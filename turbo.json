@@ -21,7 +21,7 @@
       "passThroughEnv": ["CI", "PLAYWRIGHT_*", "DOCKER_*", "TESTCONTAINERS_*"]
     },
     "web#test:e2e": {
-      "dependsOn": ["^build", "build"],
+      "dependsOn": ["^build"],
       "cache": false,
       "passThroughEnv": ["CI", "PLAYWRIGHT_*"]
     },

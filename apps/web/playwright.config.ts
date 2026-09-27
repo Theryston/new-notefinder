@@ -8,10 +8,10 @@ const isCI = Boolean(process.env.CI);
 
 /**
  * E2E tests run against a production build (`next start`), so they see the
- * same proxy, prerendering and caching behavior as production. The build
- * itself is not done here: Turbo's `web#test:e2e` depends on `web#build`
- * (cached), so `nub run test:e2e` never builds twice. Running Playwright
- * directly requires `nub run build --filter=web` first.
+ * same proxy, prerendering and caching behavior as production. The
+ * `test:e2e` script always runs `next build` first (from the repo root or from
+ * apps/web), so a stale `.next` left over from another branch is never tested.
+ * Running `playwright test` by hand skips that build.
  */
 export default defineConfig({
   testDir: './e2e',
