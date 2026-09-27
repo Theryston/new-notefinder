@@ -1,24 +1,31 @@
+import bcrypt from 'bcryptjs';
 import type { Database } from '../../src/database/database.js';
 import { albums } from '../../src/database/schema/albums.js';
 import { artists } from '../../src/database/schema/artists.js';
+import { accounts } from '../../src/database/schema/auth.js';
 import {
   thumbnails,
   trackArtists,
   trackNotes,
   tracks,
 } from '../../src/database/schema/tracks.js';
+import { users } from '../../src/database/schema/users.js';
+import { hashPassword } from '../../src/modules/auth/password.js';
 
 export type Artist = typeof artists.$inferSelect;
 export type Album = typeof albums.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type Thumbnail = typeof thumbnails.$inferSelect;
 export type TrackNote = typeof trackNotes.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type Account = typeof accounts.$inferSelect;
 
 type NewArtist = typeof artists.$inferInsert;
 type NewAlbum = typeof albums.$inferInsert;
 type NewTrack = typeof tracks.$inferInsert;
 type NewThumbnail = Omit<typeof thumbnails.$inferInsert, 'trackId'>;
 type NewTrackNote = Omit<typeof trackNotes.$inferInsert, 'trackId'>;
+type NewUser = typeof users.$inferInsert;
 
 // Per-entity counters make default values unique and predictable within a
 // spec ("Artist 1", "Artist 2", …). `resetDatabase` restarts them.
@@ -151,4 +158,64 @@ export const createTrack = async (
     thumbnails: createdThumbnails,
     notes: createdNotes,
   };
+};
+
+/** Password every factory-made credential account gets by default. */
+export const DEFAULT_PASSWORD = 'correct-horse-battery';
+
+/** A verified user (`user-1@example.com`, `user_1`) without sign-in methods. */
+export const createUser = (
+  db: Database,
+  overrides: Partial<NewUser> = {},
+): Promise<User> => {
+  const n = next('user');
+  return insertOne(
+    db
+      .insert(users)
+      .values({
+        name: `User ${n}`,
+        email: `user-${n}@example.com`,
+        emailVerified: true,
+        username: `user_${n}`,
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+export type CreateCredentialAccountOptions = {
+  /** Defaults to {@link DEFAULT_PASSWORD}. */
+  password?: string;
+  /**
+   * Stores a `$2a$` bcrypt hash, like the accounts imported from the legacy
+   * app, instead of Better Auth's scrypt.
+   */
+  legacyBcrypt?: boolean;
+};
+
+// bcryptjs only generates `$2b$`; legacy hashes are `$2a$`, the same
+// algorithm under the older prefix (bcryptjs verifies both).
+const legacyBcryptHash = async (password: string): Promise<string> =>
+  (await bcrypt.hash(password, 4)).replace(/^\$2b\$/, '$2a$');
+
+/** The email/password sign-in method of a user (Better Auth `credential`). */
+export const createCredentialAccount = async (
+  db: Database,
+  user: User,
+  options: CreateCredentialAccountOptions = {},
+): Promise<Account> => {
+  const password = options.password ?? DEFAULT_PASSWORD;
+  return insertOne(
+    db
+      .insert(accounts)
+      .values({
+        providerId: 'credential',
+        accountId: user.id,
+        userId: user.id,
+        password: options.legacyBcrypt
+          ? await legacyBcryptHash(password)
+          : await hashPassword(password),
+      })
+      .returning(),
+  );
 };
