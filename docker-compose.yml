@@ -1,5 +1,9 @@
 name: notefinder
 
+# App-specific services (the web cache Redis) live next to their app.
+include:
+  - apps/web/docker-compose.yml
+
 services:
   postgres:
     image: postgres:17-alpine
