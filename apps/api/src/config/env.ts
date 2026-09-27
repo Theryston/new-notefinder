@@ -19,6 +19,7 @@ export const envSchema = z
       )
       .pipe(z.array(z.url()).min(1)),
     SWAGGER_ENABLED: z.stringbool().optional(),
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   })
   .transform((env) => ({
     ...env,
