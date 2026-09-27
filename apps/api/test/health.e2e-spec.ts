@@ -1,48 +1,37 @@
-import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
-import type { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { configureApp } from '../src/setup-app.js';
+import { REDIS_CLIENT } from '../src/redis/redis.constants.js';
 import { E2eProbeController } from './e2e-probe.controller.js';
-import { overrideRedisProviders } from './redis-test-overrides.js';
+import { createTestApp, type TestApp } from './utils/create-test-app.js';
 
 describe('Health (e2e)', () => {
-  let app: INestApplication<App>;
+  let testApp: TestApp;
+  let http: TestApp['http'];
 
   beforeAll(async () => {
-    const { builder } = overrideRedisProviders(
-      Test.createTestingModule({
-        imports: [AppModule],
-        controllers: [E2eProbeController],
-      }),
-    );
-    const moduleRef = await builder.compile();
-
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
+    testApp = await createTestApp({ controllers: [E2eProbeController] });
+    http = testApp.http;
   });
 
   afterAll(async () => {
-    await app.close();
+    await testApp.close();
   });
 
   it('GET /v1/health returns ok', async () => {
-    await request(app.getHttpServer())
-      .get('/v1/health')
+    await http.get('/v1/health').expect(200).expect({ status: 'ok' });
+  });
+
+  it('GET /v1/health/ready checks the real database', async () => {
+    await http
+      .get('/v1/health/ready')
       .expect(200)
-      .expect({ status: 'ok' });
+      .expect({ status: 'ok', checks: { database: 'ok', redis: 'ok' } });
   });
 
   it('unversioned routes do not exist', async () => {
-    await request(app.getHttpServer()).get('/health').expect(404);
+    await http.get('/health').expect(404);
   });
 
   it('unknown routes return the NOT_FOUND envelope', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/v1/does-not-exist')
-      .expect(404);
+    const response = await http.get('/v1/does-not-exist').expect(404);
     expect(response.body).toEqual({
       statusCode: 404,
       code: 'NOT_FOUND',
@@ -51,7 +40,7 @@ describe('Health (e2e)', () => {
   });
 
   it('invalid bodies return the VALIDATION_FAILED envelope', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await http
       .post('/v1/e2e-probe')
       .send({ limit: 1000 })
       .expect(400);
@@ -66,7 +55,7 @@ describe('Health (e2e)', () => {
   });
 
   it('malformed JSON returns the BAD_REQUEST envelope', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await http
       .post('/v1/e2e-probe')
       .set('Content-Type', 'application/json')
       .send('{"limit":')
@@ -78,7 +67,7 @@ describe('Health (e2e)', () => {
   });
 
   it('parses valid bodies and serializes responses through the schema', async () => {
-    await request(app.getHttpServer())
+    await http
       .post('/v1/e2e-probe')
       .send({ limit: '5', cursor: 'abc' })
       .expect(201)
@@ -86,13 +75,8 @@ describe('Health (e2e)', () => {
   });
 
   it('validates and coerces query DTOs', async () => {
-    await request(app.getHttpServer())
-      .get('/v1/e2e-probe?limit=7')
-      .expect(200)
-      .expect({ limit: 7 });
-    const response = await request(app.getHttpServer())
-      .get('/v1/e2e-probe?limit=0')
-      .expect(400);
+    await http.get('/v1/e2e-probe?limit=7').expect(200).expect({ limit: 7 });
+    const response = await http.get('/v1/e2e-probe?limit=0').expect(400);
     expect(response.body).toMatchObject({
       code: 'VALIDATION_FAILED',
       details: { location: 'query' },
@@ -100,7 +84,7 @@ describe('Health (e2e)', () => {
   });
 
   it('allows CORS only for configured web origins', async () => {
-    const allowed = await request(app.getHttpServer())
+    const allowed = await http
       .get('/v1/health')
       .set('Origin', 'http://localhost:3000')
       .expect(200);
@@ -109,7 +93,7 @@ describe('Health (e2e)', () => {
     );
     expect(allowed.headers['access-control-allow-credentials']).toBe('true');
 
-    const denied = await request(app.getHttpServer())
+    const denied = await http
       .get('/v1/health')
       .set('Origin', 'https://evil.example')
       .expect(200);
@@ -117,9 +101,7 @@ describe('Health (e2e)', () => {
   });
 
   it('serves the OpenAPI document generated from Zod DTOs', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/docs-json')
-      .expect(200);
+    const response = await http.get('/docs-json').expect(200);
     expect(response.body.paths).toHaveProperty(['/v1/health']);
     expect(response.body.paths['/v1/e2e-probe'].get.parameters).toEqual([
       expect.objectContaining({
@@ -142,5 +124,42 @@ describe('Health (e2e)', () => {
         limit: { type: 'integer', minimum: 1, maximum: 100 },
       },
     });
+  });
+});
+
+describe('Health readiness with failing dependencies (e2e)', () => {
+  let testApp: TestApp | undefined;
+
+  afterEach(async () => {
+    await testApp?.close();
+    testApp = undefined;
+  });
+
+  it('returns 503 when the database is unreachable', async () => {
+    testApp = await createTestApp({
+      // Nothing listens on port 1, so the connection is refused at once.
+      env: { DATABASE_URL: 'postgres://postgres:postgres@127.0.0.1:1/none' },
+    });
+    await testApp.http
+      .get('/v1/health/ready')
+      .expect(503)
+      .expect({ status: 'error', checks: { database: 'error', redis: 'ok' } });
+    // Liveness stays up: restarting the instance wouldn't fix the database.
+    await testApp.http.get('/v1/health').expect(200);
+  });
+
+  it('returns 503 when Redis does not answer', async () => {
+    testApp = await createTestApp({
+      override: (builder) =>
+        builder.overrideProvider(REDIS_CLIENT).useValue({
+          status: 'end',
+          disconnect: () => undefined,
+          ping: () => Promise.reject(new Error('Connection is closed')),
+        }),
+    });
+    await testApp.http
+      .get('/v1/health/ready')
+      .expect(503)
+      .expect({ status: 'error', checks: { database: 'ok', redis: 'error' } });
   });
 });
