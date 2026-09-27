@@ -12,6 +12,7 @@ const createProcessor = async (overrides: Record<string, string> = {}) => {
     REDIS_URL: 'redis://localhost:6379',
     WEB_URL: 'https://web.example/',
     REVALIDATE_SECRET: SECRET,
+    BETTER_AUTH_SECRET: SECRET,
     ...overrides,
   });
   const moduleRef = await Test.createTestingModule({

@@ -10,6 +10,7 @@ import {
 import { id, timestamps } from '../columns.js';
 import { albums } from './albums.js';
 import { artists } from './artists.js';
+import { users } from './users.js';
 
 // Values match the legacy Prisma enums 1:1, so the import copies them as-is.
 export const trackStatus = pgEnum('track_status', [
@@ -58,9 +59,10 @@ export const tracks = pgTable(
     // URLs) because an album row was removed is never intended.
     albumId: text().references(() => albums.id, { onDelete: 'set null' }),
     score: integer().notNull().default(0),
-    // User who added the track. Required in legacy, nullable here until the
-    // users table exists: the FK is added together with the auth tables.
-    creatorId: text(),
+    // User who added the track. Required in legacy, where deleting the user
+    // cascades to their tracks; here the track (a public page) survives and
+    // just loses its creator.
+    creatorId: text().references(() => users.id, { onDelete: 'set null' }),
     ...timestamps,
   },
   (table) => [
@@ -123,10 +125,14 @@ export const trackNotes = pgTable(
     start: doublePrecision().notNull(),
     end: doublePrecision().notNull(),
     frequencyMean: doublePrecision().notNull(),
-    // Optional author (nullable in legacy too). The FK is added together with
-    // the auth tables.
-    creatorId: text(),
+    // Optional author (nullable in legacy too). Legacy cascades user deletes
+    // to notes; here the notes stay with their track.
+    creatorId: text().references(() => users.id, { onDelete: 'set null' }),
     ...timestamps,
   },
-  (table) => [index().on(table.trackId, table.start)],
+  (table) => [
+    index().on(table.trackId, table.start),
+    // Lets a user delete set creator_id to null without scanning every note.
+    index().on(table.creatorId),
+  ],
 );

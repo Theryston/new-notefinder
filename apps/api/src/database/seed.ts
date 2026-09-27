@@ -10,16 +10,24 @@ import {
 import { toSnakeCase } from 'drizzle-orm/casing';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { loadEnv } from '../config/env.js';
+import { hashPassword } from '../modules/auth/password.js';
 import { createDatabase, createPool, type Database } from './database.js';
 import { albums } from './schema/albums.js';
 import { artists } from './schema/artists.js';
+import { accounts } from './schema/auth.js';
 import {
   thumbnails,
   trackArtists,
   trackNotes,
   tracks,
 } from './schema/tracks.js';
-import { assertSeedAllowed, buildSeedData } from './seed-data.js';
+import { users } from './schema/users.js';
+import {
+  assertSeedAllowed,
+  buildSeedData,
+  SEED_USER,
+  SEED_USER_PASSWORD,
+} from './seed-data.js';
 
 /**
  * `nub run db:seed`: writes the deterministic development catalog from
@@ -45,8 +53,30 @@ const NOTES_PER_INSERT = 1000;
 const seed = async (db: Database): Promise<void> => {
   const data = buildSeedData();
   const trackIds = data.tracks.map((track) => track.id);
+  // Better Auth's email/password sign-in reads the `credential` account.
+  const credential = {
+    id: `${SEED_USER.id}credential`,
+    providerId: 'credential',
+    accountId: SEED_USER.id,
+    userId: SEED_USER.id,
+    password: await hashPassword(SEED_USER_PASSWORD),
+  };
 
   await db.transaction(async (tx) => {
+    await tx
+      .insert(users)
+      .values(data.users)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: overwriteOnConflict(users),
+      });
+    await tx
+      .insert(accounts)
+      .values(credential)
+      .onConflictDoUpdate({
+        target: accounts.id,
+        set: overwriteOnConflict(accounts),
+      });
     await tx
       .insert(artists)
       .values(data.artists)
@@ -110,8 +140,10 @@ const seed = async (db: Database): Promise<void> => {
   });
 
   new Logger('Seed').log(
-    `Seeded ${data.artists.length} artists, ${data.albums.length} albums, ` +
-      `${data.tracks.length} tracks, ${data.trackNotes.length} notes`,
+    `Seeded ${data.users.length} user(s), ${data.artists.length} artists, ` +
+      `${data.albums.length} albums, ${data.tracks.length} tracks, ` +
+      `${data.trackNotes.length} notes. Sign in as ${SEED_USER.email} / ` +
+      `${SEED_USER_PASSWORD}`,
   );
 };
 

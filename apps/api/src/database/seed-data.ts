@@ -6,6 +6,7 @@ import type {
   trackNotes,
   tracks,
 } from './schema/tracks.js';
+import type { users } from './schema/users.js';
 
 /**
  * Deterministic development data for `db:seed`. Everything here is pure (no
@@ -157,6 +158,7 @@ export const generateVocalNotes = ({
   return notes;
 };
 
+type UserRow = typeof users.$inferInsert & { id: string };
 type ArtistRow = typeof artists.$inferInsert & { id: string };
 type AlbumRow = typeof albums.$inferInsert & { id: string };
 type TrackRow = typeof tracks.$inferInsert & { id: string };
@@ -165,6 +167,7 @@ type ThumbnailRow = typeof thumbnails.$inferInsert & { id: string };
 type TrackNoteRow = typeof trackNotes.$inferInsert & { id: string };
 
 export type SeedData = {
+  users: UserRow[];
   artists: ArtistRow[];
   albums: AlbumRow[];
   tracks: TrackRow[];
@@ -172,6 +175,22 @@ export type SeedData = {
   thumbnails: ThumbnailRow[];
   trackNotes: TrackNoteRow[];
 };
+
+/**
+ * Creator of every seeded track. `seed.ts` also gives it a password
+ * (`SEED_USER_PASSWORD`), so developers can sign in right after seeding.
+ */
+export const SEED_USER = {
+  id: 'seeduser01',
+  name: 'Seed Creator',
+  email: 'seed@notefinder.dev',
+  emailVerified: true,
+  username: 'seed_creator',
+  role: 'USER',
+} satisfies UserRow;
+
+// Development only: `assertSeedAllowed` keeps the seed away from production.
+export const SEED_USER_PASSWORD = 'notefinder-seed';
 
 // Fictional catalog: YouTube IDs are placeholders, so the embedded player
 // won't find these videos, but every page that lists or renders tracks has
@@ -290,6 +309,7 @@ const hashString = (value: string): number => {
 
 export const buildSeedData = (): SeedData => {
   const data: SeedData = {
+    users: [SEED_USER],
     artists: SEED_ARTISTS,
     albums: SEED_ALBUMS,
     tracks: [],
@@ -302,6 +322,7 @@ export const buildSeedData = (): SeedData => {
     // Media and lyrics URLs stay null: there are no real files to point at.
     data.tracks.push({
       ...track,
+      creatorId: SEED_USER.id,
       duration:
         track.durationSeconds == null
           ? null

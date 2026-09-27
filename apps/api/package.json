@@ -34,6 +34,8 @@
     "@nestjs/throttler": "^6.7.1",
     "@notefinder/contracts": "workspace:*",
     "@paralleldrive/cuid2": "^3.3.0",
+    "bcryptjs": "^3.0.3",
+    "better-auth": "^1.7.6",
     "bullmq": "^6.3.9",
     "drizzle-orm": "^0.45.3",
     "ioredis": "^6.0.0",
