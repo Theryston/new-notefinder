@@ -110,16 +110,16 @@ importers:
         version: 1.48.0(react@19.2.8)
       next:
         specifier: 16.3.4
-        version: 16.3.4(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)
+        version: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       next-intl:
         specifier: ^4.14.7
-        version: 4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)
+        version: 4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react@19.2.8)(react-dom@19.2.8(react@19.2.8))
       nuqs:
         specifier: ^2.10.1
-        version: 2.10.1(@types/node@20.19.43)(next@16.3.4(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)
+        version: 2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -145,6 +145,9 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.2.8)
     devDependencies:
+      '@playwright/test':
+        specifier: 1.56.1
+        version: 1.56.1(zod@4.6.5)
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -163,6 +166,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(@vitest/expect@4.1.11)(vite@8.3.1(@types/node@20.19.43))
 
   packages/contracts:
     dependencies:
@@ -1196,6 +1202,11 @@ packages:
   '@parcel/watcher@2.6.0':
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
+
+  '@playwright/test@1.56.1':
+    resolution: {integrity: sha512-vSMYtL/zOcFpvJCW71Q/OEGQb7KYBPAdKh35WNSkaZA75JlAO8ED8UN6GUNTm3drWomcbcqRPFqQbLae8yBTdg==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@rolldown/binding-android-arm-eabi@1.2.11':
     resolution: {integrity: sha512-A5kXfGKvKWWZE0TtPrfsvT+q4Y5d1QG8gGUzpYjGydM+fARM9MuX90PrXYXe0XbsDVgyxxNzHo6giCj90bsFNw==}
@@ -2278,6 +2289,11 @@ packages:
     resolution: {integrity: sha512-KYAb4c9BJQI6QqGKthV68OHe0badztdXJWKo0WtBA9IuCFPTKvE5ZdUBglP833aMjhaSPNO4A5j/EkzZtGlKjA==}
     engines: {node: '>=14.14'}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3156,6 +3172,36 @@ packages:
   pkg-up@3.1.0:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
+
+  playwright-core@1.56.1:
+    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+    peerDependencies:
+      bufferutil: '*'
+      chromium-bidi: '*'
+      electron: '*'
+      kerberos: '*'
+      utf-8-validate: '*'
+      zod: '*'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      chromium-bidi:
+        optional: true
+      electron:
+        optional: true
+      kerberos:
+        optional: true
+      utf-8-validate:
+        optional: true
+      zod:
+        optional: true
+
+  playwright@1.56.1:
+    resolution: {integrity: sha512-aFi5B0WovBHTEvpM3DzXTUaeN6eN0qWnTkKx4NQaH4Wvcmc153PdaY2UBdSYKaGYw+UyWXSVyxDUg5DoPEttjw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
@@ -4717,6 +4763,16 @@ snapshots:
       '@parcel/watcher-win32-arm64': 2.6.0
       '@parcel/watcher-win32-x64': 2.6.0
 
+  '@playwright/test@1.56.1(zod@4.6.5)':
+    dependencies:
+      playwright: 1.56.1(zod@4.6.5)
+    transitivePeerDependencies:
+      - bufferutil
+      - chromium-bidi
+      - electron
+      - kerberos
+      - utf-8-validate
+
   '@rolldown/binding-android-arm-eabi@1.2.11':
     optional: true
 
@@ -5065,12 +5121,12 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.1
 
-  '@vitest/mocker@4.1.11(vite@8.3.1(@types/node@24.19.0))':
+  '@vitest/mocker@4.1.11(vite@8.3.1(@types/node@20.19.43))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      vite: 8.3.1(@types/node@24.19.0)
+      vite: 8.3.1(@types/node@20.19.43)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -5655,6 +5711,9 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -6156,7 +6215,7 @@ snapshots:
 
   next-intl-swc-plugin-extractor@4.14.7: {}
 
-  next-intl@4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8):
+  next-intl@4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
     dependencies:
       '@eloqnt/config': 0.1.0
       '@eloqnt/format-json': 0.1.0
@@ -6167,7 +6226,7 @@ snapshots:
       '@types/react': 19.3.0
       icu-minify: 4.14.7
       negotiator: 1.1.0
-      next: 16.3.4(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)
+      next: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       next-intl-swc-plugin-extractor: 4.14.7
       react: 19.2.8
       use-intl: 4.14.7(@types/react@19.3.0)(react@19.2.8)
@@ -6183,9 +6242,10 @@ snapshots:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  next@16.3.4(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1):
+  next@16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5):
     dependencies:
       '@next/env': 16.3.4
+      '@playwright/test': 1.56.1(zod@4.6.5)
       '@swc/helpers': 0.5.23
       baseline-browser-mapping: 2.11.26
       caniuse-lite: 1.0.30001812
@@ -6237,10 +6297,10 @@ snapshots:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
 
-  nuqs@2.10.1(@types/node@20.19.43)(next@16.3.4(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8):
+  nuqs@2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
     dependencies:
       '@standard-schema/spec': 1.1.0
-      next: 16.3.4(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)
+      next: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       react: 19.2.8
 
   object-assign@4.1.1: {}
@@ -6369,6 +6429,22 @@ snapshots:
   pkg-up@3.1.0:
     dependencies:
       find-up: 3.0.0
+
+  playwright-core@1.56.1(zod@4.6.5):
+    dependencies:
+      zod: 4.6.5
+
+  playwright@1.56.1(zod@4.6.5):
+    dependencies:
+      playwright-core: 1.56.1(zod@4.6.5)
+    optionalDependencies:
+      fsevents: 2.3.2
+    transitivePeerDependencies:
+      - bufferutil
+      - chromium-bidi
+      - electron
+      - kerberos
+      - utf-8-validate
 
   pluralize@8.0.0: {}
 
@@ -6935,6 +7011,17 @@ snapshots:
       - supports-color
       - typescript
 
+  vite@8.3.1(@types/node@20.19.43):
+    dependencies:
+      '@types/node': 20.19.43
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.28
+      rolldown: 1.2.11
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      fsevents: 2.3.3
+
   vite@8.3.1(@types/node@24.19.0):
     dependencies:
       '@types/node': 24.19.0
@@ -6946,12 +7033,39 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
+  vitest@4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(@vitest/expect@4.1.11)(vite@8.3.1(@types/node@20.19.43)):
+    dependencies:
+      '@types/node': 20.19.43
+      '@vitest/coverage-v8': 4.1.11(@types/node@24.19.0)(@vitest/expect@4.1.11)(vite@8.3.1(@types/node@24.19.0))(vitest@4.1.11)
+      '@vitest/expect': 4.1.11
+      '@vitest/mocker': 4.1.11(vite@8.3.1(@types/node@20.19.43))
+      '@vitest/pretty-format': 4.1.11
+      '@vitest/runner': 4.1.11
+      '@vitest/snapshot': 4.1.11
+      '@vitest/spy': 4.1.11
+      '@vitest/utils': 4.1.11
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 0.30.21
+      obug: 2.2.1
+      pathe: 2.0.3
+      picomatch: 4.0.7
+      std-env: 4.2.0
+      tinybench: 2.9.0
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.1
+      vite: 8.3.1(@types/node@20.19.43)
+      why-is-node-running: 2.3.0
+    transitivePeerDependencies:
+      - msw
+
   vitest@4.1.11(@types/node@24.19.0)(@vitest/coverage-v8@4.1.11)(@vitest/expect@4.1.11)(vite@8.3.1(@types/node@24.19.0)):
     dependencies:
       '@types/node': 24.19.0
       '@vitest/coverage-v8': 4.1.11(@types/node@24.19.0)(@vitest/expect@4.1.11)(vite@8.3.1(@types/node@24.19.0))(vitest@4.1.11)
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.3.1(@types/node@24.19.0))
+      '@vitest/mocker': 4.1.11(vite@8.3.1(@types/node@20.19.43))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
