@@ -26,7 +26,20 @@ export default defineConfig({
     baseURL,
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Escape hatch for machines with a preinstalled Chromium that doesn't
+        // match this Playwright version (and can't download one). CI leaves
+        // it unset and uses `playwright install`.
+        launchOptions: {
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+        },
+      },
+    },
+  ],
   webServer: {
     command: `next start --port ${port}`,
     url: baseURL,

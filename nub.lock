@@ -110,16 +110,16 @@ importers:
         version: 1.48.0(react@19.2.8)
       next:
         specifier: 16.3.4
-        version: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
+        version: 16.3.4(@playwright/test@1.63.0)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       next-intl:
         specifier: ^4.14.7
-        version: 4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
+        version: 4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.63.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react@19.2.8)(react-dom@19.2.8(react@19.2.8))
       nuqs:
         specifier: ^2.10.1
-        version: 2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
+        version: 2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.63.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5)
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -146,8 +146,8 @@ importers:
         version: 5.0.15(@types/react@19.3.0)(react@19.2.8)
     devDependencies:
       '@playwright/test':
-        specifier: 1.56.1
-        version: 1.56.1(zod@4.6.5)
+        specifier: 1.63.0
+        version: 1.63.0(zod@4.6.5)
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -1203,9 +1203,9 @@ packages:
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
 
-  '@playwright/test@1.56.1':
-    resolution: {integrity: sha512-vSMYtL/zOcFpvJCW71Q/OEGQb7KYBPAdKh35WNSkaZA75JlAO8ED8UN6GUNTm3drWomcbcqRPFqQbLae8yBTdg==}
-    engines: {node: '>=18'}
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
     hasBin: true
 
   '@rolldown/binding-android-arm-eabi@1.2.11':
@@ -2289,11 +2289,6 @@ packages:
     resolution: {integrity: sha512-KYAb4c9BJQI6QqGKthV68OHe0badztdXJWKo0WtBA9IuCFPTKvE5ZdUBglP833aMjhaSPNO4A5j/EkzZtGlKjA==}
     engines: {node: '>=14.14'}
 
-  fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
-
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -3173,9 +3168,9 @@ packages:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
 
-  playwright-core@1.56.1:
-    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
-    engines: {node: '>=18'}
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
     hasBin: true
     peerDependencies:
       bufferutil: '*'
@@ -3198,9 +3193,9 @@ packages:
       zod:
         optional: true
 
-  playwright@1.56.1:
-    resolution: {integrity: sha512-aFi5B0WovBHTEvpM3DzXTUaeN6eN0qWnTkKx4NQaH4Wvcmc153PdaY2UBdSYKaGYw+UyWXSVyxDUg5DoPEttjw==}
-    engines: {node: '>=18'}
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
     hasBin: true
 
   pluralize@8.0.0:
@@ -4763,9 +4758,9 @@ snapshots:
       '@parcel/watcher-win32-arm64': 2.6.0
       '@parcel/watcher-win32-x64': 2.6.0
 
-  '@playwright/test@1.56.1(zod@4.6.5)':
+  '@playwright/test@1.63.0(zod@4.6.5)':
     dependencies:
-      playwright: 1.56.1(zod@4.6.5)
+      playwright: 1.63.0(zod@4.6.5)
     transitivePeerDependencies:
       - bufferutil
       - chromium-bidi
@@ -5711,9 +5706,6 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
-  fsevents@2.3.2:
-    optional: true
-
   fsevents@2.3.3:
     optional: true
 
@@ -6215,7 +6207,7 @@ snapshots:
 
   next-intl-swc-plugin-extractor@4.14.7: {}
 
-  next-intl@4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
+  next-intl@4.14.7(@types/node@20.19.43)(@types/react@19.3.0)(next@16.3.4(@playwright/test@1.63.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
     dependencies:
       '@eloqnt/config': 0.1.0
       '@eloqnt/format-json': 0.1.0
@@ -6226,7 +6218,7 @@ snapshots:
       '@types/react': 19.3.0
       icu-minify: 4.14.7
       negotiator: 1.1.0
-      next: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
+      next: 16.3.4(@playwright/test@1.63.0)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       next-intl-swc-plugin-extractor: 4.14.7
       react: 19.2.8
       use-intl: 4.14.7(@types/react@19.3.0)(react@19.2.8)
@@ -6242,10 +6234,10 @@ snapshots:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  next@16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5):
+  next@16.3.4(@playwright/test@1.63.0)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5):
     dependencies:
       '@next/env': 16.3.4
-      '@playwright/test': 1.56.1(zod@4.6.5)
+      '@playwright/test': 1.63.0(zod@4.6.5)
       '@swc/helpers': 0.5.23
       baseline-browser-mapping: 2.11.26
       caniuse-lite: 1.0.30001812
@@ -6297,10 +6289,10 @@ snapshots:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
 
-  nuqs@2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.56.1)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
+  nuqs@2.10.1(@types/node@20.19.43)(next@16.3.4(@playwright/test@1.63.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(react@19.2.8)(zod@4.6.5):
     dependencies:
       '@standard-schema/spec': 1.1.0
-      next: 16.3.4(@playwright/test@1.56.1)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
+      next: 16.3.4(@playwright/test@1.63.0)(@types/node@20.19.43)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1)(zod@4.6.5)
       react: 19.2.8
 
   object-assign@4.1.1: {}
@@ -6430,15 +6422,13 @@ snapshots:
     dependencies:
       find-up: 3.0.0
 
-  playwright-core@1.56.1(zod@4.6.5):
+  playwright-core@1.63.0(zod@4.6.5):
     dependencies:
       zod: 4.6.5
 
-  playwright@1.56.1(zod@4.6.5):
+  playwright@1.63.0(zod@4.6.5):
     dependencies:
-      playwright-core: 1.56.1(zod@4.6.5)
-    optionalDependencies:
-      fsevents: 2.3.2
+      playwright-core: 1.63.0(zod@4.6.5)
     transitivePeerDependencies:
       - bufferutil
       - chromium-bidi
