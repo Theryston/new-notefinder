@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nubjs/setup-nub@v0
+        with:
+          nub-version: 0.9.5
+
+      - name: Install dependencies
+        run: nub install --frozen-lockfile
+
+      - name: Lint
+        run: nub run lint
+
+      - name: Type check
+        run: nub run check-types
+
+      - name: Test
+        run: nub run test
+
+      - name: Build
+        run: nub run build
