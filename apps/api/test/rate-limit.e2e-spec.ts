@@ -1,45 +1,26 @@
-import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
-import type { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { ENV, loadEnv } from '../src/config/env.js';
-import { configureApp } from '../src/setup-app.js';
 import { E2eProbeController } from './e2e-probe.controller.js';
-import { overrideRedisProviders } from './redis-test-overrides.js';
+import { createTestApp, type TestApp } from './utils/create-test-app.js';
 
 const LIMIT = 3;
 
 describe('Rate limiting (e2e)', () => {
-  let app: INestApplication<App>;
+  let testApp: TestApp;
 
   beforeAll(async () => {
-    const { builder } = overrideRedisProviders(
-      Test.createTestingModule({
-        imports: [AppModule],
-        controllers: [E2eProbeController],
-      }),
-    );
-    const moduleRef = await builder
-      .overrideProvider(ENV)
-      .useValue({ ...loadEnv(), RATE_LIMIT_MAX: LIMIT })
-      .compile();
-
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
+    testApp = await createTestApp({
+      controllers: [E2eProbeController],
+      env: { RATE_LIMIT_MAX: LIMIT },
+    });
   });
 
   afterAll(async () => {
-    await app.close();
+    await testApp.close();
   });
 
   // Supertest connects from loopback, a trusted proxy by default, so
   // X-Forwarded-For sets the client IP and isolates each test's bucket.
   const probe = (clientIp: string) =>
-    request(app.getHttpServer())
-      .get('/v1/e2e-probe')
-      .set('X-Forwarded-For', clientIp);
+    testApp.http.get('/v1/e2e-probe').set('X-Forwarded-For', clientIp);
 
   it('returns the RATE_LIMITED envelope above the limit', async () => {
     for (let i = 0; i < LIMIT; i++) {
@@ -67,7 +48,7 @@ describe('Rate limiting (e2e)', () => {
 
   it('never limits the health check', async () => {
     for (let i = 0; i < LIMIT * 2; i++) {
-      await request(app.getHttpServer())
+      await testApp.http
         .get('/v1/health')
         .set('X-Forwarded-For', '203.0.113.4')
         .expect(200);

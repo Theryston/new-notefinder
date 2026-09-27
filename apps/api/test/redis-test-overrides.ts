@@ -26,10 +26,15 @@ const createFakeQueue = (): FakeQueue => {
   };
 };
 
-// Only what the shutdown hook touches: any Redis command called on it throws
-// (not a function), so a provider missed by these overrides fails loudly
-// instead of trying to connect.
-const redisStub = { status: 'wait', disconnect: () => undefined };
+// Only what the shutdown hook and the readiness check touch (reported as
+// healthy): any other Redis command called on it throws (not a function), so
+// a provider missed by these overrides fails loudly instead of trying to
+// connect.
+const redisStub = {
+  status: 'wait',
+  disconnect: () => undefined,
+  ping: async () => 'PONG',
+};
 
 /**
  * Replaces every Redis-backed provider (shared client, rate-limit storage,

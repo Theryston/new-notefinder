@@ -54,7 +54,9 @@ jobs:
         run: nub exec playwright install --with-deps chromium
 
       # Builds what each suite needs (web runs against a production build),
-      # then runs the API e2e tests and the web Playwright suite.
+      # then runs the API e2e tests and the web Playwright suite. The API
+      # suite starts its own Postgres with Testcontainers on the runner's
+      # Docker (no `services:` block; see apps/api/test/setup/global-setup.ts).
       - name: E2E tests
         run: nub run test:e2e
 
