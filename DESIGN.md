@@ -4,8 +4,8 @@ The visual language of NoteFinder. It applies to the web app today and to the
 mobile app later. Tokens live in `apps/web/app/globals.css`: when you change a
 value, change this file in the same PR.
 
-Visual reference (the options each decision was picked from):
-<https://claude.ai/artifact/Y8GBjZEMrCCjKB7cRQEYEd>
+This file is the source of truth: every rule needed to build UI is written
+here, with no external reference to look up.
 
 ## Direction
 
