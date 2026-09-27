@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { cursorPaginationQuerySchema } from '@notefinder/contracts';
+import { Public } from '../src/common/decorators/public.decorator.js';
 import { createZodDto } from '../src/common/zod/create-zod-dto.js';
 import { ZodSerializerDto } from '../src/common/zod/zod-serializer.interceptor.js';
 
@@ -10,6 +11,7 @@ export class ProbeDto extends createZodDto(cursorPaginationQuerySchema) {}
  * serializer. It lives outside `*.e2e-spec.ts` because Biome's test override
  * currently drops the parameter-decorator parser option for spec files.
  */
+@Public()
 @Controller('e2e-probe')
 export class E2eProbeController {
   @Get()

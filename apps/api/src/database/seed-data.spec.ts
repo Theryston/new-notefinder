@@ -95,11 +95,13 @@ describe('buildSeedData', () => {
     const trackIds = new Set(data.tracks.map((track) => track.id));
     const artistIds = new Set(data.artists.map((artist) => artist.id));
     const albumIds = new Set(data.albums.map((album) => album.id));
+    const userIds = new Set(data.users.map((user) => user.id));
 
     for (const track of data.tracks) {
       if (track.albumId != null) {
         expect(albumIds).toContain(track.albumId);
       }
+      expect(userIds).toContain(track.creatorId);
     }
     for (const link of data.trackArtists) {
       expect(trackIds).toContain(link.trackId);

@@ -1,14 +1,16 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import type { TestingModuleBuilder } from '@nestjs/testing';
 import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
+import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
+import { EmailProcessor } from '../src/integrations/email/email.processor.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
 import { REDIS_CLIENT } from '../src/redis/redis.constants.js';
 
 /** Every BullMQ queue registered by the app; add new queues here. */
-const QUEUES = [WEB_REVALIDATION_QUEUE] as const;
+const QUEUES = [WEB_REVALIDATION_QUEUE, EMAIL_QUEUE] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
-const PROCESSORS = [WebRevalidationProcessor] as const;
+const PROCESSORS = [WebRevalidationProcessor, EmailProcessor] as const;
 
 export type FakeQueue = {
   added: { name: string; data: unknown }[];

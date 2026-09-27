@@ -6,6 +6,7 @@ import {
 } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { type Readiness, readinessSchema } from './health.schemas.js';
 import { HealthService } from './health.service.js';
@@ -13,6 +14,7 @@ import { HealthService } from './health.service.js';
 @ApiTags('health')
 // Probed frequently by Coolify and the CDN; must never be rate limited.
 @SkipThrottle()
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
