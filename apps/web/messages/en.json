@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "notefinder – see the notes a singer hits",
-    "titleTemplate": "%s | notefinder",
+    "title": "NoteFinder – see the notes a singer hits",
+    "titleTemplate": "%s | NoteFinder",
     "description": "See the exact vocal notes a singer hits in any song on a timeline synced with playback, and get real-time pitch feedback from your mic."
   },
   "home": {

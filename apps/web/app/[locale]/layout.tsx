@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist_Mono, Inter } from 'next/font/google';
+import { Figtree, Geist_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 
@@ -9,7 +9,7 @@ import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
 import { cn } from '@/lib/utils';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const fontSans = Figtree({ subsets: ['latin'], variable: '--font-sans' });
 
 const fontMono = Geist_Mono({
   subsets: ['latin'],
@@ -46,9 +46,9 @@ export default async function LocaleLayout({
       suppressHydrationWarning
       className={cn(
         'antialiased',
+        fontSans.variable,
         fontMono.variable,
         'font-sans',
-        inter.variable,
       )}
     >
       <body>
