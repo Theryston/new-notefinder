@@ -1,10 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -15,8 +14,6 @@
     "outDir": "./dist",
     "rootDir": ".",
     "incremental": true,
-    "skipLibCheck": true,
-    "strict": true,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals", "node"]
   }

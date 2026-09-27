@@ -1,0 +1,197 @@
+@AGENTS.md
+
+# apps/web — Next.js frontend
+
+Read the root `CLAUDE.md` first; this file only adds web-specific rules.
+
+Stack: Next.js 16 (App Router, **Cache Components** enabled), React 19,
+Tailwind CSS v4, shadcn/ui (`base-nova` style on **Base UI**, not Radix),
+next-intl, TanStack Query, react-hook-form + Zod, nuqs, Zustand, lucide-react.
+
+**Top priority: speed.** Every page should feel instant. Prefer a prerendered
+static shell + streamed dynamic holes over anything that blocks on a request.
+If a change makes a page slower or grows the client bundle, justify it.
+
+This Next.js version differs from your training data (`proxy.ts` instead of
+`middleware.ts`, `'use cache'`, `cacheLife`/`cacheTag`/`updateTag`,
+two-argument `revalidateTag`, `next/root-params`, …). Check
+`node_modules/next/dist/docs/` before using a Next API.
+
+## Commands
+
+```sh
+nub run dev          # next dev on port 3000
+nub run build        # production build (also validates prerendering)
+nub run check-types  # next typegen + tsc
+nub run lint
+```
+
+## Folder structure
+
+```
+app/
+  [locale]/                 every user-facing route is under the locale segment
+    layout.tsx              root layout (html lang, providers, fonts)
+    page.tsx                home
+    tracks/[trackId]/page.tsx
+    search/page.tsx
+    ...
+  api/revalidate/route.ts   secret-protected endpoint the API calls to invalidate tags
+features/                   domain code, one folder per feature
+  tracks/
+    components/             feature components (server by default)
+    queries.ts              server-side cached fetchers ('use cache')
+    actions.ts              server actions (when needed)
+    hooks/                  TanStack Query hooks (use-*.ts), client only
+    query-keys.ts           TanStack query key factory
+    stores/                 Zustand stores, only for complex client state
+  timeline/ auth/ search/ users/ streaks/ ...
+components/
+  ui/                       shadcn/ui components (generated)
+  *.tsx                     generic, domain-agnostic shared components (header, container…)
+hooks/                      generic shared hooks
+lib/
+  api/                      typed API client (server + browser)
+  i18n/                     next-intl routing/request config
+  env.ts                    Zod-validated env
+  query-client.ts           TanStack Query client factory
+  utils.ts                  cn() and tiny helpers
+messages/
+  en.json                   source of truth
+  pt-BR.json
+proxy.ts                    next-intl locale routing
+```
+
+- Route files (`page.tsx`, `layout.tsx`, `loading.tsx`) stay **thin**: read
+  params, call feature fetchers, compose feature components. No business logic
+  or big JSX trees in `app/`.
+- A feature may import from `components/`, `hooks/`, `lib/` and other
+  features' public components; avoid circular feature dependencies.
+- `features/<f>/queries.ts` and anything touching secrets import
+  `'server-only'`; client hooks/stores start with `'use client'` where needed.
+
+## Rendering, data fetching and cache
+
+**Server first.** Components are Server Components unless they need state,
+effects, browser APIs or event handlers. Put `'use client'` on the smallest
+leaf possible and pass server-fetched data down as props.
+
+### Server (initial render)
+
+- All server reads go through `lib/api` (typed fetch wrapper around `API_URL`)
+  and are parsed with the `@notefinder/contracts` schemas. Errors surface as a
+  typed `ApiError` (envelope `{ statusCode, code, message }`).
+- Feature fetchers in `features/<f>/queries.ts` use `'use cache'` +
+  `cacheTag(...)` + `cacheLife(...)`. Tag names come from the shared tag
+  builders in `@notefinder/contracts` (the API invalidates the same tags).
+- Public data (tracks, notes, artists, home sections): `'use cache'` (use
+  `'use cache: remote'` for data that must be shared across instances in
+  production). Pick the longest `cacheLife` that is still correct; freshness
+  comes from tag invalidation, not short lifetimes.
+- User-specific data: never read `cookies()`/`headers()` inside a shared cache.
+  Either extract the user id and pass it into a cached function, or use
+  `'use cache: private'`. Anything that reads the request sits behind
+  `<Suspense>` so the rest of the page stays in the static shell.
+- Every `<Suspense>` fallback is a skeleton with the **same dimensions** as the
+  final content (zero layout shift).
+- Use `generateStaticParams` for locales and for the most popular tracks so
+  hot pages are prerendered at build time.
+- Invalidation: after a mutation made from the web, use `updateTag` (in a
+  server action) for read-your-own-writes; changes made elsewhere are
+  invalidated by the API calling `app/api/revalidate` (`revalidateTag(tag,
+  'max')`).
+
+### Client (interactions)
+
+- Client-side server state uses **TanStack Query** only (never `useEffect` +
+  `fetch`). Hooks in `features/<f>/hooks/use-*.ts`, keys from
+  `features/<f>/query-keys.ts`. The browser calls the API directly via the
+  `lib/api` browser client (`credentials: 'include'`).
+- Use it for things that change after load: favorite toggle, track processing
+  status polling, search-as-you-type, streak heartbeat. Prefer optimistic
+  updates for toggles.
+- When a client component needs data the server already has, prefetch on the
+  server and pass it via `HydrationBoundary` (or as `initialData`) so there is
+  no loading flash.
+
+### Performance checklist
+
+- `next/image` with correct `sizes` for all images; `next/font` for fonts.
+- Heavy client-only libraries (YouTube player, Tone.js, pitch detection,
+  Lottie) are loaded with dynamic `import()` only on the pages that need them.
+- Keep client components small; check the bundle impact of new dependencies.
+- No request waterfalls: start independent fetches in parallel
+  (`Promise.all`) or in sibling Suspense boundaries.
+- Production is self-hosted with multiple instances: `'use cache: remote'`
+  and tag invalidation go through a Redis-backed `cacheHandlers` config.
+
+## i18n (next-intl)
+
+- Locales: `en` (default) and `pt-BR`, always in the URL (`/en/...`,
+  `/pt-BR/...`). Routing config in `lib/i18n/`, locale detection/redirect in
+  `proxy.ts`.
+- **No hard-coded user-visible strings** — including `alt`, `aria-label`,
+  `title`, placeholders, toasts, metadata and validation messages.
+- Messages are namespaced by feature (`tracks.overview.title`,
+  `common.actions.save`). Add every key to **both** `en.json` and `pt-BR.json`
+  in the same change. Keys are typed (next-intl `AppConfig` augmentation), so a
+  missing/typo key fails `check-types`.
+- Use ICU placeholders and plurals; never concatenate translated fragments.
+  Format dates, numbers and durations with next-intl's formatter, not manually.
+- API errors are translated by their `code` (`errors.NOT_FOUND`, …), never by
+  showing the API `message`.
+- `generateMetadata` is translated and sets `alternates.languages` (hreflang)
+  for every locale.
+
+## UI and styling
+
+- shadcn/ui components are added with `nub exec shadcn add <component>` and
+  then formatted with `nub run format`. Customize via variants/`className` or
+  wrap them in `components/`; avoid rewriting their internals.
+- Tailwind v4 with the design tokens in `app/globals.css`. Use theme tokens
+  (`bg-background`, `text-muted-foreground`, …), not raw hex colors or
+  arbitrary values, unless there is no token for it. Dark mode via
+  `next-themes` (class strategy) must work on every screen.
+- Merge classes with `cn()`; component variants with `cva`.
+- Accessible by default: semantic HTML, keyboard navigable, visible focus,
+  labels for inputs, `alt` for images.
+- Mobile-first: every screen must work on small screens (the timeline in
+  landscape/fullscreen, as in the original app).
+
+## Forms and client state
+
+- Forms: react-hook-form + `zodResolver` using the **contracts schema** of the
+  endpoint being called. Validation messages are i18n keys mapped from the
+  Zod issue, not hard-coded text. Show API error codes translated.
+- State placement:
+  - server data → TanStack Query (client) or props (server);
+  - URL state (search query, filters, tabs, pagination) → `nuqs`;
+  - local UI state → `useState`/`useReducer`;
+  - complex shared client state (player/timeline: playback time, transpose,
+    speed, mic on/off, detected pitch) → a Zustand store in
+    `features/<f>/stores/`, read through selectors.
+- High-frequency values (current playback time, pitch at 60 fps) must not
+  re-render React trees: keep them in refs/store subscriptions and draw with
+  `requestAnimationFrame`/canvas.
+- No React Context for frequently changing state.
+
+## Auth
+
+- Better Auth lives in the API. The web uses the Better Auth client
+  (`better-auth/react`) for sign in/up/out and reads the session on the
+  server by forwarding the request cookies to the API.
+- Session-dependent UI (avatar in the header, "favorite" state) is rendered
+  inside `<Suspense>` so it never blocks the static shell.
+
+## Env
+
+- `lib/env.ts` validates env with Zod. Server-only values (e.g. `API_URL`,
+  `REVALIDATE_SECRET`) never get the `NEXT_PUBLIC_` prefix; only values that
+  are truly safe in the browser do (e.g. `NEXT_PUBLIC_API_URL`).
+
+## Testing
+
+- Vitest for pure logic: `*.test.ts` next to the file (timeline math, note
+  conversion, pitch detection, formatters, API client parsing).
+- Playwright for critical flows in `e2e/`: search → open track, track page
+  playback/timeline, sign up/in, favorite. Run against a production build.
