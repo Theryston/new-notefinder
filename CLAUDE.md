@@ -31,7 +31,7 @@ packages/
 
 ```sh
 nub install                 # install everything
-nub run infra:up            # start Postgres + Redis (docker compose)
+nub run infra:up            # start Postgres + API Redis + web cache Redis (docker compose)
 nub run dev                 # build packages, then run web + api in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
 nub run format              # biome check --write, all packages
@@ -131,8 +131,10 @@ same records.
   module, never from `process.env` directly.
 - Every env var must be listed in the app's `.env.example` (with a safe local
   default when possible). Never commit real `.env` files or secrets.
-- `docker-compose.yml` provides Postgres 17 and Redis 8 for local development
-  (`nub run infra:up` / `infra:down`). E2E tests spin up their own throwaway
+- `docker-compose.yml` provides Postgres 17 and the API's Redis 8 (6379) for
+  local development, and includes `apps/web/docker-compose.yml` (`web-redis`
+  on 6380, the web's shared cache); `nub run infra:up` / `infra:down` start
+  and stop all of them. E2E tests spin up their own throwaway
   containers (Testcontainers) instead of using the dev database.
 - Production is self-hosted: one Docker image per app, published to GHCR by
   GitHub Actions and run on Coolify behind a CDN. Keep apps stateless so they
@@ -146,6 +148,24 @@ same records.
 - Web: Vitest for pure logic (timeline math, pitch detection, formatters) +
   Playwright for critical flows (search, track page, auth).
 - **Every bug fix comes with a test that reproduces it.**
+
+### Tests are the safety net (rules for everyone, including AI agents)
+
+- **Everything new ships with tests in the same PR.** A new endpoint, service
+  method, job, component logic, route, migration-dependent behavior or legacy
+  route is not done until tests cover it (unit and/or e2e, per the app's
+  CLAUDE.md). A PR that adds behavior without tests is incomplete.
+- **When a test fails, fix the code, not the test.** A failing test means
+  something that used to work broke. Find the root cause in the code and fix
+  it. Never make CI green by editing, weakening, skipping (`.skip`,
+  `.fixme`, `.todo`), deleting or loosening the assertions of an
+  existing test, or by adding retries/timeouts to hide a real failure.
+- The **only** reason to change an existing test is an intentional behavior
+  change that the user explicitly asked for. Then change the test in the same
+  PR as the behavior, and say in the PR description which test changed and
+  why.
+- If a test looks wrong (flaky, testing the wrong thing), don't silently
+  "fix" it: stop and raise it with the user, explaining the evidence.
 
 ### Git workflow
 

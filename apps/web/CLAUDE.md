@@ -64,6 +64,8 @@ messages/
   pt-BR.json
 proxy.ts                    custom locale detection + redirect (not next-intl's middleware)
 instrumentation.ts          validates env when the server starts
+cache-handlers/             Redis-backed handler for 'use cache' (loaded by Next outside the bundle)
+docker-compose.yml          web-redis for local dev (included by the root compose file)
 ```
 
 - Route files (`page.tsx`, `layout.tsx`, `loading.tsx`) stay **thin**: read
@@ -172,8 +174,18 @@ leaf possible and pass server-fetched data down as props.
 - Keep client components small; check the bundle impact of new dependencies.
 - No request waterfalls: start independent fetches in parallel
   (`Promise.all`) or in sibling Suspense boundaries.
-- Production is self-hosted with multiple instances: `'use cache: remote'`
-  and tag invalidation go through a Redis-backed `cacheHandlers` config.
+- **Shared cache**: `cache-handlers/redis.ts` backs both `'use cache'` and
+  `'use cache: remote'` (in-process LRU in front of Redis). With
+  `CACHE_REDIS_URL` set, every instance shares entries and tag invalidations
+  reach all instances within ~1 s (prerendered pages included); without it
+  (local dev, CI, `next build`) Next's default in-memory cache is used. Redis
+  being down degrades to the local tier, never to errors. So plain
+  `'use cache'` is already shared; no need to reach for `remote`.
+- `cache-handlers/*.ts` is imported by Next natively (Node type stripping,
+  not bundled): relative imports with the `.ts` extension, only erasable
+  TypeScript syntax, no `@/` aliases and no `server-only`. It relies on Next
+  internals (`createDefaultCacheHandler`, the tags manifest): **re-check it
+  (and its tests) whenever Next is upgraded** (`next` is pinned exactly).
 
 ## i18n (next-intl)
 
@@ -269,6 +281,11 @@ leaf possible and pass server-fetched data down as props.
   read on demand and checked at server start by `instrumentation.ts`, so
   `next build` needs no secrets. Server-only values never get the
   `NEXT_PUBLIC_` prefix.
+- `CACHE_REDIS_URL` (optional, server-only) enables the shared Redis cache;
+  it's read by `cache-handlers/redis.ts` and also validated in
+  `lib/env/server.ts`. Production: set it on **every** web instance, use a
+  Redis with `maxmemory-policy volatile-lru` (so tag keys are never evicted)
+  and persistence, and ship `cache-handlers/` next to `.next/` in the image.
 - `NEXT_PUBLIC_*` values are inlined at build time: the Docker build must
   receive them as build args. That includes `NEXT_PUBLIC_SITE_URL`
   (`getSiteUrl()`, default `http://localhost:3000`), which static pages bake
