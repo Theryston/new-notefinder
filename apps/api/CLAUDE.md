@@ -12,7 +12,8 @@ public, versioned contract.
 ```sh
 nub run dev          # nest start --watch (port from PORT, default 3333)
 nub run test         # unit tests (*.spec.ts)
-nub run test:e2e     # e2e tests (test/*.e2e-spec.ts, Testcontainers)
+nub run test:e2e     # e2e tests (test/*.e2e-spec.ts) against a Testcontainers Postgres
+                     # (needs Docker, or E2E_DATABASE_URL — see Testing)
 nub run check-types
 nub run lint
 ```
@@ -26,6 +27,7 @@ nub run db:migrate   # apply migrations (dev); production runs
                      # `node dist/database/migrate.js`, so the image ships drizzle/
 nub run db:studio    # Drizzle Studio
 nub run db:seed      # deterministic, idempotent dev data; refuses NODE_ENV=production
+                     # (sign in as seed@notefinder.dev / notefinder-seed)
 ```
 
 These scripts run through `tsx`, which does **not** emit decorator metadata:
@@ -54,7 +56,8 @@ src/
     guards/ decorators/ interceptors/ pipes/
   integrations/           clients for external services, one module each
     web-revalidation/     enqueue + POST cache tags to the web's /api/revalidate
-    ytmusic/ s3/ sqs/ email/ openai/ …
+    email/                EmailService (Resend) + OTP templates (en, pt-BR), sent via a job
+    ytmusic/ s3/ sqs/ openai/ …
   modules/                one folder per feature (domain)
     tracks/
       tracks.module.ts
@@ -186,16 +189,36 @@ possible:
 
 ## Auth (Better Auth)
 
-- The Better Auth instance (Drizzle adapter, Google + email/password, email
-  verification, password reset) lives in `modules/auth/`, with its handler
-  mounted under `/v1/auth/*`. Its tables are part of the Drizzle schema.
-- A global guard resolves the session from the request (cookie for web,
-  bearer/Expo plugin for mobile). Routes are **private by default**; opt out
-  with `@Public()`. Get the user with `@CurrentUser()`. Admin-only routes use
-  `@Roles('admin')`.
+- The Better Auth instance (`modules/auth/auth.ts`: Drizzle adapter,
+  email/password, `emailOTP` for email verification and password reset with
+  6-digit codes, `username`, Google when `GOOGLE_CLIENT_ID`/`SECRET` are set)
+  owns the `users`, `sessions`, `accounts` and `verifications` tables.
+  Verification is required before a session exists.
+- `/v1/auth/*` is a **raw Express handler** registered in `configureApp`, not
+  a Nest route: it uses Better Auth's own response format (the one exception
+  to the error envelope, because the Better Auth clients expect it) and its
+  own Redis-backed rate limiter, since Nest guards/pipes don't run there.
+  Everything else goes through Nest.
+- A global `AuthGuard` resolves the session from the cookie. Routes are
+  **private by default**: every public route (health, public catalog pages,
+  test probe controllers) needs `@Public()`. Read the user with
+  `@CurrentUser()` (set on `request.user`). Admin-only routes use
+  `@Roles('ADMIN')` (legacy enum values). Guard order: throttler → auth →
+  roles. Mobile (bearer/Expo plugin) is not wired yet.
+- Passwords: new ones are scrypt (Better Auth default); legacy bcrypt hashes
+  are accepted and rehashed to scrypt on the next successful sign-in
+  (`modules/auth/password.ts`). `role` and `dailyPracticeTargetSeconds` can't
+  be set by users (`input: false`).
+- Emails (OTP codes) go through `EmailService`/the email job with templates
+  in en and pt-BR chosen from `Accept-Language`; without `RESEND_API_KEY`
+  (outside production) they are logged, so codes show in the dev console.
 - The web app calls the API from the server forwarding the incoming `cookie`
-  header, and from the browser with `credentials: 'include'`; CORS allows only
-  the configured web origin(s).
+  header, and from the browser with `credentials: 'include'`; CORS and
+  Better Auth's `trustedOrigins` allow only `WEB_ORIGINS`.
+- **Production env**: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
+  `RESEND_API_KEY` (required, so codes are never silently lost) and
+  `AUTH_COOKIE_DOMAIN=notefinder.com.br` (the API is on a subdomain; without
+  it the web server never receives the session cookie).
 
 ## Jobs, queues and cache (Redis)
 
@@ -232,6 +255,9 @@ possible:
 - Use Nest's `Logger` (structured JSON logs in production). No `console.*`.
   Never log secrets, tokens, passwords or full request bodies.
 - `enableShutdownHooks()` so queues and DB connections close cleanly on deploy.
+- Health: `GET /v1/health` is liveness (never touches dependencies) and
+  `GET /v1/health/ready` is readiness (Postgres + Redis, 503 when one fails).
+  Point the container healthcheck at liveness and traffic routing at readiness.
 - **Deployment**: behind a CDN/reverse proxy, set `TRUST_PROXY` to the number
   of proxies between the client and the API (e.g. `2` for CDN → Traefik →
   API) or their address ranges. Otherwise `req.ip` is the proxy's address and
@@ -243,10 +269,23 @@ possible:
   `Test.createTestingModule`, overriding repositories and integrations with
   mocks. Don't unit-test controllers or repositories in isolation.
 - E2E: `test/*.e2e-spec.ts`, one file per feature, hitting real HTTP routes
-  (supertest) against a Postgres started with Testcontainers and migrated
-  with the real migrations. Redis-backed providers are replaced by
-  `overrideRedisProviders()` (`test/redis-test-overrides.ts`), so e2e tests
-  don't need Redis. Cover success, validation error, auth/permission
-  and not-found for each endpoint.
+  (supertest). Cover success, validation error, auth/permission and
+  not-found for each endpoint.
+  - Database: one Postgres 17 container per run (Testcontainers), migrated
+    with the real migrations. Without Docker, set `E2E_DATABASE_URL` to a
+    Postgres **dedicated to tests**: it is migrated and every table in it is
+    truncated.
+  - Boot the app with `createTestApp({ controllers?, env?, override? })` from
+    `test/utils/create-test-app.ts` → `{ app, http, db, queues, close }`. It
+    applies `configureApp` and replaces Redis-backed providers
+    (`test/redis-test-overrides.ts`), so e2e tests don't need Redis;
+    `override` runs last, to mock integrations.
+  - Specs that write call `resetDatabase(db)` in `beforeEach` and seed with
+    the typed factories in `test/utils/factories.ts` (add one per new table).
+    DB-only specs can use `connectTestDatabase()`.
+  - Files run sequentially against one shared database
+    (`fileParallelism: false`); tests must not depend on order.
+  - Test-only controllers live in separate non-spec files under `test/` and
+    need `@Public()` unless they test auth.
 - External services (SQS, S3, YT Music, email) are always mocked at the
   integration-module boundary.
