@@ -5,13 +5,12 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "format": "turbo run format",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test"
   },
   "devDependencies": {
-    "prettier": "3.9.6",
-    "turbo": "^2.11.4",
-    "typescript": "7.0.2"
+    "turbo": "^2.11.4"
   },
   "engines": {
     "node": ">=24"
@@ -23,7 +22,9 @@
     }
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+    "apps/*"
+  ],
+  "allowScripts": {
+    "unrs-resolver": true
+  }
 }
