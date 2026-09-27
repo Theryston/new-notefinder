@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "title": "notefinder – see the notes a singer hits",
+    "titleTemplate": "%s | notefinder",
+    "description": "See the exact vocal notes a singer hits in any song on a timeline synced with playback, and get real-time pitch feedback from your mic."
+  },
+  "home": {
+    "title": "Find the notes of any song",
+    "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback."
+  },
+  "errors": {
+    "BAD_REQUEST": "The request is invalid.",
+    "VALIDATION_FAILED": "Some fields are invalid. Check them and try again.",
+    "UNAUTHORIZED": "You need to sign in to do that.",
+    "FORBIDDEN": "You don't have permission to do that.",
+    "NOT_FOUND": "We couldn't find what you're looking for.",
+    "CONFLICT": "This conflicts with something that already exists.",
+    "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "INTERNAL_ERROR": "Something went wrong. Please try again."
+  }
+}

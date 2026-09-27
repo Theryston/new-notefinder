@@ -126,7 +126,7 @@ same records.
 ### Environment & infrastructure
 
 - Every app validates `process.env` with a Zod schema at startup and fails fast
-  (api: `src/config/env.ts`, web: `lib/env.ts`). Code reads config from that
+  (api: `src/config/env.ts`, web: `lib/env/server.ts` + `lib/env/client.ts`). Code reads config from that
   module, never from `process.env` directly.
 - Every env var must be listed in the app's `.env.example` (with a safe local
   default when possible). Never commit real `.env` files or secrets.

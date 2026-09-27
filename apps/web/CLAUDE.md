@@ -53,13 +53,14 @@ hooks/                      generic shared hooks
 lib/
   api/                      typed API client (server + browser)
   i18n/                     next-intl routing/request config
-  env.ts                    Zod-validated env
+  env/                      Zod-validated env: server.ts (server-only), client.ts (NEXT_PUBLIC_*)
   query-client.ts           TanStack Query client factory
   utils.ts                  cn() and tiny helpers
 messages/
   en.json                   source of truth
   pt-BR.json
-proxy.ts                    next-intl locale routing
+proxy.ts                    custom locale detection + redirect (not next-intl's middleware)
+instrumentation.ts          validates env when the server starts
 ```
 
 - Route files (`page.tsx`, `layout.tsx`, `loading.tsx`) stay **thin**: read
@@ -173,6 +174,13 @@ leaf possible and pass server-fetched data down as props.
 
 - Locales: `en` and `pt-BR`, always in the URL (`/en/...`, `/pt-BR/...`).
   Routing config in `lib/i18n/`, locale detection/redirect in `proxy.ts`.
+- `proxy.ts` is **custom** (next-intl's middleware can't detect by country and
+  sets cookies on prefixed paths). It must never set cookies or redirect on
+  paths that already have a locale, so static pages stay CDN-cacheable.
+  Detection logic lives in plain functions in `lib/i18n/detect-locale.ts`.
+- The locale is read from `next/root-params` in `lib/i18n/request.ts` (don't
+  use `setRequestLocale`). Route Handlers and Server Actions can't read root
+  params: pass `{ locale }` explicitly to next-intl there.
 - `en` is the **source of truth** for messages, not the locale everyone gets.
   A request without a locale prefix is redirected to the visitor's locale,
   resolved in this order:
@@ -195,8 +203,13 @@ leaf possible and pass server-fetched data down as props.
   Format dates, numbers and durations with next-intl's formatter, not manually.
 - API errors are translated by their `code` (`errors.NOT_FOUND`, …), never by
   showing the API `message`.
-- `generateMetadata` is translated and sets `alternates.languages` (hreflang)
-  for every locale.
+- Metadata is translated. The locale layout sets title template and
+  description; **each page** sets hreflang/canonical with
+  `localeAlternates(locale, path)` from `lib/i18n/metadata.ts` (a layout
+  doesn't know the current path).
+- Only the message namespaces client components need are passed to
+  `NextIntlClientProvider` (currently `errors`); add namespaces deliberately
+  to keep the RSC payload small.
 
 ## UI and styling
 
@@ -240,9 +253,13 @@ leaf possible and pass server-fetched data down as props.
 
 ## Env
 
-- `lib/env.ts` validates env with Zod. Server-only values (e.g. `API_URL`,
-  `REVALIDATE_SECRET`) never get the `NEXT_PUBLIC_` prefix; only values that
-  are truly safe in the browser do (e.g. `NEXT_PUBLIC_API_URL`).
+- `lib/env/server.ts` (`server-only`: `API_URL`, `REVALIDATE_SECRET`) and
+  `lib/env/client.ts` (`NEXT_PUBLIC_API_URL`) validate env with Zod. They are
+  read on demand and checked at server start by `instrumentation.ts`, so
+  `next build` needs no secrets. Server-only values never get the
+  `NEXT_PUBLIC_` prefix.
+- `NEXT_PUBLIC_*` values are inlined at build time: the Docker build must
+  receive them as build args.
 
 ## Testing
 

@@ -69,6 +69,14 @@
   },
   "overrides": [
     {
+      "includes": ["**/*.spec.ts", "**/*.e2e-spec.ts", "**/*.test.ts"],
+      "linter": {
+        "domains": {
+          "test": "recommended"
+        }
+      }
+    },
+    {
       "includes": ["apps/web/**"],
       "linter": {
         "domains": {
@@ -103,14 +111,6 @@
           "suspicious": {
             "noConsole": "error"
           }
-        }
-      }
-    },
-    {
-      "includes": ["**/*.spec.ts", "**/*.e2e-spec.ts", "**/*.test.ts"],
-      "linter": {
-        "domains": {
-          "test": "recommended"
         }
       }
     }

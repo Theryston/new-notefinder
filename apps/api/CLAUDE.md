@@ -3,7 +3,7 @@
 Read the root `CLAUDE.md` first; this file only adds API-specific rules.
 
 Stack: NestJS 12 (Express, **ESM**), Drizzle ORM + PostgreSQL, Better Auth,
-BullMQ + Redis, Zod (via `@notefinder/contracts` + `nestjs-zod`), Vitest.
+BullMQ + Redis, Zod (via `@notefinder/contracts` + the in-house `src/common/zod/`), Vitest.
 Serves the web app today and the mobile app later, so treat every endpoint as a
 public, versioned contract.
 
@@ -93,10 +93,14 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
 - JSON bodies and query params in **camelCase**. Dates as ISO 8601 strings.
 - Status codes: `200` read/update, `201` create (return the resource), `204`
   delete/no body, `202` accepted async work (e.g. track import queued).
-- **Validation**: request DTOs are `createZodDto(schema)` from nestjs-zod, with
-  the schema imported from `@notefinder/contracts`. Global `ZodValidationPipe`.
-  Responses are serialized through their contract schema
-  (`@ZodSerializerDto`) so no extra DB field ever leaks.
+- **Validation**: request DTOs are `createZodDto(schema)` from
+  `src/common/zod/`, with the schema imported from `@notefinder/contracts`.
+  The global `ZodValidationPipe` parses and coerces them. Responses are
+  serialized through their contract schema (`@ZodSerializerDto`) so no extra
+  DB field ever leaks. (`nestjs-zod` is not used: it doesn't support NestJS
+  12; `src/common/zod/` mirrors its API. OpenAPI covers request shapes only.)
+- Validation failures return **400** `VALIDATION_FAILED` with
+  `details: { location: 'body' | 'query' | 'param' | 'custom', issues }`.
 - **Lists** use cursor pagination: query `cursorPaginationQuerySchema`,
   response `cursorPageSchema(item)` → `{ items, nextCursor }`. Cursors are
   opaque strings (base64 of the sort key), never raw offsets.
@@ -193,7 +197,11 @@ possible:
 ## Config, logging, lifecycle
 
 - Read config only from `src/config/env.ts` (parsed with Zod at boot); inject
-  it where needed. Never read `process.env` elsewhere.
+  it with `@Inject(ENV) env: Env`. `apps/api/.env` is loaded automatically
+  outside test/production. Never read `process.env` elsewhere.
+- Global HTTP setup (versioning, CORS, pipes, filters, Swagger) lives in
+  `src/setup-app.ts` `configureApp(app)`, shared by `main.ts` and the e2e
+  tests. Add global behavior there, never only in `main.ts`.
 - Use Nest's `Logger` (structured JSON logs in production). No `console.*`.
   Never log secrets, tokens, passwords or full request bodies.
 - `enableShutdownHooks()` so queues and DB connections close cleanly on deploy.
