@@ -74,14 +74,17 @@ proxy.ts                    next-intl locale routing
 
 This app replaces the legacy notefinder web app on the same domain. **Every
 legacy URL must keep working**: either the route still exists or it
-permanently redirects (**308**) to the new one. Preserve dynamic segments
+redirects to the new one. Preserve dynamic segments
 (IDs, usernames) and query params. Since IDs are kept by the data import,
 `/tracks/<id>` must land on the same track.
 
 Because every new route is under `[locale]`, a bare legacy path like
-`/tracks/abc` is redirected by `proxy.ts` to `/<detected-locale>/tracks/abc`.
-When a route is renamed, add an explicit redirect (in `next.config.ts`
-`redirects()`, or in `proxy.ts` if it needs logic) and list it below.
+`/tracks/abc` is redirected by `proxy.ts` to `/<detected-locale>/tracks/abc`
+(see i18n below). That redirect depends on the visitor, so it is a temporary
+**307** and must not be cached as a shared response by the CDN. When a route
+is renamed, add an explicit **permanent (308)** redirect from the old path to
+the new one (in `next.config.ts` `redirects()`, or in `proxy.ts` if it needs
+logic) and list it below.
 
 Legacy public routes (source: `app/` in
 <https://github.com/theryston/notefinder>) and their current status:
@@ -168,9 +171,20 @@ leaf possible and pass server-fetched data down as props.
 
 ## i18n (next-intl)
 
-- Locales: `en` (default) and `pt-BR`, always in the URL (`/en/...`,
-  `/pt-BR/...`). Routing config in `lib/i18n/`, locale detection/redirect in
-  `proxy.ts`.
+- Locales: `en` and `pt-BR`, always in the URL (`/en/...`, `/pt-BR/...`).
+  Routing config in `lib/i18n/`, locale detection/redirect in `proxy.ts`.
+- `en` is the **source of truth** for messages, not the locale everyone gets.
+  A request without a locale prefix is redirected to the visitor's locale,
+  resolved in this order:
+  1. the locale the user picked before (next-intl locale cookie);
+  2. the user's location: the country header set by the CDN/proxy (e.g.
+     `cf-ipcountry`), mapped to a supported locale (`BR`, `PT`, `AO`, `MZ` →
+     `pt-BR`, …);
+  3. the browser's `Accept-Language`;
+  4. `en` when none of the above matches a supported locale.
+- The locale switcher lets users override it and stores the choice in the
+  cookie. Once a URL has a locale prefix, that locale is always respected (no
+  auto-redirect away from it), so shared links and crawlers get stable pages.
 - **No hard-coded user-visible strings** — including `alt`, `aria-label`,
   `title`, placeholders, toasts, metadata and validation messages.
 - Messages are namespaced by feature (`tracks.overview.title`,

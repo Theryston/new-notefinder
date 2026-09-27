@@ -1,0 +1,42 @@
+{
+  "formatter": {
+    "language_server": {
+      "name": "biome"
+    }
+  },
+  "format_on_save": "on",
+  "code_actions_on_format": {
+    "source.fixAll.biome": true,
+    "source.organizeImports.biome": true
+  },
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["biome", "vtsls", "!eslint", "..."]
+    },
+    "TSX": {
+      "language_servers": [
+        "biome",
+        "vtsls",
+        "tailwindcss-language-server",
+        "!eslint",
+        "..."
+      ]
+    },
+    "JavaScript": {
+      "language_servers": ["biome", "vtsls", "!eslint", "..."]
+    },
+    "JSON": {
+      "language_servers": ["biome", "json-language-server", "..."]
+    },
+    "CSS": {
+      "language_servers": ["biome", "tailwindcss-language-server", "..."]
+    }
+  },
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    }
+  }
+}

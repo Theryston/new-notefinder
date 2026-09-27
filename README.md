@@ -1,33 +1,39 @@
 # notefinder
 
-Reescrita do [notefinder](https://github.com/theryston/notefinder) com API e
-frontend separados. Monorepo gerenciado com [Turborepo](https://turborepo.dev)
-e [nub](https://nubjs.com).
+Rewrite of [notefinder](https://github.com/theryston/notefinder) with a
+standalone API and web frontend. Monorepo managed with
+[Turborepo](https://turborepo.dev) and [nub](https://nubjs.com).
 
-## Estrutura
+## Structure
 
-- `apps/web`: frontend [Next.js](https://nextjs.org) com
-  [shadcn/ui](https://ui.shadcn.com). Porta 3000.
-- `apps/api`: API [NestJS](https://nestjs.com). Porta 3333 (`PORT`).
-- `packages/contracts`: schemas Zod e tipos compartilhados entre API, web e
-  (futuramente) mobile.
+- `apps/web`: [Next.js](https://nextjs.org) frontend with
+  [shadcn/ui](https://ui.shadcn.com). Port 3000.
+- `apps/api`: [NestJS](https://nestjs.com) API. Port 3333 (`PORT`).
+- `packages/contracts`: Zod schemas and types shared by the API, the web app
+  and (later) the mobile app.
 
-Padrões de código, arquitetura e ferramentas estão em `CLAUDE.md` (raiz) e em
-`apps/*/CLAUDE.md`.
+Code standards, architecture and tooling are documented in `CLAUDE.md` (root)
+and `apps/*/CLAUDE.md`.
 
-## Comandos
+## Commands
 
 ```sh
-nub install          # instala dependências (e os git hooks do lefthook)
-nub run infra:up     # sobe Postgres + Redis via docker compose
-nub run dev          # sobe web e api
-nub run build        # build de tudo
+nub install          # install dependencies (and lefthook git hooks)
+nub run infra:up     # start Postgres + Redis with docker compose
+nub run dev          # run web and api
+nub run build        # build everything
 nub run lint         # Biome (lint + format + imports)
-nub run format       # Biome com --write
+nub run format       # Biome with --write
 nub run check-types
 nub run test
 ```
 
-Para rodar em um app só: `nub run dev --filter=web` (ou `api`).
+To run a single app: `nub run dev --filter=web` (or `api`).
 
-Copie `apps/api/.env.example` e `apps/web/.env.example` para `.env` em cada app.
+Copy `apps/api/.env.example` and `apps/web/.env.example` to `.env` in each app.
+
+## Editor setup
+
+Biome is the only formatter/linter. Project settings are included for
+VS Code (`.vscode/`) and Zed (`.zed/`); install the Biome extension in your
+editor.

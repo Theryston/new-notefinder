@@ -55,8 +55,8 @@ app in production. Two things must hold when that happens:
    something the legacy data can't be mapped into (see "Legacy data import"
    in `apps/api/CLAUDE.md`).
 2. **No legacy URL may return 404.** Every public route of the legacy web app
-   must either still exist or permanently redirect (308) to its new
-   equivalent, keeping IDs and query params (see "Legacy routes" in
+   must either still exist or redirect to its new equivalent, keeping IDs and
+   query params (see "Legacy routes" in
    `apps/web/CLAUDE.md`).
 
 Both depend on **keeping legacy identifiers** (track, artist, album and user
@@ -71,7 +71,10 @@ same records.
   log messages, API error messages, DB schema.
 - **No hard-coded user-facing text.** Everything a user can read goes through
   i18n (web: `next-intl`; API returns stable error `code`s that clients
-  translate). Locales: `en` (default, source of truth) and `pt-BR`.
+  translate). Locales: `en` and `pt-BR`. `en` is the **source of truth** for
+  messages (keys are written there first), not the default for visitors: the
+  locale is detected from the user's location/browser and falls back to `en`
+  only when there is no match (details in `apps/web/CLAUDE.md`).
 
 ### Contracts (`packages/contracts`)
 

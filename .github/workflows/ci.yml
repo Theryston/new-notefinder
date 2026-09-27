@@ -15,12 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: nubjs/setup-nub@v0
         with:
-          node-version-file: .node-version
-
-      - name: Install nub
-        run: npm install --global @nubjs/nub@0.9.5
+          nub-version: 0.9.5
 
       - name: Install dependencies
         run: nub install --frozen-lockfile
