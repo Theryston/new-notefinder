@@ -1,0 +1,27 @@
+# Local Redis for the web's shared 'use cache' handler (CACHE_REDIS_URL),
+# separate from the API's Redis. Included by the root docker-compose.yml, so
+# `nub run infra:up` / `infra:down` manage it with the rest of the stack.
+services:
+  web-redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # Only keys with a TTL (cache entries) may be evicted under memory
+    # pressure: tag invalidations have none and must never be dropped.
+    command:
+      - redis-server
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - volatile-lru
+    ports:
+      - '6380:6379'
+    volumes:
+      - web-redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  web-redis-data:
