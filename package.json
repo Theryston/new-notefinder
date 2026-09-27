@@ -32,6 +32,11 @@
   ],
   "allowScripts": {
     "unrs-resolver": true,
-    "lefthook": true
+    "lefthook": true,
+    "@parcel/watcher": true,
+    "@scarf/scarf": true,
+    "@swc/core": true,
+    "esbuild": true,
+    "msgpackr-extract": true
   }
 }
