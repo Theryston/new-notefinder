@@ -5,15 +5,19 @@ import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/setup-app.js';
 import { E2eProbeController } from './e2e-probe.controller.js';
+import { overrideRedisProviders } from './redis-test-overrides.js';
 
 describe('Health (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-      controllers: [E2eProbeController],
-    }).compile();
+    const { builder } = overrideRedisProviders(
+      Test.createTestingModule({
+        imports: [AppModule],
+        controllers: [E2eProbeController],
+      }),
+    );
+    const moduleRef = await builder.compile();
 
     app = moduleRef.createNestApplication();
     configureApp(app);

@@ -7,5 +7,10 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    env: {
+      // Nothing listens here: e2e specs replace every Redis-backed provider
+      // (see test/redis-test-overrides.ts), so they run without Redis.
+      REDIS_URL: 'redis://127.0.0.1:1',
+    },
   },
 });

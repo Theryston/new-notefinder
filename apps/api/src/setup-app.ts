@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { Express } from 'express';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { cleanupOpenApiDoc } from './common/zod/cleanup-open-api-doc.js';
 import { ZodSerializerInterceptor } from './common/zod/zod-serializer.interceptor.js';
@@ -20,6 +21,11 @@ export const createAppLogger = (env: Env): ConsoleLogger =>
  */
 export const configureApp = (app: INestApplication): void => {
   const env = app.get<Env>(ENV);
+
+  // Lets `req.ip` (the rate-limit key) be the real client behind the
+  // CDN/reverse proxy, trusting X-Forwarded-For only from configured hops.
+  const expressApp: Express = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', env.TRUST_PROXY);
 
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.enableCors({ origin: env.WEB_ORIGINS, credentials: true });
