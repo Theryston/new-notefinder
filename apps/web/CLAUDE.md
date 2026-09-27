@@ -209,8 +209,9 @@ leaf possible and pass server-fetched data down as props.
 - API errors are translated by their `code` (`errors.NOT_FOUND`, …), never by
   showing the API `message`.
 - Metadata is translated. The locale layout sets title template and
-  description; **each page** sets hreflang/canonical with
-  `localeAlternates(locale, path)` from `lib/i18n/metadata.ts` (a layout
+  description and `metadataBase` (from `getSiteUrl()`), so the relative
+  URLs each page sets become absolute; **each page** sets hreflang/canonical
+  with `localeAlternates(locale, path)` from `lib/i18n/metadata.ts` (a layout
   doesn't know the current path).
 - Only the message namespaces client components need are passed to
   `NextIntlClientProvider` (currently `errors`); add namespaces deliberately
@@ -269,7 +270,9 @@ leaf possible and pass server-fetched data down as props.
   `next build` needs no secrets. Server-only values never get the
   `NEXT_PUBLIC_` prefix.
 - `NEXT_PUBLIC_*` values are inlined at build time: the Docker build must
-  receive them as build args.
+  receive them as build args. That includes `NEXT_PUBLIC_SITE_URL`
+  (`getSiteUrl()`, default `http://localhost:3000`), which static pages bake
+  into canonical/hreflang URLs; a production build without it logs a warning.
 
 ## Testing
 
