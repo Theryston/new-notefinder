@@ -17,3 +17,12 @@ fi
 
 cd "$PROJECT_DIR"
 nub install
+
+# The container ships a Chromium whose revision may not match the pinned
+# @playwright/test; point Playwright at it (see apps/web/playwright.config.ts).
+if [ -n "${CLAUDE_ENV_FILE:-}" ] && [ -z "${PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:-}" ]; then
+  chromium="$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome 2>/dev/null | sort -V | tail -n1 || true)"
+  if [ -n "$chromium" ]; then
+    echo "export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=\"$chromium\"" >> "$CLAUDE_ENV_FILE"
+  fi
+fi

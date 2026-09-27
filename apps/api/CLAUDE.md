@@ -17,8 +17,20 @@ nub run check-types
 nub run lint
 ```
 
-Drizzle scripts (`db:generate`, `db:migrate`, `db:studio`) get added together
-with the database module.
+Database scripts (need a valid `apps/api/.env`, i.e. `DATABASE_URL` and
+`REDIS_URL`, since they read the same env schema):
+
+```sh
+nub run db:generate  # drizzle-kit: schema diff → new SQL migration in drizzle/
+nub run db:migrate   # apply migrations (dev); production runs
+                     # `node dist/database/migrate.js`, so the image ships drizzle/
+nub run db:studio    # Drizzle Studio
+nub run db:seed      # deterministic, idempotent dev data; refuses NODE_ENV=production
+```
+
+These scripts run through `tsx`, which does **not** emit decorator metadata:
+never bootstrap Nest DI from a `tsx` script (constructor injection by type
+resolves to `undefined`). Vitest and `nest build` are not affected.
 
 ## Folder structure
 
@@ -29,12 +41,19 @@ src/
   config/
     env.ts                Zod schema for process.env, parsed once at boot
   database/
-    database.module.ts    Drizzle client provider (global)
-    schema/               one file per table/aggregate (tracks.ts, users.ts, …) + index.ts
+    database.module.ts    Drizzle client (global) + nestjs-cls transactions
+    columns.ts            id() and timestamps helpers used by every table
+    schema/               one file per table/aggregate + relations.ts + index.ts
+    migrate.ts seed.ts    scripts behind db:migrate / db:seed
+  redis/                  shared ioredis client (REDIS_CLIENT), CacheService, redisKey()
+  queue/                  BullMQ root config, AppWorker (clean shutdown, Nest logging)
   common/                 cross-cutting Nest pieces only
     errors/               AppException + global exception filter
+    zod/                  createZodDto, ZodValidationPipe, @ZodSerializerDto
+    rate-limit/           global throttler guard + Redis storage
     guards/ decorators/ interceptors/ pipes/
   integrations/           clients for external services, one module each
+    web-revalidation/     enqueue + POST cache tags to the web's /api/revalidate
     ytmusic/ s3/ sqs/ email/ openai/ …
   modules/                one folder per feature (domain)
     tracks/
@@ -69,8 +88,9 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   plain typed objects (never leaks query builders). One repository per
   aggregate, named `<Feature>Repository`.
 - Transactions: use `@nestjs-cls/transactional` with the Drizzle adapter.
-  Services mark the unit of work with `@Transactional()`; repositories run
-  queries through the `TransactionHost`, so Drizzle stays out of services.
+  Services mark the unit of work with `@Transactional()`; repositories inject
+  `TransactionHost<DatabaseAdapter>` and query through `txHost.tx`, so Drizzle
+  stays out of services and repository calls join the current transaction.
 - Dependency injection: import injected classes as **values**, not
   `import type` (decorator metadata needs the runtime reference). Biome's
   `useImportType` is disabled for this app for that reason.
@@ -179,20 +199,27 @@ possible:
 
 ## Jobs, queues and cache (Redis)
 
-- Background work uses `@nestjs/bullmq`. Queue names are constants in the owning
-  module; consumers are `<feature>.processor.ts`. Job payloads are validated
-  with Zod and jobs must be **idempotent** (they can be retried).
+- Background work uses `@nestjs/bullmq`. Queue name, job name and the Zod
+  payload schema live in `<feature>.job.ts` (a separate file avoids an import
+  cycle between module and processor); consumers are `<feature>.processor.ts`.
+  Jobs must be **idempotent** (they are retried with exponential backoff).
+  Throw `UnrecoverableError` for failures that retrying can't fix.
+- Every new queue and processor must be added to
+  `test/redis-test-overrides.ts`, so e2e tests keep running without Redis.
 - Scheduled work (track score recalculation, daily practice reminders) uses
   BullMQ repeatable jobs, not in-process timers.
 - The track import pipeline keeps its current contract: the API enqueues on
   **SQS** for the external note-detection worker, which reports back through
   `/v1/internal/*`.
-- Redis also backs response caching of expensive reads and rate limiting
-  (`@nestjs/throttler` with Redis storage). Cache keys are namespaced by feature.
+- Redis also backs response caching of expensive reads (`CacheService`, keys
+  built with `redisKey(feature, …)`) and rate limiting (`@nestjs/throttler`
+  with the in-house `RedisThrottlerStorage`; `@nest-lab/throttler-storage-redis`
+  doesn't support NestJS 12). Both fail open: Redis being down degrades to
+  cache misses / no limiting instead of errors.
 - When data rendered by public web pages changes (a track finished processing,
-  score updated, …), the API invalidates the web cache by calling the web
-  revalidation endpoint with the affected tags. Tag builders are shared from
-  `@notefinder/contracts` so both sides agree on names.
+  score updated, …), call `WebRevalidationService.revalidate(tags)` with tags
+  from `cacheTags` in `@notefinder/contracts` (never hard-coded strings). It
+  enqueues a job that POSTs them to the web's `/api/revalidate`.
 
 ## Config, logging, lifecycle
 
@@ -205,6 +232,10 @@ possible:
 - Use Nest's `Logger` (structured JSON logs in production). No `console.*`.
   Never log secrets, tokens, passwords or full request bodies.
 - `enableShutdownHooks()` so queues and DB connections close cleanly on deploy.
+- **Deployment**: behind a CDN/reverse proxy, set `TRUST_PROXY` to the number
+  of proxies between the client and the API (e.g. `2` for CDN → Traefik →
+  API) or their address ranges. Otherwise `req.ip` is the proxy's address and
+  every visitor shares one rate-limit bucket.
 
 ## Testing
 
@@ -212,8 +243,10 @@ possible:
   `Test.createTestingModule`, overriding repositories and integrations with
   mocks. Don't unit-test controllers or repositories in isolation.
 - E2E: `test/*.e2e-spec.ts`, one file per feature, hitting real HTTP routes
-  (supertest) against a Postgres/Redis started with Testcontainers and migrated
-  with the real migrations. Cover success, validation error, auth/permission
+  (supertest) against a Postgres started with Testcontainers and migrated
+  with the real migrations. Redis-backed providers are replaced by
+  `overrideRedisProviders()` (`test/redis-test-overrides.ts`), so e2e tests
+  don't need Redis. Cover success, validation error, auth/permission
   and not-found for each endpoint.
 - External services (SQS, S3, YT Music, email) are always mocked at the
   integration-module boundary.

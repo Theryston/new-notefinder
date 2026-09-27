@@ -1,15 +1,14 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-import type { ApiError, ApiErrorCode } from '@notefinder/contracts';
+import {
+  type ApiError,
+  type ApiErrorCode,
+  revalidateBodySchema,
+} from '@notefinder/contracts';
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { getServerEnv } from '@/lib/env/server';
-
-// Next ignores tags longer than 256 characters.
-const revalidateBodySchema = z.object({
-  tags: z.array(z.string().min(1).max(256)).min(1).max(50),
-});
 
 function errorResponse(
   statusCode: number,

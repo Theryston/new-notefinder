@@ -19,7 +19,6 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:generate": "drizzle-kit generate",
-    "postdb:generate": "biome format --write drizzle",
     "db:migrate": "tsx src/database/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/database/seed.ts"
