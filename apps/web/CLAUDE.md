@@ -250,9 +250,14 @@ leaf possible and pass server-fetched data down as props.
 
 ## Auth
 
-- Better Auth lives in the API. The web uses the Better Auth client
-  (`better-auth/react`) for sign in/up/out and reads the session on the
-  server by forwarding the request cookies to the API.
+- Better Auth lives in the API. In client components use `getAuthClient()`
+  from `lib/auth/client.ts` (`better-auth/react` with the `emailOTP` and
+  `username` plugins) for sign up/in/out, OTP verification, password reset
+  and setting the username. Its responses use Better Auth's format, not
+  `ApiError`: translate its error codes through i18n too.
+- On the server, `getCurrentUser()` from `lib/auth/session.ts` calls
+  `GET /v1/me` forwarding the request cookies (deduplicated per request) and
+  returns `null` when signed out.
 - Session-dependent UI (avatar in the header, "favorite" state) is rendered
   inside `<Suspense>` so it never blocks the static shell.
 

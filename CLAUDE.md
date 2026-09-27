@@ -37,6 +37,7 @@ nub run lint                # biome check (lint + format + import order), all pa
 nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
+nub run test:e2e            # API e2e (Testcontainers Postgres) + web Playwright
 nub run build               # production build of everything
 nub run dev --filter=web    # scope any task to one package (web | api | @notefinder/contracts)
 ```
