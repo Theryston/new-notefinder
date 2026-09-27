@@ -16,8 +16,20 @@ if (
   );
 }
 
+// Next imports the handler natively at runtime (it is not bundled), so it is
+// referenced by absolute file URL. Without CACHE_REDIS_URL it behaves exactly
+// like Next's default in-memory handler.
+const cacheHandler = new URL('./cache-handlers/redis.ts', import.meta.url).href;
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // One handler instance backs both `'use cache'` and `'use cache: remote'`:
+  // every entry is shared across instances and survives restarts, and there
+  // is a single tag state to keep in sync.
+  cacheHandlers: {
+    default: cacheHandler,
+    remote: cacheHandler,
+  },
 };
 
 export default withNextIntl(nextConfig);
