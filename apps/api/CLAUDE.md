@@ -129,6 +129,37 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   builder for everything else. Select only the columns you need. No raw SQL
   strings with interpolated values; use the `sql` template tag.
 
+### Legacy data import
+
+Development starts with an empty database, but at launch all data from the
+legacy database (schema: `prisma/schema.prisma` in
+<https://github.com/theryston/notefinder>) will be imported by a one-off
+script (`src/scripts/import-legacy.ts`, written at the end of the project).
+The new schema may differ, but every schema change must keep that import
+possible:
+
+- **Every legacy entity and field has a destination** (or a documented
+  reason to drop it): users, OAuth accounts, tracks, track notes, artists,
+  albums, thumbnails, views, favorites, section visibility, daily practice
+  streaks, calculation jobs, etc.
+- **Keep legacy IDs** (cuid strings) as the primary keys of imported rows, so
+  old URLs and references still resolve. New rows use cuid2, which fits the
+  same `text` column.
+- **Password hashes are bcrypt** in the legacy DB; the Better Auth password
+  config must verify bcrypt hashes (or rehash on next login), so users don't
+  need to reset passwords. Google accounts map via `provider` +
+  `providerAccountId`.
+- Don't add `NOT NULL` columns or constraints the legacy data can't satisfy
+  without a clear default/transformation (legacy has many nullable fields,
+  e.g. `Track.title`, `Track.duration`).
+- Enum values may be renamed, but keep a 1:1 (or clearly derivable) mapping
+  from the legacy values (`TrackStatus`, `PlayingCopyright`, `Role`, …).
+- Files referenced by URL (S3 thumbnails, audio, lyrics, avatars) keep
+  working with the existing URLs or have a deterministic mapping.
+- When a schema change diverges from the legacy model, write the mapping in
+  the PR description (and in a comment next to the table if it isn't
+  obvious), so the import script can be written from those notes.
+
 ## Auth (Better Auth)
 
 - The Better Auth instance (Drizzle adapter, Google + email/password, email

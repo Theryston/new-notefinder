@@ -44,6 +44,25 @@ nub run dev --filter=web    # scope any task to one package (web | api | @notefi
 Before considering a change done, run `lint`, `check-types` and `test` for the
 packages you touched (CI runs all four tasks on every PR).
 
+## Compatibility with the legacy app (hard requirements)
+
+The new app starts with an **empty database**, but it will replace the legacy
+app in production. Two things must hold when that happens:
+
+1. **Legacy data must be importable.** The new schema does not have to mirror
+   the legacy Prisma schema, but a one-off script must be able to import all
+   legacy data into it, even with transformations along the way. Never model
+   something the legacy data can't be mapped into (see "Legacy data import"
+   in `apps/api/CLAUDE.md`).
+2. **No legacy URL may return 404.** Every public route of the legacy web app
+   must either still exist or permanently redirect (308) to its new
+   equivalent, keeping IDs and query params (see "Legacy routes" in
+   `apps/web/CLAUDE.md`).
+
+Both depend on **keeping legacy identifiers** (track, artist, album and user
+IDs, usernames): the importer copies them as-is, so old URLs resolve to the
+same records.
+
 ## Cross-cutting decisions
 
 ### Language

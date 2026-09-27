@@ -70,6 +70,47 @@ proxy.ts                    next-intl locale routing
 - `features/<f>/queries.ts` and anything touching secrets import
   `'server-only'`; client hooks/stores start with `'use client'` where needed.
 
+## Legacy routes (no 404s)
+
+This app replaces the legacy notefinder web app on the same domain. **Every
+legacy URL must keep working**: either the route still exists or it
+permanently redirects (**308**) to the new one. Preserve dynamic segments
+(IDs, usernames) and query params. Since IDs are kept by the data import,
+`/tracks/<id>` must land on the same track.
+
+Because every new route is under `[locale]`, a bare legacy path like
+`/tracks/abc` is redirected by `proxy.ts` to `/<detected-locale>/tracks/abc`.
+When a route is renamed, add an explicit redirect (in `next.config.ts`
+`redirects()`, or in `proxy.ts` if it needs logic) and list it below.
+
+Legacy public routes (source: `app/` in
+<https://github.com/theryston/notefinder>) and their current status:
+
+| Legacy route | Query params | New route |
+| --- | --- | --- |
+| `/` | | `/[locale]` |
+| `/search` | `q` | `/[locale]/search` |
+| `/tracks/[id]` | | `/[locale]/tracks/[trackId]` |
+| `/artists/[id]` | | `/[locale]/artists/[artistId]` |
+| `/albums/[id]` | | `/[locale]/albums/[albumId]` |
+| `/users/[username]` | | `/[locale]/users/[username]` |
+| `/me/edit` | | `/[locale]/me/edit` |
+| `/sign-in` | `redirectTo` | `/[locale]/sign-in` |
+| `/sign-up` | `redirectTo` | `/[locale]/sign-up` |
+| `/verify-email` | | `/[locale]/verify-email` |
+| `/forgot-password` | | `/[locale]/forgot-password` |
+| `/forgot-password/reset` | `email` | `/[locale]/forgot-password/reset` |
+| `/setup-username` | `redirectTo` | `/[locale]/setup-username` |
+| `/terms` | | `/[locale]/terms` |
+| `/sitemap.xml` | | `/sitemap.xml` |
+| `/tracks/sitemap/[...path]` | | keep, or redirect to the new sitemap |
+| `/artists/sitemap/[...path]` | | keep, or redirect to the new sitemap |
+| `/albums/sitemap/[...path]` | | keep, or redirect to the new sitemap |
+
+Keep this table up to date whenever a route is added, renamed or removed,
+and cover the legacy paths with a Playwright test that asserts none of them
+returns 404.
+
 ## Rendering, data fetching and cache
 
 **Server first.** Components are Server Components unless they need state,
