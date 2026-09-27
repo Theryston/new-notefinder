@@ -1,12 +1,12 @@
-import { z } from 'zod';
+import {
+  type RevalidateBody,
+  revalidateBodySchema,
+} from '@notefinder/contracts';
 
 export const WEB_REVALIDATION_QUEUE = 'web-revalidation';
 export const WEB_REVALIDATION_JOB = 'revalidate';
 
-// Same limits as the web's POST /api/revalidate body (Next ignores tags
-// longer than 256 characters).
-export const webRevalidationJobSchema = z.object({
-  tags: z.array(z.string().min(1).max(256)).min(1).max(50),
-});
+// The job payload is exactly the body the web's POST /api/revalidate expects.
+export const webRevalidationJobSchema = revalidateBodySchema;
 
-export type WebRevalidationJob = z.infer<typeof webRevalidationJobSchema>;
+export type WebRevalidationJob = RevalidateBody;

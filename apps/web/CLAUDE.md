@@ -24,6 +24,9 @@ nub run dev          # next dev on port 3000
 nub run build        # production build (also validates prerendering)
 nub run check-types  # next typegen + tsc
 nub run lint
+nub run test         # Vitest unit tests (*.test.ts)
+nub run test:watch
+nub run test:e2e     # Playwright against `next start` (see Testing)
 ```
 
 ## Folder structure
@@ -112,8 +115,10 @@ Legacy public routes (source: `app/` in
 | `/albums/sitemap/[...path]` | | keep, or redirect to the new sitemap |
 
 Keep this table up to date whenever a route is added, renamed or removed,
-and cover the legacy paths with a Playwright test that asserts none of them
-returns 404.
+and mirror it in `e2e/legacy-routes.ts`: every legacy URL is checked to
+redirect to its locale-prefixed equivalent (path and query kept). When a
+route ships, flip its `implemented` flag (with a sample ID that resolves) so
+the test also asserts the final page is not a 404.
 
 ## Rendering, data fetching and cache
 
@@ -266,4 +271,12 @@ leaf possible and pass server-fetched data down as props.
 - Vitest for pure logic: `*.test.ts` next to the file (timeline math, note
   conversion, pitch detection, formatters, API client parsing).
 - Playwright for critical flows in `e2e/`: search → open track, track page
-  playback/timeline, sign up/in, favorite. Run against a production build.
+  playback/timeline, sign up/in, favorite. It runs against a **production
+  build** with `next start` on port 3000, using the dummy env in
+  `e2e/web-server-env.ts`. From the repo root, `nub run test:e2e` builds web
+  first (Turbo); running it inside `apps/web` uses whatever `.next` is on disk,
+  so rebuild (or delete `.next`) after switching branches.
+- Chromium: CI runs `playwright install`. Machines with a preinstalled
+  Chromium that doesn't match the pinned `@playwright/test` set
+  `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (Claude Code cloud sessions get it
+  from `.claude/hooks/session-start.sh`).
