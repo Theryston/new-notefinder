@@ -12,6 +12,9 @@ export default defineConfig({
       // opens connections on the first query. Replaced by a Testcontainers
       // Postgres once e2e tests hit the database.
       DATABASE_URL: 'postgres://postgres:postgres@127.0.0.1:1/unused',
+      // Nothing listens here: e2e specs replace every Redis-backed provider
+      // (see test/redis-test-overrides.ts), so they run without Redis.
+      REDIS_URL: 'redis://127.0.0.1:1',
     },
   },
 });

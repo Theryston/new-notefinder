@@ -2,6 +2,17 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
+const parseTrustProxy = (value: string): boolean | number | string => {
+  const trimmed = value.trim();
+  if (trimmed === 'true' || trimmed === 'false') {
+    return trimmed === 'true';
+  }
+  if (/^\d+$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  return trimmed;
+};
+
 export const envSchema = z
   .object({
     NODE_ENV: z
@@ -20,7 +31,34 @@ export const envSchema = z
       .pipe(z.array(z.url()).min(1)),
     SWAGGER_ENABLED: z.stringbool().optional(),
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+    // Express `trust proxy`: a hop count, `true`/`false`, or a comma-separated
+    // list of trusted proxy addresses/subnets. Drives `req.ip`, which is the
+    // key for rate limiting.
+    TRUST_PROXY: z
+      .string()
+      .default('loopback, linklocal, uniquelocal')
+      .transform(parseTrustProxy),
+    RATE_LIMIT_TTL_SECONDS: z.coerce.number().int().positive().default(60),
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+    WEB_URL: z
+      .url()
+      .default('http://localhost:3000')
+      .transform((url) => url.replace(/\/+$/, '')),
+    // Blank counts as unset, so `REVALIDATE_SECRET=` doesn't fail the boot.
+    REVALIDATE_SECRET: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(32).optional(),
+    ),
   })
+  .refine(
+    (env) =>
+      env.NODE_ENV !== 'production' || env.REVALIDATE_SECRET !== undefined,
+    {
+      path: ['REVALIDATE_SECRET'],
+      message: 'Required in production',
+    },
+  )
   .transform((env) => ({
     ...env,
     SWAGGER_ENABLED: env.SWAGGER_ENABLED ?? env.NODE_ENV !== 'production',
