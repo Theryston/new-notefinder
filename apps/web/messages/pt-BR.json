@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "notefinder – veja as notas que o cantor canta",
-    "titleTemplate": "%s | notefinder",
+    "title": "NoteFinder – veja as notas que o cantor canta",
+    "titleTemplate": "%s | NoteFinder",
     "description": "Veja as notas vocais exatas que o cantor canta em qualquer música, numa linha do tempo sincronizada com a reprodução, e receba feedback de afinação em tempo real pelo seu microfone."
   },
   "home": {

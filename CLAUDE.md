@@ -77,6 +77,13 @@ same records.
   locale is detected from the user's location/browser and falls back to `en`
   only when there is no match (details in `apps/web/CLAUDE.md`).
 
+### Design
+
+`DESIGN.md` is the design system (direction, color, type, shape, elevation,
+motion, icons, the note timeline). Every UI change follows it, and changing a
+design token means updating `DESIGN.md` and the tokens in
+`apps/web/app/globals.css` together.
+
 ### Contracts (`packages/contracts`)
 
 - Single source of truth for every request/response shape crossing the API

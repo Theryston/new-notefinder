@@ -234,6 +234,9 @@ leaf possible and pass server-fetched data down as props.
 - shadcn/ui components are added with `nub exec shadcn add <component>` and
   then formatted with `nub run format`. Customize via variants/`className` or
   wrap them in `components/`; avoid rewriting their internals.
+- Follow the design system in the root `DESIGN.md` (pill controls,
+  `rounded-2xl` surfaces, `glass` floating layers, Figtree, Lucide at 1.75
+  stroke, spring motion). `components/ui/button.tsx` is already adapted to it.
 - Tailwind v4 with the design tokens in `app/globals.css`. Use theme tokens
   (`bg-background`, `text-muted-foreground`, …), not raw hex colors or
   arbitrary values, unless there is no token for it. Dark mode via
