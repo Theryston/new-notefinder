@@ -82,15 +82,22 @@ test.describe('locale-prefixed pages', () => {
 
       const alternate = (hreflang: string) =>
         page.locator(`head link[rel="alternate"][hreflang="${hreflang}"]`);
-      await expect(alternate('en')).toHaveAttribute('href', /\/en$/);
-      await expect(alternate('pt-BR')).toHaveAttribute('href', /\/pt-BR$/);
+      // Absolute URLs (metadataBase), as search engines require.
+      await expect(alternate('en')).toHaveAttribute(
+        'href',
+        /^https?:\/\/[^/]+\/en$/,
+      );
+      await expect(alternate('pt-BR')).toHaveAttribute(
+        'href',
+        /^https?:\/\/[^/]+\/pt-BR$/,
+      );
       await expect(alternate('x-default')).toHaveAttribute(
         'href',
-        /^(https?:\/\/[^/]+)?\/$/,
+        /^https?:\/\/[^/]+\/?$/,
       );
       await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute(
         'href',
-        new RegExp(`/${locale}$`),
+        new RegExp(`^https?://[^/]+/${locale}$`),
       );
     });
   }

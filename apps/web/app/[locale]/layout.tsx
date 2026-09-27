@@ -5,6 +5,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 
 import '../globals.css';
 import { Providers } from '@/components/providers';
+import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('metadata');
 
   return {
+    // Resolves the relative canonical/hreflang URLs pages set with
+    // `localeAlternates` into absolute ones, as search engines require.
+    metadataBase: getSiteUrl(),
     title: { default: t('title'), template: t('titleTemplate') },
     description: t('description'),
   };
