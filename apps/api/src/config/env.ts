@@ -30,6 +30,7 @@ export const envSchema = z
       )
       .pipe(z.array(z.url()).min(1)),
     SWAGGER_ENABLED: z.stringbool().optional(),
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
     // Express `trust proxy`: a hop count, `true`/`false`, or a comma-separated
     // list of trusted proxy addresses/subnets. Drives `req.ip`, which is the

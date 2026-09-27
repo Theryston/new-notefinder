@@ -8,6 +8,7 @@ const SECRET = 'a'.repeat(32);
 
 const createProcessor = async (overrides: Record<string, string> = {}) => {
   const env: Env = parseEnv({
+    DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
     REDIS_URL: 'redis://localhost:6379',
     WEB_URL: 'https://web.example/',
     REVALIDATE_SECRET: SECRET,

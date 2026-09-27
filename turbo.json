@@ -15,6 +15,16 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "passThroughEnv": ["CI", "PLAYWRIGHT_*", "DOCKER_*", "TESTCONTAINERS_*"]
+    },
+    "web#test:e2e": {
+      "dependsOn": ["^build", "build"],
+      "cache": false,
+      "passThroughEnv": ["CI", "PLAYWRIGHT_*"]
+    },
     "format": {
       "cache": false
     },
