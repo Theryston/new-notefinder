@@ -1,0 +1,13 @@
+import { Controller, Get } from '@nestjs/common';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+
+@ApiTags('health')
+@Controller('health')
+export class HealthController {
+  // Public liveness probe used by Coolify healthchecks.
+  @Get()
+  @ApiOkResponse({ description: 'The API process is up.' })
+  check(): { status: 'ok' } {
+    return { status: 'ok' };
+  }
+}
