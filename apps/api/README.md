@@ -12,8 +12,22 @@ From the repository root:
 nub install
 nub run infra:up             # Postgres + Redis via docker compose
 cp apps/api/.env.example apps/api/.env
+(cd apps/api && nub run db:migrate && nub run db:seed)
 nub run dev --filter=api     # http://localhost:3333
 ```
+
+## Database
+
+Drizzle ORM on Postgres. Run these from `apps/api`:
+
+- `nub run db:generate` creates a migration in `drizzle/` from changes in
+  `src/database/schema/` (review the SQL and commit it).
+- `nub run db:migrate` applies pending migrations. It is an explicit step,
+  never run on boot; production runs `node dist/database/migrate.js` (the
+  image needs the `drizzle/` folder).
+- `nub run db:seed` upserts a small fictional catalog with synthetic vocal
+  notes. Deterministic and safe to re-run; refuses `NODE_ENV=production`.
+- `nub run db:studio` opens Drizzle Studio.
 
 Other tasks, scoped with `--filter=api`: `build`, `lint`, `check-types`,
 `test`. E2E tests run from this folder with `nub run test:e2e` (needs Docker).
