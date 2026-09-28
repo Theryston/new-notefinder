@@ -115,7 +115,13 @@ design token means updating `DESIGN.md` and the tokens in
   is needed). No `enum` in TS: use `as const` objects or Zod enums.
 - **Named exports only.** Default exports only where a framework requires them
   (Next `page`/`layout`/`loading`/`error`/`not-found`, config files).
-- **No barrel files** (`index.ts` that re-exports) except `packages/*/src/index.ts`.
+- **No barrel files** (`index.ts` that re-exports) except `packages/*/src/index.ts`
+  and the Drizzle schema index.
+- All of the above are lint errors. The framework files allowed a default
+  export (and the allowed barrels) are listed in the `biome.json` overrides:
+  add a new framework file there rather than silencing the rule inline.
+  Declaration merging (`interface` augmenting a library) takes a
+  `biome-ignore` with the reason.
 - File and folder names in **kebab-case** (enforced by Biome). Next's special
   files and Nest's `name.kind.ts` suffixes (`tracks.service.ts`) follow the same rule.
 - Comments explain *why*, not *what*. No commented-out code.
@@ -137,7 +143,8 @@ design token means updating `DESIGN.md` and the tokens in
 
 - Every app validates `process.env` with a Zod schema at startup and fails fast
   (api: `src/config/env.ts`, web: `lib/env/server.ts` + `lib/env/client.ts`). Code reads config from that
-  module, never from `process.env` directly.
+  module, never from `process.env` directly (`noProcessEnv`; only the env
+  modules, config files and test setup are exempt in `biome.json`).
 - Every env var must be listed in the app's `.env.example` (with a safe local
   default when possible). Never commit real `.env` files or secrets.
 - `docker-compose.yml` provides Postgres 17 and the API's Redis 8 (6379) for
@@ -181,6 +188,13 @@ design token means updating `DESIGN.md` and the tokens in
   concern, a helper per step, an options object instead of positional
   params). A `biome-ignore` is only for what the code can't change (a
   signature imposed by a library interface, a fixture file) and says why.
+- **Architecture**: `nub run lint` also runs dependency-cruiser with each
+  app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
+  of that app's CLAUDE.md (no import cycles; API: only repositories touch
+  Drizzle, modules talk through their service; web: shared code never imports
+  features, features use each other only through `components/`). Change the
+  code, not the rule; a new rule or exception goes in that file with a
+  `comment` saying why.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 
@@ -193,6 +207,7 @@ design token means updating `DESIGN.md` and the tokens in
   it. Never make CI green by editing, weakening, skipping (`.skip`,
   `.fixme`, `.todo`), deleting or loosening the assertions of an
   existing test, or by adding retries/timeouts to hide a real failure.
+  `.skip`/`.only` are lint errors (`noSkippedTests`, `noFocusedTests`).
 - The **only** reason to change an existing test is an intentional behavior
   change that the user explicitly asked for. Then change the test in the same
   PR as the behavior, and say in the PR description which test changed and
@@ -207,7 +222,8 @@ design token means updating `DESIGN.md` and the tokens in
 - **Conventional Commits**, scoped by package:
   `<type>(<scope>): <subject>` with types `feat fix refactor perf test docs
   build ci chore style revert` and scopes `web api contracts repo`
-  (e.g. `feat(api): add track search endpoint`). Enforced by lefthook.
+  (e.g. `feat(api): add track search endpoint`). Enforced by lefthook
+  on commits and by CI on the PR title (it becomes the squash commit).
 - lefthook `pre-commit` runs Biome on staged files and re-stages the fixes.
   Don't bypass hooks with `--no-verify`.
 - One logical change per PR; tooling/refactors separated from features.
