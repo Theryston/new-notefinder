@@ -16,6 +16,11 @@ node_modules
 coverage
 coverage-e2e
 
+# Stryker (mutation testing)
+**/reports/mutation
+**/reports/stryker-incremental.json
+.stryker-tmp
+
 # Turbo
 .turbo
 

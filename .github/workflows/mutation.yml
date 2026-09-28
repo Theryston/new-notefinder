@@ -1,0 +1,58 @@
+name: Mutation tests
+
+# Stryker mutates the unit-tested code and fails when the share of mutants the
+# tests kill drops below `thresholds.break` in each app's stryker.config.json.
+# A separate workflow so it runs in parallel with CI instead of lengthening it.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nubjs/setup-nub@v0
+        with:
+          nub-version: 0.9.5
+
+      - name: Install dependencies
+        run: nub install --frozen-lockfile
+
+      # The unit tests import @notefinder/contracts from its build output.
+      - name: Build contracts
+        run: nub run build --filter=@notefinder/contracts
+
+      # Incremental mode only re-tests mutants in code or tests that changed
+      # since the cached run (this branch's, else main's).
+      - name: Restore previous mutation results
+        uses: actions/cache@v4
+        with:
+          path: apps/${{ matrix.app }}/reports/stryker-incremental.json
+          key: stryker-${{ matrix.app }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            stryker-${{ matrix.app }}-${{ github.ref }}-
+            stryker-${{ matrix.app }}-refs/heads/main-
+
+      - name: Mutation tests
+        working-directory: apps/${{ matrix.app }}
+        run: nub run test:mutation
+
+      - name: Upload mutation report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-${{ matrix.app }}
+          path: apps/${{ matrix.app }}/reports/mutation/
+          retention-days: 14
