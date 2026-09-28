@@ -207,7 +207,8 @@ design token means updating `DESIGN.md` and the tokens in
 - **Conventional Commits**, scoped by package:
   `<type>(<scope>): <subject>` with types `feat fix refactor perf test docs
   build ci chore style revert` and scopes `web api contracts repo`
-  (e.g. `feat(api): add track search endpoint`). Enforced by lefthook.
+  (e.g. `feat(api): add track search endpoint`). Enforced by lefthook
+  on commits and by CI on the PR title (it becomes the squash commit).
 - lefthook `pre-commit` runs Biome on staged files and re-stages the fixes.
   Don't bypass hooks with `--no-verify`.
 - One logical change per PR; tooling/refactors separated from features.
