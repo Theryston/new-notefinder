@@ -117,12 +117,19 @@ jobs:
       - name: E2E tests
         run: nub run test:e2e
 
-      - name: Upload Playwright report
+      # Lighthouse on the production build test:e2e just made (assertions in
+      # apps/web/lighthouserc.cjs). Uses the runner's preinstalled Chrome.
+      - name: Lighthouse
+        working-directory: apps/web
+        run: nub run lighthouse
+
+      - name: Upload Playwright and Lighthouse reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: e2e-reports
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
+            apps/web/.lighthouseci/
           retention-days: 14

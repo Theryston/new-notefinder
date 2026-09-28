@@ -17,6 +17,8 @@ const config: KnipConfig = {
         // augmentation and its request config (next.config.ts plugin).
         'global.ts',
         'lib/i18n/request.ts',
+        // Read by `lhci autorun` (`nub run lighthouse`), not imported.
+        'lighthouserc.cjs',
         // Generated shadcn/ui components, used as the design system grows.
         'components/ui/**/*.tsx',
         // Documented entry points (apps/web/CLAUDE.md) for UI that isn't
