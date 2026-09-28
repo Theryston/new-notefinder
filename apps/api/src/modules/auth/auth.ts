@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { createId } from '@paralleldrive/cuid2';
-import { betterAuth } from 'better-auth';
+import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
 import { emailOTP, username } from 'better-auth/plugins';
@@ -51,6 +51,187 @@ export type AuthDependencies = {
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/** The options that don't depend on the environment or on services. */
+const staticOptions = {
+  appName: 'notefinder',
+  basePath: AUTH_BASE_PATH,
+  user: {
+    additionalFields: {
+      // `input: false`: never settable through sign-up or update-user.
+      role: {
+        type: 'string',
+        required: false,
+        defaultValue: 'USER',
+        input: false,
+      },
+      dailyPracticeTargetSeconds: {
+        type: 'number',
+        required: false,
+        input: false,
+      },
+    },
+  },
+  session: {
+    // Legacy (NextAuth JWT) sessions lasted 30 days.
+    expiresIn: 30 * DAY_SECONDS,
+    updateAge: DAY_SECONDS,
+  },
+  emailAndPassword: {
+    enabled: true,
+    // No session until the email is verified with the OTP. Also makes
+    // sign-up answer the same way for new and existing emails.
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    password: { hash: hashPassword, verify: verifyPassword },
+  },
+  emailVerification: {
+    // Both go through `sendVerificationOTP` (`overrideDefaultEmailVerification`
+    // in the emailOTP plugin): a code, not a link.
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true,
+  },
+  account: {
+    // Legacy linked Google to an existing email account. Better Auth only
+    // links when Google reports the email as verified, and strips access
+    // an unverified local account had accrued before.
+    accountLinking: { enabled: true, trustedProviders: ['google'] },
+  },
+  // Passwordless OTP sign-in isn't a notefinder feature.
+  disabledPaths: ['/sign-in/email-otp'],
+  telemetry: { enabled: false },
+} satisfies BetterAuthOptions;
+
+const socialProviders = (env: Env): BetterAuthOptions['socialProviders'] =>
+  env.GOOGLE_CLIENT_ID !== undefined && env.GOOGLE_CLIENT_SECRET !== undefined
+    ? {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        },
+      }
+    : {};
+
+const rateLimitOptions = (
+  env: Env,
+  storage: RedisThrottlerStorage,
+): BetterAuthOptions['rateLimit'] => ({
+  // Off in tests so suites can sign in repeatedly.
+  enabled: env.NODE_ENV !== 'test',
+  window: env.RATE_LIMIT_TTL_SECONDS,
+  max: env.RATE_LIMIT_MAX,
+  // Shared by every instance and fails open when Redis is down, like the
+  // global throttler (whose Redis storage it reuses). Better Auth adds
+  // stricter per-endpoint rules (e.g. 3 sign-ins per 10s).
+  customStorage: {
+    consume: async (key, rule) => {
+      const record = await storage.increment(
+        key,
+        rule.window * 1000,
+        rule.max,
+        0,
+        'auth',
+      );
+      return record.isBlocked
+        ? { allowed: false, retryAfter: record.timeToExpire }
+        : { allowed: true, retryAfter: null };
+    },
+  },
+});
+
+const advancedOptions = (env: Env): BetterAuthOptions['advanced'] => ({
+  cookiePrefix: 'notefinder',
+  useSecureCookies: env.NODE_ENV === 'production',
+  // Web on the apex and API on a subdomain: scoping the cookie to the shared
+  // domain lets the web server read and forward it.
+  crossSubDomainCookies:
+    env.AUTH_COOKIE_DOMAIN === undefined
+      ? undefined
+      : { enabled: true, domain: env.AUTH_COOKIE_DOMAIN },
+  ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
+  // Same ID format as every other table; imported legacy cuids fit too.
+  database: { generateId: () => createId() },
+});
+
+const loggerOptions = (
+  env: Env,
+  logger: Logger,
+): BetterAuthOptions['logger'] => ({
+  level: env.NODE_ENV === 'production' ? 'warn' : 'info',
+  // Messages only: arguments may carry user data.
+  log: (level, message) => {
+    if (level === 'error') logger.error(message);
+    else if (level === 'warn') logger.warn(message);
+    else if (level === 'info') logger.log(message);
+    else logger.debug(message);
+  },
+});
+
+const emailOtpPlugin = (emailService: EmailService, logger: Logger) =>
+  emailOTP({
+    otpLength: OTP_LENGTH,
+    expiresIn: OTP_EXPIRES_IN_SECONDS,
+    allowedAttempts: 5,
+    // A database leak doesn't expose live codes.
+    storeOTP: 'hashed',
+    overrideDefaultEmailVerification: true,
+    disableSignUp: true,
+    sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+      if (type !== 'email-verification' && type !== 'forget-password') {
+        logger.warn(`Ignoring a "${type}" code request: not enabled`);
+        return;
+      }
+      // Codes triggered by sign-up/sign-in come with only the request.
+      const headers = ctx?.headers ?? ctx?.request?.headers;
+      // Not awaited: the response must not wait for (or reveal, through its
+      // timing) the enqueueing, which can hang while Redis is down.
+      emailService
+        .sendOtp({
+          to: email,
+          type,
+          otp,
+          locale: resolveEmailLocale(headers?.get('accept-language')),
+          expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
+        })
+        .catch((error: unknown) => {
+          logger.error(
+            `Could not enqueue a code email: ${errorMessage(error)}`,
+          );
+        });
+    },
+  });
+
+/**
+ * Replaces a legacy bcrypt hash with scrypt once the user proved the password,
+ * so legacy hashes disappear over time.
+ */
+const rehashLegacyPassword = (logger: Logger) =>
+  createAuthMiddleware(async (ctx) => {
+    const userId = ctx.context.newSession?.user.id;
+    const body = passwordBodySchema.safeParse(ctx.body);
+    if (
+      !PASSWORD_SIGN_IN_PATHS.has(ctx.path) ||
+      userId === undefined ||
+      !body.success
+    ) {
+      return;
+    }
+    try {
+      const credential = (
+        await ctx.context.internalAdapter.findAccounts(userId)
+      ).find((account) => account.providerId === 'credential');
+      if (credential?.password && isLegacyPasswordHash(credential.password)) {
+        await ctx.context.internalAdapter.updatePassword(
+          userId,
+          await hashPassword(body.data.password),
+        );
+      }
+    } catch (error) {
+      // The sign-in itself succeeded; try again next time.
+      logger.warn(`Could not rehash a legacy password: ${errorMessage(error)}`);
+    }
+  });
+
 /**
  * The Better Auth instance behind `/v1/auth/*` (mounted in `setup-app.ts`)
  * and the global `AuthGuard`. Responses under `/v1/auth/*` use Better Auth's
@@ -63,12 +244,10 @@ export const createAuth = ({
   emailService,
 }: AuthDependencies) => {
   const logger = new Logger('Auth');
-  const rateLimitStorage = new RedisThrottlerStorage(redis);
 
   return betterAuth({
-    appName: 'notefinder',
+    ...staticOptions,
     baseURL: env.BETTER_AUTH_URL,
-    basePath: AUTH_BASE_PATH,
     secret: env.BETTER_AUTH_SECRET,
     // Origins allowed to call auth endpoints with cookies and to be used as
     // redirect targets (`callbackURL`).
@@ -82,107 +261,10 @@ export const createAuth = ({
         verification: verifications,
       },
     }),
-    user: {
-      additionalFields: {
-        // `input: false`: never settable through sign-up or update-user.
-        role: {
-          type: 'string',
-          required: false,
-          defaultValue: 'USER',
-          input: false,
-        },
-        dailyPracticeTargetSeconds: {
-          type: 'number',
-          required: false,
-          input: false,
-        },
-      },
-    },
-    session: {
-      // Legacy (NextAuth JWT) sessions lasted 30 days.
-      expiresIn: 30 * DAY_SECONDS,
-      updateAge: DAY_SECONDS,
-    },
-    emailAndPassword: {
-      enabled: true,
-      // No session until the email is verified with the OTP. Also makes
-      // sign-up answer the same way for new and existing emails.
-      requireEmailVerification: true,
-      revokeSessionsOnPasswordReset: true,
-      password: { hash: hashPassword, verify: verifyPassword },
-    },
-    emailVerification: {
-      // Both go through `sendVerificationOTP` below
-      // (`overrideDefaultEmailVerification`): a code, not a link.
-      sendOnSignUp: true,
-      sendOnSignIn: true,
-      autoSignInAfterVerification: true,
-    },
-    socialProviders:
-      env.GOOGLE_CLIENT_ID !== undefined &&
-      env.GOOGLE_CLIENT_SECRET !== undefined
-        ? {
-            google: {
-              clientId: env.GOOGLE_CLIENT_ID,
-              clientSecret: env.GOOGLE_CLIENT_SECRET,
-            },
-          }
-        : {},
-    account: {
-      // Legacy linked Google to an existing email account. Better Auth only
-      // links when Google reports the email as verified, and strips access
-      // an unverified local account had accrued before.
-      accountLinking: { enabled: true, trustedProviders: ['google'] },
-    },
-    // Passwordless OTP sign-in isn't a notefinder feature.
-    disabledPaths: ['/sign-in/email-otp'],
-    rateLimit: {
-      // Off in tests so suites can sign in repeatedly.
-      enabled: env.NODE_ENV !== 'test',
-      window: env.RATE_LIMIT_TTL_SECONDS,
-      max: env.RATE_LIMIT_MAX,
-      // Shared by every instance and fails open when Redis is down, like
-      // the global throttler (whose Redis storage it reuses). Better Auth
-      // adds stricter per-endpoint rules (e.g. 3 sign-ins per 10s).
-      customStorage: {
-        consume: async (key, rule) => {
-          const record = await rateLimitStorage.increment(
-            key,
-            rule.window * 1000,
-            rule.max,
-            0,
-            'auth',
-          );
-          return record.isBlocked
-            ? { allowed: false, retryAfter: record.timeToExpire }
-            : { allowed: true, retryAfter: null };
-        },
-      },
-    },
-    advanced: {
-      cookiePrefix: 'notefinder',
-      useSecureCookies: env.NODE_ENV === 'production',
-      // Web on the apex and API on a subdomain: scoping the cookie to the
-      // shared domain lets the web server read and forward it.
-      crossSubDomainCookies:
-        env.AUTH_COOKIE_DOMAIN === undefined
-          ? undefined
-          : { enabled: true, domain: env.AUTH_COOKIE_DOMAIN },
-      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
-      // Same ID format as every other table; imported legacy cuids fit too.
-      database: { generateId: () => createId() },
-    },
-    telemetry: { enabled: false },
-    logger: {
-      level: env.NODE_ENV === 'production' ? 'warn' : 'info',
-      // Messages only: arguments may carry user data.
-      log: (level, message) => {
-        if (level === 'error') logger.error(message);
-        else if (level === 'warn') logger.warn(message);
-        else if (level === 'info') logger.log(message);
-        else logger.debug(message);
-      },
-    },
+    socialProviders: socialProviders(env),
+    rateLimit: rateLimitOptions(env, new RedisThrottlerStorage(redis)),
+    advanced: advancedOptions(env),
+    logger: loggerOptions(env, logger),
     plugins: [
       username({
         minUsernameLength: USERNAME_MIN_LENGTH,
@@ -190,73 +272,9 @@ export const createAuth = ({
         usernameValidator: isValidUsername,
         displayUsername: false,
       }),
-      emailOTP({
-        otpLength: OTP_LENGTH,
-        expiresIn: OTP_EXPIRES_IN_SECONDS,
-        allowedAttempts: 5,
-        // A database leak doesn't expose live codes.
-        storeOTP: 'hashed',
-        overrideDefaultEmailVerification: true,
-        disableSignUp: true,
-        sendVerificationOTP: async ({ email, otp, type }, ctx) => {
-          if (type !== 'email-verification' && type !== 'forget-password') {
-            logger.warn(`Ignoring a "${type}" code request: not enabled`);
-            return;
-          }
-          // Codes triggered by sign-up/sign-in come with only the request.
-          const headers = ctx?.headers ?? ctx?.request?.headers;
-          // Not awaited: the response must not wait for (or reveal, through
-          // its timing) the enqueueing, which can hang while Redis is down.
-          emailService
-            .sendOtp({
-              to: email,
-              type,
-              otp,
-              locale: resolveEmailLocale(headers?.get('accept-language')),
-              expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
-            })
-            .catch((error: unknown) => {
-              logger.error(
-                `Could not enqueue a code email: ${errorMessage(error)}`,
-              );
-            });
-        },
-      }),
+      emailOtpPlugin(emailService, logger),
     ],
-    hooks: {
-      // Replaces a legacy bcrypt hash with scrypt once the user proved the
-      // password, so legacy hashes disappear over time.
-      after: createAuthMiddleware(async (ctx) => {
-        const userId = ctx.context.newSession?.user.id;
-        const body = passwordBodySchema.safeParse(ctx.body);
-        if (
-          !PASSWORD_SIGN_IN_PATHS.has(ctx.path) ||
-          userId === undefined ||
-          !body.success
-        ) {
-          return;
-        }
-        try {
-          const credential = (
-            await ctx.context.internalAdapter.findAccounts(userId)
-          ).find((account) => account.providerId === 'credential');
-          if (
-            credential?.password &&
-            isLegacyPasswordHash(credential.password)
-          ) {
-            await ctx.context.internalAdapter.updatePassword(
-              userId,
-              await hashPassword(body.data.password),
-            );
-          }
-        } catch (error) {
-          // The sign-in itself succeeded; try again next time.
-          logger.warn(
-            `Could not rehash a legacy password: ${errorMessage(error)}`,
-          );
-        }
-      }),
-    },
+    hooks: { after: rehashLegacyPassword(logger) },
   });
 };
 

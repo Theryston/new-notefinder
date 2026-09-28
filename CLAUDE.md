@@ -180,6 +180,14 @@ design token means updating `DESIGN.md` and the tokens in
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
   silence the rule with `biome-ignore` or raise the limit.
+- **Size**: at most 300 lines per file (500 in test files), 50 lines per
+  function and 4 parameters per function, blank lines not counted
+  (`noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `useMaxParams`;
+  test files are exempt from the function limit, since `describe` blocks
+  are long by nature). Over a limit, split by responsibility (a module per
+  concern, a helper per step, an options object instead of positional
+  params). A `biome-ignore` is only for what the code can't change (a
+  signature imposed by a library interface, a fixture file) and says why.
 - **Architecture**: `nub run lint` also runs dependency-cruiser with each
   app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
   of that app's CLAUDE.md (no import cycles; API: only repositories touch
