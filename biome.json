@@ -64,11 +64,24 @@
             "filenameCases": ["kebab-case"],
             "requireAscii": true
           }
+        },
+        "noNonNullAssertion": "error",
+        "noEnum": "error",
+        "noProcessEnv": "error",
+        "noDefaultExport": "error",
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
         }
       },
       "nursery": {
         "noFloatingPromises": "error",
         "noMisusedPromises": "error"
+      },
+      "performance": {
+        "noBarrelFile": "error"
       }
     }
   },
@@ -86,6 +99,12 @@
       "linter": {
         "domains": {
           "test": "recommended"
+        },
+        "rules": {
+          "suspicious": {
+            "noSkippedTests": "error",
+            "noFocusedTests": "error"
+          }
         }
       }
     },
@@ -123,6 +142,64 @@
           },
           "suspicious": {
             "noConsole": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "**/*.config.ts",
+        "**/*.config.mjs",
+        "**/*.config.e2e.ts",
+        "apps/web/app/**/page.tsx",
+        "apps/web/app/**/layout.tsx",
+        "apps/web/app/**/loading.tsx",
+        "apps/web/app/**/error.tsx",
+        "apps/web/app/**/global-error.tsx",
+        "apps/web/app/**/not-found.tsx",
+        "apps/web/app/**/template.tsx",
+        "apps/web/app/**/default.tsx",
+        "apps/web/app/**/opengraph-image.tsx",
+        "apps/web/app/**/sitemap.ts",
+        "apps/web/app/**/robots.ts",
+        "apps/web/app/**/manifest.ts",
+        "apps/web/lib/i18n/request.ts",
+        "apps/web/cache-handlers/redis.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "**/*.config.ts",
+        "**/*.config.e2e.ts",
+        "apps/api/src/config/env.ts",
+        "apps/api/test/setup/**",
+        "apps/web/lib/env/**",
+        "apps/web/cache-handlers/redis.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/*/src/index.ts",
+        "apps/api/src/database/schema/index.ts"
+      ],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off"
           }
         }
       }

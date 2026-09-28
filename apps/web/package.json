@@ -7,7 +7,7 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check .",
+    "lint": "biome check . && depcruise . --config .dependency-cruiser.cjs",
     "format": "biome check --write .",
     "check-types": "next typegen && tsc --noEmit",
     "test": "vitest run",
@@ -45,6 +45,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.11",
+    "dependency-cruiser": "^18.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
