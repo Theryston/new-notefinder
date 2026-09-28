@@ -59,6 +59,12 @@ jobs:
       - name: Duplication
         run: nub run duplication
 
+      # First-load JS of every prerendered page against the budget in
+      # apps/web/scripts/bundle-budget.ts (needs the build above).
+      - name: Web bundle budget
+        working-directory: apps/web
+        run: nub run bundle:check
+
   # The API is a public contract (the mobile app will depend on it): fail when
   # the committed openapi.json has a breaking change against the base branch.
   # The e2e suite keeps openapi.json in sync with the code.
