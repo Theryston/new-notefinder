@@ -11,7 +11,8 @@
       "**",
       "!**/next-env.d.ts",
       "!**/*.tsbuildinfo",
-      "!apps/api/drizzle/meta"
+      "!apps/api/drizzle/meta",
+      "!apps/api/openapi.json"
     ]
   },
   "formatter": {
