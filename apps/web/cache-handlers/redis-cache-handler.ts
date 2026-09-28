@@ -18,7 +18,7 @@ import { TagStore, type TagsManifest } from './tag-state.ts';
 import { DAY, SECOND } from './time.ts';
 
 export type { CacheRedisClient } from './redis-connection.ts';
-export type { TagState, TagsManifest } from './tag-state.ts';
+export type { TagsManifest } from './tag-state.ts';
 
 export type RedisCacheHandlerOptions = {
   redis: CacheRedisClient;
