@@ -110,6 +110,7 @@
       "overline": "Sua conta",
       "title": "Entre no NoteFinder",
       "description": "Use seu email ou username para voltar às suas músicas favoritas e à sua sequência de prática.",
+      "passwordReset": "Senha alterada. Entre com sua nova senha.",
       "emailOrUsername": {
         "label": "Email ou username",
         "placeholder": "voce@exemplo.com",

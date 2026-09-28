@@ -103,12 +103,36 @@ function useLeaveWhenSignedIn(
   }, [user, redirectTo, router, signedIn]);
 }
 
-export function SignInForm() {
+/** The failed attempt's error, or the confirmation of a password reset. */
+function SignInNotice({
+  error,
+  passwordReset,
+}: {
+  error: SignInError | null;
+  passwordReset: boolean;
+}) {
   const t = useTranslations('auth');
   const tErrors = useTranslations('authErrors');
+
+  if (error) {
+    return (
+      <FormAlert>
+        {error === 'GOOGLE' ? t('signUp.googleError') : tErrors(error)}
+      </FormAlert>
+    );
+  }
+  if (!passwordReset) return null;
+  return <FormAlert tone="success">{t('signIn.passwordReset')}</FormAlert>;
+}
+
+export function SignInForm() {
+  const t = useTranslations('auth');
   const search = useLocationSearch();
   const redirectTo = redirectToFromSearch(search);
-  const googleFailed = new URLSearchParams(search).has('error');
+  const params = new URLSearchParams(search);
+  const googleFailed = params.has('error');
+  // Set by the password reset, which sends the user here to sign in again.
+  const passwordReset = params.get('reset') === '1';
   const { signIn, error, setError, signedIn } = useSignIn(redirectTo);
   useLeaveWhenSignedIn(redirectTo, signedIn);
   // No defaultValues, so what was typed before hydration is kept (see
@@ -136,13 +160,7 @@ export function SignInForm() {
         onSubmit={form.handleSubmit(signIn)}
         className="flex flex-col gap-5"
       >
-        {shownError && (
-          <FormAlert>
-            {shownError === 'GOOGLE'
-              ? t('signUp.googleError')
-              : tErrors(shownError)}
-          </FormAlert>
-        )}
+        <SignInNotice error={shownError} passwordReset={passwordReset} />
         <SignInFields form={form} redirectTo={redirectTo} />
         <SubmitButton
           pending={form.formState.isSubmitting}

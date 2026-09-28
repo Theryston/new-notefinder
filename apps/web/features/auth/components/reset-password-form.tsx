@@ -11,15 +11,12 @@ import { useRouter } from '@/lib/i18n/navigation';
 import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import { isCodeError } from '../code-error';
-import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
 import { authKeys } from '../query-keys';
 import { authHref } from '../redirect-to';
 import { CodeInput, isCompleteCode } from './code-input';
+import { NewPasswordField } from './credential-fields';
 import { FormAlert } from './form-alert';
-import { FormField } from './form-field';
-import { PasswordInput } from './password-input';
-import { PasswordStrengthMeter } from './password-strength-meter';
 import { ResendCodeButton } from './resend-code-button';
 import { StepHeader } from './step-header';
 import { SubmitButton } from './submit-button';
@@ -46,34 +43,6 @@ function ResetPasswordHeader({ email }: { email: string }) {
         ),
       })}
     />
-  );
-}
-
-function NewPasswordField({
-  form,
-}: {
-  form: UseFormReturn<ResetPasswordBody>;
-}) {
-  const t = useTranslations('auth');
-  const error = form.formState.errors.password;
-  const password = form.watch('password');
-
-  return (
-    <FormField
-      id="password"
-      label={t('forgotPassword.reset.passwordLabel')}
-      error={error && t(`fields.${fieldErrorKey('password', error.type)}`)}
-      hint={<PasswordStrengthMeter password={password} />}
-    >
-      <PasswordInput
-        id="password"
-        autoComplete="new-password"
-        placeholder={t('fields.password.placeholder')}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? 'password-error' : undefined}
-        {...form.register('password')}
-      />
-    </FormField>
   );
 }
 
@@ -130,6 +99,40 @@ function ResetPasswordNotice({
   );
 }
 
+/** The emailed code, then the new password once it is complete. */
+function ResetPasswordFields({
+  form,
+  notice,
+}: {
+  form: UseFormReturn<ResetPasswordBody>;
+  notice: Notice | null;
+}) {
+  const t = useTranslations('auth.forgotPassword.reset');
+
+  return (
+    <>
+      <Controller
+        control={form.control}
+        name="otp"
+        render={({ field }) => (
+          <CodeInput
+            field={field}
+            label={t('codeLabel')}
+            invalid={notice?.tone === 'error' && isCodeError(notice.code)}
+            onComplete={() => form.setFocus('password')}
+          />
+        )}
+      />
+      <NewPasswordField
+        registration={form.register('password')}
+        errorType={form.formState.errors.password?.type}
+        password={form.watch('password')}
+        label={t('passwordLabel')}
+      />
+    </>
+  );
+}
+
 /**
  * The emailed code and the new password. On success every session is
  * revoked (the API does it), so the user signs in again with the new one.
@@ -182,19 +185,7 @@ export function ResetPasswordForm({
           notice={notice}
           invalidEmail={Boolean(form.formState.errors.email)}
         />
-        <Controller
-          control={form.control}
-          name="otp"
-          render={({ field }) => (
-            <CodeInput
-              field={field}
-              label={t('codeLabel')}
-              invalid={notice?.tone === 'error' && isCodeError(notice.code)}
-              onComplete={() => form.setFocus('password')}
-            />
-          )}
-        />
-        <NewPasswordField form={form} />
+        <ResetPasswordFields form={form} notice={notice} />
         <SubmitButton
           pending={form.formState.isSubmitting}
           disabled={!isCompleteCode(form.watch('otp'))}

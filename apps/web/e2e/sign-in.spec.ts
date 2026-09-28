@@ -194,6 +194,29 @@ test.describe('sign-in', () => {
     );
   });
 
+  test('confirms a password reset, until an attempt fails', async ({
+    page,
+  }) => {
+    await mockAuthApi(page, {
+      overrides: {
+        '/sign-in/email': failWith(401, 'INVALID_EMAIL_OR_PASSWORD'),
+      },
+    });
+    await page.goto('/en/sign-in?reset=1');
+
+    const main = page.getByRole('main');
+    await expect(main.getByRole('status')).toHaveText(
+      auth.signIn.passwordReset,
+    );
+
+    await fillSignIn(page, 'ada@example.com');
+
+    await expect(main.getByRole('alert')).toHaveText(
+      authErrors.INVALID_EMAIL_OR_PASSWORD,
+    );
+    await expect(main.getByRole('status')).toHaveCount(0);
+  });
+
   test('sends a signed-in visitor on to redirectTo', async ({ page }) => {
     await mockAuthApi(page, { user: ADA_WITH_USERNAME });
     await page.goto('/en/sign-in?redirectTo=%2F%3Ffrom%3Dsign-in');

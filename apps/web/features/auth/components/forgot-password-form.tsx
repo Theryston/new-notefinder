@@ -3,20 +3,18 @@
 import type { ForgotPasswordBody } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { type UseFormReturn, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 
-import { Input } from '@/components/ui/input';
 import { useRouter } from '@/lib/i18n/navigation';
 
 import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
-import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
 import { authHref, redirectToFromSearch } from '../redirect-to';
 import { browserStorage, rememberCodeSentAt } from '../resend-cooldown';
 import { useLocationSearch } from '../use-location-search';
+import { EmailField } from './credential-fields';
 import { FormAlert } from './form-alert';
-import { FormField } from './form-field';
 import { StepHeader } from './step-header';
 import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
@@ -24,34 +22,6 @@ import { TextLink } from './text-link';
 const forgotPasswordResolver = lazyResolver<ForgotPasswordBody>(() =>
   import('@notefinder/contracts').then((m) => m.forgotPasswordBodySchema),
 );
-
-function EmailField({ form }: { form: UseFormReturn<ForgotPasswordBody> }) {
-  const t = useTranslations('auth');
-  const emailError = form.formState.errors.email;
-
-  return (
-    <FormField
-      id="email"
-      label={t('fields.email.label')}
-      error={
-        emailError && t(`fields.${fieldErrorKey('email', emailError.type)}`)
-      }
-    >
-      <Input
-        id="email"
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        autoCapitalize="none"
-        spellCheck={false}
-        placeholder={t('fields.email.placeholder')}
-        aria-invalid={emailError ? true : undefined}
-        aria-describedby={emailError ? 'email-error' : undefined}
-        {...form.register('email')}
-      />
-    </FormField>
-  );
-}
 
 function RememberedLink({ redirectTo }: { redirectTo: string }) {
   const t = useTranslations('auth.forgotPassword.request');
@@ -113,7 +83,10 @@ export function ForgotPasswordForm() {
       />
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         {error && <FormAlert>{tErrors(error)}</FormAlert>}
-        <EmailField form={form} />
+        <EmailField
+          registration={form.register('email')}
+          errorType={form.formState.errors.email?.type}
+        />
         <SubmitButton
           pending={form.formState.isSubmitting}
           className="mt-1 w-full"

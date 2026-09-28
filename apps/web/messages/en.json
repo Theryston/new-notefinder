@@ -110,6 +110,7 @@
       "overline": "Your account",
       "title": "Sign in to NoteFinder",
       "description": "Use your email or username to get back to your favorite songs and practice streak.",
+      "passwordReset": "Password changed. Sign in with your new password.",
       "emailOrUsername": {
         "label": "Email or username",
         "placeholder": "you@example.com",
