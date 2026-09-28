@@ -21,19 +21,13 @@ const config: KnipConfig = {
         'lighthouserc.cjs',
         // Generated shadcn/ui components, used as the design system grows.
         'components/ui/**/*.tsx',
-        // Documented entry points (apps/web/CLAUDE.md) for UI that isn't
-        // built yet: the auth client and locale-aware navigation.
-        'lib/auth/client.ts',
+        // Documented entry point (apps/web/CLAUDE.md): locale-aware
+        // navigation helpers, not all of them used yet.
         'lib/i18n/navigation.ts',
       ],
       // Part of the documented stack (apps/web/CLAUDE.md) but not imported
       // yet. Remove each one from this list when it is first used.
-      ignoreDependencies: [
-        '@hookform/resolvers',
-        'lucide-react',
-        'react-hook-form',
-        'zustand',
-      ],
+      ignoreDependencies: ['zustand'],
     },
   },
 };

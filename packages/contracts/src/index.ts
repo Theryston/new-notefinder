@@ -1,3 +1,5 @@
+export * from './auth.js';
+export * from './auth-rules.js';
 export * from './cache-tags.js';
 export * from './errors.js';
 export * from './pagination.js';

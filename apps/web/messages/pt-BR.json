@@ -8,6 +8,130 @@
     "title": "Descubra as notas de qualquer música",
     "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real."
   },
+  "auth": {
+    "home": "Página inicial do NoteFinder",
+    "wordmark": "NoteFinder",
+    "step": "Etapa {current} de {total}",
+    "loading": "Carregando",
+    "featured": {
+      "timelineLabel": "Uma linha vocal de C4 a G4",
+      "signUp": {
+        "overline": "Cante junto",
+        "title": "Acerte cada nota.",
+        "description": "Veja as notas exatas de qualquer música numa linha do tempo e receba feedback de afinação em tempo real enquanto canta."
+      },
+      "verifyEmail": {
+        "overline": "Quase lá",
+        "title": "Falta só um código.",
+        "description": "Só precisamos confirmar que este email é seu. Isso mantém sua conta e seu histórico de prática seguros."
+      },
+      "setupUsername": {
+        "overline": "Última etapa",
+        "title": "Deixe com a sua cara.",
+        "description": "Seu nome de usuário é o seu perfil público, onde ficam suas músicas favoritas e suas sequências de prática."
+      }
+    },
+    "fields": {
+      "name": {
+        "label": "Nome",
+        "placeholder": "Ada Lovelace",
+        "errors": {
+          "required": "Informe seu nome.",
+          "invalid": "Informe um nome válido."
+        }
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "voce@exemplo.com",
+        "errors": {
+          "invalid": "Informe um email válido."
+        }
+      },
+      "password": {
+        "label": "Senha",
+        "placeholder": "Pelo menos 6 caracteres",
+        "show": "Mostrar senha",
+        "hide": "Ocultar senha",
+        "strength": {
+          "label": "Força da senha: {level}",
+          "weak": "Fraca",
+          "fair": "Razoável",
+          "strong": "Forte"
+        },
+        "errors": {
+          "tooShort": "Use pelo menos 6 caracteres.",
+          "tooLong": "Use no máximo 128 caracteres.",
+          "invalid": "Informe uma senha."
+        }
+      },
+      "username": {
+        "label": "Nome de usuário",
+        "placeholder": "seu_nome",
+        "hint": "Letras, números e underscores, de 3 a 50 caracteres.",
+        "checking": "Verificando disponibilidade…",
+        "available": "@{username} está disponível.",
+        "taken": "@{username} já está em uso.",
+        "errors": {
+          "tooShort": "Use pelo menos 3 caracteres.",
+          "tooLong": "Use no máximo 50 caracteres.",
+          "invalid": "Use apenas letras, números e underscores."
+        }
+      }
+    },
+    "signUp": {
+      "metaTitle": "Criar conta",
+      "metaDescription": "Crie sua conta no NoteFinder para salvar músicas favoritas, acompanhar sua prática e cantar com feedback de afinação em tempo real.",
+      "title": "Crie sua conta",
+      "description": "Salve suas músicas favoritas, mantenha uma sequência de prática e cante com feedback de afinação.",
+      "submit": "Criar conta",
+      "or": "ou",
+      "google": "Continuar com Google",
+      "googleError": "Não conseguimos entrar com o Google. Tente novamente ou use seu email.",
+      "haveAccount": "Já tem uma conta? <link>Entrar</link>"
+    },
+    "verifyEmail": {
+      "metaTitle": "Verificar email",
+      "title": "Confira seu email",
+      "description": "Digite o código de 6 dígitos que enviamos para <email></email>. Ele expira em 10 minutos.",
+      "codeLabel": "Código de verificação",
+      "submit": "Verificar email",
+      "resend": "Reenviar código",
+      "resendIn": "Reenviar código em {seconds}s",
+      "resent": "Enviamos um novo código. Confira sua caixa de entrada e o spam.",
+      "wrongEmail": "Email errado? <link>Alterar</link>",
+      "missing": {
+        "title": "Comece pela sua conta",
+        "description": "Crie sua conta primeiro e enviaremos um código de verificação para o seu email.",
+        "cta": "Criar conta"
+      }
+    },
+    "setupUsername": {
+      "metaTitle": "Escolha seu nome de usuário",
+      "welcome": "Boas-vindas, {name}",
+      "title": "Escolha seu nome de usuário",
+      "description": "É assim que outros cantores encontram você no NoteFinder. Você pode alterar a sugestão.",
+      "submit": "Continuar"
+    },
+    "session": {
+      "signedInAs": "Conectado como <email></email>",
+      "signOut": "Sair"
+    }
+  },
+  "authErrors": {
+    "INVALID_EMAIL": "Informe um email válido.",
+    "PASSWORD_TOO_SHORT": "A senha é muito curta. Use pelo menos 6 caracteres.",
+    "PASSWORD_TOO_LONG": "A senha é muito longa. Use no máximo 128 caracteres.",
+    "INVALID_OTP": "Esse código não está certo. Confira e tente novamente.",
+    "OTP_EXPIRED": "Este código expirou. Peça um novo.",
+    "TOO_MANY_ATTEMPTS": "Muitas tentativas erradas. Peça um novo código.",
+    "USERNAME_IS_ALREADY_TAKEN": "Este nome de usuário já está em uso. Tente outro.",
+    "INVALID_USERNAME": "Use apenas letras, números e underscores.",
+    "USERNAME_TOO_SHORT": "O nome de usuário é muito curto. Use pelo menos 3 caracteres.",
+    "USERNAME_TOO_LONG": "O nome de usuário é muito longo. Use no máximo 50 caracteres.",
+    "RATE_LIMITED": "Muitas tentativas. Aguarde um momento e tente novamente.",
+    "UNAUTHORIZED": "Sua sessão expirou. Entre novamente.",
+    "UNKNOWN": "Algo deu errado. Tente novamente."
+  },
   "errors": {
     "BAD_REQUEST": "A requisição é inválida.",
     "VALIDATION_FAILED": "Alguns campos são inválidos. Confira e tente novamente.",

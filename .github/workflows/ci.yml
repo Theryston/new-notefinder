@@ -116,6 +116,10 @@ jobs:
       # Docker (no `services:` block; see apps/api/test/setup/global-setup.ts).
       - name: E2E tests
         run: nub run test:e2e
+        env:
+          # Inlined into the web build: the browser needs an API URL to build
+          # its auth client. Playwright mocks the API (apps/web/e2e).
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:3333
 
       # Lighthouse on the production build test:e2e just made (assertions in
       # apps/web/lighthouserc.cjs). Uses the runner's preinstalled Chrome.
@@ -132,4 +136,6 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
             apps/web/.lighthouseci/
+          # .lighthouseci is a hidden folder, skipped by default.
+          include-hidden-files: true
           retention-days: 14
