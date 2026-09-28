@@ -152,7 +152,9 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   Prisma schema for relations to preserve).
 - Migrations: change the schema → `db:generate` → review the SQL → commit it in
   `drizzle/`. Never edit a migration that was already applied, never use
-  `drizzle-kit push` outside a throwaway local database.
+  `drizzle-kit push` outside a throwaway local database. CI runs
+  `drizzle-kit check` + `generate` and fails if a schema change has no
+  committed migration.
 - Use the relational query API for reads with relations and the SQL-like
   builder for everything else. Select only the columns you need. No raw SQL
   strings with interpolated values; use the `sql` template tag.

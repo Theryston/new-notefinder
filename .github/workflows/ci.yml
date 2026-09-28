@@ -36,6 +36,21 @@ jobs:
       - name: Build
         run: nub run build
 
+      # Fails when the Drizzle schema changed without a migration (or the
+      # migrations are inconsistent). Nothing connects to a database: the
+      # example env only satisfies the env schema drizzle.config.ts parses.
+      - name: Migrations match the schema
+        working-directory: apps/api
+        run: |
+          cp .env.example .env
+          nub exec drizzle-kit check
+          nub exec drizzle-kit generate
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            git status --short -- drizzle
+            echo "::error::The Drizzle schema has changes with no migration. Run 'nub run db:generate' in apps/api and commit the result."
+            exit 1
+          fi
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
