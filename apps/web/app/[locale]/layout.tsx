@@ -10,11 +10,21 @@ import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
 import { cn } from '@/lib/utils';
 
-const fontSans = Figtree({ subsets: ['latin'], variable: '--font-sans' });
+// `optional`: the fonts are preloaded, so they are almost always there for
+// the first paint; when they aren't, the page keeps the fallback instead of
+// swapping later. A swap reflows text, and on centered layouts (auth pages)
+// that moves everything: CLS must stay at 0 (lighthouserc.cjs). The fallback
+// is metric-adjusted to Arial, which not every system has.
+const fontSans = Figtree({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'optional',
+});
 
 const fontMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
+  display: 'optional',
 });
 
 export function generateStaticParams() {

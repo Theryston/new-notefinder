@@ -20,7 +20,7 @@ const errorProps = (id: string, invalid: boolean) => ({
 export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
   const t = useTranslations('auth.fields');
   const { errors } = form.formState;
-  const password = form.watch('password');
+  const password = form.watch('password') ?? '';
 
   return (
     <>

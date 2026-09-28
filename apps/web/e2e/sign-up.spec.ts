@@ -71,6 +71,30 @@ test.describe('sign-up flow', () => {
     expect(update?.postDataJSON()).toEqual({ username: 'ada_lovelace' });
   });
 
+  test('keeps what was typed before the page hydrated', async ({ page }) => {
+    const calls = await mockAuthApi(page);
+    // Slow scripts make sure the fields are filled before React takes over.
+    // Only the first load: chunks loaded on submit (validation, the auth
+    // client) come at normal speed.
+    let slowScripts = true;
+    await page.route('**/_next/static/chunks/*.js', async (route) => {
+      if (slowScripts)
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.continue();
+    });
+    await page.goto('/en/sign-up', { waitUntil: 'commit' });
+
+    await fillSignUp(page);
+    slowScripts = false;
+    await page.getByRole('button', { name: auth.signUp.submit }).click();
+
+    await expect(page).toHaveURL(
+      /\/en\/verify-email\?email=ada%40example\.com$/,
+    );
+    const signUp = calls.find((call) => call.url().endsWith('/sign-up/email'));
+    expect(signUp?.postDataJSON()).toMatchObject({ name: 'Ada Lovelace' });
+  });
+
   test('validates the fields before calling the API', async ({ page }) => {
     const calls = await mockAuthApi(page);
     await page.goto('/en/sign-up');

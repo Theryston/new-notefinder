@@ -50,7 +50,9 @@ export function SignUpForm() {
   const form = useForm<SignUpBody>({
     resolver: signUpResolver,
     mode: 'onTouched',
-    defaultValues: { name: '', email: '', password: '' },
+    // No defaultValues: react-hook-form then takes each field's value from
+    // the input when it registers, keeping what was typed before hydration
+    // (with defaults it would overwrite the inputs with them).
   });
   // Load validation now, so it is ready (and in order) on the first blur.
   useEffect(() => {

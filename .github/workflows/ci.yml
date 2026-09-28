@@ -136,4 +136,6 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
             apps/web/.lighthouseci/
+          # .lighthouseci is a hidden folder, skipped by default.
+          include-hidden-files: true
           retention-days: 14
