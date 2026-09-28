@@ -1,6 +1,7 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { AllowMissingUsername } from '../../common/decorators/allow-missing-username.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AppException } from '../../common/errors/app-exception.js';
@@ -14,6 +15,8 @@ class PrivateController {
   publicHandler() {}
   @Roles('ADMIN')
   adminHandler() {}
+  @AllowMissingUsername()
+  usernameOptionalHandler() {}
 }
 
 @Public()
@@ -41,7 +44,13 @@ const createContext = (
   } as unknown as ExecutionContext;
 };
 
-const user = { id: 'u1', role: 'USER', email: 'ana@example.com' };
+const user = {
+  id: 'u1',
+  role: 'USER',
+  email: 'ana@example.com',
+  username: 'ana',
+};
+const userWithoutUsername = { ...user, username: null };
 const session = { id: 's1', userId: 'u1', token: 't' };
 
 describe('AuthGuard', () => {
@@ -141,6 +150,36 @@ describe('AuthGuard', () => {
         createContext(PrivateController, 'handler', { headers: {} }),
       ),
     ).rejects.toThrow('db down');
+  });
+
+  describe('users without a username', () => {
+    it('rejects private routes with USERNAME_REQUIRED', async () => {
+      withSession({ user: userWithoutUsername, session });
+      const result = guard.canActivate(
+        createContext(PrivateController, 'handler', { headers: {} }),
+      );
+      await expect(result).rejects.toBeInstanceOf(AppException);
+      await expect(result).rejects.toMatchObject({
+        code: 'USERNAME_REQUIRED',
+      });
+    });
+
+    it.each([
+      [
+        'an @AllowMissingUsername() handler',
+        PrivateController,
+        'usernameOptionalHandler',
+      ],
+      ['a @Public() handler', PrivateController, 'publicHandler'],
+      ['a @Public() controller', PublicController, 'handler'],
+    ])('lets them through %s', async (_, controller, name) => {
+      withSession({ user: userWithoutUsername, session });
+      const request: FakeRequest = { headers: {} };
+      await expect(
+        guard.canActivate(createContext(controller, name, request)),
+      ).resolves.toBe(true);
+      expect(request.user).toEqual(userWithoutUsername);
+    });
   });
 
   it('ignores non-HTTP contexts', async () => {

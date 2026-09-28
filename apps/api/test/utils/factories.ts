@@ -219,3 +219,13 @@ export const createCredentialAccount = async (
       .returning(),
   );
 };
+
+/** A {@link createUser} who can sign in with {@link DEFAULT_PASSWORD}. */
+export const createPasswordUser = async (
+  db: Database,
+  overrides: Partial<NewUser> = {},
+): Promise<User> => {
+  const user = await createUser(db, overrides);
+  await createCredentialAccount(db, user);
+  return user;
+};

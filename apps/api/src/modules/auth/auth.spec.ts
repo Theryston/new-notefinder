@@ -21,7 +21,10 @@ const productionEnv = {
 
 const setup = (env: Env = parseEnv(baseEnv)) => {
   const redis = { eval: vi.fn() };
-  const emailService = { sendOtp: vi.fn().mockResolvedValue(undefined) };
+  const emailService = {
+    sendOtp: vi.fn().mockResolvedValue(undefined),
+    sendAccountExists: vi.fn().mockResolvedValue(undefined),
+  };
   const auth = createAuth({
     env,
     // Better Auth only reaches the database on requests, never here.
@@ -36,6 +39,12 @@ const sendVerificationOtp = (auth: ReturnType<typeof setup>['auth']) => {
   const plugin = auth.options.plugins.find(({ id }) => id === 'email-otp');
   if (plugin?.id !== 'email-otp') throw new Error('emailOTP plugin missing');
   return plugin.options.sendVerificationOTP;
+};
+
+const onExistingUserSignUp = (auth: ReturnType<typeof setup>['auth']) => {
+  const hook = auth.options.emailAndPassword.onExistingUserSignUp;
+  if (!hook) throw new Error('onExistingUserSignUp missing');
+  return hook;
 };
 
 describe('createAuth', () => {
@@ -167,6 +176,53 @@ describe('createAuth', () => {
       await vi.waitFor(() =>
         expect(error).toHaveBeenCalledWith(
           'Could not enqueue a code email: Redis down',
+        ),
+      );
+    });
+  });
+
+  it('accepts passwords from 6 characters, like legacy', () => {
+    const { auth } = setup();
+    expect(auth.options.emailAndPassword.minPasswordLength).toBe(6);
+  });
+
+  describe('sign-up with an existing email', () => {
+    const existingUser = { email: 'ana@example.com' } as never;
+
+    it('tells the owner in the requester language', async () => {
+      const { auth, emailService } = setup();
+      await onExistingUserSignUp(auth)(
+        { user: existingUser },
+        new Request('http://api.test/v1/auth/sign-up/email', {
+          headers: { 'accept-language': 'pt-BR' },
+        }),
+      );
+      expect(emailService.sendAccountExists).toHaveBeenCalledWith({
+        to: 'ana@example.com',
+        locale: 'pt-BR',
+      });
+    });
+
+    it('falls back to English without a request', async () => {
+      const { auth, emailService } = setup();
+      await onExistingUserSignUp(auth)({ user: existingUser });
+      expect(emailService.sendAccountExists).toHaveBeenCalledWith({
+        to: 'ana@example.com',
+        locale: 'en',
+      });
+    });
+
+    it('logs instead of failing when the email cannot be enqueued', async () => {
+      const error = vi.spyOn(Logger.prototype, 'error').mockReturnValue();
+      const { auth, emailService } = setup();
+      emailService.sendAccountExists.mockRejectedValueOnce(
+        new Error('Redis down'),
+      );
+
+      await onExistingUserSignUp(auth)({ user: existingUser });
+      await vi.waitFor(() =>
+        expect(error).toHaveBeenCalledWith(
+          'Could not enqueue an account-exists email: Redis down',
         ),
       );
     });

@@ -2,6 +2,10 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import {
+  type AccountExistsEmailInput,
+  renderAccountExistsEmail,
+} from './account-exists-email.js';
+import {
   EMAIL_JOB,
   EMAIL_QUEUE,
   type EmailMessage,
@@ -34,5 +38,10 @@ export class EmailService {
   /** Sends a one-time code (email verification, password reset). */
   async sendOtp(input: OtpEmailInput): Promise<void> {
     await this.send(renderOtpEmail(input));
+  }
+
+  /** Tells the owner of an email that someone tried to sign up with it. */
+  async sendAccountExists(input: AccountExistsEmailInput): Promise<void> {
+    await this.send(renderAccountExistsEmail(input));
   }
 }

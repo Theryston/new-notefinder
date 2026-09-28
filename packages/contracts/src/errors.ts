@@ -9,6 +9,9 @@ export const apiErrorCodeSchema = z.enum([
   'VALIDATION_FAILED',
   'UNAUTHORIZED',
   'FORBIDDEN',
+  // Signed in, but the account has no username yet: the client sends the
+  // user to pick one (the only private action allowed until then).
+  'USERNAME_REQUIRED',
   'NOT_FOUND',
   'CONFLICT',
   'RATE_LIMITED',

@@ -8,6 +8,7 @@ import {
   type CurrentUser as CurrentUserBody,
   currentUserSchema,
 } from '@notefinder/contracts';
+import { AllowMissingUsername } from '../../common/decorators/allow-missing-username.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
@@ -18,6 +19,8 @@ import { UsersService } from './users.service.js';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // The client reads `username: null` here to send the user to pick one.
+  @AllowMissingUsername()
   @Get()
   @ZodSerializerDto(currentUserSchema)
   @ApiOkResponse({ description: 'The signed-in user.' })

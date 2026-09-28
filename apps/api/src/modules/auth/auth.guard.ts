@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Response } from 'express';
+import { ALLOW_MISSING_USERNAME_KEY } from '../../common/decorators/allow-missing-username.decorator.js';
 import type { AuthenticatedRequest } from '../../common/decorators/current-user.decorator.js';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator.js';
 import { AppException } from '../../common/errors/app-exception.js';
@@ -19,7 +20,9 @@ import type { Auth } from './auth.js';
  * before any session lookup). Resolves the Better Auth session from the
  * request cookie and exposes it to `@CurrentUser()`. Routes are private by
  * default: without a valid session they get the `UNAUTHORIZED` envelope,
- * unless marked `@Public()`.
+ * unless marked `@Public()`. Signed-in users without a username get
+ * `USERNAME_REQUIRED` on private routes, unless marked
+ * `@AllowMissingUsername()`.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -34,11 +37,7 @@ export class AuthGuard implements CanActivate {
     if (context.getType() !== 'http') {
       return true;
     }
-    const isPublic =
-      this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]) ?? false;
+    const isPublic = this.hasFlag(context, IS_PUBLIC_KEY);
 
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
@@ -60,12 +59,28 @@ export class AuthGuard implements CanActivate {
     if (session) {
       request.user = session.user;
       request.authSession = session.session;
+      if (
+        !isPublic &&
+        !session.user.username &&
+        !this.hasFlag(context, ALLOW_MISSING_USERNAME_KEY)
+      ) {
+        throw new AppException('USERNAME_REQUIRED', 'Username required');
+      }
       return true;
     }
     if (isPublic) {
       return true;
     }
     throw new AppException('UNAUTHORIZED', 'Authentication required');
+  }
+
+  private hasFlag(context: ExecutionContext, key: symbol): boolean {
+    return (
+      this.reflector.getAllAndOverride<boolean | undefined>(key, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ?? false
+    );
   }
 
   private async resolveSession(

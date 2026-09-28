@@ -64,19 +64,14 @@ const OTP_LINE = new RegExp(`^\\d{${OTP_LENGTH}}$`, 'm');
 const takeQueuedEmail = (
   queue: FakeQueue,
   to: string,
-): CapturedEmail | undefined => {
+): EmailMessage | undefined => {
   const index = queue.added.findIndex(
     (job) => emailMessageSchema.safeParse(job.data).data?.to === to,
   );
   const job = queue.added[index];
   if (!job) return undefined;
   queue.added.splice(index, 1);
-  const message = emailMessageSchema.parse(job.data);
-  const otp = OTP_LINE.exec(message.text)?.[0];
-  if (otp === undefined) {
-    throw new Error(`No ${OTP_LENGTH}-digit code in the email to ${to}`);
-  }
-  return { ...message, otp };
+  return emailMessageSchema.parse(job.data);
 };
 
 /** Forgets every email enqueued so far. */
@@ -85,14 +80,14 @@ export const clearEmails = (testApp: TestApp): void => {
 };
 
 /**
- * Removes and returns the oldest code email enqueued for `to`. Better Auth
- * enqueues it without awaiting (so the response can't reveal it), hence the
+ * Removes and returns the oldest email enqueued for `to`. Auth emails are
+ * enqueued without awaiting (so the response can't reveal them), hence the
  * polling.
  */
-export const takeOtpEmail = async (
+export const takeEmail = async (
   testApp: TestApp,
   to: string,
-): Promise<CapturedEmail> => {
+): Promise<EmailMessage> => {
   const queue = emailQueue(testApp);
   const deadline = Date.now() + EMAIL_WAIT_MS;
   for (;;) {
@@ -103,6 +98,19 @@ export const takeOtpEmail = async (
     }
     await new Promise((resolve) => setTimeout(resolve, EMAIL_POLL_MS));
   }
+};
+
+/** Like {@link takeEmail}, for an email that carries a one-time code. */
+export const takeOtpEmail = async (
+  testApp: TestApp,
+  to: string,
+): Promise<CapturedEmail> => {
+  const message = await takeEmail(testApp, to);
+  const otp = OTP_LINE.exec(message.text)?.[0];
+  if (otp === undefined) {
+    throw new Error(`No ${OTP_LENGTH}-digit code in the email to ${to}`);
+  }
+  return { ...message, otp };
 };
 
 /** Emails enqueued for `to` so far, after letting pending sends settle. */
@@ -120,7 +128,7 @@ export type Credentials = { email: string; password: string };
 
 export const signUp = (
   client: AuthClient,
-  body: Credentials & { name: string },
+  body: Credentials & { name: string; username?: string },
 ) => client.post('/v1/auth/sign-up/email').send(body);
 
 export const signIn = (client: AuthClient, body: Credentials) =>
@@ -143,7 +151,7 @@ export const verifyEmail = (
 export const signUpVerified = async (
   testApp: TestApp,
   client: AuthClient,
-  body: Credentials & { name: string },
+  body: Credentials & { name: string; username?: string },
 ): Promise<void> => {
   await signUp(client, body).expect(200);
   const { otp } = await takeOtpEmail(testApp, body.email);
