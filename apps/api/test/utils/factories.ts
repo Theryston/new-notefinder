@@ -14,9 +14,9 @@ import { hashPassword } from '../../src/modules/auth/password.js';
 
 export type Artist = typeof artists.$inferSelect;
 export type Album = typeof albums.$inferSelect;
-export type Track = typeof tracks.$inferSelect;
-export type Thumbnail = typeof thumbnails.$inferSelect;
-export type TrackNote = typeof trackNotes.$inferSelect;
+type Track = typeof tracks.$inferSelect;
+type Thumbnail = typeof thumbnails.$inferSelect;
+type TrackNote = typeof trackNotes.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 

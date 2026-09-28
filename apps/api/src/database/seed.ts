@@ -50,93 +50,112 @@ const overwriteOnConflict = (table: PgTable): Record<string, SQL> =>
 
 const NOTES_PER_INSERT = 1000;
 
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+type SeedData = ReturnType<typeof buildSeedData>;
+
+/** Better Auth's email/password sign-in reads the `credential` account. */
+const seedCredential = async () => ({
+  id: `${SEED_USER.id}credential`,
+  providerId: 'credential',
+  accountId: SEED_USER.id,
+  userId: SEED_USER.id,
+  password: await hashPassword(SEED_USER_PASSWORD),
+});
+
+const upsertUsers = async (
+  tx: Transaction,
+  data: SeedData,
+  credential: Awaited<ReturnType<typeof seedCredential>>,
+) => {
+  await tx
+    .insert(users)
+    .values(data.users)
+    .onConflictDoUpdate({ target: users.id, set: overwriteOnConflict(users) });
+  await tx
+    .insert(accounts)
+    .values(credential)
+    .onConflictDoUpdate({
+      target: accounts.id,
+      set: overwriteOnConflict(accounts),
+    });
+};
+
+const upsertCatalog = async (tx: Transaction, data: SeedData) => {
+  await tx
+    .insert(artists)
+    .values(data.artists)
+    .onConflictDoUpdate({
+      target: artists.id,
+      set: overwriteOnConflict(artists),
+    });
+  await tx
+    .insert(albums)
+    .values(data.albums)
+    .onConflictDoUpdate({
+      target: albums.id,
+      set: overwriteOnConflict(albums),
+    });
+  await tx
+    .insert(tracks)
+    .values(data.tracks)
+    .onConflictDoUpdate({
+      target: tracks.id,
+      set: overwriteOnConflict(tracks),
+    });
+  await tx
+    .insert(trackArtists)
+    .values(data.trackArtists)
+    .onConflictDoUpdate({
+      target: trackArtists.id,
+      set: overwriteOnConflict(trackArtists),
+    });
+  await tx
+    .insert(thumbnails)
+    .values(data.thumbnails)
+    .onConflictDoUpdate({
+      target: thumbnails.id,
+      set: overwriteOnConflict(thumbnails),
+    });
+};
+
+const replaceTrackNotes = async (tx: Transaction, data: SeedData) => {
+  for (
+    let offset = 0;
+    offset < data.trackNotes.length;
+    offset += NOTES_PER_INSERT
+  ) {
+    await tx
+      .insert(trackNotes)
+      .values(data.trackNotes.slice(offset, offset + NOTES_PER_INSERT))
+      .onConflictDoUpdate({
+        target: trackNotes.id,
+        set: overwriteOnConflict(trackNotes),
+      });
+  }
+
+  // Drop notes left behind by an older version of the generator.
+  await tx.delete(trackNotes).where(
+    and(
+      inArray(
+        trackNotes.trackId,
+        data.tracks.map((track) => track.id),
+      ),
+      notInArray(
+        trackNotes.id,
+        data.trackNotes.map((note) => note.id),
+      ),
+    ),
+  );
+};
+
 const seed = async (db: Database): Promise<void> => {
   const data = buildSeedData();
-  const trackIds = data.tracks.map((track) => track.id);
-  // Better Auth's email/password sign-in reads the `credential` account.
-  const credential = {
-    id: `${SEED_USER.id}credential`,
-    providerId: 'credential',
-    accountId: SEED_USER.id,
-    userId: SEED_USER.id,
-    password: await hashPassword(SEED_USER_PASSWORD),
-  };
+  const credential = await seedCredential();
 
   await db.transaction(async (tx) => {
-    await tx
-      .insert(users)
-      .values(data.users)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: overwriteOnConflict(users),
-      });
-    await tx
-      .insert(accounts)
-      .values(credential)
-      .onConflictDoUpdate({
-        target: accounts.id,
-        set: overwriteOnConflict(accounts),
-      });
-    await tx
-      .insert(artists)
-      .values(data.artists)
-      .onConflictDoUpdate({
-        target: artists.id,
-        set: overwriteOnConflict(artists),
-      });
-    await tx
-      .insert(albums)
-      .values(data.albums)
-      .onConflictDoUpdate({
-        target: albums.id,
-        set: overwriteOnConflict(albums),
-      });
-    await tx
-      .insert(tracks)
-      .values(data.tracks)
-      .onConflictDoUpdate({
-        target: tracks.id,
-        set: overwriteOnConflict(tracks),
-      });
-    await tx
-      .insert(trackArtists)
-      .values(data.trackArtists)
-      .onConflictDoUpdate({
-        target: trackArtists.id,
-        set: overwriteOnConflict(trackArtists),
-      });
-    await tx
-      .insert(thumbnails)
-      .values(data.thumbnails)
-      .onConflictDoUpdate({
-        target: thumbnails.id,
-        set: overwriteOnConflict(thumbnails),
-      });
-
-    for (
-      let offset = 0;
-      offset < data.trackNotes.length;
-      offset += NOTES_PER_INSERT
-    ) {
-      await tx
-        .insert(trackNotes)
-        .values(data.trackNotes.slice(offset, offset + NOTES_PER_INSERT))
-        .onConflictDoUpdate({
-          target: trackNotes.id,
-          set: overwriteOnConflict(trackNotes),
-        });
-    }
-
-    // Drop notes left behind by an older version of the generator.
-    await tx.delete(trackNotes).where(
-      and(
-        inArray(trackNotes.trackId, trackIds),
-        notInArray(
-          trackNotes.id,
-          data.trackNotes.map((note) => note.id),
-        ),
-      ),
-    );
+    await upsertUsers(tx, data, credential);
+    await upsertCatalog(tx, data);
+    await replaceTrackNotes(tx, data);
   });
 
   new Logger('Seed').log(

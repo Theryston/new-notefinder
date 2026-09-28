@@ -37,7 +37,7 @@ import {
   ],
   exports: [DATABASE],
 })
-export class DatabaseClientModule implements OnApplicationShutdown {
+class DatabaseClientModule implements OnApplicationShutdown {
   constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
   async onApplicationShutdown(): Promise<void> {

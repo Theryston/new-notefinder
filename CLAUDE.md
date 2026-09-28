@@ -34,6 +34,7 @@ nub install                 # install everything
 nub run infra:up            # start Postgres + API Redis + web cache Redis (docker compose)
 nub run dev                 # build packages, then run web + api in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
+nub run knip                # unused files, exports and dependencies (whole repo)
 nub run duplication         # jscpd: fails above 3% duplicated code (whole repo)
 nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
@@ -45,8 +46,8 @@ nub run dev --filter=web    # scope any task to one package (web | api | @notefi
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
-the packages you touched (CI runs lint, check-types, test:cov and build on every
-PR).
+the packages you touched, plus `knip` and `duplication` (CI runs lint,
+check-types, test:cov, build, knip and duplication on every PR).
 
 ## Compatibility with the legacy app (hard requirements)
 
@@ -181,6 +182,14 @@ design token means updating `DESIGN.md` and the tokens in
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
   silence the rule with `biome-ignore` or raise the limit.
+- **Size**: at most 300 lines per file (500 in test files), 50 lines per
+  function and 4 parameters per function, blank lines not counted
+  (`noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `useMaxParams`;
+  test files are exempt from the function limit, since `describe` blocks
+  are long by nature). Over a limit, split by responsibility (a module per
+  concern, a helper per step, an options object instead of positional
+  params). A `biome-ignore` is only for what the code can't change (a
+  signature imposed by a library interface, a fixture file) and says why.
 - **Architecture**: `nub run lint` also runs dependency-cruiser with each
   app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
   of that app's CLAUDE.md (no import cycles; API: only repositories touch
@@ -188,6 +197,14 @@ design token means updating `DESIGN.md` and the tokens in
   features, features use each other only through `components/`). Change the
   code, not the rule; a new rule or exception goes in that file with a
   `comment` saying why.
+
+### Dead code (enforced by CI)
+
+- `nub run knip` fails on unused files, exports and dependencies. Delete dead
+  code rather than exporting "for later"; export only what another module
+  imports. Files the framework loads by convention and documented entry points
+  not used yet are listed in `knip.config.ts` with the reason; remove an entry
+  from its ignore lists as soon as the code is used.
 
 ### Duplication (enforced by CI)
 
