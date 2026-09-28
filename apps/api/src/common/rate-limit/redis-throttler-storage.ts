@@ -70,6 +70,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 
   constructor(private readonly redis: Redis) {}
 
+  // biome-ignore lint/complexity/useMaxParams: the signature is @nestjs/throttler's ThrottlerStorage interface.
   async increment(
     key: string,
     ttl: number,

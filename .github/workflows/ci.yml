@@ -55,6 +55,32 @@ jobs:
       - name: Dead code
         run: nub run knip
 
+  # The API is a public contract (the mobile app will depend on it): fail when
+  # the committed openapi.json has a breaking change against the base branch.
+  # The e2e suite keeps openapi.json in sync with the code.
+  api-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: No breaking changes in the API contract
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base="origin/$BASE_REF:apps/api/openapi.json"
+          if ! git cat-file -e "$base" 2>/dev/null; then
+            echo "The base branch has no apps/api/openapi.json yet: nothing to compare."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/openapi"
+          git show "$base" > "$RUNNER_TEMP/openapi/base.json"
+          cp apps/api/openapi.json "$RUNNER_TEMP/openapi/head.json"
+          docker run --rm -v "$RUNNER_TEMP/openapi:/specs" tufin/oasdiff:v1.32.1 \
+            breaking /specs/base.json /specs/head.json --fail-on ERR
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
