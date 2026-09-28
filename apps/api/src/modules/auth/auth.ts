@@ -3,7 +3,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
-import { emailOTP, username } from 'better-auth/plugins';
+import { username } from 'better-auth/plugins';
 import type { Redis } from 'ioredis';
 import { z } from 'zod';
 import { RedisThrottlerStorage } from '../../common/rate-limit/redis-throttler-storage.js';
@@ -16,13 +16,12 @@ import {
 } from '../../database/schema/auth.js';
 import { users } from '../../database/schema/users.js';
 import type { EmailService } from '../../integrations/email/email.service.js';
-import { resolveEmailLocale } from '../../integrations/email/email-locale.js';
 import {
   AUTH_BASE_PATH,
   CLIENT_IP_HEADER,
-  OTP_EXPIRES_IN_SECONDS,
-  OTP_LENGTH,
+  PASSWORD_MIN_LENGTH,
 } from './auth.constants.js';
+import { emailOtpPlugin, notifyExistingUserSignUp } from './auth-emails.js';
 import {
   hashPassword,
   isLegacyPasswordHash,
@@ -81,6 +80,7 @@ const staticOptions = {
     // sign-up answer the same way for new and existing emails.
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
     password: { hash: hashPassword, verify: verifyPassword },
   },
   emailVerification: {
@@ -166,40 +166,6 @@ const loggerOptions = (
   },
 });
 
-const emailOtpPlugin = (emailService: EmailService, logger: Logger) =>
-  emailOTP({
-    otpLength: OTP_LENGTH,
-    expiresIn: OTP_EXPIRES_IN_SECONDS,
-    allowedAttempts: 5,
-    // A database leak doesn't expose live codes.
-    storeOTP: 'hashed',
-    overrideDefaultEmailVerification: true,
-    disableSignUp: true,
-    sendVerificationOTP: async ({ email, otp, type }, ctx) => {
-      if (type !== 'email-verification' && type !== 'forget-password') {
-        logger.warn(`Ignoring a "${type}" code request: not enabled`);
-        return;
-      }
-      // Codes triggered by sign-up/sign-in come with only the request.
-      const headers = ctx?.headers ?? ctx?.request?.headers;
-      // Not awaited: the response must not wait for (or reveal, through its
-      // timing) the enqueueing, which can hang while Redis is down.
-      emailService
-        .sendOtp({
-          to: email,
-          type,
-          otp,
-          locale: resolveEmailLocale(headers?.get('accept-language')),
-          expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
-        })
-        .catch((error: unknown) => {
-          logger.error(
-            `Could not enqueue a code email: ${errorMessage(error)}`,
-          );
-        });
-    },
-  });
-
 /**
  * Replaces a legacy bcrypt hash with scrypt once the user proved the password,
  * so legacy hashes disappear over time.
@@ -260,6 +226,10 @@ export const createAuth = ({
         verification: verifications,
       },
     }),
+    emailAndPassword: {
+      ...staticOptions.emailAndPassword,
+      onExistingUserSignUp: notifyExistingUserSignUp(emailService, logger),
+    },
     socialProviders: socialProviders(env),
     rateLimit: rateLimitOptions(env, new RedisThrottlerStorage(redis)),
     advanced: advancedOptions(env),

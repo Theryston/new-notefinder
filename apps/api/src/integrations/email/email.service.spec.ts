@@ -59,4 +59,16 @@ describe('EmailService', () => {
       expect.any(Object),
     );
   });
+
+  it('renders and enqueues account-exists emails in the requested locale', async () => {
+    await service.sendAccountExists({ to: 'ana@example.com', locale: 'en' });
+    expect(queue.add).toHaveBeenCalledWith(
+      EMAIL_JOB,
+      expect.objectContaining({
+        to: 'ana@example.com',
+        subject: 'You already have a notefinder account',
+      }),
+      expect.any(Object),
+    );
+  });
 });
