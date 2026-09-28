@@ -4,7 +4,11 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { HttpAdapterHost, Reflector } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  type OpenAPIObject,
+  SwaggerModule,
+} from '@nestjs/swagger';
 import { toNodeHandler } from 'better-auth/node';
 import type { Express, Request, RequestHandler } from 'express';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
@@ -68,11 +72,19 @@ export const configureApp = (app: INestApplication): void => {
   app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
 
   if (env.SWAGGER_ENABLED) {
-    const config = new DocumentBuilder()
-      .setTitle('notefinder API')
-      .setVersion('1')
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('docs', app, cleanupOpenApiDoc(document));
+    SwaggerModule.setup('docs', app, createOpenApiDocument(app));
   }
 };
+
+/**
+ * The OpenAPI document served at /docs. The e2e suite also snapshots it to
+ * `openapi.json`, which CI diffs against the base branch to catch breaking
+ * changes to the public contract.
+ */
+export const createOpenApiDocument = (app: INestApplication): OpenAPIObject =>
+  cleanupOpenApiDoc(
+    SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder().setTitle('notefinder API').setVersion('1').build(),
+    ),
+  );
