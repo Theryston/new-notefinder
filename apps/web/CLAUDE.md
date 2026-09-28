@@ -28,6 +28,8 @@ nub run test         # Vitest unit tests (*.test.ts)
 nub run test:cov     # unit tests + coverage thresholds (report in coverage/)
 nub run test:watch
 nub run test:e2e     # Playwright against `next start` (see Testing)
+nub run bundle:check # first-load JS per page vs the budget (after build)
+nub run lighthouse   # Lighthouse CI on the production build (after build)
 ```
 
 ## Folder structure
@@ -66,6 +68,7 @@ messages/
 proxy.ts                    custom locale detection + redirect (not next-intl's middleware)
 instrumentation.ts          validates env when the server starts
 cache-handlers/             Redis-backed handler for 'use cache' (loaded by Next outside the bundle)
+scripts/                    build checks run with Node (bundle budget)
 docker-compose.yml          web-redis for local dev (included by the root compose file)
 ```
 
@@ -173,6 +176,17 @@ leaf possible and pass server-fetched data down as props.
 - Heavy client-only libraries (YouTube player, Tone.js, pitch detection,
   Lottie) are loaded with dynamic `import()` only on the pages that need them.
 - Keep client components small; check the bundle impact of new dependencies.
+  **Bundle budget**: `nub run bundle:check` (after `nub run build`, also in
+  CI) fails when a prerendered page's first-load JS exceeds
+  `MAX_FIRST_LOAD_KIB` (gzipped) in `scripts/bundle-budget.ts`. Fix it with
+  dynamic `import()`, a smaller dependency or moving work to the server;
+  raising the budget needs the reason in the PR.
+- **Lighthouse** (`nub run lighthouse`, in CI after the e2e tests): every
+  page in `lighthouserc.cjs` must score ≥ 90 performance and ≥ 95
+  accessibility, best practices and SEO, with LCP ≤ 2.5 s, TBT ≤ 200 ms and
+  CLS ≤ 0.01 (desktop, median of 3 runs). Add each new public page to its
+  `url` list (with a sample ID that resolves). Locally, point `CHROME_PATH`
+  at a Chrome/Chromium binary if none is installed.
 - No request waterfalls: start independent fetches in parallel
   (`Promise.all`) or in sibling Suspense boundaries.
 - **Shared cache**: `cache-handlers/redis.ts` backs both `'use cache'` and

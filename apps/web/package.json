@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:mutation": "stryker run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bundle:check": "node scripts/check-bundle-budget.ts",
+    "lighthouse": "lhci autorun"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -40,6 +42,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "1.63.0",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
