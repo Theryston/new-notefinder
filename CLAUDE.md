@@ -247,12 +247,17 @@ the maintainer changes these files.
   `.fixme`, `.todo`), deleting or loosening the assertions of an
   existing test, or by adding retries/timeouts to hide a real failure.
   `.skip`/`.only` are lint errors (`noSkippedTests`, `noFocusedTests`).
-- The **only** reason to change an existing test is an intentional behavior
-  change that the user explicitly asked for. Then change the test in the same
-  PR as the behavior, and say in the PR description which test changed and
-  why.
-- If a test looks wrong (flaky, testing the wrong thing), don't silently
-  "fix" it: stop and raise it with the user, explaining the evidence.
+- **Never change an existing test without the user's explicit
+  authorization**, not even to make it pass after a behavior change the
+  user asked for. Ask first; once authorized, change the test in the same PR
+  as the behavior and say in the PR description which test changed and why.
+- **Always raise tests you left untouched that may now be a problem**: a
+  test that still passes but for the wrong reason (e.g. a new guard answers
+  first, so the assertion no longer checks what it was written for), one
+  that got weaker or redundant, or one that looks wrong (flaky, testing the
+  wrong thing). Stop, present the issue with the evidence (which test, what
+  it checks now vs. what it was meant to check) and ask the user whether the
+  test may be changed. Don't silently "fix" it and don't silently leave it.
 
 ### Git workflow
 

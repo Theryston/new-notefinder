@@ -408,7 +408,12 @@ describe('Auth (e2e)', () => {
 
       const me = await spec.client.get('/v1/me').expect(200);
       expect(me.body).toMatchObject({ role: 'USER' });
-      await spec.client.get('/v1/e2e-auth-probe/admin').expect(403);
+
+      await updateUser({ username: 'ada' }).expect(200);
+      const probe = await spec.client
+        .get('/v1/e2e-auth-probe/admin')
+        .expect(403);
+      expect(probe.body).toMatchObject({ code: 'FORBIDDEN' });
     });
   });
 
