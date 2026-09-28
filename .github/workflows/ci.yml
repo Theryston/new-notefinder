@@ -36,6 +36,12 @@ jobs:
       - name: Build
         run: nub run build
 
+      # First-load JS of every prerendered page against the budget in
+      # apps/web/scripts/bundle-budget.ts (needs the build above).
+      - name: Web bundle budget
+        working-directory: apps/web
+        run: nub run bundle:check
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20

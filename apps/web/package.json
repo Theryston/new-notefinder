@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bundle:check": "node scripts/check-bundle-budget.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
