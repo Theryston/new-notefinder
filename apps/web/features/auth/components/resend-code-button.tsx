@@ -6,10 +6,13 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import type { AuthClient } from '@/lib/auth/client';
+
 import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import {
   browserStorage,
+  type CodePurpose,
   cooldownSecondsLeft,
   readCodeSentAt,
   rememberCodeSentAt,
@@ -20,22 +23,33 @@ import {
  * the page doesn't reset the countdown, or now when there's no record (the
  * code was sent elsewhere, e.g. another browser).
  */
-function initialSentAt(email: string): number {
+function initialSentAt(email: string, purpose: CodePurpose): number {
   const storage = browserStorage();
-  const stored = readCodeSentAt(storage, email);
+  const stored = readCodeSentAt(storage, email, purpose);
   if (stored !== null) return stored;
   const now = Date.now();
-  rememberCodeSentAt(storage, email, now);
+  rememberCodeSentAt(storage, email, now, purpose);
   return now;
 }
 
-/** Sends a new verification code, at most once a minute. */
+/** Asks the API to email a new `purpose` code to `email`. */
+const sendCode = (client: AuthClient, email: string, purpose: CodePurpose) =>
+  purpose === 'forget-password'
+    ? client.emailOtp.requestPasswordReset({ email })
+    : client.emailOtp.sendVerificationOtp({ email, type: purpose });
+
+/**
+ * Sends a new code (email verification by default, or password reset), at
+ * most once a minute.
+ */
 export function ResendCodeButton({
   email,
+  purpose = 'email-verification',
   onSent,
   onError,
 }: {
   email: string;
+  purpose?: CodePurpose;
   onSent: () => void;
   onError: (code: AuthErrorCode) => void;
 }) {
@@ -49,9 +63,9 @@ export function ResendCodeButton({
   const coolingDown = secondsLeft > 0;
 
   useEffect(() => {
-    setSentAt(initialSentAt(email));
+    setSentAt(initialSentAt(email, purpose));
     setNow(Date.now());
-  }, [email]);
+  }, [email, purpose]);
 
   useEffect(() => {
     if (!coolingDown) return;
@@ -62,12 +76,7 @@ export function ResendCodeButton({
   const resend = async () => {
     setPending(true);
     const { error } = await authRequest(() =>
-      loadAuthClient().then((client) =>
-        client.emailOtp.sendVerificationOtp({
-          email,
-          type: 'email-verification',
-        }),
-      ),
+      loadAuthClient().then((client) => sendCode(client, email, purpose)),
     );
     setPending(false);
     if (error) {
@@ -75,7 +84,7 @@ export function ResendCodeButton({
       return;
     }
     const sent = Date.now();
-    rememberCodeSentAt(browserStorage(), email, sent);
+    rememberCodeSentAt(browserStorage(), email, sent, purpose);
     setSentAt(sent);
     setNow(sent);
     onSent();

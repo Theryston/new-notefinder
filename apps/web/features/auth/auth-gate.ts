@@ -12,6 +12,8 @@ const AUTH_PAGES = new Set([
   '/sign-in',
   '/verify-email',
   '/setup-username',
+  '/forgot-password',
+  '/forgot-password/reset',
 ]);
 
 /**

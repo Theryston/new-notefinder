@@ -135,7 +135,30 @@
       "signOut": "Sair"
     },
     "forgotPassword": {
-      "metaTitle": "Redefinir senha"
+      "metaTitle": "Redefinir senha",
+      "metaDescription": "Esqueceu sua senha do NoteFinder? Informe seu email e enviaremos um código para você criar uma nova.",
+      "overline": "Esqueci a senha",
+      "request": {
+        "title": "Esqueceu sua senha?",
+        "description": "Informe o email da sua conta e enviaremos um código de 6 dígitos para você criar uma nova senha.",
+        "submit": "Enviar código",
+        "remembered": "Lembrou? <link>Entrar</link>"
+      },
+      "reset": {
+        "metaTitle": "Crie uma nova senha",
+        "title": "Crie uma nova senha",
+        "description": "Se <email></email> tiver uma conta, enviamos um código de 6 dígitos para ele. O código expira em 10 minutos.",
+        "codeLabel": "Código de redefinição",
+        "passwordLabel": "Nova senha",
+        "submit": "Redefinir senha",
+        "resent": "Se este email tiver uma conta, um novo código está a caminho. Confira também o spam.",
+        "wrongEmail": "Email errado? <link>Alterar</link>",
+        "missing": {
+          "title": "Peça um código primeiro",
+          "description": "Informe o email da sua conta e enviaremos um código para você redefinir sua senha.",
+          "cta": "Pedir código"
+        }
+      }
     }
   },
   "authErrors": {
