@@ -5,38 +5,57 @@ import { cn } from '@/lib/utils';
 
 const TOTAL_STEPS = 3;
 
-/** Step progress, title and description on top of each auth form. */
+type OnboardingStep = 1 | 2 | 3;
+
+function StepProgress({ step }: { step: OnboardingStep }) {
+  return (
+    <div aria-hidden="true" className="flex gap-1.5">
+      {Array.from({ length: TOTAL_STEPS }, (_, index) => (
+        <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length list of identical segments.
+          key={index}
+          className={cn(
+            'h-1 w-8 rounded-full transition-colors duration-200',
+            index < step ? 'bg-primary' : 'bg-muted',
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+type StepLabel =
+  | {
+      step: OnboardingStep;
+      /** Replaces "Step n of 3". */
+      overline?: ReactNode;
+    }
+  | { step?: never; overline: ReactNode };
+
+/**
+ * Title and description on top of each auth form. The sign-up onboarding
+ * steps also show their progress; pages outside it (sign-in, password
+ * reset) pass an `overline` instead of a `step`.
+ */
 export function StepHeader({
-  step,
   title,
   description,
-  overline,
+  ...label
 }: {
-  step: 1 | 2 | 3;
   title: ReactNode;
   description: ReactNode;
-  /** Replaces the "Step n of 3" label. */
-  overline?: ReactNode;
-}) {
+} & StepLabel) {
   const t = useTranslations('auth');
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
-        <div aria-hidden="true" className="flex gap-1.5">
-          {Array.from({ length: TOTAL_STEPS }, (_, index) => (
-            <span
-              // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length list of identical segments.
-              key={index}
-              className={cn(
-                'h-1 w-8 rounded-full transition-colors duration-200',
-                index < step ? 'bg-primary' : 'bg-muted',
-              )}
-            />
-          ))}
-        </div>
+        {label.step !== undefined && <StepProgress step={label.step} />}
         <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-          {overline ?? t('step', { current: step, total: TOTAL_STEPS })}
+          {label.step === undefined
+            ? label.overline
+            : (label.overline ??
+              t('step', { current: label.step, total: TOTAL_STEPS }))}
         </p>
       </div>
       <div className="flex flex-col gap-2">

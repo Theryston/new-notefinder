@@ -9,6 +9,9 @@ describe('authErrorCode', () => {
     'TOO_MANY_ATTEMPTS',
     'USERNAME_IS_ALREADY_TAKEN',
     'PASSWORD_TOO_SHORT',
+    'INVALID_EMAIL_OR_PASSWORD',
+    'INVALID_USERNAME_OR_PASSWORD',
+    'EMAIL_NOT_VERIFIED',
   ])('keeps the known code %s', (code) => {
     expect(authErrorCode({ code, status: 400 })).toBe(code);
   });

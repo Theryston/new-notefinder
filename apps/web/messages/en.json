@@ -29,6 +29,21 @@
         "overline": "Last step",
         "title": "Make it yours.",
         "description": "Your username is your public profile, where your favorite songs and practice streaks live."
+      },
+      "signIn": {
+        "overline": "Welcome back",
+        "title": "Pick up where you left off.",
+        "description": "Your favorite songs, practice streak and pitch history are waiting for you."
+      },
+      "forgotPassword": {
+        "overline": "Account recovery",
+        "title": "It happens.",
+        "description": "We'll email you a code to reset your password. Your songs and practice history stay safe."
+      },
+      "resetPassword": {
+        "overline": "Account recovery",
+        "title": "Back in tune.",
+        "description": "Choose a new password and you are ready to sing again."
       }
     },
     "fields": {
@@ -89,6 +104,9 @@
       "googleError": "We couldn't sign you in with Google. Try again or use your email.",
       "haveAccount": "Already have an account? <link>Sign in</link>"
     },
+    "signIn": {
+      "metaTitle": "Sign in"
+    },
     "verifyEmail": {
       "metaTitle": "Verify your email",
       "title": "Check your inbox",
@@ -115,12 +133,18 @@
     "session": {
       "signedInAs": "Signed in as <email></email>",
       "signOut": "Sign out"
+    },
+    "forgotPassword": {
+      "metaTitle": "Reset your password"
     }
   },
   "authErrors": {
     "INVALID_EMAIL": "Enter a valid email address.",
     "PASSWORD_TOO_SHORT": "The password is too short. Use at least 6 characters.",
     "PASSWORD_TOO_LONG": "The password is too long. Use at most 128 characters.",
+    "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+    "INVALID_USERNAME_OR_PASSWORD": "Wrong username or password.",
+    "EMAIL_NOT_VERIFIED": "Verify your email to continue. We sent you a new code.",
     "INVALID_OTP": "That code isn't right. Check it and try again.",
     "OTP_EXPIRED": "This code has expired. Request a new one.",
     "TOO_MANY_ATTEMPTS": "Too many wrong attempts. Request a new code.",
