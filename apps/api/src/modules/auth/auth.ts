@@ -33,10 +33,9 @@ const DAY_SECONDS = 24 * 60 * 60;
 
 // Legacy rules: 3-50 characters, letters, digits and underscores. Input is
 // lowercased (Better Auth's default normalization), as legacy did.
-export const USERNAME_MIN_LENGTH = 3;
-export const USERNAME_MAX_LENGTH = 50;
-export const isValidUsername = (value: string): boolean =>
-  /^[a-z0-9_]+$/i.test(value);
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 50;
+const isValidUsername = (value: string): boolean => /^[a-z0-9_]+$/i.test(value);
 
 const PASSWORD_SIGN_IN_PATHS = new Set(['/sign-in/email', '/sign-in/username']);
 const passwordBodySchema = z.object({ password: z.string() });

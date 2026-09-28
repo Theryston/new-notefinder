@@ -51,6 +51,10 @@ jobs:
             exit 1
           fi
 
+      # Unused files, exports and dependencies (config in knip.config.ts).
+      - name: Dead code
+        run: nub run knip
+
   # The API is a public contract (the mobile app will depend on it): fail when
   # the committed openapi.json has a breaking change against the base branch.
   # The e2e suite keeps openapi.json in sync with the code.

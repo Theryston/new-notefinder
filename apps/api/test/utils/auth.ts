@@ -12,7 +12,7 @@ import type { TestApp } from './create-test-app.js';
  * A trusted web origin (the env default). Better Auth rejects cookie-bearing
  * requests from other origins as CSRF, so every auth client sends it.
  */
-export const TEST_WEB_ORIGIN = 'http://localhost:3000';
+const TEST_WEB_ORIGIN = 'http://localhost:3000';
 
 /** Name of Better Auth's session cookie (`cookiePrefix` + `.session_token`). */
 export const SESSION_COOKIE = 'notefinder.session_token';

@@ -24,7 +24,7 @@ const parseTrustProxy = (value: string): boolean | number | string => {
   return trimmed;
 };
 
-export const envSchema = z
+const envSchema = z
   .object({
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
