@@ -29,6 +29,21 @@
         "overline": "Última etapa",
         "title": "Deixe com a sua cara.",
         "description": "Seu nome de usuário é o seu perfil público, onde ficam suas músicas favoritas e suas sequências de prática."
+      },
+      "signIn": {
+        "overline": "Que bom te ver",
+        "title": "Continue de onde parou.",
+        "description": "Suas músicas favoritas, sua sequência de prática e seu histórico de afinação estão esperando por você."
+      },
+      "forgotPassword": {
+        "overline": "Recuperar conta",
+        "title": "Acontece.",
+        "description": "Vamos enviar um código por email para você redefinir sua senha. Suas músicas e seu histórico de prática continuam seguros."
+      },
+      "resetPassword": {
+        "overline": "Recuperar conta",
+        "title": "De volta ao tom.",
+        "description": "Escolha uma nova senha e pronto para cantar de novo."
       }
     },
     "fields": {
@@ -89,6 +104,26 @@
       "googleError": "Não conseguimos entrar com o Google. Tente novamente ou use seu email.",
       "haveAccount": "Já tem uma conta? <link>Entrar</link>"
     },
+    "signIn": {
+      "metaTitle": "Entrar",
+      "metaDescription": "Entre no NoteFinder para ver suas músicas favoritas, manter sua sequência de prática e cantar com feedback de afinação em tempo real.",
+      "overline": "Sua conta",
+      "title": "Entre no NoteFinder",
+      "description": "Use seu email ou username para voltar às suas músicas favoritas e à sua sequência de prática.",
+      "passwordReset": "Senha alterada. Entre com sua nova senha.",
+      "emailOrUsername": {
+        "label": "Email ou username",
+        "placeholder": "voce@exemplo.com",
+        "required": "Informe seu email ou username."
+      },
+      "password": {
+        "placeholder": "Sua senha",
+        "required": "Informe sua senha."
+      },
+      "forgotPassword": "Esqueceu a senha?",
+      "submit": "Entrar",
+      "noAccount": "Não tem uma conta? <link>Criar conta</link>"
+    },
     "verifyEmail": {
       "metaTitle": "Verificar email",
       "title": "Confira seu email",
@@ -115,12 +150,41 @@
     "session": {
       "signedInAs": "Conectado como <email></email>",
       "signOut": "Sair"
+    },
+    "forgotPassword": {
+      "metaTitle": "Redefinir senha",
+      "metaDescription": "Esqueceu sua senha do NoteFinder? Informe seu email e enviaremos um código para você criar uma nova.",
+      "overline": "Esqueci a senha",
+      "request": {
+        "title": "Esqueceu sua senha?",
+        "description": "Informe o email da sua conta e enviaremos um código de 6 dígitos para você criar uma nova senha.",
+        "submit": "Enviar código",
+        "remembered": "Lembrou? <link>Entrar</link>"
+      },
+      "reset": {
+        "metaTitle": "Crie uma nova senha",
+        "title": "Crie uma nova senha",
+        "description": "Se <email></email> tiver uma conta, enviamos um código de 6 dígitos para ele. O código expira em 10 minutos.",
+        "codeLabel": "Código de redefinição",
+        "passwordLabel": "Nova senha",
+        "submit": "Redefinir senha",
+        "resent": "Se este email tiver uma conta, um novo código está a caminho. Confira também o spam.",
+        "wrongEmail": "Email errado? <link>Alterar</link>",
+        "missing": {
+          "title": "Peça um código primeiro",
+          "description": "Informe o email da sua conta e enviaremos um código para você redefinir sua senha.",
+          "cta": "Pedir código"
+        }
+      }
     }
   },
   "authErrors": {
     "INVALID_EMAIL": "Informe um email válido.",
     "PASSWORD_TOO_SHORT": "A senha é muito curta. Use pelo menos 6 caracteres.",
     "PASSWORD_TOO_LONG": "A senha é muito longa. Use no máximo 128 caracteres.",
+    "INVALID_EMAIL_OR_PASSWORD": "Email ou senha incorretos.",
+    "INVALID_USERNAME_OR_PASSWORD": "Nome de usuário ou senha incorretos.",
+    "EMAIL_NOT_VERIFIED": "Verifique seu email para continuar. Enviamos um novo código.",
     "INVALID_OTP": "Esse código não está certo. Confira e tente novamente.",
     "OTP_EXPIRED": "Este código expirou. Peça um novo.",
     "TOO_MANY_ATTEMPTS": "Muitas tentativas erradas. Peça um novo código.",

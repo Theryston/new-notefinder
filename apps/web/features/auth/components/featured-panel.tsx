@@ -1,6 +1,12 @@
 import { getTranslations } from 'next-intl/server';
 
-export type AuthStep = 'signUp' | 'verifyEmail' | 'setupUsername';
+export type AuthStep =
+  | 'signIn'
+  | 'signUp'
+  | 'verifyEmail'
+  | 'setupUsername'
+  | 'forgotPassword'
+  | 'resetPassword';
 
 // A short vocal line (C4 → G4) drawn as a piano roll, in SVG units. Lanes
 // go from the highest note (0) down.
@@ -19,9 +25,12 @@ const NOTES = [
 
 // Where the playhead sits on each step: the song advances as the user does.
 const PLAYHEAD: Record<AuthStep, number> = {
+  signIn: 22,
   signUp: 66,
   verifyEmail: 160,
   setupUsername: 300,
+  forgotPassword: 116,
+  resetPassword: 250,
 };
 
 type NoteState = 'past' | 'current' | 'upcoming';

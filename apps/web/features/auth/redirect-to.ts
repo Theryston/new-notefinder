@@ -36,7 +36,13 @@ export function redirectToFromSearch(search: string): string {
   return safeRedirectPath(new URLSearchParams(search).get('redirectTo'));
 }
 
-type AuthPath = '/sign-up' | '/sign-in' | '/verify-email' | '/setup-username';
+type AuthPath =
+  | '/sign-up'
+  | '/sign-in'
+  | '/verify-email'
+  | '/setup-username'
+  | '/forgot-password'
+  | '/forgot-password/reset';
 
 export type AuthHref = {
   pathname: AuthPath;

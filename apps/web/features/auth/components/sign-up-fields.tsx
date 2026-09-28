@@ -7,14 +7,8 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 
 import { fieldErrorKey } from '../field-error';
-import { FormField } from './form-field';
-import { PasswordInput } from './password-input';
-import { PasswordStrengthMeter } from './password-strength-meter';
-
-const errorProps = (id: string, invalid: boolean) => ({
-  'aria-invalid': invalid || undefined,
-  'aria-describedby': invalid ? `${id}-error` : undefined,
-});
+import { EmailField, NewPasswordField } from './credential-fields';
+import { FormField, fieldErrorProps } from './form-field';
 
 /** Name, email and password inputs of the sign-up form. */
 export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
@@ -33,43 +27,19 @@ export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
           id="name"
           autoComplete="name"
           placeholder={t('name.placeholder')}
-          {...errorProps('name', Boolean(errors.name))}
+          {...fieldErrorProps('name', Boolean(errors.name))}
           {...form.register('name')}
         />
       </FormField>
-      <FormField
-        id="email"
-        label={t('email.label')}
-        error={errors.email && t(fieldErrorKey('email', errors.email.type))}
-      >
-        <Input
-          id="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder={t('email.placeholder')}
-          {...errorProps('email', Boolean(errors.email))}
-          {...form.register('email')}
-        />
-      </FormField>
-      <FormField
-        id="password"
-        label={t('password.label')}
-        error={
-          errors.password && t(fieldErrorKey('password', errors.password.type))
-        }
-        hint={<PasswordStrengthMeter password={password} />}
-      >
-        <PasswordInput
-          id="password"
-          autoComplete="new-password"
-          placeholder={t('password.placeholder')}
-          {...errorProps('password', Boolean(errors.password))}
-          {...form.register('password')}
-        />
-      </FormField>
+      <EmailField
+        registration={form.register('email')}
+        errorType={errors.email?.type}
+      />
+      <NewPasswordField
+        registration={form.register('password')}
+        errorType={errors.password?.type}
+        password={password}
+      />
     </>
   );
 }

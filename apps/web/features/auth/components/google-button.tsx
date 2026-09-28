@@ -29,9 +29,15 @@ function GoogleMark() {
 /**
  * "Continue with Google". New Google users come back to pick a username;
  * existing ones go straight to `redirectTo`, and failures come back to the
- * sign-up page with `?error=`.
+ * page it was clicked on (`errorPath`) with `?error=`.
  */
-export function GoogleButton({ onError }: { onError: () => void }) {
+export function GoogleButton({
+  onError,
+  errorPath = '/sign-up',
+}: {
+  onError: () => void;
+  errorPath?: '/sign-up' | '/sign-in';
+}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const [pending, setPending] = useState(false);
@@ -49,7 +55,7 @@ export function GoogleButton({ onError }: { onError: () => void }) {
         newUserCallbackURL: url(
           hrefToPath(authHref('/setup-username', redirectTo)),
         ),
-        errorCallbackURL: url(hrefToPath(authHref('/sign-up', redirectTo))),
+        errorCallbackURL: url(hrefToPath(authHref(errorPath, redirectTo))),
       }),
     );
     // On success the browser is already leaving for Google.

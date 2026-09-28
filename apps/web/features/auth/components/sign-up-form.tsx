@@ -2,7 +2,7 @@
 
 import type { SignUpBody } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { FieldSeparator } from '@/components/ui/field';
@@ -12,6 +12,7 @@ import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import { lazyResolver } from '../lazy-resolver';
 import { authHref, redirectToFromSearch } from '../redirect-to';
 import { browserStorage, rememberCodeSentAt } from '../resend-cooldown';
+import { useLocationSearch } from '../use-location-search';
 import { FormAlert } from './form-alert';
 import { GoogleButton } from './google-button';
 import { SignUpFields } from './sign-up-fields';
@@ -22,20 +23,6 @@ import { TextLink } from './text-link';
 const signUpResolver = lazyResolver<SignUpBody>(() =>
   import('@notefinder/contracts').then((m) => m.signUpBodySchema),
 );
-
-const noSubscription = () => () => {};
-
-/**
- * The query string, read after hydration: the page is prerendered once for
- * every visitor, so `redirectTo` and `error` can't be part of its HTML.
- */
-function useLocationSearch(): string {
-  return useSyncExternalStore(
-    noSubscription,
-    () => window.location.search,
-    () => '',
-  );
-}
 
 type SignUpError = AuthErrorCode | 'GOOGLE';
 

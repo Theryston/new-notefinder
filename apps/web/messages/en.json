@@ -29,6 +29,21 @@
         "overline": "Last step",
         "title": "Make it yours.",
         "description": "Your username is your public profile, where your favorite songs and practice streaks live."
+      },
+      "signIn": {
+        "overline": "Welcome back",
+        "title": "Pick up where you left off.",
+        "description": "Your favorite songs, practice streak and pitch history are waiting for you."
+      },
+      "forgotPassword": {
+        "overline": "Account recovery",
+        "title": "It happens.",
+        "description": "We'll email you a code to reset your password. Your songs and practice history stay safe."
+      },
+      "resetPassword": {
+        "overline": "Account recovery",
+        "title": "Back in tune.",
+        "description": "Choose a new password and you are ready to sing again."
       }
     },
     "fields": {
@@ -89,6 +104,26 @@
       "googleError": "We couldn't sign you in with Google. Try again or use your email.",
       "haveAccount": "Already have an account? <link>Sign in</link>"
     },
+    "signIn": {
+      "metaTitle": "Sign in",
+      "metaDescription": "Sign in to NoteFinder to see your favorite songs, keep your practice streak and sing with real-time pitch feedback.",
+      "overline": "Your account",
+      "title": "Sign in to NoteFinder",
+      "description": "Use your email or username to get back to your favorite songs and practice streak.",
+      "passwordReset": "Password changed. Sign in with your new password.",
+      "emailOrUsername": {
+        "label": "Email or username",
+        "placeholder": "you@example.com",
+        "required": "Enter your email or username."
+      },
+      "password": {
+        "placeholder": "Your password",
+        "required": "Enter your password."
+      },
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account? <link>Create one</link>"
+    },
     "verifyEmail": {
       "metaTitle": "Verify your email",
       "title": "Check your inbox",
@@ -115,12 +150,41 @@
     "session": {
       "signedInAs": "Signed in as <email></email>",
       "signOut": "Sign out"
+    },
+    "forgotPassword": {
+      "metaTitle": "Reset your password",
+      "metaDescription": "Forgot your NoteFinder password? Enter your email and we'll send you a code to choose a new one.",
+      "overline": "Forgot password",
+      "request": {
+        "title": "Forgot your password?",
+        "description": "Enter your account's email and we'll send you a 6-digit code to choose a new password.",
+        "submit": "Send code",
+        "remembered": "Remembered it? <link>Sign in</link>"
+      },
+      "reset": {
+        "metaTitle": "Choose a new password",
+        "title": "Choose a new password",
+        "description": "If <email></email> has an account, we sent it a 6-digit code. It expires in 10 minutes.",
+        "codeLabel": "Reset code",
+        "passwordLabel": "New password",
+        "submit": "Reset password",
+        "resent": "If this email has an account, a new code is on its way. Check your spam folder too.",
+        "wrongEmail": "Wrong email? <link>Change it</link>",
+        "missing": {
+          "title": "Request a code first",
+          "description": "Enter your account's email and we'll send you a code to reset your password.",
+          "cta": "Request a code"
+        }
+      }
     }
   },
   "authErrors": {
     "INVALID_EMAIL": "Enter a valid email address.",
     "PASSWORD_TOO_SHORT": "The password is too short. Use at least 6 characters.",
     "PASSWORD_TOO_LONG": "The password is too long. Use at most 128 characters.",
+    "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+    "INVALID_USERNAME_OR_PASSWORD": "Wrong username or password.",
+    "EMAIL_NOT_VERIFIED": "Verify your email to continue. We sent you a new code.",
     "INVALID_OTP": "That code isn't right. Check it and try again.",
     "OTP_EXPIRED": "This code has expired. Request a new one.",
     "TOO_MANY_ATTEMPTS": "Too many wrong attempts. Request a new code.",
