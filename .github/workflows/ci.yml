@@ -28,8 +28,10 @@ jobs:
       - name: Type check
         run: nub run check-types
 
-      - name: Test
-        run: nub run test
+      # Runs the unit tests and fails when coverage drops below the
+      # thresholds in each app's vitest.config.ts.
+      - name: Test (with coverage)
+        run: nub run test:cov
 
       - name: Build
         run: nub run build
