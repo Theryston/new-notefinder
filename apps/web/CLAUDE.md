@@ -216,7 +216,9 @@ leaf possible and pass server-fetched data down as props.
 - Messages are namespaced by feature (`tracks.overview.title`,
   `common.actions.save`). Add every key to **both** `en.json` and `pt-BR.json`
   in the same change. Keys are typed (next-intl `AppConfig` augmentation), so a
-  missing/typo key fails `check-types`.
+  missing/typo key fails `check-types`; `lib/i18n/messages.test.ts` fails when
+  a locale's keys differ from `en`, a message is empty, or an API error code
+  has no `errors.<CODE>` message.
 - Use ICU placeholders and plurals; never concatenate translated fragments.
   Format dates, numbers and durations with next-intl's formatter, not manually.
 - API errors are translated by their `code` (`errors.NOT_FOUND`, …), never by
