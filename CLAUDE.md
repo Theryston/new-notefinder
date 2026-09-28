@@ -34,6 +34,7 @@ nub install                 # install everything
 nub run infra:up            # start Postgres + API Redis + web cache Redis (docker compose)
 nub run dev                 # build packages, then run web + api in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
+nub run knip                # unused files, exports and dependencies (whole repo)
 nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
@@ -44,8 +45,8 @@ nub run dev --filter=web    # scope any task to one package (web | api | @notefi
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
-the packages you touched (CI runs lint, check-types, test:cov and build on every
-PR).
+the packages you touched, and `knip` (CI runs lint, check-types, test:cov,
+build and knip on every PR).
 
 ## Compatibility with the legacy app (hard requirements)
 
@@ -173,6 +174,14 @@ design token means updating `DESIGN.md` and the tokens in
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
   silence the rule with `biome-ignore` or raise the limit.
+
+### Dead code (enforced by CI)
+
+- `nub run knip` fails on unused files, exports and dependencies. Delete dead
+  code rather than exporting "for later"; export only what another module
+  imports. Files the framework loads by convention and documented entry points
+  not used yet are listed in `knip.config.ts` with the reason; remove an entry
+  from its ignore lists as soon as the code is used.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 

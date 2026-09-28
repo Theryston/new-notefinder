@@ -13,7 +13,7 @@ import type { users } from './schema/users.js';
  * database access) so it can be unit tested; `seed.ts` writes it.
  */
 
-export const NOTE_NAMES = [
+const NOTE_NAMES = [
   'C',
   'C#',
   'D',

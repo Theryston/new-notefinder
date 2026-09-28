@@ -36,6 +36,10 @@ jobs:
       - name: Build
         run: nub run build
 
+      # Unused files, exports and dependencies (config in knip.config.ts).
+      - name: Dead code
+        run: nub run knip
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20

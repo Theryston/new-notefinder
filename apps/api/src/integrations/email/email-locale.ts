@@ -3,7 +3,7 @@ export const EMAIL_LOCALES = ['en', 'pt-BR'] as const;
 
 export type EmailLocale = (typeof EMAIL_LOCALES)[number];
 
-export const DEFAULT_EMAIL_LOCALE: EmailLocale = 'en';
+const DEFAULT_EMAIL_LOCALE: EmailLocale = 'en';
 
 // Only one Portuguese locale exists, so every `pt-*` reads pt-BR.
 const localeForLanguageTag = (tag: string): EmailLocale | undefined => {

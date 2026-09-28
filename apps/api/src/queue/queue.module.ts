@@ -8,7 +8,7 @@ import { QueueErrorLogger } from './queue-error-logger.js';
 
 const HOUR_SECONDS = 60 * 60;
 
-export const createQueueOptions = (env: Env): QueueOptions => ({
+const createQueueOptions = (env: Env): QueueOptions => ({
   // BullMQ opens its own connections from these options (workers need
   // blocking connections that retry forever), instead of the shared client.
   connection: { url: env.REDIS_URL },

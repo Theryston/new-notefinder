@@ -12,7 +12,7 @@ import type {
  * regenerated in the background. `expired`: entries created before it (once
  * that moment has passed) are dropped.
  */
-export type TagState = { stale?: number; expired?: number };
+type TagState = { stale?: number; expired?: number };
 export type TagsManifest = Map<string, TagState>;
 
 type ExecResult = [error: Error | null, result: unknown][] | null;
