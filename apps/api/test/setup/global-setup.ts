@@ -10,6 +10,7 @@ import { Pool } from 'pg';
 import type { TestProject } from 'vitest/node';
 
 declare module 'vitest' {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: augments Vitest's interface, which needs declaration merging.
   export interface ProvidedContext {
     /** Connection URL of the migrated e2e database. */
     databaseUrl: string;
