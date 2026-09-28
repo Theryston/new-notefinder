@@ -34,28 +34,26 @@ function isTypingTarget(target: EventTarget | null) {
   );
 }
 
+function isThemeHotkey(event: KeyboardEvent) {
+  return (
+    !event.defaultPrevented &&
+    !event.repeat &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    event.key.toLowerCase() === 'd' &&
+    !isTypingTarget(event.target)
+  );
+}
+
 function ThemeHotkey() {
   const { resolvedTheme, setTheme } = useTheme();
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) {
-        return;
+      if (isThemeHotkey(event)) {
+        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
       }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-
-      if (event.key.toLowerCase() !== 'd') {
-        return;
-      }
-
-      if (isTypingTarget(event.target)) {
-        return;
-      }
-
-      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
     }
 
     window.addEventListener('keydown', onKeyDown);
