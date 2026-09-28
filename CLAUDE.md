@@ -173,6 +173,13 @@ design token means updating `DESIGN.md` and the tokens in
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
   silence the rule with `biome-ignore` or raise the limit.
+- **Architecture**: `nub run lint` also runs dependency-cruiser with each
+  app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
+  of that app's CLAUDE.md (no import cycles; API: only repositories touch
+  Drizzle, modules talk through their service; web: shared code never imports
+  features, features use each other only through `components/`). Change the
+  code, not the rule; a new rule or exception goes in that file with a
+  `comment` saying why.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 
