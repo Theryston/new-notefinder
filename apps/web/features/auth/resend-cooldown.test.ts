@@ -43,6 +43,26 @@ describe('code sent-at storage', () => {
     expect(readCodeSentAt(storage, 'other@example.com')).toBeNull();
   });
 
+  it('keeps a separate time for each kind of code', () => {
+    const storage = memoryStorage();
+    rememberCodeSentAt(storage, 'ada@example.com', 1234);
+    rememberCodeSentAt(storage, 'Ada@Example.com', 5678, 'forget-password');
+
+    expect(readCodeSentAt(storage, 'ada@example.com')).toBe(1234);
+    expect(
+      readCodeSentAt(storage, 'ada@example.com', 'email-verification'),
+    ).toBe(1234);
+    expect(readCodeSentAt(storage, 'ada@example.com', 'forget-password')).toBe(
+      5678,
+    );
+    expect(storage.getItem('notefinder:otp-sent-at:ada@example.com')).toBe(
+      '1234',
+    );
+    expect(
+      storage.getItem('notefinder:otp-sent-at:forget-password:ada@example.com'),
+    ).toBe('5678');
+  });
+
   it('ignores missing or invalid values', () => {
     const storage = memoryStorage();
     expect(readCodeSentAt(storage, 'ada@example.com')).toBeNull();

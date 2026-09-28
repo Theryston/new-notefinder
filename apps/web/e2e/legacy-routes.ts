@@ -40,10 +40,10 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/sign-in?redirectTo=/me/edit', implemented: true },
   { path: '/sign-up?redirectTo=/tracks/clx123abc', implemented: true },
   { path: '/verify-email', implemented: true },
-  { path: '/forgot-password', implemented: false },
+  { path: '/forgot-password', implemented: true },
   {
     path: '/forgot-password/reset?email=john%40example.com',
-    implemented: false,
+    implemented: true,
   },
   { path: '/setup-username?redirectTo=/me/edit', implemented: true },
   { path: '/terms', implemented: false },

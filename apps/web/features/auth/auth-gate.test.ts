@@ -63,6 +63,22 @@ describe('requiredAuthStep', () => {
     });
   });
 
+  it('keeps the destination of the password reset pages', () => {
+    expect(
+      requiredAuthStep(
+        user({ username: null }),
+        '/forgot-password/reset',
+        '?email=ada%40example.com&redirectTo=%2Fme%2Fedit',
+      ),
+    ).toEqual({
+      pathname: '/setup-username',
+      query: { redirectTo: '/me/edit' },
+    });
+    expect(
+      requiredAuthStep(user({ username: null }), '/forgot-password', ''),
+    ).toEqual({ pathname: '/setup-username', query: {} });
+  });
+
   it('does nothing on the step the user is on', () => {
     expect(
       requiredAuthStep(user({ emailVerified: false }), '/verify-email', ''),

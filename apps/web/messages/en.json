@@ -151,7 +151,30 @@
       "signOut": "Sign out"
     },
     "forgotPassword": {
-      "metaTitle": "Reset your password"
+      "metaTitle": "Reset your password",
+      "metaDescription": "Forgot your NoteFinder password? Enter your email and we'll send you a code to choose a new one.",
+      "overline": "Forgot password",
+      "request": {
+        "title": "Forgot your password?",
+        "description": "Enter your account's email and we'll send you a 6-digit code to choose a new password.",
+        "submit": "Send code",
+        "remembered": "Remembered it? <link>Sign in</link>"
+      },
+      "reset": {
+        "metaTitle": "Choose a new password",
+        "title": "Choose a new password",
+        "description": "If <email></email> has an account, we sent it a 6-digit code. It expires in 10 minutes.",
+        "codeLabel": "Reset code",
+        "passwordLabel": "New password",
+        "submit": "Reset password",
+        "resent": "If this email has an account, a new code is on its way. Check your spam folder too.",
+        "wrongEmail": "Wrong email? <link>Change it</link>",
+        "missing": {
+          "title": "Request a code first",
+          "description": "Enter your account's email and we'll send you a code to reset your password.",
+          "cta": "Request a code"
+        }
+      }
     }
   },
   "authErrors": {
