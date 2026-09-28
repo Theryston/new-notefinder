@@ -26,6 +26,7 @@ nub run lint         # Biome (lint + format + imports)
 nub run format       # Biome with --write
 nub run check-types
 nub run test
+nub run test:cov     # unit tests + coverage thresholds (what CI runs)
 ```
 
 To run a single app: `nub run dev --filter=web` (or `api`).

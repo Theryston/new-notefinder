@@ -37,13 +37,15 @@ nub run lint                # biome check (lint + format + import order), all pa
 nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
+nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:e2e            # API e2e (Testcontainers Postgres) + web Playwright
 nub run build               # production build of everything
 nub run dev --filter=web    # scope any task to one package (web | api | @notefinder/contracts)
 ```
 
-Before considering a change done, run `lint`, `check-types` and `test` for the
-packages you touched (CI runs all four tasks on every PR).
+Before considering a change done, run `lint`, `check-types` and `test:cov` for
+the packages you touched (CI runs lint, check-types, test:cov and build on every
+PR).
 
 ## Compatibility with the legacy app (hard requirements)
 
@@ -155,6 +157,22 @@ design token means updating `DESIGN.md` and the tokens in
 - Web: Vitest for pure logic (timeline math, pitch detection, formatters) +
   Playwright for critical flows (search, track page, auth).
 - **Every bug fix comes with a test that reproduces it.**
+
+### Code quality metrics (enforced by CI)
+
+- **Unit test coverage**: each app's `vitest.config.ts` sets
+  `coverage.thresholds` (lines, branches, functions, statements) and
+  `nub run test:cov` fails below them. They are a ratchet, set to the current
+  coverage rounded down: **never lower a threshold** (that counts as weakening
+  a test, see below); when a PR raises coverage, raise the thresholds to the
+  new floor in the same PR. Code covered by e2e instead of unit tests (API
+  controllers, repositories, modules and schema; web `.tsx` components) is
+  excluded from the measurement in the config, so add new unit-testable code
+  under a measured path.
+- **Cognitive complexity**: at most 15 per function
+  (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
+  function (extract helpers, return early, name compound conditions); never
+  silence the rule with `biome-ignore` or raise the limit.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 

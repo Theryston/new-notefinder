@@ -14,5 +14,27 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'html'],
+      // Listing every source file makes untested files count as 0% instead of
+      // being left out of the report. Components (.tsx) are covered by the
+      // Playwright suite, so only plain logic modules are measured here.
+      include: [
+        'app/**/*.ts',
+        'cache-handlers/**/*.ts',
+        'features/**/*.ts',
+        'hooks/**/*.ts',
+        'lib/**/*.ts',
+        'proxy.ts',
+      ],
+      exclude: ['**/*.test.ts', 'cache-handlers/fake-redis.ts'],
+      thresholds: {
+        lines: 86,
+        branches: 82,
+        functions: 78,
+        statements: 85,
+      },
+    },
   },
 });

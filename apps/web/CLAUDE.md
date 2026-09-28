@@ -25,6 +25,7 @@ nub run build        # production build (also validates prerendering)
 nub run check-types  # next typegen + tsc
 nub run lint
 nub run test         # Vitest unit tests (*.test.ts)
+nub run test:cov     # unit tests + coverage thresholds (report in coverage/)
 nub run test:watch
 nub run test:e2e     # Playwright against `next start` (see Testing)
 ```

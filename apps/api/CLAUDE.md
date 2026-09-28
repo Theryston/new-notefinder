@@ -12,6 +12,7 @@ public, versioned contract.
 ```sh
 nub run dev          # nest start --watch (port from PORT, default 3333)
 nub run test         # unit tests (*.spec.ts)
+nub run test:cov     # unit tests + coverage thresholds (report in coverage/)
 nub run test:e2e     # e2e tests (test/*.e2e-spec.ts) against a Testcontainers Postgres
                      # (needs Docker, or E2E_DATABASE_URL — see Testing)
 nub run check-types
