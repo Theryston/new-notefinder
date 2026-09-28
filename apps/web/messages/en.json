@@ -8,6 +8,126 @@
     "title": "Find the notes of any song",
     "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback."
   },
+  "auth": {
+    "home": "NoteFinder home",
+    "wordmark": "NoteFinder",
+    "step": "Step {current} of {total}",
+    "loading": "Loading",
+    "featured": {
+      "timelineLabel": "A vocal line from C4 to G4",
+      "signUp": {
+        "overline": "Sing along",
+        "title": "Hit every note.",
+        "description": "See the exact notes of any song on a timeline and get real-time pitch feedback while you sing."
+      },
+      "verifyEmail": {
+        "overline": "Almost there",
+        "title": "One code away.",
+        "description": "We just need to know this email is yours. It keeps your account and your practice history safe."
+      },
+      "setupUsername": {
+        "overline": "Last step",
+        "title": "Make it yours.",
+        "description": "Your username is your public profile, where your favorite songs and practice streaks live."
+      }
+    },
+    "fields": {
+      "name": {
+        "label": "Name",
+        "placeholder": "Ada Lovelace",
+        "errors": {
+          "required": "Enter your name.",
+          "invalid": "Enter a valid name."
+        }
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "you@example.com",
+        "errors": {
+          "invalid": "Enter a valid email address."
+        }
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "At least 6 characters",
+        "show": "Show password",
+        "hide": "Hide password",
+        "strength": {
+          "label": "Password strength: {level}",
+          "weak": "Weak",
+          "fair": "Fair",
+          "strong": "Strong"
+        },
+        "errors": {
+          "tooShort": "Use at least 6 characters.",
+          "tooLong": "Use at most 128 characters.",
+          "invalid": "Enter a password."
+        }
+      },
+      "username": {
+        "label": "Username",
+        "placeholder": "your_name",
+        "hint": "Letters, numbers and underscores, 3 to 50 characters.",
+        "checking": "Checking availability…",
+        "available": "@{username} is available.",
+        "taken": "@{username} is already taken.",
+        "errors": {
+          "tooShort": "Use at least 3 characters.",
+          "tooLong": "Use at most 50 characters.",
+          "invalid": "Use only letters, numbers and underscores."
+        }
+      }
+    },
+    "signUp": {
+      "metaTitle": "Create account",
+      "metaDescription": "Create your NoteFinder account to save favorite songs, track your practice and sing with real-time pitch feedback.",
+      "title": "Create your account",
+      "description": "Save your favorite songs, keep a practice streak and sing along with pitch feedback.",
+      "submit": "Create account",
+      "or": "or",
+      "google": "Continue with Google",
+      "googleError": "We couldn't sign you in with Google. Try again or use your email.",
+      "haveAccount": "Already have an account? <link>Sign in</link>"
+    },
+    "verifyEmail": {
+      "metaTitle": "Verify your email",
+      "title": "Check your inbox",
+      "description": "Enter the 6-digit code we sent to <email></email>. It expires in 10 minutes.",
+      "codeLabel": "Verification code",
+      "submit": "Verify email",
+      "resend": "Resend code",
+      "resendIn": "Resend code in {seconds}s",
+      "resent": "New code sent. Check your inbox and spam folder.",
+      "wrongEmail": "Wrong email? <link>Change it</link>",
+      "missing": {
+        "title": "Start with your account",
+        "description": "Create your account first and we'll email you a verification code.",
+        "cta": "Create account"
+      }
+    },
+    "setupUsername": {
+      "metaTitle": "Choose your username",
+      "welcome": "Welcome, {name}",
+      "title": "Choose your username",
+      "description": "It's how other singers find you on NoteFinder. You can change the suggestion.",
+      "submit": "Continue"
+    }
+  },
+  "authErrors": {
+    "INVALID_EMAIL": "Enter a valid email address.",
+    "PASSWORD_TOO_SHORT": "The password is too short. Use at least 6 characters.",
+    "PASSWORD_TOO_LONG": "The password is too long. Use at most 128 characters.",
+    "INVALID_OTP": "That code isn't right. Check it and try again.",
+    "OTP_EXPIRED": "This code has expired. Request a new one.",
+    "TOO_MANY_ATTEMPTS": "Too many wrong attempts. Request a new code.",
+    "USERNAME_IS_ALREADY_TAKEN": "This username is already taken. Try another one.",
+    "INVALID_USERNAME": "Use only letters, numbers and underscores.",
+    "USERNAME_TOO_SHORT": "The username is too short. Use at least 3 characters.",
+    "USERNAME_TOO_LONG": "The username is too long. Use at most 50 characters.",
+    "RATE_LIMITED": "Too many attempts. Wait a moment and try again.",
+    "UNAUTHORIZED": "Your session has expired. Sign in again.",
+    "UNKNOWN": "Something went wrong. Please try again."
+  },
   "errors": {
     "BAD_REQUEST": "The request is invalid.",
     "VALIDATION_FAILED": "Some fields are invalid. Check them and try again.",

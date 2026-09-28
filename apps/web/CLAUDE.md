@@ -283,11 +283,19 @@ leaf possible and pass server-fetched data down as props.
 
 ## Auth
 
-- Better Auth lives in the API. In client components use `getAuthClient()`
-  from `lib/auth/client.ts` (`better-auth/react` with the `emailOTP` and
+- Better Auth lives in the API. The client is `getAuthClient()` in
+  `lib/auth/client.ts` (`better-auth/react` with the `emailOTP` and
   `username` plugins) for sign up/in/out, OTP verification, password reset
   and setting the username. Its responses use Better Auth's format, not
-  `ApiError`: translate its error codes through i18n too.
+  `ApiError`: translate its error codes through i18n too
+  (`features/auth/auth-error.ts`, `authErrors.<CODE>`).
+- Keep auth pages inside the bundle budget: load the client on demand with
+  `loadAuthClient()` (`features/auth/auth-client.ts`) instead of importing
+  it, wrap calls in `authRequest()` (a thrown network error becomes a
+  returned one), validate forms with `lazyResolver()` (Zod loads on the first
+  validation) and import plain constants from
+  `@notefinder/contracts/auth-rules`, which has no Zod. The session on the
+  client is a TanStack query (`sessionUserOptions()`), not `useSession()`.
 - On the server, `getCurrentUser()` from `lib/auth/session.ts` calls
   `GET /v1/me` forwarding the request cookies (deduplicated per request) and
   returns `null` when signed out.

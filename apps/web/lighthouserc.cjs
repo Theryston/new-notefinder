@@ -9,7 +9,12 @@ module.exports = {
       // without it, and no page talks to the API yet.
       startServerCommand: `API_URL=http://127.0.0.1:3333 NEXT_PUBLIC_API_URL=http://127.0.0.1:3333 REVALIDATE_SECRET=lighthouse-revalidate-secret-unused next start --port ${port}`,
       startServerReadyPattern: 'Ready',
-      url: [`http://localhost:${port}/en`, `http://localhost:${port}/pt-BR`],
+      url: [
+        `http://localhost:${port}/en`,
+        `http://localhost:${port}/pt-BR`,
+        `http://localhost:${port}/en/sign-up`,
+        `http://localhost:${port}/pt-BR/sign-up`,
+      ],
       // The median of 3 runs smooths out noise on shared CI runners.
       numberOfRuns: 3,
       settings: {
