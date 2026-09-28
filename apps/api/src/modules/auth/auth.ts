@@ -1,4 +1,10 @@
 import { Logger } from '@nestjs/common';
+import {
+  PASSWORD_MIN_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  USERNAME_PATTERN,
+} from '@notefinder/contracts';
 import { createId } from '@paralleldrive/cuid2';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -16,11 +22,7 @@ import {
 } from '../../database/schema/auth.js';
 import { users } from '../../database/schema/users.js';
 import type { EmailService } from '../../integrations/email/email.service.js';
-import {
-  AUTH_BASE_PATH,
-  CLIENT_IP_HEADER,
-  PASSWORD_MIN_LENGTH,
-} from './auth.constants.js';
+import { AUTH_BASE_PATH, CLIENT_IP_HEADER } from './auth.constants.js';
 import { emailOtpPlugin, notifyExistingUserSignUp } from './auth-emails.js';
 import {
   hashPassword,
@@ -30,11 +32,9 @@ import {
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-// Legacy rules: 3-50 characters, letters, digits and underscores. Input is
-// lowercased (Better Auth's default normalization), as legacy did.
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 50;
-const isValidUsername = (value: string): boolean => /^[a-z0-9_]+$/i.test(value);
+// Input is lowercased (Better Auth's default normalization), as legacy did.
+const isValidUsername = (value: string): boolean =>
+  USERNAME_PATTERN.test(value);
 
 const PASSWORD_SIGN_IN_PATHS = new Set(['/sign-in/email', '/sign-in/username']);
 const passwordBodySchema = z.object({ password: z.string() });

@@ -1,9 +1,10 @@
 import type { Logger } from '@nestjs/common';
+import { OTP_LENGTH } from '@notefinder/contracts';
 import type { BetterAuthOptions } from 'better-auth';
 import { emailOTP } from 'better-auth/plugins';
 import type { EmailService } from '../../integrations/email/email.service.js';
 import { resolveEmailLocale } from '../../integrations/email/email-locale.js';
-import { OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './auth.constants.js';
+import { OTP_EXPIRES_IN_SECONDS } from './auth.constants.js';
 
 type EmailAndPasswordOptions = NonNullable<
   BetterAuthOptions['emailAndPassword']

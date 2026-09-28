@@ -1,10 +1,10 @@
+import { OTP_LENGTH } from '@notefinder/contracts';
 import request from 'supertest';
 import {
   EMAIL_QUEUE,
   type EmailMessage,
   emailMessageSchema,
 } from '../../src/integrations/email/email.job.js';
-import { OTP_LENGTH } from '../../src/modules/auth/auth.constants.js';
 import type { FakeQueue } from '../redis-test-overrides.js';
 import type { TestApp } from './create-test-app.js';
 
