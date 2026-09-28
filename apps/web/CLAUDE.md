@@ -28,6 +28,7 @@ nub run test         # Vitest unit tests (*.test.ts)
 nub run test:cov     # unit tests + coverage thresholds (report in coverage/)
 nub run test:watch
 nub run test:e2e     # Playwright against `next start` (see Testing)
+nub run lighthouse   # Lighthouse CI on the production build (after build)
 ```
 
 ## Folder structure
@@ -173,6 +174,12 @@ leaf possible and pass server-fetched data down as props.
 - Heavy client-only libraries (YouTube player, Tone.js, pitch detection,
   Lottie) are loaded with dynamic `import()` only on the pages that need them.
 - Keep client components small; check the bundle impact of new dependencies.
+- **Lighthouse** (`nub run lighthouse`, in CI after the e2e tests): every
+  page in `lighthouserc.cjs` must score ≥ 90 performance and ≥ 95
+  accessibility, best practices and SEO, with LCP ≤ 2.5 s, TBT ≤ 200 ms and
+  CLS ≤ 0.01 (desktop, median of 3 runs). Add each new public page to its
+  `url` list (with a sample ID that resolves). Locally, point `CHROME_PATH`
+  at a Chrome/Chromium binary if none is installed.
 - No request waterfalls: start independent fetches in parallel
   (`Promise.all`) or in sibling Suspense boundaries.
 - **Shared cache**: `cache-handlers/redis.ts` backs both `'use cache'` and
