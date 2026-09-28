@@ -1,0 +1,64 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_check_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The API process is up."
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Every dependency is reachable."
+          },
+          "503": {
+            "description": "At least one dependency is unreachable (see `checks`)."
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "UsersController_getMe_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The signed-in user."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "notefinder API",
+    "description": "",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}

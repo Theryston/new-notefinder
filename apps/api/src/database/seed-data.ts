@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/noExcessiveLinesPerFile: development fixture (a fictional catalog plus the note generator it feeds); splitting it would scatter the data seed-data.spec.ts checks.
 import type { albums } from './schema/albums.js';
 import type { artists } from './schema/artists.js';
 import type {
@@ -13,7 +14,7 @@ import type { users } from './schema/users.js';
  * database access) so it can be unit tested; `seed.ts` writes it.
  */
 
-export const NOTE_NAMES = [
+const NOTE_NAMES = [
   'C',
   'C#',
   'D',

@@ -17,6 +17,28 @@ export default defineConfig({
     // Booting the Nest app (and its first database connection) in
     // `beforeAll` can exceed the 10s default on a cold CI runner.
     hookTimeout: 30_000,
+    coverage: {
+      // Always on: `test:e2e` fails when it drops below the thresholds.
+      enabled: true,
+      provider: 'v8',
+      reporter: ['text-summary', 'html'],
+      reportsDirectory: './coverage-e2e',
+      include: ['src/**/*.ts'],
+      // Scripts run outside the app (tsx) and unit specs.
+      exclude: [
+        'src/**/*.spec.ts',
+        'src/main.ts',
+        'src/database/migrate.ts',
+        'src/database/seed.ts',
+        'src/database/seed-data.ts',
+      ],
+      thresholds: {
+        lines: 73,
+        branches: 50,
+        functions: 76,
+        statements: 73,
+      },
+    },
     env: {
       // Nothing listens here: e2e specs replace every Redis-backed provider
       // (see test/redis-test-overrides.ts), so they run without Redis.

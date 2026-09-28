@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "bundle:check": "node scripts/check-bundle-budget.ts",
     "lighthouse": "lhci autorun"
   },
   "dependencies": {
