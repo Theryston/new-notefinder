@@ -170,29 +170,38 @@ design token means updating `DESIGN.md` and the tokens in
 
 ### Code quality metrics (enforced by CI)
 
+**The quality configs are the source of truth. Never edit them.** That
+covers coverage thresholds (`vitest.config*.ts`), Stryker `thresholds`,
+`biome.json`, `.jscpd.json`, `.dependency-cruiser.cjs` and `knip.config.ts`.
+You may not lower **or raise** a value, add an exception or silence a rule,
+not even to adapt them to your change. When your code doesn't meet a gate,
+change your code (add tests, split functions, extract duplicates). If a
+config really seems wrong, stop and ask the user, with the evidence. Only
+the maintainer changes these files.
+
 - **Unit test coverage**: each app's `vitest.config.ts` sets
   `coverage.thresholds` (lines, branches, functions, statements) and
-  `nub run test:cov` fails below them. They are a ratchet, set to the current
-  coverage rounded down: **never lower a threshold** (that counts as weakening
-  a test, see below); when a PR raises coverage, raise the thresholds to the
-  new floor in the same PR. Code covered by e2e instead of unit tests (API
+  `nub run test:cov` fails below them. They are a ratchet that only the
+  maintainer moves: **never change a threshold** in a PR. When your PR
+  raises coverage, report the new numbers in the PR description and leave
+  the config alone. Code covered by e2e instead of unit tests (API
   controllers, repositories, modules and schema; web `.tsx` components) is
   excluded from the measurement in the config, so add new unit-testable code
   under a measured path. The API e2e suite has its own thresholds (in
   `apps/api/vitest.config.e2e.ts`, report in `coverage-e2e/`), which cover
-  those controllers and repositories; same ratchet rule.
+  those controllers and repositories; same rule (never change them).
 - **Mutation score**: coverage says a line ran, not that a test would notice
   it breaking. Stryker (`nub run test:mutation`, `stryker.config.json` per
   app, its own workflow in CI) changes the unit-tested code (flips
   conditions, removes calls, …) and fails when fewer mutants than
-  `thresholds.break` are killed (api 58%, web 66%). Same ratchet as coverage:
-  never lower it, raise it when a PR improves the score. A surviving mutant
+  `thresholds.break` are killed (api 58%, web 66%). Same rule as coverage:
+  never change it; report an improved score in the PR. A surviving mutant
   in code you touched usually means a missing assertion; the HTML report is
   in `reports/mutation/`.
 - **Cognitive complexity**: at most 15 per function
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
-  silence the rule with `biome-ignore` or raise the limit.
+  silence the rule with `biome-ignore` or change the limit.
 - **Size**: at most 300 lines per file (500 in test files), 50 lines per
   function and 4 parameters per function, blank lines not counted
   (`noExcessiveLinesPerFile`, `noExcessiveLinesPerFunction`, `useMaxParams`;
@@ -206,23 +215,25 @@ design token means updating `DESIGN.md` and the tokens in
   of that app's CLAUDE.md (no import cycles; API: only repositories touch
   Drizzle, modules talk through their service; web: shared code never imports
   features, features use each other only through `components/`). Change the
-  code, not the rule; a new rule or exception goes in that file with a
-  `comment` saying why.
+  code, not the rule. A new rule or exception is the maintainer's call:
+  ask first, and if approved it goes in that file with a `comment` saying
+  why.
 
 ### Dead code (enforced by CI)
 
 - `nub run knip` fails on unused files, exports and dependencies. Delete dead
   code rather than exporting "for later"; export only what another module
   imports. Files the framework loads by convention and documented entry points
-  not used yet are listed in `knip.config.ts` with the reason; remove an entry
-  from its ignore lists as soon as the code is used.
+  not used yet are listed in `knip.config.ts` with the reason. Adding an
+  entry needs the maintainer's approval; removing one as soon as its code
+  is used is always fine.
 
 ### Duplication (enforced by CI)
 
 - `nub run duplication` (jscpd, `.jscpd.json`) fails when duplicated code
   (clones of 50+ tokens) exceeds 3% of the codebase; today it is ~0.2%. It
   lists every clone: extract the shared part (a helper, a factory, a table
-  of cases) instead of copying it. Don't raise the threshold.
+  of cases) instead of copying it. Never change the threshold.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 
