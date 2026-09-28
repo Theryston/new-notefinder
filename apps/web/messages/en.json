@@ -8,6 +8,88 @@
     "title": "Find the notes of any song",
     "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback."
   },
+  "terms": {
+    "metaTitle": "Terms and Conditions",
+    "metaDescription": "Terms and Conditions of Use of NoteFinder.",
+    "home": "NoteFinder home",
+    "wordmark": "NoteFinder",
+    "title": "Terms and Conditions of Use",
+    "lastUpdated": "Last updated: <time>{date}</time>",
+    "sectionHeading": "{number}. {title}",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "body": "By accessing and using NoteFinder, you agree to comply with and be bound by the following terms and conditions of use. If you do not agree with any part of these terms, you must not use our service."
+      },
+      "service": {
+        "title": "Description of the Service",
+        "body": "NoteFinder is a platform that helps users discover the vocal notes of songs. Our service provides music analysis and note visualization tools for educational and entertainment purposes."
+      },
+      "copyright": {
+        "title": "Music Content and Copyright",
+        "body": "Music playback on NoteFinder follows the policy below:",
+        "items": {
+          "directPlayback": "<strong>Direct playback on the site</strong> only when: (i) the musical work allows playback or streaming under the applicable licenses; or (ii) NoteFinder has validly acquired or licensed the rights needed to play the work internally on our domain.",
+          "otherCases": "<strong>All other cases</strong>: the song is played exclusively through the <strong>official YouTube player</strong>, via the official YouTube API. In these cases, the content is served and controlled by YouTube, and any copyright matters are governed by YouTube's Terms of Service and policies.",
+          "noModification": "We do not modify, redistribute or resell music content; all copyrights and related rights remain with their respective holders.",
+          "noStorage": "We do not upload or store recordings on our servers, except where covered by a valid license that authorizes us to play them internally as described above.",
+          "analysisTool": "NoteFinder is a tool for analyzing and visualizing music data and complies with applicable copyright law."
+        }
+      },
+      "acceptableUse": {
+        "title": "Acceptable Use",
+        "body": "By using NoteFinder, you agree to:",
+        "items": {
+          "lawfulUse": "Use the service only for lawful purposes and in accordance with these Terms",
+          "noIntrusion": "Not attempt to access restricted areas of the system or reverse engineer it",
+          "noOverload": "Not use the service in a way that could damage, disable or overload our infrastructure",
+          "noDataCollection": "Not collect or store other users' personal data without consent",
+          "respectRights": "Respect the copyrights and intellectual property of third parties",
+          "noCommercialWorks": "Not use the service to create commercial derivative works without authorization"
+        }
+      },
+      "accounts": {
+        "title": "User Accounts",
+        "body": "You are responsible for keeping your account and password confidential. You agree to accept responsibility for all activity that occurs under your account. We reserve the right to terminate accounts and to remove or edit content at our sole discretion."
+      },
+      "privacy": {
+        "title": "Privacy and Data Protection",
+        "body": "We take your privacy seriously. We collect and process personal data in accordance with applicable data protection laws, including the LGPD (Brazil's General Data Protection Law). The data we collect is used exclusively to provide and improve our services."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "body": "NoteFinder is provided “as is” and “as available”. We do not guarantee that the service will be uninterrupted, secure or error-free. In no event will we be liable for any direct, indirect, incidental, special or consequential damages resulting from the use of, or inability to use, our service."
+      },
+      "accuracy": {
+        "title": "Accuracy of Information",
+        "body": "Although we strive to provide accurate music analysis, we do not guarantee the complete accuracy of the detected notes. The analyses are based on automated algorithms and should be used as an educational reference. We are not responsible for specific interpretations or uses of the information provided."
+      },
+      "serviceChanges": {
+        "title": "Changes to the Service",
+        "body": "We reserve the right to modify or discontinue, temporarily or permanently, the service (or any part of it) with or without prior notice. We will not be liable to you or to any third party for any modification, suspension or discontinuation of the service."
+      },
+      "termsChanges": {
+        "title": "Changes to the Terms",
+        "body": "We may revise these Terms of Use at any time without prior notice. By using this site, you agree to be bound by the current version of these Terms of Use. We recommend that you review this page periodically to be aware of any changes."
+      },
+      "thirdParties": {
+        "title": "Third-Party Links",
+        "body": "Our service may contain links to third-party websites, including YouTube. We have no control over the content, privacy policies or practices of those sites and assume no responsibility for them. We recommend that you read the terms and privacy policies of any third-party site you visit."
+      },
+      "governingLaw": {
+        "title": "Governing Law",
+        "body": "These Terms will be governed by and construed in accordance with the laws of Brazil, without regard to its conflict of law provisions. Any dispute related to these Terms will be subject to the exclusive jurisdiction of the Brazilian courts."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "If you have any questions about these Terms and Conditions, contact us by opening an issue on our GitHub: <link>{url}</link>."
+      },
+      "general": {
+        "title": "General Provisions",
+        "body": "If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions will continue in full force and effect. Failure to exercise or enforce any right or provision of these Terms will not constitute a waiver of that right or provision."
+      }
+    }
+  },
   "auth": {
     "home": "NoteFinder home",
     "wordmark": "NoteFinder",

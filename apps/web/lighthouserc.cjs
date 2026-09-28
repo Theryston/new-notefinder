@@ -18,6 +18,8 @@ module.exports = {
         `http://localhost:${port}/pt-BR/sign-up`,
         `http://localhost:${port}/en/sign-in`,
         `http://localhost:${port}/pt-BR/sign-in`,
+        `http://localhost:${port}/en/terms`,
+        `http://localhost:${port}/pt-BR/terms`,
       ],
       // The median of 3 runs smooths out noise on shared CI runners.
       numberOfRuns: 3,
