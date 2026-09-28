@@ -45,6 +45,19 @@
           "options": {
             "maxAllowedComplexity": 15
           }
+        },
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": {
+            "maxLines": 50,
+            "skipBlankLines": true
+          }
+        },
+        "useMaxParams": {
+          "level": "error",
+          "options": {
+            "max": 4
+          }
         }
       },
       "suspicious": {
@@ -63,6 +76,13 @@
           "options": {
             "filenameCases": ["kebab-case"],
             "requireAscii": true
+          }
+        },
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": {
+            "maxLines": 300,
+            "skipBlankLines": true
           }
         }
       },
@@ -86,6 +106,20 @@
       "linter": {
         "domains": {
           "test": "recommended"
+        },
+        "rules": {
+          "complexity": {
+            "noExcessiveLinesPerFunction": "off"
+          },
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 500,
+                "skipBlankLines": true
+              }
+            }
+          }
         }
       }
     },
