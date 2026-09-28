@@ -9,6 +9,7 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "test:cov": "turbo run test:cov",
+    "test:mutation": "turbo run test:mutation",
     "test:e2e": "turbo run test:e2e",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down"

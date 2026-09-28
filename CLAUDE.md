@@ -38,6 +38,7 @@ nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
 nub run test:cov            # unit tests + coverage thresholds (what CI runs)
+nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web)
 nub run test:e2e            # API e2e (Testcontainers Postgres) + web Playwright
 nub run build               # production build of everything
 nub run dev --filter=web    # scope any task to one package (web | api | @notefinder/contracts)
@@ -169,6 +170,14 @@ design token means updating `DESIGN.md` and the tokens in
   controllers, repositories, modules and schema; web `.tsx` components) is
   excluded from the measurement in the config, so add new unit-testable code
   under a measured path.
+- **Mutation score**: coverage says a line ran, not that a test would notice
+  it breaking. Stryker (`nub run test:mutation`, `stryker.config.json` per
+  app, its own workflow in CI) changes the unit-tested code (flips
+  conditions, removes calls, …) and fails when fewer mutants than
+  `thresholds.break` are killed (api 51%, web 66%). Same ratchet as coverage:
+  never lower it, raise it when a PR improves the score. A surviving mutant
+  in code you touched usually means a missing assertion; the HTML report is
+  in `reports/mutation/`.
 - **Cognitive complexity**: at most 15 per function
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never

@@ -15,6 +15,11 @@ node_modules
 # Testing
 coverage
 
+# Stryker (mutation testing)
+**/reports/mutation
+**/reports/stryker-incremental.json
+.stryker-tmp
+
 # Turbo
 .turbo
 
