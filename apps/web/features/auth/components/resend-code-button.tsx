@@ -40,11 +40,18 @@ export function ResendCodeButton({
   onError: (code: AuthErrorCode) => void;
 }) {
   const t = useTranslations('auth');
-  const [sentAt, setSentAt] = useState(() => initialSentAt(email));
-  const [now, setNow] = useState(() => Date.now());
+  // Unknown until mounted: the server (and the hydration pass) can't read
+  // `localStorage` or agree with the browser on the time.
+  const [sentAt, setSentAt] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
   const [pending, setPending] = useState(false);
-  const secondsLeft = cooldownSecondsLeft(sentAt, now);
+  const secondsLeft = sentAt === null ? 0 : cooldownSecondsLeft(sentAt, now);
   const coolingDown = secondsLeft > 0;
+
+  useEffect(() => {
+    setSentAt(initialSentAt(email));
+    setNow(Date.now());
+  }, [email]);
 
   useEffect(() => {
     if (!coolingDown) return;
@@ -79,7 +86,7 @@ export function ResendCodeButton({
       type="button"
       variant="ghost"
       className="tabular-nums"
-      disabled={pending || coolingDown}
+      disabled={sentAt === null || pending || coolingDown}
       aria-busy={pending}
       onClick={resend}
     >
