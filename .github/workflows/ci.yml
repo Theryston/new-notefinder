@@ -55,6 +55,10 @@ jobs:
       - name: Dead code
         run: nub run knip
 
+      # Copy-pasted code over 3% of the codebase (config in .jscpd.json).
+      - name: Duplication
+        run: nub run duplication
+
   # The API is a public contract (the mobile app will depend on it): fail when
   # the committed openapi.json has a breaking change against the base branch.
   # The e2e suite keeps openapi.json in sync with the code.

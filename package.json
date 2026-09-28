@@ -6,6 +6,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "knip": "knip --no-progress",
+    "duplication": "jscpd",
     "format": "turbo run format",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "jscpd": "^5.3.2",
     "knip": "^6.38.0",
     "lefthook": "2.1.14",
     "turbo": "^2.11.4"
