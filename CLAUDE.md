@@ -34,6 +34,7 @@ nub install                 # install everything
 nub run infra:up            # start Postgres + API Redis + web cache Redis (docker compose)
 nub run dev                 # build packages, then run web + api in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
+nub run duplication         # jscpd: fails above 3% duplicated code (whole repo)
 nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
@@ -173,6 +174,13 @@ design token means updating `DESIGN.md` and the tokens in
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
   silence the rule with `biome-ignore` or raise the limit.
+
+### Duplication (enforced by CI)
+
+- `nub run duplication` (jscpd, `.jscpd.json`) fails when duplicated code
+  (clones of 50+ tokens) exceeds 3% of the codebase; today it is ~0.2%. It
+  lists every clone: extract the shared part (a helper, a factory, a table
+  of cases) instead of copying it. Don't raise the threshold.
 
 ### Tests are the safety net (rules for everyone, including AI agents)
 

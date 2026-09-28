@@ -36,6 +36,10 @@ jobs:
       - name: Build
         run: nub run build
 
+      # Copy-pasted code over 3% of the codebase (config in .jscpd.json).
+      - name: Duplication
+        run: nub run duplication
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
