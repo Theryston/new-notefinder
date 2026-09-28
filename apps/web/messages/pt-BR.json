@@ -111,6 +111,10 @@
       "title": "Escolha seu nome de usuário",
       "description": "É assim que outros cantores encontram você no NoteFinder. Você pode alterar a sugestão.",
       "submit": "Continuar"
+    },
+    "session": {
+      "signedInAs": "Conectado como <email></email>",
+      "signOut": "Sair"
     }
   },
   "authErrors": {

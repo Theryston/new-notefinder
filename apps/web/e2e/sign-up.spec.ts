@@ -93,7 +93,9 @@ test.describe('sign-up flow', () => {
     await expect(
       page.getByText(auth.fields.password.errors.tooShort),
     ).toBeVisible();
-    expect(calls).toHaveLength(0);
+    expect(
+      calls.filter((call) => call.url().endsWith('/sign-up/email')),
+    ).toHaveLength(0);
   });
 
   test('never submits the form natively before hydration', async ({ page }) => {
@@ -109,7 +111,12 @@ test.describe('sign-up flow', () => {
 
   test('shows a translated message when the API fails', async ({ page }) => {
     await mockAuthApi(page, {
-      '/sign-up/email': () => ({ status: 429, body: { message: 'Slow down' } }),
+      overrides: {
+        '/sign-up/email': () => ({
+          status: 429,
+          body: { message: 'Slow down' },
+        }),
+      },
     });
     await page.goto('/pt-BR/sign-up');
     const pt = messages['pt-BR'];
@@ -132,7 +139,7 @@ test.describe('sign-up flow', () => {
     baseURL,
   }) => {
     const calls = await mockAuthApi(page, {
-      '/sign-in/social': () => ({ status: 500, body: {} }),
+      overrides: { '/sign-in/social': () => ({ status: 500, body: {} }) },
     });
     await page.goto('/en/sign-up?redirectTo=%2Fme%2Fedit');
 
@@ -222,7 +229,7 @@ test.describe('verify-email and setup-username guards', () => {
   });
 
   test('sends signed-out visitors to sign in', async ({ page }) => {
-    await mockAuthApi(page, { '/get-session': () => ({ body: null }) });
+    await mockAuthApi(page);
     await page.goto('/en/setup-username?redirectTo=%2Fme%2Fedit');
 
     await expect(page).toHaveURL(/\/en\/sign-in\?redirectTo=%2Fme%2Fedit$/);

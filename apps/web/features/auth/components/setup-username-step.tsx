@@ -2,13 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useQueryState } from 'nuqs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useRouter } from '@/lib/i18n/navigation';
 
 import { authHref, safeRedirectPath } from '../redirect-to';
 import { sessionUserOptions } from '../session';
 import { AuthFormSkeleton } from './auth-form-skeleton';
+import { SignedInAs } from './sign-out';
 import { UsernameForm } from './username-form';
 
 /**
@@ -21,13 +22,27 @@ export function SetupUsernameStep() {
   const router = useRouter();
   const { data: user, isPending } = useQuery(sessionUserOptions());
 
+  // Signing out from this page empties the session too; that navigation is
+  // the sign-out's, so only a visit without a session goes to sign in.
+  const hadSession = useRef(false);
+
   useEffect(() => {
     if (isPending) return;
-    if (!user) router.replace(authHref('/sign-in', redirectTo));
-    else if (user.username) router.replace(redirectTo);
+    if (!user) {
+      if (!hadSession.current) router.replace(authHref('/sign-in', redirectTo));
+      return;
+    }
+    hadSession.current = true;
+    // An unverified email goes to its own step first (see AuthGate).
+    if (user.username && user.emailVerified) router.replace(redirectTo);
   }, [isPending, user, redirectTo, router]);
 
   if (isPending || !user || user.username)
     return <AuthFormSkeleton fields={1} />;
-  return <UsernameForm name={user.name} redirectTo={redirectTo} />;
+  return (
+    <div className="flex flex-col gap-8">
+      <UsernameForm name={user.name} redirectTo={redirectTo} />
+      <SignedInAs email={user.email} />
+    </div>
+  );
 }

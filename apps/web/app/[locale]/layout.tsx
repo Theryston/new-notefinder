@@ -5,6 +5,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 
 import '../globals.css';
 import { Providers } from '@/components/providers';
+import { AuthGate } from '@/features/auth/components/auth-gate';
 import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -55,7 +56,10 @@ export default async function LocaleLayout({
         {/* Only the namespaces client components need, to keep the RSC
             payload small. */}
         <NextIntlClientProvider messages={{ errors }}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <AuthGate />
+            {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

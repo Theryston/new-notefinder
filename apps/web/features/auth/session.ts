@@ -1,17 +1,60 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { loadAuthClient } from './auth-client';
 import { authKeys } from './query-keys';
 
-/** The signed-in user as Better Auth reports it, or `null` when signed out. */
+/** What the auth screens and the gate need to know about the user. */
+export type SessionUser = {
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  username: string | null;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+/**
+ * The user in Better Auth's `get-session` answer (`{ session, user }`, or
+ * `null` when signed out). Parsed by hand: this runs on every page, and Zod
+ * would weigh on all of them.
+ */
+export function parseSessionUser(body: unknown): SessionUser | null {
+  if (!isRecord(body) || !isRecord(body.user)) return null;
+  const { name, email, emailVerified, username } = body.user;
+  if (typeof email !== 'string') return null;
+  return {
+    name: typeof name === 'string' ? name : '',
+    email,
+    emailVerified: emailVerified === true,
+    username: typeof username === 'string' && username ? username : null,
+  };
+}
+
+/**
+ * The signed-in user, or `null` when signed out. A plain request instead of
+ * the Better Auth client, so every page can afford it after load.
+ */
+export async function fetchSessionUser(
+  signal?: AbortSignal,
+): Promise<SessionUser | null> {
+  const { getClientEnv } = await import('@/lib/env/client');
+  const apiUrl = getClientEnv().NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  const response = await fetch(`${apiUrl}/v1/auth/get-session`, {
+    credentials: 'include',
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Session lookup failed (${response.status})`);
+  }
+  return parseSessionUser(await response.json());
+}
+
 export function sessionUserOptions() {
   return queryOptions({
     queryKey: authKeys.session(),
-    queryFn: async () => {
-      const { data, error } = await (await loadAuthClient()).getSession();
-      if (error) throw new Error(error.message ?? 'Session lookup failed');
-      return data?.user ?? null;
-    },
+    queryFn: ({ signal }) => fetchSessionUser(signal),
+    // Once per page load is enough; auth screens update it after changes.
+    staleTime: 5 * 60_000,
     retry: false,
   });
 }

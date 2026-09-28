@@ -8,7 +8,18 @@ export const WRONG_OTP = '000000';
 export const RIGHT_OTP = '424242';
 export const TAKEN_USERNAME = 'taken_name';
 
-const user = {
+export type MockUser = {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  username: string | null;
+  image: null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const ADA: MockUser = {
   id: 'usr_ada',
   name: 'Ada Lovelace',
   email: 'ada@example.com',
@@ -42,31 +53,62 @@ async function fulfill(route: Route, reply: Reply) {
 const bodyOf = (request: Request): Record<string, unknown> =>
   request.postDataJSON() ?? {};
 
-const defaultHandlers: Record<string, Handler> = {
-  '/sign-up/email': () => ({ body: { token: null, user } }),
-  '/email-otp/verify-email': (request) =>
-    bodyOf(request).otp === RIGHT_OTP
-      ? { body: { status: true, token: 'token', user } }
-      : { status: 400, body: { code: 'INVALID_OTP', message: 'Invalid OTP' } },
-  '/email-otp/send-verification-otp': () => ({ body: { success: true } }),
-  '/get-session': () => ({
-    body: { session: { id: 'ses_1', userId: user.id }, user },
-  }),
-  '/is-username-available': (request) => ({
-    body: { available: bodyOf(request).username !== TAKEN_USERNAME },
-  }),
-  '/update-user': () => ({ body: { status: true } }),
-};
+/**
+ * Better Auth's endpoints over a tiny session state, so the gate sees what
+ * the real API would: signed out until the email is verified, then signed in
+ * until `sign-out`.
+ */
+function createHandlers(state: { user: MockUser | null }) {
+  const session = () =>
+    state.user ? { session: { id: 'ses_1' }, user: state.user } : null;
+
+  return {
+    '/sign-up/email': () => ({ body: { token: null, user: ADA } }),
+    '/email-otp/verify-email': (request) => {
+      if (bodyOf(request).otp !== RIGHT_OTP) {
+        return {
+          status: 400,
+          body: { code: 'INVALID_OTP', message: 'Invalid OTP' },
+        };
+      }
+      state.user = { ...(state.user ?? ADA), emailVerified: true };
+      return { body: { status: true, token: 'token', user: state.user } };
+    },
+    '/email-otp/send-verification-otp': () => ({ body: { success: true } }),
+    '/get-session': () => ({ body: session() }),
+    '/is-username-available': (request) => ({
+      body: { available: bodyOf(request).username !== TAKEN_USERNAME },
+    }),
+    '/update-user': (request) => {
+      const username = bodyOf(request).username;
+      if (state.user && typeof username === 'string') {
+        state.user = { ...state.user, username: username.toLowerCase() };
+      }
+      return { body: { status: true } };
+    },
+    '/sign-out': () => {
+      state.user = null;
+      return { body: { success: true } };
+    },
+  } satisfies Record<string, Handler>;
+}
 
 /**
- * Serves the Better Auth endpoints the auth screens call. `overrides`
- * replace a path's handler; the returned list records every call.
+ * Serves the Better Auth endpoints the auth screens call. `user` is who is
+ * signed in at the start (nobody by default); `overrides` replace a path's
+ * handler. The returned list records every call.
  */
 export async function mockAuthApi(
   page: Page,
-  overrides: Record<string, Handler> = {},
+  {
+    user = null,
+    overrides = {},
+  }: { user?: MockUser | null; overrides?: Record<string, Handler> } = {},
 ): Promise<Request[]> {
-  const handlers = { ...defaultHandlers, ...overrides };
+  const handlers: Record<string, Handler> = {
+    ...createHandlers({ user }),
+    ...overrides,
+  };
   const calls: Request[] = [];
 
   await page.route(AUTH_ROUTES, async (route) => {

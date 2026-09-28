@@ -294,8 +294,19 @@ leaf possible and pass server-fetched data down as props.
   it, wrap calls in `authRequest()` (a thrown network error becomes a
   returned one), validate forms with `lazyResolver()` (Zod loads on the first
   validation) and import plain constants from
-  `@notefinder/contracts/auth-rules`, which has no Zod. The session on the
-  client is a TanStack query (`sessionUserOptions()`), not `useSession()`.
+  `@notefinder/contracts/auth-rules`, which has no Zod.
+- The session on the client is a TanStack query (`sessionUserOptions()` in
+  `features/auth/session.ts`: a plain `GET /v1/auth/get-session`, `null` when
+  signed out), not Better Auth's `useSession()`. Update it after anything
+  that changes the session (verify email, set username, sign out), or
+  screens reading it act on stale data.
+- **Onboarding gate**: `AuthGate` (in the locale layout) sends a signed-in
+  user with an unverified email to `/verify-email`, then one without a
+  username to `/setup-username`, from any page, keeping where they were
+  going in `redirectTo`. It runs in the browser so pages stay static;
+  signed-out visitors are never redirected. Those steps always offer "Sign
+  out", and changing the email signs out first. The rule is
+  `requiredAuthStep()` in `features/auth/auth-gate.ts`.
 - On the server, `getCurrentUser()` from `lib/auth/session.ts` calls
   `GET /v1/me` forwarding the request cookies (deduplicated per request) and
   returns `null` when signed out.

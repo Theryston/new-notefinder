@@ -2,6 +2,7 @@
 
 import type { VerifyEmailBody } from '@notefinder/contracts';
 import { OTP_LENGTH } from '@notefinder/contracts/auth-rules';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -16,9 +17,12 @@ import { useRouter } from '@/lib/i18n/navigation';
 import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import { lazyResolver } from '../lazy-resolver';
+import { authKeys } from '../query-keys';
 import { authHref } from '../redirect-to';
+import { sessionUserOptions } from '../session';
 import { FormAlert } from './form-alert';
 import { ResendCodeButton } from './resend-code-button';
+import { SignedInAs, useSignOut } from './sign-out';
 import { StepHeader } from './step-header';
 import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
@@ -90,17 +94,66 @@ function CodeInput({
   );
 }
 
-function ChangeEmail({ redirectTo }: { redirectTo: string }) {
+/**
+ * Back to sign-up with another email. A signed-in user (whose email isn't
+ * verified) is signed out first, or the gate would bring them right back.
+ */
+function ChangeEmail({
+  redirectTo,
+  signedIn,
+}: {
+  redirectTo: string;
+  signedIn: boolean;
+}) {
   const t = useTranslations('auth.verifyEmail');
+  const { signOut, pending } = useSignOut();
+  const signUp = authHref('/sign-up', redirectTo);
 
   return (
     <p className="px-4 text-muted-foreground text-sm">
       {t.rich('wrongEmail', {
-        link: (chunks) => (
-          <TextLink href={authHref('/sign-up', redirectTo)}>{chunks}</TextLink>
-        ),
+        link: (chunks) =>
+          signedIn ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => signOut(signUp)}
+              className="rounded-full font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+            >
+              {chunks}
+            </button>
+          ) : (
+            <TextLink href={signUp}>{chunks}</TextLink>
+          ),
       })}
     </p>
+  );
+}
+
+function VerifyEmailFooter({
+  email,
+  redirectTo,
+  onNotice,
+}: {
+  email: string;
+  redirectTo: string;
+  onNotice: (notice: Notice) => void;
+}) {
+  const { data: user } = useQuery(sessionUserOptions());
+  const signedIn = Boolean(user && !user.emailVerified);
+
+  return (
+    <>
+      <div className="-mt-4 flex flex-wrap items-center justify-between gap-2">
+        <ResendCodeButton
+          email={email}
+          onSent={() => onNotice({ tone: 'success' })}
+          onError={(code) => onNotice({ tone: 'error', code })}
+        />
+        <ChangeEmail redirectTo={redirectTo} signedIn={signedIn} />
+      </div>
+      {user && signedIn && <SignedInAs email={user.email} />}
+    </>
   );
 }
 
@@ -114,6 +167,7 @@ export function VerifyEmailForm({
   const t = useTranslations('auth');
   const tErrors = useTranslations('authErrors');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [notice, setNotice] = useState<Notice | null>(null);
   const form = useForm<VerifyEmailBody>({
     resolver: verifyEmailResolver,
@@ -135,6 +189,9 @@ export function VerifyEmailForm({
       form.setFocus('otp');
       return;
     }
+    // Verifying signs the user in (or updates their session): refresh it
+    // before moving on, or the next step would see a stale one.
+    await queryClient.invalidateQueries({ queryKey: authKeys.session() });
     router.push(authHref('/setup-username', redirectTo));
   });
 
@@ -172,14 +229,11 @@ export function VerifyEmailForm({
           {t('verifyEmail.submit')}
         </SubmitButton>
       </form>
-      <div className="-mt-4 flex flex-wrap items-center justify-between gap-2">
-        <ResendCodeButton
-          email={email}
-          onSent={() => setNotice({ tone: 'success' })}
-          onError={(code) => setNotice({ tone: 'error', code })}
-        />
-        <ChangeEmail redirectTo={redirectTo} />
-      </div>
+      <VerifyEmailFooter
+        email={email}
+        redirectTo={redirectTo}
+        onNotice={setNotice}
+      />
     </div>
   );
 }

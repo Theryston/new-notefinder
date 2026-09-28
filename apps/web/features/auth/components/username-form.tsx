@@ -2,6 +2,7 @@
 
 import type { SetUsernameBody } from '@notefinder/contracts';
 import { USERNAME_MAX_LENGTH } from '@notefinder/contracts/auth-rules';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { type UseFormRegisterReturn, useForm } from 'react-hook-form';
@@ -12,6 +13,7 @@ import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
+import { authKeys } from '../query-keys';
 import { normalizeUsernameInput, suggestUsername } from '../username';
 import { FormAlert } from './form-alert';
 import { FormField } from './form-field';
@@ -63,6 +65,33 @@ function UsernameInput({
   );
 }
 
+/** Saves the username, then continues to `redirectTo`. */
+function useSaveUsername(redirectTo: string) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<AuthErrorCode | null>(null);
+
+  const saveUsername = async (values: SetUsernameBody) => {
+    setError(null);
+    const result = await authRequest(() =>
+      loadAuthClient().then((client) => client.updateUser(values)),
+    );
+    if (result.error) {
+      setError(authErrorCode(result.error));
+      return;
+    }
+    // The gate reads the cached session: without the username it would send
+    // the user straight back here.
+    queryClient.setQueryData(authKeys.session(), (user) =>
+      user ? { ...user, username: values.username.trim().toLowerCase() } : user,
+    );
+    router.replace(redirectTo);
+    router.refresh();
+  };
+
+  return { saveUsername, error };
+}
+
 export function UsernameForm({
   name,
   redirectTo,
@@ -72,8 +101,7 @@ export function UsernameForm({
 }) {
   const t = useTranslations('auth');
   const tErrors = useTranslations('authErrors');
-  const router = useRouter();
-  const [error, setError] = useState<AuthErrorCode | null>(null);
+  const { saveUsername, error } = useSaveUsername(redirectTo);
   const [suggestion] = useState(() => suggestUsername(name));
   const form = useForm<SetUsernameBody>({
     resolver: usernameResolver,
@@ -87,19 +115,7 @@ export function UsernameForm({
   const username = form.watch('username');
   const fieldError = form.formState.errors.username;
   const availability = useUsernameAvailability(fieldError ? '' : username);
-
-  const onSubmit = form.handleSubmit(async (values) => {
-    setError(null);
-    const result = await authRequest(() =>
-      loadAuthClient().then((client) => client.updateUser(values)),
-    );
-    if (result.error) {
-      setError(authErrorCode(result.error));
-      return;
-    }
-    router.replace(redirectTo);
-    router.refresh();
-  });
+  const onSubmit = form.handleSubmit(saveUsername);
 
   return (
     <div className="flex flex-col gap-8">
