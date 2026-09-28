@@ -1,0 +1,27 @@
+name: PR title
+
+# PRs are squash merged, so the title becomes the commit message on main.
+# lefthook only checks commits made locally; this checks the one that lands.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  conventional-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the title follows Conventional Commits
+        env:
+          # Passed through env (not interpolated in the script) so a crafted
+          # title can't inject shell commands.
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Same pattern as the commit-msg hook in lefthook.yml.
+          if ! printf '%s\n' "$TITLE" | grep -Eq '^(Revert )|^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert)(\((web|api|contracts|repo)\))?!?: .+'; then
+            echo "::error::PR title must follow Conventional Commits: <type>(<scope>): <subject>"
+            echo 'Types: feat fix refactor perf test docs build ci chore style revert'
+            echo 'Scopes: web api contracts repo'
+            exit 1
+          fi
