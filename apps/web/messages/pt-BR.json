@@ -105,7 +105,23 @@
       "haveAccount": "Já tem uma conta? <link>Entrar</link>"
     },
     "signIn": {
-      "metaTitle": "Entrar"
+      "metaTitle": "Entrar",
+      "metaDescription": "Entre no NoteFinder para ver suas músicas favoritas, manter sua sequência de prática e cantar com feedback de afinação em tempo real.",
+      "overline": "Sua conta",
+      "title": "Entre no NoteFinder",
+      "description": "Use seu email ou username para voltar às suas músicas favoritas e à sua sequência de prática.",
+      "emailOrUsername": {
+        "label": "Email ou username",
+        "placeholder": "voce@exemplo.com",
+        "required": "Informe seu email ou username."
+      },
+      "password": {
+        "placeholder": "Sua senha",
+        "required": "Informe sua senha."
+      },
+      "forgotPassword": "Esqueceu a senha?",
+      "submit": "Entrar",
+      "noAccount": "Não tem uma conta? <link>Criar conta</link>"
     },
     "verifyEmail": {
       "metaTitle": "Verificar email",

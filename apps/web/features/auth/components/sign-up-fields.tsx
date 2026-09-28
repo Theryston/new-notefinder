@@ -7,14 +7,9 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 
 import { fieldErrorKey } from '../field-error';
-import { FormField } from './form-field';
+import { FormField, fieldErrorProps } from './form-field';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthMeter } from './password-strength-meter';
-
-const errorProps = (id: string, invalid: boolean) => ({
-  'aria-invalid': invalid || undefined,
-  'aria-describedby': invalid ? `${id}-error` : undefined,
-});
 
 /** Name, email and password inputs of the sign-up form. */
 export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
@@ -33,7 +28,7 @@ export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
           id="name"
           autoComplete="name"
           placeholder={t('name.placeholder')}
-          {...errorProps('name', Boolean(errors.name))}
+          {...fieldErrorProps('name', Boolean(errors.name))}
           {...form.register('name')}
         />
       </FormField>
@@ -50,7 +45,7 @@ export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
           autoCapitalize="none"
           spellCheck={false}
           placeholder={t('email.placeholder')}
-          {...errorProps('email', Boolean(errors.email))}
+          {...fieldErrorProps('email', Boolean(errors.email))}
           {...form.register('email')}
         />
       </FormField>
@@ -66,7 +61,7 @@ export function SignUpFields({ form }: { form: UseFormReturn<SignUpBody> }) {
           id="password"
           autoComplete="new-password"
           placeholder={t('password.placeholder')}
-          {...errorProps('password', Boolean(errors.password))}
+          {...fieldErrorProps('password', Boolean(errors.password))}
           {...form.register('password')}
         />
       </FormField>

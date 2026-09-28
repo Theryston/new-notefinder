@@ -105,7 +105,23 @@
       "haveAccount": "Already have an account? <link>Sign in</link>"
     },
     "signIn": {
-      "metaTitle": "Sign in"
+      "metaTitle": "Sign in",
+      "metaDescription": "Sign in to NoteFinder to see your favorite songs, keep your practice streak and sing with real-time pitch feedback.",
+      "overline": "Your account",
+      "title": "Sign in to NoteFinder",
+      "description": "Use your email or username to get back to your favorite songs and practice streak.",
+      "emailOrUsername": {
+        "label": "Email or username",
+        "placeholder": "you@example.com",
+        "required": "Enter your email or username."
+      },
+      "password": {
+        "placeholder": "Your password",
+        "required": "Enter your password."
+      },
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account? <link>Create one</link>"
     },
     "verifyEmail": {
       "metaTitle": "Verify your email",
