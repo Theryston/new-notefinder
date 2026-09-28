@@ -168,7 +168,9 @@ design token means updating `DESIGN.md` and the tokens in
   new floor in the same PR. Code covered by e2e instead of unit tests (API
   controllers, repositories, modules and schema; web `.tsx` components) is
   excluded from the measurement in the config, so add new unit-testable code
-  under a measured path.
+  under a measured path. The API e2e suite has its own thresholds (in
+  `apps/api/vitest.config.e2e.ts`, report in `coverage-e2e/`), which cover
+  those controllers and repositories; same ratchet rule.
 - **Cognitive complexity**: at most 15 per function
   (`noExcessiveCognitiveComplexity` in `biome.json`). Over the limit, split the
   function (extract helpers, return early, name compound conditions); never
