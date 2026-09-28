@@ -184,7 +184,7 @@ leaf possible and pass server-fetched data down as props.
 - **Lighthouse** (`nub run lighthouse`, in CI after the e2e tests): every
   page in `lighthouserc.cjs` must score ≥ 90 performance and ≥ 95
   accessibility, best practices and SEO, with LCP ≤ 2.5 s, TBT ≤ 200 ms and
-  CLS ≤ 0.01 (desktop, median of 3 runs). Add each new public page to its
+  CLS ≤ 0.1 (desktop, median of 3 runs). Add each new public page to its
   `url` list (with a sample ID that resolves). Locally, point `CHROME_PATH`
   at a Chrome/Chromium binary if none is installed.
 - No request waterfalls: start independent fetches in parallel
