@@ -136,7 +136,12 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   English developer message, never shown as-is to users. Add new codes to the
   contracts enum; never rename existing ones.
 - OpenAPI: generated from the Zod DTOs and served at `/docs` (disabled in
-  production unless explicitly enabled).
+  production unless explicitly enabled). The document is committed as
+  `openapi.json`: `test/openapi.e2e-spec.ts` fails when it is out of date
+  (after an intentional change, run `nub run test:e2e -- -u` and commit it),
+  and CI runs `oasdiff breaking` against the base branch's copy, so removing
+  a route or a field, or making a param required, fails the PR. Breaking
+  changes go to a new version (`/v2`) instead.
 - Internal endpoints called by the external note-detection worker live under
   `/v1/internal/*` and are protected by an API-key guard, not user auth.
 
