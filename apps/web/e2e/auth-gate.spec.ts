@@ -102,4 +102,30 @@ test.describe('onboarding gate', () => {
 
     await expect(page).toHaveURL(/\/en$/);
   });
+
+  test('only sign-up links the logo to the home page', async ({ page }) => {
+    await mockAuthApi(page);
+    const homeLink = page.getByRole('link', { name: auth.home });
+
+    await page.goto('/en/sign-up');
+    await expect(homeLink).toHaveAttribute('href', '/en');
+
+    await page.goto('/en/verify-email?email=ada%40example.com');
+    await expect(
+      page.getByRole('heading', { level: 1, name: auth.verifyEmail.title }),
+    ).toBeVisible();
+    await expect(page.getByText(auth.wordmark, { exact: true })).toBeVisible();
+    await expect(homeLink).toHaveCount(0);
+  });
+
+  test('has no home link on the username step', async ({ page }) => {
+    await mockAuthApi(page, { user: withoutUsername });
+    await page.goto('/en/setup-username');
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: auth.setupUsername.title }),
+    ).toBeVisible();
+    await expect(page.getByText(auth.wordmark, { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: auth.home })).toHaveCount(0);
+  });
 });
