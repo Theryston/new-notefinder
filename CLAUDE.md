@@ -285,3 +285,15 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, shared by `apps/web`, `apps/api` and `packages/contracts`. See `docs/agents/domain.md`.
+
+### Asking the maintainer
+
+Put decisions to the maintainer through the AskUserQuestion tool (clickable
+options, recommended one first, at most 4 per call), or one question at a
+time. Never a long numbered list of questions in plain text, even when a
+skill (e.g. `grilling`) says to ask a whole round at once.
+
+### Subagents
+
+`.claude/agents/ticket-implementer.md` implements one `ready-for-agent`
+issue end to end in its own worktree and opens a PR (Sonnet, `xhigh` effort).
