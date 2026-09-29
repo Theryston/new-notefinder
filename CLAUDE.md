@@ -271,3 +271,17 @@ the maintainer changes these files.
 - lefthook `pre-commit` runs Biome on staged files and re-stages the fixes.
   Don't bypass hooks with `--no-verify`.
 - One logical change per PR; tooling/refactors separated from features.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `Theryston/new-notefinder` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, shared by `apps/web`, `apps/api` and `packages/contracts`. See `docs/agents/domain.md`.
