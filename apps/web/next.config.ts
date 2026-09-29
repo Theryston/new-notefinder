@@ -22,7 +22,6 @@ if (
 const cacheHandler = new URL('./cache-handlers/redis.ts', import.meta.url).href;
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.3.72'],
   cacheComponents: true,
   // One handler instance backs both `'use cache'` and `'use cache: remote'`:
   // every entry is shared across instances and survives restarts, and there
