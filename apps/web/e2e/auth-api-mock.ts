@@ -3,6 +3,8 @@ import type { Page, Request, Route } from '@playwright/test';
 // Any host: the API URL the browser calls is inlined when the app is built
 // (`NEXT_PUBLIC_API_URL`), so it depends on the build, not on this suite.
 const AUTH_ROUTES = '**/v1/auth/**';
+// notefinder's own route the setup-username step calls.
+const USERNAME_ROUTE = '**/v1/me/username';
 
 export const WRONG_OTP = '000000';
 export const RIGHT_OTP = '424242';
@@ -43,7 +45,7 @@ async function fulfill(route: Route, reply: Reply) {
       'access-control-allow-origin': origin,
       'access-control-allow-credentials': 'true',
       'access-control-allow-headers': 'content-type',
-      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-methods': 'GET, POST, PUT, OPTIONS',
       'content-type': 'application/json',
     },
     body: JSON.stringify(reply.body),
@@ -53,10 +55,23 @@ async function fulfill(route: Route, reply: Reply) {
 const bodyOf = (request: Request): Record<string, unknown> =>
   request.postDataJSON() ?? {};
 
+// The `CurrentUser` the API answers with.
+const currentUserOf = (user: MockUser) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  emailVerified: user.emailVerified,
+  username: user.username,
+  image: user.image,
+  role: 'USER',
+  createdAt: user.createdAt,
+});
+
 /**
- * Better Auth's endpoints over a tiny session state, so the gate sees what
- * the real API would: signed out until the email is verified, then signed in
- * until `sign-out`.
+ * Better Auth's endpoints (keyed by their path under `/v1/auth`) and the
+ * username route (`/me/username`) over a tiny session state, so the gate sees
+ * what the real API would: signed out until the email is verified, then
+ * signed in until `sign-out`.
  */
 function createHandlers(state: { user: MockUser | null }) {
   const session = () =>
@@ -79,12 +94,20 @@ function createHandlers(state: { user: MockUser | null }) {
     '/is-username-available': (request) => ({
       body: { available: bodyOf(request).username !== TAKEN_USERNAME },
     }),
-    '/update-user': (request) => {
+    '/me/username': (request) => {
       const username = bodyOf(request).username;
-      if (state.user && typeof username === 'string') {
-        state.user = { ...state.user, username: username.toLowerCase() };
+      if (!state.user || typeof username !== 'string') {
+        return {
+          status: 401,
+          body: {
+            statusCode: 401,
+            code: 'UNAUTHORIZED',
+            message: 'No session',
+          },
+        };
       }
-      return { body: { status: true } };
+      state.user = { ...state.user, username: username.toLowerCase() };
+      return { body: currentUserOf(state.user) };
     },
     '/sign-out': () => {
       state.user = null;
@@ -93,10 +116,15 @@ function createHandlers(state: { user: MockUser | null }) {
   } satisfies Record<string, Handler>;
 }
 
+// `/v1/auth/get-session` -> `/get-session`, `/v1/me/username` ->
+// `/me/username`: the key of the handler that serves it.
+const handlerKey = (url: string): string =>
+  new URL(url).pathname.replace(/^\/v1(\/auth)?/, '');
+
 /**
- * Serves the Better Auth endpoints the auth screens call. `user` is who is
- * signed in at the start (nobody by default); `overrides` replace a path's
- * handler. The returned list records every call.
+ * Serves the API endpoints the auth screens call. `user` is who is signed in
+ * at the start (nobody by default); `overrides` replace a path's handler. The
+ * returned list records every call.
  */
 export async function mockAuthApi(
   page: Page,
@@ -111,19 +139,20 @@ export async function mockAuthApi(
   };
   const calls: Request[] = [];
 
-  await page.route(AUTH_ROUTES, async (route) => {
+  const serve = async (route: Route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') {
       await fulfill(route, { status: 204, body: null });
       return;
     }
-    const path = new URL(request.url()).pathname.replace('/v1/auth', '');
-    const handler = handlers[path];
+    const handler = handlers[handlerKey(request.url())];
     calls.push(request);
     await fulfill(
       route,
       handler ? handler(request) : { status: 404, body: { code: 'NOT_FOUND' } },
     );
-  });
+  };
+  await page.route(AUTH_ROUTES, serve);
+  await page.route(USERNAME_ROUTE, serve);
   return calls;
 }

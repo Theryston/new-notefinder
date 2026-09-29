@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import {
+  ADA,
   mockAuthApi,
   RIGHT_OTP,
   TAKEN_USERNAME,
@@ -67,8 +68,12 @@ test.describe('sign-up flow', () => {
     await page.getByRole('button', { name: auth.setupUsername.submit }).click();
 
     await expect(page).toHaveURL(/\/en\?from=sign-up$/);
-    const update = calls.find((call) => call.url().endsWith('/update-user'));
+    const update = calls.find((call) => call.url().endsWith('/me/username'));
+    expect(update?.method()).toBe('PUT');
     expect(update?.postDataJSON()).toEqual({ username: 'ada_lovelace' });
+    expect(calls.some((call) => call.url().endsWith('/update-user'))).toBe(
+      false,
+    );
   });
 
   test('keeps what was typed before the page hydrated', async ({ page }) => {
@@ -258,4 +263,41 @@ test.describe('verify-email and setup-username guards', () => {
 
     await expect(page).toHaveURL(/\/en\/sign-in\?redirectTo=%2Fme%2Fedit$/);
   });
+});
+
+test.describe('setup-username step', () => {
+  const refusals = [
+    [409, 'CONFLICT', authErrors.USERNAME_IS_ALREADY_TAKEN],
+    [400, 'VALIDATION_FAILED', authErrors.INVALID_USERNAME],
+    [429, 'RATE_LIMITED', authErrors.RATE_LIMITED],
+    [401, 'UNAUTHORIZED', authErrors.UNAUTHORIZED],
+  ] as const;
+
+  for (const [status, code, message] of refusals) {
+    test(`shows the message for a ${code} answer`, async ({ page }) => {
+      const calls = await mockAuthApi(page, {
+        user: ADA,
+        overrides: {
+          '/me/username': () => ({
+            status,
+            body: { statusCode: status, code, message: 'Refused' },
+          }),
+        },
+      });
+      await page.goto('/en/setup-username?redirectTo=%2Fme%2Fedit');
+
+      await page.getByLabel(auth.fields.username.label).fill('ada_lovelace');
+      await page
+        .getByRole('button', { name: auth.setupUsername.submit })
+        .click();
+
+      await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+        message,
+      );
+      await expect(page).toHaveURL(/\/en\/setup-username\?/);
+      expect(calls.some((call) => call.url().endsWith('/me/username'))).toBe(
+        true,
+      );
+    });
+  }
 });
