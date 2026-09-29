@@ -101,8 +101,26 @@ test.describe('terms page', () => {
     await page.goto('/pt-BR/terms');
 
     await expect(
-      page.getByRole('link', { name: messages['pt-BR'].terms.home }),
+      page.getByRole('link', { name: messages['pt-BR'].header.home }),
     ).toHaveAttribute('href', '/pt-BR');
+  });
+
+  test('shows the site header, and only it', async ({ page }) => {
+    await page.goto('/en/terms');
+
+    const { header } = messages.en;
+    await expect(page.getByRole('banner')).toHaveCount(1);
+    await expect(
+      page.getByRole('banner').getByRole('link', { name: header.home }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('searchbox', { name: header.search.label }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: header.skipToContent }),
+    ).toHaveCount(1);
+    // The layout's <main> is the only one; the page must not add another.
+    await expect(page.getByRole('main')).toHaveCount(1);
   });
 
   test('declares its canonical URL and hreflang alternates', async ({
