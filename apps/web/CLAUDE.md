@@ -152,6 +152,16 @@ leaf possible and pass server-fetched data down as props.
   `<Suspense>` so the rest of the page stays in the static shell.
 - Every `<Suspense>` fallback is a skeleton with the **same dimensions** as the
   final content (zero layout shift).
+- Metadata that depends on the URL (artists, albums) is **streamed** to
+  browsers: it lands at the end of `<body>`, and an unknown ID answers 200
+  with `noindex` plus the not-found page. HTML-only crawlers (Next's
+  default `htmlLimitedBots`) get it blocking, in `<head>`, with a real 404.
+  Read it from the same `'use cache'` fetcher the page renders (e.g.
+  `getTrackCollection`), and call `notFound()` there too. Don't set
+  `htmlLimitedBots: /.*/` to block for everyone: with Cache Components it
+  left ~5% of RSC prefetches hanging forever (Next 16.3.4). Lighthouse
+  sends the `Chrome-Lighthouse` token (`lighthouserc.cjs`) so its SEO audit
+  sees the crawlers' `<head>`.
 - Use `generateStaticParams` for locales and for the most popular tracks so
   hot pages are prerendered at build time.
 - Invalidation: after a mutation made from the web, use `updateTag` (in a
@@ -362,6 +372,12 @@ leaf possible and pass server-fetched data down as props.
   `e2e/web-server-env.ts`. From the repo root, `nub run test:e2e` builds web
   first (Turbo); running it inside `apps/web` uses whatever `.next` is on disk,
   so rebuild (or delete `.next`) after switching branches.
+- Pages that fetch from the API on the server (artist and album pages) can't
+  be mocked with `page.route`, which only sees the browser. Playwright and
+  Lighthouse also start `e2e/mock-api/server.ts` (`nub run mock-api`) at
+  `API_URL`: it serves the catalog in `e2e/mock-api/fixtures.ts`, which
+  specs import to assert on. Add a fixture there for each new server-fetched
+  route; keep using `page.route` for requests the browser makes.
 - Chromium: CI runs `playwright install`. Machines with a preinstalled
   Chromium that doesn't match the pinned `@playwright/test` set
   `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` (Claude Code cloud sessions get it
