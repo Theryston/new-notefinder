@@ -10,7 +10,7 @@ From the repository root:
 
 ```sh
 nub install
-nub run infra:up             # Postgres + Redis via docker compose
+nub run infra:up             # Postgres, Redis and MinIO (S3) via docker compose
 cp apps/api/.env.example apps/api/.env
 (cd apps/api && nub run db:migrate && nub run db:seed)
 nub run dev --filter=api     # http://localhost:3333
@@ -36,6 +36,19 @@ Other tasks, scoped with `--filter=api`: `build`, `lint`, `check-types`,
 
 Environment variables are listed in [`.env.example`](./.env.example) and
 validated at startup; the API refuses to boot with an invalid config.
+
+## File storage
+
+Uploads (Avatars) go to an S3-compatible bucket through `StorageService`
+(`src/integrations/storage`): `putPublicObject({ key, body, contentType })`
+stores a publicly readable object and `publicUrl(key)` gives the URL it is
+served from. Locally that is the MinIO started by `nub run infra:up` (bucket
+created on start; console at <http://localhost:9001>, user `notefinder`,
+password `notefinder-local`); production uses AWS S3 behind a public files
+domain. The `S3_*` variables in [`.env.example`](./.env.example) go together:
+the API refuses to boot when they are incomplete or missing. E2E tests start
+their own MinIO; without Docker, point them at a server dedicated to tests
+with `E2E_S3_ENDPOINT`, `E2E_S3_ACCESS_KEY_ID` and `E2E_S3_SECRET_ACCESS_KEY`.
 
 ## Auth
 

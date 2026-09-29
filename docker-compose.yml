@@ -35,6 +35,49 @@ services:
       timeout: 5s
       retries: 10
 
+  # S3-compatible object storage for user uploads (Avatars), reached with the
+  # same SDK calls as production's S3. Upstream's minio/minio (Docker Hub) and
+  # quay.io/minio/minio images can no longer be pulled anonymously, so this is
+  # Coolify's build of the upstream release, which also ships the `mc` client
+  # used below. Keep the tag in sync with apps/api/test/setup/minio.ts.
+  minio:
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: notefinder
+      MINIO_ROOT_PASSWORD: notefinder-local
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the bucket the API uploads to and makes its objects
+  # publicly readable (production serves them from a public files domain).
+  # Idempotent, so it is safe on every `infra:up`.
+  minio-init:
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
+    restart: 'no'
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: notefinder
+      MINIO_ROOT_PASSWORD: notefinder-local
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        mc alias set storage http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing storage/notefinder &&
+        mc anonymous set download storage/notefinder
+
 volumes:
   postgres-data:
   redis-data:
+  minio-data:

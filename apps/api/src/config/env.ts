@@ -24,6 +24,21 @@ const parseTrustProxy = (value: string): boolean | number | string => {
   return trimmed;
 };
 
+// S3-compatible file storage (MinIO locally, AWS S3 in production). The
+// endpoint and path style only matter for S3-compatible servers, so AWS
+// doesn't need them.
+const S3_MANDATORY = [
+  'S3_REGION',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY_ID',
+  'S3_SECRET_ACCESS_KEY',
+  'S3_PUBLIC_URL',
+] as const;
+const S3_OPTIONAL = ['S3_ENDPOINT', 'S3_FORCE_PATH_STYLE'] as const;
+
+// https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+const S3_BUCKET_NAME = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -85,6 +100,39 @@ const envSchema = z
       .string()
       .min(3)
       .default('notefinder <noreply@notefinder.com.br>'),
+    // Optional here so the schema itself doesn't force a storage config on
+    // every consumer; the group below must be complete once any of it is set,
+    // and the storage module refuses to boot without it.
+    S3_ENDPOINT: optional(z.url({ protocol: /^https?$/ })),
+    S3_REGION: optional(z.string().min(1)),
+    S3_BUCKET: optional(z.string().regex(S3_BUCKET_NAME)),
+    S3_ACCESS_KEY_ID: optional(z.string().min(1)),
+    S3_SECRET_ACCESS_KEY: optional(z.string().min(1)),
+    // MinIO needs path-style addressing (`host/bucket/key`); AWS doesn't.
+    S3_FORCE_PATH_STYLE: optional(z.stringbool()),
+    // Base URL the stored objects are served from, without the key: the
+    // files domain in production, the bucket's path on MinIO locally.
+    S3_PUBLIC_URL: optional(
+      z
+        .url({ protocol: /^https?$/ })
+        .transform((url) => url.replace(/\/+$/, '')),
+    ),
+  })
+  .check((ctx) => {
+    const env = ctx.value;
+    const anySet = [...S3_MANDATORY, ...S3_OPTIONAL].some(
+      (key) => env[key] !== undefined,
+    );
+    for (const key of S3_MANDATORY) {
+      if (anySet && env[key] === undefined) {
+        ctx.issues.push({
+          code: 'custom',
+          input: env,
+          path: [key],
+          message: 'Required when any S3_ variable is set',
+        });
+      }
+    }
   })
   .refine(
     (env) =>

@@ -8,12 +8,16 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import type { TestProject } from 'vitest/node';
+import { type StartedStorage, startStorage } from './minio.js';
+import type { E2eStorage } from './storage-settings.js';
 
 declare module 'vitest' {
   // biome-ignore lint/style/useConsistentTypeDefinitions: augments Vitest's interface, which needs declaration merging.
   export interface ProvidedContext {
     /** Connection URL of the migrated e2e database. */
     databaseUrl: string;
+    /** The S3-compatible server (MinIO) with the e2e bucket. */
+    storage: E2eStorage;
   }
 }
 
@@ -62,8 +66,9 @@ const migrateDatabase = async (url: string): Promise<void> => {
 
 /**
  * Starts one Postgres for the whole e2e run (or uses `E2E_DATABASE_URL`),
- * applies the real migrations and hands the URL to the test workers, where
- * `database-env.ts` exposes it as `DATABASE_URL`.
+ * applies the real migrations, starts one MinIO (see `minio.ts`) and hands
+ * both to the test workers, where `database-env.ts` exposes them as
+ * `DATABASE_URL` and the `S3_*` variables.
  */
 export const setup = async (
   project: TestProject,
@@ -78,16 +83,20 @@ export const setup = async (
     throw new Error('No e2e database URL');
   }
 
+  let storage: StartedStorage;
   try {
     await migrateDatabase(databaseUrl);
+    logger.log('Migrations applied');
+    storage = await startStorage();
   } catch (error) {
     await container?.stop();
     throw error;
   }
-  logger.log('Migrations applied');
   project.provide('databaseUrl', databaseUrl);
+  project.provide('storage', storage.storage);
 
   return async () => {
+    await storage.stop();
     if (container) {
       await container.stop();
       logger.log('Postgres container stopped');
