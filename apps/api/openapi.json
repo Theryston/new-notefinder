@@ -66,7 +66,7 @@
             "description": "The signed-in user, updated."
           },
           "400": {
-            "description": "The Name is empty or too long."
+            "description": "The Name is empty or too long, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image."
           },
           "401": {
             "description": "No valid session."
@@ -131,6 +131,12 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
+          },
+          "avatar": {
+            "type": "string",
+            "format": "binary",
+            "contentEncoding": "binary",
+            "maxLength": 5242880
           }
         },
         "required": [
