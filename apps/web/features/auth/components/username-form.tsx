@@ -9,7 +9,6 @@ import { type UseFormRegisterReturn, useForm } from 'react-hook-form';
 
 import { Input } from '@/components/ui/input';
 import { useRouter } from '@/lib/i18n/navigation';
-import { loadAuthClient } from '../auth-client';
 import { type AuthErrorCode, authErrorCode, authRequest } from '../auth-error';
 import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
@@ -73,8 +72,9 @@ function useSaveUsername(redirectTo: string) {
 
   const saveUsername = async (values: SetUsernameBody) => {
     setError(null);
+    // Loaded on submit: it brings the API client and contracts along.
     const result = await authRequest(() =>
-      loadAuthClient().then((client) => client.updateUser(values)),
+      import('../set-username').then((module) => module.setUsername(values)),
     );
     if (result.error) {
       setError(authErrorCode(result.error));

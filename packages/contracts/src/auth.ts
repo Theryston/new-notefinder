@@ -60,7 +60,11 @@ export const verifyEmailBodySchema = z.object({
 
 export type VerifyEmailBody = z.infer<typeof verifyEmailBodySchema>;
 
-/** `POST /v1/auth/update-user` with only the username (Better Auth). */
+/**
+ * `PUT /v1/me/username`: the setup step for a user who has no username yet
+ * (Google sign-ups). It only succeeds while the username is null, since a
+ * username never changes once set. The API lowercases it before storing.
+ */
 export const setUsernameBodySchema = z.object({ username: usernameSchema });
 
 export type SetUsernameBody = z.infer<typeof setUsernameBodySchema>;

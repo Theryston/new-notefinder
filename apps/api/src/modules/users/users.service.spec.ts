@@ -8,7 +8,11 @@ import { UsersService } from './users.service.js';
 
 describe('UsersService', () => {
   let service: UsersService;
-  const repository = { findCurrentUser: vi.fn(), updateName: vi.fn() };
+  const repository = {
+    findCurrentUser: vi.fn(),
+    updateName: vi.fn(),
+    setUsernameIfUnset: vi.fn(),
+  };
   const webRevalidation = { revalidate: vi.fn() };
 
   beforeEach(async () => {
@@ -58,6 +62,71 @@ describe('UsersService', () => {
       const result = service.getCurrentUser('gone');
       await expect(result).rejects.toBeInstanceOf(AppException);
       await expect(result).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+  });
+
+  describe('setUsername', () => {
+    const ana: CurrentUserRow = {
+      id: 'u1',
+      name: 'Ana',
+      email: 'ana@example.com',
+      emailVerified: true,
+      username: 'ana_maria',
+      image: null,
+      role: 'USER',
+      createdAt: new Date('2024-05-01T12:00:00.000Z'),
+    };
+
+    beforeEach(() => {
+      repository.setUsernameIfUnset.mockReset();
+    });
+
+    it('stores the username lowercased and returns the user', async () => {
+      repository.setUsernameIfUnset.mockResolvedValue({
+        status: 'set',
+        user: ana,
+      });
+
+      const user = await service.setUsername('u1', 'Ana_Maria');
+
+      expect(repository.setUsernameIfUnset).toHaveBeenCalledWith(
+        'u1',
+        'ana_maria',
+      );
+      expect(user).toEqual({ ...ana, createdAt: '2024-05-01T12:00:00.000Z' });
+      expect(currentUserSchema.parse(user)).toEqual(user);
+    });
+
+    it('answers CONFLICT when another user has the username', async () => {
+      repository.setUsernameIfUnset.mockResolvedValue({ status: 'taken' });
+
+      await expect(service.setUsername('u1', 'ana')).rejects.toMatchObject({
+        code: 'CONFLICT',
+      });
+      expect(repository.findCurrentUser).not.toHaveBeenCalled();
+    });
+
+    it('answers CONFLICT when the user already has a username', async () => {
+      repository.setUsernameIfUnset.mockResolvedValue({
+        status: 'not-updated',
+      });
+      repository.findCurrentUser.mockResolvedValue(ana);
+
+      const result = service.setUsername('u1', 'other');
+
+      await expect(result).rejects.toBeInstanceOf(AppException);
+      await expect(result).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    it('answers UNAUTHORIZED when the user no longer exists', async () => {
+      repository.setUsernameIfUnset.mockResolvedValue({
+        status: 'not-updated',
+      });
+      repository.findCurrentUser.mockResolvedValue(undefined);
+
+      await expect(service.setUsername('gone', 'ana')).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+      });
     });
   });
 
