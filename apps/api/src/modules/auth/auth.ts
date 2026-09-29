@@ -29,6 +29,7 @@ import {
   isLegacyPasswordHash,
   verifyPassword,
 } from './password.js';
+import { enforceSignUpRules } from './sign-up-rules.js';
 
 const DAY_SECONDS = 24 * 60 * 60;
 
@@ -250,7 +251,10 @@ export const createAuth = ({
       }),
       emailOtpPlugin(emailService, logger),
     ],
-    hooks: { after: rehashLegacyPassword(logger) },
+    hooks: {
+      before: enforceSignUpRules,
+      after: rehashLegacyPassword(logger),
+    },
   });
 };
 

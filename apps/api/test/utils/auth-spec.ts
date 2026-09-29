@@ -1,6 +1,10 @@
 import { AuthProbeController } from '../auth-probe.controller.js';
 import { type AuthClient, clearEmails, createAuthClient } from './auth.js';
-import { createTestApp, type TestApp } from './create-test-app.js';
+import {
+  type CreateTestAppOptions,
+  createTestApp,
+  type TestApp,
+} from './create-test-app.js';
 import { resetDatabase } from './database.js';
 
 export type AuthSpec = {
@@ -20,14 +24,20 @@ const ready = <T>(value: T | undefined, name: string): T => {
 /**
  * Registers the hooks shared by the auth specs: one app per file, and a
  * clean database, email queue and client before each test. Call it at the
- * top of a `describe` and read `testApp`/`client` inside tests.
+ * top of a `describe` and read `testApp`/`client` inside tests. `env` is
+ * merged over the app's env (e.g. to enable Google sign-in).
  */
-export const useAuthSpec = (): AuthSpec => {
+export const useAuthSpec = (
+  options: Pick<CreateTestAppOptions, 'env'> = {},
+): AuthSpec => {
   let testApp: TestApp | undefined;
   let client: AuthClient | undefined;
 
   beforeAll(async () => {
-    testApp = await createTestApp({ controllers: [AuthProbeController] });
+    testApp = await createTestApp({
+      controllers: [AuthProbeController],
+      ...options,
+    });
   });
 
   afterAll(async () => {
