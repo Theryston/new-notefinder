@@ -321,8 +321,14 @@ leaf possible and pass server-fetched data down as props.
   visitors go to sign in with `redirectTo` and the username step is
   `AuthGate`'s. Saving calls the API from the browser (`PATCH /v1/me` as
   `FormData` through `browserApi`, loaded on the first save) and writes the
-  answer into the session query, so the header shows it at once. Toasts use
-  `components/ui/sonner` (`Toaster` mounted by the page that toasts).
+  answer into the session query, so the header shows it at once. The Avatar
+  is picked with `AvatarPicker` (local preview through an object URL) and
+  sent as the `avatar` file part of that same request; the file is checked
+  before the upload with `avatarFileProblem()`
+  (`features/auth/avatar-file.ts`), which reads the limits from
+  `@notefinder/contracts/avatar-rules` (no Zod). The API still decides from
+  the file's content. Toasts use `components/ui/sonner` (`Toaster` mounted by
+  the page that toasts).
 - **Zod stays out of first-load JS.** `lib/api/api-error.ts` (the
   `ApiError` class, imported by the query client on every page) must not
   import a contracts value: the first client use of `browserApi` once pulled

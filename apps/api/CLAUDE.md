@@ -58,7 +58,8 @@ src/
   integrations/           clients for external services, one module each
     web-revalidation/     enqueue + POST cache tags to the web's /api/revalidate
     email/                EmailService (Resend) + OTP templates (en, pt-BR), sent via a job
-    ytmusic/ s3/ sqs/ openai/ …
+    storage/              StorageService (public objects on any S3 API) + its S3 implementation
+    ytmusic/ sqs/ openai/ …
   modules/                one folder per feature (domain)
     tracks/
       tracks.module.ts
@@ -125,11 +126,25 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   12; `src/common/zod/` mirrors its API. OpenAPI covers request shapes only.)
 - Validation failures return **400** `VALIDATION_FAILED` with
   `details: { location: 'body' | 'query' | 'param' | 'custom', issues }`.
-- **Multipart forms** (`PATCH /v1/me`: Name now, Avatar file later): a multer
-  interceptor from `@nestjs/platform-express` (`NoFilesInterceptor`,
-  `FileInterceptor`) fills `request.body` with the text fields, then the
+- **Multipart forms** (`PATCH /v1/me`: Name and the optional Avatar file): a
+  multer interceptor from `@nestjs/platform-express` (`FileInterceptor`,
+  `NoFilesInterceptor`) fills `request.body` with the text fields, then the
   same DTO/Zod pipe validates them. Always pass `limits`, so an oversized
   part is refused while it is read (`BAD_REQUEST`) instead of buffered.
+  A file goes into the body as a standard `File` (see
+  `AvatarUploadInterceptor`), so the contract schema declares it with
+  `z.file()` and the one schema validates text and file together (OpenAPI
+  shows it as a binary field). A file over its limit is answered as
+  `VALIDATION_FAILED`, like any other bad field.
+- **Uploaded files** are judged by their content, never by the filename or
+  the `Content-Type` the client declares: check the magic bytes, then let the
+  image library decode. The Avatar (`modules/users/avatar-image.ts`) is
+  re-encoded by `sharp` as a 512×512 center-cropped webp, upright and with
+  its metadata (EXIF, GPS) dropped, stored through `StorageService` at the
+  fixed key `avatars/{userId}.webp` and saved as
+  `<public URL>?cacheBust=<timestamp>`. The file is stored before the row is
+  written, so a failed upload changes nothing. Size and accepted types are
+  constants in `@notefinder/contracts/avatar-rules`.
 - **Lists** use cursor pagination: query `cursorPaginationQuerySchema`,
   response `cursorPageSchema(item)` → `{ items, nextCursor }`. Cursors are
   opaque strings (base64 of the sort key), never raw offsets.
@@ -311,5 +326,11 @@ possible:
     (`fileParallelism: false`); tests must not depend on order.
   - Test-only controllers live in separate non-spec files under `test/` and
     need `@Public()` unless they test auth.
-- External services (SQS, S3, YT Music, email) are always mocked at the
-  integration-module boundary.
+- External services (SQS, YT Music, email) are always mocked at the
+  integration-module boundary. File storage is the exception: e2e runs
+  against a real S3-compatible server (MinIO), started once per run next to
+  Postgres by `test/setup/global-setup.ts` (Testcontainers, or
+  `E2E_S3_ENDPOINT` + `E2E_S3_ACCESS_KEY_ID` + `E2E_S3_SECRET_ACCESS_KEY`
+  for one dedicated to tests) and reached through the `S3_*` variables, so
+  specs assert on the stored objects fetched from their public URL. Unit
+  tests of services mock `StorageService`.

@@ -31,7 +31,7 @@ packages/
 
 ```sh
 nub install                 # install everything
-nub run infra:up            # start Postgres + API Redis + web cache Redis (docker compose)
+nub run infra:up            # start Postgres + API Redis + MinIO + web cache Redis (docker compose)
 nub run dev                 # build packages, then run web + api in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
 nub run knip                # unused files, exports and dependencies (whole repo)
@@ -150,11 +150,14 @@ design token means updating `DESIGN.md` and the tokens in
   modules, config files and test setup are exempt in `biome.json`).
 - Every env var must be listed in the app's `.env.example` (with a safe local
   default when possible). Never commit real `.env` files or secrets.
-- `docker-compose.yml` provides Postgres 17 and the API's Redis 8 (6379) for
+- `docker-compose.yml` provides Postgres 17, the API's Redis 8 (6379) and
+  MinIO (S3 API on 9000, console on 9001; `minio-init` creates the public
+  `notefinder` bucket, so uploads use the same code as production's S3) for
   local development, and includes `apps/web/docker-compose.yml` (`web-redis`
   on 6380, the web's shared cache); `nub run infra:up` / `infra:down` start
   and stop all of them. E2E tests spin up their own throwaway
-  containers (Testcontainers) instead of using the dev database.
+  containers (Testcontainers: Postgres and MinIO) instead of using the dev
+  ones.
 - Production is self-hosted: one Docker image per app, published to GHCR by
   GitHub Actions and run on Coolify behind a CDN. Keep apps stateless so they
   can run with multiple instances (shared state lives in Postgres/Redis).
