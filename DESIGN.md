@@ -133,6 +133,11 @@ times, vocal ranges and other data that must line up. Use
   symbol size. The symbol is ~1.15× the wordmark's font size.
 - Compact contexts (favicon, app icon, tight mobile header) use the symbol
   alone.
+- App icons live in `apps/web/app/` and are the symbol drawn from
+  `logo-mark.tsx`: `icon.svg` and `favicon.ico` (16/32/48) are the orange
+  symbol on a transparent background; `apple-icon.png` (180×180) is the white
+  symbol on a full-bleed `#FA4900` square (iOS rounds the corners itself).
+  If the symbol changes, regenerate all three.
 
 ## Shape
 
