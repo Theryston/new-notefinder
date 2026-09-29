@@ -185,3 +185,116 @@ describe('parseEnv', () => {
     );
   });
 });
+
+describe('parseEnv S3 storage settings', () => {
+  const storage = {
+    S3_ENDPOINT: 'http://localhost:9000',
+    S3_REGION: 'us-east-1',
+    S3_BUCKET: 'notefinder',
+    S3_ACCESS_KEY_ID: 'access-key',
+    S3_SECRET_ACCESS_KEY: 'secret-key',
+    S3_FORCE_PATH_STYLE: 'true',
+    S3_PUBLIC_URL: 'http://localhost:9000/notefinder/',
+  };
+  const mandatory = [
+    'S3_REGION',
+    'S3_BUCKET',
+    'S3_ACCESS_KEY_ID',
+    'S3_SECRET_ACCESS_KEY',
+    'S3_PUBLIC_URL',
+  ] as const;
+
+  it('parses a complete config', () => {
+    expect(parseEnv({ ...required, ...storage })).toMatchObject({
+      S3_ENDPOINT: 'http://localhost:9000',
+      S3_REGION: 'us-east-1',
+      S3_BUCKET: 'notefinder',
+      S3_ACCESS_KEY_ID: 'access-key',
+      S3_SECRET_ACCESS_KEY: 'secret-key',
+      S3_FORCE_PATH_STYLE: true,
+      // Trailing slashes are dropped so URLs can be built as `${base}/${key}`.
+      S3_PUBLIC_URL: 'http://localhost:9000/notefinder',
+    });
+  });
+
+  it('drops every trailing slash of the public URL', () => {
+    expect(
+      parseEnv({
+        ...required,
+        ...storage,
+        S3_PUBLIC_URL: 'https://files.notefinder.com.br//',
+      }).S3_PUBLIC_URL,
+    ).toBe('https://files.notefinder.com.br');
+  });
+
+  it('needs neither the endpoint nor path style on AWS', () => {
+    const { S3_ENDPOINT: _, S3_FORCE_PATH_STYLE: __, ...aws } = storage;
+    const env = parseEnv({ ...required, ...aws });
+    expect(env.S3_ENDPOINT).toBeUndefined();
+    expect(env.S3_FORCE_PATH_STYLE).toBeUndefined();
+    expect(env.S3_BUCKET).toBe('notefinder');
+  });
+
+  it('accepts a config with no S3 variable at all', () => {
+    const env = parseEnv(required);
+    for (const key of [...mandatory, 'S3_ENDPOINT', 'S3_FORCE_PATH_STYLE']) {
+      expect(env[key as keyof typeof env]).toBeUndefined();
+    }
+  });
+
+  it('counts blank variables as unset', () => {
+    const blank = Object.fromEntries(Object.keys(storage).map((k) => [k, '']));
+    const env = parseEnv({ ...required, ...blank });
+    expect(env.S3_BUCKET).toBeUndefined();
+    expect(env.S3_FORCE_PATH_STYLE).toBeUndefined();
+  });
+
+  it.each(mandatory)('requires %s once another S3 variable is set', (key) => {
+    const { [key]: _, ...incomplete } = storage;
+    const expected = new RegExp(
+      `Required when any S3_ variable is set[\\s\\S]*at ${key}`,
+    );
+    expect(() => parseEnv({ ...required, ...incomplete })).toThrowError(
+      expected,
+    );
+    expect(() =>
+      parseEnv({ ...required, ...incomplete, [key]: '' }),
+    ).toThrowError(expected);
+  });
+
+  it.each(['S3_ENDPOINT', 'S3_FORCE_PATH_STYLE'] as const)(
+    'does not accept %s alone',
+    (key) => {
+      expect(() => parseEnv({ ...required, [key]: storage[key] })).toThrowError(
+        /S3_BUCKET/,
+      );
+    },
+  );
+
+  it.each([
+    ['S3_ENDPOINT', 'localhost:9000'],
+    ['S3_PUBLIC_URL', 'files.notefinder.com.br'],
+    ['S3_BUCKET', 'ab'],
+    ['S3_BUCKET', 'Uppercase'],
+    ['S3_BUCKET', '-leading-hyphen'],
+    ['S3_BUCKET', 'trailing-hyphen-'],
+    ['S3_BUCKET', 'under_score'],
+    ['S3_BUCKET', 'a'.repeat(64)],
+    ['S3_FORCE_PATH_STYLE', 'maybe'],
+  ])('rejects %s=%s', (key, value) => {
+    expect(() =>
+      parseEnv({ ...required, ...storage, [key]: value }),
+    ).toThrowError(new RegExp(key));
+  });
+
+  it.each([
+    'abc',
+    'notefinder-files',
+    'files.notefinder.com.br',
+    'a'.repeat(63),
+  ])('accepts the bucket name %s', (bucket) => {
+    expect(
+      parseEnv({ ...required, ...storage, S3_BUCKET: bucket }).S3_BUCKET,
+    ).toBe(bucket);
+  });
+});
