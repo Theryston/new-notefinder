@@ -13,9 +13,9 @@ export type UpdateProfileResult =
   | { ok: false; code: ApiErrorCode };
 
 /**
- * Saves the profile with `PATCH /v1/me`. Multipart, like the API expects
- * (the Avatar file joins the same request). Never throws: a failure comes
- * back as the code whose message the form shows.
+ * Saves the profile with `PATCH /v1/me`. Multipart, like the API expects: the
+ * Avatar, when there is one, is a further part of the same request. Never
+ * throws: a failure comes back as the code whose message the form shows.
  *
  * Load it on demand (`import()`): it pulls in Zod and the API client, which
  * the page doesn't need until the first save.
@@ -25,6 +25,7 @@ export async function updateProfile(
 ): Promise<UpdateProfileResult> {
   const form = new FormData();
   form.set('name', body.name);
+  if (body.avatar) form.set('avatar', body.avatar);
   try {
     const user = await browserApi('/me', {
       method: 'PATCH',

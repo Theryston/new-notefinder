@@ -45,13 +45,29 @@ export class UsersRepository {
   }
 
   /** Sets the Name and returns the updated user, or nothing when gone. */
-  async updateName(
+  updateName(id: string, name: string): Promise<CurrentUserRow | undefined> {
+    return this.updateProfile(id, { name });
+  }
+
+  /**
+   * Sets the Name and the Avatar's URL in one statement, so the two are
+   * never saved apart.
+   */
+  updateNameAndImage(
     id: string,
     name: string,
+    image: string,
+  ): Promise<CurrentUserRow | undefined> {
+    return this.updateProfile(id, { name, image });
+  }
+
+  private async updateProfile(
+    id: string,
+    values: Pick<typeof users.$inferInsert, 'name' | 'image'>,
   ): Promise<CurrentUserRow | undefined> {
     const [row] = await this.txHost.tx
       .update(users)
-      .set({ name })
+      .set(values)
       .where(eq(users.id, id))
       .returning(currentUserColumns);
     return row;

@@ -136,7 +136,15 @@
       "changePassword": "Alterar senha",
       "save": "Salvar alterações",
       "saving": "Salvando",
-      "saved": "Perfil atualizado."
+      "saved": "Perfil atualizado.",
+      "avatar": {
+        "change": "Trocar foto",
+        "hint": "PNG, JPEG ou WEBP, até {size}.",
+        "errors": {
+          "unsupportedType": "Escolha uma imagem PNG, JPEG ou WEBP.",
+          "tooLarge": "Essa imagem tem mais de {size}. Escolha uma menor."
+        }
+      }
     }
   },
   "auth": {

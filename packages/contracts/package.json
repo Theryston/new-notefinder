@@ -11,6 +11,10 @@
     "./auth-rules": {
       "types": "./dist/auth-rules.d.ts",
       "default": "./dist/auth-rules.js"
+    },
+    "./avatar-rules": {
+      "types": "./dist/avatar-rules.d.ts",
+      "default": "./dist/avatar-rules.js"
     }
   },
   "scripts": {

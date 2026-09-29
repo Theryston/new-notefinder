@@ -19,6 +19,11 @@ import { Spinner } from '@/components/ui/spinner';
 import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
 import type { UpdateProfileResult } from '../update-profile';
+import {
+  AvatarPicker,
+  type AvatarPickerState,
+  useAvatarPicker,
+} from './avatar-picker';
 import { FormAlert } from './form-alert';
 import { FormField, fieldErrorProps } from './form-field';
 import { ProfileSummary, type ProfileUser } from './profile-summary';
@@ -38,6 +43,7 @@ const LOAD_FAILED: UpdateProfileResult = {
 /** The form, its saving and what to do once the API accepts the change. */
 function useProfileForm(
   user: ProfileUser,
+  picker: AvatarPickerState,
   onSaved: (user: CurrentUser) => void,
 ) {
   const t = useTranslations('profile.edit');
@@ -62,15 +68,16 @@ function useProfileForm(
   const onSubmit = form.handleSubmit(async (values) => {
     setErrorCode(null);
     const result = await mutation
-      .mutateAsync(values)
+      .mutateAsync({ ...values, avatar: picker.file ?? undefined })
       .catch((): UpdateProfileResult => LOAD_FAILED);
     if (!result.ok) {
-      // The typed Name stays in the field, so the user can just retry.
+      // The typed Name and the picked image stay, so the user can just retry.
       setErrorCode(result.code);
       return;
     }
     // Shows the Name as saved (trimmed) and starts a clean form.
     form.reset({ name: result.user.name });
+    picker.clear();
     onSaved(result.user);
     toast.success(t('saved'));
   });
@@ -100,9 +107,9 @@ function PasswordRow() {
 }
 
 /**
- * The Name is editable; Username, email and password are shown for
- * reference (the password leads to the recovery flow). Saved with
- * `PATCH /v1/me`; `onSaved` gets the updated user.
+ * The Name and the Avatar are editable, saved together with `PATCH /v1/me`
+ * (`onSaved` gets the updated user); Username, email and password are shown
+ * for reference (the password leads to the recovery flow).
  */
 export function EditProfileForm({
   user,
@@ -114,13 +121,16 @@ export function EditProfileForm({
   const t = useTranslations('profile.edit');
   const tFields = useTranslations('auth.fields');
   const tErrors = useTranslations('errors');
-  const { form, onSubmit, errorCode } = useProfileForm(user, onSaved);
+  const picker = useAvatarPicker();
+  const { form, onSubmit, errorCode } = useProfileForm(user, picker, onSaved);
   const nameError = form.formState.errors.name;
   const pending = form.formState.isSubmitting;
 
   return (
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-6">
-      <ProfileSummary user={user} />
+      <ProfileSummary user={user} previewUrl={picker.previewUrl}>
+        <AvatarPicker picker={picker} />
+      </ProfileSummary>
       {errorCode && <FormAlert>{tErrors(errorCode)}</FormAlert>}
       <FormField
         id="name"
