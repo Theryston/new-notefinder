@@ -34,6 +34,32 @@ export function multipartFields(request: Request): Record<string, string> {
   return fields;
 }
 
+type MultipartFile = {
+  filename: string;
+  contentType: string;
+  bytes: Buffer;
+};
+
+/** The file part `field` of a multipart request, if it has one. */
+export function multipartFile(
+  request: Request,
+  field: string,
+): MultipartFile | undefined {
+  const boundary = /boundary=(.+)$/.exec(
+    request.headers()['content-type'] ?? '',
+  )?.[1];
+  const body = request.postDataBuffer();
+  if (!boundary || !body) return undefined;
+  // latin1 maps every byte to one character, so the file's bytes come back
+  // unchanged from the slice of the text.
+  const part = new RegExp(
+    `name="${field}"; filename="([^"]*)"\\r\\nContent-Type: ([^\\r]*)\\r\\n\\r\\n([\\s\\S]*?)\\r\\n--${boundary}`,
+  ).exec(body.toString('latin1'));
+  if (!part) return undefined;
+  const [, filename = '', contentType = '', content = ''] = part;
+  return { filename, contentType, bytes: Buffer.from(content, 'latin1') };
+}
+
 /**
  * Serves `PATCH /v1/me`. By default it saves the trimmed Name, like the API;
  * `reply` overrides the answer (errors, slow responses). The returned list

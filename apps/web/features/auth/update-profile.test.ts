@@ -41,6 +41,26 @@ describe('updateProfile', () => {
     expect([...sentForm()]).toEqual([['name', 'Ada King']]);
   });
 
+  it('sends the Avatar as a file part next to the name', async () => {
+    const avatar = new File([new Uint8Array([1, 2, 3])], 'me.png', {
+      type: 'image/png',
+    });
+
+    await updateProfile({ name: 'Ada King', avatar });
+
+    const form = sentForm();
+    expect([...form.keys()]).toEqual(['name', 'avatar']);
+    const sent = form.get('avatar');
+    expect(sent).toBeInstanceOf(File);
+    expect(sent).toMatchObject({ name: 'me.png', type: 'image/png', size: 3 });
+  });
+
+  it('sends no avatar part when none was picked', async () => {
+    await updateProfile({ name: 'Ada King', avatar: undefined });
+
+    expect(sentForm().has('avatar')).toBe(false);
+  });
+
   it('parses the answer with the current user contract', async () => {
     await updateProfile({ name: 'Ada King' });
 

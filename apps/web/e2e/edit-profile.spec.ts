@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, type Request, test } from '@playwright/test';
 
 import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
@@ -7,6 +7,7 @@ import {
   type MeReply,
   mockProfileApi,
   multipartFields,
+  multipartFile,
 } from './profile-api-mock';
 
 const { profile, auth, errors, header } = messages.en;
@@ -164,5 +165,231 @@ test.describe('edit profile: saving', () => {
     await expect(nameInput(page)).toHaveValue('Ada King');
     await expect(page.getByText(edit.saved)).toHaveCount(0);
     await expect(saveButton(page)).toBeEnabled();
+  });
+});
+
+// A 1×1 PNG: the picture the user picks and, as a data URL (which needs no
+// network), the one the mocked API says it stored.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
+  'base64',
+);
+const STORED_IMAGE = `data:image/png;base64,${PNG.toString('base64')}`;
+const MAX_BYTES = 5 * 1024 * 1024;
+const sizeLimit = (locale: string) =>
+  new Intl.NumberFormat(locale, { style: 'unit', unit: 'megabyte' }).format(5);
+
+const fileInput = (page: Page) => page.locator('input[type="file"]');
+const summaryImage = (page: Page) => page.getByRole('main').locator('img');
+const headerImage = (page: Page) =>
+  page.getByRole('button', { name: header.account.accountMenu }).locator('img');
+const formAlert = (page: Page) => page.getByRole('main').getByRole('alert');
+
+type PickedFile = { name: string; mimeType: string; buffer?: Buffer };
+const pick = (page: Page, file: PickedFile) =>
+  fileInput(page).setInputFiles({ buffer: PNG, ...file });
+const pickPng = (page: Page) =>
+  pick(page, { name: 'me.png', mimeType: 'image/png' });
+const pickGif = (page: Page) =>
+  pick(page, { name: 'move.gif', mimeType: 'image/gif' });
+
+/**
+ * Answers like the API: an upload becomes the user's stored image, and a save
+ * without one leaves the image as it was.
+ */
+const storesUploads = () => {
+  let image: string | null = null;
+  return (request: Request): MeReply => {
+    if (multipartFile(request, 'avatar')) image = STORED_IMAGE;
+    return {
+      body: currentUserBody({ ...ada, image }, multipartFields(request).name),
+    };
+  };
+};
+
+/** The file was refused with `message` and nothing is left to upload. */
+const expectRefused = async (page: Page, message: string) => {
+  await expect(formAlert(page)).toHaveText(message);
+  await expect(summaryImage(page)).toHaveCount(0);
+};
+
+/** Saves, and the request that went out has the Name but no picture. */
+const saveWithoutAvatar = async (page: Page, saves: Request[]) => {
+  await saveButton(page).click();
+  await expect(page.getByText(edit.saved)).toBeVisible();
+  expect(multipartFile(lastSave(saves), 'avatar')).toBeUndefined();
+};
+
+const lastSave = (saves: Request[]): Request => {
+  const save = saves.at(-1);
+  if (!save) throw new Error('No save request');
+  return save;
+};
+
+test.describe('edit profile: picking an Avatar', () => {
+  test('previews the picked file without uploading it', async ({ page }) => {
+    const saves = await openAsAda(page, storesUploads());
+    await expect(summaryImage(page)).toHaveCount(0);
+
+    await pickPng(page);
+
+    await expect(summaryImage(page)).toHaveAttribute('src', /^blob:/);
+    await expect(
+      page.getByText(edit.avatar.hint.replace('{size}', sizeLimit('en'))),
+    ).toBeVisible();
+    expect(saves).toHaveLength(0);
+  });
+
+  test('offers only PNG, JPEG and WEBP in the file dialog', async ({
+    page,
+  }) => {
+    await openAsAda(page);
+
+    await expect(fileInput(page)).toHaveAttribute(
+      'accept',
+      'image/png,image/jpeg,image/webp',
+    );
+    await expect(
+      page.getByRole('button', { name: edit.avatar.change }),
+    ).toBeVisible();
+  });
+
+  test('refuses an image over the size limit before uploading', async ({
+    page,
+  }) => {
+    const saves = await openAsAda(page);
+
+    await pick(page, {
+      name: 'huge.png',
+      mimeType: 'image/png',
+      buffer: Buffer.alloc(MAX_BYTES + 1),
+    });
+
+    await expectRefused(
+      page,
+      edit.avatar.errors.tooLarge.replace('{size}', sizeLimit('en')),
+    );
+    await saveWithoutAvatar(page, saves);
+  });
+
+  test('refuses a file that is not a PNG, JPEG or WEBP image', async ({
+    page,
+  }) => {
+    await openAsAda(page);
+
+    await pickGif(page);
+
+    await expectRefused(page, edit.avatar.errors.unsupportedType);
+  });
+
+  test('drops a picked file when the next one is refused', async ({ page }) => {
+    const saves = await openAsAda(page);
+    await pickPng(page);
+    await expect(summaryImage(page)).toHaveAttribute('src', /^blob:/);
+
+    await pick(page, { name: 'notes.pdf', mimeType: 'application/pdf' });
+
+    await expectRefused(page, edit.avatar.errors.unsupportedType);
+    await saveWithoutAvatar(page, saves);
+  });
+
+  test('takes the next valid file after a refused one', async ({ page }) => {
+    await openAsAda(page);
+    await pickGif(page);
+    await expect(formAlert(page)).toBeVisible();
+
+    await pickPng(page);
+
+    await expect(formAlert(page)).toHaveCount(0);
+    await expect(summaryImage(page)).toHaveAttribute('src', /^blob:/);
+  });
+
+  test('is translated to Portuguese', async ({ page }) => {
+    const pt = messages['pt-BR'].profile.edit.avatar;
+    await mockAuthApi(page, { user: ada });
+    await mockProfileApi(page, { user: ada });
+    await page.goto('/pt-BR/me/edit');
+
+    await expect(page.getByRole('button', { name: pt.change })).toBeVisible();
+    await expect(
+      page.getByText(pt.hint.replace('{size}', sizeLimit('pt-BR'))),
+    ).toBeVisible();
+
+    await pickGif(page);
+
+    await expect(formAlert(page)).toHaveText(pt.errors.unsupportedType);
+  });
+});
+
+test.describe('edit profile: saving an Avatar', () => {
+  test('sends the file with the Name and shows it in the page and header', async ({
+    page,
+  }) => {
+    const saves = await openAsAda(page, storesUploads());
+
+    await nameInput(page).fill('Ada King');
+    await pickPng(page);
+    await saveButton(page).click();
+
+    await expect(page.getByText(edit.saved)).toBeVisible();
+    expect(saves).toHaveLength(1);
+    const request = lastSave(saves);
+    expect(request.method()).toBe('PATCH');
+    expect(request.headers()['content-type']).toMatch(/^multipart\/form-data/);
+    expect(multipartFields(request)).toEqual({ name: 'Ada King' });
+    expect(multipartFile(request, 'avatar')).toEqual({
+      filename: 'me.png',
+      contentType: 'image/png',
+      bytes: PNG,
+    });
+    await expect(summaryImage(page)).toHaveAttribute('src', STORED_IMAGE);
+    await expect(headerImage(page)).toHaveAttribute('src', STORED_IMAGE);
+  });
+
+  test('sends only the Name once the Avatar is saved', async ({ page }) => {
+    const saves = await openAsAda(page, storesUploads());
+    await pickPng(page);
+    await saveButton(page).click();
+    await expect(page.getByText(edit.saved)).toBeVisible();
+
+    await nameInput(page).fill('Ada King');
+    await saveButton(page).click();
+
+    await expect.poll(() => saves.length).toBe(2);
+    expect(multipartFile(lastSave(saves), 'avatar')).toBeUndefined();
+    expect(multipartFields(lastSave(saves))).toEqual({ name: 'Ada King' });
+  });
+
+  test('keeps the picked file and the Name when saving fails', async ({
+    page,
+  }) => {
+    const invalidImage: MeReply = {
+      status: 400,
+      body: {
+        statusCode: 400,
+        code: 'VALIDATION_FAILED',
+        message: 'Avatar could not be read as an image',
+      },
+    };
+    const stored = storesUploads();
+    let failing = true;
+    const saves = await openAsAda(page, (request) =>
+      failing ? invalidImage : stored(request),
+    );
+    await nameInput(page).fill('Ada King');
+    await pickPng(page);
+
+    await saveButton(page).click();
+
+    await expect(formAlert(page)).toHaveText(errors.VALIDATION_FAILED);
+    await expect(nameInput(page)).toHaveValue('Ada King');
+    await expect(summaryImage(page)).toHaveAttribute('src', /^blob:/);
+
+    failing = false;
+    await saveButton(page).click();
+
+    await expect(page.getByText(edit.saved)).toBeVisible();
+    expect(multipartFile(lastSave(saves), 'avatar')?.filename).toBe('me.png');
+    await expect(headerImage(page)).toHaveAttribute('src', STORED_IMAGE);
   });
 });

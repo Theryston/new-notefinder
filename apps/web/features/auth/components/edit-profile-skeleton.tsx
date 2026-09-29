@@ -28,8 +28,14 @@ export function EditProfileSkeleton() {
       <div className="flex items-center gap-4">
         <Skeleton className="size-20" />
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-6 w-40 rounded-md" />
-          <Skeleton className="h-4 w-24 rounded-md" />
+          <div className="flex flex-col">
+            <Skeleton className="h-7 w-40 rounded-md" />
+            <Skeleton className="h-5 w-24 rounded-md" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-48 rounded-md" />
+          </div>
         </div>
       </div>
       <FieldSkeleton />
