@@ -101,6 +101,9 @@ design token means updating `DESIGN.md` and the tokens in
   file allowed in the repo).
 - Shared primitives already exist: `apiErrorSchema` (error envelope +
   `ApiErrorCode`), `cursorPaginationQuerySchema` and `cursorPageSchema(item)`.
+- Write regexes in schemas **without flags** (`[a-zA-Z]`, not `/…/i`): the
+  OpenAPI document is generated from these schemas and JSON Schema patterns
+  carry no flags, so a flag would silently vanish from what clients see.
 - Web cache tag builders (e.g. `cacheTags.track(id)`) also live here, so the
   API invalidates exactly the tags the web caches with.
 - It is a compiled package (`tsc` → `dist/`). Relative imports use the `.js`
