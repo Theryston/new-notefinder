@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 
-import { apiErrorFromResponse, internalApiError } from './api-error';
+import { internalApiError } from './api-error';
+import { apiErrorFromResponse } from './error-response';
 
 const apiVersionPrefix = '/v1';
 
@@ -10,7 +11,7 @@ export type ApiRequestOptions<TSchema extends z.ZodType> = {
   /** Contracts schema the response body is parsed with. */
   schema: TSchema;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  /** Serialized as JSON. */
+  /** Serialized as JSON, except a `FormData`, which is sent as multipart. */
   body?: unknown;
   /** `null`/`undefined` values are omitted. */
   query?: Record<string, QueryValue>;
@@ -18,10 +19,19 @@ export type ApiRequestOptions<TSchema extends z.ZodType> = {
   signal?: AbortSignal;
 };
 
+/** The `fetch` body for `body`, and whether it is JSON (needs its header). */
+function encodeBody(body: unknown): { payload?: BodyInit; json: boolean } {
+  if (body === undefined) return { json: false };
+  // fetch writes the multipart content type itself, boundary included.
+  if (body instanceof FormData) return { payload: body, json: false };
+  return { payload: JSON.stringify(body), json: true };
+}
+
 /**
  * Isomorphic core shared by the server and browser clients: builds the
- * versioned URL, sends JSON, and parses both success and error bodies with
- * the contracts schemas. Every failure surfaces as an `ApiError`.
+ * versioned URL, sends JSON (or multipart for a `FormData`), and parses both
+ * success and error bodies with the contracts schemas. Every failure
+ * surfaces as an `ApiError`.
  */
 export async function apiRequest<TSchema extends z.ZodType>(
   baseUrl: string,
@@ -41,9 +51,8 @@ export async function apiRequest<TSchema extends z.ZodType>(
 
   const headers = new Headers(options.headers);
   headers.set('accept', 'application/json');
-  if (options.body !== undefined) {
-    headers.set('content-type', 'application/json');
-  }
+  const { payload, json } = encodeBody(options.body);
+  if (json) headers.set('content-type', 'application/json');
 
   let response: Response;
   try {
@@ -51,8 +60,7 @@ export async function apiRequest<TSchema extends z.ZodType>(
       ...init,
       method: options.method ?? 'GET',
       headers,
-      body:
-        options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: payload,
       signal: options.signal,
     });
   } catch (error) {

@@ -124,6 +124,21 @@
       }
     }
   },
+  "profile": {
+    "edit": {
+      "metaTitle": "Edit profile",
+      "overline": "Your account",
+      "title": "Edit profile",
+      "description": "Change how you appear to other singers on NoteFinder.",
+      "loading": "Loading your profile",
+      "usernameHint": "Your username is your profile link, so it can't be changed.",
+      "passwordHint": "We'll email you a code to choose a new one.",
+      "changePassword": "Change password",
+      "save": "Save changes",
+      "saving": "Saving",
+      "saved": "Profile updated."
+    }
+  },
   "auth": {
     "home": "NoteFinder home",
     "wordmark": "NoteFinder",
@@ -168,6 +183,7 @@
         "placeholder": "Ada Lovelace",
         "errors": {
           "required": "Enter your name.",
+          "tooLong": "Use at most 100 characters.",
           "invalid": "Enter a valid name."
         }
       },

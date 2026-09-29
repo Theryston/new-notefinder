@@ -1,6 +1,6 @@
 /** The messages each field has under `auth.fields.<field>.errors`. */
 type FieldErrorKinds = {
-  name: 'required' | 'invalid';
+  name: 'required' | 'tooLong' | 'invalid';
   email: 'invalid';
   password: 'tooShort' | 'tooLong' | 'invalid';
   username: 'tooShort' | 'tooLong' | 'invalid';
@@ -18,7 +18,7 @@ export type FieldErrorKey<F extends FieldName> =
 const SPECIFIC_ERRORS: {
   [F in FieldName]: Partial<Record<string, FieldErrorKinds[F]>>;
 } = {
-  name: { too_small: 'required' },
+  name: { too_small: 'required', too_big: 'tooLong' },
   email: {},
   password: { too_small: 'tooShort', too_big: 'tooLong' },
   username: { too_small: 'tooShort', too_big: 'tooLong' },

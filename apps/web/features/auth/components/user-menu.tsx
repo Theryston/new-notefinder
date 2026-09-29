@@ -22,7 +22,6 @@ import {
   PreferencesPanel,
   PreferencesSubmenus,
 } from '@/components/preferences';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,9 +32,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Link } from '@/lib/i18n/navigation';
 
-import { initials } from '../initials';
 import type { SessionUser } from '../session';
 import { useSignOut } from './sign-out';
+import { UserAvatar } from './user-avatar';
 
 type MenuLink = { href: string; label: string; icon: LucideIcon };
 
@@ -54,21 +53,6 @@ function useMenuLinks(user: SessionUser): MenuLink[] {
     ...profile,
     { href: '/me/edit', label: t('account.editProfile'), icon: PencilIcon },
   ];
-}
-
-function UserAvatar({ user }: { user: SessionUser }) {
-  return (
-    <Avatar className="size-9">
-      {user.image ? (
-        // Decorative: the name is next to it or on the button. Google's photo
-        // host refuses some requests that carry a referrer.
-        <AvatarImage src={user.image} alt="" referrerPolicy="no-referrer" />
-      ) : null}
-      <AvatarFallback className="bg-primary/15 font-semibold text-primary">
-        {initials(user.name, user.username ?? user.email)}
-      </AvatarFallback>
-    </Avatar>
-  );
 }
 
 function UserSummary({ user }: { user: SessionUser }) {
