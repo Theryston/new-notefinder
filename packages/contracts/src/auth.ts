@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  NAME_MAX_LENGTH,
   OTP_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -16,6 +17,9 @@ export const usernameSchema = z
   .max(USERNAME_MAX_LENGTH)
   .regex(USERNAME_PATTERN);
 
+/** A User's Name as written by them: trimmed, 1 to {@link NAME_MAX_LENGTH}. */
+export const nameSchema = z.string().trim().min(1).max(NAME_MAX_LENGTH);
+
 const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH)
@@ -28,7 +32,7 @@ const otpSchema = z.string().regex(new RegExp(`^\\d{${OTP_LENGTH}}$`));
  * separate step, once the email is verified.
  */
 export const signUpBodySchema = z.object({
-  name: z.string().trim().min(1),
+  name: nameSchema,
   email: z.email(),
   password: passwordSchema,
 });

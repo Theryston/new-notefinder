@@ -1,8 +1,11 @@
-import {
-  type ApiError as ApiErrorBody,
-  type ApiErrorCode,
-  apiErrorSchema,
+import type {
+  ApiError as ApiErrorBody,
+  ApiErrorCode,
 } from '@notefinder/contracts';
+
+// Types only, on purpose: the query client (in every page's first-load
+// JavaScript) imports `ApiError`, so this file must not pull in Zod. Parsing
+// an error response lives in `error-response.ts`.
 
 /**
  * Error thrown by the API clients. `code` is stable and meant to be
@@ -36,20 +39,4 @@ export function internalApiError(message: string, cause?: unknown): ApiError {
     { statusCode: 500, code: 'INTERNAL_ERROR', message },
     { cause },
   );
-}
-
-/** Builds an `ApiError` from a non-2xx response, even if it isn't JSON. */
-export async function apiErrorFromResponse(
-  response: Response,
-): Promise<ApiError> {
-  const body: unknown = await response.json().catch(() => undefined);
-  const parsed = apiErrorSchema.safeParse(body);
-
-  if (parsed.success) return new ApiError(parsed.data);
-
-  return new ApiError({
-    statusCode: response.status,
-    code: 'INTERNAL_ERROR',
-    message: `Unexpected ${response.status} response from the API`,
-  });
 }

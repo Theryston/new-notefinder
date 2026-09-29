@@ -96,6 +96,23 @@ describe('apiRequest', () => {
       expect(headers.get('x-custom')).toBe('1');
     });
 
+    it('sends a FormData body as is, leaving the multipart boundary to fetch', async () => {
+      const form = new FormData();
+      form.set('name', 'Ada Lovelace');
+
+      await apiRequest('http://api.test', '/me', {
+        schema: z.object(),
+        method: 'PATCH',
+        body: form,
+      });
+
+      const { init, headers } = lastCall();
+      expect(init.method).toBe('PATCH');
+      expect(init.body).toBe(form);
+      // Set by fetch, with the boundary; a value set here would break it.
+      expect(headers.has('content-type')).toBe(false);
+    });
+
     it('merges extra fetch init (e.g. credentials)', async () => {
       await apiRequest(
         'http://api.test',

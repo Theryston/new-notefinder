@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { nameSchema } from './auth.js';
+
 export const userRoleSchema = z.enum(['USER', 'ADMIN']);
 
 export type UserRole = z.infer<typeof userRoleSchema>;
@@ -21,3 +23,12 @@ export const currentUserSchema = z.object({
 });
 
 export type CurrentUser = z.infer<typeof currentUserSchema>;
+
+/**
+ * `PATCH /v1/me`, sent as `multipart/form-data` (the Avatar file joins as a
+ * further field). Only the Name can change here: the Username is chosen once
+ * and never edited.
+ */
+export const updateMeBodySchema = z.object({ name: nameSchema });
+
+export type UpdateMeBody = z.infer<typeof updateMeBodySchema>;

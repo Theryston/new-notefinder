@@ -315,6 +315,19 @@ leaf possible and pass server-fetched data down as props.
   returns `null` when signed out.
 - Session-dependent UI (avatar in the header, "favorite" state) is rendered
   inside `<Suspense>` so it never blocks the static shell.
+- **Private pages** follow `/me/edit` (`EditProfile` in
+  `features/auth/components/`): the page and its heading stay static, the
+  session is read in the browser, a skeleton shows meanwhile, signed-out
+  visitors go to sign in with `redirectTo` and the username step is
+  `AuthGate`'s. Saving calls the API from the browser (`PATCH /v1/me` as
+  `FormData` through `browserApi`, loaded on the first save) and writes the
+  answer into the session query, so the header shows it at once. Toasts use
+  `components/ui/sonner` (`Toaster` mounted by the page that toasts).
+- **Zod stays out of first-load JS.** `lib/api/api-error.ts` (the
+  `ApiError` class, imported by the query client on every page) must not
+  import a contracts value: the first client use of `browserApi` once pulled
+  Zod (~89 KiB gzipped) into every page through it. Parsing lives in
+  `lib/api/error-response.ts`; forms load their schema with `lazyResolver()`.
 
 ## Env
 

@@ -16,6 +16,10 @@ describe('fieldErrorKey', () => {
     expect(fieldErrorKey(field, type)).toBe(key);
   });
 
+  it('says a name over the length limit is too long', () => {
+    expect(fieldErrorKey('name', 'too_big')).toBe('name.errors.tooLong');
+  });
+
   it('uses the generic message without a type', () => {
     expect(fieldErrorKey('password', undefined)).toBe(
       'password.errors.invalid',

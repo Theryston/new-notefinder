@@ -125,6 +125,11 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   12; `src/common/zod/` mirrors its API. OpenAPI covers request shapes only.)
 - Validation failures return **400** `VALIDATION_FAILED` with
   `details: { location: 'body' | 'query' | 'param' | 'custom', issues }`.
+- **Multipart forms** (`PATCH /v1/me`: Name now, Avatar file later): a multer
+  interceptor from `@nestjs/platform-express` (`NoFilesInterceptor`,
+  `FileInterceptor`) fills `request.body` with the text fields, then the
+  same DTO/Zod pipe validates them. Always pass `limits`, so an oversized
+  part is refused while it is read (`BAD_REQUEST`) instead of buffered.
 - **Lists** use cursor pagination: query `cursorPaginationQuerySchema`,
   response `cursorPageSchema(item)` → `{ items, nextCursor }`. Cursors are
   opaque strings (base64 of the sort key), never raw offsets.
