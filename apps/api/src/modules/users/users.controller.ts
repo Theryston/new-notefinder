@@ -16,7 +16,6 @@ import { AllowMissingUsername } from '../../common/decorators/allow-missing-user
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
-import { ProfileService } from './profile.service.js';
 import { UpdateMeBodyDto } from './update-me.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -27,10 +26,7 @@ const UPDATE_ME_FORM_LIMITS = { fields: 8, fieldSize: 16 * 1024 };
 @ApiTags('users')
 @Controller('me')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly profileService: ProfileService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   // The client reads `username: null` here to send the user to pick one.
   @AllowMissingUsername()
@@ -56,6 +52,6 @@ export class UsersController {
     @CurrentUser() user: AuthUser,
     @Body() body: UpdateMeBodyDto,
   ): Promise<CurrentUserBody> {
-    return this.profileService.updateProfile(user.id, body);
+    return this.usersService.updateProfile(user.id, body);
   }
 }
