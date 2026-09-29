@@ -229,6 +229,13 @@ possible:
   routes, which enforce the rules Better Auth doesn't know (immutable
   username, avatars we upload ourselves). Don't re-enable it or add a Better
   Auth endpoint that edits those fields.
+- Sign-up (`POST /v1/auth/sign-up/email`) goes through the `before` hook in
+  `modules/auth/sign-up-rules.ts`: an `image` is **refused**
+  (`IMAGE_NOT_ALLOWED`, a hook can't remove a field), so an Avatar only comes
+  from the upload or the Google profile (a different path, which keeps the
+  provider's picture), and `name` must pass the shared `nameSchema` from
+  contracts (`INVALID_NAME`) and is stored trimmed. Sign-up rules live in
+  that hook, not in the web form alone.
 - Passwords: new ones are scrypt (Better Auth default); legacy bcrypt hashes
   are accepted and rehashed to scrypt on the next successful sign-in
   (`modules/auth/password.ts`). `role` and `dailyPracticeTargetSeconds` can't
