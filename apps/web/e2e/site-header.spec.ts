@@ -5,6 +5,12 @@ import { messages } from './messages';
 
 const { header } = messages.en;
 const ada: MockUser = { ...ADA, username: 'ada' };
+const PHOTO_URL = 'https://lh3.googleusercontent.com/a/ada-photo=s96-c';
+// 1×1 PNG, standing in for the Google profile photo.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
+  'base64',
+);
 
 const menuButton = (page: Page) =>
   page.getByRole('button', { name: header.account.menu, exact: true });
@@ -59,6 +65,31 @@ test.describe('site header (desktop)', () => {
       page.getByRole('link', { name: header.account.signIn }),
     ).toBeVisible();
     await expect(page).toHaveURL(/\/en\?x=1$/);
+  });
+
+  test('shows the photo of a user who signed up with Google', async ({
+    page,
+  }) => {
+    await page.route(PHOTO_URL, (route) =>
+      route.fulfill({ contentType: 'image/png', body: PNG }),
+    );
+    await mockAuthApi(page, { user: { ...ada, image: PHOTO_URL } });
+    await page.goto('/en');
+
+    await expect(accountButton(page).locator('img')).toHaveAttribute(
+      'src',
+      PHOTO_URL,
+    );
+    await expect(accountButton(page)).not.toContainText('AL');
+  });
+
+  test('falls back to the initials when the photo fails', async ({ page }) => {
+    await page.route(PHOTO_URL, (route) => route.fulfill({ status: 404 }));
+    await mockAuthApi(page, { user: { ...ada, image: PHOTO_URL } });
+    await page.goto('/en');
+
+    await expect(accountButton(page)).toContainText('AL');
+    await expect(accountButton(page).locator('img')).toHaveCount(0);
   });
 
   test('searches from the field, focused with Ctrl K', async ({ page }) => {

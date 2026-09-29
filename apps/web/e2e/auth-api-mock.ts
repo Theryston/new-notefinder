@@ -14,7 +14,7 @@ export type MockUser = {
   email: string;
   emailVerified: boolean;
   username: string | null;
-  image: null;
+  image: string | null;
   createdAt: string;
   updatedAt: string;
 };
