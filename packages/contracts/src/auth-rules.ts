@@ -18,6 +18,13 @@ export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 50;
 export const USERNAME_PATTERN = /^[a-z0-9_]+$/i;
 
+/**
+ * Longest Name accepted when one is written (sign-up, edit profile). Names
+ * imported from the legacy app may be longer: they stay valid as they are and
+ * only need shortening when their owner edits them.
+ */
+export const NAME_MAX_LENGTH = 100;
+
 /** Length of the email verification and password-reset codes. */
 export const OTP_LENGTH = 6;
 
