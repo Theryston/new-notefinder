@@ -43,6 +43,19 @@ describe('parseSessionUser', () => {
     });
   });
 
+  it('keeps the photo URL (Google sign-ups have one)', () => {
+    const image = 'https://lh3.googleusercontent.com/a/photo=s96-c';
+    expect(parseSessionUser({ user: { ...apiUser, image } })?.image).toBe(
+      image,
+    );
+  });
+
+  it.each([[null], [''], [42]])('has no photo for image %j', (image) => {
+    const user = parseSessionUser({ user: { ...apiUser, image } });
+    expect(user).not.toBeNull();
+    expect(user?.image).toBeUndefined();
+  });
+
   it.each([[null], [undefined], ['x'], [{}], [{ user: null }], [{ user: {} }]])(
     'is null when signed out or malformed: %j',
     (body) => {

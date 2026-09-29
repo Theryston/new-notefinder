@@ -6,7 +6,43 @@
   },
   "home": {
     "title": "Find the notes of any song",
-    "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback."
+    "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback.",
+    "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+  },
+  "header": {
+    "home": "NoteFinder home",
+    "wordmark": "NoteFinder",
+    "skipToContent": "Skip to content",
+    "search": {
+      "label": "Search songs and artists",
+      "placeholder": "Search songs, artists…",
+      "open": "Search",
+      "cancel": "Cancel"
+    },
+    "account": {
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "menu": "Menu",
+      "accountMenu": "Account menu",
+      "myProfile": "My profile",
+      "editProfile": "Edit profile",
+      "signOut": "Sign out",
+      "signingOut": "Signing out"
+    },
+    "preferences": {
+      "theme": "Theme",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "language": "Language",
+      "terms": "Terms of use",
+      "languages": {
+        "en": "English",
+        "pt-BR": "Português (Brasil)"
+      }
+    }
   },
   "terms": {
     "metaTitle": "Terms and Conditions",

@@ -6,7 +6,43 @@
   },
   "home": {
     "title": "Descubra as notas de qualquer música",
-    "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real."
+    "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real.",
+    "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+  },
+  "header": {
+    "home": "Início do NoteFinder",
+    "wordmark": "NoteFinder",
+    "skipToContent": "Pular para o conteúdo",
+    "search": {
+      "label": "Buscar músicas e artistas",
+      "placeholder": "Buscar músicas, artistas…",
+      "open": "Buscar",
+      "cancel": "Cancelar"
+    },
+    "account": {
+      "signIn": "Entrar",
+      "signUp": "Criar conta",
+      "menu": "Menu",
+      "accountMenu": "Menu da conta",
+      "myProfile": "Meu perfil",
+      "editProfile": "Editar perfil",
+      "signOut": "Sair",
+      "signingOut": "Saindo"
+    },
+    "preferences": {
+      "theme": "Tema",
+      "themes": {
+        "light": "Claro",
+        "dark": "Escuro",
+        "system": "Sistema"
+      },
+      "language": "Idioma",
+      "terms": "Termos de uso",
+      "languages": {
+        "en": "English",
+        "pt-BR": "Português (Brasil)"
+      }
+    }
   },
   "terms": {
     "metaTitle": "Termos e Condições",

@@ -38,10 +38,12 @@ nub run lighthouse   # Lighthouse CI on the production build (after build)
 app/
   [locale]/                 every user-facing route is under the locale segment
     layout.tsx              root layout (html lang, providers, fonts)
-    page.tsx                home
-    tracks/[trackId]/page.tsx
-    search/page.tsx
-    ...
+    (site)/                 pages with the site header (auth pages and terms stay outside)
+      layout.tsx            site header + <main id="main">
+      page.tsx              home
+      tracks/[trackId]/page.tsx
+      search/page.tsx
+      ...
   api/revalidate/route.ts   secret-protected endpoint the API calls to invalidate tags
 features/                   domain code, one folder per feature
   tracks/
@@ -243,8 +245,9 @@ leaf possible and pass server-fetched data down as props.
   with `localeAlternates(locale, path)` from `lib/i18n/metadata.ts` (a layout
   doesn't know the current path).
 - Only the message namespaces client components need are passed to
-  `NextIntlClientProvider` (currently `errors`); add namespaces deliberately
-  to keep the RSC payload small.
+  `NextIntlClientProvider` (currently `errors`, plus `header` in the
+  `(site)` layout); add namespaces deliberately to keep the RSC payload
+  small.
 
 ## UI and styling
 

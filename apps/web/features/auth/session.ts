@@ -8,6 +8,8 @@ export type SessionUser = {
   email: string;
   emailVerified: boolean;
   username: string | null;
+  /** Photo URL (Google sign-ups bring one), when there is one. */
+  image?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -20,13 +22,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  */
 export function parseSessionUser(body: unknown): SessionUser | null {
   if (!isRecord(body) || !isRecord(body.user)) return null;
-  const { name, email, emailVerified, username } = body.user;
+  const { name, email, emailVerified, username, image } = body.user;
   if (typeof email !== 'string') return null;
   return {
     name: typeof name === 'string' ? name : '',
     email,
     emailVerified: emailVerified === true,
     username: typeof username === 'string' && username ? username : null,
+    image: typeof image === 'string' && image ? image : undefined,
   };
 }
 

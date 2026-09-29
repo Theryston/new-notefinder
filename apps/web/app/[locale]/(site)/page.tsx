@@ -9,14 +9,26 @@ export async function generateMetadata(): Promise<Metadata> {
   return { alternates: localeAlternates(await getLocale(), '/') };
 }
 
+// Temporary filler so the page scrolls while the header is built; replaced
+// by the real home sections.
+const placeholderKeys = Array.from(
+  { length: 12 },
+  (_, index) => `placeholder-${index}`,
+);
+
 export default function HomePage() {
   const t = useTranslations('home');
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-2xl flex-col justify-center gap-4 p-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-12 md:px-6">
       <LogoMark className="size-12" />
       <h1 className="font-extrabold text-4xl tracking-tight">{t('title')}</h1>
       <p className="text-muted-foreground">{t('description')}</p>
-    </main>
+      {placeholderKeys.map((key) => (
+        <p key={key} className="max-w-prose">
+          {t('placeholder')}
+        </p>
+      ))}
+    </div>
   );
 }
