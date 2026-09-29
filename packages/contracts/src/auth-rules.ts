@@ -16,7 +16,10 @@ export const PASSWORD_MAX_LENGTH = 128;
 // The API lowercases the input before storing it, as legacy did.
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 50;
-export const USERNAME_PATTERN = /^[a-z0-9_]+$/i;
+// Spells out both letter cases instead of using the `i` flag: JSON Schema and
+// OpenAPI patterns carry no flags, so the generated OpenAPI document would
+// drop it and describe lowercase letters only. The accepted set is the same.
+export const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
 
 /**
  * Longest Name accepted when one is written (sign-up, edit profile). Names
