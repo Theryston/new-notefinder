@@ -239,12 +239,7 @@ test.describe('site header (mobile)', () => {
 });
 
 test.describe('pages without the site header', () => {
-  for (const path of [
-    '/en/sign-in',
-    '/en/sign-up',
-    '/en/forgot-password',
-    '/en/terms',
-  ]) {
+  for (const path of ['/en/sign-in', '/en/sign-up', '/en/forgot-password']) {
     test(`${path} has no site header`, async ({ page }) => {
       await mockAuthApi(page);
       await page.goto(path);

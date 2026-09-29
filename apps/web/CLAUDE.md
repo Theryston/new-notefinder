@@ -38,7 +38,7 @@ nub run lighthouse   # Lighthouse CI on the production build (after build)
 app/
   [locale]/                 every user-facing route is under the locale segment
     layout.tsx              root layout (html lang, providers, fonts)
-    (site)/                 pages with the site header (auth pages and terms stay outside)
+    (site)/                 pages with the site header (auth pages stay outside)
       layout.tsx            site header + <main id="main">
       page.tsx              home
       tracks/[trackId]/page.tsx

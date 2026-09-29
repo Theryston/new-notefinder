@@ -47,8 +47,6 @@
   "terms": {
     "metaTitle": "Termos e Condições",
     "metaDescription": "Termos e Condições de Uso do NoteFinder.",
-    "home": "Página inicial do NoteFinder",
-    "wordmark": "NoteFinder",
     "title": "Termos e Condições de Uso",
     "lastUpdated": "Última atualização: <time>{date}</time>",
     "sectionHeading": "{number}. {title}",

@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { AccountMenu } from '@/features/auth/components/account-menu';
 import { HeaderSearch } from '@/features/search/components/header-search';
 
-/** Site pages (home, tracks, search…): everything but auth and the terms. */
+/** Site pages (home, tracks, search, terms…): everything but auth. */
 export default async function SiteLayout({
   children,
 }: LayoutProps<'/[locale]'>) {
