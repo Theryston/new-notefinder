@@ -218,6 +218,17 @@ possible:
   `@CurrentUser()` (set on `request.user`). Admin-only routes use
   `@Roles('ADMIN')` (legacy enum values). Guard order: throttler → auth →
   roles. Mobile (bearer/Expo plugin) is not wired yet.
+- A signed-in user without a username (Google sign-up) gets
+  `USERNAME_REQUIRED` on every private route except those marked
+  `@AllowMissingUsername()`. They set it once with `PUT /v1/me/username`
+  (stored lowercased; `CONFLICT` if they already have one or it is taken):
+  a username never changes afterwards.
+- Better Auth's `POST /v1/auth/update-user` is **disabled** for everyone
+  (`disabledPaths`, it answers 404), so an existing user's profile fields
+  (name, username, image) change only through notefinder's own `/v1/me`
+  routes, which enforce the rules Better Auth doesn't know (immutable
+  username, avatars we upload ourselves). Don't re-enable it or add a Better
+  Auth endpoint that edits those fields.
 - Passwords: new ones are scrypt (Better Auth default); legacy bcrypt hashes
   are accepted and rehashed to scrypt on the next successful sign-in
   (`modules/auth/password.ts`). `role` and `dailyPracticeTargetSeconds` can't

@@ -79,6 +79,39 @@
           "users"
         ]
       }
+    },
+    "/v1/me/username": {
+      "put": {
+        "operationId": "UsersController_setUsername_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUsernameBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user, with the username set."
+          },
+          "400": {
+            "description": "The username is not valid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "409": {
+            "description": "The user already has a username, or another user has it."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
     }
   },
   "info": {
@@ -102,6 +135,20 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "SetUsernameBodyDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "pattern": "^[a-z0-9_]+$"
+          }
+        },
+        "required": [
+          "username"
         ]
       }
     }

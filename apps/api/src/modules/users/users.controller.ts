@@ -1,7 +1,15 @@
-import { Body, Controller, Get, Patch, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Put,
+  UseInterceptors,
+} from '@nestjs/common';
 import { NoFilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiConsumes,
   ApiForbiddenResponse,
   ApiOkResponse,
@@ -16,6 +24,7 @@ import { AllowMissingUsername } from '../../common/decorators/allow-missing-user
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
+import { SetUsernameBodyDto } from './set-username.dto.js';
 import { UpdateMeBodyDto } from './update-me.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -53,5 +62,23 @@ export class UsersController {
     @Body() body: UpdateMeBodyDto,
   ): Promise<CurrentUserBody> {
     return this.usersService.updateProfile(user.id, body);
+  }
+
+  // For users who have no username yet; it is the setup step the client
+  // sends them to (`USERNAME_REQUIRED`).
+  @AllowMissingUsername()
+  @Put('username')
+  @ZodSerializerDto(currentUserSchema)
+  @ApiOkResponse({ description: 'The user, with the username set.' })
+  @ApiBadRequestResponse({ description: 'The username is not valid.' })
+  @ApiUnauthorizedResponse({ description: 'No valid session.' })
+  @ApiConflictResponse({
+    description: 'The user already has a username, or another user has it.',
+  })
+  setUsername(
+    @CurrentUser() user: AuthUser,
+    @Body() body: SetUsernameBodyDto,
+  ): Promise<CurrentUserBody> {
+    return this.usersService.setUsername(user.id, body.username);
   }
 }

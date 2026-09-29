@@ -96,8 +96,15 @@ const staticOptions = {
     // an unverified local account had accrued before.
     accountLinking: { enabled: true, trustedProviders: ['google'] },
   },
-  // Passwordless OTP sign-in isn't a notefinder feature.
-  disabledPaths: ['/sign-in/email-otp'],
+  disabledPaths: [
+    // Passwordless OTP sign-in isn't a notefinder feature.
+    '/sign-in/email-otp',
+    // Profile fields (name, username, image) are written through
+    // notefinder's own `/v1/me` routes, which enforce their rules: an
+    // immutable username and avatars that only we upload. Disabled for
+    // everyone, so it can't be used to bypass them.
+    '/update-user',
+  ],
   telemetry: { enabled: false },
 } satisfies BetterAuthOptions;
 

@@ -84,6 +84,10 @@ describe('createAuth', () => {
     });
   });
 
+  it('disables update-user, so profile fields only change through /v1/me', () => {
+    expect(setup().auth.options.disabledPaths).toContain('/update-user');
+  });
+
   it('generates cuid2 IDs, like every other table', () => {
     const generateId = setup().auth.options.advanced?.database?.generateId;
     if (typeof generateId !== 'function') throw new Error('no generateId');

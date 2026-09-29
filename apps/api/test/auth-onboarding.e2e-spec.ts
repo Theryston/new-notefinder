@@ -150,7 +150,7 @@ describe('Auth onboarding (e2e)', () => {
 
       it('unblocks private routes once the username is set', async () => {
         await spec.client
-          .post('/v1/auth/update-user')
+          .put('/v1/me/username')
           .send({ username: 'ada' })
           .expect(200);
         await spec.client

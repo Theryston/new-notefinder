@@ -338,82 +338,57 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  describe('username', () => {
+  describe('update-user', () => {
     const updateUser = (body: Record<string, unknown>) =>
       spec.client.post('/v1/auth/update-user').send(body);
 
-    beforeEach(async () => {
-      const user = await createPasswordUser(spec.testApp.db, {
-        username: null,
+    // Profile fields are written through notefinder's own routes only
+    // (`PUT /v1/me/username`, see users-username.e2e-spec.ts).
+    describe.each([
+      ['a user with a username', 'ada'],
+      ['a user without a username', null],
+    ])('for %s', (_label, username) => {
+      let user: User;
+
+      beforeEach(async () => {
+        user = await createPasswordUser(spec.testApp.db, { username });
+        await signIn(spec.client, {
+          email: user.email,
+          password: DEFAULT_PASSWORD,
+        }).expect(200);
       });
+
+      it.each([
+        ['name', { name: 'Someone Else' }],
+        ['username', { username: 'someone_else' }],
+        ['image', { image: 'https://evil.example/avatar.png' }],
+        ['role', { role: 'ADMIN' }],
+      ])(
+        'rejects a new %s and leaves the user unchanged',
+        async (_field, body) => {
+          const before = await findUser(user.email);
+
+          await updateUser(body).expect(404);
+
+          expect(await findUser(user.email)).toEqual(before);
+        },
+      );
+    });
+
+    it('keeps the other endpoints working', async () => {
+      const user = await createPasswordUser(spec.testApp.db);
       await signIn(spec.client, {
         email: user.email,
         password: DEFAULT_PASSWORD,
       }).expect(200);
-    });
 
-    it('stores the username lowercased and signs in with it', async () => {
-      await updateUser({ username: 'Ada_Lovelace' }).expect(200);
-
-      const me = await spec.client.get('/v1/me').expect(200);
-      expect(me.body).toMatchObject({ username: 'ada_lovelace' });
-
-      await signInWithUsername(createAuthClient(spec.testApp), {
-        username: 'ada_lovelace',
-        password: DEFAULT_PASSWORD,
-      }).expect(200);
-      await signInWithUsername(createAuthClient(spec.testApp), {
-        username: 'ADA_LOVELACE',
-        password: DEFAULT_PASSWORD,
-      }).expect(200);
-    });
-
-    it('refuses a wrong password on username sign-in', async () => {
-      await updateUser({ username: 'ada' }).expect(200);
-
-      await signInWithUsername(createAuthClient(spec.testApp), {
-        username: 'ada',
-        password: 'not-the-password',
-      }).expect(401);
-    });
-
-    it('rejects a username that is already taken', async () => {
-      await createPasswordUser(spec.testApp.db, { username: 'taken_name' });
-
-      const response = await updateUser({ username: 'Taken_Name' }).expect(400);
-      expect(response.body).toMatchObject({
-        code: 'USERNAME_IS_ALREADY_TAKEN',
-      });
-      const me = await spec.client.get('/v1/me').expect(200);
-      expect(me.body).toMatchObject({ username: null });
-    });
-
-    it.each([
-      ['with space', 'INVALID_USERNAME'],
-      ['dots.not.allowed', 'INVALID_USERNAME'],
-      ['hyphen-ated', 'INVALID_USERNAME'],
-      ['ação', 'INVALID_USERNAME'],
-      ['ab', 'USERNAME_TOO_SHORT'],
-      ['x'.repeat(51), 'USERNAME_TOO_LONG'],
-    ])('rejects the invalid username %j', async (username, code) => {
-      const response = await updateUser({ username }).expect(400);
-      expect(response.body).toMatchObject({ code });
-      const me = await spec.client.get('/v1/me').expect(200);
-      expect(me.body).toMatchObject({ username: null });
-    });
-
-    it('never lets a user set their own role', async () => {
-      const response = await updateUser({ role: 'ADMIN' }).expect(400);
-      expect(response.body).toMatchObject({ code: 'FIELD_NOT_ALLOWED' });
-
-      const me = await spec.client.get('/v1/me').expect(200);
-      expect(me.body).toMatchObject({ role: 'USER' });
-
-      await updateUser({ username: 'ada' }).expect(200);
-      const probe = await spec.client
-        .get('/v1/e2e-auth-probe/admin')
-        .expect(403);
-      expect(probe.body).toMatchObject({ code: 'FORBIDDEN' });
+      const session = await spec.client.get('/v1/auth/get-session').expect(200);
+      expect(session.body).toMatchObject({ user: { id: user.id } });
+      await spec.client
+        .post('/v1/auth/is-username-available')
+        .send({ username: 'free_name' })
+        .expect(200, { available: true });
+      await spec.client.post('/v1/auth/sign-out').expect(200);
     });
   });
 

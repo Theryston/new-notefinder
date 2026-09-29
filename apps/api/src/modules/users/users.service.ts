@@ -41,6 +41,28 @@ export class UsersService {
   }
 
   /**
+   * Sets the username of a user who has none yet (`PUT /v1/me/username`). It
+   * never changes once set, so a user that already has one is refused.
+   * Stored lowercased, like legacy.
+   */
+  async setUsername(userId: string, username: string): Promise<CurrentUser> {
+    const result = await this.usersRepository.setUsernameIfUnset(
+      userId,
+      username.toLowerCase(),
+    );
+    if (result.status === 'set') {
+      return toCurrentUser(result.user);
+    }
+    if (result.status === 'taken') {
+      throw new AppException('CONFLICT', 'Username is already taken');
+    }
+    // Nothing was updated: the user is gone (UNAUTHORIZED) or already had a
+    // username.
+    requireUser(await this.usersRepository.findCurrentUser(userId));
+    throw new AppException('CONFLICT', 'Username is already set');
+  }
+
+  /**
    * What the user changes about how they appear to others (`PATCH /v1/me`):
    * the Name, for now. Returns the updated user.
    */
