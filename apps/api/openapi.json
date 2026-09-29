@@ -47,6 +47,37 @@
         "tags": [
           "users"
         ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateMe_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The signed-in user, updated."
+          },
+          "400": {
+            "description": "The Name is empty or too long."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The user has no username yet."
+          }
+        },
+        "tags": [
+          "users"
+        ]
       }
     }
   },
@@ -59,6 +90,20 @@
   "tags": [],
   "servers": [],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "UpdateMeBodyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
   }
 }
