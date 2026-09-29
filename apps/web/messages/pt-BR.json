@@ -8,6 +8,88 @@
     "title": "Descubra as notas de qualquer música",
     "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real."
   },
+  "terms": {
+    "metaTitle": "Termos e Condições",
+    "metaDescription": "Termos e Condições de Uso do NoteFinder.",
+    "home": "Página inicial do NoteFinder",
+    "wordmark": "NoteFinder",
+    "title": "Termos e Condições de Uso",
+    "lastUpdated": "Última atualização: <time>{date}</time>",
+    "sectionHeading": "{number}. {title}",
+    "sections": {
+      "acceptance": {
+        "title": "Aceitação dos Termos",
+        "body": "Ao acessar e usar o NoteFinder, você concorda em cumprir e estar vinculado aos seguintes termos e condições de uso. Se você não concordar com qualquer parte destes termos, não deverá usar nosso serviço."
+      },
+      "service": {
+        "title": "Descrição do Serviço",
+        "body": "O NoteFinder é uma plataforma que auxilia usuários a descobrir as notas vocais de músicas. Nosso serviço fornece ferramentas de análise musical e visualização de notas para fins educacionais e de entretenimento."
+      },
+      "copyright": {
+        "title": "Conteúdo Musical e Direitos Autorais",
+        "body": "A reprodução de músicas no NoteFinder segue a política abaixo:",
+        "items": {
+          "directPlayback": "<strong>Reprodução direta no site</strong> somente quando: (i) a obra musical permite reprodução/streaming de acordo com as licenças aplicáveis; ou (ii) o NoteFinder adquiriu/licenciou de forma válida os direitos necessários para reproduzir a obra internamente em nosso domínio.",
+          "otherCases": "<strong>Demais casos</strong>: a música é reproduzida exclusivamente por meio do <strong>player oficial do YouTube</strong>, via API oficial do YouTube. Nesses cenários, o conteúdo é servido e controlado pelo YouTube, e eventuais questões de direitos autorais regem-se pelos Termos de Serviço e políticas do YouTube.",
+          "noModification": "Não modificamos, redistribuímos ou revendemos o conteúdo musical; todos os direitos autorais e conexos permanecem com seus respectivos titulares.",
+          "noStorage": "Não efetuamos upload/armazenamento de fonogramas em nossos servidores, exceto quando cobertos por licença válida que nos autorize a reprodução interna conforme descrito acima.",
+          "analysisTool": "O NoteFinder atua como uma ferramenta de análise e visualização de dados musicais e respeita a legislação aplicável de direitos autorais."
+        }
+      },
+      "acceptableUse": {
+        "title": "Uso Aceitável",
+        "body": "Ao usar o NoteFinder, você concorda em:",
+        "items": {
+          "lawfulUse": "Usar o serviço apenas para fins legais e de acordo com estes Termos",
+          "noIntrusion": "Não tentar acessar áreas restritas do sistema ou realizar engenharia reversa",
+          "noOverload": "Não usar o serviço de forma que possa danificar, desabilitar ou sobrecarregar nossa infraestrutura",
+          "noDataCollection": "Não coletar ou armazenar dados pessoais de outros usuários sem consentimento",
+          "respectRights": "Respeitar os direitos autorais e propriedade intelectual de terceiros",
+          "noCommercialWorks": "Não utilizar o serviço para criar obras derivadas comerciais sem autorização"
+        }
+      },
+      "accounts": {
+        "title": "Contas de Usuário",
+        "body": "Você é responsável por manter a confidencialidade de sua conta e senha. Você concorda em aceitar a responsabilidade por todas as atividades que ocorram em sua conta. Reservamo-nos o direito de encerrar contas, remover ou editar conteúdo a nosso exclusivo critério."
+      },
+      "privacy": {
+        "title": "Privacidade e Proteção de Dados",
+        "body": "Levamos sua privacidade a sério. Coletamos e processamos dados pessoais de acordo com as leis aplicáveis de proteção de dados, incluindo a LGPD (Lei Geral de Proteção de Dados). Os dados coletados são utilizados exclusivamente para fornecer e melhorar nossos serviços."
+      },
+      "liability": {
+        "title": "Limitação de Responsabilidade",
+        "body": "O NoteFinder é fornecido “como está” e “conforme disponível”. Não garantimos que o serviço será ininterrupto, seguro ou livre de erros. Em nenhuma hipótese seremos responsáveis por quaisquer danos diretos, indiretos, incidentais, especiais ou consequenciais resultantes do uso ou incapacidade de usar nosso serviço."
+      },
+      "accuracy": {
+        "title": "Precisão das Informações",
+        "body": "Embora nos esforcemos para fornecer análises musicais precisas, não garantimos a exatidão completa das notas detectadas. As análises são baseadas em algoritmos automatizados e devem ser usadas como referência educacional. Não nos responsabilizamos por interpretações ou usos específicos das informações fornecidas."
+      },
+      "serviceChanges": {
+        "title": "Modificações do Serviço",
+        "body": "Reservamo-nos o direito de modificar ou descontinuar, temporariamente ou permanentemente, o serviço (ou qualquer parte dele) com ou sem aviso prévio. Não seremos responsáveis perante você ou qualquer terceiro por qualquer modificação, suspensão ou descontinuação do serviço."
+      },
+      "termsChanges": {
+        "title": "Alterações nos Termos",
+        "body": "Podemos revisar estes Termos de Uso a qualquer momento sem aviso prévio. Ao usar este site, você concorda em estar vinculado à versão atual destes Termos de Uso. Recomendamos que você revise periodicamente esta página para estar ciente de quaisquer alterações."
+      },
+      "thirdParties": {
+        "title": "Links para Terceiros",
+        "body": "Nosso serviço pode conter links para sites de terceiros, incluindo o YouTube. Não temos controle sobre o conteúdo, políticas de privacidade ou práticas desses sites e não assumimos responsabilidade por eles. Recomendamos que você leia os termos e políticas de privacidade de qualquer site de terceiros que você visitar."
+      },
+      "governingLaw": {
+        "title": "Lei Aplicável",
+        "body": "Estes Termos serão regidos e interpretados de acordo com as leis do Brasil, sem considerar suas disposições sobre conflitos de leis. Qualquer disputa relacionada a estes Termos será de jurisdição exclusiva dos tribunais brasileiros."
+      },
+      "contact": {
+        "title": "Contato",
+        "body": "Se você tiver alguma dúvida sobre estes Termos e Condições, entre em contato conosco através de uma issue no nosso GitHub: <link>{url}</link>."
+      },
+      "general": {
+        "title": "Disposições Gerais",
+        "body": "Se qualquer disposição destes Termos for considerada inválida ou inexequível, as demais disposições continuarão em pleno vigor e efeito. A falha em exercer ou fazer valer qualquer direito ou disposição destes Termos não constituirá uma renúncia a tal direito ou disposição."
+      }
+    }
+  },
   "auth": {
     "home": "Página inicial do NoteFinder",
     "wordmark": "NoteFinder",
