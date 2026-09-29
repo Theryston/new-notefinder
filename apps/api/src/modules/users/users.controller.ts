@@ -6,7 +6,6 @@ import {
   Put,
   UseInterceptors,
 } from '@nestjs/common';
-import { NoFilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -24,13 +23,10 @@ import { AllowMissingUsername } from '../../common/decorators/allow-missing-user
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
+import { AvatarUploadInterceptor } from './avatar-upload.interceptor.js';
 import { SetUsernameBodyDto } from './set-username.dto.js';
 import { UpdateMeBodyDto } from './update-me.dto.js';
 import { UsersService } from './users.service.js';
-
-// The form is a few short text fields until the Avatar file joins it, so
-// anything bigger is rejected while it is being read, not after.
-const UPDATE_ME_FORM_LIMITS = { fields: 8, fieldSize: 16 * 1024 };
 
 @ApiTags('users')
 @Controller('me')
@@ -47,14 +43,17 @@ export class UsersController {
     return this.usersService.getCurrentUser(user.id);
   }
 
-  // Multipart from the start, so the Avatar file only adds a field. Until
-  // then a file part is refused instead of silently dropped.
+  // Multipart: the Name as a text field, the optional Avatar as a file.
   @Patch()
-  @UseInterceptors(NoFilesInterceptor({ limits: UPDATE_ME_FORM_LIMITS }))
+  @UseInterceptors(AvatarUploadInterceptor)
   @ApiConsumes('multipart/form-data')
   @ZodSerializerDto(currentUserSchema)
   @ApiOkResponse({ description: 'The signed-in user, updated.' })
-  @ApiBadRequestResponse({ description: 'The Name is empty or too long.' })
+  @ApiBadRequestResponse({
+    description:
+      'The Name is empty or too long, or the Avatar is over 5 MB or not a ' +
+      'PNG, JPEG or WEBP image.',
+  })
   @ApiUnauthorizedResponse({ description: 'No valid session.' })
   @ApiForbiddenResponse({ description: 'The user has no username yet.' })
   updateMe(

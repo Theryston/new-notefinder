@@ -5,7 +5,9 @@ import {
   type UpdateMeBody,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { StorageService } from '../../integrations/storage/storage.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
 import { type CurrentUserRow, UsersRepository } from './users.repository.js';
 
 const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
@@ -21,6 +23,13 @@ const requireUser = (user: CurrentUserRow | undefined): CurrentUserRow => {
   return user;
 };
 
+/** Why something failed, looking through wrappers to their `cause`. */
+const reasonOf = (error: unknown): string => {
+  const cause = error instanceof Error ? error.cause : undefined;
+  const failure = cause ?? error;
+  return failure instanceof Error ? failure.message : String(failure);
+};
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -28,6 +37,7 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly webRevalidation: WebRevalidationService,
+    private readonly storage: StorageService,
   ) {}
 
   /**
@@ -64,19 +74,62 @@ export class UsersService {
 
   /**
    * What the user changes about how they appear to others (`PATCH /v1/me`):
-   * the Name, for now. Returns the updated user.
+   * the Name and, optionally, a new Avatar. Returns the updated user.
    */
   async updateProfile(
     userId: string,
     changes: UpdateMeBody,
   ): Promise<CurrentUser> {
-    const user = requireUser(
-      await this.usersRepository.updateName(userId, changes.name),
-    );
+    const user = requireUser(await this.saveProfile(userId, changes));
     if (user.username !== null) {
       await this.revalidateProfile(user.username);
     }
     return toCurrentUser(user);
+  }
+
+  /**
+   * Without an Avatar only the Name is written and the current image stays
+   * (Google's, a legacy one or none). With one, the file is stored first and
+   * both are written in a single update, so a failed upload leaves the
+   * profile untouched.
+   */
+  private async saveProfile(
+    userId: string,
+    { name, avatar }: UpdateMeBody,
+  ): Promise<CurrentUserRow | undefined> {
+    if (!avatar) {
+      return this.usersRepository.updateName(userId, name);
+    }
+    const image = await this.storeAvatar(userId, avatar);
+    return this.usersRepository.updateNameAndImage(userId, name, image);
+  }
+
+  /**
+   * Stores the Avatar under a key of its own, replacing the previous one, and
+   * returns the URL to save. The timestamp makes each upload a new URL, since
+   * browsers and the CDN keep serving the old picture from the same key.
+   *
+   * @throws {ZodValidationException} when the file is not a usable image.
+   * @throws {StorageError} when the file could not be stored.
+   */
+  private async storeAvatar(userId: string, avatar: File): Promise<string> {
+    const body = await processAvatarImage(
+      new Uint8Array(await avatar.arrayBuffer()),
+    );
+    const key = `avatars/${userId}.webp`;
+    try {
+      await this.storage.putPublicObject({
+        key,
+        body,
+        contentType: AVATAR_CONTENT_TYPE,
+      });
+    } catch (error) {
+      // The error filter only sees the StorageError's own message; what went
+      // wrong (access denied, no bucket, timeout) is its cause.
+      this.logger.error(`Could not store the Avatar: ${reasonOf(error)}`);
+      throw error;
+    }
+    return `${this.storage.publicUrl(key)}?cacheBust=${Date.now()}`;
   }
 
   /**
@@ -88,9 +141,7 @@ export class UsersService {
       await this.webRevalidation.revalidate([cacheTags.userProfile(username)]);
     } catch (error) {
       this.logger.warn(
-        `Could not enqueue the Profile revalidation: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Could not enqueue the Profile revalidation: ${reasonOf(error)}`,
       );
     }
   }
