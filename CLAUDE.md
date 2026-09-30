@@ -288,7 +288,7 @@ the maintainer changes these files.
   (lint, check-types, test, build). Squash merge.
 - **Conventional Commits**, scoped by package:
   `<type>(<scope>): <subject>` with types `feat fix refactor perf test docs
-  build ci chore style revert` and scopes `web api contracts repo`
+  build ci chore style revert` and scopes `web api music-catalog contracts repo`
   (e.g. `feat(api): add track search endpoint`). Enforced by lefthook
   on commits and by CI on the PR title (it becomes the squash commit).
 - lefthook `pre-commit` runs Biome on staged files and re-stages the fixes.
