@@ -31,6 +31,28 @@ The public page of a User, addressed by their Username, showing their Name
 and Avatar.
 _Avoid_: Account page, user page
 
+### Music catalog
+
+**Music catalog**:
+Every Recording in the world with its artists, releases, genres and Lyrics,
+kept in sync with MusicBrainz. It is where notefinder's own catalog (the
+Tracks, Artists and Albums that have notes and public URLs) finds songs; a
+Recording is not a Track until notefinder processes it.
+_Avoid_: Catalog (alone, which means notefinder's own catalog)
+
+**Recording**:
+One specific audio take of a piece of music, as MusicBrainz defines it (a
+studio take, a live take and a remaster are different Recordings). It is
+what the music catalog searches and returns, one result per Recording, never
+grouped, because a singer may want to practice a specific take (e.g. one
+sung in a different key).
+_Avoid_: Song, track (for this concept)
+
+**Lyrics**:
+The words sung in a Recording, plain or synced to time, matched to the
+Recording from an open lyrics source.
+_Avoid_: Letra, text
+
 ### Legacy
 
 **Legacy ID**:
