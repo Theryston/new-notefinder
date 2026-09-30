@@ -25,10 +25,10 @@ Drizzle ORM on Postgres. Run these from `apps/api`:
 - `nub run db:migrate` applies pending migrations. It is an explicit step,
   never run on boot; production runs `node dist/database/migrate.js` (the
   image needs the `drizzle/` folder).
-- `nub run db:seed` upserts a small fictional catalog with synthetic vocal
-  notes, created by a user you can sign in as (`seed@notefinder.dev` /
-  `notefinder-seed`). Deterministic and safe to re-run; refuses
-  `NODE_ENV=production`.
+- `nub run db:seed` upserts the development user you can sign in as
+  (`seed@notefinder.dev` / `notefinder-seed`). Development only: safe to
+  re-run, refuses `NODE_ENV=production`. Seed data grows with the features
+  that add tables.
 - `nub run db:studio` opens Drizzle Studio.
 
 Other tasks, scoped with `--filter=api`: `build`, `lint`, `check-types`,

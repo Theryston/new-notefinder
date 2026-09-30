@@ -170,11 +170,13 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
 - Schema in `src/database/schema/*.ts`. Tables and columns are **snake_case**
   in SQL (`casing: 'snake_case'`), camelCase in TypeScript; table names plural
   (`tracks`, `track_notes`).
-- Every table has `id` (text, cuid2 generated in app, compatible with the
-  original data), `createdAt` and `updatedAt` (`timestamp with time zone`).
+- Every table has `id` (text, cuid2 generated in app; imported users keep
+  their legacy cuid, which fits the same column), `createdAt` and
+  `updatedAt` (`timestamp with time zone`).
+- Tables arrive with the feature that uses them: don't create a table (or
+  columns) ahead of the feature that reads and writes it.
 - Declare foreign keys with explicit `onDelete`, and add indexes for every
-  column used in `where`/`order by` of hot queries (look at the original
-  Prisma schema for relations to preserve).
+  column used in `where`/`order by` of hot queries.
 - Migrations: change the schema → `db:generate` → review the SQL → commit it in
   `drizzle/`. Never edit a migration that was already applied, never use
   `drizzle-kit push` outside a throwaway local database. CI runs
@@ -186,34 +188,53 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
 
 ### Legacy data import
 
-Development starts with an empty database, but at launch all data from the
-legacy database (schema: `prisma/schema.prisma` in
-<https://github.com/theryston/notefinder>) will be imported by a one-off
-script (`src/scripts/import-legacy.ts`, written at the end of the project).
-The new schema may differ, but every schema change must keep that import
-possible:
+Development starts with an empty database. At launch, a one-off script
+(`src/scripts/import-legacy.ts`, written at the end of the project) imports
+the legacy users and their data (schema: `prisma/schema.prisma` in
+<https://github.com/theryston/notefinder>). The legacy **catalog** (tracks,
+artists, albums, notes, thumbnails) is **not** imported: it is reprocessed
+into a schema designed for the new app (see
+`docs/adr/0001-reprocessed-catalog-with-legacy-id-maps.md`).
 
-- **Every legacy entity and field has a destination** (or a documented
-  reason to drop it): users, OAuth accounts, tracks, track notes, artists,
-  albums, thumbnails, views, favorites, section visibility, daily practice
-  streaks, calculation jobs, etc.
-- **Keep legacy IDs** (cuid strings) as the primary keys of imported rows, so
-  old URLs and references still resolve. New rows use cuid2, which fits the
-  same `text` column.
-- **Password hashes are bcrypt** in the legacy DB; the Better Auth password
-  config must verify bcrypt hashes (or rehash on next login), so users don't
-  need to reset passwords. Google accounts map via `provider` +
-  `providerAccountId`.
-- Don't add `NOT NULL` columns or constraints the legacy data can't satisfy
-  without a clear default/transformation (legacy has many nullable fields,
-  e.g. `Track.title`, `Track.duration`).
-- Enum values may be renamed, but keep a 1:1 (or clearly derivable) mapping
-  from the legacy values (`TrackStatus`, `PlayingCopyright`, `Role`, …).
-- Files referenced by URL (S3 thumbnails, audio, lyrics, avatars) keep
-  working with the existing URLs or have a deterministic mapping.
-- When a schema change diverges from the legacy model, write the mapping in
-  the PR description (and in a comment next to the table if it isn't
-  obvious), so the import script can be written from those notes.
+**Users** keep their legacy identity, so the schema must always be able to
+hold them:
+
+- **Keep the legacy user ID** (cuid) as the primary key, plus username, email
+  and password hash. Sessions, accounts and every user-owned row reference
+  the user ID, and profile URLs use the username. Users have no ID map.
+- Emails and usernames are lowercased; legacy uniqueness was case-sensitive,
+  so case-only collisions are listed in the import report, never merged
+  silently.
+- **Password hashes are bcrypt** in the legacy DB; they are imported as-is
+  and rehashed on the next sign-in (see Auth). Google accounts map via
+  `provider` + `providerAccountId`.
+- User data with no catalog reference (daily practice streaks, section
+  visibility, daily practice target, Avatar URL) is imported as-is, or with a
+  documented transformation. Don't add `NOT NULL` user columns or
+  constraints the legacy data can't satisfy without a clear default.
+
+**Tables with a public URL (tracks, artists, albums)** get new IDs, so old
+URLs resolve through a map:
+
+- When you create one of these tables, create its legacy ID map in the same
+  PR, e.g. `legacy_track_ids (legacy_id text primary key, track_id text not
+  null references tracks(id) on delete cascade)`. Several legacy IDs may
+  point to the same record (legacy has duplicates).
+- When a read by ID finds nothing, look the ID up in that map. On a hit,
+  answer **404 with the code `RESOURCE_MOVED`** and the new ID (add the code
+  to `apiErrorSchema` with the first such table); the web turns it into a 308
+  redirect. On a miss, a plain `NOT_FOUND`. A 404 with a code, not an HTTP
+  redirect, so server-side `fetch` never follows it silently and the mobile
+  app handles it the same way. Cover both cases in the endpoint's e2e.
+- The import script fills the maps.
+
+**User data that points to the catalog** (favorites, views, created tracks)
+is translated through the maps at import. A row whose catalog record has no
+new equivalent is dropped and listed in the import report.
+
+When a user-related schema change diverges from the legacy model, write the
+mapping in the PR description (and in a comment next to the table if it
+isn't obvious), so the import script can be written from those notes.
 
 ## Auth (Better Auth)
 
