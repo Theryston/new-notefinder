@@ -318,29 +318,6 @@
       }
     }
   },
-  "tracks": {
-    "card": {
-      "untitled": "Música sem título",
-      "vocalRange": "Extensão vocal"
-    },
-    "list": {
-      "loadMore": "Carregar mais músicas",
-      "loading": "Carregando mais músicas",
-      "error": "Não foi possível carregar mais músicas.",
-      "retry": "Tentar de novo"
-    },
-    "collection": {
-      "artist": "Artista",
-      "album": "Álbum",
-      "loading": "Carregando músicas",
-      "songs": "Músicas",
-      "trackCount": "{count, plural, =0 {Nenhuma música com notas ainda} one {# música com notas} other {# músicas com notas}}",
-      "artistMetaTitle": "Músicas de {name} com suas notas vocais",
-      "artistMetaDescription": "Veja as músicas do artista {name} no NoteFinder e as notas vocais de cada música para nunca desafinar ao cantar!",
-      "albumMetaTitle": "Músicas do álbum {name} com suas notas vocais",
-      "albumMetaDescription": "Veja as músicas do álbum {name} no NoteFinder e as notas vocais de cada música para nunca desafinar ao cantar!"
-    }
-  },
   "authErrors": {
     "INVALID_EMAIL": "Informe um email válido.",
     "PASSWORD_TOO_SHORT": "A senha é muito curta. Use pelo menos 6 caracteres.",

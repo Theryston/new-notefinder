@@ -33,9 +33,8 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/search?q=bohemian%20rhapsody&page=2', implemented: false },
   { path: '/tracks/clx123abc', implemented: false },
   { path: '/tracks/clx123abc?x=1', implemented: false },
-  // IDs served by the mock API (e2e/mock-api/fixtures.ts).
-  { path: '/artists/clx456def', implemented: true },
-  { path: '/albums/clx789ghi', implemented: true },
+  { path: '/artists/clx456def', implemented: false },
+  { path: '/albums/clx789ghi', implemented: false },
   { path: '/users/john.doe', implemented: false },
   { path: '/me/edit', implemented: true },
   { path: '/sign-in?redirectTo=/me/edit', implemented: true },

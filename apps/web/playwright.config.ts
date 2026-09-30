@@ -40,24 +40,14 @@ export default defineConfig({
       },
     },
   ],
-  webServer: [
-    {
-      // Stand-in for the API the pages fetch from on the server
-      // (`API_URL`), which `page.route` can't intercept.
-      command: 'node e2e/mock-api/server.ts',
-      url: `${webServerEnv.API_URL}/covers/ready.svg`,
-      reuseExistingServer: false,
-      timeout: 10_000,
-    },
-    {
-      command: `next start --port ${port}`,
-      url: baseURL,
-      env: webServerEnv,
-      // Never attach to a `next dev` server left running on the same port:
-      // its behavior differs from production and would hide real failures.
-      reuseExistingServer: false,
-      stdout: 'pipe',
-      timeout: 60_000,
-    },
-  ],
+  webServer: {
+    command: `next start --port ${port}`,
+    url: baseURL,
+    env: webServerEnv,
+    // Never attach to a `next dev` server left running on the same port:
+    // its behavior differs from production and would hide real failures.
+    reuseExistingServer: false,
+    stdout: 'pipe',
+    timeout: 60_000,
+  },
 });
