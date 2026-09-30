@@ -20,6 +20,7 @@ export const mbid = (n: number): string =>
 const FIXTURE_TABLES = [
   'area',
   'artist',
+  'artist_alias',
   'artist_credit',
   'artist_credit_name',
   'artist_tag',
@@ -112,13 +113,13 @@ export type FixtureArtist = { id: number; mbid: string; name: string };
 
 export const addArtist = async (
   db: Database,
-  input: { name: string; mbid?: string },
+  input: { name: string; mbid?: string; sortName?: string },
 ): Promise<FixtureArtist> => {
   const artistMbid = input.mbid ?? randomUUID();
   const id = await insertRowWithId(db, 'artist', {
     gid: artistMbid,
     name: input.name,
-    sort_name: input.name,
+    sort_name: input.sortName ?? input.name,
   });
   return { id, mbid: artistMbid, name: input.name };
 };

@@ -34,7 +34,7 @@ packages/
 
 ```sh
 nub install                 # install everything
-nub run infra:up            # start Postgres + API Redis + MinIO + web cache Redis + Music catalog Postgres (docker compose)
+nub run infra:up            # start Postgres + API Redis + MinIO + web cache Redis + Music catalog Postgres and Meilisearch (docker compose)
 nub run dev                 # build packages, then run web + api + music-catalog in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
 nub run knip                # unused files, exports and dependencies (whole repo)
@@ -44,7 +44,7 @@ nub run check-types         # tsc in every package
 nub run test                # unit tests
 nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
-nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres) + web Playwright
+nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
 nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | @notefinder/contracts)
 ```
@@ -112,7 +112,8 @@ design token means updating `DESIGN.md` and the tokens in
 - Web cache tag builders (e.g. `cacheTags.track(id)`) also live here, so the
   API invalidates exactly the tags the web caches with.
 - `music-catalog.ts` (with `music-catalog-recording.ts`, the `Recording`
-  returned by `getRecording`) is the **private** WebSocket protocol of the
+  returned by `getRecording`, and `music-catalog-search.ts`, `search` and its
+  summaries) is the **private** WebSocket protocol of the
   Music catalog service (envelope, its own error codes, `status`), spoken
   between internal services only. It never goes through the API's DTOs, so
   it stays out of the public OpenAPI document, and its error codes are not
@@ -170,10 +171,12 @@ design token means updating `DESIGN.md` and the tokens in
   `notefinder` bucket, so uploads use the same code as production's S3) for
   local development, and includes `apps/web/docker-compose.yml` (`web-redis`
   on 6380, the web's shared cache) and `apps/music-catalog/docker-compose.yml`
-  (`music-catalog-postgres` on 5433, the Music catalog's own database);
+  (`music-catalog-postgres` on 5433, the Music catalog's own database, and
+  `music-catalog-meilisearch` on 7700, its search engine, with a job that
+  creates the two API keys it uses);
   `nub run infra:up` / `infra:down` start and stop all of them. E2E tests
-  spin up their own throwaway containers (Testcontainers: Postgres and MinIO)
-  instead of using the dev ones.
+  spin up their own throwaway containers (Testcontainers: Postgres, MinIO and,
+  for the Music catalog, Meilisearch) instead of using the dev ones.
 - Production is self-hosted: one Docker image per app, published to GHCR by
   GitHub Actions and run on Coolify behind a CDN. Keep apps stateless so they
   can run with multiple instances (shared state lives in Postgres/Redis).

@@ -1,4 +1,5 @@
 import type { BootstrapPhase, CatalogDataset } from '@notefinder/contracts';
+import { and, eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import { bootstrapState } from '../../database/schema/bootstrap-state.js';
 
@@ -20,5 +21,22 @@ export class BootstrapRepository {
       .from(bootstrapState)
       .limit(1);
     return state;
+  }
+
+  /**
+   * Moves the phase from `from` to `to`, only if it is still `from`: a worker
+   * that lost a race with another one (or with a restart) changes nothing
+   * instead of overwriting what the other recorded.
+   */
+  async advance(move: {
+    from: BootstrapPhase;
+    to: BootstrapPhase;
+  }): Promise<void> {
+    await this.db
+      .update(bootstrapState)
+      .set({ phase: move.to })
+      .where(
+        and(eq(bootstrapState.id, true), eq(bootstrapState.phase, move.from)),
+      );
   }
 }

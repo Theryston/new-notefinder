@@ -21,7 +21,7 @@ and `apps/*/CLAUDE.md`.
 
 ```sh
 nub install          # install dependencies (and lefthook git hooks)
-nub run infra:up     # start Postgres, Redis, MinIO (S3) and the Music catalog's Postgres with docker compose
+nub run infra:up     # start Postgres, Redis, MinIO (S3) and the Music catalog's Postgres and Meilisearch with docker compose
 nub run dev          # run web and api
 nub run build        # build everything
 nub run lint         # Biome (lint + format + imports)

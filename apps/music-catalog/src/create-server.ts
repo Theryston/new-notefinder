@@ -1,16 +1,29 @@
-import type { Env } from './config/env.js';
+import type { ServerEnv, WorkerEnv } from './config/env.js';
 import type { Database } from './database/database.js';
+import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
+import {
+  RECORDINGS_INDEX,
+  type RecordingDocument,
+} from './lib/recordings-index.js';
 import type { Logger } from './logger.js';
 import { createStatusHandler } from './modules/bootstrap/bootstrap.handler.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
+import { IndexingRepository } from './modules/indexing/indexing.repository.js';
+import { IndexingService } from './modules/indexing/indexing.service.js';
 import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
 import { RecordingRepository } from './modules/recording/recording.repository.js';
 import { RecordingService } from './modules/recording/recording.service.js';
+import { RecordingDocumentRepository } from './modules/recording/recording-document.repository.js';
+import { RecordingDocumentService } from './modules/recording/recording-document.service.js';
+import { RecordingSummaryRepository } from './modules/recording/recording-summary.repository.js';
+import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
+import { createSearchHandler } from './modules/search/search.handler.js';
+import { SearchService } from './modules/search/search.service.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 export type CreateServerOptions = {
-  env: Env;
+  env: ServerEnv;
   db: Database;
   logger: Logger;
 };
@@ -33,15 +46,69 @@ export const createMusicCatalogServer = (
     new RecordingRepository(db),
     bootstrap,
   );
+  const search = new SearchService({
+    bootstrap,
+    // The server only searches: its key cannot write.
+    index: createMeilisearchIndex<RecordingDocument>({
+      url: env.MEILISEARCH_URL,
+      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
+      ...RECORDINGS_INDEX,
+    }),
+    summaries: new RecordingSummaryService(new RecordingSummaryRepository(db)),
+  });
   return createWsServer({
     port: env.PORT,
     apiKeys: env.API_KEYS,
     handlers: [
       createStatusHandler(bootstrap),
       createGetRecordingHandler(recording),
+      createSearchHandler(search),
     ],
     heartbeatIntervalMs: env.HEARTBEAT_INTERVAL_MS,
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logger,
   });
+};
+
+export type CreateWorkerOptions = {
+  env: WorkerEnv;
+  db: Database;
+  logger: Logger;
+  /** Aborted when the process is asked to stop. */
+  signal: AbortSignal;
+};
+
+export type MusicCatalogWorker = {
+  /** One round of the worker's periodic work. */
+  tick: () => Promise<void>;
+};
+
+/**
+ * The composition root of the worker process, next to the server's: shared
+ * by `worker.ts` and the e2e tests, so they run the same wiring. Each step
+ * the worker gains (outbox draining, Lyrics) plugs into `tick`.
+ */
+export const createMusicCatalogWorker = (
+  options: CreateWorkerOptions,
+): MusicCatalogWorker => {
+  const { env, db, logger, signal } = options;
+  const indexing = new IndexingService({
+    bootstrap: new BootstrapService(
+      new BootstrapRepository(db),
+      env.CATALOG_DATASET,
+    ),
+    documents: new RecordingDocumentService(
+      new RecordingDocumentRepository(db),
+    ),
+    repository: new IndexingRepository(db),
+    // The worker is the only writer of the index: its key can write.
+    index: createMeilisearchIndex<RecordingDocument>({
+      url: env.MEILISEARCH_URL,
+      apiKey: env.MEILISEARCH_WRITE_API_KEY,
+      ...RECORDINGS_INDEX,
+    }),
+    batchSize: env.INDEXING_BATCH_SIZE,
+    logger,
+  });
+  return { tick: () => indexing.run(signal) };
 };

@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import type { TestProject } from 'vitest/node';
 import { createDatabase, createPool } from '../../src/database/database.js';
 import { createLogger } from '../../src/logger.js';
+import { type E2eMeilisearch, startMeilisearch } from './meilisearch.js';
 import { applyMusicBrainzSchema } from './musicbrainz-schema.js';
 
 declare module 'vitest' {
@@ -11,6 +12,8 @@ declare module 'vitest' {
   export interface ProvidedContext {
     /** Connection URL of the migrated e2e database. */
     databaseUrl: string;
+    /** Where the e2e Meilisearch is and the keys the services use. */
+    meilisearch: E2eMeilisearch;
   }
 }
 
@@ -62,9 +65,9 @@ const migrateDatabase = async (url: string): Promise<void> => {
 };
 
 /**
- * Starts one Postgres for the whole e2e run (or uses `E2E_DATABASE_URL`),
- * applies the migrations and the MusicBrainz schema, and provides its URL to
- * the test workers.
+ * Starts one Postgres and one Meilisearch for the whole e2e run (or uses
+ * `E2E_DATABASE_URL` and `E2E_MEILISEARCH_URL`), applies the migrations and
+ * the MusicBrainz schema, and provides both to the test workers.
  */
 export const setup = async (
   project: TestProject,
@@ -84,6 +87,14 @@ export const setup = async (
     await database.stop();
     throw error;
   }
+  const search = await startMeilisearch().catch(async (error: unknown) => {
+    await database.stop();
+    throw error;
+  });
   project.provide('databaseUrl', database.url);
-  return database.stop;
+  project.provide('meilisearch', search.meilisearch);
+  return async () => {
+    await search.stop();
+    await database.stop();
+  };
 };

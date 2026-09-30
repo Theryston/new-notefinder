@@ -23,6 +23,7 @@
   "dependencies": {
     "@notefinder/contracts": "workspace:*",
     "drizzle-orm": "^0.45.3",
+    "meilisearch": "^0.62.0",
     "pg": "^8.23.0",
     "ws": "^8.22.0",
     "zod": "^4.6.5"
@@ -38,6 +39,7 @@
     "concurrently": "^10.0.5",
     "dependency-cruiser": "^18.4.0",
     "drizzle-kit": "^0.31.11",
+    "testcontainers": "^12.1.0",
     "tsx": "^4.23.15",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"

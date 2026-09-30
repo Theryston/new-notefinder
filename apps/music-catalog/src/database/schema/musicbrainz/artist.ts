@@ -5,6 +5,14 @@ export const artist = musicbrainz.table('artist', {
   id: integer().notNull(),
   gid: uuid().notNull(),
   name: varchar().notNull(),
+  sortName: varchar().notNull(),
+});
+
+/** Another name an artist is known by (a translation, a stage name, ...). */
+export const artistAlias = musicbrainz.table('artist_alias', {
+  artist: integer().notNull(),
+  name: varchar().notNull(),
+  sortName: varchar().notNull(),
 });
 
 /** The printed credit of a Recording, release or track. */

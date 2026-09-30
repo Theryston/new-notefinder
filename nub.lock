@@ -159,6 +159,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.3
         version: 0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
+      meilisearch:
+        specifier: ^0.62.0
+        version: 0.62.0
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -199,6 +202,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11(drizzle-orm@0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)(react@19.2.8))(pg@8.23.0)(zod@4.6.5)
+      testcontainers:
+        specifier: ^12.1.0
+        version: 12.1.0
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -5473,6 +5479,10 @@ packages:
   media-typer@1.1.1:
     resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
     engines: {node: '>= 0.8'}
+
+  meilisearch@0.62.0:
+    resolution: {integrity: sha512-/ETDW7mmWI2NcSmtJdTPhbjsIbs3VcuapszX5X6JhdHB0XbszPOhqd3EB2bEylL0HK7dgwh/4Z3MdyuycWVf5A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
 
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
@@ -11982,6 +11992,8 @@ snapshots:
   media-typer@0.3.0: {}
 
   media-typer@1.1.1: {}
+
+  meilisearch@0.62.0: {}
 
   merge-descriptors@1.0.3: {}
 

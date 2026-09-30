@@ -36,4 +36,18 @@ export class BootstrapService {
       );
     }
   }
+
+  /**
+   * The worker takes over from the mbslave container: the restore is done
+   * (`restored`) and it starts indexing. A no-op in any other phase, so a
+   * worker that restarts while indexing just goes on.
+   */
+  async startIndexing(): Promise<void> {
+    await this.repository.advance({ from: 'restored', to: 'indexing' });
+  }
+
+  /** Every Recording is indexed: from now on the catalog answers searches. */
+  async markReady(): Promise<void> {
+    await this.repository.advance({ from: 'indexing', to: 'ready' });
+  }
 }
