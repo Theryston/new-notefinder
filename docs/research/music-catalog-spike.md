@@ -46,6 +46,90 @@ What to read first:
 Decisions of the spec that are affected are collected in
 [Impact on the spec (#55)](#impact-on-the-spec-55).
 
+## Decisions taken after this spike
+
+Added to this PR after review. The maintainer took the decisions
+below in [this comment on #55](https://github.com/Theryston/new-notefinder/issues/55#issuecomment-5915812512)
+and in the "Decided after the spike (#56)" part of #55's Implementation
+Decisions, which override the older text of the spec. The findings in the rest
+of this document are left as written, as the record of what the spike saw and
+proposed; where a decision differs from a proposal in
+[Impact on the spec (#55)](#impact-on-the-spec-55), it says so.
+
+- **Search engine: pending a benchmark.** Tuned Sonic vs Meilisearch vs
+  Postgres full-text search on the MusicBrainz sample; [#58](https://github.com/Theryston/new-notefinder/issues/58)
+  (Search) is blocked until the maintainer picks from the numbers in
+  [#68](https://github.com/Theryston/new-notefinder/issues/68). Whatever the
+  engine, results keep its relevance order when loaded from Postgres.
+  **Differs from the proposals** (impact item 1): the spike suggested keeping
+  tuned Sonic and benchmarking it at 40 M documents, and measured Postgres
+  full-text search only as a calibration point; the decision is a three-way
+  benchmark on the 2.95 M sample instead, and Meilisearch was not measured by
+  the spike.
+- **Licence: notefinder is non-commercial.** It uses the free MetaBrainz token;
+  attribution for genres and tags (CC BY-NC-SA 3.0) is owed where they are
+  shown, which is web work and out of scope for the Music catalog. Carried by
+  [#62](https://github.com/Theryston/new-notefinder/issues/62) (replication,
+  note in the app's `CLAUDE.md`) and [#65](https://github.com/Theryston/new-notefinder/issues/65)
+  (deploy docs). Answers impact item 2; the "core dump only, no genres, no
+  sync" fallback is not needed.
+- **Restore: the mbslave container owns it**, with `init --empty` + `import`,
+  mbslave pinned to git tag `v31.0.1`, recording `restored`; the worker waits
+  for `restored`, then installs triggers, imports Lyrics and indexes. Carried by
+  [#60](https://github.com/Theryston/new-notefinder/issues/60). **Matches** the
+  proposal in impact item 6 (the worker waits on a recorded phase rather than
+  on polling `replication_control`, as that item suggested).
+- **Yearly schema change: CI bump PR plus an automatic blue-green reimport**,
+  new ticket [#69](https://github.com/Theryston/new-notefinder/issues/69). A
+  scheduled CI job opens a PR bumping the pinned mbslave version and runs the
+  e2e suite on it; the maintainer merges it and runs `docker compose pull &&
+  docker compose up -d`; the service then restores and indexes a parallel copy
+  while the current one serves, reuses Lyrics (match rerun), and swaps when the
+  new copy is ready. `CATALOG_NOT_READY` stays first-import-only; #62 only has
+  to make a stall visible in `status` and the logs. **Differs from the
+  proposal** (impact item 5): the spike proposed the mbslave image applying
+  `updates/schema-change/<n>.all.sql` in place; the decision is a full
+  reimport (about twice the disk during the swap), with the bump PR and the
+  reimport automated and the merge plus `pull && up -d` as the single human
+  step per year.
+- **LRCLIB in `sample`: a fake dump generated locally.** A deterministic,
+  seeded generator writes an SQLite file in the real LRCLIB schema from a few
+  thousand imported Recordings, with near-miss cases that must not match
+  (length just outside ±2 s, "(Live)" or remix titles, a different album on a
+  tie); the same generator feeds the e2e fixture, the import and match code is
+  the same for fake and real dumps, and nothing is downloaded from LRCLIB. The
+  importer checks the dump's schema and fails loudly on a mismatch. Carried by
+  [#63](https://github.com/Theryston/new-notefinder/issues/63). **Differs from
+  the proposal** (impact item 4): the spike proposed publishing a small slice
+  of the real LRCLIB data in the real schema; the decision generates synthetic
+  data instead, so no real lyrics are published or downloaded in `sample`.
+- **LRCLIB in `full`: streamed download and gunzip, refreshed at most every N
+  days** (env, default 30), about 260 GB of temporary disk per import, deleted
+  afterwards. The worker still checks the (undocumented) listing, as section 5
+  describes, but imports a newer dump at most once per interval. Carried by
+  [#63](https://github.com/Theryston/new-notefinder/issues/63) and
+  [#64](https://github.com/Theryston/new-notefinder/issues/64). Answers impact
+  item 3. The two-pass import proposed there (match on `tracks` first, copy
+  lyrics text only for matched Recordings, to avoid about 110 GB of text) is
+  not mentioned in the comment or in the decision block of #63, so it remains a
+  proposal for that ticket to settle.
+- **Sizing for the docs and the compose:** about 64 GB Postgres and 8 to 13 GB
+  of search index in `full` (about 120 GB steady state), plus about 260 GB
+  temporary per LRCLIB import, about twice the steady state during a
+  blue-green reimport, and at least 8 GB of RAM; `sample` is about 3.9 GB
+  Postgres and 0.6 GB of index, about 12 minutes. These are this document's
+  numbers, taken as the plan. Carried by [#65](https://github.com/Theryston/new-notefinder/issues/65)
+  (now also blocked by #69). The "search index" size is Sonic's until #68
+  decides the engine.
+
+Impact items 7 to 11 and 13 to 20 (explicit-URL `import` instead of
+`auto-import`, `limit`/`offset` bounds, no Sonic health check, extra env
+variables, the `sample` dataset not being small, and the things that hold) are
+not addressed by the decisions; they stand as written, and the search-specific
+ones (8, 9 and the Sonic settings of section 7) depend on the engine chosen in
+#68. Item 12 (mbslave built from git, pinned) is covered by the restore
+decision above.
+
 ## Method and environment
 
 Everything was run on one developer laptop (Linux, 16 threads, 15 GiB RAM of
@@ -886,6 +970,10 @@ SONIC_STORE__KV__DATABASE__LEVEL_ZERO_STOP_WRITES_TRIGGER=64
 
 
 ## Impact on the spec (#55)
+
+This section is the spike's analysis as written before the maintainer's
+decisions; [Decisions taken after this spike](#decisions-taken-after-this-spike)
+records what was decided and where it differs from the proposals below.
 
 Legend: **holds** = confirmed, no change; **changes** = still doable, the text
 of the spec or a ticket has to change; **at risk** = the decision may not
