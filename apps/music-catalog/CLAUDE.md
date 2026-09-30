@@ -13,8 +13,12 @@ exists.
 server answering `status`, the protocol envelope, our own Postgres schema
 (the bootstrap state), the `server` and `worker` entrypoints (the worker is a
 no-op loop) and the test and quality setup. Search, Get by id, the MusicBrainz
-bootstrap, Sonic, replication, Lyrics and the production compose are later
-tickets: do not build them here ahead of their ticket.
+restore and bootstrap, the search engine, replication, Lyrics and the
+production compose are later tickets: do not build them here ahead of their
+ticket. The **search engine is still to be chosen** (a benchmark of tuned
+Sonic, Meilisearch and Postgres full-text search, issue #68); whatever it is,
+`search` will return results in the engine's relevance order, loaded from
+Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Zod (protocol schemas come from `@notefinder/contracts`), Vitest,
@@ -90,8 +94,9 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
   modules use it only through its **service**.
 - `ws/` is generic protocol code. A feature plugs in a handler; `ws/` never
   imports `modules/`.
-- Third-party clients (Sonic, HTTP downloaders, mbslave control) will live in
-  `integrations/`, wrapped behind a small typed class, one folder each.
+- Third-party clients (the search engine, once chosen in #68, and HTTP
+  downloaders) will live in `integrations/`, wrapped behind a small typed
+  class, one folder each.
 
 ## Layers (handler -> service -> repository)
 
@@ -154,10 +159,13 @@ failure   { id, ok: false, error: { code, message } }
   message was too broken to read one from it.
 - `type` is `status` today (`search` and `getRecording` come later). `payload`
   is validated per type; `status` takes none (missing or `{}`).
-- `status` result: `{ phase: 'restoring' | 'indexing' | 'ready', dataset:
-  'sample' | 'full' }`, read from the bootstrap state row in our schema. While
-  the worker has not written the row, the answer is `restoring` with the
-  configured `CATALOG_DATASET`.
+- `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
+  dataset: 'sample' | 'full' }`, read from the bootstrap state row in our
+  schema. The phases run in that order: the mbslave container records
+  `restoring` and `restored` (it owns the MusicBrainz restore), then the
+  worker waits for `restored` and records `indexing` and `ready`. While no row
+  has been written, the answer is `restoring` with the configured
+  `CATALOG_DATASET`.
 - Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
   `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`, `INTERNAL`.
@@ -191,9 +199,13 @@ failure   { id, ok: false, error: { code, message } }
 - Tables and columns are **snake_case** in SQL (`casing: 'snake_case'`),
   camelCase in TypeScript. Tables arrive with the feature that uses them.
 - `bootstrap_state` is a single-row table (a boolean primary key that must be
-  true) written by the worker: `phase`, `dataset` and timestamps. The
-  enum values come from the contracts' schemas, so the database and the
-  `status` result can't drift apart.
+  true): `phase`, `dataset` and timestamps. The mbslave container (Python)
+  creates the row and writes `restoring` and `restored`; the worker writes
+  `indexing` and `ready`. The enum values come from the contracts'
+  `BOOTSTRAP_PHASES` / `CATALOG_DATASETS` constants, passed to Drizzle as
+  tuples (not Zod's `.enum` object, from which drizzle-kit drops the Postgres
+  schema of the type), so the database and the `status` result can't drift
+  apart.
 - Migrations: change the schema -> `db:generate` -> review the SQL -> commit
   it. Never edit an applied migration. CI runs `drizzle-kit check` +
   `generate` and fails when the schema has a change with no migration.
@@ -232,8 +244,8 @@ failure   { id, ok: false, error: { code, message } }
   real `ws` client (`test/utils/ws-client.ts`). Assert what a client sees, not
   internals. Use `useTestServer(env?)` (one server per file) and
   `useTestClient(server)` (empties the database, connects and hangs up per
-  test). Arrange the data the worker will one day write with the helpers in
-  `test/utils/database.ts` (`setBootstrapState`).
+  test). Arrange the state the import will write (mbslave and the worker)
+  with the helpers in `test/utils/database.ts` (`setBootstrapState`).
 - Database: one Postgres 17 container per run (Testcontainers), migrated with
   the real migrations. Without Docker, set `E2E_DATABASE_URL` to a Postgres
   **dedicated to tests**: it is migrated and every table of the

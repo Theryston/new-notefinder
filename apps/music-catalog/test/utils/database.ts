@@ -23,7 +23,7 @@ export const resetDatabase = async (db: Database): Promise<void> => {
   }
 };
 
-/** Writes the row the worker keeps, as it would at each step of the import. */
+/** Writes the row the import keeps, as it would at each step of it. */
 export const setBootstrapState = async (
   db: Database,
   state: Pick<typeof bootstrapState.$inferInsert, 'phase' | 'dataset'>,

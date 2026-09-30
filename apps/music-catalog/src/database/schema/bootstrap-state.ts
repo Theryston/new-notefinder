@@ -1,26 +1,27 @@
-import {
-  bootstrapPhaseSchema,
-  catalogDatasetSchema,
-} from '@notefinder/contracts';
+import { BOOTSTRAP_PHASES, CATALOG_DATASETS } from '@notefinder/contracts';
 import { sql } from 'drizzle-orm';
 import { boolean, check, timestamp } from 'drizzle-orm/pg-core';
 import { musicCatalog } from './music-catalog-schema.js';
 
-// The values come from the protocol's schemas, so the database and the
-// `status` response can't drift apart.
+// The values come from the protocol's constants, so the database and the
+// `status` response can't drift apart. They are passed as a tuple, not as
+// Zod's `.enum` object: drizzle-kit drops the Postgres schema from the column
+// types of an enum declared from an object.
 export const bootstrapPhase = musicCatalog.enum(
   'bootstrap_phase',
-  bootstrapPhaseSchema.enum,
+  BOOTSTRAP_PHASES,
 );
 
 export const catalogDataset = musicCatalog.enum(
   'catalog_dataset',
-  catalogDatasetSchema.enum,
+  CATALOG_DATASETS,
 );
 
 /**
- * How far the first import got: a single row, written by the worker. Until it
- * exists the import has not started, and the catalog is still `restoring`.
+ * How far the first import got: a single row. The mbslave container creates
+ * it and records `restoring` and `restored`; the worker then records
+ * `indexing` and `ready`. Until the row exists the import has not started, and
+ * the catalog is still `restoring`.
  */
 export const bootstrapState = musicCatalog.table(
   'bootstrap_state',

@@ -22,7 +22,7 @@ export type TestServer = {
   /** `ws://127.0.0.1:<port>` of the running server. */
   url: string;
   env: Env;
-  /** The server's database, for arranging what the worker would have written. */
+  /** The server's database, for arranging what the import would have written. */
   db: Database;
   close: () => Promise<void>;
 };

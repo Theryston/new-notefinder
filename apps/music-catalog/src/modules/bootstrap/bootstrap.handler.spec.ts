@@ -1,12 +1,15 @@
+import type { MusicCatalogStatusResult } from '@notefinder/contracts';
 import { createStatusHandler } from './bootstrap.handler.js';
 import type { BootstrapService } from './bootstrap.service.js';
 
 const setup = () => {
   const service = {
-    getStatus: vi.fn(async () => ({
-      phase: 'indexing' as const,
-      dataset: 'full' as const,
-    })),
+    getStatus: vi.fn(
+      async (): Promise<MusicCatalogStatusResult> => ({
+        phase: 'indexing',
+        dataset: 'full',
+      }),
+    ),
   };
   const handler = createStatusHandler(service as unknown as BootstrapService);
   return { handler, service };
@@ -16,6 +19,19 @@ describe('createStatusHandler', () => {
   it('answers the status request type', () => {
     expect(setup().handler.type).toBe('status');
   });
+
+  it.each(['restoring', 'restored', 'indexing', 'ready'] as const)(
+    'passes on the phase %s the service reports',
+    async (phase) => {
+      const { handler, service } = setup();
+      service.getStatus.mockResolvedValueOnce({ phase, dataset: 'sample' });
+
+      await expect(handler.handle({})).resolves.toEqual({
+        phase,
+        dataset: 'sample',
+      });
+    },
+  );
 
   it.each([
     ['no payload', undefined],

@@ -1,6 +1,6 @@
 CREATE SCHEMA "music_catalog";
 --> statement-breakpoint
-CREATE TYPE "music_catalog"."bootstrap_phase" AS ENUM('restoring', 'indexing', 'ready');--> statement-breakpoint
+CREATE TYPE "music_catalog"."bootstrap_phase" AS ENUM('restoring', 'restored', 'indexing', 'ready');--> statement-breakpoint
 CREATE TYPE "music_catalog"."catalog_dataset" AS ENUM('sample', 'full');--> statement-breakpoint
 CREATE TABLE "music_catalog"."bootstrap_state" (
 	"id" boolean PRIMARY KEY DEFAULT true NOT NULL,

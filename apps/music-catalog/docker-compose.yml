@@ -1,7 +1,8 @@
 # The Music catalog service's own Postgres, separate from the API's (host
 # port 5433, the API's uses 5432). Included by the root docker-compose.yml, so
 # `nub run infra:up` / `infra:down` manage it with the rest of the stack.
-# Sonic and mbslave join this file with the tickets that need them.
+# The search engine (chosen in #68) and mbslave join this file with the
+# tickets that need them.
 services:
   music-catalog-postgres:
     image: postgres:17-alpine

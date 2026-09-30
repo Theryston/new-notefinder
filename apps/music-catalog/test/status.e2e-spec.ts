@@ -18,7 +18,7 @@ describe('status (e2e)', () => {
       await client().request('status', payload),
     );
 
-  it('answers the configured dataset as restoring before the worker records anything', async () => {
+  it('answers the configured dataset as restoring before the import records anything', async () => {
     const response = await status({});
 
     expect(response).toMatchObject({
@@ -29,6 +29,7 @@ describe('status (e2e)', () => {
 
   it.each([
     ['restoring', 'sample'],
+    ['restored', 'sample'],
     ['indexing', 'full'],
     ['ready', 'full'],
   ] as const)(
@@ -48,24 +49,21 @@ describe('status (e2e)', () => {
     expect(response).toMatchObject({ id: 'my-request-id', ok: true });
   });
 
-  it('follows the worker as the import advances, on the same connection', async () => {
+  it('follows the import as it advances, on the same connection', async () => {
     await setBootstrapState(server().db, {
       phase: 'restoring',
       dataset: 'sample',
     });
-    const before = await status({});
+    const phases = [await status({})];
 
-    await setBootstrapState(server().db, {
-      phase: 'indexing',
-      dataset: 'sample',
-    });
-    const during = await status({});
+    for (const phase of ['restored', 'indexing', 'ready'] as const) {
+      await setBootstrapState(server().db, { phase, dataset: 'sample' });
+      phases.push(await status({}));
+    }
 
-    await setBootstrapState(server().db, { phase: 'ready', dataset: 'sample' });
-    const after = await status({});
-
-    expect([before, during, after].map((r) => r.ok && r.result.phase)).toEqual([
+    expect(phases.map((r) => r.ok && r.result.phase)).toEqual([
       'restoring',
+      'restored',
       'indexing',
       'ready',
     ]);

@@ -1,5 +1,5 @@
 {
-  "id": "6eba656d-3500-4472-96c7-0b17ab0a6c85",
+  "id": "c87b76f2-2126-407e-898e-141a0ed5b4db",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -63,7 +63,7 @@
     "music_catalog.bootstrap_phase": {
       "name": "bootstrap_phase",
       "schema": "music_catalog",
-      "values": ["restoring", "indexing", "ready"]
+      "values": ["restoring", "restored", "indexing", "ready"]
     },
     "music_catalog.catalog_dataset": {
       "name": "catalog_dataset",

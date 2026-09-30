@@ -14,6 +14,7 @@ describe('BootstrapService', () => {
   describe('getStatus', () => {
     it.each([
       ['restoring', 'sample'],
+      ['restored', 'sample'],
       ['indexing', 'full'],
       ['ready', 'full'],
     ] as const)(
@@ -34,7 +35,7 @@ describe('BootstrapService', () => {
       );
     });
 
-    it('is still restoring the configured dataset before the worker records anything', async () => {
+    it('is still restoring the configured dataset before the import records anything', async () => {
       const { service } = setup(undefined);
 
       await expect(service.getStatus()).resolves.toEqual({

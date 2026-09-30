@@ -21,8 +21,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 logger.info('Worker started', { dataset: env.CATALOG_DATASET });
 
 await runWorkerLoop({
-  // Nothing to do yet: the bootstrap, the Sonic indexing, the outbox
-  // draining and the LRCLIB refresh each add their step here.
+  // Nothing to do yet: waiting for the restore, the initial indexing, the
+  // outbox draining and the Lyrics refresh each add their step here.
   tick: async () => undefined,
   intervalMs: IDLE_INTERVAL_MS,
   signal: controller.signal,

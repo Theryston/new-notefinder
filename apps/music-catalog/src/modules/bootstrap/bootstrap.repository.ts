@@ -10,7 +10,7 @@ export type BootstrapState = {
 export class BootstrapRepository {
   constructor(private readonly db: Database) {}
 
-  /** The recorded state, or undefined until the worker writes it. */
+  /** The recorded state, or undefined until the import writes it. */
   async getState(): Promise<BootstrapState | undefined> {
     const [state] = await this.db
       .select({

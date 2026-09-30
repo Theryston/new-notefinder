@@ -12,9 +12,9 @@ export class BootstrapService {
   ) {}
 
   /**
-   * Where the first import stands. The worker records it in the database; a
-   * server that starts before the worker has written anything still answers,
-   * with the import as not started yet.
+   * Where the first import stands. The mbslave container and the worker
+   * record it in the database; a server that starts before anything has been
+   * written still answers, with the import as not started yet.
    */
   async getStatus(): Promise<MusicCatalogStatusResult> {
     const state = await this.repository.getState();

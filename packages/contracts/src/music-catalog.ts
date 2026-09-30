@@ -91,15 +91,26 @@ export type MusicCatalogResponse<TResult = unknown> =
   | MusicCatalogErrorResponse;
 
 /**
- * Where the first import stands: `restoring` the MusicBrainz dump, then
- * `indexing` every Recording, then `ready`. It never goes back once `ready`.
+ * Where the first import stands, in this order: the MusicBrainz dump is being
+ * `restoring` and then `restored` (both recorded by the mbslave container),
+ * then every Recording is being `indexing` and finally `ready` (both recorded
+ * by the worker). It never goes back once `ready`.
  */
-export const bootstrapPhaseSchema = z.enum(['restoring', 'indexing', 'ready']);
+export const BOOTSTRAP_PHASES = [
+  'restoring',
+  'restored',
+  'indexing',
+  'ready',
+] as const;
+
+export const bootstrapPhaseSchema = z.enum(BOOTSTRAP_PHASES);
 
 export type BootstrapPhase = z.infer<typeof bootstrapPhaseSchema>;
 
 /** `sample` is the small MusicBrainz sample used in development. */
-export const catalogDatasetSchema = z.enum(['sample', 'full']);
+export const CATALOG_DATASETS = ['sample', 'full'] as const;
+
+export const catalogDatasetSchema = z.enum(CATALOG_DATASETS);
 
 export type CatalogDataset = z.infer<typeof catalogDatasetSchema>;
 
