@@ -111,10 +111,11 @@ design token means updating `DESIGN.md` and the tokens in
   carry no flags, so a flag would silently vanish from what clients see.
 - Web cache tag builders (e.g. `cacheTags.track(id)`) also live here, so the
   API invalidates exactly the tags the web caches with.
-- `music-catalog.ts` is the **private** WebSocket protocol of the Music
-  catalog service (envelope, its own error codes, `status`), spoken between
-  internal services only. It never goes through the API's DTOs, so it stays
-  out of the public OpenAPI document, and its error codes are not
+- `music-catalog.ts` (with `music-catalog-recording.ts`, the `Recording`
+  returned by `getRecording`) is the **private** WebSocket protocol of the
+  Music catalog service (envelope, its own error codes, `status`), spoken
+  between internal services only. It never goes through the API's DTOs, so
+  it stays out of the public OpenAPI document, and its error codes are not
   `ApiErrorCode`s.
 - It is a compiled package (`tsc` → `dist/`). Relative imports use the `.js`
   extension (NodeNext). Turbo builds it before `dev`, `check-types` and `test`.

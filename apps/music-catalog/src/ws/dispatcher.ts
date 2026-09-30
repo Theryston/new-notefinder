@@ -64,7 +64,8 @@ export const createDispatcher = (
     } else if (body.code === 'INTERNAL') {
       options.logger.error('Request failed', { ...info, error });
     }
-    return errorResponse(info.id, body.code, body.message);
+    const { code, message, ...extra } = body;
+    return errorResponse(info.id, code, message, extra);
   };
 
   return async (text) => {

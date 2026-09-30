@@ -152,3 +152,41 @@ describe('formatIssues', () => {
     ).toBe('request: first; x: second');
   });
 });
+
+describe('the new MBID of a moved Recording', () => {
+  const newMbid = '00000000-0000-4000-8000-000000000100';
+
+  it('travels with the error of a CatalogError that has one', () => {
+    const error = new CatalogError('RECORDING_MOVED', 'Merged', { newMbid });
+
+    expect(toMusicCatalogError(error)).toEqual({
+      code: 'RECORDING_MOVED',
+      message: 'Merged',
+      newMbid,
+    });
+  });
+
+  it('is left out of the error of a CatalogError that has none', () => {
+    const error = toMusicCatalogError(new CatalogError('INTERNAL', 'Broken'));
+
+    expect(error).toStrictEqual({ code: 'INTERNAL', message: 'Broken' });
+  });
+
+  it('is added to an error response when given', () => {
+    expect(
+      errorResponse('r1', 'RECORDING_MOVED', 'Merged', { newMbid }),
+    ).toEqual({
+      id: 'r1',
+      ok: false,
+      error: { code: 'RECORDING_MOVED', message: 'Merged', newMbid },
+    });
+  });
+
+  it('is not in an error response that is given none', () => {
+    expect(errorResponse('r1', 'INTERNAL', 'Broken')).toStrictEqual({
+      id: 'r1',
+      ok: false,
+      error: { code: 'INTERNAL', message: 'Broken' },
+    });
+  });
+});

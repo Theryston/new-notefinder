@@ -2,8 +2,9 @@
 
 Private service that will hold every Recording in the world (kept in sync with
 MusicBrainz, plus open Lyrics) and answer searches over an authenticated
-WebSocket. Today it is the skeleton: the WebSocket server answering `status`,
-its Postgres schema and the worker entrypoint. Full design: issue #55.
+WebSocket. Today: the WebSocket server answering `status` and `getRecording`
+(everything known about one Recording, by MBID), its Postgres schema and the
+worker entrypoint. Full design: issue #55.
 Rules, layers and the protocol are in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Running locally

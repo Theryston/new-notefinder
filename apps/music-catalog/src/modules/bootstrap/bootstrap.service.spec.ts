@@ -63,3 +63,45 @@ describe('BootstrapService', () => {
     });
   });
 });
+
+describe('BootstrapService assertReady', () => {
+  it('lets a request through once the import is ready', async () => {
+    const { service } = setup({ phase: 'ready', dataset: 'full' });
+
+    await expect(service.assertReady()).resolves.toBeUndefined();
+  });
+
+  it.each([['restoring'], ['restored'], ['indexing']] as const)(
+    'answers CATALOG_NOT_READY in the %s phase, naming it',
+    async (phase) => {
+      const { service } = setup({ phase, dataset: 'full' });
+
+      await expect(service.assertReady()).rejects.toMatchObject({
+        code: 'CATALOG_NOT_READY',
+        message: expect.stringContaining(phase),
+      });
+    },
+  );
+
+  it('answers CATALOG_NOT_READY before the import records anything', async () => {
+    const { service } = setup(undefined);
+
+    await expect(service.assertReady()).rejects.toMatchObject({
+      code: 'CATALOG_NOT_READY',
+    });
+  });
+
+  it('reads the state on every call, so it follows the worker', async () => {
+    const { service, repository } = setup({
+      phase: 'indexing',
+      dataset: 'full',
+    });
+    await expect(service.assertReady()).rejects.toBeDefined();
+    repository.getState.mockResolvedValueOnce({
+      phase: 'ready',
+      dataset: 'full',
+    });
+
+    await expect(service.assertReady()).resolves.toBeUndefined();
+  });
+});

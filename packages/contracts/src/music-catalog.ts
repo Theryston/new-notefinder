@@ -22,10 +22,25 @@ export const musicCatalogErrorCodeSchema = z.enum([
 
 export type MusicCatalogErrorCode = z.infer<typeof musicCatalogErrorCodeSchema>;
 
-/** `message` is an English developer message, never shown as-is to users. */
+/**
+ * The identifier MusicBrainz gives every entity (its public UUID, the `gid`),
+ * and the only identity of a Recording: MusicBrainz's integer ids disappear
+ * on a merge, MBIDs stay resolvable. Any UUID-shaped text is accepted, since
+ * MusicBrainz's own MBIDs are not guaranteed to carry an RFC 4122 version.
+ */
+export const mbidSchema = z.guid();
+
+export type Mbid = z.infer<typeof mbidSchema>;
+
+/**
+ * `message` is an English developer message, never shown as-is to users.
+ * `newMbid` is only present on `RECORDING_MOVED`: the MBID the requested
+ * Recording was merged into, so the client can update what it stored.
+ */
 export const musicCatalogErrorSchema = z.object({
   code: musicCatalogErrorCodeSchema,
   message: z.string(),
+  newMbid: mbidSchema.optional(),
 });
 
 export type MusicCatalogError = z.infer<typeof musicCatalogErrorSchema>;
@@ -39,7 +54,7 @@ export type MusicCatalogRequestId = z.infer<typeof musicCatalogRequestIdSchema>;
  * Every operation the service answers. A new operation adds its type here,
  * its payload and result schemas next to it, and a handler in the service.
  */
-export const musicCatalogRequestTypeSchema = z.enum(['status']);
+export const musicCatalogRequestTypeSchema = z.enum(['status', 'getRecording']);
 
 export type MusicCatalogRequestType = z.infer<
   typeof musicCatalogRequestTypeSchema

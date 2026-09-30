@@ -8,10 +8,17 @@ import type { MusicCatalogErrorCode } from '@notefinder/contracts';
  */
 export class CatalogError extends Error {
   readonly code: MusicCatalogErrorCode;
+  /** Only set on `RECORDING_MOVED`: the MBID the Recording was merged into. */
+  readonly newMbid: string | undefined;
 
-  constructor(code: MusicCatalogErrorCode, message: string) {
+  constructor(
+    code: MusicCatalogErrorCode,
+    message: string,
+    options: { newMbid?: string } = {},
+  ) {
     super(message);
     this.name = 'CatalogError';
     this.code = code;
+    this.newMbid = options.newMbid;
   }
 }

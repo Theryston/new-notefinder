@@ -117,6 +117,28 @@ jobs:
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
+      # The Music catalog e2e suite creates the MusicBrainz schema with
+      # mbslave's SQL scripts, downloaded from GitHub at the pinned tag and
+      # kept in node_modules/.cache (apps/music-catalog/test/setup/
+      # musicbrainz-schema.ts). Caching that folder, keyed on the tag,
+      # keeps the runs from downloading them every time; bumping the tag is
+      # what changes the key.
+      - name: Read the pinned mbslave version
+        id: mbslave
+        run: |
+          ref=$(sed -n "s/^const MBSLAVE_REF = '\(.*\)';$/\1/p" apps/music-catalog/test/setup/musicbrainz-schema.ts)
+          if [ -z "$ref" ]; then
+            echo "::error::Could not read MBSLAVE_REF from apps/music-catalog/test/setup/musicbrainz-schema.ts"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the mbslave SQL scripts
+        uses: actions/cache@v4
+        with:
+          path: apps/music-catalog/node_modules/.cache/mbslave-${{ steps.mbslave.outputs.ref }}
+          key: mbslave-sql-${{ steps.mbslave.outputs.ref }}
+
       # Chromium matching the installed @playwright/test version, plus the
       # system libraries it needs on the runner.
       - name: Install Playwright Chromium
