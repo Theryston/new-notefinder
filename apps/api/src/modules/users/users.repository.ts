@@ -10,7 +10,7 @@ export type CurrentUserRow = Omit<CurrentUser, 'createdAt'> & {
   createdAt: Date;
 };
 
-// Named in migration 0001_auth.
+// Named in migration 0000_init.
 const USERNAME_UNIQUE_CONSTRAINT = 'users_username_unique';
 
 const currentUserColumns = {

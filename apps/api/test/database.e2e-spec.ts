@@ -1,15 +1,19 @@
-import { asc, count, eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import type { Database } from '../src/database/database.js';
-import { albums } from '../src/database/schema/albums.js';
-import { artists } from '../src/database/schema/artists.js';
 import {
-  thumbnails,
-  trackArtists,
-  trackNotes,
-  tracks,
-} from '../src/database/schema/tracks.js';
+  accounts,
+  sessions,
+  verifications,
+} from '../src/database/schema/auth.js';
+import { users } from '../src/database/schema/users.js';
+import { verifyPassword } from '../src/modules/auth/password.js';
 import { connectTestDatabase, resetDatabase } from './utils/database.js';
-import { createAlbum, createArtist, createTrack } from './utils/factories.js';
+import {
+  createCredentialAccount,
+  createPasswordUser,
+  createUser,
+  DEFAULT_PASSWORD,
+} from './utils/factories.js';
 
 // Covers the e2e database helpers themselves: migrations applied by the
 // global setup, the factories and resetDatabase.
@@ -31,89 +35,96 @@ describe('E2E database helpers (e2e)', () => {
 
   const countRows = async (
     table:
-      | typeof artists
-      | typeof albums
-      | typeof tracks
-      | typeof trackArtists
-      | typeof thumbnails
-      | typeof trackNotes,
+      | typeof users
+      | typeof accounts
+      | typeof sessions
+      | typeof verifications,
   ): Promise<number> => {
     const [row] = await db.select({ value: count() }).from(table);
     return row?.value ?? 0;
   };
 
-  it('creates a track with its relations and deterministic defaults', async () => {
-    const album = await createAlbum(db);
-    const { track, artists: trackArtistList } = await createTrack(db, {
-      album,
-      notes: [{}, { note: 'C#', octave: 5 }],
-    });
+  it('creates users with deterministic defaults', async () => {
+    const first = await createUser(db);
+    const second = await createUser(db);
 
-    const stored = await db.query.tracks.findFirst({
-      where: eq(tracks.id, track.id),
-      with: {
-        album: true,
-        thumbnails: true,
-        notes: { orderBy: asc(trackNotes.start) },
-        trackArtists: { with: { artist: true } },
-      },
+    expect(first).toMatchObject({
+      name: 'User 1',
+      email: 'user-1@example.com',
+      emailVerified: true,
+      username: 'user_1',
+      role: 'USER',
     });
-
-    expect(stored).toMatchObject({
-      ytId: 'yt-track-1',
-      title: 'Track 1',
-      status: 'COMPLETED',
-      album: { name: 'Album 1', ytId: 'MPRE-album-1' },
-      thumbnails: [
-        {
-          url: 'https://i.ytimg.com/vi/yt-track-1/hqdefault.jpg',
-          width: 480,
-          height: 360,
-        },
-      ],
-      notes: [
-        { note: 'A', octave: 4, start: 0, end: 0.5, frequencyMean: 440 },
-        { note: 'C#', octave: 5, start: 0.5, end: 1 },
-      ],
-      trackArtists: [{ artist: { name: 'Artist 1', ytId: 'UC-artist-1' } }],
-    });
-    expect(trackArtistList.map((artist) => artist.name)).toEqual(['Artist 1']);
+    expect(second).toMatchObject({ name: 'User 2', username: 'user_2' });
+    expect(first.id).not.toBe(second.id);
   });
 
-  it('applies overrides and reuses given artists', async () => {
-    const singer = await createArtist(db, { name: 'Singer' });
-    const { track, thumbnails: created } = await createTrack(db, {
-      track: { title: 'Custom', status: 'QUEUED', score: 7 },
-      artists: [singer],
-      thumbnails: [],
+  it('applies overrides', async () => {
+    const user = await createUser(db, {
+      name: 'Grace',
+      username: null,
+      role: 'ADMIN',
     });
 
-    expect(track).toMatchObject({
-      title: 'Custom',
-      status: 'QUEUED',
-      score: 7,
+    expect(user).toMatchObject({
+      name: 'Grace',
+      username: null,
+      role: 'ADMIN',
     });
-    expect(created).toEqual([]);
-    expect(await countRows(artists)).toBe(1);
+  });
+
+  it('gives credential accounts a scrypt hash of the default password', async () => {
+    const user = await createPasswordUser(db);
+
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.userId, user.id));
+
+    expect(account).toMatchObject({
+      providerId: 'credential',
+      accountId: user.id,
+    });
+    const hash = account?.password ?? '';
+    expect(hash).not.toMatch(/^\$2/);
+    expect(await verifyPassword({ hash, password: DEFAULT_PASSWORD })).toBe(
+      true,
+    );
+  });
+
+  it('stores a legacy bcrypt hash when asked', async () => {
+    const user = await createUser(db);
+
+    const account = await createCredentialAccount(db, user, {
+      password: 'legacy-secret',
+      legacyBcrypt: true,
+    });
+
+    const hash = account.password ?? '';
+    expect(hash).toMatch(/^\$2a\$/);
+    expect(await verifyPassword({ hash, password: 'legacy-secret' })).toBe(
+      true,
+    );
   });
 
   it('resetDatabase empties every table and restarts the sequences', async () => {
-    await createTrack(db, { album: await createAlbum(db), notes: [{}] });
-    await createTrack(db);
+    const user = await createPasswordUser(db);
+    await db.insert(sessions).values({
+      token: 'session-token',
+      expiresAt: new Date(Date.now() + 60_000),
+      userId: user.id,
+    });
+    await db.insert(verifications).values({
+      identifier: 'email-verification-otp-user-1@example.com',
+      value: '123456',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
 
     await resetDatabase(db);
 
-    for (const table of [
-      artists,
-      albums,
-      tracks,
-      trackArtists,
-      thumbnails,
-      trackNotes,
-    ]) {
+    for (const table of [users, accounts, sessions, verifications]) {
       expect(await countRows(table)).toBe(0);
     }
-    const { track } = await createTrack(db);
-    expect(track.title).toBe('Track 1');
+    expect(await createUser(db)).toMatchObject({ name: 'User 1' });
   });
 });

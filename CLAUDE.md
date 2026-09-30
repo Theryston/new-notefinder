@@ -55,19 +55,21 @@ check-types, test:cov, build, knip and duplication on every PR).
 The new app starts with an **empty database**, but it will replace the legacy
 app in production. Two things must hold when that happens:
 
-1. **Legacy data must be importable.** The new schema does not have to mirror
-   the legacy Prisma schema, but a one-off script must be able to import all
-   legacy data into it, even with transformations along the way. Never model
-   something the legacy data can't be mapped into (see "Legacy data import"
-   in `apps/api/CLAUDE.md`).
+1. **Users and their data must be importable.** A one-off script imports
+   every legacy user (keeping their ID, username, email and password hash)
+   and their data. Never model users in a way legacy users can't be mapped
+   into. The legacy **catalog** (tracks, artists, albums and their notes and
+   thumbnails) is **not** imported: it is reprocessed into a schema designed
+   for the new app (see "Legacy data import" in `apps/api/CLAUDE.md`).
 2. **No legacy URL may return 404.** Every public route of the legacy web app
-   must either still exist or redirect to its new equivalent, keeping IDs and
-   query params (see "Legacy routes" in
-   `apps/web/CLAUDE.md`).
+   must either still exist or redirect to its new equivalent, keeping query
+   params (see "Legacy routes" in `apps/web/CLAUDE.md`). Profile URLs keep
+   working because usernames are kept. Catalog records get new IDs, so every
+   table with a public URL has a **legacy ID map** (legacy ID → new ID),
+   created with the table, that turns an old URL into a permanent redirect.
 
-Both depend on **keeping legacy identifiers** (track, artist, album and user
-IDs, usernames): the importer copies them as-is, so old URLs resolve to the
-same records.
+The reasoning is in
+`docs/adr/0001-reprocessed-catalog-with-legacy-id-maps.md`.
 
 ## Cross-cutting decisions
 

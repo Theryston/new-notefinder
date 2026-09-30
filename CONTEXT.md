@@ -30,3 +30,12 @@ _Avoid_: Profile picture, photo, image (for the concept)
 The public page of a User, addressed by their Username, showing their Name
 and Avatar.
 _Avoid_: Account page, user page
+
+### Legacy
+
+**Legacy ID**:
+The ID a Track, Artist or Album had in the legacy app. It only exists to
+resolve old URLs: a legacy ID map points it to the record's current ID, and
+the old URL redirects there. Users have no Legacy ID: they keep the ID they
+had in the legacy app.
+_Avoid_: Old ID, external ID

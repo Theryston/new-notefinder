@@ -94,9 +94,16 @@ docker-compose.yml          web-redis for local dev (included by the root compos
 
 This app replaces the legacy notefinder web app on the same domain. **Every
 legacy URL must keep working**: either the route still exists or it
-redirects to the new one. Preserve dynamic segments
-(IDs, usernames) and query params. Since IDs are kept by the data import,
-`/tracks/<id>` must land on the same track.
+redirects to the new one. Redirects keep dynamic segments (IDs, usernames)
+and query params as they are, except the legacy catalog ID redirect below,
+which swaps the ID for the new one. Usernames are kept by the data import, so
+`/users/<username>` lands on the same profile. Catalog records (tracks,
+artists, albums) get new IDs: when the API answers a read with
+`RESOURCE_MOVED` (the ID is a legacy one, found in the entity's legacy ID
+map), the page issues a **permanent (308)** redirect to the same route with
+the new ID, keeping the query params (see "Legacy data import" in
+`apps/api/CLAUDE.md`). When a catalog route ships, its e2e covers that case
+too: a legacy ID redirects with 308 to the new one.
 
 Because every new route is under `[locale]`, a bare legacy path like
 `/tracks/abc` is redirected by `proxy.ts` to `/<detected-locale>/tracks/abc`
