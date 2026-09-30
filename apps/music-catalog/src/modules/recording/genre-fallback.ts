@@ -27,30 +27,43 @@ const LEVELS_IN_ORDER: readonly RecordingTagsSource[] = [
   'artist',
 ];
 
+const hasGenre = (rows: readonly TagVotesRow[]): boolean =>
+  rows.some((row) => row.genreMbid !== null);
+
 /**
- * Picks the genres and tags of a Recording. Most Recordings have none of
- * their own, so the first level that has any tag wins as a whole: the
- * Recording's, else its release groups', else its artists'. `source` says
- * which, and is null when no level has a tag. Levels are never mixed, so what
- * a client reads came from one place. Genres are the tags MusicBrainz also
- * lists as genres; the rest stay tags.
+ * Picks the genres and tags of a Recording. Most Recordings have no genre of
+ * their own, so the level they come from is the first that has a genre: the
+ * Recording's, else its release groups', else its artists'. When no level has
+ * a genre, it is the first that has any tag, so a Recording tagged only
+ * "live" keeps that tag. `source` names the level, and `genres` and `tags`
+ * both come from it (levels are never mixed): a Recording with only a
+ * non-genre tag whose release group has a genre gets the release group's
+ * genres and other tags, not its own. `source` is null, with both lists
+ * empty, when no level has a tag. Genres are the tags MusicBrainz also lists
+ * as genres; the rest are tags.
  */
 export const chooseTags = (levels: TagLevels): ChosenTags => {
-  for (const source of LEVELS_IN_ORDER) {
-    const rows = votedTags(levels[source]);
-    if (rows.length > 0) {
-      return {
-        source,
-        genres: rows.flatMap((row) =>
-          row.genreMbid === null
-            ? []
-            : [{ mbid: row.genreMbid, name: row.name, count: row.count }],
-        ),
-        tags: rows.flatMap((row) =>
-          row.genreMbid === null ? [{ name: row.name, count: row.count }] : [],
-        ),
-      };
-    }
+  const voted = {
+    recording: votedTags(levels.recording),
+    release_group: votedTags(levels.release_group),
+    artist: votedTags(levels.artist),
+  };
+  const source =
+    LEVELS_IN_ORDER.find((level) => hasGenre(voted[level])) ??
+    LEVELS_IN_ORDER.find((level) => voted[level].length > 0);
+  if (source === undefined) {
+    return { source: null, genres: [], tags: [] };
   }
-  return { source: null, genres: [], tags: [] };
+  const rows = voted[source];
+  return {
+    source,
+    genres: rows.flatMap((row) =>
+      row.genreMbid === null
+        ? []
+        : [{ mbid: row.genreMbid, name: row.name, count: row.count }],
+    ),
+    tags: rows.flatMap((row) =>
+      row.genreMbid === null ? [{ name: row.name, count: row.count }] : [],
+    ),
+  };
 };

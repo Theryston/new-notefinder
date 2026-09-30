@@ -238,13 +238,22 @@ integer ids of MusicBrainz are internal and never leave the service.
 - **Genres and tags** (`genres`, `tags`, `tagsSource`): genres are the tags
   MusicBrainz also lists as genres (matched by name, with the genre MBID);
   the rest are tags; both carry the vote count and come most voted first, by
-  name on a tie. Only tags with a positive vote count. Which level they come
-  from is decided as a whole (levels are never mixed): the **Recording's own**
-  if it has any tag (genre or not), else the **release groups'** of the
-  releases it is on (votes added up per tag), else its **credited artists'**
-  (added up likewise). `tagsSource` is `recording`, `release_group` or
-  `artist`, and null when no level has a tag. The rule is in
-  `genre-fallback.ts`.
+  name on a tie. Only tags with a positive vote count. The fallback is on
+  **genres**, and `tagsSource` names the one level both lists come from
+  (levels are never mixed):
+  1. `source` is the first level with at least one genre, in this order: the
+     **Recording's own**, the **release groups'** of the releases it is on
+     (votes added up per tag), its **credited artists'** (added up likewise).
+     `genres` are that level's genres and `tags` its other tags. So a
+     Recording tagged only "live" whose release group has a genre gets the
+     release group's genres and other tags, and its own "live" is not in the
+     answer.
+  2. When no level has a genre, `source` is the first level with any tag:
+     `genres` is empty and `tags` are that level's (a Recording tagged only
+     "live", with no genre anywhere, keeps it, `tagsSource: 'recording'`).
+  3. When no level has any tag, `tagsSource` is null and both lists are empty.
+
+  The rule is in `genre-fallback.ts`.
 - `lyrics` is `{ plain: null, synced: null }` until the Lyrics ticket fills it.
 - Loading: the service reads the parts in parallel (one query each, all in
   `RecordingRepository`) and `assembleRecording` builds the answer without
@@ -328,7 +337,12 @@ integer ids of MusicBrainz are internal and never leave the service.
   bump it together with the mbslave container). The scripts come from
   musicbrainz-server (GPL), so they are **not vendored**: they are fetched
   from that tag on GitHub (with retries) and cached in
-  `node_modules/.cache/`, so the first run needs the network. They are run
+  `apps/music-catalog/node_modules/.cache/mbslave-<MBSLAVE_REF>/`, so the
+  first run needs the network. CI's `e2e` job restores that folder with
+  `actions/cache`, keyed on the `MBSLAVE_REF` it reads from
+  `test/setup/musicbrainz-schema.ts`, so it hits GitHub only on the first run
+  after a bump (bumping the constant is the only thing that changes the key).
+  A script missing from a restored cache is still downloaded. They are run
   through `pg` with mbslave's `musicbrainz, public` search path and the psql
   `\set` lines stripped, no `psql` needed. The database user must be a
   superuser (contrib extensions `cube`, `earthdistance`, `unaccent`); the

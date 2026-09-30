@@ -104,8 +104,10 @@ export const recordingTagSchema = z.object({
 export type RecordingTag = z.infer<typeof recordingTagSchema>;
 
 /**
- * Where the genres and tags of a Recording came from: its own, else the
- * release groups' of the releases it is on, else its artists'.
+ * The level the genres and tags of a Recording came from, all of them from
+ * the same one: its own, else the release groups' of the releases it is on,
+ * else its artists'. The first level with a genre is the one; when none has a
+ * genre, the first with any tag.
  */
 export const RECORDING_TAGS_SOURCES = [
   'recording',
@@ -148,7 +150,7 @@ export const recordingSchema = z.object({
   works: z.array(recordingWorkSchema),
   genres: z.array(recordingGenreSchema),
   tags: z.array(recordingTagSchema),
-  /** null when neither the Recording nor the fallbacks have any tag. */
+  /** null, with no genre or tag, when no level has a tag at all. */
   tagsSource: recordingTagsSourceSchema.nullable(),
   externalUrls: z.array(recordingExternalUrlSchema),
   lyrics: recordingLyricsSchema,

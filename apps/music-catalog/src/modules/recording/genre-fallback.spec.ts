@@ -61,22 +61,89 @@ describe('chooseTags', () => {
     expect(chosen.genres).toEqual([{ mbid: ROCK, name: 'rock', count: 1 }]);
   });
 
-  it('never mixes levels', () => {
-    const chosen = chooseTags(
+  it.each([
+    [
+      'the release groups',
       levels({
         recording: [tag('live', 1)],
-        artist: [genre('rock', 9)],
+        release_group: [genre('rock', 4), tag('british', 2)],
+        artist: [genre('pop', 9, POP)],
+      }),
+      {
+        source: 'release_group',
+        genres: [{ mbid: ROCK, name: 'rock', count: 4 }],
+        tags: [{ name: 'british', count: 2 }],
+      },
+    ],
+    [
+      'the artists',
+      levels({
+        recording: [tag('live', 1)],
+        release_group: [tag('british', 2)],
+        artist: [genre('pop', 9, POP), tag('female vocalists', 3)],
+      }),
+      {
+        source: 'artist',
+        genres: [{ mbid: POP, name: 'pop', count: 9 }],
+        tags: [{ name: 'female vocalists', count: 3 }],
+      },
+    ],
+  ] as const)(
+    'falls back to %s when the Recording has only tags that are not genres',
+    (_label, given, expected) => {
+      expect(chooseTags(given)).toEqual(expected);
+    },
+  );
+
+  it('gives the genres and the other tags of the level the genres come from, never the Recording’s own', () => {
+    const chosen = chooseTags(
+      levels({
+        recording: [tag('live', 5)],
+        release_group: [genre('rock', 1)],
       }),
     );
 
     expect(chosen).toEqual({
-      source: 'recording',
-      genres: [],
-      tags: [{ name: 'live', count: 1 }],
+      source: 'release_group',
+      genres: [{ mbid: ROCK, name: 'rock', count: 1 }],
+      tags: [],
     });
   });
 
-  it('counts a level as empty when no tag in it has a positive vote', () => {
+  it.each([
+    [
+      'the Recording when it has a tag',
+      levels({
+        recording: [tag('live', 1)],
+        release_group: [tag('british', 2)],
+        artist: [tag('pop vocal', 3)],
+      }),
+      'recording',
+      [{ name: 'live', count: 1 }],
+    ],
+    [
+      'its release groups when the Recording has none',
+      levels({
+        release_group: [tag('british', 2)],
+        artist: [tag('pop vocal', 3)],
+      }),
+      'release_group',
+      [{ name: 'british', count: 2 }],
+    ],
+    [
+      'its artists when neither has one',
+      levels({ artist: [tag('pop vocal', 3)] }),
+      'artist',
+      [{ name: 'pop vocal', count: 3 }],
+    ],
+  ] as const)(
+    'keeps the tags of %s when no level has a genre',
+    (_label, given, source, tags) => {
+      expect(chooseTags(given)).toEqual({ source, genres: [], tags });
+    },
+  );
+
+  it('counts a genre without a positive vote as no genre', () => {
     const chosen = chooseTags(
       levels({
         recording: [genre('rock', 0), tag('live', -3)],

@@ -114,7 +114,7 @@ describe('RecordingService', () => {
       expect(repository.findReleaseEvents).toHaveBeenCalledWith([11, 12]);
     });
 
-    it('takes the genres from the fallback when the Recording has no tags', async () => {
+    it('takes the genres from the fallback when the Recording has no genre', async () => {
       const { service } = setup({
         findTagLevels: vi.fn(async () => ({
           recording: [],
