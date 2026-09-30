@@ -185,3 +185,34 @@ describe('createDispatcher', () => {
     ]);
   });
 });
+
+describe('createDispatcher with a moved Recording', () => {
+  it('answers the new MBID the handler reports', async () => {
+    const newMbid = '00000000-0000-4000-8000-000000000100';
+    const { dispatch } = setup(async () => {
+      throw new CatalogError('RECORDING_MOVED', 'Merged', { newMbid });
+    });
+
+    const response = await dispatch(request({}));
+
+    expect(response).toStrictEqual({
+      id: 'r1',
+      ok: false,
+      error: { code: 'RECORDING_MOVED', message: 'Merged', newMbid },
+    });
+  });
+
+  it('answers a failure without a new MBID with none', async () => {
+    const { dispatch } = setup(async () => {
+      throw new CatalogError('RECORDING_NOT_FOUND', 'Unknown');
+    });
+
+    const response = await dispatch(request({}));
+
+    expect(response).toStrictEqual({
+      id: 'r1',
+      ok: false,
+      error: { code: 'RECORDING_NOT_FOUND', message: 'Unknown' },
+    });
+  });
+});

@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import type { TestProject } from 'vitest/node';
 import { createDatabase, createPool } from '../../src/database/database.js';
 import { createLogger } from '../../src/logger.js';
+import { applyMusicBrainzSchema } from './musicbrainz-schema.js';
 
 declare module 'vitest' {
   // biome-ignore lint/style/useConsistentTypeDefinitions: augments Vitest's interface, which needs declaration merging.
@@ -62,7 +63,8 @@ const migrateDatabase = async (url: string): Promise<void> => {
 
 /**
  * Starts one Postgres for the whole e2e run (or uses `E2E_DATABASE_URL`),
- * applies the migrations and provides its URL to the test workers.
+ * applies the migrations and the MusicBrainz schema, and provides its URL to
+ * the test workers.
  */
 export const setup = async (
   project: TestProject,
@@ -73,11 +75,15 @@ export const setup = async (
     : await startContainer();
   try {
     await migrateDatabase(database.url);
+    logger.info('Migrations applied');
+    // Next to our schema, like the mbslave container puts the MusicBrainz one
+    // in production: the tables the service reads.
+    await applyMusicBrainzSchema(database.url);
+    logger.info('MusicBrainz schema applied');
   } catch (error) {
     await database.stop();
     throw error;
   }
-  logger.info('Migrations applied');
   project.provide('databaseUrl', database.url);
   return database.stop;
 };

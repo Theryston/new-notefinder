@@ -4,6 +4,9 @@ import type { Logger } from './logger.js';
 import { createStatusHandler } from './modules/bootstrap/bootstrap.handler.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
+import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
+import { RecordingRepository } from './modules/recording/recording.repository.js';
+import { RecordingService } from './modules/recording/recording.service.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 export type CreateServerOptions = {
@@ -26,10 +29,17 @@ export const createMusicCatalogServer = (
     new BootstrapRepository(db),
     env.CATALOG_DATASET,
   );
+  const recording = new RecordingService(
+    new RecordingRepository(db),
+    bootstrap,
+  );
   return createWsServer({
     port: env.PORT,
     apiKeys: env.API_KEYS,
-    handlers: [createStatusHandler(bootstrap)],
+    handlers: [
+      createStatusHandler(bootstrap),
+      createGetRecordingHandler(recording),
+    ],
     heartbeatIntervalMs: env.HEARTBEAT_INTERVAL_MS,
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logger,

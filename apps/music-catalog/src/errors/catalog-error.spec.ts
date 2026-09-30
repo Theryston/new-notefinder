@@ -10,3 +10,17 @@ describe('CatalogError', () => {
     expect(error.message).toBe('Still importing');
   });
 });
+
+describe('CatalogError newMbid', () => {
+  it('carries the MBID a Recording was merged into', () => {
+    const error = new CatalogError('RECORDING_MOVED', 'Merged', {
+      newMbid: '00000000-0000-4000-8000-000000000100',
+    });
+
+    expect(error.newMbid).toBe('00000000-0000-4000-8000-000000000100');
+  });
+
+  it('has none unless told', () => {
+    expect(new CatalogError('INTERNAL', 'Broken').newMbid).toBeUndefined();
+  });
+});

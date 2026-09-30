@@ -71,14 +71,22 @@ export const errorResponse = (
   id: string | null,
   code: MusicCatalogErrorCode,
   message: string,
-): MusicCatalogErrorResponse => ({ id, ok: false, error: { code, message } });
+  extra: Omit<MusicCatalogError, 'code' | 'message'> = {},
+): MusicCatalogErrorResponse => ({
+  id,
+  ok: false,
+  error: { code, message, ...extra },
+});
 
 /**
  * What a client is told about a thrown value: an expected failure keeps its
  * code and message; anything else is `INTERNAL` with no detail, since the
  * message of an unexpected error may carry connection strings or SQL.
  */
-export const toMusicCatalogError = (error: unknown): MusicCatalogError =>
-  error instanceof CatalogError
-    ? { code: error.code, message: error.message }
-    : { code: 'INTERNAL', message: 'Internal error' };
+export const toMusicCatalogError = (error: unknown): MusicCatalogError => {
+  if (!(error instanceof CatalogError)) {
+    return { code: 'INTERNAL', message: 'Internal error' };
+  }
+  const { code, message, newMbid } = error;
+  return newMbid === undefined ? { code, message } : { code, message, newMbid };
+};

@@ -9,16 +9,17 @@ others later) talk to it over one long-lived, authenticated **WebSocket**.
 The full design is in the parent spec, issue #55; this file documents what
 exists.
 
-**What exists today** (the skeleton, issue #57): the authenticated WebSocket
-server answering `status`, the protocol envelope, our own Postgres schema
-(the bootstrap state), the `server` and `worker` entrypoints (the worker is a
-no-op loop) and the test and quality setup. Search, Get by id, the MusicBrainz
-restore and bootstrap, the search engine, replication, Lyrics and the
-production compose are later tickets: do not build them here ahead of their
-ticket. The **search engine is still to be chosen** (a benchmark of tuned
-Sonic, Meilisearch and Postgres full-text search, issue #68); whatever it is,
-`search` will return results in the engine's relevance order, loaded from
-Postgres without re-ranking.
+**What exists today**: the authenticated WebSocket server answering `status`
+and `getRecording` (issues #57 and #59), the protocol envelope, our own
+Postgres schema (the bootstrap state), read-only declarations of the
+MusicBrainz tables `getRecording` reads, the `server` and `worker`
+entrypoints (the worker is a no-op loop) and the test and quality setup.
+Search, the MusicBrainz restore and bootstrap, the search engine,
+replication, Lyrics and the production compose are later tickets: do not
+build them here ahead of their ticket. The **search engine is still to be
+chosen** (a benchmark of tuned Sonic, Meilisearch and Postgres full-text
+search, issue #68); whatever it is, `search` will return results in the
+engine's relevance order, loaded from Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Zod (protocol schemas come from `@notefinder/contracts`), Vitest,
@@ -67,9 +68,11 @@ src/
   config/env.ts           Zod schema for process.env, parsed once at boot
   logger.ts               minimal structured logger (JSON in production)
   errors/                 CatalogError: an expected failure with a protocol error code
+  lib/                    small pure helpers shared by modules (text comparison, cover art URL)
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
+    schema/musicbrainz/   read-only declarations of mbslave's tables, one file per entity
     migrate.ts            script behind db:migrate
   ws/                     protocol plumbing, knows nothing about features
     ws-server.ts          http + ws server: handshake auth, heartbeat, message loop
@@ -85,9 +88,18 @@ src/
       bootstrap.service.ts
       bootstrap.repository.ts
       bootstrap.service.spec.ts
+    recording/
+      recording.handler.ts      the `getRecording` handler
+      recording.service.ts      readiness, not found / moved, loading the parts
+      recording.repository.ts   the queries on the MusicBrainz tables
+      recording-data.ts         the rows the repository returns
+      assemble-recording.ts     rows -> the protocol's Recording (pure)
+      genre-fallback.ts         which level the genres and tags come from (pure)
+      release-event.ts          the date and country a release is shown with (pure)
   worker/worker-loop.ts   the loop the worker's steps plug into
 drizzle/                  generated SQL migrations (committed)
-test/                     e2e specs + helpers (test server, ws client, Testcontainers setup)
+test/                     e2e specs + helpers (test server, ws client, Testcontainers setup,
+                          MusicBrainz schema and fixture)
 ```
 
 - A feature module owns its handler(s), service, repository and tests. Other
@@ -127,7 +139,7 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
 - `tsx` runs the TypeScript in dev and for `db:migrate`; production runs the
   output of `tsc` (`dist/`).
 
-## Protocol (`@notefinder/contracts`, `music-catalog.ts`)
+## Protocol (`@notefinder/contracts`, `music-catalog.ts` and `music-catalog-recording.ts`)
 
 The schemas and types live in contracts and are the only definition of the
 protocol; never redeclare them here. They are **private**: not part of the
@@ -149,7 +161,7 @@ code 1009).
 ```
 request   { id, type, payload }
 success   { id, ok: true,  result }
-failure   { id, ok: false, error: { code, message } }
+failure   { id, ok: false, error: { code, message, newMbid? } }
 ```
 
 - `id` is chosen by the client (1 to 128 characters) and echoed by the
@@ -157,8 +169,8 @@ failure   { id, ok: false, error: { code, message } }
   requests can be in flight on one connection and responses may arrive in any
   order: match them by `id`. `id` is `null` in a failure only when the
   message was too broken to read one from it.
-- `type` is `status` today (`search` and `getRecording` come later). `payload`
-  is validated per type; `status` takes none (missing or `{}`).
+- `type` is `status` or `getRecording` today (`search` comes later).
+  `payload` is validated per type; `status` takes none (missing or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
   dataset: 'sample' | 'full' }`, read from the bootstrap state row in our
   schema. The phases run in that order: the mbslave container records
@@ -169,9 +181,11 @@ failure   { id, ok: false, error: { code, message } }
 - Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
   `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`, `INTERNAL`.
-  `message` is an English developer message. Anything a handler throws that
-  is not a `CatalogError` is answered `INTERNAL` with the fixed message
-  "Internal error" and logged; its own message never reaches the client.
+  `message` is an English developer message. `RECORDING_MOVED` also carries
+  `error.newMbid` (the only error with an extra field): a `CatalogError`
+  built with `{ newMbid }` becomes it. Anything a handler throws that is not
+  a `CatalogError` is answered `INTERNAL` with the fixed message "Internal
+  error" and logged; its own message never reaches the client.
 - A malformed message or an unknown type never closes the connection.
 - **Heartbeat**: the server pings every `HEARTBEAT_INTERVAL_MS`; a connection
   that did not pong since the previous ping is terminated (so a dead peer is
@@ -181,21 +195,77 @@ failure   { id, ok: false, error: { code, message } }
 - **Request timeout**: a request still unanswered after `REQUEST_TIMEOUT_MS`
   gets `INTERNAL` ("Request timed out"). The handler keeps running (a promise
   can't be cancelled), so handlers must be safe to finish late.
+- Every operation that reads the catalog (`getRecording`, later `search`)
+  starts with `BootstrapService.assertReady()`: until the first import
+  reaches `ready` it answers `CATALOG_NOT_READY` (after the payload is
+  validated), and it reads the phase on every request, so it follows the
+  worker. `status` is the only operation that answers meanwhile.
 - Changing a field of a result is a breaking change for consumers: add
   fields, don't rename or remove them (same rule as the API's contracts).
   A new operation adds its type to `musicCatalogRequestTypeSchema` and its
   payload/result schemas to contracts, a handler in its module and a line in
   `create-server.ts`.
 
+## `getRecording`
+
+Payload `{ mbid }` (any UUID-shaped text; a malformed one is
+`VALIDATION_FAILED`, the case does not matter). The result is the contract's
+`Recording` (`music-catalog-recording.ts`): every field is always present,
+null or empty when unknown, never omitted. Only the MBID is the identity: the
+integer ids of MusicBrainz are internal and never leave the service.
+
+- `RECORDING_NOT_FOUND`: the MBID is unknown (or the Recording it was merged
+  into was deleted). `RECORDING_MOVED` + `error.newMbid`: the MBID is in
+  `recording_gid_redirect` and its target exists.
+- Core: `mbid`, `title`, `lengthMs` (null when unknown), `disambiguation`
+  (`''` when none), `video`, `isrcs` (sorted), and `artistCredit`: the whole
+  credit as printed plus, per artist in credit order, `mbid`, `name` (the
+  artist's own), `creditedName` (as this Recording credits it) and
+  `joinPhrase`.
+- `releases`: one entry per track the Recording is on, each with the release
+  and release group MBIDs, title, release group primary type, status,
+  `mediumPosition` and `trackPosition`, and `coverArtUrl`. Its `date` and
+  `country` (ISO 3166-1 alpha-2) are the release's **earliest release event**
+  (dates keep their precision: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; a dated
+  event beats an undated one; ties go to the smaller country code). Releases
+  come oldest first, undated last, then by title and MBID.
+- `coverArtUrl` is `https://coverartarchive.org/release/<release MBID>/front-500`,
+  built from the MBID alone (`cover_art` is not loaded in `sample`), so it can
+  answer 404. `src/lib/cover-art-url.ts` is the one place that builds it; the
+  search ticket reuses it.
+- `works` (Recording-Work relationships), `externalUrls` (`url` plus
+  `linkType`, MusicBrainz's name for the relationship, e.g. "streaming music").
+- **Genres and tags** (`genres`, `tags`, `tagsSource`): genres are the tags
+  MusicBrainz also lists as genres (matched by name, with the genre MBID);
+  the rest are tags; both carry the vote count and come most voted first, by
+  name on a tie. Only tags with a positive vote count. Which level they come
+  from is decided as a whole (levels are never mixed): the **Recording's own**
+  if it has any tag (genre or not), else the **release groups'** of the
+  releases it is on (votes added up per tag), else its **credited artists'**
+  (added up likewise). `tagsSource` is `recording`, `release_group` or
+  `artist`, and null when no level has a tag. The rule is in
+  `genre-fallback.ts`.
+- `lyrics` is `{ plain: null, synced: null }` until the Lyrics ticket fills it.
+- Loading: the service reads the parts in parallel (one query each, all in
+  `RecordingRepository`) and `assembleRecording` builds the answer without
+  any I/O; the rules above live in those pure functions.
+
 ## Database (Drizzle + Postgres)
 
 - Our own tables live in the dedicated Postgres schema **`music_catalog`**
   (`src/database/schema/music-catalog-schema.ts`), managed by drizzle-kit
   migrations in `drizzle/` (committed; the migrations table is drizzle's
-  default `drizzle.__drizzle_migrations`). The MusicBrainz tables that later
-  tickets read belong to mbslave: they are declared by hand as read-only
-  Drizzle tables and **never migrated here** (`schemaFilter` in
-  `drizzle.config.ts` keeps drizzle-kit out of them).
+  default `drizzle.__drizzle_migrations`). The MusicBrainz tables belong to
+  mbslave, which restores them into the `musicbrainz` schema of the same
+  database: they are declared by hand as read-only Drizzle tables in
+  `src/database/schema/musicbrainz/` (one file per entity: recording, artist,
+  release, work, url, tag) and **never migrated here** (the folder is outside
+  `drizzle.config.ts`'s `*.ts` glob and `schemaFilter` keeps drizzle-kit out
+  of the schema). Declare a table or column when a query needs it, with the
+  name and type of mbslave's `CreateTables.sql` at the pinned tag; only
+  repositories import them, and a repository never writes to them. The files
+  sit under `src/database/schema/`, so the coverage and mutation exclusions
+  of the schema apply.
 - Tables and columns are **snake_case** in SQL (`casing: 'snake_case'`),
   camelCase in TypeScript. Tables arrive with the feature that uses them.
 - `bootstrap_state` is a single-row table (a boolean primary key that must be
@@ -251,6 +321,32 @@ failure   { id, ok: false, error: { code, message } }
   **dedicated to tests**: it is migrated and every table of the
   `music_catalog` schema is truncated. Files run sequentially against one
   shared database (`fileParallelism: false`).
+- **The MusicBrainz schema in e2e** (`test/setup/musicbrainz-schema.ts`):
+  after the migrations, the global setup creates the real 375-table schema in
+  the `musicbrainz` schema with the same eight SQL scripts `mbslave init
+  --empty` runs (mbslave pinned to git tag `v31.0.1`, constant `MBSLAVE_REF`;
+  bump it together with the mbslave container). The scripts come from
+  musicbrainz-server (GPL), so they are **not vendored**: they are fetched
+  from that tag on GitHub (with retries) and cached in
+  `node_modules/.cache/`, so the first run needs the network. They are run
+  through `pg` with mbslave's `musicbrainz, public` search path and the psql
+  `\set` lines stripped, no `psql` needed. The database user must be a
+  superuser (contrib extensions `cube`, `earthdistance`, `unaccent`); the
+  Testcontainers one is. A reused `E2E_DATABASE_URL` that already has the
+  schema is left as is.
+- **The MusicBrainz fixture** (`test/utils/musicbrainz.ts` and
+  `musicbrainz-relations.ts`): small helpers that write rows with plain SQL,
+  the way a dump or a replication packet would (`addArtist`, `addRecording`,
+  `addRecordingRedirect`, `deleteRecording`, `addIsrc`, `addRelease`,
+  `addTrack`, `addWork`, `addExternalUrl`, `addGenre`, `addTag`, `mbid(n)`
+  for readable MBIDs), deliberately **not** through the service's own Drizzle
+  declarations, so a wrong column name there fails a spec. `resetDatabase`
+  (run by `useTestClient`) also empties every table the fixture writes to, so
+  a new helper that writes to another table must add it to `FIXTURE_TABLES`.
+  Search and sync tests build on these; add a helper instead of writing SQL
+  in a spec. `useReadyCatalog(server)` marks the import `ready` before each
+  test (call it after `useTestClient`), and `requestRecording` sends
+  `getRecording` and parses the answer with the contract's schema.
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers, the dispatcher with its
   timeout, the heartbeat with fake timers, the worker loop, the logger).

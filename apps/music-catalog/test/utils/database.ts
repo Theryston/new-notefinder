@@ -1,13 +1,16 @@
 import { sql } from 'drizzle-orm';
 import type { Database } from '../../src/database/database.js';
 import { bootstrapState } from '../../src/database/schema/bootstrap-state.js';
+import { resetMusicBrainz } from './musicbrainz.js';
 
 /**
  * Empties every table of the service's schema (discovered from the database,
- * so new tables are covered without touching this helper). Call it in
- * `beforeEach` of specs that write to the database.
+ * so new tables are covered without touching this helper) and the MusicBrainz
+ * tables the fixture writes to. Call it in `beforeEach` of specs that write to
+ * the database.
  */
 export const resetDatabase = async (db: Database): Promise<void> => {
+  await resetMusicBrainz(db);
   const result = await db.execute<{ table_name: string }>(sql`
     select table_name from information_schema.tables
     where table_schema = 'music_catalog' and table_type = 'BASE TABLE'

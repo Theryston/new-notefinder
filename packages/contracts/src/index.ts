@@ -4,6 +4,7 @@ export * from './avatar-rules.js';
 export * from './cache-tags.js';
 export * from './errors.js';
 export * from './music-catalog.js';
+export * from './music-catalog-recording.js';
 export * from './pagination.js';
 export * from './revalidation.js';
 export * from './users.js';
