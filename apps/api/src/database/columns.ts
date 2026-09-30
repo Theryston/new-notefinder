@@ -2,7 +2,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { text, timestamp } from 'drizzle-orm/pg-core';
 
 /**
- * Text primary key. New rows get a cuid2; imported legacy rows keep their
+ * Text primary key. New rows get a cuid2; imported legacy users keep their
  * Prisma cuid, which fits the same column (see "Legacy data import").
  */
 export const id = () =>
