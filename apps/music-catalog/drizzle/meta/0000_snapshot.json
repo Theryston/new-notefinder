@@ -1,0 +1,86 @@
+{
+  "id": "6eba656d-3500-4472-96c7-0b17ab0a6c85",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "music_catalog.bootstrap_state": {
+      "name": "bootstrap_state",
+      "schema": "music_catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "boolean",
+          "primaryKey": true,
+          "notNull": true,
+          "default": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "bootstrap_phase",
+          "typeSchema": "music_catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'restoring'"
+        },
+        "dataset": {
+          "name": "dataset",
+          "type": "catalog_dataset",
+          "typeSchema": "music_catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bootstrap_state_single_row": {
+          "name": "bootstrap_state_single_row",
+          "value": "\"music_catalog\".\"bootstrap_state\".\"id\""
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "music_catalog.bootstrap_phase": {
+      "name": "bootstrap_phase",
+      "schema": "music_catalog",
+      "values": ["restoring", "indexing", "ready"]
+    },
+    "music_catalog.catalog_dataset": {
+      "name": "catalog_dataset",
+      "schema": "music_catalog",
+      "values": ["sample", "full"]
+    }
+  },
+  "schemas": {
+    "music_catalog": "music_catalog"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

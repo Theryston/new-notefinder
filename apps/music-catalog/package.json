@@ -1,0 +1,45 @@
+{
+  "name": "music-catalog",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others --names server,worker \"tsx watch src/server.ts\" \"tsx watch src/worker.ts\"",
+    "build": "tsc -p tsconfig.build.json",
+    "start:server": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
+    "lint": "biome check . && depcruise src --config .dependency-cruiser.cjs",
+    "format": "biome check --write .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:mutation": "stryker run",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/database/migrate.ts"
+  },
+  "dependencies": {
+    "@notefinder/contracts": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.0",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@testcontainers/postgresql": "^12.1.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.2",
+    "@vitest/coverage-v8": "^4.1.2",
+    "concurrently": "^10.0.5",
+    "dependency-cruiser": "^18.4.0",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

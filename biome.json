@@ -213,6 +213,8 @@
         "**/*.config.e2e.ts",
         "apps/api/src/config/env.ts",
         "apps/api/test/setup/**",
+        "apps/music-catalog/src/config/env.ts",
+        "apps/music-catalog/test/setup/**",
         "apps/web/lib/env/**",
         "apps/web/cache-handlers/redis.ts"
       ],
