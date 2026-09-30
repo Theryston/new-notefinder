@@ -260,3 +260,16 @@ export const addTag = async (
     });
   }
 };
+
+/** Gives the artist another name people know it by. */
+export const addArtistAlias = async (
+  db: Database,
+  artist: FixtureArtist,
+  input: { name: string; sortName?: string },
+): Promise<void> => {
+  await insertRow(db, 'artist_alias', {
+    artist: artist.id,
+    name: input.name,
+    sort_name: input.sortName ?? input.name,
+  });
+};

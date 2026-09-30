@@ -40,8 +40,34 @@ const envSchema = z.object({
 
 export type Env = z.output<typeof envSchema>;
 
-export const parseEnv = (source: Record<string, string | undefined>): Env => {
-  const result = envSchema.safeParse(source);
+// Meilisearch is reached over HTTP(S): the dev compose and a private compose
+// network use plain HTTP, a managed instance HTTPS.
+const meilisearchUrlSchema = z.url({ protocol: /^https?$/ });
+
+// Each process reads only the key it needs: the server can search, nothing
+// else, and the worker can write. Both are keys created in Meilisearch (see
+// CLAUDE.md "Meilisearch"), scoped to what they do, not its master key.
+const serverEnvSchema = envSchema.extend({
+  MEILISEARCH_URL: meilisearchUrlSchema,
+  MEILISEARCH_SEARCH_API_KEY: z.string().min(1),
+});
+
+const workerEnvSchema = envSchema.extend({
+  MEILISEARCH_URL: meilisearchUrlSchema,
+  MEILISEARCH_WRITE_API_KEY: z.string().min(1),
+  // Recordings sent to Meilisearch per task: bigger batches index faster and
+  // use more memory, smaller ones checkpoint more often.
+  INDEXING_BATCH_SIZE: z.coerce.number().int().min(1).max(10_000).default(2000),
+});
+
+export type ServerEnv = z.output<typeof serverEnvSchema>;
+export type WorkerEnv = z.output<typeof workerEnvSchema>;
+
+const parseWith = <TSchema extends z.ZodType>(
+  schema: TSchema,
+  source: Record<string, string | undefined>,
+): z.output<TSchema> => {
+  const result = schema.safeParse(source);
   if (!result.success) {
     throw new Error(
       `Invalid environment variables:\n${z.prettifyError(result.error)}`,
@@ -50,21 +76,26 @@ export const parseEnv = (source: Record<string, string | undefined>): Env => {
   return result.data;
 };
 
+type EnvSource = Record<string, string | undefined>;
+
+export const parseEnv = (source: EnvSource): Env =>
+  parseWith(envSchema, source);
+
+export const parseServerEnv = (source: EnvSource): ServerEnv =>
+  parseWith(serverEnvSchema, source);
+
+export const parseWorkerEnv = (source: EnvSource): WorkerEnv =>
+  parseWith(workerEnvSchema, source);
+
 // Resolves to apps/music-catalog/.env from both src/config and dist/config.
 const dotEnvPath = fileURLToPath(new URL('../../.env', import.meta.url));
 
 let cachedEnv: Env | undefined;
 
-/**
- * Parses `process.env` once and caches the result. Outside production and
- * tests, variables from `apps/music-catalog/.env` are loaded first (without
- * overriding variables that are already set), so no dotenv dependency is
- * needed.
- */
-export const loadEnv = (): Env => {
-  if (cachedEnv) {
-    return cachedEnv;
-  }
+// Outside production and tests, variables from apps/music-catalog/.env are
+// loaded first (without overriding variables that are already set), so no
+// dotenv dependency is needed.
+const loadDotEnvFile = (): void => {
   const nodeEnv = process.env.NODE_ENV;
   if (
     nodeEnv !== 'production' &&
@@ -73,6 +104,28 @@ export const loadEnv = (): Env => {
   ) {
     process.loadEnvFile(dotEnvPath);
   }
+};
+
+/**
+ * Parses `process.env` once and caches the result: the settings every
+ * process shares (what the migrations need too). The server and the worker
+ * load their own, bigger sets with `loadServerEnv` and `loadWorkerEnv`.
+ */
+export const loadEnv = (): Env => {
+  if (cachedEnv) {
+    return cachedEnv;
+  }
+  loadDotEnvFile();
   cachedEnv = parseEnv(process.env);
   return cachedEnv;
+};
+
+export const loadServerEnv = (): ServerEnv => {
+  loadDotEnvFile();
+  return parseServerEnv(process.env);
+};
+
+export const loadWorkerEnv = (): WorkerEnv => {
+  loadDotEnvFile();
+  return parseWorkerEnv(process.env);
 };

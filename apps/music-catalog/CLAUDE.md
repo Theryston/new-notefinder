@@ -9,21 +9,21 @@ others later) talk to it over one long-lived, authenticated **WebSocket**.
 The full design is in the parent spec, issue #55; this file documents what
 exists.
 
-**What exists today**: the authenticated WebSocket server answering `status`
-and `getRecording` (issues #57 and #59), the protocol envelope, our own
-Postgres schema (the bootstrap state), read-only declarations of the
-MusicBrainz tables `getRecording` reads, the `server` and `worker`
-entrypoints (the worker is a no-op loop) and the test and quality setup.
-Search, the MusicBrainz restore and bootstrap, the search engine,
-replication, Lyrics and the production compose are later tickets: do not
-build them here ahead of their ticket. The **search engine is still to be
-chosen** (a benchmark of tuned Sonic, Meilisearch and Postgres full-text
-search, issue #68); whatever it is, `search` will return results in the
-engine's relevance order, loaded from Postgres without re-ranking.
+**What exists today**: the authenticated WebSocket server answering
+`status`, `getRecording` and `search` (issues #57, #59 and #58), the protocol
+envelope, our own Postgres schema (the bootstrap state and the indexing
+checkpoint), read-only declarations of the MusicBrainz tables the queries
+read, **Meilisearch** as the search engine behind a small integration, the
+`server` and `worker` entrypoints (the worker indexes every Recording once
+the MusicBrainz data is restored) and the test and quality setup. The
+MusicBrainz restore and bootstrap (mbslave container), replication, Lyrics
+and the production compose are later tickets: do not build them here ahead of
+their ticket. `search` returns results in **Meilisearch's relevance order**,
+loaded from Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
-(`pg`), Zod (protocol schemas come from `@notefinder/contracts`), Vitest,
-Testcontainers. Not a public API: it has no OpenAPI, no versioned URLs and no
+(`pg`), Meilisearch (its official JS client, behind `integrations/`), Zod
+(protocol schemas come from `@notefinder/contracts`), Vitest, Testcontainers. Not a public API: it has no OpenAPI, no versioned URLs and no
 users; only trusted services with an API key connect.
 
 ## Commands
@@ -33,8 +33,9 @@ nub run dev          # server + worker in watch mode (tsx watch), port from PORT
 nub run build        # tsc -> dist/ (start:server / start:worker run the compiled entrypoints)
 nub run test         # unit tests (*.spec.ts)
 nub run test:cov     # unit tests + coverage thresholds (report in coverage/)
-nub run test:e2e     # e2e tests (test/*.e2e-spec.ts) against a Testcontainers Postgres
-                     # (needs Docker, or E2E_DATABASE_URL, see Testing); report in coverage-e2e/
+nub run test:e2e     # e2e tests (test/*.e2e-spec.ts) against a Testcontainers Postgres + Meilisearch
+                     # (needs Docker, or E2E_DATABASE_URL and E2E_MEILISEARCH_URL, see Testing);
+                     # report in coverage-e2e/
 nub run test:mutation --filter=music-catalog   # Stryker
 nub run check-types
 nub run lint         # biome + dependency-cruiser
@@ -44,7 +45,7 @@ Local setup, from the repository root:
 
 ```sh
 nub install
-nub run infra:up                                   # includes this app's Postgres on port 5433
+nub run infra:up                                   # includes this app's Postgres (5433) and Meilisearch (7700)
 cp apps/music-catalog/.env.example apps/music-catalog/.env
 (cd apps/music-catalog && nub run db:migrate)
 nub run dev --filter=music-catalog                 # ws://localhost:3334
@@ -63,12 +64,16 @@ nub run db:migrate   # apply migrations; an explicit step, never run on boot
 ```
 src/
   server.ts               entrypoint of the server process: env, pool, server, signals
-  worker.ts               entrypoint of the worker process (a no-op loop for now)
-  create-server.ts        composition root of the server: modules -> handlers -> ws server
-  config/env.ts           Zod schema for process.env, parsed once at boot
+  worker.ts               entrypoint of the worker process: env, pool, worker, signals
+  create-server.ts        composition roots of both processes: the server (modules -> handlers ->
+                          ws server) and the worker (services -> `tick`)
+  config/env.ts           Zod schemas for process.env: shared, server and worker sets
   logger.ts               minimal structured logger (JSON in production)
   errors/                 CatalogError: an expected failure with a protocol error code
-  lib/                    small pure helpers shared by modules (text comparison, cover art URL)
+  lib/                    small pure helpers shared by modules (text comparison, cover art URL,
+                          grouping) and the definition of the recordings index
+  integrations/
+    meilisearch/          MeilisearchIndex: the only code that imports the Meilisearch SDK
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
@@ -96,6 +101,17 @@ src/
       assemble-recording.ts     rows -> the protocol's Recording (pure)
       genre-fallback.ts         which level the genres and tags come from (pure)
       release-event.ts          the date and country a release is shown with (pure)
+      recording-summary.*       the summaries a search lists (one query), for the search module
+      assemble-summary.ts       summary row -> the protocol's RecordingSummary (pure)
+      recording-document.*      the documents of a batch of Recordings, for the indexing module
+      recording-document.ts     rows -> the document Meilisearch indexes (pure)
+    search/
+      search.handler.ts         the `search` handler
+      search.service.ts         readiness, scope, Meilisearch, summaries, order
+      order-by-ids.ts           rows -> the order of a list of ids, dropping the missing (pure)
+    indexing/
+      indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
+      indexing.repository.ts    the indexing checkpoint
   worker/worker-loop.ts   the loop the worker's steps plug into
 drizzle/                  generated SQL migrations (committed)
 test/                     e2e specs + helpers (test server, ws client, Testcontainers setup,
@@ -106,9 +122,13 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
   modules use it only through its **service**.
 - `ws/` is generic protocol code. A feature plugs in a handler; `ws/` never
   imports `modules/`.
-- Third-party clients (the search engine, once chosen in #68, and HTTP
-  downloaders) will live in `integrations/`, wrapped behind a small typed
-  class, one folder each.
+- Third-party clients (Meilisearch today, HTTP downloaders later) live in
+  `integrations/`, wrapped behind a small typed class, one folder each.
+  **Nothing else imports the SDK**: features depend on the wrapper
+  (`MeilisearchIndex`), which is also what unit tests stand in for, and the
+  composition roots build it with `createMeilisearchIndex`. (A convention:
+  dependency-cruiser enforces that `integrations/` knows no feature, not that
+  the SDK stays in it.)
 
 ## Layers (handler -> service -> repository)
 
@@ -124,7 +144,10 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
   plain typed objects. One repository per aggregate, `<Feature>Repository`.
 - Wiring is manual, in `create-server.ts` (no DI framework): build
   repositories, then services, then handlers, and pass the handlers to
-  `createWsServer`. A new module adds its lines there.
+  `createWsServer`; `createMusicCatalogWorker`, in the same file, builds the
+  worker's services and returns its `tick`. A new module adds its lines there.
+  (The file holds both roots because it is one of the files the unit
+  coverage and mutation configs leave to the e2e suite, which runs both.)
 - `nub run lint` runs dependency-cruiser (`.dependency-cruiser.cjs`), which
   enforces this: no cycles, only repositories (and `src/database/`) touch
   Drizzle, handlers never import repositories, services and repositories
@@ -139,7 +162,7 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
 - `tsx` runs the TypeScript in dev and for `db:migrate`; production runs the
   output of `tsc` (`dist/`).
 
-## Protocol (`@notefinder/contracts`, `music-catalog.ts` and `music-catalog-recording.ts`)
+## Protocol (`@notefinder/contracts`, `music-catalog.ts`, `music-catalog-recording.ts` and `music-catalog-search.ts`)
 
 The schemas and types live in contracts and are the only definition of the
 protocol; never redeclare them here. They are **private**: not part of the
@@ -169,8 +192,8 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   requests can be in flight on one connection and responses may arrive in any
   order: match them by `id`. `id` is `null` in a failure only when the
   message was too broken to read one from it.
-- `type` is `status` or `getRecording` today (`search` comes later).
-  `payload` is validated per type; `status` takes none (missing or `{}`).
+- `type` is `status`, `getRecording` or `search`. `payload` is validated per
+  type; `status` takes none (missing or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
   dataset: 'sample' | 'full' }`, read from the bootstrap state row in our
   schema. The phases run in that order: the mbslave container records
@@ -195,7 +218,7 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
 - **Request timeout**: a request still unanswered after `REQUEST_TIMEOUT_MS`
   gets `INTERNAL` ("Request timed out"). The handler keeps running (a promise
   can't be cancelled), so handlers must be safe to finish late.
-- Every operation that reads the catalog (`getRecording`, later `search`)
+- Every operation that reads the catalog (`getRecording`, `search`)
   starts with `BootstrapService.assertReady()`: until the first import
   reaches `ready` it answers `CATALOG_NOT_READY` (after the payload is
   validated), and it reads the phase on every request, so it follows the
@@ -259,6 +282,100 @@ integer ids of MusicBrainz are internal and never leave the service.
   `RecordingRepository`) and `assembleRecording` builds the answer without
   any I/O; the rules above live in those pure functions.
 
+## `search`
+
+Payload `{ query, scope?, limit?, offset? }`:
+
+- `query`: text, trimmed, 1 to 256 characters (`SEARCH_MAX_QUERY_LENGTH`).
+  Anything else, blanks included, is `VALIDATION_FAILED`.
+- `scope`: `metadata` (default) or `lyrics`. `lyrics` is accepted by the
+  schema but answers `{ results: [] }` until Lyrics are imported (issue #63).
+- `limit`: 1 to 100, default 20. `offset`: 0 to 900, default 0. A client can
+  reach the first 1000 matches of a query (Meilisearch's
+  `pagination.maxTotalHits`, which the index settings pin to
+  `SEARCH_MAX_TOTAL_HITS`); the bounds live in contracts and derive from it.
+
+Result `{ results: RecordingSummary[] }` (an object, so fields can be added
+later), best match first:
+
+- `mbid`, `title`, `lengthMs`, `disambiguation`, `video`, `artistCredit`
+  and `genres` are the Recording's own (the schema is `getRecording`'s
+  `recordingSchema` picked, so the names and meaning cannot drift), and
+  `primaryRelease` is `{ mbid, title, year, coverArtUrl }` or null.
+- `primaryRelease` is the release `getRecording` lists first (the oldest by
+  earliest release event, undated last, then by title and MBID); `year` is
+  the year of that event, null when unknown. `genres` follow the same
+  fallback as `getRecording` (the Recording's, else its release groups', else
+  its artists'; never mixed).
+- **The order is Meilisearch's, untouched**: the server asks Meilisearch for
+  the MBIDs only (`attributesToRetrieve` is the primary key), reads every
+  summary of the page from Postgres in **one query**
+  (`RecordingSummaryRepository`, one statement with a lateral subquery per
+  part) and puts the rows back in the order of the MBIDs (`orderByIds`).
+  An MBID Meilisearch returns that is no longer in the database is dropped,
+  so a page can be shorter than `limit` without being the last one: stop
+  paging on an empty page.
+- Before `ready` it answers `CATALOG_NOT_READY` (after validating).
+  Meilisearch being down is `INTERNAL`.
+
+## Meilisearch
+
+The search engine (chosen after the benchmark in issue #68). Its URL and keys
+come from env; version pinned to a stable v1.x in the dev compose
+(`getmeili/meilisearch:v1.54.2`) and in e2e.
+
+- **`recordings` index**, primary key `mbid` (the Recording's MBID). One
+  document per Recording (`RecordingDocument`, `src/lib/recordings-index.ts`),
+  built by `buildRecordingDocument` from: `title`, `artistCredit` (the credit
+  as printed), `artistAliases` (name and sort name of each credited artist and
+  of each of its aliases), `releaseTitles`, `workTitles`, `genres` (names, from
+  the level `getRecording` takes its genres from) and `disambiguation`. The
+  lists hold each text once, sorted, so re-indexing a Recording sends the same
+  document. Nothing to display lives in the index: results come from Postgres.
+- **Settings**, applied by code (`MeilisearchIndex.ensure`, idempotent: it
+  reads the index and only writes what differs, so a restart never makes
+  Meilisearch reindex): `searchableAttributes` in ranking order (`title`,
+  `artistCredit`, `artistAliases`, `releaseTitles`, `workTitles`, `genres`,
+  `disambiguation`) and `pagination.maxTotalHits`. **Typo tolerance, prefix
+  search and every other setting stay at Meilisearch's defaults** (the
+  benchmark's recall came from them; do not tune them here), so a typo in a
+  word of 5 letters or more, or a last word cut short while typing, still
+  finds the Recording.
+- **Indexing flow** (`IndexingService.run`, one worker tick): while the phase
+  is `restoring` or there is no bootstrap row, nothing happens. On `restored`
+  the worker records `indexing`, applies the settings, and walks the
+  Recordings by MusicBrainz's integer id, `INDEXING_BATCH_SIZE` at a time
+  (default 2000): read the batch's documents (one query per kind of data per
+  batch, not per Recording), send them, **wait for the Meilisearch task**, then
+  write the checkpoint (`music_catalog.indexing_checkpoint`, one row per
+  index). When no Recording is left it records `ready`. A worker that dies or
+  is restarted in the middle resumes after the checkpoint (a batch that was
+  sent but not checkpointed is sent again, which replaces the same documents);
+  a task that fails throws, the loop logs it and the next tick resumes. Aborting
+  the worker's signal stops it after the batch in progress. Changes after
+  `ready` (replication, the outbox) are a later ticket.
+- **Keys**: Meilisearch runs with a master key that neither process gets. The
+  **server** has a search-only key (`MEILISEARCH_SEARCH_API_KEY`, action
+  `search` on `recordings` and `lyrics`); the **worker** has a key that can
+  write (`MEILISEARCH_WRITE_API_KEY`, actions `documents.*`, `indexes.*`,
+  `settings.*` and `tasks.get`). Each process validates only its own
+  variables (`parseServerEnv`, `parseWorkerEnv`). A key is derived from its
+  `uid` and the master key (HMAC-SHA256), so a key created with a fixed `uid`
+  is the same everywhere: the dev compose's `music-catalog-meilisearch-init`
+  job creates both with fixed uids and `.env.example` lists the resulting
+  values for the dev master key. In production create them once with the
+  master key, for example:
+
+  ```sh
+  curl -X POST "$MEILISEARCH_URL/keys" -H "Authorization: Bearer $MEILI_MASTER_KEY" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}'
+  ```
+
+  and copy the `key` of each answer (the write one has the actions above and
+  `"indexes":["*"]`, since a blue-green reimport builds indexes under other
+  names).
+
 ## Database (Drizzle + Postgres)
 
 - Our own tables live in the dedicated Postgres schema **`music_catalog`**
@@ -285,6 +402,9 @@ integer ids of MusicBrainz are internal and never leave the service.
   tuples (not Zod's `.enum` object, from which drizzle-kit drops the Postgres
   schema of the type), so the database and the `status` result can't drift
   apart.
+- `indexing_checkpoint` has one row per search index (`index_uid`, the last
+  Recording sent to it by integer id, `updated_at`); the worker writes it
+  after every confirmed batch. No row means nothing was indexed yet.
 - Migrations: change the schema -> `db:generate` -> review the SQL -> commit
   it. Never edit an applied migration. CI runs `drizzle-kit check` +
   `generate` and fails when the schema has a change with no migration.
@@ -307,13 +427,24 @@ integer ids of MusicBrainz are internal and never leave the service.
   | `CATALOG_DATASET` | `sample` or `full`; required, no default |
   | `HEARTBEAT_INTERVAL_MS` | Ping interval (default 30000) |
   | `REQUEST_TIMEOUT_MS` | Per-request timeout (default 10000) |
+  | `MEILISEARCH_URL` | Meilisearch, `http(s)://` (dev compose: port 7700); server and worker |
+  | `MEILISEARCH_SEARCH_API_KEY` | Search-only key; required by the **server** only |
+  | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
+  | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
+
+  The server and the worker parse different sets (`loadServerEnv`,
+  `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
+  needs and never receives the other's key. `loadEnv` (the shared set) is
+  what `db:migrate` reads, so a deploy step needs no Meilisearch settings.
 
 - Logging: `createLogger` from `src/logger.ts` (one JSON object per line in
   production, text otherwise). No `console.*`. Never log API keys, the
   `Authorization` header or whole request bodies.
 - Shutdown: on SIGINT/SIGTERM the server closes every connection with 1001,
-  stops listening and closes the pool; the worker finishes its current tick
-  and exits. Keep both stateless so several instances can run.
+  stops listening and closes the pool; the worker stops indexing after the
+  batch in progress, finishes its tick and exits. Keep both stateless so
+  several instances can run the server (run **one** worker: two would index
+  the same batches twice, which is harmless but wasted work).
 
 ## Testing
 
@@ -330,6 +461,20 @@ integer ids of MusicBrainz are internal and never leave the service.
   **dedicated to tests**: it is migrated and every table of the
   `music_catalog` schema is truncated. Files run sequentially against one
   shared database (`fileParallelism: false`).
+- **Meilisearch in e2e** (`test/setup/meilisearch.ts`): one container per run
+  (`getmeili/meilisearch:v1.54.2`, the tag of the dev compose; Testcontainers'
+  generic container, there is no module for it), started next to Postgres by
+  the global setup. It creates the two scoped keys (search, write) with the
+  master key, and the test server and worker get only their own, so a missing
+  permission fails a spec. Without Docker, set `E2E_MEILISEARCH_URL` and
+  `E2E_MEILISEARCH_MASTER_KEY` to a Meilisearch **dedicated to tests** (its
+  `recordings` index is deleted between tests). Helpers in
+  `test/utils/test-worker.ts`: `createTestWorker(server, { env, signal })`
+  builds a worker with the same wiring as `worker.ts` (build a new one to
+  play a restart), `indexCatalog(server, worker?)` records `restored` and
+  ticks it until the catalog is `ready`, `useEmptySearchIndex()` deletes the
+  index before each test, and `meilisearchOrder(query)` asks Meilisearch
+  itself what the order is, to compare a `search` answer with.
 - **The MusicBrainz schema in e2e** (`test/setup/musicbrainz-schema.ts`):
   after the migrations, the global setup creates the real 375-table schema in
   the `musicbrainz` schema with the same eight SQL scripts `mbslave init
@@ -352,19 +497,24 @@ integer ids of MusicBrainz are internal and never leave the service.
   `musicbrainz-relations.ts`): small helpers that write rows with plain SQL,
   the way a dump or a replication packet would (`addArtist`, `addRecording`,
   `addRecordingRedirect`, `deleteRecording`, `addIsrc`, `addRelease`,
-  `addTrack`, `addWork`, `addExternalUrl`, `addGenre`, `addTag`, `mbid(n)`
+  `addTrack`, `addWork`, `addExternalUrl`, `addGenre`, `addTag`,
+  `addArtistAlias`, `mbid(n)`
   for readable MBIDs), deliberately **not** through the service's own Drizzle
   declarations, so a wrong column name there fails a spec. `resetDatabase`
   (run by `useTestClient`) also empties every table the fixture writes to, so
   a new helper that writes to another table must add it to `FIXTURE_TABLES`.
   Search and sync tests build on these; add a helper instead of writing SQL
   in a spec. `useReadyCatalog(server)` marks the import `ready` before each
-  test (call it after `useTestClient`), and `requestRecording` sends
-  `getRecording` and parses the answer with the contract's schema.
+  test (call it after `useTestClient`), and `requestRecording` and
+  `requestSearch` send `getRecording` and `search` and parse the answer with
+  the contract's schema. A search test arranges its Recordings, calls
+  `indexCatalog`, then asks over the WebSocket.
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
-  check, envelope parsing and error mapping, handlers, the dispatcher with its
-  timeout, the heartbeat with fake timers, the worker loop, the logger).
-  Services are tested with a mocked repository. Not unit-tested, covered by
+  check, envelope parsing and error mapping, handlers and their payload
+  validation, the dispatcher with its timeout, the heartbeat with fake
+  timers, the worker loop, the logger, building the Meilisearch document and
+  the summary, re-sorting rows by Meilisearch's order). Services are tested
+  with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
   e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
   and the schema (the exclusions are in `vitest.config.ts`).
 - The e2e suite has its own coverage thresholds

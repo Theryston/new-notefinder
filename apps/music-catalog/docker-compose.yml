@@ -1,8 +1,8 @@
 # The Music catalog service's own Postgres, separate from the API's (host
 # port 5433, the API's uses 5432). Included by the root docker-compose.yml, so
 # `nub run infra:up` / `infra:down` manage it with the rest of the stack.
-# The search engine (chosen in #68) and mbslave join this file with the
-# tickets that need them.
+# Meilisearch, the search engine (chosen after the benchmark in issue #68),
+# joins it below; mbslave joins with the ticket that needs it.
 services:
   music-catalog-postgres:
     image: postgres:17-alpine
@@ -21,5 +21,52 @@ services:
       timeout: 5s
       retries: 10
 
+
+  # The search engine. Pinned to a stable v1.x (the benchmark used v1.54.2);
+  # keep the tag in sync with apps/music-catalog/test/setup/meilisearch.ts.
+  # With a master key it refuses requests without a valid API key, like in
+  # production.
+  music-catalog-meilisearch:
+    image: getmeili/meilisearch:v1.54.2
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: local-dev-meilisearch-master-key
+      MEILI_NO_ANALYTICS: 'true'
+    ports:
+      - '7700:7700'
+    volumes:
+      - music-catalog-meilisearch-data:/meili_data
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', 'http://127.0.0.1:7700/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the two keys the service uses, with fixed uids (a
+  # key is derived from its uid and the master key, so they are the same on
+  # every machine and .env.example can list them): the server's can only
+  # search, the worker's can manage indexes, settings and documents.
+  # Idempotent (HTTP 409 means the key is already there), so it is safe on
+  # every `infra:up`.
+  music-catalog-meilisearch-init:
+    image: getmeili/meilisearch:v1.54.2
+    restart: 'no'
+    depends_on:
+      music-catalog-meilisearch:
+        condition: service_healthy
+    environment:
+      MEILI_MASTER_KEY: local-dev-meilisearch-master-key
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        create_key() {
+          code=$$(curl -s -o /dev/null -w '%{http_code}' -X POST http://music-catalog-meilisearch:7700/keys \
+            -H "Authorization: Bearer $$MEILI_MASTER_KEY" -H 'Content-Type: application/json' -d "$$1")
+          [ "$$code" = 201 ] || [ "$$code" = 409 ] || { echo "Could not create a key (HTTP $$code)"; exit 1; }
+        }
+        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}' &&
+        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000002","name":"music-catalog-write","actions":["documents.*","indexes.*","settings.*","tasks.get"],"indexes":["*"],"expiresAt":null}'
+
 volumes:
   music-catalog-postgres-data:
+  music-catalog-meilisearch-data:

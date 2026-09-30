@@ -1,9 +1,9 @@
-import { loadEnv } from './config/env.js';
+import { loadServerEnv } from './config/env.js';
 import { createMusicCatalogServer } from './create-server.js';
 import { createDatabase, createPool } from './database/database.js';
 import { createLogger } from './logger.js';
 
-const env = loadEnv();
+const env = loadServerEnv();
 const logger = createLogger({
   name: 'server',
   json: env.NODE_ENV === 'production',

@@ -2,9 +2,11 @@
 
 Private service that will hold every Recording in the world (kept in sync with
 MusicBrainz, plus open Lyrics) and answer searches over an authenticated
-WebSocket. Today: the WebSocket server answering `status` and `getRecording`
-(everything known about one Recording, by MBID), its Postgres schema and the
-worker entrypoint. Full design: issue #55.
+WebSocket. Today: the WebSocket server answering `status`, `getRecording`
+(everything known about one Recording, by MBID) and `search` (free text over
+Meilisearch, results in its relevance order), its Postgres schema and the
+worker, which indexes the Recordings once MusicBrainz is restored. Full
+design: issue #55.
 Rules, layers and the protocol are in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Running locally
@@ -13,7 +15,7 @@ From the repository root:
 
 ```sh
 nub install
-nub run infra:up                                   # Postgres on port 5433, with the rest of the stack
+nub run infra:up                                   # Postgres (5433) and Meilisearch (7700), with the rest of the stack
 cp apps/music-catalog/.env.example apps/music-catalog/.env
 (cd apps/music-catalog && nub run db:migrate)
 nub run dev --filter=music-catalog                 # server on ws://localhost:3334, plus the worker

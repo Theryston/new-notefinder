@@ -1,7 +1,7 @@
 name: notefinder
 
-# App-specific services (the web cache Redis, the Music catalog's Postgres)
-# live next to their app.
+# App-specific services (the web cache Redis, the Music catalog's Postgres and
+# Meilisearch) live next to their app.
 include:
   - apps/web/docker-compose.yml
   - apps/music-catalog/docker-compose.yml

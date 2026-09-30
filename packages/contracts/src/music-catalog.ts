@@ -54,7 +54,11 @@ export type MusicCatalogRequestId = z.infer<typeof musicCatalogRequestIdSchema>;
  * Every operation the service answers. A new operation adds its type here,
  * its payload and result schemas next to it, and a handler in the service.
  */
-export const musicCatalogRequestTypeSchema = z.enum(['status', 'getRecording']);
+export const musicCatalogRequestTypeSchema = z.enum([
+  'status',
+  'getRecording',
+  'search',
+]);
 
 export type MusicCatalogRequestType = z.infer<
   typeof musicCatalogRequestTypeSchema

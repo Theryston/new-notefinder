@@ -1,5 +1,5 @@
 import { inject } from 'vitest';
-import { type Env, parseEnv } from '../../src/config/env.js';
+import { parseServerEnv, type ServerEnv } from '../../src/config/env.js';
 import { createMusicCatalogServer } from '../../src/create-server.js';
 import type { Database } from '../../src/database/database.js';
 import { createDatabase, createPool } from '../../src/database/database.js';
@@ -7,7 +7,7 @@ import { createLogger } from '../../src/logger.js';
 
 // The real logger with its output discarded, so the expected errors of the
 // failure cases stay out of the test output.
-const logger = createLogger({
+export const testLogger = createLogger({
   name: 'e2e-server',
   json: true,
   out: () => undefined,
@@ -21,7 +21,7 @@ export const ROTATED_API_KEY = 'e2e-rotated-key-'.padEnd(40, '1');
 export type TestServer = {
   /** `ws://127.0.0.1:<port>` of the running server. */
   url: string;
-  env: Env;
+  env: ServerEnv;
   /** The server's database, for arranging what the import would have written. */
   db: Database;
   close: () => Promise<void>;
@@ -35,12 +35,15 @@ export type TestServer = {
 const createTestServer = async (
   env: Record<string, string> = {},
 ): Promise<TestServer> => {
-  const parsed = parseEnv({
+  const meilisearch = inject('meilisearch');
+  const parsed = parseServerEnv({
     NODE_ENV: 'test',
     PORT: '0',
     DATABASE_URL: inject('databaseUrl'),
     API_KEYS: `${API_KEY},${ROTATED_API_KEY}`,
     CATALOG_DATASET: 'sample',
+    MEILISEARCH_URL: meilisearch.url,
+    MEILISEARCH_SEARCH_API_KEY: meilisearch.searchKey,
     ...env,
   });
   const pool = createPool(parsed.DATABASE_URL, () => undefined);
@@ -48,7 +51,7 @@ const createTestServer = async (
   const server = createMusicCatalogServer({
     env: parsed,
     db,
-    logger,
+    logger: testLogger,
   });
   const { port } = await server.start();
   return {
