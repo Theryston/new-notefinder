@@ -180,6 +180,16 @@ design token means updating `DESIGN.md` and the tokens in
 - Production is self-hosted: one Docker image per app, published to GHCR by
   GitHub Actions and run on Coolify behind a CDN. Keep apps stateless so they
   can run with multiple instances (shared state lives in Postgres/Redis).
+  The exception is the Music catalog: it runs on its own server from a
+  single production compose (`docker compose up -d`, no Coolify); see
+  `docs/adr/0002-music-catalog-service.md`.
+- **Large data needs the maintainer's go-ahead.** Never download a large
+  dataset (e.g. the full MusicBrainz dumps or the LRCLIB dump) or build
+  data or indexes that grow the disk by more than a few GB (e.g. multiplying
+  a sample for a scale test) without asking the maintainer first, with the
+  expected size. Use the MusicBrainz **sample** and the e2e fixtures instead.
+  Clean up every container, volume and file you create outside
+  Testcontainers.
 
 ### Testing philosophy
 
