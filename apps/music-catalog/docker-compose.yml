@@ -1,0 +1,25 @@
+# The Music catalog service's own Postgres, separate from the API's (host
+# port 5433, the API's uses 5432). Included by the root docker-compose.yml, so
+# `nub run infra:up` / `infra:down` manage it with the rest of the stack.
+# The search engine (chosen in #68) and mbslave join this file with the
+# tickets that need them.
+services:
+  music-catalog-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: music_catalog
+      POSTGRES_PASSWORD: music_catalog
+      POSTGRES_DB: music_catalog
+    ports:
+      - '5433:5432'
+    volumes:
+      - music-catalog-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U music_catalog -d music_catalog']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  music-catalog-postgres-data:

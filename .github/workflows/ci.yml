@@ -51,6 +51,19 @@ jobs:
             exit 1
           fi
 
+      # Same check for the Music catalog service's own schema. Its drizzle
+      # config needs no credentials, so there is no .env to create.
+      - name: Music catalog migrations match the schema
+        working-directory: apps/music-catalog
+        run: |
+          nub exec drizzle-kit check
+          nub exec drizzle-kit generate
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            git status --short -- drizzle
+            echo "::error::The Music catalog Drizzle schema has changes with no migration. Run 'nub run db:generate' in apps/music-catalog and commit the result."
+            exit 1
+          fi
+
       # Unused files, exports and dependencies (config in knip.config.ts).
       - name: Dead code
         run: nub run knip
@@ -111,9 +124,11 @@ jobs:
         run: nub exec playwright install --with-deps chromium
 
       # Builds what each suite needs (web runs against a production build),
-      # then runs the API e2e tests and the web Playwright suite. The API
-      # suite starts its own Postgres with Testcontainers on the runner's
-      # Docker (no `services:` block; see apps/api/test/setup/global-setup.ts).
+      # then runs the API and Music catalog e2e tests and the web Playwright
+      # suite. The API and Music catalog suites start their own Postgres with
+      # Testcontainers on the runner's Docker (no `services:` block; see
+      # apps/api/test/setup/global-setup.ts and
+      # apps/music-catalog/test/setup/global-setup.ts).
       - name: E2E tests
         run: nub run test:e2e
         env:

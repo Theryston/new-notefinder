@@ -9,7 +9,8 @@ Goal: same features, split into a standalone API and a web client (a mobile app
 comes later and will consume the same API), with a better-looking web UI.
 When in doubt about a feature's behavior, check how the original does it.
 
-App-specific rules live in `apps/web/CLAUDE.md` and `apps/api/CLAUDE.md`.
+App-specific rules live in `apps/web/CLAUDE.md`, `apps/api/CLAUDE.md` and
+`apps/music-catalog/CLAUDE.md`.
 
 ## Monorepo layout
 
@@ -17,6 +18,8 @@ App-specific rules live in `apps/web/CLAUDE.md` and `apps/api/CLAUDE.md`.
 apps/
   web/          Next.js 16 frontend (SSR, Cache Components, next-intl, shadcn/ui). Port 3000.
   api/          NestJS 12 REST API (Drizzle, Better Auth, BullMQ). Port 3333.
+  music-catalog/  Private Music catalog service: Node + ws WebSocket server and worker,
+                  no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
 ```
@@ -31,8 +34,8 @@ packages/
 
 ```sh
 nub install                 # install everything
-nub run infra:up            # start Postgres + API Redis + MinIO + web cache Redis (docker compose)
-nub run dev                 # build packages, then run web + api in watch mode
+nub run infra:up            # start Postgres + API Redis + MinIO + web cache Redis + Music catalog Postgres (docker compose)
+nub run dev                 # build packages, then run web + api + music-catalog in watch mode
 nub run lint                # biome check (lint + format + import order), all packages
 nub run knip                # unused files, exports and dependencies (whole repo)
 nub run duplication         # jscpd: fails above 3% duplicated code (whole repo)
@@ -40,10 +43,10 @@ nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
 nub run test:cov            # unit tests + coverage thresholds (what CI runs)
-nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web)
-nub run test:e2e            # API e2e (Testcontainers Postgres) + web Playwright
+nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
+nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | @notefinder/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
@@ -108,6 +111,11 @@ design token means updating `DESIGN.md` and the tokens in
   carry no flags, so a flag would silently vanish from what clients see.
 - Web cache tag builders (e.g. `cacheTags.track(id)`) also live here, so the
   API invalidates exactly the tags the web caches with.
+- `music-catalog.ts` is the **private** WebSocket protocol of the Music
+  catalog service (envelope, its own error codes, `status`), spoken between
+  internal services only. It never goes through the API's DTOs, so it stays
+  out of the public OpenAPI document, and its error codes are not
+  `ApiErrorCode`s.
 - It is a compiled package (`tsc` → `dist/`). Relative imports use the `.js`
   extension (NodeNext). Turbo builds it before `dev`, `check-types` and `test`.
 - Changing an existing field is a breaking change for the mobile app: add new
@@ -150,7 +158,8 @@ design token means updating `DESIGN.md` and the tokens in
 ### Environment & infrastructure
 
 - Every app validates `process.env` with a Zod schema at startup and fails fast
-  (api: `src/config/env.ts`, web: `lib/env/server.ts` + `lib/env/client.ts`). Code reads config from that
+  (api and music-catalog: `src/config/env.ts`, web: `lib/env/server.ts` +
+  `lib/env/client.ts`). Code reads config from that
   module, never from `process.env` directly (`noProcessEnv`; only the env
   modules, config files and test setup are exempt in `biome.json`).
 - Every env var must be listed in the app's `.env.example` (with a safe local
@@ -159,10 +168,11 @@ design token means updating `DESIGN.md` and the tokens in
   MinIO (S3 API on 9000, console on 9001; `minio-init` creates the public
   `notefinder` bucket, so uploads use the same code as production's S3) for
   local development, and includes `apps/web/docker-compose.yml` (`web-redis`
-  on 6380, the web's shared cache); `nub run infra:up` / `infra:down` start
-  and stop all of them. E2E tests spin up their own throwaway
-  containers (Testcontainers: Postgres and MinIO) instead of using the dev
-  ones.
+  on 6380, the web's shared cache) and `apps/music-catalog/docker-compose.yml`
+  (`music-catalog-postgres` on 5433, the Music catalog's own database);
+  `nub run infra:up` / `infra:down` start and stop all of them. E2E tests
+  spin up their own throwaway containers (Testcontainers: Postgres and MinIO)
+  instead of using the dev ones.
 - Production is self-hosted: one Docker image per app, published to GHCR by
   GitHub Actions and run on Coolify behind a CDN. Keep apps stateless so they
   can run with multiple instances (shared state lives in Postgres/Redis).
@@ -172,6 +182,9 @@ design token means updating `DESIGN.md` and the tokens in
 - Pragmatic: test behavior that can break, not framework glue.
 - API: unit tests for services (repositories mocked) + e2e tests per endpoint
   against a real Postgres.
+- Music catalog: e2e tests over the real WebSocket protocol (a `ws` client
+  against the real server and a Testcontainers Postgres) + unit tests for pure
+  logic.
 - Web: Vitest for pure logic (timeline math, pitch detection, formatters) +
   Playwright for critical flows (search, track page, auth).
 - **Every bug fix comes with a test that reproduces it.**
@@ -202,8 +215,9 @@ the maintainer changes these files.
   it breaking. Stryker (`nub run test:mutation`, `stryker.config.json` per
   app, its own workflow in CI) changes the unit-tested code (flips
   conditions, removes calls, …) and fails when fewer mutants than
-  `thresholds.break` are killed (api 58%, web 66%). Same rule as coverage:
-  never change it; report an improved score in the PR. A surviving mutant
+  `thresholds.break` are killed (api 58%, web 66%, music-catalog 58%). Same
+  rule as coverage: never change it; report an improved score in the PR. A
+  surviving mutant
   in code you touched usually means a missing assertion; the HTML report is
   in `reports/mutation/`.
 - **Cognitive complexity**: at most 15 per function
@@ -220,8 +234,9 @@ the maintainer changes these files.
   signature imposed by a library interface, a fixture file) and says why.
 - **Architecture**: `nub run lint` also runs dependency-cruiser with each
   app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
-  of that app's CLAUDE.md (no import cycles; API: only repositories touch
-  Drizzle, modules talk through their service; web: shared code never imports
+  of that app's CLAUDE.md (no import cycles; API and music-catalog: only
+  repositories touch Drizzle, handlers/controllers go through services; API:
+  modules talk through their service; web: shared code never imports
   features, features use each other only through `components/`). Change the
   code, not the rule. A new rule or exception is the maintainer's call:
   ask first, and if approved it goes in that file with a `comment` saying

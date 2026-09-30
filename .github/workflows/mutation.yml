@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [api, web]
+        app: [api, web, music-catalog]
     steps:
       - uses: actions/checkout@v4
 
