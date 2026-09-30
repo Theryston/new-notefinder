@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Figtree, Geist_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
-import { Suspense } from 'react';
 
 import '../globals.css';
 import { Providers } from '@/components/providers';
@@ -68,11 +67,7 @@ export default async function LocaleLayout({
             payload small. */}
         <NextIntlClientProvider messages={{ errors }}>
           <Providers>
-            {/* Reads the pathname, which pages with params unknown at build
-                time (artists, albums) only have at request time. */}
-            <Suspense>
-              <AuthGate />
-            </Suspense>
+            <AuthGate />
             {children}
           </Providers>
         </NextIntlClientProvider>

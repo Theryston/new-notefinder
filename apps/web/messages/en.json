@@ -318,29 +318,6 @@
       }
     }
   },
-  "tracks": {
-    "card": {
-      "untitled": "Untitled song",
-      "vocalRange": "Vocal range"
-    },
-    "list": {
-      "loadMore": "Load more songs",
-      "loading": "Loading more songs",
-      "error": "Couldn't load more songs.",
-      "retry": "Try again"
-    },
-    "collection": {
-      "artist": "Artist",
-      "album": "Album",
-      "loading": "Loading songs",
-      "songs": "Songs",
-      "trackCount": "{count, plural, =0 {No songs with notes yet} one {# song with notes} other {# songs with notes}}",
-      "artistMetaTitle": "{name} songs with vocal notes",
-      "artistMetaDescription": "See every {name} song on NoteFinder with its vocal notes, and never sing off-key again.",
-      "albumMetaTitle": "Songs from the album {name} with vocal notes",
-      "albumMetaDescription": "See the songs from the album {name} on NoteFinder with their vocal notes, and never sing off-key again."
-    }
-  },
   "authErrors": {
     "INVALID_EMAIL": "Enter a valid email address.",
     "PASSWORD_TOO_SHORT": "The password is too short. Use at least 6 characters.",
