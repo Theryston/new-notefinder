@@ -8,11 +8,63 @@ import { spawn as nodeSpawn } from 'node:child_process';
  */
 export type MbslaveRun = (args: readonly string[]) => Promise<void>;
 
+/**
+ * One complete `stderr` line from the `mbslave` child, with the command that
+ * produced it. The restore logs these live so a long import is greppable;
+ * failures still carry the tail in the rejection below.
+ */
+export type MbslaveStderrLine = (line: string, args: readonly string[]) => void;
+
 type SpawnFn = typeof nodeSpawn;
 
-/** Spawns `mbslave` with the given arguments, inheriting the environment. */
+type StderrRecorder = {
+  push: (chunk: string) => void;
+  flush: () => void;
+  text: () => string;
+};
+
+const createStderrRecorder = (
+  args: readonly string[],
+  onStderrLine?: MbslaveStderrLine,
+): StderrRecorder => {
+  let text = '';
+  let pending = '';
+  const emit = (line: string): void => {
+    const trimmed = line.replace(/\r$/, '');
+    if (trimmed.length === 0) {
+      return;
+    }
+    onStderrLine?.(trimmed, args);
+  };
+  return {
+    push: (chunk: string) => {
+      text += chunk;
+      pending += chunk;
+      const parts = pending.split('\n');
+      pending = parts.pop() ?? '';
+      for (const part of parts) {
+        emit(part);
+      }
+    },
+    flush: () => {
+      if (pending.trim().length > 0) {
+        emit(pending);
+      }
+      pending = '';
+    },
+    text: () => text,
+  };
+};
+
+/**
+ * Spawns `mbslave` with the given arguments, inheriting the environment.
+ * `onStderrLine` sees every complete `stderr` line as it arrives
+ * (line-buffered, blank lines skipped); the rejection still carries the last
+ * 2000 characters for the restore log.
+ */
 export const createProcessMbslaveRun = (
   spawnImpl: SpawnFn = nodeSpawn,
+  onStderrLine?: MbslaveStderrLine,
 ): MbslaveRun => {
   const stderrTailLength = 2000;
   return (args) =>
@@ -20,9 +72,9 @@ export const createProcessMbslaveRun = (
       const child = spawnImpl('mbslave', [...args], {
         stdio: ['ignore', 'inherit', 'pipe'],
       });
-      let stderr = '';
+      const recorder = createStderrRecorder(args, onStderrLine);
       child.stderr?.on('data', (chunk: Buffer) => {
-        stderr += String(chunk);
+        recorder.push(String(chunk));
       });
       child.on('error', (error) => {
         reject(
@@ -30,11 +82,12 @@ export const createProcessMbslaveRun = (
         );
       });
       child.on('close', (code) => {
+        recorder.flush();
         if (code === 0) {
           resolve();
           return;
         }
-        const tail = stderr.slice(-stderrTailLength).trim();
+        const tail = recorder.text().slice(-stderrTailLength).trim();
         reject(
           new Error(
             `mbslave ${args[0] ?? ''} failed (exit ${String(code)})${tail === '' ? '' : `: ${tail}`}`,

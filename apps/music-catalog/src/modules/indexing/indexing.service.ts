@@ -8,6 +8,7 @@ import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RecordingDocumentService } from '../recording/recording-document.service.js';
 import type { IndexingRepository } from './indexing.repository.js';
+import { indexingPercent } from './indexing-progress.js';
 
 export type IndexingServiceDeps = {
   bootstrap: BootstrapService;
@@ -36,6 +37,7 @@ export class IndexingService {
    */
   async run(signal: AbortSignal): Promise<void> {
     const { bootstrap, index, repository } = this.deps;
+    const startedAt = Date.now();
     const { phase } = await bootstrap.getStatus();
     if (phase === 'restored') {
       await bootstrap.startIndexing();
@@ -44,15 +46,20 @@ export class IndexingService {
     }
     await index.ensure(RECORDINGS_INDEX_SETTINGS);
     const checkpoint = await repository.getCheckpoint(RECORDINGS_INDEX.uid);
-    if (await this.indexFrom(checkpoint, signal)) {
+    const total = await this.deps.documents.countAll();
+    if (await this.indexFrom(checkpoint, total, signal)) {
       await bootstrap.markReady();
-      this.deps.logger.info('Indexing finished: the catalog is ready');
+      this.deps.logger.info('Indexing finished: the catalog is ready', {
+        total,
+        durationMs: Date.now() - startedAt,
+      });
     }
   }
 
   // Returns whether every Recording was indexed (false: stopped early).
   private async indexFrom(
     checkpoint: number,
+    total: number,
     signal: AbortSignal,
   ): Promise<boolean> {
     const { documents, index, repository, batchSize, logger } = this.deps;
@@ -73,6 +80,8 @@ export class IndexingService {
       logger.info('Indexed a batch of Recordings', {
         batch: batchNumber,
         indexed,
+        total,
+        percent: indexingPercent(indexed, total),
         lastRecordingId: afterId,
       });
     }

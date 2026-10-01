@@ -21,6 +21,26 @@ const dumpDirectory = (baseUrl: string, dataset: CatalogDataset): string =>
 export const latestUrl = (baseUrl: string, dataset: CatalogDataset): string =>
   `${dumpDirectory(baseUrl, dataset)}/LATEST`;
 
+/**
+ * Reads the dump run (`LATEST` value) back from resolved archive URLs, so the
+ * restore can log what it resolved without fetching `LATEST` twice. Returns
+ * undefined when the URLs are empty or malformed.
+ */
+export const latestFromArchiveUrls = (
+  urls: readonly string[],
+): string | undefined => {
+  const first = urls[0];
+  if (first === undefined) {
+    return undefined;
+  }
+  const segments = first.split('/');
+  const latest = segments[segments.length - 2];
+  if (latest === undefined || latest.length === 0) {
+    return undefined;
+  }
+  return latest;
+};
+
 /** The archives of one dump run (`latest` is its `LATEST` file, trimmed). */
 export const resolveDumpUrls = (
   baseUrl: string,
@@ -69,3 +89,58 @@ export const resolveLatestDumpUrls = async (
     dataset,
     await readLatest(latestUrl(baseUrl, dataset), fetchImpl),
   );
+
+const parseContentLength = (value: string | null): number | undefined => {
+  if (value === null) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    return undefined;
+  }
+  return parsed;
+};
+
+const headArchiveSize = async (
+  url: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<number | undefined> => {
+  try {
+    const response = await fetchImpl(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) {
+      return undefined;
+    }
+    return parseContentLength(response.headers.get('content-length'));
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Sums the `Content-Length` of the archives with one `HEAD` per URL, so the
+ * restore can log the total bytes before mbslave downloads them. Best
+ * effort: any missing or unparsable size omits the whole total (undefined)
+ * instead of failing the restore. Never throws.
+ */
+export const fetchArchiveTotalBytes = async (
+  urls: readonly string[],
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = 10_000,
+): Promise<number | undefined> => {
+  if (urls.length === 0) {
+    return undefined;
+  }
+  let total = 0;
+  for (const url of urls) {
+    const size = await headArchiveSize(url, fetchImpl, timeoutMs);
+    if (size === undefined) {
+      return undefined;
+    }
+    total += size;
+  }
+  return total;
+};

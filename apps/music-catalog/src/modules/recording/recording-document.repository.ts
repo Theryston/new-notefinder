@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import {
   artist,
@@ -55,6 +55,15 @@ export class RecordingDocumentRepository {
       .where(gt(recording.id, afterId))
       .orderBy(asc(recording.id))
       .limit(limit);
+  }
+
+  /**
+   * How many Recordings the catalog holds. The worker reads it once per
+   * indexing run to log its progress against; batches never re-read it.
+   */
+  async countAll(): Promise<number> {
+    const [row] = await this.db.select({ value: count() }).from(recording);
+    return row?.value ?? 0;
   }
 
   /** Each credited artist with each of its aliases (once without aliases). */

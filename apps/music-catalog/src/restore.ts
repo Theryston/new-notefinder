@@ -6,7 +6,10 @@ import {
 } from './integrations/mbslave/mbslave-client.js';
 import { createLogger } from './logger.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
-import { resolveLatestDumpUrls } from './modules/bootstrap/dump-urls.js';
+import {
+  fetchArchiveTotalBytes,
+  resolveLatestDumpUrls,
+} from './modules/bootstrap/dump-urls.js';
 import { RestoreService } from './modules/bootstrap/restore.service.js';
 
 // The process the mbslave container runs on start: it restores the
@@ -20,10 +23,14 @@ const logger = createLogger({
 const pool = createPool(env.DATABASE_URL, (error) => {
   logger.error('Database connection error', { error });
 });
+const mbslaveRun = createProcessMbslaveRun(undefined, (line, args) => {
+  logger.info('mbslave output', { command: args[0] ?? '', line });
+});
 const restore = new RestoreService({
   repository: new BootstrapRepository(createDatabase(pool)),
-  mbslave: new MbslaveClient(createProcessMbslaveRun()),
+  mbslave: new MbslaveClient(mbslaveRun),
   resolveUrls: resolveLatestDumpUrls,
+  resolveTotalBytes: (urls) => fetchArchiveTotalBytes(urls),
   baseUrl: env.MUSICBRAINZ_DUMP_BASE_URL,
   dataset: env.CATALOG_DATASET,
   logger,
