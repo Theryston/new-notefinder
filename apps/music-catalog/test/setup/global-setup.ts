@@ -6,6 +6,7 @@ import { createDatabase, createPool } from '../../src/database/database.js';
 import { createLogger } from '../../src/logger.js';
 import { type E2eMeilisearch, startMeilisearch } from './meilisearch.js';
 import { applyMusicBrainzSchema } from './musicbrainz-schema.js';
+import { applySyncTriggers } from './sync-triggers.js';
 
 declare module 'vitest' {
   // biome-ignore lint/style/useConsistentTypeDefinitions: augments Vitest's interface, which needs declaration merging.
@@ -83,6 +84,10 @@ export const setup = async (
     // in production: the tables the service reads.
     await applyMusicBrainzSchema(database.url);
     logger.info('MusicBrainz schema applied');
+    // The worker's change triggers, which production installs after the
+    // restore: the fixture writes below must reach the outbox the same way.
+    await applySyncTriggers(database.url);
+    logger.info('Sync triggers applied');
   } catch (error) {
     await database.stop();
     throw error;

@@ -156,6 +156,17 @@ export const addTrack = async (
   });
 };
 
+/** Renames the release, the way a replicated update would. */
+export const renameRelease = async (
+  db: Database,
+  release: FixtureRelease,
+  name: string,
+): Promise<void> => {
+  await db.execute(
+    sql`update musicbrainz.release set name = ${name} where id = ${release.id}`,
+  );
+};
+
 /** Links the Recording to a new Work (a performance relationship). */
 export const addWork = async (
   db: Database,

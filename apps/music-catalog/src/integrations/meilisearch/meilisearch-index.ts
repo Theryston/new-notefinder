@@ -80,6 +80,16 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
     );
   }
 
+  /** Removes the documents with these primary keys, when they are there. */
+  async deleteDocuments(ids: string[]): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+    await this.wait(
+      this.client.index<TDocument>(this.uid).deleteDocuments(ids),
+    );
+  }
+
   /**
    * The primary keys of the best matches for `query`, in the order
    * Meilisearch ranked them. Nothing else is asked for: the caller loads

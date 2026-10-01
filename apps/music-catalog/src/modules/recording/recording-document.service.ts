@@ -12,6 +12,14 @@ export type DocumentBatch = {
   lastRecordingId: number;
 };
 
+/** A Recording that still exists, with the document the index should hold. */
+export type CurrentDocument = {
+  /** MusicBrainz's integer id. */
+  id: number;
+  mbid: string;
+  document: RecordingDocument;
+};
+
 /**
  * Describes Recordings for the search index, for the worker. Other modules
  * (indexing) use the catalog's Recordings through this service.
@@ -47,6 +55,26 @@ export class RecordingDocumentService {
    */
   async countAll(): Promise<number> {
     return this.repository.countAll();
+  }
+
+  /**
+   * The documents of the Recordings with these integer ids, for the sync:
+   * one entry per Recording that still exists (a deleted one has none, and
+   * the sync deletes its MBIDs instead).
+   */
+  async findDocumentsByIds(ids: readonly number[]): Promise<CurrentDocument[]> {
+    const rows = await this.repository.findByIds(ids);
+    if (rows.length === 0) {
+      return [];
+    }
+    const documents = buildDocuments(rows, await this.loadDetails(rows));
+    return rows.map((row, index) => {
+      const document = documents[index];
+      if (document === undefined) {
+        throw new Error(`No document was built for Recording ${row.id}`);
+      }
+      return { id: row.id, mbid: row.mbid, document };
+    });
   }
 
   private async loadDetails(

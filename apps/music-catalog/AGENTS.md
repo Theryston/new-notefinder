@@ -11,12 +11,13 @@ exists.
 
 **What exists today**: the authenticated WebSocket server answering
 `status`, `getRecording` and `search` (issues #57, #59 and #58), the protocol
-envelope, our own Postgres schema (the bootstrap state and the indexing
-checkpoint), read-only declarations of the MusicBrainz tables the queries
-read, **Meilisearch** as the search engine behind a small integration, the
-`server` and `worker` entrypoints (the worker indexes every Recording once
-the MusicBrainz data is restored), the **first import** (issue #60: the
-mbslave container restores the MusicBrainz dump and records
+envelope, our own Postgres schema (the bootstrap state, the indexing
+checkpoint and the recording outbox), read-only declarations of the
+MusicBrainz tables the queries read, **Meilisearch** as the search engine
+behind a small integration, the `server` and `worker` entrypoints (the worker
+indexes every Recording once the MusicBrainz data is restored, then keeps
+the index in sync with it through the outbox), the **first import** (issue
+#60: the mbslave container restores the MusicBrainz dump and records
 `restoring`/`restored`) and the test and quality setup. Replication, Lyrics
 and the production compose are later tickets: do not build them here ahead of
 their ticket. `search` returns results in **Meilisearch's relevance order**,
@@ -127,6 +128,12 @@ src/
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
+    sync/
+      sync.service.ts             the worker's continuous sync: triggers, outbox drain
+      sync-plan.ts                outbox entries + current rows -> index writes (pure)
+      sync-tracked-tables.ts      which MusicBrainz tables have a trigger, and the SQL builder
+      recording-outbox.repository.ts  pending entries, done marks, trigger installer
+      sync.*.spec.ts              unit tests of the plan, the service and the tracked set
   worker/worker-loop.ts   the loop the worker's steps plug into
 mbslave.Dockerfile        the mbslave image: Node for dist/restore.js plus mbslave from
                           git (pinned) and psql; run by the dev compose (below)
@@ -452,8 +459,52 @@ come from env; version pinned to a stable v1.x in the dev compose
   is restarted in the middle resumes after the checkpoint (a batch that was
   sent but not checkpointed is sent again, which replaces the same documents);
   a task that fails throws, the loop logs it and the next tick resumes. Aborting
-  the worker's signal stops it after the batch in progress. Changes after
-  `ready` (replication, the outbox) are a later ticket.
+  the worker's signal stops it after the batch in progress. Every tick drains
+  the outbox first (a no-op until `ready`), then runs the initial indexing
+  (a no-op once `ready`).
+
+## Sync (outbox)
+
+After the first import, every change to the MusicBrainz tables reaches the
+`recordings` index through the outbox, while the service stays live:
+
+- **Triggers** (`sync-tracked-tables.ts`): one `notefinder_sync_<table>`
+  trigger per tracked table writes the affected Recording ids (with the MBID
+  each had then) to `music_catalog.recording_outbox`. Both the `NEW` and the
+  `OLD` row are enqueued, so deletes and moved links are caught; re-enqueueing
+  re-arms the entry. This ticket owns the triggers: the worker installs (or
+  replaces) them with plain SQL (`RecordingOutboxRepository.ensureTriggers`,
+  idempotent, stale sync triggers dropped), after the restore and before
+  indexing, and again on every tick while any is missing — never a Drizzle
+  migration, since the tables belong to mbslave.
+- **Drain** (`SyncService.drain`, one worker tick): only once `ready` (so a
+  ready catalog never answers `CATALOG_NOT_READY`, however many entries wait).
+  Each batch rebuilds the documents of the Recordings its entries touch with
+  the same queries as the initial indexing (`RecordingDocumentService`,
+  extended with `findDocumentsByIds`), upserts them, deletes the enqueued
+  MBIDs that are gone (deleted rows) or stale (merges, MBID changes), and only
+  then marks the entries done (`processed_at`, matched by key and only while
+  still pending, so a change written mid-batch waits for the next one). A
+  worker that dies mid-batch reprocesses what is left on its return; every
+  write is idempotent, so processing an entry twice changes nothing.
+- **Tracked tables** (the full list lives in `TRACKED_TABLES` and its spec):
+  `recording`, `recording_gid_redirect`, `recording_tag`, `artist_credit`,
+  `artist_credit_name`, `artist`, `artist_alias`, `artist_tag`, `release`,
+  `medium`, `track`, `release_country`, `release_unknown_country`,
+  `release_group_tag`, `work`, `l_recording_work`, `url`, `link`,
+  `l_recording_url`, `link_type`, `tag`, `genre`. Only tables whose columns
+  feed the indexed document are tracked: what `getRecording` shows live
+  (isrcs, release dates and countries, release group names, link type names)
+  needs no trigger, and search summaries are read from Postgres at query time.
+
+  To track another table, add one entry to `TRACKED_TABLES`: the MusicBrainz
+  table plus a `selectNew` query that returns `recording_id` and
+  `recording_mbid` for the changed row (`NEW`; the `OLD` side is derived for
+  deletes and moved links). Add the table to the e2e fixture's
+  `FIXTURE_TABLES` only when a fixture helper writes to it, extend
+  `test/recording-sync.e2e-spec.ts` with a scenario that changes the table
+  and asserts over the WebSocket, and extend the tracked-set spec's table
+  list.
 - **Keys**: Meilisearch runs with a master key that neither process gets. The
   **server** has a search-only key (`MEILISEARCH_SEARCH_API_KEY`, action
   `search` on `recordings` and `lyrics`); the **worker** has a key that can
@@ -595,12 +646,16 @@ come from env; version pinned to a stable v1.x in the dev compose
   `\set` lines stripped, no `psql` needed. The database user must be a
   superuser (contrib extensions `cube`, `earthdistance`, `unaccent`); the
   Testcontainers one is. A reused `E2E_DATABASE_URL` that already has the
-  schema is left as is.
+  schema is left as is. Right after the schema, the global setup installs the
+  worker's change triggers (`test/setup/sync-triggers.ts`, the same SQL the
+  worker installs), so fixture writes reach the outbox the way replication
+  packets will; it runs on every setup, since the SQL is idempotent.
 - **The MusicBrainz fixture** (`test/utils/musicbrainz.ts` and
   `musicbrainz-relations.ts`): small helpers that write rows with plain SQL,
   the way a dump or a replication packet would (`addArtist`, `addRecording`,
-  `addRecordingRedirect`, `deleteRecording`, `addIsrc`, `addRelease`,
-  `addTrack`, `addWork`, `addExternalUrl`, `addGenre`, `addTag`,
+  `addRecordingRedirect`, `deleteRecording`, `renameRecording`,
+  `renameArtist`, `addIsrc`, `addRelease`, `renameRelease`, `addTrack`,
+  `addWork`, `addExternalUrl`, `addGenre`, `addTag`,
   `addArtistAlias`, `mbid(n)`
   for readable MBIDs), deliberately **not** through the service's own Drizzle
   declarations, so a wrong column name there fails a spec. `resetDatabase`
@@ -611,7 +666,10 @@ come from env; version pinned to a stable v1.x in the dev compose
   test (call it after `useTestClient`), and `requestRecording` and
   `requestSearch` send `getRecording` and `search` and parse the answer with
   the contract's schema. A search test arranges its Recordings, calls
-  `indexCatalog`, then asks over the WebSocket.
+  `indexCatalog`, then asks over the WebSocket. A sync test
+  (`test/recording-sync.e2e-spec.ts`) arranges, calls `indexCatalog`, changes
+  the MusicBrainz tables, ticks a worker and asserts over the WebSocket with
+  bounded polling — never on the outbox rows.
 - **The first import in e2e** (`test/first-import.e2e-spec.ts`): the real
   `RestoreService` wired like `restore.ts`, with mbslave behind its
   integration boundary (a fake `MbslaveRun`: `init` recreates the schema with
@@ -630,7 +688,8 @@ come from env; version pinned to a stable v1.x in the dev compose
   check, envelope parsing and error mapping, handlers and their payload
   validation, the dispatcher with its timeout, the heartbeat with fake
   timers, the worker loop, the logger, building the Meilisearch document and
-  the summary, re-sorting rows by Meilisearch's order). Services are tested
+  the summary, re-sorting rows by Meilisearch's order, the sync plan and the
+  tracked trigger set). Services are tested
   with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
   e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
   and the schema (the exclusions are in `vitest.config.ts`).

@@ -30,6 +30,17 @@ import type {
   RecordingTitleRow,
 } from './recording-document-data.js';
 
+// The Recording's own row with the printed name of its artist credit, read
+// the same way whether a batch is walked in order or synced by id.
+const documentColumns = {
+  id: recording.id,
+  mbid: recording.gid,
+  title: recording.name,
+  disambiguation: recording.comment,
+  artistCreditId: recording.artistCredit,
+  artistCreditName: artistCredit.name,
+};
+
 /**
  * Reads the Recordings the worker indexes, a batch at a time. Read-only: the
  * tables belong to mbslave. Every method takes the ids of a whole batch and
@@ -42,14 +53,7 @@ export class RecordingDocumentRepository {
   /** The next `limit` Recordings after `afterId`, in id order. */
   findBatch(afterId: number, limit: number): Promise<DocumentRecordingRow[]> {
     return this.db
-      .select({
-        id: recording.id,
-        mbid: recording.gid,
-        title: recording.name,
-        disambiguation: recording.comment,
-        artistCreditId: recording.artistCredit,
-        artistCreditName: artistCredit.name,
-      })
+      .select(documentColumns)
       .from(recording)
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
       .where(gt(recording.id, afterId))
@@ -64,6 +68,19 @@ export class RecordingDocumentRepository {
   async countAll(): Promise<number> {
     const [row] = await this.db.select({ value: count() }).from(recording);
     return row?.value ?? 0;
+  }
+
+  /** The Recordings with these integer ids, in no particular order. */
+  async findByIds(ids: readonly number[]): Promise<DocumentRecordingRow[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.db
+      .select(documentColumns)
+      .from(recording)
+      .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
+      .where(inArray(recording.id, [...ids]));
+  }
   }
 
   /** Each credited artist with each of its aliases (once without aliases). */
