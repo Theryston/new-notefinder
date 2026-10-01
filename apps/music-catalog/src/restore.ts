@@ -20,9 +20,12 @@ const logger = createLogger({
 const pool = createPool(env.DATABASE_URL, (error) => {
   logger.error('Database connection error', { error });
 });
+const mbslaveRun = createProcessMbslaveRun(undefined, (line, args) => {
+  logger.info('mbslave output', { command: args[0] ?? '', line });
+});
 const restore = new RestoreService({
   repository: new BootstrapRepository(createDatabase(pool)),
-  mbslave: new MbslaveClient(createProcessMbslaveRun()),
+  mbslave: new MbslaveClient(mbslaveRun),
   resolveUrls: resolveLatestDumpUrls,
   baseUrl: env.MUSICBRAINZ_DUMP_BASE_URL,
   dataset: env.CATALOG_DATASET,

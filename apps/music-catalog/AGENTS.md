@@ -363,6 +363,11 @@ the bootstrap state and either exits or restores:
 
 `status` shows each phase (`restoring` → `restored` → `indexing` → `ready`);
 `search` and `getRecording` answer `CATALOG_NOT_READY` until `ready`.
+Greppable restore logs (`docker compose logs -f music-catalog-mbslave`):
+`Restoring the MusicBrainz dump` (with `latest`, `archives`, `urls`),
+`Restore schema creation finished` / `Restore import finished` (with
+`durationMs`), `Restore already done, skipping the download` on skip and
+`Restore failed, the next start redoes it` on failure.
 
 Handoff for issue #61 (change triggers and the outbox, owned by that ticket):
 after this records `restored`, the worker installs the change triggers and

@@ -2,7 +2,11 @@ import type { CatalogDataset } from '@notefinder/contracts';
 import type { MbslaveClient } from '../../integrations/mbslave/mbslave-client.js';
 import type { Logger } from '../../logger.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';
-import { type ResolveDumpUrls, resolveLatestDumpUrls } from './dump-urls.js';
+import {
+  latestFromArchiveUrls,
+  type ResolveDumpUrls,
+  resolveLatestDumpUrls,
+} from './dump-urls.js';
 import { planRestore } from './restore-plan.js';
 
 export type RestoreOutcome = 'restored' | 'skipped';
@@ -49,6 +53,7 @@ export class RestoreService {
    */
   async run(): Promise<RestoreOutcome> {
     const { repository, dataset, logger } = this.deps;
+    const startedAt = Date.now();
     const plan = planRestore(await repository.getState(), dataset);
     if (plan === 'skip') {
       logger.info('Restore already done, skipping the download', { dataset });
@@ -62,19 +67,44 @@ export class RestoreService {
       );
     }
     if (plan === 'redo') {
-      logger.info('Interrupted restore detected, starting from a clean state');
+      logger.info('Interrupted restore detected, starting from a clean state', {
+        dataset,
+      });
       await repository.clearMusicBrainz();
     }
     await repository.beginRestore(dataset);
     const urls = await this.deps.resolveUrls(this.deps.baseUrl, dataset);
     logger.info('Restoring the MusicBrainz dump', {
       dataset,
+      baseUrl: this.deps.baseUrl,
+      latest: latestFromArchiveUrls(urls),
       archives: urls.length,
+      urls,
     });
+    const initStartedAt = Date.now();
+    logger.info('Restore schema creation started', { dataset });
     await this.deps.mbslave.initEmpty();
+    const initMs = Date.now() - initStartedAt;
+    logger.info('Restore schema creation finished', {
+      dataset,
+      durationMs: initMs,
+    });
+    const importStartedAt = Date.now();
+    logger.info('Restore import started', { dataset, archives: urls.length });
     await this.deps.mbslave.importArchives(urls);
+    const importMs = Date.now() - importStartedAt;
+    logger.info('Restore import finished', {
+      dataset,
+      archives: urls.length,
+      durationMs: importMs,
+    });
     await repository.finishRestore();
-    logger.info('Restore finished', { dataset });
+    logger.info('Restore finished', {
+      dataset,
+      durationMs: Date.now() - startedAt,
+      initMs,
+      importMs,
+    });
     return 'restored';
   }
 }

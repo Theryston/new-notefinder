@@ -21,6 +21,26 @@ const dumpDirectory = (baseUrl: string, dataset: CatalogDataset): string =>
 export const latestUrl = (baseUrl: string, dataset: CatalogDataset): string =>
   `${dumpDirectory(baseUrl, dataset)}/LATEST`;
 
+/**
+ * Reads the dump run (`LATEST` value) back from resolved archive URLs, so the
+ * restore can log what it resolved without fetching `LATEST` twice. Returns
+ * undefined when the URLs are empty or malformed.
+ */
+export const latestFromArchiveUrls = (
+  urls: readonly string[],
+): string | undefined => {
+  const first = urls[0];
+  if (first === undefined) {
+    return undefined;
+  }
+  const segments = first.split('/');
+  const latest = segments[segments.length - 2];
+  if (latest === undefined || latest.length === 0) {
+    return undefined;
+  }
+  return latest;
+};
+
 /** The archives of one dump run (`latest` is its `LATEST` file, trimmed). */
 export const resolveDumpUrls = (
   baseUrl: string,
