@@ -126,9 +126,7 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
   `integrations/`, wrapped behind a small typed class, one folder each.
   **Nothing else imports the SDK**: features depend on the wrapper
   (`MeilisearchIndex`), which is also what unit tests stand in for, and the
-  composition roots build it with `createMeilisearchIndex`. (A convention:
-  dependency-cruiser enforces that `integrations/` knows no feature, not that
-  the SDK stays in it.)
+  composition roots build it with `createMeilisearchIndex`.
 
 ## Layers (handler -> service -> repository)
 
@@ -152,6 +150,8 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
   enforces this: no cycles, only repositories (and `src/database/`) touch
   Drizzle, handlers never import repositories, services and repositories
   never import handlers or `ws/`, `ws/` never imports modules.
+- dependency-cruiser enforces that only `src/integrations/` imports the
+  Meilisearch SDK.
 
 ## ESM details
 
