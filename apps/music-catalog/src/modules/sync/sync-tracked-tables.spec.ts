@@ -1,5 +1,7 @@
 import {
   buildSyncTriggersSql,
+  planTriggerSync,
+  syncFunctionName,
   TRACKED_TABLES,
   triggerName,
 } from './sync-tracked-tables.js';
@@ -60,5 +62,65 @@ describe('the sync triggers', () => {
     expect(sql).toContain("WHERE TG_OP <> 'DELETE'");
     expect(sql).toContain("WHERE TG_OP <> 'INSERT'");
     expect(sql).toContain('OLD.recording');
+  });
+});
+
+describe('planTriggerSync', () => {
+  const installed = () => ({
+    triggers: TRACKED_TABLES.map((entry) => ({
+      name: triggerName(entry.table),
+      table: entry.table,
+    })),
+    functions: TRACKED_TABLES.map((entry) => syncFunctionName(entry.table)),
+  });
+
+  it('does nothing when every trigger and function is in place', () => {
+    expect(planTriggerSync(installed())).toEqual({
+      reinstall: false,
+      staleTriggers: [],
+      staleFunctions: [],
+    });
+  });
+
+  it('reinstalls when a trigger is missing', () => {
+    const existing = installed();
+    const plan = planTriggerSync({
+      ...existing,
+      triggers: existing.triggers.filter(
+        (trigger) => trigger.name !== triggerName('track'),
+      ),
+    });
+
+    expect(plan.reinstall).toBe(true);
+    expect(plan.staleTriggers).toEqual([]);
+    expect(plan.staleFunctions).toEqual([]);
+  });
+
+  it('drops a trigger of a table this version no longer tracks, then reinstalls', () => {
+    const existing = installed();
+    const plan = planTriggerSync({
+      ...existing,
+      triggers: [
+        ...existing.triggers,
+        { name: 'notefinder_sync_retired', table: 'isrc' },
+      ],
+    });
+
+    expect(plan.reinstall).toBe(true);
+    expect(plan.staleTriggers).toEqual([
+      { name: 'notefinder_sync_retired', table: 'isrc' },
+    ]);
+  });
+
+  it('drops a function of a table this version no longer tracks, then reinstalls', () => {
+    const existing = installed();
+    const plan = planTriggerSync({
+      ...existing,
+      functions: [...existing.functions, 'sync_outbox_from_retired'],
+    });
+
+    expect(plan.reinstall).toBe(true);
+    expect(plan.staleTriggers).toEqual([]);
+    expect(plan.staleFunctions).toEqual(['sync_outbox_from_retired']);
   });
 });

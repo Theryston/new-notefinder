@@ -474,9 +474,14 @@ After the first import, every change to the MusicBrainz tables reaches the
   `OLD` row are enqueued, so deletes and moved links are caught; re-enqueueing
   re-arms the entry. This ticket owns the triggers: the worker installs (or
   replaces) them with plain SQL (`RecordingOutboxRepository.ensureTriggers`,
-  idempotent, stale sync triggers dropped), after the restore and before
-  indexing, and again on every tick while any is missing — never a Drizzle
-  migration, since the tables belong to mbslave.
+  idempotent, stale sync triggers and functions dropped), after the restore
+  and before indexing, and again on every tick while any is missing — never
+  a Drizzle migration, since the tables belong to mbslave. The triggers run
+  as the role that writes the MusicBrainz tables; the deployment uses a
+  single Postgres role for mbslave, the server and the worker (see
+  `docker-compose.yml`), so no extra grant is needed — a deployment that
+  split roles would have to grant the writer `INSERT` on
+  `music_catalog.recording_outbox`.
 - **Drain** (`SyncService.drain`, one worker tick): only once `ready` (so a
   ready catalog never answers `CATALOG_NOT_READY`, however many entries wait).
   Each batch rebuilds the documents of the Recordings its entries touch with

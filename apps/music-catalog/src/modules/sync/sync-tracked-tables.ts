@@ -32,7 +32,12 @@ export const SYNC_TRIGGER_PREFIX = 'notefinder_sync';
 export const triggerName = (table: string): string =>
   `${SYNC_TRIGGER_PREFIX}_${table}`;
 
-const functionName = (table: string): string => `sync_outbox_from_${table}`;
+/** Prefix of every trigger function this ticket owns, so stale ones can be found. */
+export const SYNC_FUNCTION_PREFIX = 'sync_outbox_from';
+
+/** The trigger function a tracked table's trigger calls. */
+export const syncFunctionName = (table: string): string =>
+  `${SYNC_FUNCTION_PREFIX}_${table}`;
 
 const selectOld = (entry: TrackedTable): string =>
   entry.selectNew.replaceAll('NEW.', 'OLD.');
@@ -167,7 +172,7 @@ export const TRACKED_TABLES: readonly TrackedTable[] = [
 
 const triggerSql = (entry: TrackedTable): string => {
   const trigger = triggerName(entry.table);
-  const fn = functionName(entry.table);
+  const fn = syncFunctionName(entry.table);
   // Re-enqueueing a Recording that is already (or still) in the outbox
   // re-arms its entry: the same Recording changes again after it was
   // synced, and the drain must pick it up again.
@@ -199,3 +204,53 @@ CREATE TRIGGER ${trigger}
  */
 export const buildSyncTriggersSql = (): string =>
   TRACKED_TABLES.map(triggerSql).join('\n');
+
+/** A sync trigger found in the database, with the table it watches. */
+export type ExistingSyncTrigger = {
+  name: string;
+  table: string;
+};
+
+/** What installing the triggers means given what is already there. */
+export type TriggerSyncPlan = {
+  /** A trigger is missing or something stale is left: (re)install. */
+  reinstall: boolean;
+  /** Triggers of tables this version no longer tracks. */
+  staleTriggers: ExistingSyncTrigger[];
+  /** Sync functions of tables this version no longer tracks. */
+  staleFunctions: string[];
+};
+
+/**
+ * Compares the installed triggers and functions with the tracked set, so
+ * the worker only writes when something is missing or stale. Pure: the
+ * repository lists what exists and drops what this plans.
+ */
+export const planTriggerSync = (existing: {
+  triggers: readonly ExistingSyncTrigger[];
+  functions: readonly string[];
+}): TriggerSyncPlan => {
+  const expectedTriggers = new Set(
+    TRACKED_TABLES.map((entry) => triggerName(entry.table)),
+  );
+  const expectedFunctions = new Set(
+    TRACKED_TABLES.map((entry) => syncFunctionName(entry.table)),
+  );
+  const missing = [...expectedTriggers].filter(
+    (name) => !existing.triggers.some((trigger) => trigger.name === name),
+  );
+  const staleTriggers = existing.triggers.filter(
+    (trigger) => !expectedTriggers.has(trigger.name),
+  );
+  const staleFunctions = existing.functions.filter(
+    (name) => !expectedFunctions.has(name),
+  );
+  return {
+    reinstall:
+      missing.length > 0 ||
+      staleTriggers.length > 0 ||
+      staleFunctions.length > 0,
+    staleTriggers,
+    staleFunctions,
+  };
+};

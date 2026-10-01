@@ -4,9 +4,9 @@ import { recordingOutbox } from '../../database/schema/recording-outbox.js';
 import type { OutboxEntry } from './sync-plan.js';
 import {
   buildSyncTriggersSql,
+  planTriggerSync,
+  SYNC_FUNCTION_PREFIX,
   SYNC_TRIGGER_PREFIX,
-  TRACKED_TABLES,
-  triggerName,
 } from './sync-tracked-tables.js';
 
 type SyncTriggerRow = { name: string; table: string };
@@ -64,25 +64,28 @@ export class RecordingOutboxRepository {
   }
 
   /**
-   * Installs (or replaces) every change trigger when any is missing or stale,
-   * and drops sync triggers of tables this version no longer tracks. Safe to
-   * call on every start: when everything is in place it is a single lookup.
+   * Installs (or replaces) every change trigger when any is missing or
+   * stale, and drops sync triggers and functions of tables this version no
+   * longer tracks. Safe to call on every start: when everything is in place
+   * it is two lookups that change nothing.
    */
   async ensureTriggers(): Promise<void> {
-    const existing = await this.listSyncTriggers();
-    const expected = new Set(
-      TRACKED_TABLES.map((entry) => triggerName(entry.table)),
-    );
-    const missing = [...expected].filter(
-      (name) => !existing.some((row) => row.name === name),
-    );
-    const stale = existing.filter((row) => !expected.has(row.name));
-    for (const row of stale) {
+    const [triggers, functions] = await Promise.all([
+      this.listSyncTriggers(),
+      this.listSyncFunctions(),
+    ]);
+    const plan = planTriggerSync({ triggers, functions });
+    for (const trigger of plan.staleTriggers) {
       await this.db.execute(
-        sql`drop trigger if exists ${sql.identifier(row.name)} on ${sql.identifier('musicbrainz')}.${sql.identifier(row.table)}`,
+        sql`drop trigger if exists ${sql.identifier(trigger.name)} on ${sql.identifier('musicbrainz')}.${sql.identifier(trigger.table)}`,
       );
     }
-    if (missing.length === 0 && stale.length === 0) {
+    for (const name of plan.staleFunctions) {
+      await this.db.execute(
+        sql`drop function if exists ${sql.identifier('music_catalog')}.${sql.identifier(name)}()`,
+      );
+    }
+    if (!plan.reinstall) {
       return;
     }
     await this.db.execute(sql.raw(buildSyncTriggersSql()));
@@ -101,5 +104,17 @@ export class RecordingOutboxRepository {
         and not t.tgisinternal
     `);
     return result.rows;
+  }
+
+  private async listSyncFunctions(): Promise<string[]> {
+    const prefixPattern = `${SYNC_FUNCTION_PREFIX}\\_%`;
+    const result = await this.db.execute<{ name: string }>(sql`
+      select p.proname as "name"
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'music_catalog'
+        and p.proname like ${prefixPattern}
+    `);
+    return result.rows.map((row) => row.name);
   }
 }

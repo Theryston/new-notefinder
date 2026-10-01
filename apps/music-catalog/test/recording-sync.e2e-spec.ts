@@ -226,7 +226,7 @@ describe('recording sync: MusicBrainz changes reach the index (e2e)', () => {
     );
   });
 
-  it('reinstalls a missing trigger and drops a stale one on the next tick', async () => {
+  it('reinstalls a missing trigger and drops a stale trigger and function on the next tick', async () => {
     const db = server().db;
     const artist = await addArtist(db, { name: 'Beatrix Potter' });
     const tune = await addRecording(db, {
@@ -259,8 +259,15 @@ describe('recording sync: MusicBrainz changes reach the index (e2e)', () => {
     const names = await syncTriggerNames();
     expect(names).toContain('notefinder_sync_artist_alias');
     expect(names).not.toContain('notefinder_sync_retired');
-    await db.execute(
-      sql`drop function music_catalog.sync_outbox_from_retired()`,
+    const functionPattern = 'sync_outbox_from\\_%';
+    const functions = await db.execute<{ name: string }>(
+      sql`select p.proname as "name" from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'music_catalog'
+          and p.proname like ${functionPattern}`,
+    );
+    expect(functions.rows.map((row) => row.name)).not.toContain(
+      'sync_outbox_from_retired',
     );
 
     await addArtistAlias(db, artist, { name: 'Zephyrian Brass' });
