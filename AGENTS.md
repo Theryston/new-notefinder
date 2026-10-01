@@ -79,7 +79,10 @@ The reasoning is in
 ### Language
 
 - **All code is in English**: identifiers, file names, comments, commit messages,
-  log messages, API error messages, DB schema.
+  PR and issue titles/bodies, log messages, API error messages, DB schema.
+  The only non-English text in the repo lives in the locale files themselves;
+  API errors cross the wire as stable `code`s that clients translate, never
+  as translated strings.
 - **No hard-coded user-facing text.** Everything a user can read goes through
   i18n (web: `next-intl`; API returns stable error `code`s that clients
   translate). Locales: `en` and `pt-BR`. `en` is the **source of truth** for
