@@ -15,6 +15,7 @@ import {
   type LrclibTrack,
   openLrclibDump,
 } from '../../integrations/lrclib/lrclib-dump.js';
+import { normalizeLyricsText } from '../../lib/normalize-text.js';
 import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type {
@@ -207,7 +208,9 @@ export class LyricsImportService {
     for (const artist of new Set(artists)) {
       const found = dump.findCandidates({
         titleLower: recording.title.toLowerCase(),
+        titleNormalized: normalizeLyricsText(recording.title),
         artistLower: artist.toLowerCase(),
+        artistNormalized: normalizeLyricsText(artist),
         minDuration: seconds - DURATION_WINDOW_S,
         maxDuration: seconds + DURATION_WINDOW_S,
       });

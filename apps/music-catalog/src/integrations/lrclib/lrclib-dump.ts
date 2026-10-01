@@ -19,9 +19,16 @@ type LrclibLyrics = {
 };
 
 export type LrclibCandidateQuery = {
-  /** Simple lowercase, the way the dump's `_lower` columns are spelled. */
+  /**
+   * The title and artist in both spellings the dump's `_lower` columns may
+   * hold: simple lowercase (what the real dump writes) and normalized (what
+   * the fake generator writes, accents and punctuation stripped). Either
+   * form fetches the row; the strict match decides afterwards.
+   */
   titleLower: string;
+  titleNormalized: string;
   artistLower: string;
+  artistNormalized: string;
   /** In seconds: a window around the Recording's length, refined in code. */
   minDuration: number;
   maxDuration: number;
@@ -71,7 +78,8 @@ export const openLrclibDump = (path: string): LrclibDump => {
   }
   const candidates = db.prepare(`
     SELECT id, name, artist_name, album_name, duration FROM tracks
-    WHERE name_lower = ? AND artist_name_lower = ?
+    WHERE (name_lower = ? OR name_lower = ?)
+      AND (artist_name_lower = ? OR artist_name_lower = ?)
       AND duration BETWEEN ? AND ?
   `);
   const byIds = (placeholders: string) =>
@@ -84,7 +92,9 @@ export const openLrclibDump = (path: string): LrclibDump => {
       (
         candidates.all(
           query.titleLower,
+          query.titleNormalized,
           query.artistLower,
+          query.artistNormalized,
           query.minDuration,
           query.maxDuration,
         ) as TrackRow[]

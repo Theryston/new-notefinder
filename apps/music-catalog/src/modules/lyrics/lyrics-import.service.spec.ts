@@ -119,20 +119,33 @@ describe('LyricsImportService', () => {
           artistNames: ['No Length Band'],
           albumTitles: [],
         }),
+        recording({
+          id: 4,
+          mbid: '00000000-0000-4000-8000-000000000004',
+          title: 'Café (Lumière!)',
+          lengthMs: 200_000,
+          artistCredit: 'Zoé Brönte',
+          artistNames: ['Zoé Brönte'],
+          albumTitles: ['Été Perpétuel'],
+        }),
       ],
     ]);
     const { service, dir } = setup(stub, 'indexing');
 
     const result = await service.importOnce();
 
-    expect(result.matched).toBe(1);
-    expect(result.saved).toBe(1);
+    expect(result.matched).toBe(2);
+    expect(result.saved).toBe(2);
     const kept = stub.saved.flat();
     expect(kept.map((row) => row.mbid)).toEqual([
       '00000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000004',
     ]);
     expect(kept[0]?.plainLyrics).toContain('fake-lrclib-0');
     expect(kept[0]?.syncedLyrics).toContain('[00:01.00]');
+    // Accents and punctuation are spelling noise: the accented Recording
+    // matches its normalized row through pass one, not around it.
+    expect(kept[1]?.plainLyrics).toContain('fake-lrclib-3');
     // The temp dump is deleted afterwards, with the unmatched Lyrics in it.
     expect(readdirSync(dir)).toHaveLength(0);
     cleanup(dir);

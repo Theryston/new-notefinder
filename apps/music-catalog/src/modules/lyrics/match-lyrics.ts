@@ -1,5 +1,5 @@
 import type { LrclibTrack } from '../../integrations/lrclib/lrclib-dump.js';
-import { normalizeLyricsText } from './normalize-text.js';
+import { normalizeLyricsText } from '../../lib/normalize-text.js';
 
 /** A Recording asking for Lyrics: what the match compares. */
 export type MatchableRecording = {

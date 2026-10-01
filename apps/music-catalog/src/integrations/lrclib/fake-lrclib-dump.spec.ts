@@ -118,7 +118,7 @@ describe('writeFakeLrclibDump', () => {
     withDump((path) => {
       const rows = readTracks(
         path,
-        "name_lower IN ('yellow (live)', 'yellow (remix)')",
+        "name_lower IN ('yellow live', 'yellow remix')",
       );
       expect(rows.map((row) => row.name).sort()).toEqual([
         'Yellow (Live)',
@@ -128,6 +128,33 @@ describe('writeFakeLrclibDump', () => {
         'Coldplay',
         'Coldplay',
       ]);
+    });
+  });
+
+  it('writes the `_lower` columns normalized, the way the match compares', () => {
+    withDump((path) => {
+      const db = new DatabaseSync(path, { readOnly: true });
+      try {
+        const rows = db
+          .prepare(
+            `SELECT name_lower, artist_name_lower, album_name_lower
+            FROM tracks WHERE name = 'Yellow (Live)'`,
+          )
+          .all() as {
+          name_lower: string;
+          artist_name_lower: string;
+          album_name_lower: string;
+        }[];
+        expect(rows).toEqual([
+          {
+            name_lower: 'yellow live',
+            artist_name_lower: 'coldplay',
+            album_name_lower: 'parachutes',
+          },
+        ]);
+      } finally {
+        db.close();
+      }
     });
   });
 

@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { normalizeLyricsText } from '../../lib/normalize-text.js';
 
 /** One Recording the fake dump is generated from. */
 export type FakeDumpRecording = {
@@ -156,11 +157,13 @@ export const writeFakeLrclibDump = (
       const trackId = Number(
         insertTrack.run(
           track.title,
-          track.title.toLowerCase(),
+          // The `_lower` columns hold the normalized spelling, the way the
+          // strict match compares: pass one and pass two agree on them.
+          normalizeLyricsText(track.title),
           track.artist,
-          track.artist.toLowerCase(),
+          normalizeLyricsText(track.artist),
           track.album,
-          track.album.toLowerCase(),
+          normalizeLyricsText(track.album),
           track.duration,
           null,
           CREATED_AT,

@@ -530,8 +530,11 @@ job, not this import's.
   never hold the catalog back.
 - **Two-pass import.** Pass one matches Recordings against the dump's
   lightweight track metadata (`tracks`: title, artist, album, duration)
-  without reading Lyrics; pass two reads `lyrics` only for the matched track
-  ids and copies them into our `music_catalog.recording_lyrics` (keyed by
+  without reading Lyrics: it looks tracks up by both the raw-lowercase and
+  the normalized title/artist (the dump's `_lower` columns may hold either
+  spelling upstream), and the strict match below decides; pass two reads
+  `lyrics` only for the matched track ids and copies them into our
+  `music_catalog.recording_lyrics` (keyed by
   MBID). Unmatched Lyrics never reach our schema. The temp file is deleted
   afterwards.
 - **Strict matching** (`matchLrclibTrack`, unit-spec'd): the normalized title
