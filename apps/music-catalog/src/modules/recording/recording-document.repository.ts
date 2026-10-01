@@ -81,7 +81,6 @@ export class RecordingDocumentRepository {
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
       .where(inArray(recording.id, [...ids]));
   }
-  }
 
   /** Each credited artist with each of its aliases (once without aliases). */
   findArtistNames(artistCreditIds: number[]): Promise<ArtistNameRow[]> {
