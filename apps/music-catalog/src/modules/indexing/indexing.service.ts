@@ -15,7 +15,7 @@ import type { RecordingDocumentService } from '../recording/recording-document.s
 import type { IndexingRepository } from './indexing.repository.js';
 import { indexingPercent } from './indexing-progress.js';
 
-export type IndexingLyricsDeps = {
+type IndexingLyricsDeps = {
   /** The kept Lyrics, read in the same id order as the Recordings. */
   documents: LyricsService;
   /** Opened with the key that can write: only the worker indexes. */

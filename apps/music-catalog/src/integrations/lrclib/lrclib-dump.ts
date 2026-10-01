@@ -12,7 +12,7 @@ export type LrclibTrack = {
 };
 
 /** One row of the dump's `lyrics` table, without the columns never read. */
-export type LrclibLyrics = {
+type LrclibLyrics = {
   trackId: number;
   plain: string | null;
   synced: string | null;
