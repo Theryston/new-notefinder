@@ -18,6 +18,7 @@ const row = (
 const setup = (rows: DocumentRecordingRow[]) => {
   const repository = {
     findBatch: vi.fn(async () => rows),
+    countAll: vi.fn(async () => rows.length),
     findArtistNames: vi.fn(async () => []),
     findReleaseTitles: vi.fn(async () => [{ recordingId: 11, title: 'Album' }]),
     findWorkTitles: vi.fn(async () => []),
@@ -83,6 +84,15 @@ describe('RecordingDocumentService', () => {
 
       await expect(service.findBatch(10, 5)).resolves.toBeUndefined();
       expect(repository.findReleaseTitles).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('countAll', () => {
+    it('reports how many Recordings the catalog holds', async () => {
+      const { service, repository } = setup([row(11, 5), row(12, 6)]);
+
+      await expect(service.countAll()).resolves.toBe(2);
+      expect(repository.countAll).toHaveBeenCalledTimes(1);
     });
   });
 });

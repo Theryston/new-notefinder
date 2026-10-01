@@ -89,3 +89,58 @@ export const resolveLatestDumpUrls = async (
     dataset,
     await readLatest(latestUrl(baseUrl, dataset), fetchImpl),
   );
+
+const parseContentLength = (value: string | null): number | undefined => {
+  if (value === null) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    return undefined;
+  }
+  return parsed;
+};
+
+const headArchiveSize = async (
+  url: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<number | undefined> => {
+  try {
+    const response = await fetchImpl(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) {
+      return undefined;
+    }
+    return parseContentLength(response.headers.get('content-length'));
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Sums the `Content-Length` of the archives with one `HEAD` per URL, so the
+ * restore can log the total bytes before mbslave downloads them. Best
+ * effort: any missing or unparsable size omits the whole total (undefined)
+ * instead of failing the restore. Never throws.
+ */
+export const fetchArchiveTotalBytes = async (
+  urls: readonly string[],
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = 10_000,
+): Promise<number | undefined> => {
+  if (urls.length === 0) {
+    return undefined;
+  }
+  let total = 0;
+  for (const url of urls) {
+    const size = await headArchiveSize(url, fetchImpl, timeoutMs);
+    if (size === undefined) {
+      return undefined;
+    }
+    total += size;
+  }
+  return total;
+};

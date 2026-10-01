@@ -40,6 +40,15 @@ export class RecordingDocumentService {
     };
   }
 
+  /**
+   * How many Recordings the catalog holds. The worker calls it once per
+   * indexing run (one `count(*)`), then walks the batches without re-reading
+   * it, so the total stays the one the run started with.
+   */
+  async countAll(): Promise<number> {
+    return this.repository.countAll();
+  }
+
   private async loadDetails(
     rows: readonly DocumentRecordingRow[],
   ): Promise<BatchDetails> {

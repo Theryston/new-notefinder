@@ -55,6 +55,7 @@ const setup = (options: Options = {}) => {
   };
   const documents = {
     findBatch: vi.fn(catalog(options.total ?? 5)),
+    countAll: vi.fn(async () => options.total ?? 5),
   };
   const repository = {
     getCheckpoint: vi.fn(async () => options.checkpoint ?? 0),
@@ -135,6 +136,7 @@ describe('IndexingService', () => {
 
       expect(logger.info).toHaveBeenLastCalledWith(
         'Indexing finished: the catalog is ready',
+        expect.objectContaining({ total: 1 }),
       );
     });
 
@@ -144,6 +146,17 @@ describe('IndexingService', () => {
       await service.run(signal());
 
       expect(events).toEqual(['startIndexing', 'ensure', 'markReady']);
+    });
+
+    it('reports a zero total when the catalog is empty', async () => {
+      const { service, logger } = setup({ total: 0 });
+
+      await service.run(signal());
+
+      expect(logger.info).toHaveBeenLastCalledWith(
+        'Indexing finished: the catalog is ready',
+        expect.objectContaining({ total: 0 }),
+      );
     });
 
     it('asks for batches of the configured size', async () => {
@@ -164,6 +177,8 @@ describe('IndexingService', () => {
         {
           batch: 1,
           indexed: 2,
+          total: 3,
+          percent: 67,
           lastRecordingId: 2,
         },
       );
@@ -172,9 +187,19 @@ describe('IndexingService', () => {
         {
           batch: 2,
           indexed: 3,
+          total: 3,
+          percent: 100,
           lastRecordingId: 3,
         },
       );
+    });
+
+    it('reads the total once per run, never per batch', async () => {
+      const { service, documents } = setup({ total: 5, batchSize: 2 });
+
+      await service.run(signal());
+
+      expect(documents.countAll).toHaveBeenCalledTimes(1);
     });
 
     describe('when the worker is restarted in the middle of indexing', () => {

@@ -1,7 +1,11 @@
 import { MbslaveClient } from '../../integrations/mbslave/mbslave-client.js';
 import { createLogger } from '../../logger.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';
-import { RestoreService, restoreServiceDeps } from './restore.service.js';
+import {
+  type ResolveArchiveTotalBytes,
+  RestoreService,
+  restoreServiceDeps,
+} from './restore.service.js';
 
 type LoggedCall = {
   message: string;
@@ -32,29 +36,39 @@ const stubRepository = () =>
     clearMusicBrainz: async () => undefined,
   }) as unknown as BootstrapRepository;
 
+const runRestore = async (
+  resolveTotalBytes?: ResolveArchiveTotalBytes,
+): Promise<LoggedCall[]> => {
+  const { logger, calls } = capturingLogger();
+  const restore = new RestoreService(
+    restoreServiceDeps({
+      repository: stubRepository(),
+      mbslave: new MbslaveClient(async () => undefined),
+      logger,
+      baseUrl: 'https://data.metabrainz.org/pub/musicbrainz/data',
+      dataset: 'sample',
+      resolveUrls: async (baseUrl) => [
+        `${baseUrl}/sample/20260901-000002/mbdump-sample.tar.xz`,
+      ],
+      ...(resolveTotalBytes === undefined ? {} : { resolveTotalBytes }),
+    }),
+  );
+  await restore.run();
+  return calls;
+};
+
+const byMessage = (
+  calls: LoggedCall[],
+  message: string,
+): Record<string, unknown> | undefined =>
+  calls.find((call) => call.message === message)?.fields;
+
 describe('RestoreService logging', () => {
   it('logs the resolved LATEST, archives and phase timings', async () => {
-    const { logger, calls } = capturingLogger();
-    const mbslave = new MbslaveClient(async () => undefined);
+    const calls = await runRestore();
     const baseUrl = 'https://data.metabrainz.org/pub/musicbrainz/data';
-    const restore = new RestoreService(
-      restoreServiceDeps({
-        repository: stubRepository(),
-        mbslave,
-        logger,
-        baseUrl,
-        dataset: 'sample',
-        resolveUrls: async () => [
-          `${baseUrl}/sample/20260901-000002/mbdump-sample.tar.xz`,
-        ],
-      }),
-    );
 
-    await expect(restore.run()).resolves.toBe('restored');
-
-    const byMessage = (message: string): Record<string, unknown> | undefined =>
-      calls.find((call) => call.message === message)?.fields;
-    const dumpFields = byMessage('Restoring the MusicBrainz dump');
+    const dumpFields = byMessage(calls, 'Restoring the MusicBrainz dump');
     expect(dumpFields).toMatchObject({
       dataset: 'sample',
       baseUrl,
@@ -62,28 +76,50 @@ describe('RestoreService logging', () => {
       archives: 1,
       urls: [`${baseUrl}/sample/20260901-000002/mbdump-sample.tar.xz`],
     });
-    expect(byMessage('Restore schema creation started')).toMatchObject({
+    expect(byMessage(calls, 'Restore schema creation started')).toMatchObject({
       dataset: 'sample',
     });
-    expect(byMessage('Restore schema creation finished')).toMatchObject({
+    expect(byMessage(calls, 'Restore schema creation finished')).toMatchObject({
       dataset: 'sample',
     });
     expect(
-      (byMessage('Restore schema creation finished')?.durationMs as number) >=
-        0,
+      (byMessage(calls, 'Restore schema creation finished')
+        ?.durationMs as number) >= 0,
     ).toBe(true);
-    expect(byMessage('Restore import started')).toMatchObject({
+    expect(byMessage(calls, 'Restore import started')).toMatchObject({
       dataset: 'sample',
       archives: 1,
     });
-    expect(byMessage('Restore import finished')).toMatchObject({
+    expect(byMessage(calls, 'Restore import finished')).toMatchObject({
       dataset: 'sample',
       archives: 1,
     });
-    const finished = byMessage('Restore finished');
+    const finished = byMessage(calls, 'Restore finished');
     expect(finished).toMatchObject({ dataset: 'sample' });
     expect(typeof finished?.durationMs).toBe('number');
     expect(typeof finished?.initMs).toBe('number');
     expect(typeof finished?.importMs).toBe('number');
+  });
+
+  it('logs the total bytes before the import when the lookup succeeds', async () => {
+    const calls = await runRestore(async () => 362_835_168);
+
+    expect(byMessage(calls, 'Restoring the MusicBrainz dump')).toMatchObject({
+      archives: 1,
+      totalBytes: 362_835_168,
+    });
+    expect(byMessage(calls, 'Restore import started')).toMatchObject({
+      totalBytes: 362_835_168,
+    });
+  });
+
+  it('omits the total instead of failing when the lookup throws', async () => {
+    const calls = await runRestore(async () => {
+      throw new Error('HEAD timed out');
+    });
+
+    const dump = byMessage(calls, 'Restoring the MusicBrainz dump');
+    expect(dump).toMatchObject({ archives: 1 });
+    expect('totalBytes' in (dump ?? {})).toBe(false);
   });
 });
