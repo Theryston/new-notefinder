@@ -12,7 +12,7 @@ test.describe('legacy routes', () => {
     if (route.todo) {
       // Sitemaps keep their unprefixed URL, so the only requirement is that
       // they resolve.
-      // biome-ignore lint/suspicious/noSkippedTests: routes flagged `todo` are not built yet; `fixme` keeps them listed in the report until they ship (see apps/web/CLAUDE.md "Legacy routes").
+      // biome-ignore lint/suspicious/noSkippedTests: routes flagged `todo` are not built yet; `fixme` keeps them listed in the report until they ship (see apps/web/AGENTS.md "Legacy routes").
       test.fixme(`${route.path} does not 404 (todo: ${route.todo})`, async ({
         request,
       }) => {

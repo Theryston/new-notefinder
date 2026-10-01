@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/muse-spark-1.3-contributor#medium",
+  "default_agent": "build",
+  "formatter": true,
+  "permissions": [
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "nub *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "gh *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "turbo *"
+    },
+    {
+      "action": "shell",
+      "effect": "ask",
+      "resource": "git push *"
+    }
+  ]
+}

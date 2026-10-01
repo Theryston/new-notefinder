@@ -9,8 +9,8 @@ Goal: same features, split into a standalone API and a web client (a mobile app
 comes later and will consume the same API), with a better-looking web UI.
 When in doubt about a feature's behavior, check how the original does it.
 
-App-specific rules live in `apps/web/CLAUDE.md`, `apps/api/CLAUDE.md` and
-`apps/music-catalog/CLAUDE.md`.
+App-specific rules live in `apps/web/AGENTS.md`, `apps/api/AGENTS.md` and
+`apps/music-catalog/AGENTS.md`.
 
 ## Monorepo layout
 
@@ -19,7 +19,7 @@ apps/
   web/          Next.js 16 frontend (SSR, Cache Components, next-intl, shadcn/ui). Port 3000.
   api/          NestJS 12 REST API (Drizzle, Better Auth, BullMQ). Port 3333.
   music-catalog/  Private Music catalog service: Node + ws WebSocket server and worker,
-                  no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
+                  no Nest (Drizzle). Port 3334. See apps/music-catalog/AGENTS.md.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
 ```
@@ -63,10 +63,10 @@ app in production. Two things must hold when that happens:
    and their data. Never model users in a way legacy users can't be mapped
    into. The legacy **catalog** (tracks, artists, albums and their notes and
    thumbnails) is **not** imported: it is reprocessed into a schema designed
-   for the new app (see "Legacy data import" in `apps/api/CLAUDE.md`).
+   for the new app (see "Legacy data import" in `apps/api/AGENTS.md`).
 2. **No legacy URL may return 404.** Every public route of the legacy web app
    must either still exist or redirect to its new equivalent, keeping query
-   params (see "Legacy routes" in `apps/web/CLAUDE.md`). Profile URLs keep
+   params (see "Legacy routes" in `apps/web/AGENTS.md`). Profile URLs keep
    working because usernames are kept. Catalog records get new IDs, so every
    table with a public URL has a **legacy ID map** (legacy ID → new ID),
    created with the table, that turns an old URL into a permanent redirect.
@@ -85,7 +85,7 @@ The reasoning is in
   translate). Locales: `en` and `pt-BR`. `en` is the **source of truth** for
   messages (keys are written there first), not the default for visitors: the
   locale is detected from the user's location/browser and falls back to `en`
-  only when there is no match (details in `apps/web/CLAUDE.md`).
+  only when there is no match (details in `apps/web/AGENTS.md`).
 
 ### Design
 
@@ -248,7 +248,7 @@ the maintainer changes these files.
   signature imposed by a library interface, a fixture file) and says why.
 - **Architecture**: `nub run lint` also runs dependency-cruiser with each
   app's `.dependency-cruiser.cjs`, which encodes the layer and module rules
-  of that app's CLAUDE.md (no import cycles; API and music-catalog: only
+  of that app's AGENTS.md (no import cycles; API and music-catalog: only
   repositories touch Drizzle, handlers/controllers go through services; API:
   modules talk through their service; web: shared code never imports
   features, features use each other only through `components/`). Change the
@@ -277,7 +277,7 @@ the maintainer changes these files.
 - **Everything new ships with tests in the same PR.** A new endpoint, service
   method, job, component logic, route, migration-dependent behavior or legacy
   route is not done until tests cover it (unit and/or e2e, per the app's
-  CLAUDE.md). A PR that adds behavior without tests is incomplete.
+  AGENTS.md). A PR that adds behavior without tests is incomplete.
 - **When a test fails, fix the code, not the test.** A failing test means
   something that used to work broke. Find the root cause in the code and fix
   it. Never make CI green by editing, weakening, skipping (`.skip`,
@@ -325,12 +325,13 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, shared by `ap
 
 ### Asking the maintainer
 
-Put decisions to the maintainer through the AskUserQuestion tool (clickable
+Put decisions to the maintainer through the question tool (clickable
 options, recommended one first, at most 4 per call), or one question at a
 time. Never a long numbered list of questions in plain text, even when a
 skill (e.g. `grilling`) says to ask a whole round at once.
 
 ### Subagents
 
-`.claude/agents/ticket-implementer.md` implements one `ready-for-agent`
-issue end to end in its own worktree and opens a PR (Sonnet, `xhigh` effort).
+`.opencode/agents/ticket-implementer.md` implements one `ready-for-agent`
+issue end to end in its own worktree and opens a PR
+(`opencode-go/muse-spark-1.3-contributor`, medium effort).

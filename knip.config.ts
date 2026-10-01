@@ -3,9 +3,12 @@ import type { KnipConfig } from 'knip';
 // Unused files, exports and dependencies fail CI (`nub run knip`). Before
 // adding to an ignore list here, delete the dead code instead.
 const config: KnipConfig = {
-  // Skill files are templates and documentation, not app entry points. The
-  // Claude skill paths are symlinks to this same tree.
-  ignore: ['.agents/skills/**'],
+  // Skill files are templates and documentation, not app entry points.
+  // The env-setup plugin runs on OpenCode server start, outside the
+  // workspace entry points.
+  // (Migration: repointed from `.agents/skills/**` when skills moved to
+  // `.opencode/skills/`.)
+  ignore: ['.opencode/skills/**', '.opencode/plugins/**'],
   workspaces: {
     'apps/api': {
       // drizzle.config.ts parses the app's env when imported, which fails
@@ -24,11 +27,11 @@ const config: KnipConfig = {
         'lighthouserc.cjs',
         // Generated shadcn/ui components, used as the design system grows.
         'components/ui/**/*.tsx',
-        // Documented entry point (apps/web/CLAUDE.md): locale-aware
+        // Documented entry point (apps/web/AGENTS.md): locale-aware
         // navigation helpers, not all of them used yet.
         'lib/i18n/navigation.ts',
       ],
-      // Part of the documented stack (apps/web/CLAUDE.md) but not imported
+      // Part of the documented stack (apps/web/AGENTS.md) but not imported
       // yet. Remove each one from this list when it is first used.
       ignoreDependencies: ['zustand'],
     },

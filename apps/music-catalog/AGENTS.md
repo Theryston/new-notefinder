@@ -1,6 +1,6 @@
 # apps/music-catalog: Music catalog service
 
-Read the root `CLAUDE.md` first; this file only adds this app's rules.
+Read the root `AGENTS.md` first; this file only adds this app's rules.
 
 The **Music catalog** is a private, autonomous service that will hold every
 **Recording** in the world (kept in sync with MusicBrainz, plus open

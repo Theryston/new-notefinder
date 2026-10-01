@@ -46,7 +46,7 @@ const meilisearchUrlSchema = z.url({ protocol: /^https?$/ });
 
 // Each process reads only the key it needs: the server can search, nothing
 // else, and the worker can write. Both are keys created in Meilisearch (see
-// CLAUDE.md "Meilisearch"), scoped to what they do, not its master key.
+// AGENTS.md "Meilisearch"), scoped to what they do, not its master key.
 const serverEnvSchema = envSchema.extend({
   MEILISEARCH_URL: meilisearchUrlSchema,
   MEILISEARCH_SEARCH_API_KEY: z.string().min(1),
