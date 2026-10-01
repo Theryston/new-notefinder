@@ -26,7 +26,7 @@ export type ReplicationReport = {
  * structurally so this module never imports the sync module's repository
  * (modules talk through services); `RecordingOutboxRepository` satisfies it.
  */
-export type ReplicationBacklog = {
+type ReplicationBacklog = {
   countPending: () => Promise<number>;
 };
 
