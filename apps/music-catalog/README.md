@@ -7,7 +7,7 @@ WebSocket. Today: the WebSocket server answering `status`, `getRecording`
 Meilisearch, results in its relevance order), its Postgres schema and the
 worker, which indexes the Recordings once MusicBrainz is restored. Full
 design: issue #55.
-Rules, layers and the protocol are in [`CLAUDE.md`](./CLAUDE.md).
+Rules, layers and the protocol are in [`AGENTS.md`](./AGENTS.md).
 
 ## Running locally
 

@@ -16,7 +16,7 @@ export default defineConfig({
       // being left out of the report.
       include: ['src/**/*.ts'],
       // Controllers, repositories, module wiring and the DB schema are covered
-      // by the e2e suite (see CLAUDE.md "Testing"), not by unit tests.
+      // by the e2e suite (see AGENTS.md "Testing"), not by unit tests.
       exclude: [
         'src/**/*.spec.ts',
         'src/**/*.controller.ts',
