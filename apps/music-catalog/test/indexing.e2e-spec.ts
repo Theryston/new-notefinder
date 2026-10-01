@@ -115,7 +115,7 @@ describe('indexing: the worker takes the catalog to ready (e2e)', () => {
     expect(await searchMbids('anything')).toEqual([]);
   });
 
-  it('leaves a ready catalog alone', async () => {
+  it('syncs a Recording added after the catalog is ready', async () => {
     await addTunes(2);
     await indexCatalog(server());
     const upsert = vi.spyOn(MeilisearchIndex.prototype, 'upsert');
@@ -123,8 +123,8 @@ describe('indexing: the worker takes the catalog to ready (e2e)', () => {
 
     await createTestWorker(server()).tick();
 
-    expect(upsert).not.toHaveBeenCalled();
-    expect(await searchMbids('newcomer')).toEqual([]);
+    expect(upsert).toHaveBeenCalled();
+    expect(await searchMbids('newcomer')).toContain(mbid(200));
   });
 
   // What the worker sends to Meilisearch, batch by batch; `beforeSend` may

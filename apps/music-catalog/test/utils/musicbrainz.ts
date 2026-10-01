@@ -207,6 +207,28 @@ export const addRecordingRedirect = async (
   });
 };
 
+/** Renames the Recording, the way a replicated update would. */
+export const renameRecording = async (
+  db: Database,
+  recording: FixtureRecording,
+  name: string,
+): Promise<void> => {
+  await db.execute(
+    sql`update musicbrainz.recording set name = ${name} where id = ${recording.id}`,
+  );
+};
+
+/** Renames the artist (its name and sort name), the way replication would. */
+export const renameArtist = async (
+  db: Database,
+  artist: FixtureArtist,
+  name: string,
+): Promise<void> => {
+  await db.execute(
+    sql`update musicbrainz.artist set name = ${name}, sort_name = ${name} where id = ${artist.id}`,
+  );
+};
+
 export const addIsrc = async (
   db: Database,
   recording: FixtureRecording,

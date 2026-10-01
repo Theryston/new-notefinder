@@ -15,6 +15,13 @@
       "when": 1790804463889,
       "tag": "0001_indexing_checkpoint",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790874988522,
+      "tag": "0002_fair_the_leader",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,8 @@ import { RecordingSummaryRepository } from './modules/recording/recording-summar
 import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
 import { createSearchHandler } from './modules/search/search.handler.js';
 import { SearchService } from './modules/search/search.service.js';
+import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
+import { SyncService } from './modules/sync/sync.service.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 export type CreateServerOptions = {
@@ -86,29 +88,50 @@ export type MusicCatalogWorker = {
 /**
  * The composition root of the worker process, next to the server's: shared
  * by `worker.ts` and the e2e tests, so they run the same wiring. Each step
- * the worker gains (outbox draining, Lyrics) plugs into `tick`.
+ * the worker gains (Lyrics) plugs into `tick`.
  */
 export const createMusicCatalogWorker = (
   options: CreateWorkerOptions,
 ): MusicCatalogWorker => {
   const { env, db, logger, signal } = options;
+  const bootstrap = new BootstrapService(
+    new BootstrapRepository(db),
+    env.CATALOG_DATASET,
+  );
+  const documents = new RecordingDocumentService(
+    new RecordingDocumentRepository(db),
+  );
+  // The worker is the only writer of the index: its key can write.
+  const index = createMeilisearchIndex<RecordingDocument>({
+    url: env.MEILISEARCH_URL,
+    apiKey: env.MEILISEARCH_WRITE_API_KEY,
+    ...RECORDINGS_INDEX,
+  });
   const indexing = new IndexingService({
-    bootstrap: new BootstrapService(
-      new BootstrapRepository(db),
-      env.CATALOG_DATASET,
-    ),
-    documents: new RecordingDocumentService(
-      new RecordingDocumentRepository(db),
-    ),
+    bootstrap,
+    documents,
     repository: new IndexingRepository(db),
-    // The worker is the only writer of the index: its key can write.
-    index: createMeilisearchIndex<RecordingDocument>({
-      url: env.MEILISEARCH_URL,
-      apiKey: env.MEILISEARCH_WRITE_API_KEY,
-      ...RECORDINGS_INDEX,
-    }),
+    index,
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });
-  return { tick: () => indexing.run(signal) };
+  const sync = new SyncService({
+    bootstrap,
+    outbox: new RecordingOutboxRepository(db),
+    documents,
+    index,
+    batchSize: env.INDEXING_BATCH_SIZE,
+    logger,
+  });
+  return {
+    // The drain runs before the initial indexing: entries the bulk has not
+    // written yet wait for the next tick, so one tick never indexes the same
+    // Recording twice, and a tick that finishes the bulk leaves the sync to
+    // the tick after it.
+    tick: async () => {
+      await sync.ensureTriggers();
+      await sync.drain(signal);
+      await indexing.run(signal);
+    },
+  };
 };
