@@ -22,6 +22,13 @@
       "when": 1790874988522,
       "tag": "0002_fair_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790891434309,
+      "tag": "0003_shocking_ben_parker",
+      "breakpoints": true
     }
   ]
 }

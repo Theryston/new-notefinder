@@ -38,6 +38,25 @@ describe('MbslaveClient', () => {
       'mbslave import failed',
     );
   });
+
+  it('applies the pending packets with one sync call', async () => {
+    const calls: string[][] = [];
+    const client = new MbslaveClient(async (args) => {
+      calls.push([...args]);
+    });
+
+    await client.sync();
+
+    expect(calls).toEqual([['sync']]);
+  });
+
+  it('lets a failing sync surface to the replication loop, which restarts', async () => {
+    const client = new MbslaveClient(async () => {
+      throw new Error('mbslave sync failed (exit 1): boom');
+    });
+
+    await expect(client.sync()).rejects.toThrow('mbslave sync failed');
+  });
 });
 
 describe('createProcessMbslaveRun', () => {
@@ -79,5 +98,25 @@ describe('createProcessMbslaveRun', () => {
     await expect(
       createProcessMbslaveRun(spawn)(['import', 'https://a/x']),
     ).rejects.toThrow('mbslave import failed (exit 1): traceback\nboom');
+  });
+
+  it('inherits the environment unless told otherwise', async () => {
+    const { spawn, calls } = spawning(0, '');
+
+    await createProcessMbslaveRun(spawn)(['sync']);
+
+    expect(calls[0]?.[2]).toEqual({ stdio: ['ignore', 'inherit', 'pipe'] });
+  });
+
+  it('runs with the given environment when one is passed', async () => {
+    const { spawn, calls } = spawning(0, '');
+    const env = { PATH: '/usr/bin', MBSLAVE_MUSICBRAINZ_TOKEN: 'token' };
+
+    await createProcessMbslaveRun(spawn, undefined, env)(['sync']);
+
+    expect(calls[0]?.[2]).toEqual({
+      stdio: ['ignore', 'inherit', 'pipe'],
+      env,
+    });
   });
 });

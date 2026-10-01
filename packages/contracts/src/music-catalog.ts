@@ -143,6 +143,15 @@ export type MusicCatalogStatusPayload = z.infer<
 export const musicCatalogStatusResultSchema = z.object({
   phase: bootstrapPhaseSchema,
   dataset: catalogDatasetSchema,
+  // Continuous replication (issue #62, `full` mode only): the last replication
+  // packet the mbslave container applied. Null until the first packet lands;
+  // absent when the service answers without replication state. A sequence
+  // that stops advancing while packets are published means replication
+  // stalled (the yearly schema change, handled by #69, looks exactly so).
+  replicationSequence: z.number().int().nonnegative().nullable().optional(),
+  // Entries still waiting to reach the search index: the replication lag
+  // operators watch next to the sequence above.
+  pendingOutbox: z.number().int().nonnegative().optional(),
 });
 
 export type MusicCatalogStatusResult = z.infer<

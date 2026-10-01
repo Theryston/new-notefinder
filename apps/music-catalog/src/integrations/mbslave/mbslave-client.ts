@@ -60,17 +60,21 @@ const createStderrRecorder = (
  * Spawns `mbslave` with the given arguments, inheriting the environment.
  * `onStderrLine` sees every complete `stderr` line as it arrives
  * (line-buffered, blank lines skipped); the rejection still carries the last
- * 2000 characters for the restore log.
+ * 2000 characters for the restore log. Pass `env` (built with
+ * `mbslaveSpawnEnv`, which drops the compose file's blank token defaults) to
+ * run with anything but the inherited environment.
  */
 export const createProcessMbslaveRun = (
   spawnImpl: SpawnFn = nodeSpawn,
   onStderrLine?: MbslaveStderrLine,
+  env?: NodeJS.ProcessEnv,
 ): MbslaveRun => {
   const stderrTailLength = 2000;
   return (args) =>
     new Promise<void>((resolve, reject) => {
       const child = spawnImpl('mbslave', [...args], {
         stdio: ['ignore', 'inherit', 'pipe'],
+        ...(env === undefined ? null : { env }),
       });
       const recorder = createStderrRecorder(args, onStderrLine);
       child.stderr?.on('data', (chunk: Buffer) => {
@@ -117,5 +121,17 @@ export class MbslaveClient {
    */
   async importArchives(urls: readonly string[]): Promise<void> {
     await this.run(['import', ...urls]);
+  }
+
+  /**
+   * Applies every pending replication packet and stops at the first one that
+   * does not exist yet (`Not found, stopping`, exit zero). Without
+   * `--keep-running` mbslave owns no loop or sleep: the caller (the
+   * replication service) records the sequence, logs the backlog and decides
+   * when to run again. A schema mismatch or a bad token exits non-zero, so
+   * the container crash-loops with mbslave's message instead of going quiet.
+   */
+  async sync(): Promise<void> {
+    await this.run(['sync']);
   }
 }
