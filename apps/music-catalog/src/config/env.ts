@@ -87,6 +87,27 @@ export const parseServerEnv = (source: EnvSource): ServerEnv =>
 export const parseWorkerEnv = (source: EnvSource): WorkerEnv =>
   parseWith(workerEnvSchema, source);
 
+// The restore runs in the mbslave container, not next to the server and the
+// worker, so it parses its own small set on top of the shared one: what to
+// restore and where the dumps are. It stays a separate schema (not an
+// extension the server or worker reads): the shared schema is asserted
+// exactly by its specs, and the server and worker must not need the dump
+// settings, nor the restore the API keys.
+const restoreEnvSchema = envSchema
+  .pick({ NODE_ENV: true, DATABASE_URL: true, CATALOG_DATASET: true })
+  .extend({
+    // The `.../data` directory the dumps are published under (the sample
+    // next to the full export). Points at a fake HTTP server in tests.
+    MUSICBRAINZ_DUMP_BASE_URL: z
+      .url({ protocol: /^https?$/ })
+      .default('https://data.metabrainz.org/pub/musicbrainz/data'),
+  });
+
+export type RestoreEnv = z.output<typeof restoreEnvSchema>;
+
+export const parseRestoreEnv = (source: EnvSource): RestoreEnv =>
+  parseWith(restoreEnvSchema, source);
+
 // Resolves to apps/music-catalog/.env from both src/config and dist/config.
 const dotEnvPath = fileURLToPath(new URL('../../.env', import.meta.url));
 
@@ -128,4 +149,14 @@ export const loadServerEnv = (): ServerEnv => {
 export const loadWorkerEnv = (): WorkerEnv => {
   loadDotEnvFile();
   return parseWorkerEnv(process.env);
+};
+
+/**
+ * Parses `process.env` for the restore. In the mbslave container the compose
+ * file passes the variables with `env_file`, so loading `.env` here stays a
+ * local fallback, like for the server and the worker.
+ */
+export const loadRestoreEnv = (): RestoreEnv => {
+  loadDotEnvFile();
+  return parseRestoreEnv(process.env);
 };

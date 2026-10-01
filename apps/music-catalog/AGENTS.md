@@ -15,8 +15,9 @@ envelope, our own Postgres schema (the bootstrap state and the indexing
 checkpoint), read-only declarations of the MusicBrainz tables the queries
 read, **Meilisearch** as the search engine behind a small integration, the
 `server` and `worker` entrypoints (the worker indexes every Recording once
-the MusicBrainz data is restored) and the test and quality setup. The
-MusicBrainz restore and bootstrap (mbslave container), replication, Lyrics
+the MusicBrainz data is restored), the **first import** (issue #60: the
+mbslave container restores the MusicBrainz dump and records
+`restoring`/`restored`) and the test and quality setup. Replication, Lyrics
 and the production compose are later tickets: do not build them here ahead of
 their ticket. `search` returns results in **Meilisearch's relevance order**,
 loaded from Postgres without re-ranking.
@@ -45,11 +46,20 @@ Local setup, from the repository root:
 
 ```sh
 nub install
-nub run infra:up                                   # includes this app's Postgres (5433) and Meilisearch (7700)
 cp apps/music-catalog/.env.example apps/music-catalog/.env
 (cd apps/music-catalog && nub run db:migrate)
+nub run build --filter=music-catalog              # the mbslave container runs this dist
+nub run infra:up                                   # this app's Postgres (5433) and Meilisearch (7700),
+                                                   # plus a one-shot mbslave container that restores the
+                                                   # sample dump, then the worker indexes it to `ready`
 nub run dev --filter=music-catalog                 # ws://localhost:3334
 ```
+
+Watch `status` while the sample restores (about a dozen minutes the first
+time): `restoring` (mbslave) → `restored` → `indexing` (worker) → `ready`.
+`CATALOG_DATASET=full` restores everything instead (see "Dataset modes");
+switching datasets means resetting the database (see "Resetting a local
+database").
 
 Database scripts (`db:generate` needs no `.env`; `db:migrate` needs a valid
 one, since it reads the same env schema):
@@ -65,15 +75,17 @@ nub run db:migrate   # apply migrations; an explicit step, never run on boot
 src/
   server.ts               entrypoint of the server process: env, pool, server, signals
   worker.ts               entrypoint of the worker process: env, pool, worker, signals
+  restore.ts              entrypoint of the mbslave container: env, pool, restore, exit code
   create-server.ts        composition roots of both processes: the server (modules -> handlers ->
                           ws server) and the worker (services -> `tick`)
-  config/env.ts           Zod schemas for process.env: shared, server and worker sets
+  config/env.ts           Zod schemas for process.env: shared, server, worker and restore sets
   logger.ts               minimal structured logger (JSON in production)
   errors/                 CatalogError: an expected failure with a protocol error code
   lib/                    small pure helpers shared by modules (text comparison, cover art URL,
                           grouping) and the definition of the recordings index
   integrations/
     meilisearch/          MeilisearchIndex: the only code that imports the Meilisearch SDK
+    mbslave/              MbslaveClient: the only code that spawns the mbslave binary
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
@@ -93,6 +105,9 @@ src/
       bootstrap.service.ts
       bootstrap.repository.ts
       bootstrap.service.spec.ts
+      restore.service.ts        the first import mbslave owns: skip, redo or restore
+      restore-plan.ts           which of those a start has to do (pure)
+      dump-urls.ts              the dump archives under the base URL (pure + LATEST)
     recording/
       recording.handler.ts      the `getRecording` handler
       recording.service.ts      readiness, not found / moved, loading the parts
@@ -113,6 +128,10 @@ src/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
   worker/worker-loop.ts   the loop the worker's steps plug into
+mbslave.Dockerfile        the mbslave image: Node for dist/restore.js plus mbslave from
+                          git (pinned) and psql; run by the dev compose (below)
+docker-compose.yml        our Postgres (5433), Meilisearch (7700) with its key-creating
+                          job, and the one-shot mbslave service owning the restore
 drizzle/                  generated SQL migrations (committed)
 test/                     e2e specs + helpers (test server, ws client, Testcontainers setup,
                           MusicBrainz schema and fixture)
@@ -318,6 +337,79 @@ later), best match first:
 - Before `ready` it answers `CATALOG_NOT_READY` (after validating).
   Meilisearch being down is `INTERNAL`.
 
+## First import
+
+The mbslave container owns the restore (issue #60): the Node image has no
+Python or `psql`, so the server and the worker never run it. On start the
+container runs `dist/restore.js` (`src/restore.ts`, built on the host with
+`nub run build --filter=music-catalog` and mounted read-only), which checks
+the bootstrap state and either exits or restores:
+
+- **No row yet** (`fresh`): records `restoring`, reads the dataset's `LATEST`
+  file under `MUSICBRAINZ_DUMP_BASE_URL`, restores the archives with `mbslave
+  init --empty` followed by `mbslave import <urls>` (plain `init` is neither
+  idempotent nor URL-configurable), and records `restored`. A failure leaves
+  `restoring` behind, so the next start redoes it; `ready` is the worker's to
+  record, never the restore's.
+- **Restore done** (`skip`): the phase is `restored`, `indexing` or `ready`
+  with the configured dataset. It downloads and restores nothing.
+- **Interrupted restore** (`redo`): the phase is still `restoring`. It drops
+  every schema mbslave creates and starts over from a clean state (`import`
+  skips tables that already hold rows, so a resume would silently keep a
+  half-loaded dump).
+- **Another dataset** (`dataset-changed`): the catalog reached `restored` or
+  further with a different `CATALOG_DATASET`. It refuses instead of silently
+  re-downloading gigabytes: reset the database (below) and start over.
+
+`status` shows each phase (`restoring` → `restored` → `indexing` → `ready`);
+`search` and `getRecording` answer `CATALOG_NOT_READY` until `ready`.
+
+Handoff for issue #61 (change triggers and the outbox, owned by that ticket):
+after this records `restored`, the worker installs the change triggers and
+only then indexes. Nothing trigger- or outbox-shaped is created here, and a
+redo never drops the outbox's schema: it does not exist yet.
+
+## Dataset modes
+
+`CATALOG_DATASET` is `sample` or `full`, required with no default, and the
+first import records it in the bootstrap state. Both go through the same
+`import <urls>` code path; only the archives differ
+(`src/modules/bootstrap/dump-urls.ts`):
+
+- `sample`: the official sample dump, one `mbdump-sample.tar.xz` under
+  `<base>/sample/`. Development mode: about 6 GB and a dozen minutes. The
+  sample ships no `cover_art` data and an empty `replication_control`, so
+  there is no cover-art data and no replication in this mode.
+- `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2`
+  under `<base>/fullexport/`), no edit history. Production mode: about
+  150-220 GB steady state (see ADR 0002).
+
+`MUSICBRAINZ_DUMP_BASE_URL` is the `.../data` directory both layouts live
+under (default: the official `data.metabrainz.org` directory). The mbslave
+binary reads its own `MBSLAVE_*` variables from the container environment
+(use `MBSLAVE_DB_DB` for the database name; mbslave ignores the README's
+`MBSLAVE_DB_NAME`); the dump download needs no token. The image
+(`mbslave.Dockerfile`) installs mbslave from git tag `v31.0.1`: bump
+`MBSLAVE_REF` there together with `MBSLAVE_REF` in
+`test/setup/musicbrainz-schema.ts`, which builds the same schema in e2e.
+
+## Resetting a local database
+
+Switching datasets, or throwing away a local import, means starting over;
+there is no in-place switch:
+
+```sh
+# From the repository root: drops the dev Postgres data (and the downloaded
+# dumps), so the next `infra:up` restores the configured dataset from scratch.
+docker compose down -v
+nub run infra:up
+```
+
+Dropping only the volume works too
+(`docker volume rm notefinder_music-catalog-postgres-data`), but `-v` drops
+every dev volume (the API's database included). Never run either against a
+database that holds anything worth keeping.
+
 ## Meilisearch
 
 The search engine (chosen after the benchmark in issue #68). Its URL and keys
@@ -431,11 +523,14 @@ come from env; version pinned to a stable v1.x in the dev compose
   | `MEILISEARCH_SEARCH_API_KEY` | Search-only key; required by the **server** only |
   | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
   | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
+  | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
 
   The server and the worker parse different sets (`loadServerEnv`,
   `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
-  needs and never receives the other's key. `loadEnv` (the shared set) is
-  what `db:migrate` reads, so a deploy step needs no Meilisearch settings.
+  needs and never receives the other's key. The restore parses its own set
+  (`loadRestoreEnv`): the shared `DATABASE_URL` and `CATALOG_DATASET` plus
+  `MUSICBRAINZ_DUMP_BASE_URL`. `loadEnv` (the shared set) is what `db:migrate`
+  reads, so a deploy step needs no Meilisearch settings.
 
 - Logging: `createLogger` from `src/logger.ts` (one JSON object per line in
   production, text otherwise). No `console.*`. Never log API keys, the
@@ -509,6 +604,20 @@ come from env; version pinned to a stable v1.x in the dev compose
   `requestSearch` send `getRecording` and `search` and parse the answer with
   the contract's schema. A search test arranges its Recordings, calls
   `indexCatalog`, then asks over the WebSocket.
+- **The first import in e2e** (`test/first-import.e2e-spec.ts`): the real
+  `RestoreService` wired like `restore.ts`, with mbslave behind its
+  integration boundary (a fake `MbslaveRun`: `init` recreates the schema with
+  `applyMusicBrainzSchema`, `import` downloads the archives over real HTTP
+  and seeds what the dump would load) and the dump base URL pointed at a fake
+  HTTP server (`test/utils/fake-dump-server.ts`, the real `sample` next to
+  `fullexport` layout with tiny archives). It covers the first run to
+  `ready` (restore, then a worker tick, then a search over the WebSocket),
+  the skip on a second start, the redo from a clean state after an
+  interrupted restore (it drops the real `musicbrainz` schema, so it
+  re-applies it in a `finally` for the files after it) and the refusal to
+  switch datasets. Spawning the real binary is deliberately out: it would
+  need its Python/psql image, minutes per run and the network on every PR
+  (the spike verified the real commands against a fake mirror instead).
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
   validation, the dispatcher with its timeout, the heartbeat with fake

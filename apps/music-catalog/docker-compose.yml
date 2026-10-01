@@ -2,7 +2,8 @@
 # port 5433, the API's uses 5432). Included by the root docker-compose.yml, so
 # `nub run infra:up` / `infra:down` manage it with the rest of the stack.
 # Meilisearch, the search engine (chosen after the benchmark in issue #68),
-# joins it below; mbslave joins with the ticket that needs it.
+# joins it below, and so does mbslave, which owns the first import (issue
+# #60): on start it restores the MusicBrainz dump, then exits.
 services:
   music-catalog-postgres:
     image: postgres:17-alpine
@@ -67,6 +68,55 @@ services:
         create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}' &&
         create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000002","name":"music-catalog-write","actions":["documents.*","indexes.*","settings.*","tasks.get"],"indexes":["*"],"expiresAt":null}'
 
+  # The first import (issue #60). One-shot: on start it checks the bootstrap
+  # state, restores the MusicBrainz dump with `mbslave init --empty` +
+  # `mbslave import` when needed (skipping when already done, redoing from a
+  # clean state when interrupted), records `restored` and exits. The worker
+  # takes it from there to `ready`. `infra:down` removes the exited
+  # container, so every `infra:up` re-checks the state (a no-op when done).
+  # Re-run it without touching anything else with
+  # `docker compose up --force-recreate music-catalog-mbslave`.
+  music-catalog-mbslave:
+    build:
+      # The repository root: the image only copies manifests and sources, and
+      # the container runs the compiled restore from a read-only mount below.
+      context: ../..
+      dockerfile: apps/music-catalog/mbslave.Dockerfile
+    # Rebuild the image on `up` when the Dockerfile changed (cached otherwise).
+    pull_policy: build
+    restart: 'no'
+    depends_on:
+      music-catalog-postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      # The same database the server and the worker use, reached by service
+      # name inside the compose network (not the host's localhost:5433).
+      DATABASE_URL: postgres://music_catalog:music_catalog@music-catalog-postgres:5432/music_catalog
+      CATALOG_DATASET: ${CATALOG_DATASET:-sample}
+      MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
+      # What the mbslave binary itself connects with. The dump download needs
+      # no token; the database name comes from MBSLAVE_DB_DB (mbslave ignores
+      # the README's MBSLAVE_DB_NAME). The dev database user is a superuser
+      # (it owns the database), which `init --empty` needs for the contrib
+      # extensions, so it doubles as the admin user here.
+      MBSLAVE_DB_HOST: music-catalog-postgres
+      MBSLAVE_DB_PORT: '5432'
+      MBSLAVE_DB_DB: music_catalog
+      MBSLAVE_DB_USER: music_catalog
+      MBSLAVE_DB_PASSWORD: music_catalog
+      MBSLAVE_DB_ADMIN_USER: music_catalog
+      MBSLAVE_DB_ADMIN_PASSWORD: music_catalog
+    volumes:
+      # The compiled restore and its dependencies, built on the host with
+      # `nub run build --filter=music-catalog` (the repo's own toolchain, so
+      # the container never installs workspaces itself).
+      - ../../:/repo:ro
+      # mbslave downloads the dumps into its work directory: kept across
+      # restarts, so an interrupted download resumes instead of starting over.
+      - music-catalog-mbslave-data:/var/lib/mbslave
+
 volumes:
   music-catalog-postgres-data:
   music-catalog-meilisearch-data:
+  music-catalog-mbslave-data:
