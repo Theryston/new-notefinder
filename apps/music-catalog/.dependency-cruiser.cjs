@@ -24,6 +24,15 @@ module.exports = {
       to: { path: ['^src/database/schema/', 'node_modules/drizzle-orm/'] },
     },
     {
+      name: 'meilisearch-only-in-integrations',
+      severity: 'error',
+      comment: 'The typed integration keeps features independent of the SDK.',
+      from: {
+        pathNot: ['^src/integrations/'],
+      },
+      to: { path: '(^meilisearch(/|$)|node_modules/meilisearch(/|$))' },
+    },
+    {
       name: 'handlers-call-services',
       severity: 'error',
       comment:
