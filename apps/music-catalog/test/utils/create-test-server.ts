@@ -32,7 +32,7 @@ export type TestServer = {
  * against the e2e database. `env` overrides the defaults below, as strings,
  * the way the environment provides them.
  */
-const createTestServer = async (
+export const createTestServer = async (
   env: Record<string, string> = {},
 ): Promise<TestServer> => {
   const meilisearch = inject('meilisearch');

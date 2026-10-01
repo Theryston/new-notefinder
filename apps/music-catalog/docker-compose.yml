@@ -2,7 +2,7 @@
 # port 5433, the API's uses 5432). Included by the root docker-compose.yml, so
 # `nub run infra:up` / `infra:down` manage it with the rest of the stack.
 # Meilisearch, the search engine (chosen after the benchmark in issue #68),
-# joins it below; mbslave joins with the ticket that needs it.
+# joins it below; mbslave owns the initial MusicBrainz restore.
 services:
   music-catalog-postgres:
     image: postgres:17-alpine
@@ -20,6 +20,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # One-shot restore job. It shares the database but owns only the
+  # MusicBrainz schemas; the service's schema remains managed by Drizzle.
+  music-catalog-mbslave:
+    image: notefinder/music-catalog-mbslave:v31.0.1
+    build:
+      context: ./mbslave
+      args:
+        MBSLAVE_REF: v31.0.1
+    restart: 'no'
+    depends_on:
+      music-catalog-postgres:
+        condition: service_healthy
+    environment:
+      CATALOG_DATASET: ${CATALOG_DATASET:-sample}
+      MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
+      MBSLAVE_DB_HOST: ${MBSLAVE_DB_HOST:-music-catalog-postgres}
+      MBSLAVE_DB_PORT: ${MBSLAVE_DB_PORT:-5432}
+      MBSLAVE_DB_DB: ${MBSLAVE_DB_DB:-music_catalog}
+      MBSLAVE_DB_USER: ${MBSLAVE_DB_USER:-music_catalog}
+      MBSLAVE_DB_PASSWORD: ${MBSLAVE_DB_PASSWORD:-music_catalog}
+      MBSLAVE_DB_ADMIN_USER: ${MBSLAVE_DB_ADMIN_USER:-music_catalog}
+      MBSLAVE_DB_ADMIN_PASSWORD: ${MBSLAVE_DB_ADMIN_PASSWORD:-music_catalog}
 
 
   # The search engine. Pinned to a stable v1.x (the benchmark used v1.54.2);

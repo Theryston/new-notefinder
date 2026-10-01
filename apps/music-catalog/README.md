@@ -15,9 +15,9 @@ From the repository root:
 
 ```sh
 nub install
-nub run infra:up                                   # Postgres (5433) and Meilisearch (7700), with the rest of the stack
 cp apps/music-catalog/.env.example apps/music-catalog/.env
-(cd apps/music-catalog && nub run db:migrate)
+(cd apps/music-catalog && nub run db:migrate)      # apply the service schema before restore
+nub run infra:up                                   # includes the sample MusicBrainz restore
 nub run dev --filter=music-catalog                 # server on ws://localhost:3334, plus the worker
 ```
 
@@ -31,4 +31,19 @@ Try it with any WebSocket client, sending the key from `.env` in the handshake:
 
 E2E tests run from this folder with `nub run test:e2e` (needs Docker).
 Environment variables are listed in [`.env.example`](./.env.example) and
-validated at startup; both processes refuse to boot with an invalid config.
+the Node process settings are validated at startup; both processes refuse to
+boot with an invalid config. The mbslave container uses the restore settings
+from the same file. Use `CATALOG_DATASET=sample` for local development;
+`full` downloads the official full core and derived archives.
+
+The restore runs once per database. It skips a completed restore, including
+when the configured dataset later changes. To start over locally, stop the
+stack and remove only the Music catalog Postgres volume, then migrate and
+start it again:
+
+```sh
+nub run infra:down
+docker volume rm notefinder_music-catalog-postgres-data
+(cd apps/music-catalog && nub run db:migrate)
+nub run infra:up
+```

@@ -15,10 +15,10 @@ envelope, our own Postgres schema (the bootstrap state and the indexing
 checkpoint), read-only declarations of the MusicBrainz tables the queries
 read, **Meilisearch** as the search engine behind a small integration, the
 `server` and `worker` entrypoints (the worker indexes every Recording once
-the MusicBrainz data is restored) and the test and quality setup. The
-MusicBrainz restore and bootstrap (mbslave container), replication, Lyrics
-and the production compose are later tickets: do not build them here ahead of
-their ticket. `search` returns results in **Meilisearch's relevance order**,
+the MusicBrainz data is restored), the pinned mbslave container that owns the
+initial restore, and the test and quality setup. Replication, Lyrics and the
+production compose are later tickets: do not build them here ahead of their
+ticket. `search` returns results in **Meilisearch's relevance order**,
 loaded from Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
@@ -405,6 +405,25 @@ come from env; version pinned to a stable v1.x in the dev compose
 - `indexing_checkpoint` has one row per search index (`index_uid`, the last
   Recording sent to it by integer id, `updated_at`); the worker writes it
   after every confirmed batch. No row means nothing was indexed yet.
+- **Initial restore (mbslave container)**: `nub run infra:up` starts the
+  one-shot `music-catalog-mbslave` service after Postgres is healthy. It uses
+  the pinned mbslave Git tag `v31.0.1`, writes `restoring`, runs `init
+  --empty`, and explicitly imports the sample archive or both full archives.
+  Sample and full use the same importer; mbslave auto-import is not used
+  because it requires extra archives. `MUSICBRAINZ_DUMP_BASE_URL` selects the
+  archive mirror. The admin database credentials need PostgreSQL superuser
+  privileges for extensions and schema setup. The container records
+  `restored` only after import succeeds; the worker then advances through
+  `indexing` to `ready`.
+- The first import records its `CATALOG_DATASET`. A completed restore is
+  skipped on later starts, even if the configured dataset differs; switching
+  datasets requires resetting the database. If a process stops in
+  `restoring`, the next start drops only mbslave-owned schemas and
+  `public.mb_simple`, clears the stale indexing checkpoint, and repeats from a
+  clean MusicBrainz schema. It preserves `music_catalog` and its bootstrap
+  row. For a local full reset, stop the stack and remove only
+  `notefinder_music-catalog-postgres-data`, then apply migrations and start
+  infrastructure again (see `README.md`).
 - Migrations: change the schema -> `db:generate` -> review the SQL -> commit
   it. Never edit an applied migration. CI runs `drizzle-kit check` +
   `generate` and fails when the schema has a change with no migration.
@@ -425,6 +444,14 @@ come from env; version pinned to a stable v1.x in the dev compose
   | `DATABASE_URL` | The service's own Postgres (dev compose: port 5433) |
   | `API_KEYS` | Comma-separated keys, each at least 32 characters; list the new key next to the old one to rotate |
   | `CATALOG_DATASET` | `sample` or `full`; required, no default |
+  | `MUSICBRAINZ_DUMP_BASE_URL` | Archive mirror base URL; mbslave container only |
+  | `MBSLAVE_DB_HOST` | Postgres service host inside Compose; mbslave container only |
+  | `MBSLAVE_DB_PORT` | Database port inside Compose; mbslave container only |
+  | `MBSLAVE_DB_DB` | Target database name; mbslave container only |
+  | `MBSLAVE_DB_USER` | MusicBrainz target role; mbslave container only |
+  | `MBSLAVE_DB_PASSWORD` | Target role password; mbslave container only |
+  | `MBSLAVE_DB_ADMIN_USER` | PostgreSQL bootstrap superuser; mbslave container only |
+  | `MBSLAVE_DB_ADMIN_PASSWORD` | Bootstrap superuser password; mbslave container only |
   | `HEARTBEAT_INTERVAL_MS` | Ping interval (default 30000) |
   | `REQUEST_TIMEOUT_MS` | Per-request timeout (default 10000) |
   | `MEILISEARCH_URL` | Meilisearch, `http(s)://` (dev compose: port 7700); server and worker |
