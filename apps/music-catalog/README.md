@@ -15,11 +15,18 @@ From the repository root:
 
 ```sh
 nub install
-nub run infra:up                                   # Postgres (5433) and Meilisearch (7700), with the rest of the stack
 cp apps/music-catalog/.env.example apps/music-catalog/.env
 (cd apps/music-catalog && nub run db:migrate)
+nub run build --filter=music-catalog              # the mbslave container runs this dist
+nub run infra:up                                   # Postgres (5433) and Meilisearch (7700), with the rest of the stack,
+                                                   # plus a one-shot mbslave container that restores the sample dump
 nub run dev --filter=music-catalog                 # server on ws://localhost:3334, plus the worker
 ```
+
+The sample restore takes about a dozen minutes the first time; `status`
+follows it (`restoring` → `restored` → `indexing` → `ready`), and `search`
+answers once it is `ready`. Bootstrap phases, dataset modes and resetting a
+local database are documented in [`AGENTS.md`](./AGENTS.md).
 
 Try it with any WebSocket client, sending the key from `.env` in the handshake:
 

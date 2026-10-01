@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start:server": "node dist/server.js",
     "start:worker": "node dist/worker.js",
+    "start:restore": "node dist/restore.js",
     "lint": "biome check . && depcruise src --config .dependency-cruiser.cjs",
     "format": "biome check --write .",
     "check-types": "tsc --noEmit",
@@ -18,7 +19,8 @@
     "test:mutation": "stryker run",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/database/migrate.ts"
+    "db:migrate": "tsx src/database/migrate.ts",
+    "restore": "tsx src/restore.ts"
   },
   "dependencies": {
     "@notefinder/contracts": "workspace:*",
