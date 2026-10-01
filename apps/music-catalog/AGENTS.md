@@ -86,9 +86,13 @@ src/
   errors/                 CatalogError: an expected failure with a protocol error code
   lib/                    small pure helpers shared by modules (text comparison, cover art URL,
                           grouping) and the definition of the recordings index
+                          (`recordings-index.ts`) and of the lyrics index
+                          (`lyrics-index.ts`)
   integrations/
     meilisearch/          MeilisearchIndex: the only code that imports the Meilisearch SDK
     mbslave/              MbslaveClient: the only code that spawns the mbslave binary
+    lrclib/               the LRCLIB dump: download + stream-gunzip, open + schema
+                          check + track/Lyrics reads, and the fake-dump generator
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
@@ -134,6 +138,13 @@ src/
       replication.service.ts      the mbslave container's loop: wait for ready, sync, record, sleep
       replication.repository.ts   our copy of the applied sequence + mbslave's cursor
       replication-token.ts        the full-mode token requirement (pure)
+    lyrics/
+      lyrics-import.service.ts  the worker's LRCLIB import: dump, two-pass match, copy
+      lyrics.service.ts         the kept Lyrics (for `getRecording`) and their
+                                documents (for indexing); the only way other
+                                modules use Lyrics
+      lyrics.repository.ts      the Recordings for matching, the kept Lyrics
+      match-lyrics.ts           the strict match: normalization, ±2 s, album tie-break (pure)
     sync/
       sync.service.ts             the worker's continuous sync: triggers, outbox drain
       sync-plan.ts                outbox entries + current rows -> index writes (pure)
@@ -313,10 +324,14 @@ integer ids of MusicBrainz are internal and never leave the service.
   3. When no level has any tag, `tagsSource` is null and both lists are empty.
 
   The rule is in `genre-fallback.ts`.
-- `lyrics` is `{ plain: null, synced: null }` until the Lyrics ticket fills it.
+- `lyrics` is `{ plain, synced }` (LRC text in `synced`) when a strict LRCLIB
+  match exists (see "Lyrics (LRCLIB)"), `{ plain: null, synced: null }`
+  otherwise. The service reads them through `LyricsService`, in parallel with
+  the other parts.
 - Loading: the service reads the parts in parallel (one query each, all in
-  `RecordingRepository`) and `assembleRecording` builds the answer without
-  any I/O; the rules above live in those pure functions.
+  `RecordingRepository`, plus the Lyrics through `LyricsService`) and
+  `assembleRecording` builds the answer without any I/O; the rules above live
+  in those pure functions.
 
 ## `search`
 
@@ -324,8 +339,9 @@ Payload `{ query, scope?, limit?, offset? }`:
 
 - `query`: text, trimmed, 1 to 256 characters (`SEARCH_MAX_QUERY_LENGTH`).
   Anything else, blanks included, is `VALIDATION_FAILED`.
-- `scope`: `metadata` (default) or `lyrics`. `lyrics` is accepted by the
-  schema but answers `{ results: [] }` until Lyrics are imported (issue #63).
+- `scope`: `metadata` (default) or `lyrics`. The metadata scope only asks the
+  `recordings` index (it never matches on Lyrics) and the lyrics scope only
+  the `lyrics` index (see "Lyrics (LRCLIB)").
 - `limit`: 1 to 100, default 20. `offset`: 0 to 900, default 0. A client can
   reach the first 1000 matches of a query (Meilisearch's
   `pagination.maxTotalHits`, which the index settings pin to
@@ -459,20 +475,79 @@ come from env; version pinned to a stable v1.x in the dev compose
   benchmark's recall came from them; do not tune them here), so a typo in a
   word of 5 letters or more, or a last word cut short while typing, still
   finds the Recording.
+- **`lyrics` index**, primary key `mbid` (the Recording's MBID). One document
+  per Recording with kept Lyrics (`LyricsDocument`, `src/lib/lyrics-index.ts`):
+  a single `lyrics` text, the plain Lyrics when known, else the synced lines
+  without their LRC timestamps. `search` with `scope: lyrics` asks only this
+  index, in the same way (MBIDs only, summaries from Postgres, Meilisearch's
+  order kept); the server's search-only key already covers both indexes.
 - **Indexing flow** (`IndexingService.run`, one worker tick): while the phase
   is `restoring` or there is no bootstrap row, nothing happens. On `restored`
-  the worker records `indexing`, applies the settings, and walks the
+  the worker records `indexing`, applies the settings **of both indexes**, and
+  walks the
   Recordings by MusicBrainz's integer id, `INDEXING_BATCH_SIZE` at a time
   (default 2000): read the batch's documents (one query per kind of data per
   batch, not per Recording), send them, **wait for the Meilisearch task**, then
   write the checkpoint (`music_catalog.indexing_checkpoint`, one row per
-  index). When no Recording is left it records `ready`. A worker that dies or
+  index). The kept Lyrics of the batch go to the `lyrics` index with it
+  (replacing documents by MBID is idempotent, so they need no checkpoint of
+  their own). When no Recording is left it records `ready`. A worker that dies or
   is restarted in the middle resumes after the checkpoint (a batch that was
   sent but not checkpointed is sent again, which replaces the same documents);
   a task that fails throws, the loop logs it and the next tick resumes. Aborting
   the worker's signal stops it after the batch in progress. Every tick drains
-  the outbox first (a no-op until `ready`), then runs the initial indexing
-  (a no-op once `ready`).
+  the outbox first (a no-op until `ready`), imports the Lyrics (below, a
+  no-op once `ready`), then runs the initial indexing (a no-op once `ready`).
+
+## Lyrics (LRCLIB)
+
+Lyrics come from the open **LRCLIB** dump (CC0): one `.sqlite3.gz` (about
+48 GB, about 260 GB unpacked) published by hand every few weeks to months,
+only the latest kept online, no checksum, no incremental form, listing at an
+undocumented endpoint (see the spike, `docs/research/music-catalog-spike.md`
+section 5). The worker imports it once per bootstrap, during the `indexing`
+phase (`LyricsImportService.importOnce`, between the outbox drain and the
+indexing run); refreshing it from a newer dump later is the refresh ticket's
+job, not this import's.
+
+- **Source per dataset.** In `full` the worker reads the latest key from
+  `LRCLIB_LISTING_URL`, downloads `${LRCLIB_BASE_URL}/${key}` and gunzips it
+  **as a stream** straight to its SQLite file: the `.gz` is never kept
+  (about 260 GB of temp disk, deleted after the import). In `sample` nothing
+  is downloaded: a deterministic, seeded generator
+  (`src/integrations/lrclib/fake-lrclib-dump.ts`) writes an SQLite file in the
+  **real LRCLIB schema** from the first 3000 imported Recordings, with
+  placeholder plain and synced Lyrics. It deliberately includes near-misses
+  that must **not** match: a length just outside ±2 s, "(Live)" and remix
+  titles, and an album tie on other albums. The same generator builds the e2e
+  fixture served over HTTP, and the import and match code is identical for
+  fake and real dumps.
+- **Schema check.** The importer checks the dump right after opening it
+  (`assertLrclibSchema`) and fails with an `LrclibSchemaError` naming the
+  missing table or column when it drifted, so a stale fake cannot hide a real
+  schema change. A failed import is logged (`LRCLIB import failed, continuing
+  without Lyrics`) and the catalog still becomes `ready`: a bad dump must
+  never hold the catalog back.
+- **Two-pass import.** Pass one matches Recordings against the dump's
+  lightweight track metadata (`tracks`: title, artist, album, duration)
+  without reading Lyrics; pass two reads `lyrics` only for the matched track
+  ids and copies them into our `music_catalog.recording_lyrics` (keyed by
+  MBID). Unmatched Lyrics never reach our schema. The temp file is deleted
+  afterwards.
+- **Strict matching** (`matchLrclibTrack`, unit-spec'd): the normalized title
+  **and** artist must be equal (normalization is lowercase without accents or
+  punctuation, `normalizeLyricsText`, so a "(Live)" or remix title never
+  matches), the length within **±2 s**, and when several tracks pass, exactly
+  one must sit on one of the Recording's release titles (the album
+  tie-breaker). No confident match means no Lyrics: a Recording without a
+  length, or with only an album tie on other albums, keeps null Lyrics.
+- **Reads.** `getRecording` returns the kept plain and synced (LRC) Lyrics,
+  null otherwise. `search` with `scope: lyrics` searches the `lyrics` index
+  (primary key the MBID), in Meilisearch's relevance order; the default
+  `metadata` scope never touches it.
+- **Disk and RAM.** About 260 GB of temp disk per `full` import (the steady
+  state stays about 150-220 GB, see ADR 0002). Local development and tests
+  use the generated fake dump and tiny fixtures, never the real one.
 
 ## Sync (outbox)
 
@@ -665,6 +740,8 @@ could not start there anyway).
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `sample` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
+  | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
+  | `LRCLIB_LISTING_URL` | The endpoint listing the published LRCLIB dumps, read for the latest key (default: LRCLIB's own); worker, `full` only |
 
   The server and the worker parse different sets (`loadServerEnv`,
   `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
@@ -776,12 +853,28 @@ could not start there anyway).
   same reasons as the first import, plus a MetaBrainz token; so is the
   container's crash-restart, which is a compose `restart: on-failure` policy
   (unit tests prove a failed sync propagates instead of going quiet).
+- **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `sample` mode the
+  worker tick generates the fake dump, imports and indexes it, and the spec
+  asserts over the WebSocket that a matched Recording has plain and synced
+  Lyrics, that the tie and length-less Recordings have none, that a
+  lyrics-scope search finds a Recording by a line of its Lyrics (first, in
+  Meilisearch's relevance order) and that the metadata scope never matches on
+  Lyrics. In `full` mode a tiny dump built by the same generator is served
+  gzipped by a fake HTTP server (`test/utils/fake-lrclib-server.ts`, listing
+  plus files, like `fake-dump-server.ts`), and the spec covers the download
+  path the same way, plus a dump with an unexpected schema: the tick still
+  reaches `ready`, with null Lyrics. `useEmptyLyricsIndex()` (in
+  `test/utils/test-worker.ts`) deletes the `lyrics` index before each test,
+  next to `useEmptySearchIndex()`.
+
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
   validation, the dispatcher with its timeout, the heartbeat with fake
   timers, the worker loop, the abortable sleep, the logger, building the Meilisearch document and
   the summary, re-sorting rows by Meilisearch's order, the sync plan and the
-  tracked trigger set, the replication loop and its token gate). Services are tested
+  tracked trigger set, the replication loop and its token gate, the Lyrics
+  normalization and match, the fake-dump generator, the dump download and
+  the Lyrics import). Services are tested
   with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
   e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
   and the schema (the exclusions are in `vitest.config.ts`).
