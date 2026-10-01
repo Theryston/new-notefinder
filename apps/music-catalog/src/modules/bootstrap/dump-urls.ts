@@ -15,10 +15,7 @@ const ARCHIVES: Record<CatalogDataset, readonly string[]> = {
 const withoutTrailingSlash = (url: string): string =>
   url.endsWith('/') ? url.slice(0, -1) : url;
 
-export const dumpDirectory = (
-  baseUrl: string,
-  dataset: CatalogDataset,
-): string =>
+const dumpDirectory = (baseUrl: string, dataset: CatalogDataset): string =>
   `${withoutTrailingSlash(baseUrl)}/${dataset === 'sample' ? 'sample' : 'fullexport'}`;
 
 export const latestUrl = (baseUrl: string, dataset: CatalogDataset): string =>

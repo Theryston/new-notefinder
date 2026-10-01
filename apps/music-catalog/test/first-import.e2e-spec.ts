@@ -21,7 +21,11 @@ import { requestSearch } from './utils/search-client.js';
 import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
 import { useTestClient } from './utils/use-test-client.js';
 
-describe('first import: the mbslave container restores the dump (e2e)', () => {
+// Recreating the 375-table MusicBrainz schema (the redo test) and
+// indexing to ready take longer than vitest's 5s default on CI runners.
+describe('first import: the mbslave container restores the dump (e2e)', {
+  timeout: 120_000,
+}, () => {
   const server = useTestServer();
   const client = useTestClient(server);
 
