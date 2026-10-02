@@ -163,10 +163,7 @@
       "compositePrimaryKeys": {
         "recording_outbox_recording_id_recording_mbid_pk": {
           "name": "recording_outbox_recording_id_recording_mbid_pk",
-          "columns": [
-            "recording_id",
-            "recording_mbid"
-          ]
+          "columns": ["recording_id", "recording_mbid"]
         }
       },
       "uniqueConstraints": {},
@@ -217,20 +214,12 @@
     "music_catalog.bootstrap_phase": {
       "name": "bootstrap_phase",
       "schema": "music_catalog",
-      "values": [
-        "restoring",
-        "restored",
-        "indexing",
-        "ready"
-      ]
+      "values": ["restoring", "restored", "indexing", "ready"]
     },
     "music_catalog.catalog_dataset": {
       "name": "catalog_dataset",
       "schema": "music_catalog",
-      "values": [
-        "sample",
-        "full"
-      ]
+      "values": ["sample", "full"]
     }
   },
   "schemas": {
