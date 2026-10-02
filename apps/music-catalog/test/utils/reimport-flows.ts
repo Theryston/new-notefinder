@@ -190,11 +190,15 @@ export const serveCatalogFlow = async (
     lengthMs: 180_000,
   });
   await stallReplication(db);
+  // The flow suites opt out of the default cleanup: their flip must never
+  // drop the shared e2e database (the default path has its own suite on
+  // scratch databases, reimport-cleanup).
   return createTestWorker(server, {
     env: {
       CATALOG_DATASET: 'full',
       LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
       LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
+      REIMPORT_CLEANUP_OLD_COPY: 'false',
     },
     nextCopy: { db: parallel.db, url: parallel.url },
   });
