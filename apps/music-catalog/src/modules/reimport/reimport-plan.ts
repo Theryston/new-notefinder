@@ -43,13 +43,39 @@ export type ReimportDecision =
 /** The release marker missing from an image built before it existed. */
 export const UNKNOWN_MBSLAVE_REF = 'unknown';
 
+const mbslaveMajorOf = (ref: string): number | undefined => {
+  const major = /^v(\d+)\.\d+\.\d+$/.exec(ref)?.[1];
+  if (major === undefined) {
+    return undefined;
+  }
+  const parsed = Number(major);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+};
+
 const isCompatibleMbslave = (
   current: string | undefined,
   stalled: string | null | undefined,
-): boolean =>
-  current !== undefined &&
-  current !== UNKNOWN_MBSLAVE_REF &&
-  current !== stalled;
+): boolean => {
+  if (current === undefined || current === UNKNOWN_MBSLAVE_REF) {
+    return false;
+  }
+  // A stall recorded without a release (images built before the stall
+  // columns existed) has nothing to compare against, so any known release
+  // starts the reimport instead of waiting forever.
+  if (stalled === null || stalled === undefined) {
+    return true;
+  }
+  // The yearly schema change ships with a new mbslave major (v31 to v32): an
+  // older release, the stalled one or an unrelated same-major patch cannot
+  // support the new schema, so only a newer major starts the reimport.
+  const currentMajor = mbslaveMajorOf(current);
+  const stalledMajor = mbslaveMajorOf(stalled);
+  return (
+    currentMajor !== undefined &&
+    stalledMajor !== undefined &&
+    currentMajor > stalledMajor
+  );
+};
 
 export const planReimport = (
   situation: ReimportSituation,
