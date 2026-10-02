@@ -43,6 +43,13 @@
       "when": 1790961714103,
       "tag": "0005_marvelous_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790965484229,
+      "tag": "0006_open_angel",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,7 @@ import type {
   RecordingDocumentService,
 } from '../recording/recording-document.service.js';
 import type { RecordingOutboxRepository } from './recording-outbox.repository.js';
-import { planSync } from './sync-plan.js';
+import { type OutboxEntry, planSync } from './sync-plan.js';
 
 export type SyncServiceDeps = {
   bootstrap: BootstrapService;
@@ -35,6 +35,16 @@ export class SyncService {
       return;
     }
     await this.deps.outbox.ensureTriggers();
+  }
+
+  /**
+   * The oldest outbox entries still waiting to reach the index. The Lyrics
+   * lookup reads them to give new and changed Recordings their Lyrics from
+   * the LRCLIB API; it never marks anything, so the drain below still owns
+   * every entry.
+   */
+  async peekPending(limit: number): Promise<OutboxEntry[]> {
+    return this.deps.outbox.peekPending(limit);
   }
 
   /**
