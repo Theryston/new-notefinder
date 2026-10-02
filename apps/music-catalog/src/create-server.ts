@@ -1,5 +1,9 @@
 import type { ServerEnv, WorkerEnv } from './config/env.js';
 import type { Database } from './database/database.js';
+import {
+  createProcessMbslaveRun,
+  MbslaveClient,
+} from './integrations/mbslave/mbslave-client.js';
 import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
 import {
   RECORDINGS_INDEX,
@@ -18,6 +22,8 @@ import { RecordingDocumentRepository } from './modules/recording/recording-docum
 import { RecordingDocumentService } from './modules/recording/recording-document.service.js';
 import { RecordingSummaryRepository } from './modules/recording/recording-summary.repository.js';
 import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
+import { ReplicationRepository } from './modules/replication/replication.repository.js';
+import { ReplicationService } from './modules/replication/replication.service.js';
 import { createSearchHandler } from './modules/search/search.handler.js';
 import { SearchService } from './modules/search/search.service.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
@@ -40,9 +46,20 @@ export const createMusicCatalogServer = (
   options: CreateServerOptions,
 ): WsServer => {
   const { env, db, logger } = options;
+  // The server never runs the replication loop (that is the mbslave
+  // container's): it only reads the recorded sequence and the backlog for
+  // `status`, so the token and the interval stay unset here.
+  const replication = new ReplicationService({
+    sequences: new ReplicationRepository(db),
+    backlog: new RecordingOutboxRepository(db),
+    mbslave: new MbslaveClient(createProcessMbslaveRun()),
+    dataset: env.CATALOG_DATASET,
+    logger,
+  });
   const bootstrap = new BootstrapService(
     new BootstrapRepository(db),
     env.CATALOG_DATASET,
+    replication,
   );
   const recording = new RecordingService(
     new RecordingRepository(db),

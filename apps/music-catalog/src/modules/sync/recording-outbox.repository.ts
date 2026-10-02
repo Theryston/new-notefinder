@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { count, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import { recordingOutbox } from '../../database/schema/recording-outbox.js';
 import type { OutboxEntry } from './sync-plan.js';
@@ -37,6 +37,19 @@ export class RecordingOutboxRepository {
       recordingMbid: row.recordingMbid,
       enqueuedAt: row.enqueuedAt,
     }));
+  }
+
+  /**
+   * How many entries still wait to reach the index. Replication logs it next
+   * to every applied packet and `status` reports it, so operators see the lag
+   * behind the last applied sequence.
+   */
+  async countPending(): Promise<number> {
+    const [row] = await this.db
+      .select({ pending: count() })
+      .from(recordingOutbox)
+      .where(sql`${recordingOutbox.processedAt} IS NULL`);
+    return row?.pending ?? 0;
   }
 
   /**

@@ -1,3 +1,4 @@
+import { sleepUnlessAborted } from '../lib/abortable-sleep.js';
 import type { Logger } from '../logger.js';
 
 export type WorkerLoopOptions = {
@@ -9,21 +10,6 @@ export type WorkerLoopOptions = {
   signal: AbortSignal;
   logger: Logger;
 };
-
-const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
-  new Promise((resolve) => {
-    if (signal.aborted) {
-      resolve();
-      return;
-    }
-    const wake = () => {
-      clearTimeout(timer);
-      signal.removeEventListener('abort', wake);
-      resolve();
-    };
-    const timer = setTimeout(wake, ms);
-    signal.addEventListener('abort', wake);
-  });
 
 /**
  * The worker's heartbeat: run the tick, wait, repeat until aborted. Ticks
@@ -39,6 +25,6 @@ export const runWorkerLoop = async (
     } catch (error) {
       options.logger.error('Worker tick failed', { error });
     }
-    await sleep(options.intervalMs, options.signal);
+    await sleepUnlessAborted(options.intervalMs, options.signal);
   }
 };

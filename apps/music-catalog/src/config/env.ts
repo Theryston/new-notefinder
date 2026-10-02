@@ -101,12 +101,43 @@ const restoreEnvSchema = envSchema
     MUSICBRAINZ_DUMP_BASE_URL: z
       .url({ protocol: /^https?$/ })
       .default('https://data.metabrainz.org/pub/musicbrainz/data'),
+    // The MetaBrainz access token replication authenticates with in `full`
+    // mode (free for non-commercial use). The mbslave binary reads either
+    // variable itself, so both stay optional here; the replication service
+    // requires a non-empty one at container startup (`assertReplicationToken`,
+    // which also treats the compose file's empty default as missing), which
+    // keeps `parseRestoreEnv` (and the restore, which needs no token)
+    // exactly as it was.
+    MBSLAVE_MUSICBRAINZ_TOKEN: z.string().optional(),
+    MBSLAVE_MUSICBRAINZ_TOKEN_FILE: z.string().optional(),
   });
 
 export type RestoreEnv = z.output<typeof restoreEnvSchema>;
 
 export const parseRestoreEnv = (source: EnvSource): RestoreEnv =>
   parseWith(restoreEnvSchema, source);
+
+// The compose file passes both token variables through with an empty default
+// when unset. mbslave would crash opening an empty `_FILE` path, and an
+// empty token authenticates nothing, so blank values never reach the binary;
+// an absent token still fails, but at the replication service's validation
+// or as the mirror's 403, both with a clear message.
+export const withoutBlankTokenVars = (source: EnvSource): EnvSource => {
+  const cleaned = { ...source };
+  for (const name of [
+    'MBSLAVE_MUSICBRAINZ_TOKEN',
+    'MBSLAVE_MUSICBRAINZ_TOKEN_FILE',
+  ] as const) {
+    if (cleaned[name]?.trim() === '') {
+      delete cleaned[name];
+    }
+  }
+  return cleaned;
+};
+
+/** The environment the mbslave binary is spawned with (see above). */
+export const mbslaveSpawnEnv = (): NodeJS.ProcessEnv =>
+  withoutBlankTokenVars(process.env);
 
 // Resolves to apps/music-catalog/.env from both src/config and dist/config.
 const dotEnvPath = fileURLToPath(new URL('../../.env', import.meta.url));

@@ -43,6 +43,7 @@ const FIXTURE_TABLES = [
   'release_group_tag',
   'release_status',
   'release_unknown_country',
+  'replication_control',
   'tag',
   'track',
   'url',

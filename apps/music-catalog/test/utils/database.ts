@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import type { Database } from '../../src/database/database.js';
 import { bootstrapState } from '../../src/database/schema/bootstrap-state.js';
+import { replicationState } from '../../src/database/schema/replication-state.js';
 import { resetMusicBrainz } from './musicbrainz.js';
 
 /**
@@ -35,4 +36,35 @@ export const setBootstrapState = async (
     .insert(bootstrapState)
     .values(state)
     .onConflictDoUpdate({ target: bootstrapState.id, set: state });
+};
+
+/** Records the last applied replication packet, as the loop would. */
+export const setReplicationState = async (
+  db: Database,
+  lastSequence: number,
+): Promise<void> => {
+  await db
+    .insert(replicationState)
+    .values({ lastSequence })
+    .onConflictDoUpdate({
+      target: replicationState.id,
+      set: { lastSequence },
+    });
+};
+
+/**
+ * Moves mbslave's own cursor, the way an applied replication packet would
+ * (the full dump ships the row; the sample leaves the table empty). 31 is
+ * the pinned schema sequence both the container and the e2e schema build.
+ */
+export const setReplicationControl = async (
+  db: Database,
+  sequence: number,
+): Promise<void> => {
+  await db.execute(sql`delete from musicbrainz.replication_control`);
+  await db.execute(
+    sql`insert into musicbrainz.replication_control
+      (current_schema_sequence, current_replication_sequence)
+      values (31, ${sequence})`,
+  );
 };

@@ -68,13 +68,18 @@ services:
         create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}' &&
         create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000002","name":"music-catalog-write","actions":["documents.*","indexes.*","settings.*","tasks.get"],"indexes":["*"],"expiresAt":null}'
 
-  # The first import (issue #60). One-shot: on start it checks the bootstrap
-  # state, restores the MusicBrainz dump with `mbslave init --empty` +
-  # `mbslave import` when needed (skipping when already done, redoing from a
-  # clean state when interrupted), records `restored` and exits. The worker
-  # takes it from there to `ready`. `infra:down` removes the exited
-  # container, so every `infra:up` re-checks the state (a no-op when done).
-  # Re-run it without touching anything else with
+  # The first import and continuous replication (issues #60 and #62). On
+  # start it checks the bootstrap state, restores the MusicBrainz dump with
+  # `mbslave init --empty` + `mbslave import` when needed (skipping when
+  # already done, redoing from a clean state when interrupted) and records
+  # `restored`. The worker takes it from there to `ready`. In `full` mode it
+  # then replicates continuously: once the catalog is `ready` it applies the
+  # pending packets with `mbslave sync`, records the sequence and sleeps,
+  # until stopped; in `sample` mode it exits instead. A crash exits non-zero,
+  # so the restart below brings the loop back (it resumes from mbslave's own
+  # cursor). `infra:down` removes the container, so every `infra:up`
+  # re-checks the state (a no-op when done). Re-run it without touching
+  # anything else with
   # `docker compose up --force-recreate music-catalog-mbslave`.
   music-catalog-mbslave:
     build:
@@ -84,7 +89,10 @@ services:
       dockerfile: apps/music-catalog/mbslave.Dockerfile
     # Rebuild the image on `up` when the Dockerfile changed (cached otherwise).
     pull_policy: build
-    restart: 'no'
+    # Restarts after a crash (a failed restore is redone from `restoring`, a
+    # failed sync resumed from the cursor), never after a clean exit (the
+    # `sample` container stays stopped once it is done).
+    restart: on-failure
     depends_on:
       music-catalog-postgres:
         condition: service_healthy
@@ -95,6 +103,14 @@ services:
       DATABASE_URL: postgres://music_catalog:music_catalog@music-catalog-postgres:5432/music_catalog
       CATALOG_DATASET: ${CATALOG_DATASET:-sample}
       MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
+      # The MetaBrainz access token replication authenticates with in `full`
+      # mode (required there, ignored in `sample`): the 40-character token
+      # from the MetaBrainz profile page, free for non-commercial use. Either
+      # the token itself or a file holding it (Docker secrets); empty when
+      # unset, which the restore strips before spawning mbslave (an empty
+      # `_FILE` path would make the binary crash opening it).
+      MBSLAVE_MUSICBRAINZ_TOKEN: ${MBSLAVE_MUSICBRAINZ_TOKEN:-}
+      MBSLAVE_MUSICBRAINZ_TOKEN_FILE: ${MBSLAVE_MUSICBRAINZ_TOKEN_FILE:-}
       # What the mbslave binary itself connects with. The dump download needs
       # no token; the database name comes from MBSLAVE_DB_DB (mbslave ignores
       # the README's MBSLAVE_DB_NAME). The dev database user is a superuser

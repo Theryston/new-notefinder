@@ -12,16 +12,18 @@ exists.
 **What exists today**: the authenticated WebSocket server answering
 `status`, `getRecording` and `search` (issues #57, #59 and #58), the protocol
 envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint and the recording outbox), read-only declarations of the
+checkpoint, the recording outbox and the replication state), read-only declarations of the
 MusicBrainz tables the queries read, **Meilisearch** as the search engine
 behind a small integration, the `server` and `worker` entrypoints (the worker
 indexes every Recording once the MusicBrainz data is restored, then keeps
 the index in sync with it through the outbox), the **first import** (issue
 #60: the mbslave container restores the MusicBrainz dump and records
-`restoring`/`restored`) and the test and quality setup. Replication, Lyrics
-and the production compose are later tickets: do not build them here ahead of
-their ticket. `search` returns results in **Meilisearch's relevance order**,
-loaded from Postgres without re-ranking.
+`restoring`/`restored`) and **continuous replication** (issue #62: in `full`
+mode the same container keeps applying replication packets after the catalog
+is `ready`, records the sequence and reports it in `status`) and the test and
+quality setup. Lyrics and the production compose are later tickets: do not
+build them here ahead of their ticket. `search` returns results in
+**Meilisearch's relevance order**, loaded from Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Meilisearch (its official JS client, behind `integrations/`), Zod
@@ -128,6 +130,10 @@ src/
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
+    replication/
+      replication.service.ts      the mbslave container's loop: wait for ready, sync, record, sleep
+      replication.repository.ts   our copy of the applied sequence + mbslave's cursor
+      replication-token.ts        the full-mode token requirement (pure)
     sync/
       sync.service.ts             the worker's continuous sync: triggers, outbox drain
       sync-plan.ts                outbox entries + current rows -> index writes (pure)
@@ -221,12 +227,16 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
 - `type` is `status`, `getRecording` or `search`. `payload` is validated per
   type; `status` takes none (missing or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
-  dataset: 'sample' | 'full' }`, read from the bootstrap state row in our
-  schema. The phases run in that order: the mbslave container records
-  `restoring` and `restored` (it owns the MusicBrainz restore), then the
-  worker waits for `restored` and records `indexing` and `ready`. While no row
-  has been written, the answer is `restoring` with the configured
-  `CATALOG_DATASET`.
+  dataset: 'sample' | 'full', replicationSequence?, pendingOutbox? }`, read
+  from the bootstrap state row in our schema. The phases run in that order:
+  the mbslave container records `restoring` and `restored` (it owns the
+  MusicBrainz restore), then the worker waits for `restored` and records
+  `indexing` and `ready`. While no row has been written, the answer is
+  `restoring` with the configured `CATALOG_DATASET`. `replicationSequence`
+  is the last replication packet the container applied (null until the first
+  one lands; see "Continuous replication") and `pendingOutbox` the entries
+  still waiting to reach the index — the replication lag. Both are absent
+  when the service answers without replication state.
 - Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
   `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`, `INTERNAL`.
@@ -349,8 +359,9 @@ later), best match first:
 The mbslave container owns the restore (issue #60): the Node image has no
 Python or `psql`, so the server and the worker never run it. On start the
 container runs `dist/restore.js` (`src/restore.ts`, built on the host with
-`nub run build --filter=music-catalog` and mounted read-only), which checks
-the bootstrap state and either exits or restores:
+`nub run build --filter=music-catalog` and mounted read-only), which restores
+when needed and then, in `full` mode, replicates continuously (see
+"Continuous replication" below; in `sample` mode it exits instead):
 
 - **No row yet** (`fresh`): records `restoring`, reads the dataset's `LATEST`
   file under `MUSICBRAINZ_DUMP_BASE_URL`, restores the archives with `mbslave
@@ -532,6 +543,66 @@ After the first import, every change to the MusicBrainz tables reaches the
   `"indexes":["*"]`, since a blue-green reimport builds indexes under other
   names).
 
+## Continuous replication
+
+In `full` mode the mbslave container keeps applying MusicBrainz replication
+packets after the first import (issue #62); in `sample` mode replication
+stays off (the sample ships an empty `replication_control`, so `mbslave sync`
+could not start there anyway).
+
+- **Loop** (`ReplicationService.run`, owned by `restore.ts` after the
+  restore): requires a token (below, failing fast otherwise), waits for the
+  catalog to be `ready` — the worker installs the change triggers after the
+  restore and before indexing, so only then does every packet reach the
+  outbox — then runs one-shot `mbslave sync` (which applies every pending
+  packet and stops at the first missing one), records the sequence, logs it
+  with the outbox backlog and sleeps ten minutes
+  (`REPLICATION_POLL_INTERVAL_MS`). A throw (a bad token, a schema mismatch,
+  a lost database) exits the container non-zero, so the compose
+  `restart: on-failure` brings the loop back: it resumes from mbslave's own
+  cursor and re-records the sequence. SIGINT/SIGTERM stop it after the sync
+  in progress. The container is long-running in `full` (a failed restore is
+  retried from `restoring`) and still one-shot in `sample` (a clean exit is
+  never restarted).
+- **Sequence** (`replication_state`, one row, migrated normally): our copy of
+  mbslave's cursor, written after every sync run and read by `status` next to
+  the outbox backlog (`RecordingOutboxRepository.countPending`). mbslave's
+  own `musicbrainz.replication_control` is declared read-only (like every
+  file under `src/database/schema/musicbrainz/`) and only read from.
+- **Token** (`MBSLAVE_MUSICBRAINZ_TOKEN` or
+  `MBSLAVE_MUSICBRAINZ_TOKEN_FILE`): the 40-character MetaBrainz access
+  token, free for non-commercial use (notefinder is non-commercial, decided
+  after the spike). Required in `full` mode, validated at container startup
+  (`assertReplicationToken`, before any download); the dump download itself
+  needs no token. The file variant suits Docker secrets. The compose file
+  passes both through with an empty default when unset, which the restore
+  strips before spawning mbslave (`mbslaveSpawnEnv`: an empty `_FILE` path
+  would make the binary crash opening it). Replication packets come from
+  `MBSLAVE_MUSICBRAINZ_BASE_URL` (default: the official API), which the
+  binary reads itself — point it at a mirror to test against one.
+- **Licence**: replication packets and the derived dump are CC BY-NC-SA 3.0,
+  so attribution is owed wherever genres and tags are shown. That display is
+  web work, out of scope for this service; this note is the service's part.
+- **Checking lag**: `status` answers `replicationSequence` (null until the
+  first packet) with `pendingOutbox`. A healthy `full` catalog advances the
+  sequence hourly and drains the backlog to zero between packets. Greppable
+  loop logs (`docker compose logs -f music-catalog-mbslave`): `Applied
+  replication packets` (with `previousSequence`, `sequence`,
+  `pendingOutbox`), `Waiting for the catalog to be ready before replicating`
+  and `Replication stopped: the container is stopping`; mbslave's own lines
+  stream live as `mbslave output`.
+- **Recovering from a stuck sequence**: a sequence that stops advancing while
+  packets are published means replication stalled. First read the container
+  log: a 403 is a bad or revoked token (fix the token, restart the
+  container); `Mismatched schema` is the yearly MusicBrainz schema change
+  (issue #69 owns the reimport — do not touch the database by hand); a lost
+  database or mirror resolves itself on restart. The loop never rewinds
+  mbslave's cursor, so restarting the container (`docker compose restart
+  music-catalog-mbslave`) always resumes from the last applied packet; the
+  worker's outbox then carries every change to the index. Never update
+  `replication_control` or `replication_state` by hand: the two would
+  disagree about what was applied.
+
 ## Database (Drizzle + Postgres)
 
 - Our own tables live in the dedicated Postgres schema **`music_catalog`**
@@ -561,6 +632,10 @@ After the first import, every change to the MusicBrainz tables reaches the
 - `indexing_checkpoint` has one row per search index (`index_uid`, the last
   Recording sent to it by integer id, `updated_at`); the worker writes it
   after every confirmed batch. No row means nothing was indexed yet.
+- `replication_state` is a single-row table like `bootstrap_state`: the last
+  replication packet applied (`last_sequence`, `updated_at`). The mbslave
+  container writes it after every sync run; no row until the first packet
+  lands (see "Continuous replication").
 - Migrations: change the schema -> `db:generate` -> review the SQL -> commit
   it. Never edit an applied migration. CI runs `drizzle-kit check` +
   `generate` and fails when the schema has a change with no migration.
@@ -588,6 +663,8 @@ After the first import, every change to the MusicBrainz tables reaches the
   | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
   | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
+  | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `sample` (see "Continuous replication") |
+  | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
 
   The server and the worker parse different sets (`loadServerEnv`,
   `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
@@ -689,12 +766,22 @@ After the first import, every change to the MusicBrainz tables reaches the
   switch datasets. Spawning the real binary is deliberately out: it would
   need its Python/psql image, minutes per run and the network on every PR
   (the spike verified the real commands against a fake mirror instead).
+- **Replication in e2e** (`test/replication.e2e-spec.ts`): the real
+  `ReplicationService` wired like `restore.ts`, with mbslave behind its
+  integration boundary (a fake `MbslaveRun`: `sync` moves mbslave's own
+  cursor the way an applied packet would) and the trigger-written outbox as
+  the backlog. It covers the recorded sequence and the backlog in `status`
+  (null before the first packet, recorded after a run, kept when a run
+  applies nothing new). Spawning the real `sync` is deliberately out for the
+  same reasons as the first import, plus a MetaBrainz token; so is the
+  container's crash-restart, which is a compose `restart: on-failure` policy
+  (unit tests prove a failed sync propagates instead of going quiet).
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
   validation, the dispatcher with its timeout, the heartbeat with fake
-  timers, the worker loop, the logger, building the Meilisearch document and
+  timers, the worker loop, the abortable sleep, the logger, building the Meilisearch document and
   the summary, re-sorting rows by Meilisearch's order, the sync plan and the
-  tracked trigger set). Services are tested
+  tracked trigger set, the replication loop and its token gate). Services are tested
   with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
   e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
   and the schema (the exclusions are in `vitest.config.ts`).
