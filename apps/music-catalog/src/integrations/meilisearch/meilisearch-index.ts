@@ -23,7 +23,7 @@ export type MeilisearchIndexConfig = {
 /** The part of the SDK's client this class uses, so tests can stand in. */
 export type MeilisearchClient = Pick<
   Meilisearch,
-  'getRawIndex' | 'createIndex' | 'index'
+  'getRawIndex' | 'createIndex' | 'index' | 'swapIndexes' | 'deleteIndex'
 >;
 
 // A batch of a few thousand documents is indexed in seconds; a Meilisearch
@@ -88,6 +88,25 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
     await this.wait(
       this.client.index<TDocument>(this.uid).deleteDocuments(ids),
     );
+  }
+
+  /**
+   * Atomically swaps this index with another one: afterwards this uid holds
+   * the other's documents and vice versa. The blue-green reimport builds the
+   * new copy under `*_next` uids and swaps them into place, so clients flip
+   * from the old copy to the new one between two requests, never mid-page.
+   */
+  async swapWith(otherUid: string): Promise<void> {
+    await this.wait(
+      this.client.swapIndexes([
+        { indexes: [this.uid, otherUid], rename: false },
+      ]),
+    );
+  }
+
+  /** Deletes the whole index. The reimport drops the old copy this way. */
+  async deleteIndex(): Promise<void> {
+    await this.wait(this.client.deleteIndex(this.uid));
   }
 
   /**

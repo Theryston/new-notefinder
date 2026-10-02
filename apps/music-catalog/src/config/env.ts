@@ -90,6 +90,13 @@ const workerEnvSchema = envSchema.extend({
     .int()
     .positive()
     .default(30),
+  // The parallel database the blue-green reimport rebuilds the catalog in
+  // after MusicBrainz's yearly schema change (same server, other database).
+  // Absent, the worker never reimports (see apps/music-catalog/AGENTS.md).
+  REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
+  // Drop the retired database after the flip. Absent, it is kept for
+  // inspection and the runbook drops it (same AGENTS.md section).
+  REIMPORT_CLEANUP_OLD_COPY: z.literal('true').optional(),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;
@@ -142,6 +149,15 @@ const restoreEnvSchema = envSchema
     // exactly as it was.
     MBSLAVE_MUSICBRAINZ_TOKEN: z.string().optional(),
     MBSLAVE_MUSICBRAINZ_TOKEN_FILE: z.string().optional(),
+    // The mbslave release running here, baked into the image from its build
+    // argument (`mbslave.Dockerfile`). Recorded with a schema-change stall,
+    // so the reimport starts once the container runs a newer release than
+    // the stalled one. Absent outside the image (local runs, tests).
+    MBSLAVE_REF: z.string().min(1).optional(),
+    // The parallel database the blue-green reimport restores the new dump
+    // into (same server, other database, migrated like the serving one).
+    // Absent, the container never reimports.
+    REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
   });
 
 export type RestoreEnv = z.output<typeof restoreEnvSchema>;

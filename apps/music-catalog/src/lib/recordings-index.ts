@@ -26,6 +26,16 @@ export const RECORDINGS_INDEX = {
   primaryKey: 'mbid',
 } as const satisfies { uid: string; primaryKey: keyof RecordingDocument };
 
+/**
+ * The index the blue-green reimport builds the parallel copy into: swapped
+ * with `recordings` on the flip, then holding the retired copy until it is
+ * deleted. Same documents and settings, other name.
+ */
+export const RECORDINGS_NEXT_INDEX = {
+  uid: 'recordings_next',
+  primaryKey: 'mbid',
+} as const satisfies { uid: string; primaryKey: keyof RecordingDocument };
+
 // In ranking order: a match in the title beats one in the artist credit, and
 // so on (Meilisearch's `attribute` rule). Typo tolerance, prefix search and
 // every other setting stay at Meilisearch's defaults, which is what the

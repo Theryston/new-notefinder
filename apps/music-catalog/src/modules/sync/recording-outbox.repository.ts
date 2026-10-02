@@ -1,5 +1,6 @@
 import { count, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import { recordingOutbox } from '../../database/schema/recording-outbox.js';
 import type { OutboxEntry } from './sync-plan.js';
 import {
@@ -18,11 +19,15 @@ type SyncTriggerRow = { name: string; table: string };
  * and migrated normally.
  */
 export class RecordingOutboxRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /** The oldest entries still waiting to reach the index. */
   async peekPending(limit: number): Promise<OutboxEntry[]> {
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         recordingId: recordingOutbox.recordingId,
         recordingMbid: recordingOutbox.recordingMbid,
@@ -45,11 +50,21 @@ export class RecordingOutboxRepository {
    * behind the last applied sequence.
    */
   async countPending(): Promise<number> {
-    const [row] = await this.db
+    const [row] = await this.getDb()
       .select({ pending: count() })
       .from(recordingOutbox)
       .where(sql`${recordingOutbox.processedAt} IS NULL`);
     return row?.pending ?? 0;
+  }
+
+  /**
+   * Drops every entry: the reimport switched copies, so entries queued
+   * against the retired copy are meaningless on the new one (its own
+   * outbox carries its changes). Replication re-enqueues real lag from its
+   * cursor afterwards.
+   */
+  async clearAll(): Promise<void> {
+    await this.getDb().delete(recordingOutbox);
   }
 
   /**
@@ -68,7 +83,7 @@ export class RecordingOutboxRepository {
       ),
       sql`, `,
     );
-    await this.db.execute(sql`
+    await this.getDb().execute(sql`
       update music_catalog.recording_outbox
       set processed_at = now()
       where (recording_id, recording_mbid) in (${keys})
@@ -89,25 +104,25 @@ export class RecordingOutboxRepository {
     ]);
     const plan = planTriggerSync({ triggers, functions });
     for (const trigger of plan.staleTriggers) {
-      await this.db.execute(
+      await this.getDb().execute(
         sql`drop trigger if exists ${sql.identifier(trigger.name)} on ${sql.identifier('musicbrainz')}.${sql.identifier(trigger.table)}`,
       );
     }
     for (const name of plan.staleFunctions) {
-      await this.db.execute(
+      await this.getDb().execute(
         sql`drop function if exists ${sql.identifier('music_catalog')}.${sql.identifier(name)}()`,
       );
     }
     if (!plan.reinstall) {
       return;
     }
-    await this.db.execute(sql.raw(buildSyncTriggersSql()));
+    await this.getDb().execute(sql.raw(buildSyncTriggersSql()));
   }
 
   private async listSyncTriggers(): Promise<SyncTriggerRow[]> {
     // `\_` keeps the prefix's own underscore from matching any character.
     const prefixPattern = `${SYNC_TRIGGER_PREFIX}\\_%`;
-    const result = await this.db.execute<SyncTriggerRow>(sql`
+    const result = await this.getDb().execute<SyncTriggerRow>(sql`
       select t.tgname as "name", c.relname as "table"
       from pg_trigger t
       join pg_class c on c.oid = t.tgrelid
@@ -121,7 +136,7 @@ export class RecordingOutboxRepository {
 
   private async listSyncFunctions(): Promise<string[]> {
     const prefixPattern = `${SYNC_FUNCTION_PREFIX}\\_%`;
-    const result = await this.db.execute<{ name: string }>(sql`
+    const result = await this.getDb().execute<{ name: string }>(sql`
       select p.proname as "name"
       from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace

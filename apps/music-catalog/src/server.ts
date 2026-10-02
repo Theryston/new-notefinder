@@ -2,13 +2,24 @@ import { loadServerEnv } from './config/env.js';
 import { createMusicCatalogServer } from './create-server.js';
 import { createDatabase, createPool } from './database/database.js';
 import { createLogger } from './logger.js';
+import { readReimportStateOf } from './modules/reimport/read-reimport-state.js';
+import { resolveServingDatabaseUrl } from './modules/reimport/resolve-serving-url.js';
 
 const env = loadServerEnv();
 const logger = createLogger({
   name: 'server',
   json: env.NODE_ENV === 'production',
 });
-const pool = createPool(env.DATABASE_URL, (error) => {
+// A reimport may have flipped the serving copy since this process was last
+// deployed: open the database the flip record points at.
+const servingUrl = await resolveServingDatabaseUrl({
+  configuredUrl: env.DATABASE_URL,
+  readReimportState: (url) =>
+    readReimportStateOf(url, (error) => {
+      logger.error('Database connection error', { error });
+    }),
+});
+const pool = createPool(servingUrl, (error) => {
   logger.error('Database connection error', { error });
 });
 const server = createMusicCatalogServer({

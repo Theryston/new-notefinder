@@ -19,6 +19,15 @@ export const LYRICS_INDEX = {
   primaryKey: 'mbid',
 } as const satisfies { uid: string; primaryKey: keyof LyricsDocument };
 
+/**
+ * The index the blue-green reimport builds the parallel copy's Lyrics into:
+ * swapped with `lyrics` on the flip, like the metadata index above.
+ */
+export const LYRICS_NEXT_INDEX = {
+  uid: 'lyrics_next',
+  primaryKey: 'mbid',
+} as const satisfies { uid: string; primaryKey: keyof LyricsDocument };
+
 export const LYRICS_INDEX_SETTINGS: IndexSettings = {
   // A single field: there is nothing to rank above anything else. Typo
   // tolerance, prefix search and every other setting stay at Meilisearch's

@@ -1,5 +1,6 @@
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   artist,
   artistCredit,
@@ -52,10 +53,14 @@ import type {
  * what to load and combines it.
  */
 export class RecordingRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   async findByMbid(mbid: string): Promise<RecordingRow | undefined> {
-    const [row] = await this.db
+    const [row] = await this.getDb()
       .select({
         id: recording.id,
         mbid: recording.gid,
@@ -78,7 +83,7 @@ export class RecordingRepository {
    * merged away and its target still exists.
    */
   async findMergedInto(mbid: string): Promise<string | undefined> {
-    const [row] = await this.db
+    const [row] = await this.getDb()
       .select({ mbid: recording.gid })
       .from(recordingGidRedirect)
       .innerJoin(recording, eq(recording.id, recordingGidRedirect.newId))
@@ -88,7 +93,7 @@ export class RecordingRepository {
   }
 
   findCreditedArtists(artistCreditId: number): Promise<CreditedArtistRow[]> {
-    return this.db
+    return this.getDb()
       .select({
         mbid: artist.gid,
         name: artist.name,
@@ -102,7 +107,7 @@ export class RecordingRepository {
   }
 
   async findIsrcs(recordingId: number): Promise<string[]> {
-    const rows = await this.db
+    const rows = await this.getDb()
       .selectDistinct({ isrc: isrc.isrc })
       .from(isrc)
       .where(eq(isrc.recording, recordingId))
@@ -111,7 +116,7 @@ export class RecordingRepository {
   }
 
   findReleases(recordingId: number): Promise<ReleaseRow[]> {
-    return this.db
+    return this.getDb()
       .select({
         id: release.id,
         mbid: release.gid,
@@ -139,7 +144,7 @@ export class RecordingRepository {
       return [];
     }
     const [inCountry, inUnknownCountry] = await Promise.all([
-      this.db
+      this.getDb()
         .select({
           releaseId: releaseCountry.release,
           country: iso31661.code,
@@ -150,7 +155,7 @@ export class RecordingRepository {
         .from(releaseCountry)
         .leftJoin(iso31661, eq(iso31661.area, releaseCountry.country))
         .where(inArray(releaseCountry.release, releaseIds)),
-      this.db
+      this.getDb()
         .select({
           releaseId: releaseUnknownCountry.release,
           year: releaseUnknownCountry.dateYear,
@@ -167,7 +172,7 @@ export class RecordingRepository {
   }
 
   findWorks(recordingId: number): Promise<WorkRow[]> {
-    return this.db
+    return this.getDb()
       .selectDistinct({ mbid: work.gid, title: work.name })
       .from(lRecordingWork)
       .innerJoin(work, eq(work.id, lRecordingWork.entity1))
@@ -175,7 +180,7 @@ export class RecordingRepository {
   }
 
   findExternalUrls(recordingId: number): Promise<ExternalUrlRow[]> {
-    return this.db
+    return this.getDb()
       .selectDistinct({ url: url.url, linkType: linkType.name })
       .from(lRecordingUrl)
       .innerJoin(link, eq(link.id, lRecordingUrl.link))
@@ -203,7 +208,7 @@ export class RecordingRepository {
   }
 
   private recordingTags(recordingId: number): Promise<TagVotesRow[]> {
-    return this.db
+    return this.getDb()
       .select({
         name: tag.name,
         count: recordingTag.count,
@@ -218,13 +223,13 @@ export class RecordingRepository {
   }
 
   private releaseGroupTags(recordingId: number): Promise<TagVotesRow[]> {
-    const releaseGroupIds = this.db
+    const releaseGroupIds = this.getDb()
       .select({ id: release.releaseGroup })
       .from(track)
       .innerJoin(medium, eq(medium.id, track.medium))
       .innerJoin(release, eq(release.id, medium.release))
       .where(eq(track.recording, recordingId));
-    return this.db
+    return this.getDb()
       .select({
         name: tag.name,
         count: sql<number>`sum(${releaseGroupTag.count})::int`,
@@ -243,11 +248,11 @@ export class RecordingRepository {
   }
 
   private artistTags(artistCreditId: number): Promise<TagVotesRow[]> {
-    const artistIds = this.db
+    const artistIds = this.getDb()
       .select({ id: artistCreditName.artist })
       .from(artistCreditName)
       .where(eq(artistCreditName.artistCredit, artistCreditId));
-    return this.db
+    return this.getDb()
       .select({
         name: tag.name,
         count: sql<number>`sum(${artistTag.count})::int`,

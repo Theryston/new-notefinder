@@ -1,6 +1,7 @@
 import { type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn, AnyPgTable } from 'drizzle-orm/pg-core';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   artist,
   artistCredit,
@@ -181,7 +182,11 @@ const toSummaryRow = ({
  * belong to mbslave.
  */
 export class RecordingSummaryRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /**
    * The summaries of the Recordings with these MBIDs, in no particular order,
@@ -192,7 +197,7 @@ export class RecordingSummaryRepository {
       mbids.map((mbid) => sql`${mbid}::uuid`),
       sql`, `,
     );
-    const result = await this.db.execute<SummaryQueryRow>(sql`
+    const result = await this.getDb().execute<SummaryQueryRow>(sql`
       select
         ${recording.gid} as "mbid",
         ${recording.name} as "title",

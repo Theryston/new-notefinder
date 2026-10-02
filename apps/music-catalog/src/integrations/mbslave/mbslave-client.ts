@@ -3,8 +3,9 @@ import { spawn as nodeSpawn } from 'node:child_process';
 /**
  * Runs one `mbslave` command, resolving when it exits zero. Inject the fake
  * in tests; the production implementation spawns the binary of the mbslave
- * container (pinned to git tag `v31.0.1`, installed from git because PyPI is
- * stale), which reads its own `MBSLAVE_*` variables from the environment.
+ * container (pinned to a git tag, `MBSLAVE_REF` in `mbslave.Dockerfile`,
+ * installed from git because PyPI is stale), which reads its own `MBSLAVE_*`
+ * variables from the environment.
  */
 export type MbslaveRun = (args: readonly string[]) => Promise<void>;
 

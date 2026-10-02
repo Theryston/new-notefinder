@@ -1,5 +1,6 @@
 import { asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   artistCredit,
   artistCreditName,
@@ -42,6 +43,13 @@ export type LyricsDocumentRow = {
   synced: string | null;
 };
 
+/** Kept Lyrics as the reimport carries them, in MBID order. */
+export type KeptLyricsRow = {
+  mbid: string;
+  plain: string | null;
+  synced: string | null;
+};
+
 // Postgres caps the parameters of one statement; Lyrics are saved in chunks
 // below it.
 const SAVE_CHUNK = 500;
@@ -52,14 +60,18 @@ const SAVE_CHUNK = 500;
  * go to our own `recording_lyrics`.
  */
 export class LyricsRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /** The next `limit` Recordings after `afterId`, with their match data. */
   async findMatchBatch(
     afterId: number,
     limit: number,
   ): Promise<MatchingRecording[]> {
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         id: recording.id,
         mbid: recording.gid,
@@ -81,7 +93,7 @@ export class LyricsRepository {
     if (ids.length === 0) {
       return [];
     }
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         id: recording.id,
         mbid: recording.gid,
@@ -100,7 +112,7 @@ export class LyricsRepository {
   async findByMbid(
     mbid: string,
   ): Promise<{ plain: string | null; synced: string | null } | undefined> {
-    const [row] = await this.db
+    const [row] = await this.getDb()
       .select({
         plain: recordingLyrics.plainLyrics,
         synced: recordingLyrics.syncedLyrics,
@@ -118,7 +130,7 @@ export class LyricsRepository {
     if (mbids.length === 0) {
       return new Map();
     }
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         mbid: recordingLyrics.mbid,
         plain: recordingLyrics.plainLyrics,
@@ -137,7 +149,7 @@ export class LyricsRepository {
     limit: number,
   ): Promise<LyricsDocumentRow[]> {
     return (
-      this.db
+      this.getDb()
         .select({
           recordingId: recording.id,
           mbid: recordingLyrics.mbid,
@@ -159,7 +171,7 @@ export class LyricsRepository {
   /** Keeps the matched Lyrics, replacing a Recording's earlier match. */
   async saveLyrics(rows: readonly LyricsInsert[]): Promise<void> {
     for (let at = 0; at < rows.length; at += SAVE_CHUNK) {
-      await this.db
+      await this.getDb()
         .insert(recordingLyrics)
         .values(rows.slice(at, at + SAVE_CHUNK))
         .onConflictDoUpdate({
@@ -175,12 +187,17 @@ export class LyricsRepository {
 
   /** Forgets the kept Lyrics of the given Recordings. */
   async deleteLyrics(mbids: string[]): Promise<void> {
+    return this.deleteKeptByMbids(mbids);
+  }
+
+  /** Drops the kept Lyrics of Recordings that lost their match. */
+  async deleteKeptByMbids(mbids: readonly string[]): Promise<void> {
     if (mbids.length === 0) {
       return;
     }
-    await this.db
+    await this.getDb()
       .delete(recordingLyrics)
-      .where(inArray(recordingLyrics.mbid, mbids));
+      .where(inArray(recordingLyrics.mbid, [...mbids]));
   }
 
   private async withMatchData(
@@ -213,10 +230,57 @@ export class LyricsRepository {
     }));
   }
 
+  /**
+   * The kept Lyrics of the next `limit` MBIDs after `afterMbid` (MBID order,
+   * which is the only order `recording_lyrics` has). The reimport carries
+   * them to the parallel copy in chunks, so millions of kept Lyrics never
+   * sit in memory at once.
+   */
+  async findKeptBatch(
+    afterMbid: string,
+    limit: number,
+  ): Promise<KeptLyricsRow[]> {
+    return this.getDb()
+      .select({
+        mbid: recordingLyrics.mbid,
+        plain: recordingLyrics.plainLyrics,
+        synced: recordingLyrics.syncedLyrics,
+      })
+      .from(recordingLyrics)
+      .where(gt(recordingLyrics.mbid, afterMbid))
+      .orderBy(asc(recordingLyrics.mbid))
+      .limit(limit);
+  }
+
+  /**
+   * The match data of the Recordings with these MBIDs, for revalidating
+   * carried Lyrics against the parallel copy. An MBID missing from this
+   * copy (a deleted or merged Recording) simply has no row.
+   */
+  async findMatchRecordingsByMbids(
+    mbids: readonly string[],
+  ): Promise<MatchingRecording[]> {
+    if (mbids.length === 0) {
+      return [];
+    }
+    const rows = await this.getDb()
+      .select({
+        id: recording.id,
+        mbid: recording.gid,
+        title: recording.name,
+        lengthMs: recording.length,
+        artistCreditId: recording.artistCredit,
+        artistCredit: artistCredit.name,
+      })
+      .from(recording)
+      .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
+      // `gid` is a uuid column and the MBIDs text: compared as text.
+      .where(inArray(sql`${recording.gid}::text`, [...mbids]));
+    return this.withMatchData(rows);
   private async findArtistNames(
     creditIds: number[],
   ): Promise<Map<number, string[]>> {
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         creditId: artistCreditName.artistCredit,
         name: artistCreditName.name,
@@ -236,7 +300,7 @@ export class LyricsRepository {
   private async findAlbumTitles(
     recordingIds: number[],
   ): Promise<Map<number, string[]>> {
-    const rows = await this.db
+    const rows = await this.getDb()
       .selectDistinct({ recordingId: track.recording, title: release.name })
       .from(track)
       .innerJoin(medium, eq(medium.id, track.medium))

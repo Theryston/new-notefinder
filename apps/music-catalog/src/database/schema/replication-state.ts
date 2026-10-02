@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, integer, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, check, integer, text, timestamp } from 'drizzle-orm/pg-core';
 import { musicCatalog } from './music-catalog-schema.js';
 
 /**
@@ -18,6 +18,14 @@ export const replicationState = musicCatalog.table(
     // Always true: together with the check below it keeps the table to one row.
     id: boolean().primaryKey().default(true),
     lastSequence: integer().notNull(),
+    // Why `mbslave sync` cannot apply packets (`schema-change` after
+    // MusicBrainz's yearly schema change), with mbslave's message and the
+    // mbslave release that saw it. All null while replication applies
+    // packets: a reimport starts once the container runs a newer release
+    // than the stalled one.
+    stalledReason: text(),
+    stalledDetail: text(),
+    stalledMbslaveRef: text(),
     updatedAt: timestamp({ withTimezone: true })
       .notNull()
       .defaultNow()
