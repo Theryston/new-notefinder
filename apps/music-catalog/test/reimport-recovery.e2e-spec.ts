@@ -178,6 +178,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
         CATALOG_DATASET: 'full',
         LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
         LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
+        REIMPORT_CLEANUP_OLD_COPY: 'false',
       },
       nextCopy: { db: parallel().db, url: parallel().url },
     });
