@@ -1,8 +1,8 @@
 import { assertReplicationToken } from './replication-token.js';
 
 describe('assertReplicationToken', () => {
-  it('passes in sample mode without any token', () => {
-    expect(() => assertReplicationToken({ dataset: 'sample' })).not.toThrow();
+  it('passes in tiny mode without any token', () => {
+    expect(() => assertReplicationToken({ dataset: 'tiny' })).not.toThrow();
   });
 
   it.each([

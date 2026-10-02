@@ -121,7 +121,7 @@ describe('lyrics: the LRCLIB import, getRecording and lyrics search (e2e)', () =
   useEmptySearchIndex();
   useEmptyLyricsIndex();
 
-  describe('in sample mode, from the generated fake dump', () => {
+  describe('in tiny mode, from the generated fake dump', () => {
     it('returns the matched Lyrics in getRecording, null when unmatched', async () => {
       await arrangeSongbook(server().db);
       await indexCatalog(server());
@@ -167,7 +167,7 @@ describe('lyrics: the LRCLIB import, getRecording and lyrics search (e2e)', () =
   });
 
   describe('in full mode, downloading a tiny dump', () => {
-    it('imports the dump over HTTP and answers Lyrics like the sample', async () => {
+    it('imports the dump over HTTP and answers Lyrics like tiny does', async () => {
       const { recordings } = await arrangeSongbook(server().db);
       const lrclib = await startFakeLrclibServer({
         'lrclib-db-dump-20260923T042405Z.sqlite3.gz':

@@ -23,7 +23,7 @@ const setup = () => {
   const bootstrap = {
     getStatus: vi.fn(async () => ({
       phase: 'restored' as const,
-      dataset: 'sample' as const,
+      dataset: 'tiny' as const,
     })),
     startIndexing: vi.fn(async () => undefined),
     markReady: vi.fn(async () => undefined),

@@ -9,7 +9,6 @@ export type FakeDumpServer = {
   close: () => Promise<void>;
 };
 
-const SAMPLE_RUN = '20240101-000001';
 const FULL_RUN = '20240102-000003';
 
 // A tiny stand-in for a dump archive: the e2e mbslave is faked behind its
@@ -18,11 +17,6 @@ const FULL_RUN = '20240102-000003';
 const tinyArchive = Buffer.from('fake MusicBrainz dump archive, not parsed');
 
 const routes = new Map<string, { status: number; body: Buffer | string }>([
-  ['/data/sample/LATEST', { status: 200, body: `${SAMPLE_RUN}\n` }],
-  [
-    `/data/sample/${SAMPLE_RUN}/mbdump-sample.tar.xz`,
-    { status: 200, body: tinyArchive },
-  ],
   ['/data/fullexport/LATEST', { status: 200, body: `${FULL_RUN}\n` }],
   [
     `/data/fullexport/${FULL_RUN}/mbdump.tar.bz2`,
@@ -35,11 +29,12 @@ const routes = new Map<string, { status: number; body: Buffer | string }>([
 ]);
 
 /**
- * Serves tiny dump archives under the real MusicBrainz directory layout
- * (`sample/` next to `fullexport/`, one `LATEST` file per dataset), so the
- * restore resolves and downloads its archives over real HTTP without
- * touching the network. Anything else answers 404, the way a wrong base URL
- * would.
+ * Serves tiny dump archives under the real MusicBrainz full-export layout
+ * (one `LATEST` file plus the core and derived archives), so the restore
+ * resolves and downloads its archives over real HTTP without touching the
+ * network. Anything else answers 404, the way a wrong base URL would. The
+ * `tiny` dataset needs no server: it is seeded locally and downloads
+ * nothing.
  */
 export const startFakeDumpServer = async (): Promise<FakeDumpServer> => {
   const requested: string[] = [];

@@ -50,7 +50,7 @@ const setup = (
   const bootstrap = {
     getStatus: vi.fn(async () => ({
       phase: options.phase ?? 'ready',
-      dataset: 'sample' as const,
+      dataset: 'tiny' as const,
     })),
   };
   const outbox = {

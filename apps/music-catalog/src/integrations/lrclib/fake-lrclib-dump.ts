@@ -110,7 +110,7 @@ const tiePair = (recording: FakeDumpRecording, duration: number) =>
  * Writes an SQLite file in the real LRCLIB schema from the given Recordings,
  * with placeholder plain and synced Lyrics. Deterministic: the same
  * Recordings always produce the same file, so the e2e fixture served over
- * HTTP and the sample-mode dump carry the same near-misses. The second
+ * HTTP and the tiny-mode dump carry the same near-misses. The second
  * Recording gets no exact row on purpose (only an album tie that must not
  * match), and a Recording without a length gets no row at all.
  */

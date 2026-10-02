@@ -23,13 +23,13 @@ describe('status (e2e)', () => {
 
     expect(response).toMatchObject({
       ok: true,
-      result: { phase: 'restoring', dataset: 'sample' },
+      result: { phase: 'restoring', dataset: 'tiny' },
     });
   });
 
   it.each([
-    ['restoring', 'sample'],
-    ['restored', 'sample'],
+    ['restoring', 'tiny'],
+    ['restored', 'tiny'],
     ['indexing', 'full'],
     ['ready', 'full'],
   ] as const)(
@@ -52,12 +52,12 @@ describe('status (e2e)', () => {
   it('follows the import as it advances, on the same connection', async () => {
     await setBootstrapState(server().db, {
       phase: 'restoring',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
     const phases = [await status({})];
 
     for (const phase of ['restored', 'indexing', 'ready'] as const) {
-      await setBootstrapState(server().db, { phase, dataset: 'sample' });
+      await setBootstrapState(server().db, { phase, dataset: 'tiny' });
       phases.push(await status({}));
     }
 

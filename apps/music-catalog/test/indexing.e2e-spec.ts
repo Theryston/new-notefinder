@@ -67,7 +67,7 @@ describe('indexing: the worker takes the catalog to ready (e2e)', () => {
     const worker = createTestWorker(server());
     await setBootstrapState(server().db, {
       phase: 'restoring',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
 
     await worker.tick();

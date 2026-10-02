@@ -6,7 +6,7 @@ const KEY_B = 'b'.repeat(40);
 const required = {
   DATABASE_URL,
   API_KEYS: KEY_A,
-  CATALOG_DATASET: 'sample',
+  CATALOG_DATASET: 'tiny',
 };
 
 describe('parseEnv', () => {
@@ -16,7 +16,7 @@ describe('parseEnv', () => {
       PORT: 3334,
       DATABASE_URL,
       API_KEYS: [KEY_A],
-      CATALOG_DATASET: 'sample',
+      CATALOG_DATASET: 'tiny',
       HEARTBEAT_INTERVAL_MS: 30_000,
       REQUEST_TIMEOUT_MS: 10_000,
     });
@@ -97,7 +97,8 @@ describe('parseEnv', () => {
 
   it.each([
     ['is missing', undefined],
-    ['is not sample or full', 'huge'],
+    ['is not full or tiny', 'huge'],
+    ['is the removed sample dataset', 'sample'],
   ])('rejects a CATALOG_DATASET that %s', (_label, value) => {
     expect(() => parseEnv({ ...required, CATALOG_DATASET: value })).toThrow(
       /CATALOG_DATASET/,

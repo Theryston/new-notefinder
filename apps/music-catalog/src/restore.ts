@@ -13,13 +13,16 @@ import {
   resolveLatestDumpUrls,
 } from './modules/bootstrap/dump-urls.js';
 import { RestoreService } from './modules/bootstrap/restore.service.js';
+import { TinySeedRepository } from './modules/bootstrap/tiny-seed.repository.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { ReplicationService } from './modules/replication/replication.service.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
 
-// The process the mbslave container runs on start: it restores the
-// MusicBrainz dump when needed, then replicates continuously in `full` mode
-// (in `sample` mode replication stays off and the container exits). The
+// The process the mbslave container runs on start: it lays the dataset down
+// when needed, then replicates continuously in `full` mode (in `tiny` mode
+// replication stays off and the container exits). The
+// worker takes it from `restored` to `ready`; replication itself waits for
+// `ready`, so every packet reaches the outbox through the worker's triggers.
 // worker takes it from `restored` to `ready`; replication itself waits for
 // `ready`, so every packet reaches the outbox through the worker's triggers.
 const env = loadRestoreEnv();
@@ -43,6 +46,9 @@ const restore = new RestoreService({
   mbslave: new MbslaveClient(mbslaveRun),
   resolveUrls: resolveLatestDumpUrls,
   resolveTotalBytes: (urls) => fetchArchiveTotalBytes(urls),
+  // `tiny` seeds Recordings with plain SQL after `init --empty`;
+  // `full` resolves and imports the dump archives instead.
+  seedTiny: () => new TinySeedRepository(db).seed(),
   baseUrl: env.MUSICBRAINZ_DUMP_BASE_URL,
   dataset: env.CATALOG_DATASET,
   logger,

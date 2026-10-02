@@ -7,7 +7,7 @@ const KEY = 'k'.repeat(32);
 const stubValidEnv = () => {
   vi.stubEnv('DATABASE_URL', 'postgres://user:pass@localhost:5433/db');
   vi.stubEnv('API_KEYS', KEY);
-  vi.stubEnv('CATALOG_DATASET', 'sample');
+  vi.stubEnv('CATALOG_DATASET', 'tiny');
   vi.stubEnv('MEILISEARCH_URL', 'http://localhost:7700');
   vi.stubEnv('MEILISEARCH_SEARCH_API_KEY', 'search-key');
   vi.stubEnv('MEILISEARCH_WRITE_API_KEY', 'write-key');
@@ -54,6 +54,6 @@ describe('the env loaders', () => {
     vi.stubEnv('CATALOG_DATASET', 'full');
 
     expect(loadEnv()).toBe(first);
-    expect(first.CATALOG_DATASET).toBe('sample');
+    expect(first.CATALOG_DATASET).toBe('tiny');
   });
 });

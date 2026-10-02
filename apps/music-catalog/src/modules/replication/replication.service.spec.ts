@@ -82,9 +82,9 @@ const runUntilFirstSync = async (parts: {
 };
 
 describe('ReplicationService run: mode gating', () => {
-  it('stays off in sample mode without touching mbslave', async () => {
+  it('stays off in tiny mode without touching mbslave', async () => {
     const { service, bootstrap, mbslave, sequences, info } = setup({
-      dataset: 'sample',
+      dataset: 'tiny',
       token: undefined,
     });
 
@@ -95,8 +95,8 @@ describe('ReplicationService run: mode gating', () => {
     expect(mbslave.sync).not.toHaveBeenCalled();
     expect(sequences.lastRecordedSequence).not.toHaveBeenCalled();
     expect(info).toHaveBeenCalledWith(
-      'Replication stays off: the sample ships no replication packets',
-      { dataset: 'sample' },
+      'Replication stays off: tiny seeds no replication packets',
+      { dataset: 'tiny' },
     );
   });
 

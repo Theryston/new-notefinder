@@ -7,7 +7,7 @@ import {
 const DATABASE_URL = 'postgres://user:pass@localhost:5433/db';
 const required = {
   DATABASE_URL,
-  CATALOG_DATASET: 'sample',
+  CATALOG_DATASET: 'tiny',
 };
 
 describe('withoutBlankTokenVars', () => {

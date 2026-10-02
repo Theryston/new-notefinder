@@ -41,7 +41,7 @@ const createTestServer = async (
     PORT: '0',
     DATABASE_URL: inject('databaseUrl'),
     API_KEYS: `${API_KEY},${ROTATED_API_KEY}`,
-    CATALOG_DATASET: 'sample',
+    CATALOG_DATASET: 'tiny',
     MEILISEARCH_URL: meilisearch.url,
     MEILISEARCH_SEARCH_API_KEY: meilisearch.searchKey,
     ...env,

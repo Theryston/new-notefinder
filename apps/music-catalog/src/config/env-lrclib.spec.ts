@@ -4,7 +4,7 @@ const KEY = 'k'.repeat(32);
 const worker = {
   DATABASE_URL: 'postgres://user:pass@localhost:5433/db',
   API_KEYS: KEY,
-  CATALOG_DATASET: 'sample',
+  CATALOG_DATASET: 'tiny',
   MEILISEARCH_URL: 'http://localhost:7700',
   MEILISEARCH_WRITE_API_KEY: 'write-key',
 };

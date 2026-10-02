@@ -20,11 +20,18 @@ export type ResolveArchiveTotalBytes = (
   urls: readonly string[],
 ) => Promise<number | undefined>;
 
+/**
+ * Seeds the `tiny` dataset (no downloads): the schema scripts already ran
+ * through `init --empty`, so this writes the deterministic Recordings.
+ */
+export type SeedTinyCatalog = () => Promise<number>;
+
 export type RestoreServiceDeps = {
   repository: BootstrapRepository;
   mbslave: MbslaveClient;
   resolveUrls: ResolveDumpUrls;
   resolveTotalBytes: ResolveArchiveTotalBytes;
+  seedTiny: SeedTinyCatalog;
   /** The `.../data` directory the dumps are published under. */
   baseUrl: string;
   /** The dataset this deployment restores (`CATALOG_DATASET`). */
@@ -36,13 +43,14 @@ export const restoreServiceDeps = (
   overrides: Partial<RestoreServiceDeps> & {
     repository: BootstrapRepository;
     mbslave: MbslaveClient;
+    seedTiny: SeedTinyCatalog;
     logger: Logger;
   },
 ): RestoreServiceDeps => ({
   resolveUrls: resolveLatestDumpUrls,
   resolveTotalBytes: async () => undefined,
   baseUrl: 'https://data.metabrainz.org/pub/musicbrainz/data',
-  dataset: 'sample',
+  dataset: 'tiny',
   ...overrides,
 });
 
@@ -52,10 +60,12 @@ export class RestoreService {
   /**
    * Runs the first import the mbslave container owns: skips a restore that is
    * already done, redoes an interrupted one from a clean state, and
-   * otherwise records `restoring`, resolves the dump archives, restores them
-   * with `init --empty` + `import` and records `restored`. A failure leaves
-   * `restoring` behind, so the next start redoes it; `ready` is the worker's
-   * to record, never this one's.
+   * otherwise records `restoring` and lays the dataset down. `full`
+   * resolves the dump archives and restores them with `init --empty` +
+   * `import`; `tiny` creates the same schema with `init --empty` and seeds
+   * a few hundred deterministic Recordings, downloading nothing. A failure
+   * leaves `restoring` behind, so the next start redoes it; `ready` is the
+   * worker's to record, never this one's.
    *
    * Handoff for issue #61 (change triggers and the outbox): the worker
    * installs the triggers after this records `restored` and before it
@@ -84,7 +94,40 @@ export class RestoreService {
       await repository.clearMusicBrainz();
     }
     await repository.beginRestore(dataset);
-    const urls = await this.deps.resolveUrls(this.deps.baseUrl, dataset);
+    if (dataset === 'tiny') {
+      await this.runSeed(startedAt);
+    } else {
+      await this.runImport();
+    }
+    await repository.finishRestore();
+    logger.info('Restore finished', {
+      dataset,
+      durationMs: Date.now() - startedAt,
+    });
+    return 'restored';
+  }
+
+  // `tiny`: the schema scripts ran through `init --empty`, then the seed
+  // writes the deterministic Recordings. No network, megabytes of disk.
+  private async runSeed(startedAt: number): Promise<void> {
+    const { dataset, logger } = this.deps;
+    await this.runInitEmpty();
+    logger.info('Seeding the tiny catalog', { dataset });
+    const recordings = await this.deps.seedTiny();
+    logger.info('Tiny catalog seeded', {
+      dataset,
+      recordings,
+      durationMs: Date.now() - startedAt,
+    });
+  }
+
+  // `full`: resolves the dump archives, then `init --empty` + `import`.
+  // Per-archive completion is not logged because mbslave's output is
+  // opaque; its stderr streams live to the log instead (see
+  // `MbslaveStderrLine`).
+  private async runImport(): Promise<void> {
+    const { dataset, logger } = this.deps;
+    const urls = await this.deps.resolveUrls(this.deps.baseUrl);
     const totalBytes = await this.totalBytesOf(urls);
     logger.info('Restoring the MusicBrainz dump', {
       dataset,
@@ -94,33 +137,7 @@ export class RestoreService {
       urls,
       totalBytes,
     });
-    const { initMs, importMs } = await this.runImport(urls, totalBytes);
-    await repository.finishRestore();
-    logger.info('Restore finished', {
-      dataset,
-      durationMs: Date.now() - startedAt,
-      initMs,
-      importMs,
-    });
-    return 'restored';
-  }
-
-  // Runs `init --empty` + `import` with start/finish logs. Per-archive
-  // completion is not logged because mbslave's output is opaque; its stderr
-  // streams live to the log instead (see `MbslaveStderrLine`).
-  private async runImport(
-    urls: readonly string[],
-    totalBytes: number | undefined,
-  ): Promise<{ initMs: number; importMs: number }> {
-    const { dataset, logger } = this.deps;
-    const initStartedAt = Date.now();
-    logger.info('Restore schema creation started', { dataset });
-    await this.deps.mbslave.initEmpty();
-    const initMs = Date.now() - initStartedAt;
-    logger.info('Restore schema creation finished', {
-      dataset,
-      durationMs: initMs,
-    });
+    await this.runInitEmpty();
     const importStartedAt = Date.now();
     logger.info('Restore import started', {
       dataset,
@@ -135,7 +152,20 @@ export class RestoreService {
       totalBytes,
       durationMs: importMs,
     });
-    return { initMs, importMs };
+  }
+
+  // Creates the empty MusicBrainz schema with start/finish logs, shared by
+  // both datasets: `init --empty` is not idempotent, so it only ever runs
+  // on an empty database or right after clearing it.
+  private async runInitEmpty(): Promise<void> {
+    const { dataset, logger } = this.deps;
+    const initStartedAt = Date.now();
+    logger.info('Restore schema creation started', { dataset });
+    await this.deps.mbslave.initEmpty();
+    logger.info('Restore schema creation finished', {
+      dataset,
+      durationMs: Date.now() - initStartedAt,
+    });
   }
 
   // The `HEAD` sizes are best-effort logging: a missing total is omitted,

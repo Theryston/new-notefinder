@@ -3,14 +3,6 @@ import { latestFromArchiveUrls } from './dump-urls.js';
 const BASE = 'https://data.metabrainz.org/pub/musicbrainz/data';
 
 describe('latestFromArchiveUrls', () => {
-  it('reads the dump run from the sample archive URL', () => {
-    expect(
-      latestFromArchiveUrls([
-        `${BASE}/sample/20260901-000002/mbdump-sample.tar.xz`,
-      ]),
-    ).toBe('20260901-000002');
-  });
-
   it('reads the dump run from the first full archive URL', () => {
     expect(
       latestFromArchiveUrls([

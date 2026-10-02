@@ -3,6 +3,10 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { loadEnv } from '../config/env.js';
 import { createLogger } from '../logger.js';
 import { createDatabase, createPool } from './database.js';
+import {
+  assertSupportedDatasets,
+  readRecordedDatasets,
+} from './dataset-guard.js';
 
 /**
  * Applies pending migrations from `apps/music-catalog/drizzle`. Runs as an
@@ -28,6 +32,10 @@ const pool = createPool(env.DATABASE_URL, (error) => {
 });
 
 try {
+  // A catalog bootstrapped on the dropped `sample` dataset cannot be cast
+  // to the new enum: refuse it with where to go instead of letting the
+  // migration die on a raw cast error.
+  assertSupportedDatasets(await readRecordedDatasets(createDatabase(pool)));
   await migrate(createDatabase(pool), { migrationsFolder });
   logger.info('Migrations applied');
 } finally {

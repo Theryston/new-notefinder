@@ -1,3 +1,4 @@
+import type { CatalogDataset } from '@notefinder/contracts';
 import { MbslaveClient } from '../../integrations/mbslave/mbslave-client.js';
 import { createLogger } from '../../logger.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';
@@ -36,7 +37,10 @@ const stubRepository = () =>
     clearMusicBrainz: async () => undefined,
   }) as unknown as BootstrapRepository;
 
+const BASE_URL = 'https://data.metabrainz.org/pub/musicbrainz/data';
+
 const runRestore = async (
+  dataset: CatalogDataset,
   resolveTotalBytes?: ResolveArchiveTotalBytes,
 ): Promise<LoggedCall[]> => {
   const { logger, calls } = capturingLogger();
@@ -45,11 +49,13 @@ const runRestore = async (
       repository: stubRepository(),
       mbslave: new MbslaveClient(async () => undefined),
       logger,
-      baseUrl: 'https://data.metabrainz.org/pub/musicbrainz/data',
-      dataset: 'sample',
+      baseUrl: BASE_URL,
+      dataset,
       resolveUrls: async (baseUrl) => [
-        `${baseUrl}/sample/20260901-000002/mbdump-sample.tar.xz`,
+        `${baseUrl}/fullexport/20260930-002222/mbdump.tar.bz2`,
+        `${baseUrl}/fullexport/20260930-002222/mbdump-derived.tar.bz2`,
       ],
+      seedTiny: async () => 300,
       ...(resolveTotalBytes === undefined ? {} : { resolveTotalBytes }),
     }),
   );
@@ -64,48 +70,65 @@ const byMessage = (
   calls.find((call) => call.message === message)?.fields;
 
 describe('RestoreService logging', () => {
-  it('logs the resolved LATEST, archives and phase timings', async () => {
-    const calls = await runRestore();
-    const baseUrl = 'https://data.metabrainz.org/pub/musicbrainz/data';
+  it('logs the resolved LATEST, archives and phase timings in full mode', async () => {
+    const calls = await runRestore('full');
 
     const dumpFields = byMessage(calls, 'Restoring the MusicBrainz dump');
     expect(dumpFields).toMatchObject({
-      dataset: 'sample',
-      baseUrl,
-      latest: '20260901-000002',
-      archives: 1,
-      urls: [`${baseUrl}/sample/20260901-000002/mbdump-sample.tar.xz`],
+      dataset: 'full',
+      baseUrl: BASE_URL,
+      latest: '20260930-002222',
+      archives: 2,
+      urls: [
+        `${BASE_URL}/fullexport/20260930-002222/mbdump.tar.bz2`,
+        `${BASE_URL}/fullexport/20260930-002222/mbdump-derived.tar.bz2`,
+      ],
     });
     expect(byMessage(calls, 'Restore schema creation started')).toMatchObject({
-      dataset: 'sample',
+      dataset: 'full',
     });
     expect(byMessage(calls, 'Restore schema creation finished')).toMatchObject({
-      dataset: 'sample',
+      dataset: 'full',
     });
     expect(
       (byMessage(calls, 'Restore schema creation finished')
         ?.durationMs as number) >= 0,
     ).toBe(true);
     expect(byMessage(calls, 'Restore import started')).toMatchObject({
-      dataset: 'sample',
-      archives: 1,
+      dataset: 'full',
+      archives: 2,
     });
     expect(byMessage(calls, 'Restore import finished')).toMatchObject({
-      dataset: 'sample',
-      archives: 1,
+      dataset: 'full',
+      archives: 2,
     });
     const finished = byMessage(calls, 'Restore finished');
-    expect(finished).toMatchObject({ dataset: 'sample' });
+    expect(finished).toMatchObject({ dataset: 'full' });
     expect(typeof finished?.durationMs).toBe('number');
-    expect(typeof finished?.initMs).toBe('number');
-    expect(typeof finished?.importMs).toBe('number');
+  });
+
+  it('logs the seeded recording count in tiny mode, without a dump download', async () => {
+    const calls = await runRestore('tiny');
+
+    expect(byMessage(calls, 'Restoring the MusicBrainz dump')).toBeUndefined();
+    expect(byMessage(calls, 'Restore import started')).toBeUndefined();
+    expect(byMessage(calls, 'Seeding the tiny catalog')).toMatchObject({
+      dataset: 'tiny',
+    });
+    expect(byMessage(calls, 'Tiny catalog seeded')).toMatchObject({
+      dataset: 'tiny',
+      recordings: 300,
+    });
+    expect(byMessage(calls, 'Restore finished')).toMatchObject({
+      dataset: 'tiny',
+    });
   });
 
   it('logs the total bytes before the import when the lookup succeeds', async () => {
-    const calls = await runRestore(async () => 362_835_168);
+    const calls = await runRestore('full', async () => 362_835_168);
 
     expect(byMessage(calls, 'Restoring the MusicBrainz dump')).toMatchObject({
-      archives: 1,
+      archives: 2,
       totalBytes: 362_835_168,
     });
     expect(byMessage(calls, 'Restore import started')).toMatchObject({
@@ -114,12 +137,12 @@ describe('RestoreService logging', () => {
   });
 
   it('omits the total instead of failing when the lookup throws', async () => {
-    const calls = await runRestore(async () => {
+    const calls = await runRestore('full', async () => {
       throw new Error('HEAD timed out');
     });
 
     const dump = byMessage(calls, 'Restoring the MusicBrainz dump');
-    expect(dump).toMatchObject({ archives: 1 });
+    expect(dump).toMatchObject({ archives: 2 });
     expect('totalBytes' in (dump ?? {})).toBe(false);
   });
 });
