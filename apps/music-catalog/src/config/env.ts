@@ -94,9 +94,9 @@ const workerEnvSchema = envSchema.extend({
   // after MusicBrainz's yearly schema change (same server, other database).
   // Absent, the worker never reimports (see apps/music-catalog/AGENTS.md).
   REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
-  // Drop the retired database after the flip. Absent, it is kept for
-  // inspection and the runbook drops it (same AGENTS.md section).
-  REIMPORT_CLEANUP_OLD_COPY: z.literal('true').optional(),
+  // Drop the retired database after the flip, the default path: only an
+  // explicit 'false' keeps it for inspection (same AGENTS.md section).
+  REIMPORT_CLEANUP_OLD_COPY: z.enum(['true', 'false']).optional(),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;

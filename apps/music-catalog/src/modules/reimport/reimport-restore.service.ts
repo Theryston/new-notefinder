@@ -38,6 +38,22 @@ export type ReimportRestoreOutcome =
   | 'restored';
 
 /**
+ * Whether the container should tell the operator to configure the parallel
+ * database: replication stalled on the yearly schema change in `full` mode,
+ * but no `REIMPORT_DATABASE_URL` means no reimport ever rebuilds the catalog.
+ * A pure predicate (not a service method) so the container entrypoint, which
+ * owns no service instance here, can warn with the exact setting to set.
+ */
+export const needsParallelDatabaseWarning = (options: {
+  dataset: CatalogDataset;
+  stallReason: string | undefined;
+  hasParallelDatabase: boolean;
+}): boolean =>
+  options.dataset === 'full' &&
+  options.stallReason === 'schema-change' &&
+  !options.hasParallelDatabase;
+
+/**
  * The mbslave container's side of the blue-green reimport: once replication
  * stalls on the yearly schema change and this image runs a newer mbslave
  * than the stalled one, it restores the new dump into the parallel database

@@ -21,7 +21,10 @@ import {
 import { RestoreService } from './modules/bootstrap/restore.service.js';
 import { TinySeedRepository } from './modules/bootstrap/tiny-seed.repository.js';
 import { readReimportStateOf } from './modules/reimport/read-reimport-state.js';
-import { ReimportRestoreService } from './modules/reimport/reimport-restore.service.js';
+import {
+  needsParallelDatabaseWarning,
+  ReimportRestoreService,
+} from './modules/reimport/reimport-restore.service.js';
 import { ReimportStateRepository } from './modules/reimport/reimport-state.repository.js';
 import { resolveServingDatabaseUrl } from './modules/reimport/resolve-serving-url.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
@@ -189,6 +192,36 @@ try {
   }
 }
 
+// Without a parallel database a schema-change stall waits forever: the
+// container crash-loops on sync and nothing rebuilds the catalog. The
+// status already carries the stall; this names the exact setting to set, on
+// both processes that need it, with the runbook that provisions it.
+const warnWhenReimportUnconfigured = async (): Promise<void> => {
+  const stall = await sequences.readStall().catch(() => undefined);
+  if (
+    !needsParallelDatabaseWarning({
+      dataset: env.CATALOG_DATASET,
+      stallReason: stall?.reason,
+      hasParallelDatabase: nextPool !== undefined,
+    })
+  ) {
+    return;
+  }
+  logger.warn(
+    'Replication stalled on the yearly schema change but ' +
+      'REIMPORT_DATABASE_URL is unset, so no reimport rebuilds the catalog',
+    {
+      setting: 'REIMPORT_DATABASE_URL',
+      steps:
+        'create a fresh database on the same server, migrate it ' +
+        '(DATABASE_URL=<new-url> nub run db:migrate from apps/music-catalog), ' +
+        'set REIMPORT_DATABASE_URL to it on the mbslave container and the ' +
+        'worker, then restart both',
+      runbook: 'apps/music-catalog/AGENTS.md (Yearly schema change)',
+    },
+  );
+};
+
 // A crash here exits non-zero, so the compose restart brings the loop back:
 // it resumes from mbslave's own cursor (`replication_control`), re-records
 // the sequence and carries on.
@@ -209,6 +242,7 @@ if (restored) {
     logger.info('Replication done', { outcome });
   } catch (error) {
     logger.error('Replication failed, the next start resumes it', { error });
+    await warnWhenReimportUnconfigured();
     process.exitCode = 1;
   } finally {
     await pool.end();

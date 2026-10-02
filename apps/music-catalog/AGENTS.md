@@ -753,26 +753,30 @@ downtime and with a single human step (issue #69):
    rebuilds with the new tag; `pull_policy: build` in the dev compose,
    the published image in production).
 3. **An automatic blue-green reimport follows.** The next `mbslave sync`
-   still fails, but the container now runs a newer release than the stalled
-   one, so instead of crash-looping it restores the new dump into the
-   **parallel database** (`REIMPORT_DATABASE_URL`, a fresh database on the
-   same server, migrated like the serving one) while the current copy keeps
-   serving. Then the worker reinstalls the change triggers there, carries
-   the kept Lyrics over (the strict match rerun from our own schema, no new
-   LRCLIB download), indexes into the `recordings_next`/`lyrics_next`
-   indexes and flips over: Meilisearch's atomic index swap for the indexes,
-   and the reads for the database (every repository resolves a reference the
-   flip swaps, so in-flight requests finish on the old copy). The retired
-   copy's indexes are deleted; its database is dropped when
-   `REIMPORT_CLEANUP_OLD_COPY=true`, else the runbook below drops it.
+   still fails, but the container now runs a newer mbslave major than the
+   stalled one (an older release, the stalled one or an unrelated same-major
+   patch keeps waiting), so instead of crash-looping it restores the new dump
+   into the **parallel database** (`REIMPORT_DATABASE_URL`, a fresh database
+   on the same server, migrated like the serving one) while the current copy
+   keeps serving. Then the worker reinstalls the change triggers there,
+   carries the kept Lyrics over (the strict match rerun from our own schema,
+   no new LRCLIB download), indexes into the `recordings_next`/`lyrics_next`
+   indexes and flips over: one atomic Meilisearch `swap-indexes` task for
+   both index pairs, and the reads for the database (every repository
+   resolves a reference the flip swaps, so in-flight requests finish on the
+   old copy). The retired copy's indexes are deleted; its database is dropped
+   unless `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection
+   until the runbook below drops it.
 4. **Watch `status`.** The first import's `phase` stays `ready` throughout
    (so `search` and `getRecording` never answer `CATALOG_NOT_READY` for a
    reimport), with `replicationStalled: { reason: 'schema-change' }` until
    the flip and `reimport: { phase, progressPct? }` while one runs
    (`restoring` → `indexing` → `switching`). A reimport interrupted by a
    crash or restart resumes on the parallel copy (the restore redoes from a
-   clean state, indexing resumes after its checkpoint, the flip record
-   makes every restarted process open the new copy).
+   clean state, indexing resumes after its checkpoint, the flip replays
+   forward: a rerun that finds the flip record, or the swapped documents
+   without it, completes the flip instead of swapping back, then every
+   restarted process opens the new copy).
 
 - **Disk.** About twice the steady state during a reimport (the parallel
   database plus the `*_next` indexes next to the serving ones), back to
@@ -784,13 +788,27 @@ downtime and with a single human step (issue #69):
   `apps/music-catalog`), and create one fresh database per reimport: the
   container refuses a parallel database that holds a serving or retired
   catalog, and one that is the serving database itself. Without the
-  variable, nothing ever reimports. `tiny` mode never reimports either.
+  variable, nothing ever reimports: the container keeps crash-looping on the
+  stall and logs exactly what to set (`Replication stalled on the yearly
+  schema change but REIMPORT_DATABASE_URL is unset`, with the steps). The
+  database stays an explicit operator step on purpose: provisioning it means
+  migrating it, and migrations are a deploy step, never run on boot.
+  `tiny` mode never reimports either.
 - **After the flip.** Replication resumes from the new dump's cursor on the
   new copy (restart the mbslave container if it kept syncing the retired
-  one: with cleanup on, its next sync fails and the compose restart brings
-  it back on the new copy by itself). Drop a kept retired database with
-  `DROP DATABASE <old>` once verified — the flip record survives in the new
-  copy, so restarts keep opening it.
+  one: with the default cleanup, its next sync fails and the compose restart
+  brings it back on the new copy by itself). With
+  `REIMPORT_CLEANUP_OLD_COPY=false` the retired database is kept for
+  inspection: drop it with `DROP DATABASE <old>` once verified — the flip
+  record survives in the new copy, so restarts keep opening it.
+- **Crash windows.** The index swap is one Meilisearch task, so there is no
+  half-swapped catalog. The residual window is the flip record right after
+  it: a crash there replays the flip, finds the swapped documents through a
+  sample of the parallel copy's ids (hundreds, so a differing copy is missed
+  only by extreme bad luck; an identical copy is harmless either way) and
+  completes forward instead of swapping back. If a flip ever looks wrong,
+  compare the serving index counts with the serving database before dropping
+  anything: `recordings` must hold the new copy's documents.
 - **Greppable logs.** Until the bump, the container crash-loops on mbslave's
   own schema-mismatch message (`mbslave output`, then `Replication failed,
   the next start resumes it`) while `status` carries the stall. The reimport
@@ -869,7 +887,7 @@ downtime and with a single human step (issue #69):
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
   | `MBSLAVE_REF` | The mbslave release in the mbslave image (baked in from its build argument); recorded with a schema-change stall (see "Yearly schema change") |
   | `REIMPORT_DATABASE_URL` | The parallel database a reimport rebuilds (same server, other database); absent, nothing ever reimports (see "Yearly schema change"); restore and worker |
-  | `REIMPORT_CLEANUP_OLD_COPY` | `true` drops the retired database after the flip; absent, it is kept for inspection |
+  | `REIMPORT_CLEANUP_OLD_COPY` | Anything but `false` drops the retired database after the flip; `false` keeps it for inspection |
   | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `tiny` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
   | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
