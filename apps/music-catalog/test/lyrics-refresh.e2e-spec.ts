@@ -1,229 +1,31 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
-import { gzipSync } from 'node:zlib';
-import { musicCatalogStatusResponseSchema } from '@notefinder/contracts';
-import type { Database } from '../src/database/database.js';
-import {
-  type FakeDumpRecording,
-  writeFakeLrclibDump,
-} from '../src/integrations/lrclib/fake-lrclib-dump.js';
-import {
-  LRCLIB_API_USER_AGENT,
-  type LrclibApiTrack,
-} from '../src/integrations/lrclib/lrclib-api.js';
-import { type TestServer, useTestServer } from './utils/create-test-server.js';
-import { setBootstrapState } from './utils/database.js';
-import {
-  type FakeLrclibApiServer,
-  startFakeLrclibApiServer,
-} from './utils/fake-lrclib-api-server.js';
-import {
-  type FakeLrclibServer,
-  fakeLrclibDumpGz,
-  startFakeLrclibServer,
-} from './utils/fake-lrclib-server.js';
-import { requestRecording } from './utils/get-recording-client.js';
+import { LRCLIB_API_USER_AGENT } from '../src/integrations/lrclib/lrclib-api.js';
+import { useTestServer } from './utils/create-test-server.js';
+import { fakeLrclibDumpGz } from './utils/fake-lrclib-server.js';
 import { setRefreshState } from './utils/lrclib-refresh-state.js';
-import { addArtist, addRecording, mbid } from './utils/musicbrainz.js';
-import { addRelease, addTrack } from './utils/musicbrainz-relations.js';
-import { requestSearch } from './utils/search-client.js';
 import {
-  createTestWorker,
+  addLateSong,
+  ageRefreshState,
+  arrangeDuo,
+  DUMP_ONE,
+  DUMP_THREE,
+  DUMP_TWO,
+  lyricsOf,
+  REC_A,
+  REC_B,
+  refreshedDumpGz,
+  searchMbids,
+  startServers,
+  statusPhase,
+  tickFirst,
+  tickWorker,
+  waitForApiRequest,
+} from './utils/lyrics-refresh-setup.js';
+import { mbid } from './utils/musicbrainz.js';
+import {
   useEmptyLyricsIndex,
   useEmptySearchIndex,
 } from './utils/test-worker.js';
 import { useTestClient } from './utils/use-test-client.js';
-import type { TestClient } from './utils/ws-client.js';
-
-const REC_A = mbid(31);
-const REC_B = mbid(32);
-
-const DUMP_ONE = 'lrclib-db-dump-20260101T000000Z.sqlite3.gz';
-const DUMP_TWO = 'lrclib-db-dump-20260215T000000Z.sqlite3.gz';
-
-// Two Recordings: the first matches its dump row, the second only gets an
-// album tie that must never match (the generator's index-1 role), so it
-// stays without Lyrics until the API lookup.
-const arrangeDuo = async (db: Database): Promise<FakeDumpRecording[]> => {
-  const moths = await addArtist(db, { name: 'Copper Moths', mbid: mbid(41) });
-  const parade = await addArtist(db, { name: 'Silent Parade', mbid: mbid(42) });
-  const songs = [
-    {
-      mbid: REC_A,
-      name: 'Copper Kettle',
-      artists: [{ artist: moths }],
-      lengthMs: 210_000,
-      album: 'Evening Static',
-    },
-    {
-      mbid: REC_B,
-      name: 'Glass Parade',
-      artists: [{ artist: parade }],
-      lengthMs: 195_000,
-      album: 'Tide Charts',
-    },
-  ] as const;
-  const recordings: FakeDumpRecording[] = [];
-  for (const song of songs) {
-    const recorded = await addRecording(db, {
-      mbid: song.mbid,
-      name: song.name,
-      artists: song.artists,
-      lengthMs: song.lengthMs,
-    });
-    const release = await addRelease(db, {
-      name: song.album,
-      artistCredit: recorded.artistCredit,
-    });
-    await addTrack(db, { release, recording: recorded });
-    recordings.push({
-      mbid: song.mbid,
-      title: song.name,
-      artist: song.artists[0]?.artist.name ?? '',
-      lengthMs: song.lengthMs,
-      albums: [song.album],
-    });
-  }
-  return recordings;
-};
-
-// The same dump with every Lyrics text rewritten, the way a newer dump
-// carries corrected words for the same tracks.
-const refreshedDumpGz = (
-  recordings: readonly FakeDumpRecording[],
-  marker: string,
-): Buffer => {
-  const dir = mkdtempSync(join(tmpdir(), 'lrclib-refresh-e2e-'));
-  try {
-    const path = join(dir, 'lrclib.sqlite3');
-    writeFakeLrclibDump(path, recordings);
-    const db = new DatabaseSync(path);
-    try {
-      const tracks = db.prepare('SELECT id FROM tracks').all() as {
-        id: number;
-      }[];
-      const update = db.prepare(
-        'UPDATE lyrics SET plain_lyrics = ?, synced_lyrics = ? WHERE track_id = ?',
-      );
-      for (const track of tracks) {
-        update.run(
-          `Refreshed words ${marker} still drifting on`,
-          `[00:01.00] Refreshed words ${marker} still drifting on`,
-          track.id,
-        );
-      }
-    } finally {
-      db.close();
-    }
-    return gzipSync(readFileSync(path));
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-};
-
-const lyricsOf = async (
-  client: TestClient,
-  song: string,
-): Promise<{ plain: string | null; synced: string | null }> => {
-  const response = await requestRecording(client, { mbid: song });
-  if (!response.ok) {
-    throw new Error(`getRecording failed: ${response.error.code}`);
-  }
-  return response.result.lyrics;
-};
-
-const searchMbids = async (
-  client: TestClient,
-  query: string,
-  scope: 'metadata' | 'lyrics',
-): Promise<string[]> => {
-  const response = await requestSearch(client, { query, scope });
-  if (!response.ok) {
-    throw new Error(`search failed: ${response.error.code}`);
-  }
-  return response.result.results.map((result) => result.mbid);
-};
-
-const statusPhase = async (client: TestClient): Promise<string> => {
-  const response = musicCatalogStatusResponseSchema.parse(
-    await client.request('status', {}),
-  );
-  if (!response.ok) {
-    throw new Error(`status failed: ${response.error.code}`);
-  }
-  return response.result.phase;
-};
-
-type Servers = {
-  lrclib: FakeLrclibServer;
-  api: FakeLrclibApiServer;
-  close: () => Promise<void>;
-};
-
-const startServers = async (options: {
-  dumps: Record<string, Buffer>;
-  apiTracks?: readonly LrclibApiTrack[];
-  apiFailures?: string[];
-}): Promise<Servers> => {
-  const lrclib = await startFakeLrclibServer(options.dumps);
-  const api = await startFakeLrclibApiServer({
-    tracks: options.apiTracks ?? [],
-    failures: options.apiFailures ?? [],
-  });
-  return {
-    lrclib,
-    api,
-    close: async () => {
-      await api.close();
-      await lrclib.close();
-    },
-  };
-};
-
-// One worker tick in `full` mode, the way `worker.ts` ticks: the listing and
-// the API point at the fake servers, and the intervals stay tiny so the
-// refresh is due whenever the test ages its state.
-const tickWorker = async (
-  server: TestServer,
-  servers: Servers,
-  env: Record<string, string> = {},
-): Promise<void> => {
-  const worker = createTestWorker(server, {
-    env: {
-      CATALOG_DATASET: 'full',
-      LRCLIB_BASE_URL: servers.lrclib.baseUrl,
-      LRCLIB_LISTING_URL: servers.lrclib.listingUrl,
-      LRCLIB_API_BASE_URL: servers.api.baseUrl,
-      LRCLIB_REFRESH_CHECK_INTERVAL_MS: '1',
-      LRCLIB_REFRESH_MIN_INTERVAL_DAYS: '1',
-      ...env,
-    },
-  });
-  await worker.tick();
-};
-
-// The first tick, from where the mbslave container leaves the catalog
-// (`restored`): later ticks leave the phase alone, the way the worker finds
-// it (`ready` after the first one reaches it).
-const tickFirst = async (
-  server: TestServer,
-  servers: Servers,
-  env: Record<string, string> = {},
-): Promise<void> => {
-  await setBootstrapState(server.db, { phase: 'restored', dataset: 'full' });
-  await tickWorker(server, servers, env);
-};
-
-const ageRefreshState = async (db: Database, key: string): Promise<void> => {
-  const aged = new Date(Date.now() - 2 * 86_400_000);
-  await setRefreshState(db, {
-    lastDumpKey: key,
-    lastCheckedAt: aged,
-    lastImportedAt: aged,
-  });
-};
 
 describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
   const server = useTestServer();
@@ -324,10 +126,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       const third = await startServers({
         dumps: {
           [DUMP_TWO]: refreshedDumpGz(recordings, 'second-pressing'),
-          'lrclib-db-dump-20260301T000000Z.sqlite3.gz': refreshedDumpGz(
-            recordings,
-            'third-pressing',
-          ),
+          [DUMP_THREE]: refreshedDumpGz(recordings, 'third-pressing'),
         },
       });
       try {
@@ -340,6 +139,27 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
           plain: expect.stringContaining('second-pressing'),
         });
+
+        // Once the minimum interval passes, the skipped dump is still
+        // imported: waiting it out lost nothing.
+        const past = new Date(Date.now() - 31 * 86_400_000);
+        await setRefreshState(server().db, {
+          lastDumpKey: DUMP_TWO,
+          lastCheckedAt: past,
+          lastImportedAt: past,
+        });
+        await tickWorker(server(), third, {
+          LRCLIB_REFRESH_MIN_INTERVAL_DAYS: '30',
+        });
+        await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+          plain: expect.stringContaining('third-pressing'),
+        });
+        const found = await searchMbids(
+          client(),
+          'third-pressing still drifting',
+          'lyrics',
+        );
+        expect(found[0]).toBe(REC_A);
       } finally {
         await third.close();
       }
@@ -418,6 +238,176 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       const found = await searchMbids(client(), 'Glass Parade', 'metadata');
       expect(found).toContain(REC_B);
       await expect(statusPhase(client())).resolves.toBe('ready');
+    } finally {
+      await servers.close();
+    }
+  });
+
+  it('fills a Recording added after ready from the API', async () => {
+    const recordings = await arrangeDuo(server().db);
+    const servers = await startServers({
+      dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+    });
+    try {
+      await tickFirst(server(), servers);
+
+      const late = await addLateSong(server().db, {
+        mbid: mbid(33),
+        title: 'Paper Lanterns',
+        artist: 'Paper Foxes',
+        album: 'Night Markets',
+        lengthMs: 220_000,
+      });
+      const withApi = await startServers({
+        dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+        apiTracks: [
+          {
+            trackName: late.title,
+            artistName: late.artist,
+            albumName: late.albums[0] ?? '',
+            duration: (late.lengthMs ?? 0) / 1000,
+            plainLyrics: 'Lantern words only the API knows',
+            syncedLyrics: '[00:01.00] Lantern words only the API knows',
+          },
+        ],
+      });
+      try {
+        await tickWorker(server(), withApi);
+
+        await expect(lyricsOf(client(), late.mbid)).resolves.toMatchObject({
+          plain: expect.stringContaining('Lantern words'),
+        });
+        const found = await searchMbids(
+          client(),
+          'Lantern words only the API knows',
+          'lyrics',
+        );
+        expect(found).toContain(late.mbid);
+        // The outbox drained behind the lookup: the metadata index answers.
+        const metadata = await searchMbids(
+          client(),
+          'Paper Lanterns',
+          'metadata',
+        );
+        expect(metadata).toContain(late.mbid);
+      } finally {
+        await withApi.close();
+      }
+    } finally {
+      await servers.close();
+    }
+  });
+
+  it('drains the outbox while an API lookup hangs', async () => {
+    const recordings = await arrangeDuo(server().db);
+    const servers = await startServers({
+      dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+    });
+    try {
+      await tickFirst(server(), servers);
+
+      const late = await addLateSong(server().db, {
+        mbid: mbid(34),
+        title: 'Harbor Static',
+        artist: 'Paper Foxes',
+        album: 'Night Markets',
+        lengthMs: 230_000,
+      });
+      let releaseApi = (): void => undefined;
+      const apiGate = new Promise<void>((resolve) => {
+        releaseApi = resolve;
+      });
+      const hanging = await startServers({
+        dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+        apiTracks: [
+          {
+            trackName: late.title,
+            artistName: late.artist,
+            albumName: late.albums[0] ?? '',
+            duration: (late.lengthMs ?? 0) / 1000,
+            plainLyrics: 'Harbor words held back by the API',
+            syncedLyrics: '[00:01.00] Harbor words held back by the API',
+          },
+        ],
+        apiBeforeResponse: () => apiGate,
+      });
+      try {
+        const ticking = tickWorker(server(), hanging);
+        try {
+          await waitForApiRequest(hanging);
+          // The drain ran before the lookup even asked: the metadata index
+          // answers while the API still holds every response.
+          const metadata = await searchMbids(
+            client(),
+            'Harbor Static',
+            'metadata',
+          );
+          expect(metadata).toContain(late.mbid);
+        } finally {
+          releaseApi();
+        }
+        await ticking;
+
+        await expect(lyricsOf(client(), late.mbid)).resolves.toMatchObject({
+          plain: expect.stringContaining('held back by the API'),
+        });
+      } finally {
+        await hanging.close();
+      }
+    } finally {
+      await servers.close();
+    }
+  });
+
+  it('rejects an API track outside the strict match window', async () => {
+    const recordings = await arrangeDuo(server().db);
+    const servers = await startServers({
+      dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+    });
+    try {
+      await tickFirst(server(), servers);
+
+      const late = await addLateSong(server().db, {
+        mbid: mbid(35),
+        title: 'Tin Echoes',
+        artist: 'Paper Foxes',
+        album: 'Night Markets',
+        lengthMs: 240_000,
+      });
+      // Thirty seconds away from the Recording: not the same take. Served
+      // verbatim, so the fake's echo cannot hide the mismatch. (The album
+      // tie-break needs several passing tracks, which the single-track
+      // endpoint never returns, so duration is the rejection path here.)
+      const strict = await startServers({
+        dumps: { [DUMP_ONE]: fakeLrclibDumpGz(recordings) },
+        apiTracks: [
+          {
+            trackName: late.title,
+            artistName: late.artist,
+            albumName: late.albums[0] ?? '',
+            duration: (late.lengthMs ?? 0) / 1000 + 30,
+            plainLyrics: 'Words that are not this take',
+            syncedLyrics: '[00:01.00] Words that are not this take',
+          },
+        ],
+        apiVerbatimTitles: [late.title],
+      });
+      try {
+        await tickWorker(server(), strict);
+
+        await expect(lyricsOf(client(), late.mbid)).resolves.toEqual({
+          plain: null,
+          synced: null,
+        });
+        // Rejected Lyrics never reach the index, while the outbox drains.
+        await expect(
+          searchMbids(client(), 'Words that are not this take', 'lyrics'),
+        ).resolves.not.toContain(late.mbid);
+        const metadata = await searchMbids(client(), 'Tin Echoes', 'metadata');
+        expect(metadata).toContain(late.mbid);
+      } finally {
+        await strict.close();
+      }
     } finally {
       await servers.close();
     }

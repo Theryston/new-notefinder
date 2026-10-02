@@ -588,15 +588,16 @@ job, not this import's.
   throughout. A failed check or download only logs: the catalog serves the
   kept Lyrics until the next tick. In `tiny` the refresh never runs (it would
   need the network; the fake dump is generated instead).
-- **Outbox lookup** (`LyricsLookupService.fillFromApi`, one worker tick,
+- **Outbox lookup** (`LyricsLookupService`, one worker tick,
   `full` only): Recordings the outbox reports that have no kept Lyrics get
   them from LRCLIB's public API (`LRCLIB_API_BASE_URL`,
-  `/api/get?artist_name&track_name&album_name&duration`), before the drain
-  carries the changes to the metadata index. The one returned track goes
-  through the same strict match; at most 10 Recordings are asked per tick, a
-  second apart, every request with a notefinder `User-Agent`. An API failure
-  only logs: the Recording stays without Lyrics until the next dump refresh,
-  and the drain behind it never waits on the API.
+  `/api/get?artist_name&track_name&album_name&duration`). The tick peeks the
+  candidates before the drain and fills them after it (`peekLyricless`, then
+  `fillLyricless`), so a slow or failing API never holds the drain back. The
+  one returned track goes through the same strict match; at most 10
+  Recordings are asked per tick, a second apart, every request with a
+  notefinder `User-Agent`. An API failure only logs: the Recording stays
+  without Lyrics until the next dump refresh.
 - **Disk and RAM.** About 260 GB of temp disk per `full` import (the steady
   state stays about 150-220 GB, see ADR 0002). Local development and tests
   use the generated fake dump and tiny fixtures, never the real one.
@@ -929,10 +930,12 @@ could not start there anyway).
   dump over a worker tick (`getRecording` returns the new Lyrics and the
   lyrics scope finds the new text, still in Meilisearch's relevance order),
   the skip of an already-imported dump (no second download), the wait past
-  the minimum interval, the Lyrics of an outbox Recording from the API (with
-  the `User-Agent` the fake server records), and the failure paths: an API
-  failure leaves the Recording without Lyrics while the outbox still drains,
-  and a listing failure leaves the catalog ready with null Lyrics.
+  the minimum interval (still imported once it passes), the Lyrics of an
+  outbox Recording from the API (with the `User-Agent` the fake server
+  records), including one added after `ready`, and the failure paths: an API
+  failure leaves the Recording without Lyrics while the outbox still drains
+  (even while a lookup hangs), a non-matching API track is rejected, and a
+  listing failure leaves the catalog ready with null Lyrics.
 
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload

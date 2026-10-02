@@ -59,13 +59,37 @@ const defaultSleep = (ms: number): Promise<void> =>
  * strict match as the dump import (normalized, ±2 s, album tie-break),
  * through a rate-limited queue carrying our User-Agent. An API failure only
  * logs: the Recording stays without Lyrics until the next dump refresh, and
- * the outbox drain behind it never waits on the API's errors.
+ * the outbox drain never waits on the API: the tick peeks the candidates
+ * before the drain and fills them after it.
  */
 export class LyricsLookupService {
   constructor(private readonly deps: LyricsLookupDeps) {}
 
   async fillFromApi(signal?: AbortSignal): Promise<LyricsLookupResult> {
-    const candidates = await this.findCandidates(signal);
+    return this.fillLyricless(await this.peekLyricless(signal), signal);
+  }
+
+  /**
+   * The outbox Recordings still without kept Lyrics, oldest first: new and
+   * changed Recordings whose Lyrics the API may know. Pure database reads,
+   * no network: the tick calls it before the drain, so the peek sees the
+   * entries the drain is about to carry to the index.
+   */
+  async peekLyricless(signal?: AbortSignal): Promise<MatchingRecording[]> {
+    return this.findCandidates(signal);
+  }
+
+  /**
+   * Asks the API for the peeked Recordings' Lyrics, at most
+   * `maxPerTick` per tick and a second apart. Runs after the drain, so a
+   * slow or failing API only delays the Lyrics, never the outbox behind
+   * them. An API failure only logs: the Recording waits for the next dump
+   * refresh instead of holding anything back.
+   */
+  async fillLyricless(
+    candidates: readonly MatchingRecording[],
+    signal?: AbortSignal,
+  ): Promise<LyricsLookupResult> {
     let lookedUp = 0;
     const gap = this.deps.minGapMs ?? MIN_GAP_MS;
     const sleep = this.deps.sleep ?? defaultSleep;
@@ -114,7 +138,7 @@ export class LyricsLookupService {
   // One Recording's Lyrics from the API, kept and indexed when the strict
   // match agrees. Undefined when there is nothing to keep; an API failure
   // only logs, so the Recording waits for the next dump refresh instead of
-  // holding the tick back.
+  // holding the drain back.
   private async lookupOne(
     recording: MatchingRecording,
     signal?: AbortSignal,

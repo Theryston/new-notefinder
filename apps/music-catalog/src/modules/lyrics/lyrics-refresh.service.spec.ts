@@ -54,7 +54,7 @@ type Stubs = {
   deleted: string[][];
   upserted: LyricsDocument[][];
   removed: string[][];
-  checks: { now: Date; dumpKey: string | null }[];
+  checks: { now: Date }[];
   imports: { now: Date; dumpKey: string }[];
 };
 
@@ -138,9 +138,12 @@ const wire = async (
     } as unknown as LyricsRepository,
     refreshState: {
       getState: async () => state,
-      recordCheck: async (now: Date, dumpKey: string | null) => {
-        stubs.checks.push({ now, dumpKey });
-        state.lastDumpKey = dumpKey;
+      // Like the real repository: a check only stamps the poll, never the
+      // key. Only a finished import records its key, so a newer dump seen
+      // while the minimum interval has not passed is still imported once the
+      // interval passes.
+      recordCheck: async (now: Date) => {
+        stubs.checks.push({ now });
         state.lastCheckedAt = now;
       },
       recordImport: async (now: Date, dumpKey: string) => {
@@ -175,6 +178,36 @@ const wire = async (
     requested: () => server.requested,
     close: () => server.close(),
   };
+};
+
+// A newer dump the listing serves while the minimum interval has not passed
+// since dump-a was imported: one tick skips it without downloading, and the
+// skipped key stays unremembered.
+const wireSkippedNewerDump = async (): Promise<
+  Wiring & { close: () => Promise<void> }
+> => {
+  const batch = [recording()];
+  const wiring = await wire(
+    batch,
+    {
+      'dump-a.sqlite3.gz': batch.map(asFake),
+      'dump-b.sqlite3.gz': batch.map(asFake),
+    },
+    aged({
+      lastDumpKey: 'dump-a.sqlite3.gz',
+      lastCheckedAt: null,
+      lastImportedAt: new Date(),
+    }),
+  );
+  // The listing only keeps the latest dump, the newer key.
+  await expect(wiring.service.refreshOnce()).resolves.toMatchObject({
+    refreshed: false,
+  });
+  expect(
+    wiring.requested().filter((path) => path.startsWith('/files/')),
+  ).toHaveLength(0);
+  expect(wiring.stubs.imports).toHaveLength(0);
+  return wiring;
 };
 
 describe('LyricsRefreshService', () => {
@@ -270,28 +303,32 @@ describe('LyricsRefreshService', () => {
   });
 
   it('waits out the minimum interval even for a newer dump', async () => {
-    const batch = [recording()];
-    const wiring = await wire(
-      batch,
-      {
-        'dump-a.sqlite3.gz': batch.map(asFake),
-        'dump-b.sqlite3.gz': batch.map(asFake),
-      },
-      aged({
-        lastDumpKey: 'dump-a.sqlite3.gz',
-        lastCheckedAt: null,
-        lastImportedAt: new Date(),
-      }),
-    );
+    const wiring = await wireSkippedNewerDump();
     try {
-      // The listing only keeps the latest dump, the newer key.
+      // The skipped key is not remembered as imported.
+      expect(wiring.state.lastDumpKey).toBe('dump-a.sqlite3.gz');
+    } finally {
+      await wiring.close();
+    }
+  });
+
+  it('imports a newer dump skipped during the minimum interval once it passes', async () => {
+    const wiring = await wireSkippedNewerDump();
+    try {
+      expect(wiring.state.lastDumpKey).toBe('dump-a.sqlite3.gz');
+
+      // Past both intervals, the same newer dump is imported: nothing was
+      // lost by skipping it earlier.
+      const past = new Date(Date.now() - 31 * 86_400_000);
+      wiring.state.lastCheckedAt = past;
+      wiring.state.lastImportedAt = past;
       await expect(wiring.service.refreshOnce()).resolves.toMatchObject({
-        refreshed: false,
+        refreshed: true,
       });
-      expect(
-        wiring.requested().filter((path) => path.startsWith('/files/')),
-      ).toHaveLength(0);
-      expect(wiring.stubs.imports).toHaveLength(0);
+      expect(wiring.stubs.imports.map((entry) => entry.dumpKey)).toEqual([
+        'dump-b.sqlite3.gz',
+      ]);
+      expect(wiring.state.lastDumpKey).toBe('dump-b.sqlite3.gz');
     } finally {
       await wiring.close();
     }

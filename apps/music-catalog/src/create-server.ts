@@ -19,6 +19,7 @@ import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { IndexingRepository } from './modules/indexing/indexing.repository.js';
 import { IndexingService } from './modules/indexing/indexing.service.js';
+import type { MatchingRecording } from './modules/lyrics/lyrics.repository.js';
 import { LyricsRepository } from './modules/lyrics/lyrics.repository.js';
 import { LyricsService } from './modules/lyrics/lyrics.service.js';
 import { LyricsImportService } from './modules/lyrics/lyrics-import.service.js';
@@ -168,9 +169,10 @@ export const createMusicCatalogWorker = (
   // catalog is still being built: the indexing then sends the kept Lyrics
   // to the `lyrics` index in the same run, and a failed import only logs
   // (the catalog still becomes ready; the refresh below retries later).
-  // Once the catalog is ready, the lookup gives outbox Recordings their
-  // Lyrics from the public API before the drain carries the changes to the
-  // metadata index, and the refresh imports a newer dump when one is due:
+  // Once the catalog is ready, the lookup peeks the outbox Recordings
+  // without Lyrics before the drain and asks the public API for them after
+  // it, so a slow or failing API never holds the drain back, and the refresh
+  // imports a newer dump when one is due:
   // only changed Lyrics are reindexed, the phase never moves, and every
   // failure only logs, so `getRecording` and `search` keep answering.
   return { tick: createWorkerTick({ sync, lyrics, indexing, signal, logger }) };
@@ -186,21 +188,32 @@ type WorkerTickOptions = {
 };
 
 // One round of the worker's periodic work. Steps never overlap, so the work
-// a tick does needs no lock against itself.
+// a tick does needs no lock against itself. The Lyrics candidates are peeked
+// before the drain and filled after it: the drain never waits on the API,
+// however slow or broken it is, and the peek still sees the entries the
+// drain is about to carry to the index.
 const createWorkerTick = (
   options: WorkerTickOptions,
 ): (() => Promise<void>) => {
   const { sync, lyrics, indexing, signal, logger } = options;
   return async () => {
     await sync.ensureTriggers();
+    let lyricless: MatchingRecording[] = [];
     try {
-      await lyrics.lookupService.fillFromApi(signal);
+      lyricless = await lyrics.lookupService.peekLyricless(signal);
     } catch (error) {
       logger.error('LRCLIB API lookup failed, continuing without Lyrics', {
         error,
       });
     }
     await sync.drain(signal);
+    try {
+      await lyrics.lookupService.fillLyricless(lyricless, signal);
+    } catch (error) {
+      logger.error('LRCLIB API lookup failed, continuing without Lyrics', {
+        error,
+      });
+    }
     try {
       await lyrics.importService.importOnce(signal);
     } catch (error) {

@@ -91,7 +91,7 @@ export class LyricsRefreshService {
     if (!this.isCheckDue(state.lastCheckedAt, now)) {
       return idle;
     }
-    // Read before the check below records the polled key.
+    // Read before the check below: it records the poll, never the key.
     const previousKey = state.lastDumpKey;
     const key = await this.fetchKey(previousKey, now);
     if (key === undefined || key === previousKey) {
@@ -124,15 +124,18 @@ export class LyricsRefreshService {
 
   // The latest listing key, or undefined when there is nothing to import.
   // A listing failure is recorded as a check (so it is not retried at once)
-  // and only logged: the catalog keeps serving the kept Lyrics.
+  // and only logged: the catalog keeps serving the kept Lyrics. The polled
+  // key is not stored here: `lastDumpKey` stays the last imported one, so a
+  // newer dump seen while the minimum interval has not passed is still
+  // imported once the interval passes.
   private async fetchKey(
-    lastDumpKey: string | null,
+    importedKey: string | null,
     now: Date,
   ): Promise<string | undefined> {
     try {
       const key = await fetchLatestDumpKey(this.deps.lrclibListingUrl);
-      await this.deps.refreshState.recordCheck(now, key);
-      if (key === lastDumpKey) {
+      await this.deps.refreshState.recordCheck(now);
+      if (key === importedKey) {
         this.deps.logger.info('Skipping the LRCLIB refresh', {
           key,
           reason: 'dump already imported',
@@ -141,7 +144,7 @@ export class LyricsRefreshService {
       }
       return key;
     } catch (error) {
-      await this.deps.refreshState.recordCheck(now, lastDumpKey);
+      await this.deps.refreshState.recordCheck(now);
       this.deps.logger.error(
         'LRCLIB refresh check failed, serving the kept Lyrics',
         { error },
