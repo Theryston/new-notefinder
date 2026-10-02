@@ -84,3 +84,10 @@ loop. Datasets are now `full` (the official dumps, production) and `tiny`
 recall and latency numbers above were measured on the dropped sample and are
 kept as history; `tiny` carries no benchmark. Replication runs only in
 `full`, and the Lyrics import keeps only matched Lyrics.
+
+This explicitly supersedes the "Local development and tests use the
+MusicBrainz sample, a generated fake LRCLIB dump and e2e fixtures, never
+the full data." line above (kept verbatim as history): local development
+and tests now use `tiny`, and `full` is verified explicitly before releases
+that touch the restore or sizing. The "2.95 M-Recording sample" recall
+figures stay as measurements of the dropped dump.
