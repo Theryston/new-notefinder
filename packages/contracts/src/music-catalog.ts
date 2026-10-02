@@ -126,8 +126,12 @@ export const bootstrapPhaseSchema = z.enum(BOOTSTRAP_PHASES);
 
 export type BootstrapPhase = z.infer<typeof bootstrapPhaseSchema>;
 
-/** `sample` is the small MusicBrainz sample used in development. */
-export const CATALOG_DATASETS = ['sample', 'full'] as const;
+/**
+ * Which data the first import lays down. `full` restores the official
+ * MusicBrainz dumps (production). `tiny` seeds a small deterministic catalog
+ * locally in seconds (development): no downloads, megabytes of disk.
+ */
+export const CATALOG_DATASETS = ['full', 'tiny'] as const;
 
 export const catalogDatasetSchema = z.enum(CATALOG_DATASETS);
 
