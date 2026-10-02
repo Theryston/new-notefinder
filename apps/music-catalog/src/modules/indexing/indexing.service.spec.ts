@@ -44,7 +44,7 @@ const setup = (options: Options = {}) => {
   const bootstrap = {
     getStatus: vi.fn(async () => ({
       phase: options.phase ?? 'restored',
-      dataset: 'sample' as const,
+      dataset: 'tiny' as const,
     })),
     startIndexing: vi.fn(async () => {
       events.push('startIndexing');

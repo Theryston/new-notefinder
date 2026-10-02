@@ -75,3 +75,12 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
   Meilisearch latency depends on RAM.
 - Local development and tests use the MusicBrainz sample, a generated fake
   LRCLIB dump and e2e fixtures, never the full data.
+
+## Update (#85)
+
+The official sample dump is dropped: it was too heavy for the local dev
+loop. Datasets are now `full` (the official dumps, production) and `tiny`
+(300 deterministic Recordings seeded locally in seconds, development). The
+recall and latency numbers above were measured on the dropped sample and are
+kept as history; `tiny` carries no benchmark. Replication runs only in
+`full`, and the Lyrics import keeps only matched Lyrics.

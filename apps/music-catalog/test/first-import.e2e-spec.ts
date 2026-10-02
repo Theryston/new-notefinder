@@ -9,6 +9,11 @@ import {
   RestoreService,
   restoreServiceDeps,
 } from '../src/modules/bootstrap/restore.service.js';
+import {
+  TINY_RECORDING_COUNT,
+  tinyRecordingMbid,
+} from '../src/modules/bootstrap/tiny-seed.js';
+import { TinySeedRepository } from '../src/modules/bootstrap/tiny-seed.repository.js';
 import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
 import { applySyncTriggers } from './setup/sync-triggers.js';
 import { testLogger, useTestServer } from './utils/create-test-server.js';
@@ -17,6 +22,7 @@ import {
   type FakeDumpServer,
   startFakeDumpServer,
 } from './utils/fake-dump-server.js';
+import { requestRecording } from './utils/get-recording-client.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { requestSearch } from './utils/search-client.js';
 import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
@@ -24,7 +30,7 @@ import { useTestClient } from './utils/use-test-client.js';
 
 // Recreating the 375-table MusicBrainz schema (the redo test) and
 // indexing to ready take longer than vitest's 5s default on CI runners.
-describe('first import: the mbslave container restores the dump (e2e)', {
+describe('first import: the mbslave container lays the dataset down (e2e)', {
   timeout: 120_000,
 }, () => {
   const server = useTestServer();
@@ -45,11 +51,13 @@ describe('first import: the mbslave container restores the dump (e2e)', {
 
   // The real restore wired like `restore.ts`, except mbslave runs behind its
   // integration boundary: `init --empty` recreates the schema the scripts
-  // would create, and `import` downloads the archives over real HTTP from
-  // the fake dump server and seeds what the dump would load. Spawning the
-  // real binary here would need its Python/psql image, minutes per run and
-  // the network on every PR; the spike verified the real commands against a
-  // fake mirror instead (docs/research/music-catalog-spike.md, section 2).
+  // would create. In `tiny` mode the real seed then writes the deterministic
+  // Recordings (no downloads); in `full` mode `import` downloads the
+  // archives over real HTTP from the fake dump server and seeds what the
+  // dump would load. Spawning the real binary here would need its
+  // Python/psql image, minutes per run and the network on every PR; the
+  // spike verified the real commands against a fake mirror instead
+  // (docs/research/music-catalog-spike.md, section 2).
   const harness = async (
     options: {
       dataset?: CatalogDataset;
@@ -58,6 +66,7 @@ describe('first import: the mbslave container restores the dump (e2e)', {
     } = {},
   ) => {
     const calls: string[][] = [];
+    const dataset = options.dataset ?? 'tiny';
     const mbslave = new MbslaveClient(async (args) => {
       calls.push([...args]);
       if (args[0] === 'init') {
@@ -83,43 +92,50 @@ describe('first import: the mbslave container restores the dump (e2e)', {
         repository: new BootstrapRepository(server().db),
         mbslave,
         resolveUrls: resolveLatestDumpUrls,
+        seedTiny: () => new TinySeedRepository(server().db).seed(),
         baseUrl: dumps.url,
-        dataset: options.dataset ?? 'sample',
+        dataset,
         logger: testLogger,
       }),
     );
     return { run: () => restore.run(), calls };
   };
 
-  const statusPhase = async (): Promise<string> => {
+  const statusOf = async (): Promise<{ phase: string; dataset: string }> => {
     const response = musicCatalogStatusResponseSchema.parse(
       await client().request('status', {}),
     );
     if (!response.ok) {
       throw new Error('status failed');
     }
-    return response.result.phase;
+    return response.result;
   };
 
-  const searchMbids = async (query: string): Promise<string[]> => {
-    const response = await requestSearch(client(), { query });
+  const searchMbids = async (
+    query: string,
+    scope?: 'metadata' | 'lyrics',
+  ): Promise<string[]> => {
+    const response = await requestSearch(client(), { query, scope });
     if (!response.ok) {
       throw new Error(`search failed: ${response.error.code}`);
     }
     return response.result.results.map((result) => result.mbid);
   };
 
-  const recordingGids = async (): Promise<string[]> => {
-    const rows = await server().db.execute<{ gid: string }>(
-      sql`select gid from musicbrainz.recording`,
+  const recordingCount = async (): Promise<number> => {
+    const rows = await server().db.execute<{ count: string }>(
+      sql`select count(*) as count from musicbrainz.recording`,
     );
-    return rows.rows.map((row) => row.gid).sort();
+    return Number(rows.rows[0]?.count ?? 0);
   };
 
-  it('restores the sample dump to ready on the first run', async () => {
-    expect(await statusPhase()).toBe('restoring');
+  it('seeds the tiny catalog to ready on the first run, downloading nothing', async () => {
+    expect(await statusOf()).toMatchObject({
+      phase: 'restoring',
+      dataset: 'tiny',
+    });
     await expect(
-      requestSearch(client(), { query: 'first song' }),
+      requestSearch(client(), { query: 'tiny song' }),
     ).resolves.toMatchObject({
       ok: false,
       error: { code: 'CATALOG_NOT_READY' },
@@ -128,26 +144,70 @@ describe('first import: the mbslave container restores the dump (e2e)', {
     const { run, calls } = await harness();
     await expect(run()).resolves.toBe('restored');
 
-    expect(calls).toEqual([
-      ['init', '--empty'],
-      ['import', `${dumps.url}/sample/20240101-000001/mbdump-sample.tar.xz`],
-    ]);
-    expect(dumps.requested).toEqual([
-      '/data/sample/LATEST',
-      '/data/sample/20240101-000001/mbdump-sample.tar.xz',
-    ]);
-    expect(await statusPhase()).toBe('restored');
+    // Same schema scripts, no dump layout: only `init --empty` ran, and no
+    // HTTP request ever reached a dump server.
+    expect(calls).toEqual([['init', '--empty']]);
+    expect(dumps.requested).toEqual([]);
+    expect(await recordingCount()).toBe(TINY_RECORDING_COUNT);
+    expect(await statusOf()).toMatchObject({
+      phase: 'restored',
+      dataset: 'tiny',
+    });
 
     await createTestWorker(server()).tick();
 
-    expect(await statusPhase()).toBe('ready');
-    await expect(searchMbids('first song')).resolves.toContain(mbid(301));
+    expect(await statusOf()).toMatchObject({
+      phase: 'ready',
+      dataset: 'tiny',
+    });
+    const seededMbid = tinyRecordingMbid(1);
+    await expect(searchMbids('Tiny Song 001')).resolves.toContain(seededMbid);
+    await expect(
+      requestRecording(client(), { mbid: seededMbid }),
+    ).resolves.toMatchObject({ ok: true, result: { title: 'Tiny Song 001' } });
+    // Lyrics are not imported yet: the scope is accepted but finds nothing.
+    await expect(searchMbids('tiny song', 'lyrics')).resolves.toEqual([]);
+  });
+
+  it('restores the full dump to ready on the first run', async () => {
+    const { run, calls } = await harness({
+      dataset: 'full',
+      seedMbid: mbid(302),
+      seedName: 'Full Song',
+    });
+    await expect(run()).resolves.toBe('restored');
+
+    expect(calls).toEqual([
+      ['init', '--empty'],
+      [
+        'import',
+        `${dumps.url}/fullexport/20240102-000003/mbdump.tar.bz2`,
+        `${dumps.url}/fullexport/20240102-000003/mbdump-derived.tar.bz2`,
+      ],
+    ]);
+    expect(dumps.requested).toEqual([
+      '/data/fullexport/LATEST',
+      '/data/fullexport/20240102-000003/mbdump.tar.bz2',
+      '/data/fullexport/20240102-000003/mbdump-derived.tar.bz2',
+    ]);
+    expect(await statusOf()).toMatchObject({
+      phase: 'restored',
+      dataset: 'full',
+    });
+
+    await createTestWorker(server()).tick();
+
+    expect(await statusOf()).toMatchObject({
+      phase: 'ready',
+      dataset: 'full',
+    });
+    await expect(searchMbids('full song')).resolves.toContain(mbid(302));
   });
 
   it('skips the download and the restore on a second start', async () => {
     await setBootstrapState(server().db, {
       phase: 'restored',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
 
     const { run, calls } = await harness();
@@ -155,27 +215,30 @@ describe('first import: the mbslave container restores the dump (e2e)', {
 
     expect(calls).toEqual([]);
     expect(dumps.requested).toEqual([]);
-    expect(await statusPhase()).toBe('restored');
+    expect(await statusOf()).toMatchObject({
+      phase: 'restored',
+      dataset: 'tiny',
+    });
   });
 
-  it('redoes an interrupted restore from a clean state', async () => {
+  it('redoes an interrupted tiny restore from a clean state', async () => {
     await addRecording(server().db, { mbid: mbid(399), name: 'Leftover' });
     await setBootstrapState(server().db, {
       phase: 'restoring',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
     try {
-      const { run, calls } = await harness({
-        seedMbid: mbid(302),
-        seedName: 'Second Song',
-      });
+      const { run, calls } = await harness();
       await expect(run()).resolves.toBe('restored');
 
       expect(calls[0]).toEqual(['init', '--empty']);
-      // The interrupted import's tables are gone with its rows; only what
-      // the redo loaded is there.
-      await expect(recordingGids()).resolves.toEqual([mbid(302)]);
-      expect(await statusPhase()).toBe('restored');
+      // The interrupted restore's tables are gone with its rows (the
+      // leftover recording included); only what the seed wrote is there.
+      expect(await recordingCount()).toBe(TINY_RECORDING_COUNT);
+      expect(await statusOf()).toMatchObject({
+        phase: 'restored',
+        dataset: 'tiny',
+      });
     } finally {
       // Leaves the MusicBrainz schema behind for the files after this one,
       // however the test above ended. The redo dropped the schema with the
@@ -189,10 +252,13 @@ describe('first import: the mbslave container restores the dump (e2e)', {
   it('refuses to switch the dataset of a catalog that is already restored', async () => {
     await setBootstrapState(server().db, { phase: 'ready', dataset: 'full' });
 
-    const { run, calls } = await harness({ dataset: 'sample' });
+    const { run, calls } = await harness({ dataset: 'tiny' });
     await expect(run()).rejects.toThrow(/another dataset/);
 
     expect(calls).toEqual([]);
-    expect(await statusPhase()).toBe('ready');
+    expect(await statusOf()).toMatchObject({
+      phase: 'ready',
+      dataset: 'full',
+    });
   });
 });

@@ -115,9 +115,8 @@ export class MbslaveClient {
 
   /**
    * Streams the dump archives into the empty schema. Plain `init` hard-codes
-   * the full-export mirror and cannot load the sample, so both datasets go
-   * through `import` with explicit URLs (one `tar.xz` for the sample, core
-   * plus derived `tar.bz2` for the full export, no edit history).
+   * the full-export mirror, so the restore goes through `import` with
+   * explicit URLs (core plus derived `tar.bz2`, no edit history).
    */
   async importArchives(urls: readonly string[]): Promise<void> {
     await this.run(['import', ...urls]);

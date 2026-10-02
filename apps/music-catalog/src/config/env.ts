@@ -28,8 +28,8 @@ const envSchema = z.object({
     .string()
     .transform(parseApiKeys)
     .pipe(z.array(z.string().min(API_KEY_MIN_LENGTH)).min(1)),
-  // Which MusicBrainz data the first import restores. No default: forgetting
-  // it in production must not silently restore the small sample.
+  // Which MusicBrainz data the first import lays down. No default: forgetting
+  // it in production must not silently seed the tiny development catalog.
   CATALOG_DATASET: catalogDatasetSchema,
   // A connection that misses one pong between two pings is dropped, so a
   // dead peer is gone after at most twice this interval.
@@ -107,8 +107,8 @@ export const parseWorkerEnv = (source: EnvSource): WorkerEnv =>
 const restoreEnvSchema = envSchema
   .pick({ NODE_ENV: true, DATABASE_URL: true, CATALOG_DATASET: true })
   .extend({
-    // The `.../data` directory the dumps are published under (the sample
-    // next to the full export). Points at a fake HTTP server in tests.
+    // The `.../data` directory the full export is published under. Points at
+    // a fake HTTP server in tests.
     MUSICBRAINZ_DUMP_BASE_URL: z
       .url({ protocol: /^https?$/ })
       .default('https://data.metabrainz.org/pub/musicbrainz/data'),

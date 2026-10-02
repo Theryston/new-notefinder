@@ -110,7 +110,7 @@ describe('getRecording: failures (e2e)', () => {
       'answers CATALOG_NOT_READY in the %s phase, even for a Recording that exists',
       async (phase) => {
         await addRecording(server().db, { mbid: mbid(100), name: 'Known' });
-        await setBootstrapState(server().db, { phase, dataset: 'sample' });
+        await setBootstrapState(server().db, { phase, dataset: 'tiny' });
 
         const response = await requestRecording(client(), { mbid: mbid(100) });
 
@@ -134,13 +134,13 @@ describe('getRecording: failures (e2e)', () => {
       await addRecording(server().db, { mbid: mbid(100), name: 'Known' });
       await setBootstrapState(server().db, {
         phase: 'indexing',
-        dataset: 'sample',
+        dataset: 'tiny',
       });
       const before = await requestRecording(client(), { mbid: mbid(100) });
 
       await setBootstrapState(server().db, {
         phase: 'ready',
-        dataset: 'sample',
+        dataset: 'tiny',
       });
       const after = await requestRecording(client(), { mbid: mbid(100) });
 

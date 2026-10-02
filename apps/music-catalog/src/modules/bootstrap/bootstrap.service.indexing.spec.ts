@@ -5,7 +5,7 @@ const setup = () => {
   const repository = { advance: vi.fn(async () => undefined) };
   const service = new BootstrapService(
     repository as unknown as BootstrapRepository,
-    'sample',
+    'tiny',
   );
   return { service, repository };
 };

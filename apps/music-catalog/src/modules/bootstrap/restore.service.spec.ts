@@ -8,6 +8,7 @@ import {
   RestoreService,
   type RestoreServiceDeps,
   restoreServiceDeps,
+  type SeedTinyCatalog,
 } from './restore.service.js';
 
 // Silent in tests: the specs assert the outcome, not the log lines.
@@ -64,6 +65,15 @@ const stubMbslave = (failOn?: 'init' | 'import') => {
   return { mbslave, calls };
 };
 
+const stubSeedTiny = (recordings = 300) => {
+  const calls: string[] = [];
+  const seedTiny: SeedTinyCatalog = async () => {
+    calls.push('seedTiny');
+    return recordings;
+  };
+  return { seedTiny, calls };
+};
+
 const archiveOf = (baseUrl: string): string[] => [`${baseUrl}/archive`];
 
 const service = (
@@ -78,17 +88,44 @@ const service = (
       // A stub, so these stay unit tests: resolving the real LATEST file
       // over HTTP is covered by dump-urls.spec.ts and the e2e suite.
       resolveUrls: async (baseUrl) => archiveOf(baseUrl),
+      seedTiny: async () => 0,
       ...overrides,
     }),
   );
 
 describe('RestoreService', () => {
-  it('restores an empty database: restoring, then init, import and restored', async () => {
+  it('seeds an empty database in tiny mode: restoring, then init and the seed', async () => {
+    const repo = stubRepository(undefined);
+    const { mbslave, calls } = stubMbslave();
+    const { seedTiny, calls: seedCalls } = stubSeedTiny();
+    const seen: string[] = [];
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      seedTiny,
+      dataset: 'tiny',
+      resolveUrls: async (baseUrl) => {
+        seen.push(baseUrl);
+        return archiveOf(baseUrl);
+      },
+    });
+
+    await expect(restore.run()).resolves.toBe('restored');
+
+    expect(repo.calls).toEqual(['getState', 'beginRestore', 'finishRestore']);
+    expect(calls).toEqual([['init', '--empty']]);
+    expect(seedCalls).toEqual(['seedTiny']);
+    // Tiny downloads nothing: the dump base URL is never even resolved.
+    expect(seen).toEqual([]);
+  });
+
+  it('restores an empty database in full mode: restoring, then init, import and restored', async () => {
     const repo = stubRepository(undefined);
     const { mbslave, calls } = stubMbslave();
     const restore = service({
       repository: repo.repository,
       mbslave,
+      dataset: 'full',
     });
 
     await expect(restore.run()).resolves.toBe('restored');
@@ -100,42 +137,76 @@ describe('RestoreService', () => {
     ]);
   });
 
-  it('resolves the configured dataset from the configured base URL', async () => {
+  it('resolves the full export from the configured base URL', async () => {
     const repo = stubRepository(undefined);
     const { mbslave, calls } = stubMbslave();
-    const seen: Array<[string, string]> = [];
+    const seen: string[] = [];
     const restore = service({
       repository: repo.repository,
       mbslave,
       baseUrl: 'http://fake:8000/data',
       dataset: 'full',
-      resolveUrls: async (baseUrl, dataset) => {
-        seen.push([baseUrl, dataset]);
+      resolveUrls: async (baseUrl) => {
+        seen.push(baseUrl);
         return archiveOf(baseUrl);
       },
     });
 
     await restore.run();
 
-    expect(seen).toEqual([['http://fake:8000/data', 'full']]);
+    expect(seen).toEqual(['http://fake:8000/data']);
     expect(calls[1]).toEqual(['import', 'http://fake:8000/data/archive']);
   });
 
   it('skips a second start without touching mbslave or the database row', async () => {
-    const repo = stubRepository({ phase: 'restored', dataset: 'sample' });
+    const repo = stubRepository({ phase: 'restored', dataset: 'tiny' });
     const { mbslave, calls } = stubMbslave();
-    const restore = service({ repository: repo.repository, mbslave });
+    const { seedTiny, calls: seedCalls } = stubSeedTiny();
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      seedTiny,
+      dataset: 'tiny',
+    });
 
     await expect(restore.run()).resolves.toBe('skipped');
 
     expect(repo.calls).toEqual(['getState']);
     expect(calls).toEqual([]);
+    expect(seedCalls).toEqual([]);
   });
 
-  it('redoes an interrupted restore from a clean state', async () => {
-    const repo = stubRepository({ phase: 'restoring', dataset: 'sample' });
+  it('redoes an interrupted tiny restore from a clean state', async () => {
+    const repo = stubRepository({ phase: 'restoring', dataset: 'tiny' });
     const { mbslave, calls } = stubMbslave();
-    const restore = service({ repository: repo.repository, mbslave });
+    const { seedTiny, calls: seedCalls } = stubSeedTiny();
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      seedTiny,
+      dataset: 'tiny',
+    });
+
+    await expect(restore.run()).resolves.toBe('restored');
+
+    expect(repo.calls).toEqual([
+      'getState',
+      'clearMusicBrainz',
+      'beginRestore',
+      'finishRestore',
+    ]);
+    expect(calls).toEqual([['init', '--empty']]);
+    expect(seedCalls).toEqual(['seedTiny']);
+  });
+
+  it('redoes an interrupted full restore from a clean state', async () => {
+    const repo = stubRepository({ phase: 'restoring', dataset: 'full' });
+    const { mbslave, calls } = stubMbslave();
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      dataset: 'full',
+    });
 
     await expect(restore.run()).resolves.toBe('restored');
 
@@ -152,7 +223,7 @@ describe('RestoreService', () => {
   });
 
   it('refuses to switch the dataset of a catalog that is already restored', async () => {
-    const repo = stubRepository({ phase: 'ready', dataset: 'sample' });
+    const repo = stubRepository({ phase: 'ready', dataset: 'tiny' });
     const { mbslave, calls } = stubMbslave();
     const restore = service({
       repository: repo.repository,
@@ -169,9 +240,30 @@ describe('RestoreService', () => {
   it('leaves restoring behind when the import fails, so the next start redoes it', async () => {
     const repo = stubRepository(undefined);
     const { mbslave } = stubMbslave('import');
-    const restore = service({ repository: repo.repository, mbslave });
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      dataset: 'full',
+    });
 
     await expect(restore.run()).rejects.toThrow('mbslave import failed');
+
+    expect(repo.calls).toEqual(['getState', 'beginRestore']);
+  });
+
+  it('leaves restoring behind when the seed fails, so the next start redoes it', async () => {
+    const repo = stubRepository(undefined);
+    const { mbslave } = stubMbslave();
+    const restore = service({
+      repository: repo.repository,
+      mbslave,
+      seedTiny: async () => {
+        throw new Error('tiny seed failed');
+      },
+      dataset: 'tiny',
+    });
+
+    await expect(restore.run()).rejects.toThrow('tiny seed failed');
 
     expect(repo.calls).toEqual(['getState', 'beginRestore']);
   });

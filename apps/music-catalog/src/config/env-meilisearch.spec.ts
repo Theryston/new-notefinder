@@ -4,7 +4,7 @@ const KEY = 'k'.repeat(32);
 const base = {
   DATABASE_URL: 'postgres://user:pass@localhost:5433/db',
   API_KEYS: KEY,
-  CATALOG_DATASET: 'sample',
+  CATALOG_DATASET: 'tiny',
 };
 const SEARCH_KEY = 'search-key';
 const WRITE_KEY = 'write-key';

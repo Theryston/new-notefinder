@@ -8,6 +8,6 @@ import { setBootstrapState } from './database.js';
  */
 export const useReadyCatalog = (server: () => TestServer): void => {
   beforeEach(async () => {
-    await setBootstrapState(server().db, { phase: 'ready', dataset: 'sample' });
+    await setBootstrapState(server().db, { phase: 'ready', dataset: 'tiny' });
   });
 };

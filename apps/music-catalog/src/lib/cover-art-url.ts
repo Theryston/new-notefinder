@@ -4,8 +4,8 @@ const COVER_ART_ARCHIVE = 'https://coverartarchive.org';
  * The Cover Art Archive URL of a release's front cover, a 500 px image: big
  * enough for an album cover on screen, light enough for a list. It is built
  * from the release MBID alone, because the catalog does not know which
- * releases have art (the `cover_art` table is not loaded in the `sample`
- * dataset), so the URL may answer 404. Other sizes: replace `500` with `250`
+ * releases have art (the `cover_art` table is never loaded: neither the
+ * full dumps nor the `tiny` seed carry cover-art data), so the URL may answer 404. Other sizes: replace `500` with `250`
  * or `1200`, or drop the suffix for the original image.
  */
 export const coverArtUrl = (releaseMbid: string): string =>

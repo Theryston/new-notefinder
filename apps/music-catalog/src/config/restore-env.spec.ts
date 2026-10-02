@@ -3,7 +3,7 @@ import { parseRestoreEnv } from './env.js';
 const DATABASE_URL = 'postgres://user:pass@localhost:5433/db';
 const required = {
   DATABASE_URL,
-  CATALOG_DATASET: 'sample',
+  CATALOG_DATASET: 'tiny',
 };
 
 describe('parseRestoreEnv', () => {
@@ -11,7 +11,7 @@ describe('parseRestoreEnv', () => {
     expect(parseRestoreEnv(required)).toEqual({
       NODE_ENV: 'development',
       DATABASE_URL,
-      CATALOG_DATASET: 'sample',
+      CATALOG_DATASET: 'tiny',
       MUSICBRAINZ_DUMP_BASE_URL:
         'https://data.metabrainz.org/pub/musicbrainz/data',
     });
@@ -32,9 +32,9 @@ describe('parseRestoreEnv', () => {
 
   it.each([
     ['CATALOG_DATASET', undefined],
-    ['CATALOG_DATASET', 'tiny'],
+    ['CATALOG_DATASET', 'sample'],
   ])(
-    'rejects %s=%s: forgetting the dataset must not restore the sample silently',
+    'rejects %s=%s: the removed sample dataset fails fast with the valid choices',
     (name, value) => {
       expect(() => parseRestoreEnv({ ...required, [name]: value })).toThrow(
         name,

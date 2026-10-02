@@ -24,11 +24,11 @@ describe('createStatusHandler', () => {
     'passes on the phase %s the service reports',
     async (phase) => {
       const { handler, service } = setup();
-      service.getStatus.mockResolvedValueOnce({ phase, dataset: 'sample' });
+      service.getStatus.mockResolvedValueOnce({ phase, dataset: 'tiny' });
 
       await expect(handler.handle({})).resolves.toEqual({
         phase,
-        dataset: 'sample',
+        dataset: 'tiny',
       });
     },
   );

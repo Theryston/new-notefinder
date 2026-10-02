@@ -15,13 +15,14 @@ envelope, our own Postgres schema (the bootstrap state, the indexing
 checkpoint, the recording outbox and the replication state), read-only declarations of the
 MusicBrainz tables the queries read, **Meilisearch** as the search engine
 behind a small integration, the `server` and `worker` entrypoints (the worker
-indexes every Recording once the MusicBrainz data is restored, then keeps
+indexes every Recording once the MusicBrainz data is laid down, then keeps
 the index in sync with it through the outbox), the **first import** (issue
-#60: the mbslave container restores the MusicBrainz dump and records
-`restoring`/`restored`) and **continuous replication** (issue #62: in `full`
-mode the same container keeps applying replication packets after the catalog
-is `ready`, records the sequence and reports it in `status`) and the test and
-quality setup. Lyrics and the production compose are later tickets: do not
+#60, datasets reworked in #85: the mbslave container lays down `tiny` or
+`full` and records `restoring`/`restored`) and **continuous replication**
+(issue #62: in `full` mode the same container keeps applying replication
+packets after the catalog is `ready`, records the sequence and reports it
+in `status`) and the test and quality setup. Lyrics and the production
+compose are later tickets: do not
 build them here ahead of their ticket. `search` returns results in
 **Meilisearch's relevance order**, loaded from Postgres without re-ranking.
 
@@ -53,12 +54,12 @@ cp apps/music-catalog/.env.example apps/music-catalog/.env
 (cd apps/music-catalog && nub run db:migrate)
 nub run build --filter=music-catalog              # the mbslave container runs this dist
 nub run infra:up                                   # this app's Postgres (5433) and Meilisearch (7700),
-                                                   # plus a one-shot mbslave container that restores the
-                                                   # sample dump, then the worker indexes it to `ready`
+                                                   # plus a one-shot mbslave container that lays down the
+                                                   # tiny seed, then the worker indexes it to `ready`
 nub run dev --filter=music-catalog                 # ws://localhost:3334
 ```
 
-Watch `status` while the sample restores (about a dozen minutes the first
+Watch `status` while `tiny` seeds (seconds the first
 time): `restoring` (mbslave) → `restored` → `indexing` (worker) → `ready`.
 `CATALOG_DATASET=full` restores everything instead (see "Dataset modes");
 switching datasets means resetting the database (see "Resetting a local
@@ -112,9 +113,11 @@ src/
       bootstrap.service.ts
       bootstrap.repository.ts
       bootstrap.service.spec.ts
-      restore.service.ts        the first import mbslave owns: skip, redo or restore
+      restore.service.ts        the first import mbslave owns: skip, redo, seed or restore
       restore-plan.ts           which of those a start has to do (pure)
-      dump-urls.ts              the dump archives under the base URL (pure + LATEST)
+      dump-urls.ts              the full-export archives under the base URL (pure + LATEST)
+      tiny-seed.ts              the deterministic Recordings `tiny` seeds (pure)
+      tiny-seed.repository.ts   writing those Recordings with plain SQL
     recording/
       recording.handler.ts      the `getRecording` handler
       recording.service.ts      readiness, not found / moved, loading the parts
@@ -238,7 +241,7 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
 - `type` is `status`, `getRecording` or `search`. `payload` is validated per
   type; `status` takes none (missing or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
-  dataset: 'sample' | 'full', replicationSequence?, pendingOutbox? }`, read
+  dataset: 'tiny' | 'full', replicationSequence?, pendingOutbox? }`, read
   from the bootstrap state row in our schema. The phases run in that order:
   the mbslave container records `restoring` and `restored` (it owns the
   MusicBrainz restore), then the worker waits for `restored` and records
@@ -300,7 +303,7 @@ integer ids of MusicBrainz are internal and never leave the service.
   event beats an undated one; ties go to the smaller country code). Releases
   come oldest first, undated last, then by title and MBID.
 - `coverArtUrl` is `https://coverartarchive.org/release/<release MBID>/front-500`,
-  built from the MBID alone (`cover_art` is not loaded in `sample`), so it can
+  built from the MBID alone (`cover_art` is loaded in neither dataset), so it can
   answer 404. `src/lib/cover-art-url.ts` is the one place that builds it; the
   search ticket reuses it.
 - `works` (Recording-Work relationships), `externalUrls` (`url` plus
@@ -379,12 +382,15 @@ container runs `dist/restore.js` (`src/restore.ts`, built on the host with
 when needed and then, in `full` mode, replicates continuously (see
 "Continuous replication" below; in `sample` mode it exits instead):
 
-- **No row yet** (`fresh`): records `restoring`, reads the dataset's `LATEST`
-  file under `MUSICBRAINZ_DUMP_BASE_URL`, restores the archives with `mbslave
-  init --empty` followed by `mbslave import <urls>` (plain `init` is neither
-  idempotent nor URL-configurable), and records `restored`. A failure leaves
-  `restoring` behind, so the next start redoes it; `ready` is the worker's to
-  record, never the restore's.
+- **No row yet** (`fresh`): records `restoring`, then lays the dataset
+  down. `full` reads the `LATEST` file under `MUSICBRAINZ_DUMP_BASE_URL`
+  and restores the archives with `mbslave init --empty` followed by
+  `mbslave import <urls>` (plain `init` is neither idempotent nor
+  URL-configurable). `tiny` runs `mbslave init --empty` for the same
+  schema and seeds the deterministic Recordings with plain SQL,
+  downloading nothing. Either way it then records `restored`. A failure
+  leaves `restoring` behind, so the next start redoes it; `ready` is the
+  worker's to record, never the restore's.
 - **Restore done** (`skip`): the phase is `restored`, `indexing` or `ready`
   with the configured dataset. It downloads and restores nothing.
 - **Interrupted restore** (`redo`): the phase is still `restoring`. It drops
@@ -413,26 +419,39 @@ redo never drops the outbox's schema: it does not exist yet.
 
 ## Dataset modes
 
-`CATALOG_DATASET` is `sample` or `full`, required with no default, and the
-first import records it in the bootstrap state. Both go through the same
-`import <urls>` code path; only the archives differ
+`CATALOG_DATASET` is `tiny` or `full`, required with no default, and the
+first import records it in the bootstrap state. `tiny` never touches the
+network; `full` restores through `mbslave import <urls>`
 (`src/modules/bootstrap/dump-urls.ts`):
 
-- `sample`: the official sample dump, one `mbdump-sample.tar.xz` under
-  `<base>/sample/`. Development mode: about 6 GB and a dozen minutes. The
-  sample ships no `cover_art` data and an empty `replication_control`, so
-  there is no cover-art data and no replication in this mode.
+- `tiny`: the same mbslave schema scripts plus 300 deterministic Recordings
+  written with plain SQL (`tiny-seed.ts` + `TinySeedRepository`, no Drizzle
+  tables, so a wrong column there fails the suite instead of passing
+  twice). Development mode, seeded in seconds: about 1.5 s for the schema
+  scripts and well under a second for the seed on a local Postgres, about
+  24 MB of database, megabytes of Meilisearch index. The future Lyrics
+  import generates its fake dump from exactly these Recordings (same MBIDs
+  and titles). There is no replication in this mode: the seed writes no
+  `replication_control` row, so the replication worker stays off.
 - `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2`
   under `<base>/fullexport/`), no edit history. Production mode: about
-  150-220 GB steady state (see ADR 0002).
+  150-220 GB steady state (see ADR 0002). Only `full` runs replication
+  (MetaBrainz token required) and only matched Lyrics are kept there.
 
-`MUSICBRAINZ_DUMP_BASE_URL` is the `.../data` directory both layouts live
-under (default: the official `data.metabrainz.org` directory). The mbslave
-binary reads its own `MBSLAVE_*` variables from the container environment
-(use `MBSLAVE_DB_DB` for the database name; mbslave ignores the README's
-`MBSLAVE_DB_NAME`); the dump download needs no token. The image
-(`mbslave.Dockerfile`) installs mbslave from git tag `v31.0.1`: bump
-`MBSLAVE_REF` there together with `MBSLAVE_REF` in
+The dev loop runs on `tiny` (`nub run infra:up`, then `dev`): every search,
+`getRecording` and Lyrics-scope query works end to end against it. Verify
+against `full` before releases that touch the restore, the seed assumptions
+or sizing: point `MUSICBRAINZ_DUMP_BASE_URL` at the official directory (or a
+full mirror) with `CATALOG_DATASET=full` on a machine with the disk and the
+hours the restore takes, and run the e2e suite's full-mode paths.
+
+`MUSICBRAINZ_DUMP_BASE_URL` is the `.../data` directory the full export
+lives under (default: the official `data.metabrainz.org` directory); `tiny`
+ignores it. The mbslave binary reads its own `MBSLAVE_*` variables from
+the container environment (use `MBSLAVE_DB_DB` for the database name;
+mbslave ignores the README's `MBSLAVE_DB_NAME`); the dump download needs
+no token. The image (`mbslave.Dockerfile`) installs mbslave from git tag
+`v31.0.1`: bump `MBSLAVE_REF` there together with `MBSLAVE_REF` in
 `test/setup/musicbrainz-schema.ts`, which builds the same schema in e2e.
 
 ## Resetting a local database
@@ -733,7 +752,7 @@ could not start there anyway).
   | `PORT` | Server port (default 3334; 0 picks a free one, used by tests) |
   | `DATABASE_URL` | The service's own Postgres (dev compose: port 5433) |
   | `API_KEYS` | Comma-separated keys, each at least 32 characters; list the new key next to the old one to rotate |
-  | `CATALOG_DATASET` | `sample` or `full`; required, no default |
+  | `CATALOG_DATASET` | `tiny` or `full`; required, no default |
   | `HEARTBEAT_INTERVAL_MS` | Ping interval (default 30000) |
   | `REQUEST_TIMEOUT_MS` | Per-request timeout (default 10000) |
   | `MEILISEARCH_URL` | Meilisearch, `http(s)://` (dev compose: port 7700); server and worker |
@@ -837,13 +856,14 @@ could not start there anyway).
   integration boundary (a fake `MbslaveRun`: `init` recreates the schema with
   `applyMusicBrainzSchema`, `import` downloads the archives over real HTTP
   and seeds what the dump would load) and the dump base URL pointed at a fake
-  HTTP server (`test/utils/fake-dump-server.ts`, the real `sample` next to
-  `fullexport` layout with tiny archives). It covers the first run to
-  `ready` (restore, then a worker tick, then a search over the WebSocket),
-  the skip on a second start, the redo from a clean state after an
-  interrupted restore (it drops the real `musicbrainz` schema, so it
-  re-applies it in a `finally` for the files after it) and the refusal to
-  switch datasets. Spawning the real binary is deliberately out: it would
+  HTTP server (`test/utils/fake-dump-server.ts`, the real `fullexport`
+  layout with tiny archives). It covers the first run to `ready` in each
+  dataset (`tiny` seeds with the real `TinySeedRepository` and downloads
+  nothing; `full` downloads over real HTTP), then a worker tick and a
+  search over the WebSocket, the skip on a second start, the redo from a
+  clean state after an interrupted restore (it drops the real `musicbrainz`
+  schema, so it re-applies it in a `finally` for the files after it) and
+  the refusal to switch datasets. Spawning the real binary is deliberately out: it would
   need its Python/psql image, minutes per run and the network on every PR
   (the spike verified the real commands against a fake mirror instead).
 - **Replication in e2e** (`test/replication.e2e-spec.ts`): the real

@@ -5,7 +5,7 @@ const setup = (state: Awaited<ReturnType<BootstrapRepository['getState']>>) => {
   const repository = { getState: vi.fn(async () => state) };
   const service = new BootstrapService(
     repository as unknown as BootstrapRepository,
-    'sample',
+    'tiny',
   );
   return { service, repository };
 };
@@ -13,8 +13,8 @@ const setup = (state: Awaited<ReturnType<BootstrapRepository['getState']>>) => {
 describe('BootstrapService', () => {
   describe('getStatus', () => {
     it.each([
-      ['restoring', 'sample'],
-      ['restored', 'sample'],
+      ['restoring', 'tiny'],
+      ['restored', 'tiny'],
       ['indexing', 'full'],
       ['ready', 'full'],
     ] as const)(
@@ -40,20 +40,20 @@ describe('BootstrapService', () => {
 
       await expect(service.getStatus()).resolves.toEqual({
         phase: 'restoring',
-        dataset: 'sample',
+        dataset: 'tiny',
       });
     });
 
     it('reads the state on every call, so it follows the worker', async () => {
       const { service, repository } = setup({
         phase: 'restoring',
-        dataset: 'sample',
+        dataset: 'tiny',
       });
 
       await service.getStatus();
       repository.getState.mockResolvedValueOnce({
         phase: 'ready',
-        dataset: 'sample',
+        dataset: 'tiny',
       });
 
       await expect(service.getStatus()).resolves.toMatchObject({

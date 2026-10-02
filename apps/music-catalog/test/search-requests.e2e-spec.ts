@@ -21,7 +21,7 @@ describe('search: requests (e2e)', () => {
     it.each(['restoring', 'restored', 'indexing'] as const)(
       'answers CATALOG_NOT_READY in the %s phase',
       async (phase) => {
-        await setBootstrapState(server().db, { phase, dataset: 'sample' });
+        await setBootstrapState(server().db, { phase, dataset: 'tiny' });
 
         const response = await requestSearch(client(), { query: 'yesterday' });
 

@@ -21,9 +21,9 @@ describe('bootstrap state table (e2e)', () => {
   it('holds a single row: writing again updates it', async () => {
     await setBootstrapState(server().db, {
       phase: 'restoring',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
-    await setBootstrapState(server().db, { phase: 'ready', dataset: 'sample' });
+    await setBootstrapState(server().db, { phase: 'ready', dataset: 'tiny' });
 
     const rows = await server().db.select().from(bootstrapState);
 
@@ -34,13 +34,11 @@ describe('bootstrap state table (e2e)', () => {
   it('refuses a second row', async () => {
     await setBootstrapState(server().db, {
       phase: 'restoring',
-      dataset: 'sample',
+      dataset: 'tiny',
     });
 
     await expect(
-      server()
-        .db.insert(bootstrapState)
-        .values({ id: false, dataset: 'sample' }),
+      server().db.insert(bootstrapState).values({ id: false, dataset: 'tiny' }),
     ).rejects.toThrow();
   });
 });

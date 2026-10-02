@@ -101,7 +101,7 @@ services:
       # The same database the server and the worker use, reached by service
       # name inside the compose network (not the host's localhost:5433).
       DATABASE_URL: postgres://music_catalog:music_catalog@music-catalog-postgres:5432/music_catalog
-      CATALOG_DATASET: ${CATALOG_DATASET:-sample}
+      CATALOG_DATASET: ${CATALOG_DATASET:-tiny}
       MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
       # The MetaBrainz access token replication authenticates with in `full`
       # mode (required there, ignored in `sample`): the 40-character token

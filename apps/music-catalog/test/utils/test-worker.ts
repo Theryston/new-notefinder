@@ -31,7 +31,7 @@ export const createTestWorker = (
       NODE_ENV: 'test',
       DATABASE_URL: inject('databaseUrl'),
       API_KEYS: server.env.API_KEYS.join(','),
-      CATALOG_DATASET: 'sample',
+      CATALOG_DATASET: 'tiny',
       MEILISEARCH_URL: meilisearch.url,
       MEILISEARCH_WRITE_API_KEY: meilisearch.writeKey,
       ...options.env,
@@ -51,7 +51,7 @@ export const indexCatalog = async (
   server: TestServer,
   worker: TestWorker = createTestWorker(server),
 ): Promise<void> => {
-  await setBootstrapState(server.db, { phase: 'restored', dataset: 'sample' });
+  await setBootstrapState(server.db, { phase: 'restored', dataset: 'tiny' });
   await worker.tick();
 };
 

@@ -1,5 +1,9 @@
 # Music catalog spike: MusicBrainz, mbslave, LRCLIB and Sonic
 
+> Historical note: every measurement in this document was taken on the
+> official MusicBrainz sample dump, dropped in #85 in favor of `full` and
+> `tiny`. The numbers are kept as history.
+
 Findings for [#56](https://github.com/Theryston/new-notefinder/issues/56), the
 spike behind the Music catalog spec
 ([#55](https://github.com/Theryston/new-notefinder/issues/55)). Work done on
