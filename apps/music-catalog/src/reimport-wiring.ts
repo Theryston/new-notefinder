@@ -4,8 +4,13 @@ import type { Database } from './database/database.js';
 import { databaseNameOf } from './database/database-ref.js';
 import type { MeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
 import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
-import { LYRICS_NEXT_INDEX, type LyricsDocument } from './lib/lyrics-index.js';
 import {
+  LYRICS_INDEX,
+  LYRICS_NEXT_INDEX,
+  type LyricsDocument,
+} from './lib/lyrics-index.js';
+import {
+  RECORDINGS_INDEX,
   RECORDINGS_NEXT_INDEX,
   type RecordingDocument,
 } from './lib/recordings-index.js';
@@ -86,10 +91,16 @@ type NextCopyParts = {
   logger: Logger;
 };
 
+// How many of the parallel copy's ids the flip samples before swapping: a
+// differing copy is missed only when every sampled id exists on both sides,
+// so hundreds make a wrong skip vanishingly unlikely, while an identical
+// copy is harmless to swap twice anyway.
+const REIMPORT_SWAP_PROBE_SIZE = 200;
+
 // The four steps against the parallel copy. Split from the assembly above
 // so each function stays small; covered by the same construction spec.
 const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
-  const { env, dbSource, nextDb, nextUrl, index, lyricsIndex, logger } = parts;
+  const { env, dbSource, nextDb, logger } = parts;
   const nextIndex = createMeilisearchIndex<RecordingDocument>({
     url: env.MEILISEARCH_URL,
     apiKey: env.MEILISEARCH_WRITE_API_KEY,
@@ -119,22 +130,60 @@ const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
       );
       await onProgress(1);
     },
-    switchToCopy: () =>
-      new ReimportSwitchService({
-        servingOutbox: new RecordingOutboxRepository(dbSource),
-        servingState: new ReimportStateRepository(dbSource),
-        nextState: new ReimportStateRepository(nextDb),
-        sequences: new ReplicationRepository(dbSource),
-        servingIndex: index,
-        nextIndex,
-        servingLyricsIndex: lyricsIndex,
-        nextLyricsIndex,
-        nextUrl,
-        oldDatabaseName: databaseNameOf(env.DATABASE_URL),
-        cleanupOldCopy: env.REIMPORT_CLEANUP_OLD_COPY === 'true',
-        logger,
-      }).switchToCopy(),
+    switchToCopy: buildSwitchStep(parts, nextIndex, nextLyricsIndex),
   };
+};
+
+// The flip to the parallel copy. Split from the copy above so each function
+// stays small; covered by the same construction spec.
+const buildSwitchStep = (
+  parts: NextCopyParts,
+  nextIndex: MeilisearchIndex<RecordingDocument>,
+  nextLyricsIndex: MeilisearchIndex<LyricsDocument>,
+): ReimportCopy['switchToCopy'] => {
+  const { env, dbSource, nextDb, nextUrl, index, lyricsIndex, logger } = parts;
+  return () =>
+    new ReimportSwitchService({
+      servingOutbox: new RecordingOutboxRepository(dbSource),
+      servingState: new ReimportStateRepository(dbSource),
+      nextState: new ReimportStateRepository(nextDb),
+      sequences: new ReplicationRepository(dbSource),
+      servingIndex: index,
+      nextIndex,
+      servingLyricsIndex: lyricsIndex,
+      nextLyricsIndex,
+      nextUrl,
+      oldDatabaseName: databaseNameOf(env.DATABASE_URL),
+      cleanupOldCopy: env.REIMPORT_CLEANUP_OLD_COPY !== 'false',
+      // One Meilisearch task swaps both pairs: no half-swapped catalog
+      // when the process dies mid-flip (see ReimportSwitchService).
+      swapBoth: () =>
+        index.swapPairs([
+          {
+            servingUid: RECORDINGS_INDEX.uid,
+            nextUid: RECORDINGS_NEXT_INDEX.uid,
+          },
+          { servingUid: LYRICS_INDEX.uid, nextUid: LYRICS_NEXT_INDEX.uid },
+        ]),
+      // A rerun that finds the flip record completes the flip instead of
+      // swapping back. Either copy's row proves it: the record is written
+      // on both, and the reads may already point at the new copy.
+      alreadySwitched: async () => {
+        const state = await new ReimportStateRepository(dbSource).get();
+        return state?.phase === 'switched' && state.detail === nextUrl;
+      },
+      // A sample of the parallel copy's ids: when the flip record is
+      // missing but the serving index already holds them all, the swap ran
+      // and the process died before recording it.
+      swapProbe: async () =>
+        (
+          await new RecordingDocumentRepository(nextDb).findBatch(
+            0,
+            REIMPORT_SWAP_PROBE_SIZE,
+          )
+        ).map((row) => row.mbid),
+      logger,
+    }).switchToCopy();
 };
 
 // The parallel copy's indexer: detached from the first import's phases (the

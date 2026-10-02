@@ -36,6 +36,10 @@ const isIndexNotFound = (error: unknown): boolean =>
   error instanceof MeilisearchApiError &&
   error.cause?.code === 'index_not_found';
 
+const isDocumentNotFound = (error: unknown): boolean =>
+  error instanceof MeilisearchApiError &&
+  error.cause?.code === 'document_not_found';
+
 /**
  * One Meilisearch index, behind the few operations the service needs. It is
  * the only place that knows the SDK: features depend on this class, so the
@@ -104,9 +108,61 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
     );
   }
 
-  /** Deletes the whole index. The reimport drops the old copy this way. */
+  /**
+   * Swaps every pair in one `swap-indexes` task: Meilisearch applies the
+   * whole list atomically, so the blue-green reimport flips the recordings
+   * and the lyrics indexes together, never one without the other. Two
+   * separate `swapWith` calls leave a half-swapped catalog when the process
+   * dies between them; this call has no between.
+   */
+  async swapPairs(
+    pairs: Array<{ servingUid: string; nextUid: string }>,
+  ): Promise<void> {
+    if (pairs.length === 0) {
+      return;
+    }
+    await this.wait(
+      this.client.swapIndexes(
+        pairs.map((pair) => ({
+          indexes: [pair.servingUid, pair.nextUid] as [string, string],
+          rename: false,
+        })),
+      ),
+    );
+  }
+
+  /**
+   * Whether the index holds a document with this primary key. The reimport
+   * asks it about the parallel copy's documents before swapping: when a
+   * restarted flip finds them already here, the swap ran and only the flip
+   * record and the cleanup are left, so replaying the swap (which would swap
+   * back) is skipped.
+   */
+  async hasDocument(id: string): Promise<boolean> {
+    try {
+      await this.client.index(this.uid).getDocument(id);
+      return true;
+    } catch (error) {
+      if (isIndexNotFound(error) || isDocumentNotFound(error)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes the whole index. The reimport drops the old copy this way. A
+   * missing index is already gone (a rerun after the delete), so it resolves
+   * instead of failing the flip.
+   */
   async deleteIndex(): Promise<void> {
-    await this.wait(this.client.deleteIndex(this.uid));
+    try {
+      await this.wait(this.client.deleteIndex(this.uid));
+    } catch (error) {
+      if (!isIndexNotFound(error)) {
+        throw error;
+      }
+    }
   }
 
   /**
