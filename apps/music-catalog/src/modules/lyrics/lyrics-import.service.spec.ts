@@ -49,7 +49,7 @@ const setup = (
 ): { service: LyricsImportService; stub: StubRecordings; dir: string } => {
   const dir = mkdtempSync(join(tmpdir(), 'lyrics-import-'));
   const bootstrap = {
-    getStatus: async () => ({ phase, dataset: 'sample' }),
+    getStatus: async () => ({ phase, dataset: 'tiny' }),
   };
   const repository = {
     findMatchBatch: async (afterId: number, limit: number) => {
@@ -69,7 +69,7 @@ const setup = (
   const service = new LyricsImportService({
     bootstrap: bootstrap as unknown as BootstrapService,
     recordings: repository as unknown as LyricsRepository,
-    dataset: 'sample',
+    dataset: 'tiny',
     lrclibBaseUrl: 'http://localhost',
     lrclibListingUrl: 'http://localhost/listing',
     logger,
