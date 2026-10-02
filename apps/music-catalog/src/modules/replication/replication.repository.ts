@@ -13,7 +13,7 @@ export class ReplicationRepository {
 
   /**
    * The last sequence this service recorded, or null until the first packet
-   * lands (and always null in `sample`, where replication stays off).
+   * lands (and always null in `tiny`, where replication stays off).
    */
   async lastRecordedSequence(): Promise<number | null> {
     const [state] = await this.db
@@ -42,7 +42,7 @@ export class ReplicationRepository {
    * What mbslave's cursor says it applied last: the dump's
    * `REPLICATION_SEQUENCE` before the first packet, then one step per
    * applied packet. Null while the table holds no row or no sequence (an
-   * empty `replication_control`, like the sample ships).
+   * empty `replication_control`, like the seed leaves it).
    */
   async readAppliedSequence(): Promise<number | null> {
     const [control] = await this.db

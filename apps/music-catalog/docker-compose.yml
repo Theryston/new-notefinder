@@ -75,7 +75,7 @@ services:
   # `restored`. The worker takes it from there to `ready`. In `full` mode it
   # then replicates continuously: once the catalog is `ready` it applies the
   # pending packets with `mbslave sync`, records the sequence and sleeps,
-  # until stopped; in `sample` mode it exits instead. A crash exits non-zero,
+  # until stopped; in `tiny` mode it exits instead. A crash exits non-zero,
   # so the restart below brings the loop back (it resumes from mbslave's own
   # cursor). `infra:down` removes the container, so every `infra:up`
   # re-checks the state (a no-op when done). Re-run it without touching
@@ -91,7 +91,7 @@ services:
     pull_policy: build
     # Restarts after a crash (a failed restore is redone from `restoring`, a
     # failed sync resumed from the cursor), never after a clean exit (the
-    # `sample` container stays stopped once it is done).
+    # `tiny` container stays stopped once it is done).
     restart: on-failure
     depends_on:
       music-catalog-postgres:
@@ -104,7 +104,7 @@ services:
       CATALOG_DATASET: ${CATALOG_DATASET:-tiny}
       MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
       # The MetaBrainz access token replication authenticates with in `full`
-      # mode (required there, ignored in `sample`): the 40-character token
+      # mode (required there, ignored in `tiny`): the 40-character token
       # from the MetaBrainz profile page, free for non-commercial use. Either
       # the token itself or a file holding it (Docker secrets); empty when
       # unset, which the restore strips before spawning mbslave (an empty

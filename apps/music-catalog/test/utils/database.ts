@@ -54,7 +54,7 @@ export const setReplicationState = async (
 
 /**
  * Moves mbslave's own cursor, the way an applied replication packet would
- * (the full dump ships the row; the sample leaves the table empty). 31 is
+ * (the full dump ships the row; the tiny seed leaves the table empty). 31 is
  * the pinned schema sequence both the container and the e2e schema build.
  */
 export const setReplicationControl = async (

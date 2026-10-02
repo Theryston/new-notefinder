@@ -7,7 +7,7 @@ import { musicCatalog } from './music-catalog-schema.js';
  * `full` mode. mbslave tracks the same number in its own
  * `musicbrainz.replication_control`; this row is our copy of it, so `status`
  * can answer it in every phase without depending on mbslave's tables. No row
- * until the first packet lands (and never one in `sample`, where replication
+ * until the first packet lands (and never one in `tiny`, where replication
  * stays off). `updatedAt` tells operators when the sequence last moved, so a
  * stall (the yearly schema change, issue #69) is visible as a frozen
  * sequence next to a growing outbox backlog.

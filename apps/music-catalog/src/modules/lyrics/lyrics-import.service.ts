@@ -48,8 +48,8 @@ export type LyricsImportResult = {
 
 type MatchedPair = { mbid: string; trackId: number };
 
-// How many Recordings the fake dump is generated from: a few thousand, like
-// the MusicBrainz sample is a few million, so the sample flow stays local.
+// How many Recordings the fake dump is generated from: all of `tiny`'s few
+// hundred, so the dev flow stays local.
 const FAKE_DUMP_RECORDINGS = 3000;
 const MATCH_BATCH_SIZE = 1000;
 // The dump lookup window around a Recording's length, wider than the ±2 s
@@ -57,14 +57,15 @@ const MATCH_BATCH_SIZE = 1000;
 const DURATION_WINDOW_S = 2.5;
 
 /**
- * Imports the LRCLIB dump into our schema, once per bootstrap: `sample`
- * generates a fake dump locally (nothing is downloaded), `full` downloads
- * and gunzips the real one as a stream. Two passes: Recordings are matched
- * against the dump's lightweight track metadata first, then only the Lyrics
- * of matched tracks are copied. The temp file is deleted afterwards, so
- * unmatched Lyrics never reach our schema. Runs while the catalog is
- * `restored` or `indexing`; afterwards (and before) it skips: refreshing an
- * older import from a newer dump is the refresh ticket's job.
+ * Imports the LRCLIB dump into our schema, once per bootstrap: `tiny`
+ * generates a fake dump locally from its seeded Recordings (nothing is
+ * downloaded), `full` downloads and gunzips the real one as a stream. Two
+ * passes: Recordings are matched against the dump's lightweight track
+ * metadata first, then only the Lyrics of matched tracks are copied. The
+ * temp file is deleted afterwards, so unmatched Lyrics never reach our
+ * schema. Runs while the catalog is `restored` or `indexing`; afterwards
+ * (and before) it skips: refreshing an older import from a newer dump is
+ * the refresh ticket's job.
  */
 export class LyricsImportService {
   constructor(private readonly deps: LyricsImportDeps) {}
@@ -96,7 +97,7 @@ export class LyricsImportService {
 
   private async acquireDump(signal?: AbortSignal): Promise<string> {
     const dir = this.deps.tmpDir ?? tmpdir();
-    if (this.deps.dataset === 'sample') {
+    if (this.deps.dataset === 'tiny') {
       return this.generateFakeDump(dir, signal);
     }
     const key = await fetchLatestDumpKey(this.deps.lrclibListingUrl);

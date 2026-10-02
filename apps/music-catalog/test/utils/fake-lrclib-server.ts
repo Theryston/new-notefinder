@@ -21,7 +21,7 @@ export type FakeLrclibServer = {
 
 /**
  * Builds a tiny `.sqlite3.gz` in the real LRCLIB schema from the given
- * Recordings, with the same generator the sample mode uses, so the download
+ * Recordings, with the same generator the tiny mode uses, so the download
  * path serves what the import matches.
  */
 export const fakeLrclibDumpGz = (

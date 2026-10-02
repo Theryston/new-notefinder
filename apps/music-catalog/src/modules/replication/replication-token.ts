@@ -12,8 +12,8 @@ export type ReplicationTokenOptions = {
 /**
  * Fails fast when `full` mode would replicate without a MetaBrainz access
  * token: without one the first `mbslave sync` answers 403 and the container
- * crash-loops on mbslave's message instead of ours. `sample` mode needs no
- * token (the dump download needs none, and replication stays off there), so
+ * crash-loops on mbslave's message instead of ours. `tiny` mode needs no
+ * token (it downloads nothing, and replication stays off there), so
  * it always passes.
  */
 export const assertReplicationToken = (

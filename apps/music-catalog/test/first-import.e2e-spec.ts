@@ -22,10 +22,18 @@ import {
   type FakeDumpServer,
   startFakeDumpServer,
 } from './utils/fake-dump-server.js';
+import {
+  fakeLrclibDumpGz,
+  startFakeLrclibServer,
+} from './utils/fake-lrclib-server.js';
 import { requestRecording } from './utils/get-recording-client.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { requestSearch } from './utils/search-client.js';
-import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
+import {
+  createTestWorker,
+  useEmptyLyricsIndex,
+  useEmptySearchIndex,
+} from './utils/test-worker.js';
 import { useTestClient } from './utils/use-test-client.js';
 
 // Recreating the 375-table MusicBrainz schema (the redo test) and
@@ -37,6 +45,7 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
   const client = useTestClient(server);
 
   useEmptySearchIndex();
+  useEmptyLyricsIndex();
 
   let dumps: FakeDumpServer;
   beforeAll(async () => {
@@ -162,11 +171,34 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
     });
     const seededMbid = tinyRecordingMbid(1);
     await expect(searchMbids('Tiny Song 001')).resolves.toContain(seededMbid);
+    // The tick generated the fake LRCLIB dump from the seeded Recordings
+    // and kept only the matched Lyrics: recording 1 has them, recording 2
+    // (an album tie) stays null.
     await expect(
       requestRecording(client(), { mbid: seededMbid }),
-    ).resolves.toMatchObject({ ok: true, result: { title: 'Tiny Song 001' } });
-    // Lyrics are not imported yet: the scope is accepted but finds nothing.
-    await expect(searchMbids('tiny song', 'lyrics')).resolves.toEqual([]);
+    ).resolves.toMatchObject({
+      ok: true,
+      result: {
+        title: 'Tiny Song 001',
+        lyrics: {
+          plain: expect.stringContaining('fake-lrclib-0'),
+          synced: expect.stringContaining('[00:01.00]'),
+        },
+      },
+    });
+    await expect(
+      requestRecording(client(), { mbid: tinyRecordingMbid(2) }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { lyrics: { plain: null, synced: null } },
+    });
+    await expect(
+      searchMbids('fake-lrclib-2 drifting', 'lyrics'),
+    ).resolves.toContain(tinyRecordingMbid(3));
+    // The metadata scope never matches on Lyrics.
+    await expect(
+      searchMbids('fake-lrclib-0 drifting', 'metadata'),
+    ).resolves.toEqual([]);
   });
 
   it('restores the full dump to ready on the first run', async () => {
@@ -195,13 +227,34 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       dataset: 'full',
     });
 
-    await createTestWorker(server()).tick();
+    // The worker's Lyrics import downloads the dump: serve it an empty one
+    // from a fake server, never the real LRCLIB.
+    const lrclib = await startFakeLrclibServer({
+      'lrclib-db-dump-20240102T000000Z.sqlite3.gz': fakeLrclibDumpGz([]),
+    });
+    try {
+      await createTestWorker(server(), {
+        env: {
+          CATALOG_DATASET: 'full',
+          LRCLIB_BASE_URL: lrclib.baseUrl,
+          LRCLIB_LISTING_URL: lrclib.listingUrl,
+        },
+      }).tick();
+    } finally {
+      await lrclib.close();
+    }
 
     expect(await statusOf()).toMatchObject({
       phase: 'ready',
       dataset: 'full',
     });
     await expect(searchMbids('full song')).resolves.toContain(mbid(302));
+    await expect(
+      requestRecording(client(), { mbid: mbid(302) }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { lyrics: { plain: null, synced: null } },
+    });
   });
 
   it('skips the download and the restore on a second start', async () => {

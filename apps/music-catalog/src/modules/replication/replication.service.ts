@@ -100,8 +100,8 @@ export class ReplicationService {
    * `ready` (the worker installs the change triggers after the restore and
    * before indexing, so only then does every packet reach the outbox), then
    * applies the pending packets, records the sequence and sleeps, until
-   * `signal` aborts. In `sample` mode it logs once and returns: the sample
-   * ships no replication data. Aborting the signal stops it after the sync
+   * `signal` aborts. In `tiny` mode it logs once and returns: the seed
+   * writes no replication data. Aborting the signal stops it after the sync
    * in progress.
    */
   async run(
@@ -110,10 +110,9 @@ export class ReplicationService {
   ): Promise<ReplicationRunOutcome> {
     const { dataset, logger } = this.deps;
     if (dataset !== 'full') {
-      logger.info(
-        'Replication stays off: the sample ships no replication packets',
-        { dataset },
-      );
+      logger.info('Replication stays off: tiny seeds no replication packets', {
+        dataset,
+      });
       return 'off';
     }
     assertReplicationToken({

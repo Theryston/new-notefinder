@@ -380,7 +380,7 @@ Python or `psql`, so the server and the worker never run it. On start the
 container runs `dist/restore.js` (`src/restore.ts`, built on the host with
 `nub run build --filter=music-catalog` and mounted read-only), which restores
 when needed and then, in `full` mode, replicates continuously (see
-"Continuous replication" below; in `sample` mode it exits instead):
+"Continuous replication" below; in `tiny` mode it exits instead):
 
 - **No row yet** (`fresh`): records `restoring`, then lays the dataset
   down. `full` reads the `LATEST` file under `MUSICBRAINZ_DUMP_BASE_URL`
@@ -429,8 +429,8 @@ network; `full` restores through `mbslave import <urls>`
   tables, so a wrong column there fails the suite instead of passing
   twice). Development mode, seeded in seconds: about 1.5 s for the schema
   scripts and well under a second for the seed on a local Postgres, about
-  24 MB of database, megabytes of Meilisearch index. The future Lyrics
-  import generates its fake dump from exactly these Recordings (same MBIDs
+  24 MB of database, megabytes of Meilisearch index. The Lyrics import
+  generates its fake dump from exactly these Recordings (same MBIDs
   and titles). There is no replication in this mode: the seed writes no
   `replication_control` row, so the replication worker stays off.
 - `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2`
@@ -532,10 +532,10 @@ job, not this import's.
 - **Source per dataset.** In `full` the worker reads the latest key from
   `LRCLIB_LISTING_URL`, downloads `${LRCLIB_BASE_URL}/${key}` and gunzips it
   **as a stream** straight to its SQLite file: the `.gz` is never kept
-  (about 260 GB of temp disk, deleted after the import). In `sample` nothing
+  (about 260 GB of temp disk, deleted after the import). In `tiny` nothing
   is downloaded: a deterministic, seeded generator
   (`src/integrations/lrclib/fake-lrclib-dump.ts`) writes an SQLite file in the
-  **real LRCLIB schema** from the first 3000 imported Recordings, with
+  **real LRCLIB schema** from the seeded Recordings, with
   placeholder plain and synced Lyrics. It deliberately includes near-misses
   that must **not** match: a length just outside ±2 s, "(Live)" and remix
   titles, and an album tie on other albums. The same generator builds the e2e
@@ -643,8 +643,8 @@ After the first import, every change to the MusicBrainz tables reaches the
 ## Continuous replication
 
 In `full` mode the mbslave container keeps applying MusicBrainz replication
-packets after the first import (issue #62); in `sample` mode replication
-stays off (the sample ships an empty `replication_control`, so `mbslave sync`
+packets after the first import (issue #62); in `tiny` mode replication
+stays off (the seed writes an empty `replication_control`, so `mbslave sync`
 could not start there anyway).
 
 - **Loop** (`ReplicationService.run`, owned by `restore.ts` after the
@@ -659,7 +659,7 @@ could not start there anyway).
   `restart: on-failure` brings the loop back: it resumes from mbslave's own
   cursor and re-records the sequence. SIGINT/SIGTERM stop it after the sync
   in progress. The container is long-running in `full` (a failed restore is
-  retried from `restoring`) and still one-shot in `sample` (a clean exit is
+  retried from `restoring`) and still one-shot in `tiny` (a clean exit is
   never restarted).
 - **Sequence** (`replication_state`, one row, migrated normally): our copy of
   mbslave's cursor, written after every sync run and read by `status` next to
@@ -760,7 +760,7 @@ could not start there anyway).
   | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
   | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
-  | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `sample` (see "Continuous replication") |
+  | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `tiny` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
   | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
   | `LRCLIB_LISTING_URL` | The endpoint listing the published LRCLIB dumps, read for the latest key (default: LRCLIB's own); worker, `full` only |
@@ -876,7 +876,7 @@ could not start there anyway).
   same reasons as the first import, plus a MetaBrainz token; so is the
   container's crash-restart, which is a compose `restart: on-failure` policy
   (unit tests prove a failed sync propagates instead of going quiet).
-- **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `sample` mode the
+- **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `tiny` mode the
   worker tick generates the fake dump, imports and indexes it, and the spec
   asserts over the WebSocket that a matched Recording has plain and synced
   Lyrics, that the tie and length-less Recordings have none, that a
