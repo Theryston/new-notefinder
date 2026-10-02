@@ -50,6 +50,11 @@ const meilisearchUrlSchema = z.url({ protocol: /^https?$/ });
 const serverEnvSchema = envSchema.extend({
   MEILISEARCH_URL: meilisearchUrlSchema,
   MEILISEARCH_SEARCH_API_KEY: z.string().min(1),
+  // The parallel database of a running reimport (same server, other
+  // database). Only the boot fallback reads it: after a flip that dropped
+  // the retired copy, a restarted server opens the new copy instead of the
+  // unreachable configured one (see apps/music-catalog/AGENTS.md).
+  REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
 });
 
 const workerEnvSchema = envSchema.extend({

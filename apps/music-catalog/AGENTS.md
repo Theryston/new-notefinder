@@ -797,10 +797,18 @@ downtime and with a single human step (issue #69):
 - **After the flip.** Replication resumes from the new dump's cursor on the
   new copy (restart the mbslave container if it kept syncing the retired
   one: with the default cleanup, its next sync fails and the compose restart
-  brings it back on the new copy by itself). With
+  brings it back on the new copy by itself). With the default cleanup the
+  retired database is already gone, so restart the server and the worker
+  too: their pools still point at the dropped database, and on boot each
+  opens the new copy instead (the server reads `REIMPORT_DATABASE_URL` for
+  exactly this fallback). The flip's own tick ends failed on the dropped
+  database, and later ticks fail the same way until the restart: that error
+  is the signal to restart, not a broken flip. Clients reconnect by
+  themselves; between the flip and the restart requests fail instead of
+  serving the old copy. With
   `REIMPORT_CLEANUP_OLD_COPY=false` the retired database is kept for
-  inspection: drop it with `DROP DATABASE <old>` once verified — the flip
-  record survives in the new copy, so restarts keep opening it.
+  inspection instead: drop it with `DROP DATABASE <old>` once verified —
+  the flip record survives in the new copy, so restarts keep opening it.
 - **Crash windows.** The index swap is one Meilisearch task, so there is no
   half-swapped catalog. The residual window is the flip record right after
   it: a crash there replays the flip, finds the swapped documents through a
@@ -886,7 +894,7 @@ downtime and with a single human step (issue #69):
   | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
   | `MBSLAVE_REF` | The mbslave release in the mbslave image (baked in from its build argument); recorded with a schema-change stall (see "Yearly schema change") |
-  | `REIMPORT_DATABASE_URL` | The parallel database a reimport rebuilds (same server, other database); absent, nothing ever reimports (see "Yearly schema change"); restore and worker |
+  | `REIMPORT_DATABASE_URL` | The parallel database a reimport rebuilds (same server, other database); absent, nothing ever reimports (see "Yearly schema change"); restore, worker and server (boot fallback) |
   | `REIMPORT_CLEANUP_OLD_COPY` | Anything but `false` drops the retired database after the flip; `false` keeps it for inspection |
   | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `tiny` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
@@ -1007,19 +1015,28 @@ downtime and with a single human step (issue #69):
   same reasons as the first import, plus a MetaBrainz token; so is the
   container's crash-restart, which is a compose `restart: on-failure` policy
   (unit tests prove a failed sync propagates instead of going quiet).
-- **The reimport in e2e** (`test/reimport.e2e-spec.ts`): the real stall, state
-  machine, Meilisearch swap and cutover against a second database on the
-  same server (created and migrated by the spec, `*_reimport`), with the
-  binary faked behind the same boundary (a fake `sync` fails with the
-  schema mismatch, a fake `init`/`import` lays the "new dump" next door).
-  It covers the stall in `status` while search and `getRecording` answer,
-  serving from the current copy during the reimport, the atomic switch with
-  the old indexes deleted, Lyrics carried without any download (the LRCLIB
-  endpoints are closed ports), a worker and a container restarted
-  mid-reimport, and that `CATALOG_NOT_READY` never answers. Each test boots
-  its own server: a switch test flips its process to the parallel database,
-  and the next test must read the serving copy again. The parallel
-  database is dropped in `afterAll`; the spec reuses one per file and
+- **The reimport in e2e** (`test/reimport-stall.e2e-spec.ts`,
+  `test/reimport-indexing.e2e-spec.ts`, `test/reimport-switch.e2e-spec.ts`,
+  `test/reimport-recovery.e2e-spec.ts` and
+  `test/reimport-cleanup.e2e-spec.ts`, sharing
+  `test/utils/reimport-harness.ts`): the real stall, state machine,
+  Meilisearch swap and cutover against a second database on the same server
+  (created and migrated by the harness, `*_reimport`), with the binary faked
+  behind the same boundary (a fake `sync` fails with the schema mismatch, a
+  fake `init`/`import` lays the "new dump" next door, downloading its
+  archives over real HTTP from the fake dump server like the first-import
+  path does). They cover the stall in `status` while search and
+  `getRecording` answer, serving from the current copy during the reimport,
+  the atomic switch with the old indexes deleted, Lyrics carried without any
+  download (the LRCLIB endpoints are closed ports), a worker and a container
+  restarted mid-reimport, a flip lost after the swap and one lost before the
+  flip record (both complete forward instead of swapping back), the retired
+  database dropped by default (on scratch databases, never the shared one:
+  the flip drops the serving database, so the runbook restarts the processes
+  onto the new copy), and that `CATALOG_NOT_READY` never answers. Each test
+  boots its own server: a switch test flips its process to the parallel
+  database, and the next test must read the serving copy again. The parallel
+  database is dropped in `afterAll`; each suite reuses one per file and
   resets it (tables plus sync triggers) per test.
 - **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `tiny` mode the
   worker tick generates the fake dump, imports and indexes it, and the spec

@@ -11,9 +11,11 @@ const logger = createLogger({
   json: env.NODE_ENV === 'production',
 });
 // A reimport may have flipped the serving copy since this process was last
-// deployed: open the database the flip record points at.
+// deployed (or dropped the retired copy it flipped from): open the database
+// the flip record points at.
 const servingUrl = await resolveServingDatabaseUrl({
   configuredUrl: env.DATABASE_URL,
+  reimportUrl: env.REIMPORT_DATABASE_URL,
   readReimportState: (url) =>
     readReimportStateOf(url, (error) => {
       logger.error('Database connection error', { error });
