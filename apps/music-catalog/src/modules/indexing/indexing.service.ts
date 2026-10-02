@@ -1,14 +1,26 @@
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import {
+  LYRICS_INDEX_SETTINGS,
+  type LyricsDocument,
+} from '../../lib/lyrics-index.js';
+import {
   RECORDINGS_INDEX,
   RECORDINGS_INDEX_SETTINGS,
   type RecordingDocument,
 } from '../../lib/recordings-index.js';
 import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
+import type { LyricsService } from '../lyrics/lyrics.service.js';
 import type { RecordingDocumentService } from '../recording/recording-document.service.js';
 import type { IndexingRepository } from './indexing.repository.js';
 import { indexingPercent } from './indexing-progress.js';
+
+type IndexingLyricsDeps = {
+  /** The kept Lyrics, read in the same id order as the Recordings. */
+  documents: LyricsService;
+  /** Opened with the key that can write: only the worker indexes. */
+  index: MeilisearchIndex<LyricsDocument>;
+};
 
 export type IndexingServiceDeps = {
   bootstrap: BootstrapService;
@@ -19,6 +31,12 @@ export type IndexingServiceDeps = {
   /** How many Recordings go to Meilisearch in one task. */
   batchSize: number;
   logger: Logger;
+  /**
+   * The Lyrics side of the indexing. Optional so the specs written before
+   * Lyrics keep constructing the service without it; the composition root
+   * always passes it, and without it no Lyrics document is indexed.
+   */
+  lyrics?: IndexingLyricsDeps;
 };
 
 export class IndexingService {
@@ -45,6 +63,7 @@ export class IndexingService {
       return;
     }
     await index.ensure(RECORDINGS_INDEX_SETTINGS);
+    await this.deps.lyrics?.index.ensure(LYRICS_INDEX_SETTINGS);
     const checkpoint = await repository.getCheckpoint(RECORDINGS_INDEX.uid);
     const total = await this.deps.documents.countAll();
     if (await this.indexFrom(checkpoint, total, signal)) {
@@ -71,6 +90,7 @@ export class IndexingService {
         return true;
       }
       await index.upsert(batch.documents);
+      await this.indexLyricsBatch(afterId, batchSize);
       await repository.saveCheckpoint(
         RECORDINGS_INDEX.uid,
         batch.lastRecordingId,
@@ -87,5 +107,23 @@ export class IndexingService {
     }
     logger.info('Indexing paused: the worker is stopping', { indexed });
     return false;
+  }
+
+  // The kept Lyrics of the batch just indexed: replacing documents by MBID
+  // is idempotent, so a batch sent but not checkpointed is sent again
+  // harmlessly, and Lyrics need no checkpoint of their own. A batch without
+  // Lyrics sends nothing, so the index is left alone until there is.
+  private async indexLyricsBatch(
+    afterId: number,
+    limit: number,
+  ): Promise<void> {
+    const lyrics = this.deps.lyrics;
+    if (lyrics === undefined) {
+      return;
+    }
+    const documents = await lyrics.documents.findDocuments(afterId, limit);
+    if (documents.length > 0) {
+      await lyrics.index.upsert(documents);
+    }
   }
 }

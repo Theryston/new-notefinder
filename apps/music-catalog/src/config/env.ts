@@ -58,6 +58,17 @@ const workerEnvSchema = envSchema.extend({
   // Recordings sent to Meilisearch per task: bigger batches index faster and
   // use more memory, smaller ones checkpoint more often.
   INDEXING_BATCH_SIZE: z.coerce.number().int().min(1).max(10_000).default(2000),
+  // The directory the LRCLIB dump files live under; the latest key read from
+  // the listing below is appended to it. Points at a fake HTTP server in
+  // tests, never at a mirror that does not publish the dumps.
+  LRCLIB_BASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .default('https://db-dumps.lrclib.net'),
+  // The undocumented endpoint listing the published dumps, read for the
+  // latest key (only the latest is kept online).
+  LRCLIB_LISTING_URL: z
+    .url({ protocol: /^https?$/ })
+    .default('https://lrclib-db-dumps.bu3nnyut4y9jfkdg.workers.dev'),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;

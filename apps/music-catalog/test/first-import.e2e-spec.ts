@@ -10,6 +10,7 @@ import {
   restoreServiceDeps,
 } from '../src/modules/bootstrap/restore.service.js';
 import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
+import { applySyncTriggers } from './setup/sync-triggers.js';
 import { testLogger, useTestServer } from './utils/create-test-server.js';
 import { setBootstrapState } from './utils/database.js';
 import {
@@ -177,8 +178,11 @@ describe('first import: the mbslave container restores the dump (e2e)', {
       expect(await statusPhase()).toBe('restored');
     } finally {
       // Leaves the MusicBrainz schema behind for the files after this one,
-      // however the test above ended.
+      // however the test above ended. The redo dropped the schema with the
+      // sync triggers in it, so they are reinstalled too: later files assume
+      // the global setup's triggers, and file order is not guaranteed.
       await applyMusicBrainzSchema(inject('databaseUrl'));
+      await applySyncTriggers(inject('databaseUrl'));
     }
   });
 

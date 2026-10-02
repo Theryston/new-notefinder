@@ -5,6 +5,7 @@ import {
   MbslaveClient,
 } from './integrations/mbslave/mbslave-client.js';
 import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
+import { LYRICS_INDEX, type LyricsDocument } from './lib/lyrics-index.js';
 import {
   RECORDINGS_INDEX,
   type RecordingDocument,
@@ -15,6 +16,9 @@ import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { IndexingRepository } from './modules/indexing/indexing.repository.js';
 import { IndexingService } from './modules/indexing/indexing.service.js';
+import { LyricsRepository } from './modules/lyrics/lyrics.repository.js';
+import { LyricsService } from './modules/lyrics/lyrics.service.js';
+import { LyricsImportService } from './modules/lyrics/lyrics-import.service.js';
 import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
 import { RecordingRepository } from './modules/recording/recording.repository.js';
 import { RecordingService } from './modules/recording/recording.service.js';
@@ -64,6 +68,7 @@ export const createMusicCatalogServer = (
   const recording = new RecordingService(
     new RecordingRepository(db),
     bootstrap,
+    new LyricsService(new LyricsRepository(db)),
   );
   const search = new SearchService({
     bootstrap,
@@ -72,6 +77,11 @@ export const createMusicCatalogServer = (
       url: env.MEILISEARCH_URL,
       apiKey: env.MEILISEARCH_SEARCH_API_KEY,
       ...RECORDINGS_INDEX,
+    }),
+    lyricsIndex: createMeilisearchIndex<LyricsDocument>({
+      url: env.MEILISEARCH_URL,
+      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
+      ...LYRICS_INDEX,
     }),
     summaries: new RecordingSummaryService(new RecordingSummaryRepository(db)),
   });
@@ -129,6 +139,15 @@ export const createMusicCatalogWorker = (
     documents,
     repository: new IndexingRepository(db),
     index,
+    lyrics: {
+      documents: new LyricsService(new LyricsRepository(db)),
+      // The worker is the only writer of the index: its key can write.
+      index: createMeilisearchIndex<LyricsDocument>({
+        url: env.MEILISEARCH_URL,
+        apiKey: env.MEILISEARCH_WRITE_API_KEY,
+        ...LYRICS_INDEX,
+      }),
+    },
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });
@@ -140,14 +159,32 @@ export const createMusicCatalogWorker = (
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });
+  const lyricsImport = new LyricsImportService({
+    bootstrap,
+    recordings: new LyricsRepository(db),
+    dataset: env.CATALOG_DATASET,
+    lrclibBaseUrl: env.LRCLIB_BASE_URL,
+    lrclibListingUrl: env.LRCLIB_LISTING_URL,
+    logger,
+  });
   return {
     // The drain runs before the initial indexing: entries the bulk has not
     // written yet wait for the next tick, so one tick never indexes the same
     // Recording twice, and a tick that finishes the bulk leaves the sync to
-    // the tick after it.
+    // the tick after it. The Lyrics import runs between the two, while the
+    // catalog is still being built: the indexing then sends the kept Lyrics
+    // to the `lyrics` index in the same run, and a failed import only logs
+    // (the catalog still becomes ready; the refresh ticket retries later).
     tick: async () => {
       await sync.ensureTriggers();
       await sync.drain(signal);
+      try {
+        await lyricsImport.importOnce(signal);
+      } catch (error) {
+        logger.error('LRCLIB import failed, continuing without Lyrics', {
+          error,
+        });
+      }
       await indexing.run(signal);
     },
   };

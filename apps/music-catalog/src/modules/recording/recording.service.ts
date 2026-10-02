@@ -1,6 +1,7 @@
 import type { Recording } from '@notefinder/contracts';
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
+import type { LyricsService } from '../lyrics/lyrics.service.js';
 import { assembleRecording } from './assemble-recording.js';
 import type { RecordingRepository } from './recording.repository.js';
 import type { RecordingDetails, RecordingRow } from './recording-data.js';
@@ -9,6 +10,12 @@ export class RecordingService {
   constructor(
     private readonly repository: RecordingRepository,
     private readonly bootstrap: BootstrapService,
+    /**
+     * Reads the kept Lyrics. Optional so the specs written before Lyrics
+     * keep constructing the service without it; the composition root always
+     * passes it, and without it every Recording answers null Lyrics.
+     */
+    private readonly lyrics?: LyricsService,
   ) {}
 
   /**
@@ -23,7 +30,14 @@ export class RecordingService {
     if (row === undefined) {
       throw await this.whyMissing(mbid);
     }
-    return assembleRecording(row, await this.loadDetails(row));
+    const [details, lyrics] = await Promise.all([
+      this.loadDetails(row),
+      this.lyrics?.getLyrics(row.mbid) ?? {
+        plain: null,
+        synced: null,
+      },
+    ]);
+    return { ...assembleRecording(row, details), lyrics };
   }
 
   private async whyMissing(mbid: string): Promise<CatalogError> {
