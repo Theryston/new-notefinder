@@ -7,7 +7,7 @@ import type { LyricsRefreshService } from '../modules/lyrics/lyrics-refresh.serv
 import type { ReimportService } from '../modules/reimport/reimport.service.js';
 import type { SyncService } from '../modules/sync/sync.service.js';
 
-export type WorkerLyricsSteps = {
+type WorkerLyricsSteps = {
   importService: LyricsImportService;
   refreshService: LyricsRefreshService;
   lookupService: LyricsLookupService;
