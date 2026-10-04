@@ -144,6 +144,48 @@ export type MusicCatalogStatusPayload = z.infer<
   typeof musicCatalogStatusPayloadSchema
 >;
 
+/**
+ * Why replication stopped applying packets. `schema-change` is MusicBrainz's
+ * yearly schema change: `mbslave sync` fails with a schema mismatch until a
+ * compatible mbslave restores the new dump (issue #69). Never rename a
+ * reason: add a new one instead.
+ */
+export const replicationStallReasonSchema = z.enum(['schema-change']);
+
+export type ReplicationStallReason = z.infer<
+  typeof replicationStallReasonSchema
+>;
+
+/** Replication stalled, with the reason and mbslave's message, when set. */
+export const replicationStalledSchema = z.object({
+  reason: replicationStallReasonSchema,
+  detail: z.string().optional(),
+});
+
+export type ReplicationStalled = z.infer<typeof replicationStalledSchema>;
+
+/**
+ * Where the blue-green reimport stands, in this order: the new dump is being
+ * `restoring` into the parallel copy, then `indexing` it, then `switching`
+ * the serving copy over to it. Reported while `phase` above stays `ready`,
+ * so clients keep reading from the current copy throughout.
+ */
+export const REIMPORT_PHASES = ['restoring', 'indexing', 'switching'] as const;
+
+export const reimportPhaseSchema = z.enum(REIMPORT_PHASES);
+
+export type ReimportPhase = z.infer<typeof reimportPhaseSchema>;
+
+/** The reimport phase with its progress, when one is running. */
+export const musicCatalogReimportStatusSchema = z.object({
+  phase: reimportPhaseSchema,
+  progressPct: z.number().int().min(0).max(100).optional(),
+});
+
+export type MusicCatalogReimportStatus = z.infer<
+  typeof musicCatalogReimportStatusSchema
+>;
+
 export const musicCatalogStatusResultSchema = z.object({
   phase: bootstrapPhaseSchema,
   dataset: catalogDatasetSchema,
@@ -156,6 +198,12 @@ export const musicCatalogStatusResultSchema = z.object({
   // Entries still waiting to reach the search index: the replication lag
   // operators watch next to the sequence above.
   pendingOutbox: z.number().int().nonnegative().optional(),
+  // Set while replication cannot apply packets: the yearly schema change
+  // reports `schema-change` here until the blue-green reimport finishes.
+  replicationStalled: replicationStalledSchema.optional(),
+  // The blue-green reimport rebuilding the catalog next to the serving copy.
+  // Present only while one runs; `phase` above stays `ready` throughout.
+  reimport: musicCatalogReimportStatusSchema.optional(),
 });
 
 export type MusicCatalogStatusResult = z.infer<

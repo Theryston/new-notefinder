@@ -1,4 +1,5 @@
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import { lrclibRefreshState } from '../../database/schema/lrclib-refresh-state.js';
 
 /** Where the Lyrics refresh stands: nulls until the first check ran. */
@@ -15,10 +16,14 @@ export type LrclibRefreshState = {
  * import) already brought in.
  */
 export class LyricsRefreshRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   async getState(): Promise<LrclibRefreshState> {
-    const [row] = await this.db.select().from(lrclibRefreshState).limit(1);
+    const [row] = await this.getDb().select().from(lrclibRefreshState).limit(1);
     return {
       lastDumpKey: row?.lastDumpKey ?? null,
       lastCheckedAt: row?.lastCheckedAt ?? null,
@@ -33,7 +38,7 @@ export class LyricsRefreshRepository {
    * passed is still imported once the interval passes.
    */
   async recordCheck(now: Date): Promise<void> {
-    await this.db
+    await this.getDb()
       .insert(lrclibRefreshState)
       .values({ id: true, lastCheckedAt: now })
       .onConflictDoUpdate({
@@ -44,7 +49,7 @@ export class LyricsRefreshRepository {
 
   /** Remembers a finished dump refresh, so it is skipped from now on. */
   async recordImport(now: Date, dumpKey: string): Promise<void> {
-    await this.db
+    await this.getDb()
       .insert(lrclibRefreshState)
       .values({
         id: true,

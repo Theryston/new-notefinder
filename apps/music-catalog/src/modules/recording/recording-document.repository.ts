@@ -1,5 +1,6 @@
 import { and, asc, count, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   artist,
   artistAlias,
@@ -48,11 +49,15 @@ const documentColumns = {
  * not per Recording.
  */
 export class RecordingDocumentRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /** The next `limit` Recordings after `afterId`, in id order. */
   findBatch(afterId: number, limit: number): Promise<DocumentRecordingRow[]> {
-    return this.db
+    return this.getDb()
       .select(documentColumns)
       .from(recording)
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
@@ -66,7 +71,7 @@ export class RecordingDocumentRepository {
    * indexing run to log its progress against; batches never re-read it.
    */
   async countAll(): Promise<number> {
-    const [row] = await this.db.select({ value: count() }).from(recording);
+    const [row] = await this.getDb().select({ value: count() }).from(recording);
     return row?.value ?? 0;
   }
 
@@ -75,7 +80,7 @@ export class RecordingDocumentRepository {
     if (ids.length === 0) {
       return [];
     }
-    return this.db
+    return this.getDb()
       .select(documentColumns)
       .from(recording)
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
@@ -84,7 +89,7 @@ export class RecordingDocumentRepository {
 
   /** Each credited artist with each of its aliases (once without aliases). */
   findArtistNames(artistCreditIds: number[]): Promise<ArtistNameRow[]> {
-    return this.db
+    return this.getDb()
       .selectDistinct({
         artistCreditId: artistCreditName.artistCredit,
         name: artist.name,
@@ -99,7 +104,7 @@ export class RecordingDocumentRepository {
   }
 
   findReleaseTitles(recordingIds: number[]): Promise<RecordingTitleRow[]> {
-    return this.db
+    return this.getDb()
       .selectDistinct({ recordingId: track.recording, title: release.name })
       .from(track)
       .innerJoin(medium, eq(medium.id, track.medium))
@@ -108,7 +113,7 @@ export class RecordingDocumentRepository {
   }
 
   findWorkTitles(recordingIds: number[]): Promise<RecordingTitleRow[]> {
-    return this.db
+    return this.getDb()
       .selectDistinct({
         recordingId: lRecordingWork.entity0,
         title: work.name,
@@ -120,7 +125,7 @@ export class RecordingDocumentRepository {
 
   /** The genres (only) the Recordings' own tags give them. */
   findRecordingGenres(recordingIds: number[]): Promise<RecordingGenreRow[]> {
-    return this.db
+    return this.getDb()
       .select({
         recordingId: recordingTag.recording,
         name: tag.name,
@@ -144,7 +149,7 @@ export class RecordingDocumentRepository {
    * its releases carry it.
    */
   findReleaseGroupGenres(recordingIds: number[]): Promise<RecordingGenreRow[]> {
-    const groups = this.db
+    const groups = this.getDb()
       .selectDistinct({
         recordingId: track.recording,
         releaseGroupId: release.releaseGroup,
@@ -155,7 +160,7 @@ export class RecordingDocumentRepository {
       .where(inArray(track.recording, recordingIds))
       .as('groups');
     const votes = sql<number>`sum(${releaseGroupTag.count})::int`;
-    return this.db
+    return this.getDb()
       .select({
         recordingId: groups.recordingId,
         name: tag.name,
@@ -176,7 +181,7 @@ export class RecordingDocumentRepository {
   /** The genres of the credited artists, votes added up per genre. */
   findArtistGenres(artistCreditIds: number[]): Promise<CreditGenreRow[]> {
     const votes = sql<number>`sum(${artistTag.count})::int`;
-    return this.db
+    return this.getDb()
       .select({
         artistCreditId: artistCreditName.artistCredit,
         name: tag.name,

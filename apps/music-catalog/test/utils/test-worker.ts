@@ -1,6 +1,7 @@
 import { inject } from 'vitest';
 import { parseWorkerEnv } from '../../src/config/env.js';
 import { createMusicCatalogWorker } from '../../src/create-server.js';
+import type { Database } from '../../src/database/database.js';
 import { LYRICS_INDEX } from '../../src/lib/lyrics-index.js';
 import { RECORDINGS_INDEX } from '../../src/lib/recordings-index.js';
 import { type TestServer, testLogger } from './create-test-server.js';
@@ -14,6 +15,8 @@ export type TestWorkerOptions = {
   env?: Record<string, string>;
   /** Aborting it stops the worker once its current batch is indexed. */
   signal?: AbortSignal;
+  /** The parallel database a reimport rebuilds, with its URL. */
+  nextCopy?: { db: Database; url: string };
 };
 
 /**
@@ -37,6 +40,7 @@ export const createTestWorker = (
       ...options.env,
     }),
     db: server.db,
+    nextCopy: options.nextCopy,
     logger: testLogger,
     signal: options.signal ?? new AbortController().signal,
   });

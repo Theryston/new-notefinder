@@ -23,7 +23,7 @@ export type MeilisearchIndexConfig = {
 /** The part of the SDK's client this class uses, so tests can stand in. */
 export type MeilisearchClient = Pick<
   Meilisearch,
-  'getRawIndex' | 'createIndex' | 'index'
+  'getRawIndex' | 'createIndex' | 'index' | 'swapIndexes' | 'deleteIndex'
 >;
 
 // A batch of a few thousand documents is indexed in seconds; a Meilisearch
@@ -35,6 +35,10 @@ const TASK_POLL_INTERVAL_MS = 100;
 const isIndexNotFound = (error: unknown): boolean =>
   error instanceof MeilisearchApiError &&
   error.cause?.code === 'index_not_found';
+
+const isDocumentNotFound = (error: unknown): boolean =>
+  error instanceof MeilisearchApiError &&
+  error.cause?.code === 'document_not_found';
 
 /**
  * One Meilisearch index, behind the few operations the service needs. It is
@@ -88,6 +92,77 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
     await this.wait(
       this.client.index<TDocument>(this.uid).deleteDocuments(ids),
     );
+  }
+
+  /**
+   * Atomically swaps this index with another one: afterwards this uid holds
+   * the other's documents and vice versa. The blue-green reimport builds the
+   * new copy under `*_next` uids and swaps them into place, so clients flip
+   * from the old copy to the new one between two requests, never mid-page.
+   */
+  async swapWith(otherUid: string): Promise<void> {
+    await this.wait(
+      this.client.swapIndexes([
+        { indexes: [this.uid, otherUid], rename: false },
+      ]),
+    );
+  }
+
+  /**
+   * Swaps every pair in one `swap-indexes` task: Meilisearch applies the
+   * whole list atomically, so the blue-green reimport flips the recordings
+   * and the lyrics indexes together, never one without the other. Two
+   * separate `swapWith` calls leave a half-swapped catalog when the process
+   * dies between them; this call has no between.
+   */
+  async swapPairs(
+    pairs: Array<{ servingUid: string; nextUid: string }>,
+  ): Promise<void> {
+    if (pairs.length === 0) {
+      return;
+    }
+    await this.wait(
+      this.client.swapIndexes(
+        pairs.map((pair) => ({
+          indexes: [pair.servingUid, pair.nextUid] as [string, string],
+          rename: false,
+        })),
+      ),
+    );
+  }
+
+  /**
+   * Whether the index holds a document with this primary key. The reimport
+   * asks it about the parallel copy's documents before swapping: when a
+   * restarted flip finds them already here, the swap ran and only the flip
+   * record and the cleanup are left, so replaying the swap (which would swap
+   * back) is skipped.
+   */
+  async hasDocument(id: string): Promise<boolean> {
+    try {
+      await this.client.index(this.uid).getDocument(id);
+      return true;
+    } catch (error) {
+      if (isIndexNotFound(error) || isDocumentNotFound(error)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes the whole index. The reimport drops the old copy this way. A
+   * missing index is already gone (a rerun after the delete), so it resolves
+   * instead of failing the flip.
+   */
+  async deleteIndex(): Promise<void> {
+    try {
+      await this.wait(this.client.deleteIndex(this.uid));
+    } catch (error) {
+      if (!isIndexNotFound(error)) {
+        throw error;
+      }
+    }
   }
 
   /**

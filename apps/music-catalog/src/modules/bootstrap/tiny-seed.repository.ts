@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   type TinySeedRecording,
   tinyArtistCreditMbid,
@@ -34,7 +35,11 @@ const musicbrainz = (table: string) =>
  * `init --empty`, on an empty schema.
  */
 export class TinySeedRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /** Seeds the entries and returns how many Recordings were written. */
   async seed(
@@ -53,7 +58,7 @@ export class TinySeedRepository {
     const values = artists.map(
       (artist) => sql`(${artist.mbid}, ${artist.name}, ${artist.name})`,
     );
-    const rows = await this.db.execute<{ id: number; gid: string }>(sql`
+    const rows = await this.getDb().execute<{ id: number; gid: string }>(sql`
       insert into ${musicbrainz('artist')} (gid, name, sort_name)
       values ${sql.join(values, sql`, `)}
       returning id, gid`);
@@ -71,7 +76,7 @@ export class TinySeedRepository {
     const values = credits.map(
       (credit) => sql`(${credit.gid}, ${credit.artist.name}, 1)`,
     );
-    const rows = await this.db.execute<{ id: number; gid: string }>(sql`
+    const rows = await this.getDb().execute<{ id: number; gid: string }>(sql`
       insert into ${musicbrainz('artist_credit')} (gid, name, artist_count)
       values ${sql.join(values, sql`, `)}
       returning id, gid`);
@@ -84,7 +89,7 @@ export class TinySeedRepository {
       }
       return sql`(${creditId}, 0, ${artistId}, ${credit.artist.name}, ${''})`;
     });
-    await this.db.execute(sql`
+    await this.getDb().execute(sql`
       insert into ${musicbrainz('artist_credit_name')}
         (artist_credit, position, artist, name, join_phrase)
       values ${sql.join(names, sql`, `)}`);
@@ -109,7 +114,7 @@ export class TinySeedRepository {
       }
       return sql`(${recording.mbid}, ${recording.title}, ${creditId}, ${recording.lengthMs}, ${''}, ${false})`;
     });
-    await this.db.execute(sql`
+    await this.getDb().execute(sql`
       insert into ${musicbrainz('recording')}
         (gid, name, artist_credit, length, comment, video)
       values ${sql.join(values, sql`, `)}`);

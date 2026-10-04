@@ -54,7 +54,7 @@ export class IndexingService {
    * in progress; the next round continues.
    */
   async run(signal: AbortSignal): Promise<void> {
-    const { bootstrap, index, repository } = this.deps;
+    const { bootstrap } = this.deps;
     const startedAt = Date.now();
     const { phase } = await bootstrap.getStatus();
     if (phase === 'restored') {
@@ -62,17 +62,32 @@ export class IndexingService {
     } else if (phase !== 'indexing') {
       return;
     }
-    await index.ensure(RECORDINGS_INDEX_SETTINGS);
-    await this.deps.lyrics?.index.ensure(LYRICS_INDEX_SETTINGS);
-    const checkpoint = await repository.getCheckpoint(RECORDINGS_INDEX.uid);
-    const total = await this.deps.documents.countAll();
-    if (await this.indexFrom(checkpoint, total, signal)) {
+    const total = await this.runDetached(signal);
+    if (total !== undefined) {
       await bootstrap.markReady();
       this.deps.logger.info('Indexing finished: the catalog is ready', {
         total,
         durationMs: Date.now() - startedAt,
       });
     }
+  }
+
+  /**
+   * Indexes every Recording without touching the bootstrap phases: the
+   * blue-green reimport walks the parallel copy this way, tracking its own
+   * state instead of the first import's. Returns the Recording count, or
+   * undefined when aborted before the last batch.
+   */
+  async runDetached(signal: AbortSignal): Promise<number | undefined> {
+    const { index, repository } = this.deps;
+    await index.ensure(RECORDINGS_INDEX_SETTINGS);
+    await this.deps.lyrics?.index.ensure(LYRICS_INDEX_SETTINGS);
+    const checkpoint = await repository.getCheckpoint(RECORDINGS_INDEX.uid);
+    const total = await this.deps.documents.countAll();
+    if (await this.indexFrom(checkpoint, total, signal)) {
+      return total;
+    }
+    return undefined;
   }
 
   // Returns whether every Recording was indexed (false: stopped early).

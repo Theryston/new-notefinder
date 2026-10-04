@@ -12,16 +12,19 @@ exists.
 **What exists today**: the authenticated WebSocket server answering
 `status`, `getRecording` and `search` (issues #57, #59 and #58), the protocol
 envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint, the recording outbox and the replication state), read-only declarations of the
+checkpoint, the recording outbox, the replication state and the reimport
+state), read-only declarations of the
 MusicBrainz tables the queries read, **Meilisearch** as the search engine
 behind a small integration, the `server` and `worker` entrypoints (the worker
 indexes every Recording once the MusicBrainz data is laid down, then keeps
 the index in sync with it through the outbox), the **first import** (issue
 #60, datasets reworked in #85: the mbslave container lays down `tiny` or
-`full` and records `restoring`/`restored`) and **continuous replication**
+`full` and records `restoring`/`restored`), **continuous replication**
 (issue #62: in `full` mode the same container keeps applying replication
 packets after the catalog is `ready`, records the sequence and reports it
-in `status`) and the test and quality setup. Lyrics and the production
+in `status`) and the **yearly schema-change reimport** (issue #69: a CI job
+proposes the mbslave bump, then the service rebuilds the catalog into a
+parallel copy with zero downtime) and the test and quality setup. Lyrics and the production
 compose are later tickets: do not
 build them here ahead of their ticket. `search` returns results in
 **Meilisearch's relevance order**, loaded from Postgres without re-ranking.
@@ -457,8 +460,10 @@ lives under (default: the official `data.metabrainz.org` directory); `tiny`
 ignores it. The mbslave binary reads its own `MBSLAVE_*` variables from
 the container environment (use `MBSLAVE_DB_DB` for the database name;
 mbslave ignores the README's `MBSLAVE_DB_NAME`); the dump download needs
-no token. The image (`mbslave.Dockerfile`) installs mbslave from git tag
-`v31.0.1`: bump `MBSLAVE_REF` there together with `MBSLAVE_REF` in
+no token. The image (`mbslave.Dockerfile`) installs mbslave from a pinned
+git tag (`MBSLAVE_REF`, baked into the image for the stall check below):
+a CI job proposes the bump (see "Yearly schema change"); bump `MBSLAVE_REF`
+there together with `MBSLAVE_REF` in
 `test/setup/musicbrainz-schema.ts`, which builds the same schema in e2e.
 
 ## Resetting a local database
@@ -723,13 +728,102 @@ could not start there anyway).
   packets are published means replication stalled. First read the container
   log: a 403 is a bad or revoked token (fix the token, restart the
   container); `Mismatched schema` is the yearly MusicBrainz schema change
-  (issue #69 owns the reimport — do not touch the database by hand); a lost
+  (see "Yearly schema change" below — do not touch the database by hand); a lost
   database or mirror resolves itself on restart. The loop never rewinds
   mbslave's cursor, so restarting the container (`docker compose restart
   music-catalog-mbslave`) always resumes from the last applied packet; the
   worker's outbox then carries every change to the index. Never update
   `replication_control` or `replication_state` by hand: the two would
   disagree about what was applied.
+
+## Yearly schema change (blue-green reimport)
+
+About once a year (usually May), MusicBrainz changes its database schema and
+replication stops until mbslave is upgraded. The service survives it without
+downtime and with a single human step (issue #69):
+
+1. **CI proposes the upgrade.** A scheduled workflow
+   (`.github/workflows/music-catalog-mbslave-bump.yml`) watches mbslave
+   releases and opens a PR bumping the pinned `MBSLAVE_REF` in
+   `mbslave.Dockerfile`, `.env.example` and
+   `test/setup/musicbrainz-schema.ts`. The music-catalog e2e suite runs on
+   that PR against the new schema.
+2. **The maintainer merges and deploys.** Merge the PR, then on the server:
+   `docker compose pull && docker compose up -d` (the mbslave image
+   rebuilds with the new tag; `pull_policy: build` in the dev compose,
+   the published image in production).
+3. **An automatic blue-green reimport follows.** The next `mbslave sync`
+   still fails, but the container now runs a newer mbslave major than the
+   stalled one (an older release, the stalled one or an unrelated same-major
+   patch keeps waiting), so instead of crash-looping it restores the new dump
+   into the **parallel database** (`REIMPORT_DATABASE_URL`, a fresh database
+   on the same server, migrated like the serving one) while the current copy
+   keeps serving. Then the worker reinstalls the change triggers there,
+   carries the kept Lyrics over (the strict match rerun from our own schema,
+   no new LRCLIB download), indexes into the `recordings_next`/`lyrics_next`
+   indexes and flips over: one atomic Meilisearch `swap-indexes` task for
+   both index pairs, and the reads for the database (every repository
+   resolves a reference the flip swaps, so in-flight requests finish on the
+   old copy). The retired copy's indexes are deleted; its database is dropped
+   unless `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection
+   until the runbook below drops it.
+4. **Watch `status`.** The first import's `phase` stays `ready` throughout
+   (so `search` and `getRecording` never answer `CATALOG_NOT_READY` for a
+   reimport), with `replicationStalled: { reason: 'schema-change' }` until
+   the flip and `reimport: { phase, progressPct? }` while one runs
+   (`restoring` → `indexing` → `switching`). A reimport interrupted by a
+   crash or restart resumes on the parallel copy (the restore redoes from a
+   clean state, indexing resumes after its checkpoint, the flip replays
+   forward: a rerun that finds the flip record, or the swapped documents
+   without it, completes the flip instead of swapping back, then every
+   restarted process opens the new copy).
+
+- **Disk.** About twice the steady state during a reimport (the parallel
+  database plus the `*_next` indexes next to the serving ones), back to
+  steady after the old copy is deleted. The LRCLIB temp disk is not needed:
+  Lyrics are reused, never re-downloaded.
+- **Enabling it.** Set `REIMPORT_DATABASE_URL` (mbslave container and
+  worker; the compose file passes it through when set) to a fresh database
+  you migrated (`DATABASE_URL=<it> nub run db:migrate` from
+  `apps/music-catalog`), and create one fresh database per reimport: the
+  container refuses a parallel database that holds a serving or retired
+  catalog, and one that is the serving database itself. Without the
+  variable, nothing ever reimports: the container keeps crash-looping on the
+  stall and logs exactly what to set (`Replication stalled on the yearly
+  schema change but REIMPORT_DATABASE_URL is unset`, with the steps). The
+  database stays an explicit operator step on purpose: provisioning it means
+  migrating it, and migrations are a deploy step, never run on boot.
+  `tiny` mode never reimports either.
+- **After the flip.** Replication resumes from the new dump's cursor on the
+  new copy (restart the mbslave container if it kept syncing the retired
+  one: with the default cleanup, its next sync fails and the compose restart
+  brings it back on the new copy by itself). With the default cleanup the
+  retired database is already gone, so restart the server and the worker
+  too: their pools still point at the dropped database, and on boot each
+  opens the new copy instead (the server reads `REIMPORT_DATABASE_URL` for
+  exactly this fallback). The flip's own tick ends failed on the dropped
+  database, and later ticks fail the same way until the restart: that error
+  is the signal to restart, not a broken flip. Clients reconnect by
+  themselves; between the flip and the restart requests fail instead of
+  serving the old copy. With
+  `REIMPORT_CLEANUP_OLD_COPY=false` the retired database is kept for
+  inspection instead: drop it with `DROP DATABASE <old>` once verified —
+  the flip record survives in the new copy, so restarts keep opening it.
+- **Crash windows.** The index swap is one Meilisearch task, so there is no
+  half-swapped catalog. The residual window is the flip record right after
+  it: a crash there replays the flip, finds the swapped documents through a
+  sample of the parallel copy's ids (hundreds, so a differing copy is missed
+  only by extreme bad luck; an identical copy is harmless either way) and
+  completes forward instead of swapping back. If a flip ever looks wrong,
+  compare the serving index counts with the serving database before dropping
+  anything: `recordings` must hold the new copy's documents.
+- **Greppable logs.** Until the bump, the container crash-loops on mbslave's
+  own schema-mismatch message (`mbslave output`, then `Replication failed,
+  the next start resumes it`) while `status` carries the stall. The reimport
+  logs `Starting the parallel restore for the schema change`, `Reimport
+  carried the kept Lyrics to the parallel copy` (with `carried`, `dropped`),
+  `Reimport switched to the parallel copy` and `Adopted the reimported
+  copy` once per process.
 
 ## Database (Drizzle + Postgres)
 
@@ -763,7 +857,15 @@ could not start there anyway).
 - `replication_state` is a single-row table like `bootstrap_state`: the last
   replication packet applied (`last_sequence`, `updated_at`). The mbslave
   container writes it after every sync run; no row until the first packet
-  lands (see "Continuous replication").
+  lands (see "Continuous replication"). A schema mismatch also records the
+  stall there (`stalled_reason`, `stalled_detail`, `stalled_mbslave_ref`),
+  cleared when sync applies packets again or the reimport flips.
+- `reimport_state` is a single-row table for the blue-green reimport
+  (`phase` `restoring` | `indexing` | `switching`, `progress_pct`,
+  `detail`; see "Yearly schema change"). The container writes `restoring`
+  and the worker moves it to `indexing` and `switching`; after the flip it
+  holds `switched` with the new serving database URL, overwritten by the
+  next reimport.
 - Migrations: change the schema -> `db:generate` -> review the SQL -> commit
   it. Never edit an applied migration. CI runs `drizzle-kit check` +
   `generate` and fails when the schema has a change with no migration.
@@ -791,6 +893,9 @@ could not start there anyway).
   | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
   | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
+  | `MBSLAVE_REF` | The mbslave release in the mbslave image (baked in from its build argument); recorded with a schema-change stall (see "Yearly schema change") |
+  | `REIMPORT_DATABASE_URL` | The parallel database a reimport rebuilds (same server, other database); absent, nothing ever reimports (see "Yearly schema change"); restore, worker and server (boot fallback) |
+  | `REIMPORT_CLEANUP_OLD_COPY` | Anything but `false` drops the retired database after the flip; `false` keeps it for inspection |
   | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `tiny` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
   | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
@@ -847,7 +952,7 @@ could not start there anyway).
 - **The MusicBrainz schema in e2e** (`test/setup/musicbrainz-schema.ts`):
   after the migrations, the global setup creates the real 375-table schema in
   the `musicbrainz` schema with the same eight SQL scripts `mbslave init
-  --empty` runs (mbslave pinned to git tag `v31.0.1`, constant `MBSLAVE_REF`;
+  --empty` runs (mbslave pinned to a git tag, constant `MBSLAVE_REF`;
   bump it together with the mbslave container). The scripts come from
   musicbrainz-server (GPL), so they are **not vendored**: they are fetched
   from that tag on GitHub (with retries) and cached in
@@ -910,6 +1015,29 @@ could not start there anyway).
   same reasons as the first import, plus a MetaBrainz token; so is the
   container's crash-restart, which is a compose `restart: on-failure` policy
   (unit tests prove a failed sync propagates instead of going quiet).
+- **The reimport in e2e** (`test/reimport-stall.e2e-spec.ts`,
+  `test/reimport-indexing.e2e-spec.ts`, `test/reimport-switch.e2e-spec.ts`,
+  `test/reimport-recovery.e2e-spec.ts` and
+  `test/reimport-cleanup.e2e-spec.ts`, sharing
+  `test/utils/reimport-harness.ts`): the real stall, state machine,
+  Meilisearch swap and cutover against a second database on the same server
+  (created and migrated by the harness, `*_reimport`), with the binary faked
+  behind the same boundary (a fake `sync` fails with the schema mismatch, a
+  fake `init`/`import` lays the "new dump" next door, downloading its
+  archives over real HTTP from the fake dump server like the first-import
+  path does). They cover the stall in `status` while search and
+  `getRecording` answer, serving from the current copy during the reimport,
+  the atomic switch with the old indexes deleted, Lyrics carried without any
+  download (the LRCLIB endpoints are closed ports), a worker and a container
+  restarted mid-reimport, a flip lost after the swap and one lost before the
+  flip record (both complete forward instead of swapping back), the retired
+  database dropped by default (on scratch databases, never the shared one:
+  the flip drops the serving database, so the runbook restarts the processes
+  onto the new copy), and that `CATALOG_NOT_READY` never answers. Each test
+  boots its own server: a switch test flips its process to the parallel
+  database, and the next test must read the serving copy again. The parallel
+  database is dropped in `afterAll`; each suite reuses one per file and
+  resets it (tables plus sync triggers) per test.
 - **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `tiny` mode the
   worker tick generates the fake dump, imports and indexes it, and the spec
   asserts over the WebSocket that a matched Recording has plain and synced

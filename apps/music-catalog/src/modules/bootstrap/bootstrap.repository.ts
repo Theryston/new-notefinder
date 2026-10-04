@@ -1,6 +1,7 @@
 import type { BootstrapPhase, CatalogDataset } from '@notefinder/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
+import type { DatabaseSource } from '../../database/database-ref.js';
 import { bootstrapState } from '../../database/schema/bootstrap-state.js';
 
 export type BootstrapState = {
@@ -22,11 +23,15 @@ const MBSLAVE_SCHEMAS = [
 ] as const;
 
 export class BootstrapRepository {
-  constructor(private readonly db: Database) {}
+  private readonly getDb: () => Database;
+
+  constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
+  }
 
   /** The recorded state, or undefined until the import writes it. */
   async getState(): Promise<BootstrapState | undefined> {
-    const [state] = await this.db
+    const [state] = await this.getDb()
       .select({
         phase: bootstrapState.phase,
         dataset: bootstrapState.dataset,
@@ -45,7 +50,7 @@ export class BootstrapRepository {
     from: BootstrapPhase;
     to: BootstrapPhase;
   }): Promise<void> {
-    await this.db
+    await this.getDb()
       .update(bootstrapState)
       .set({ phase: move.to })
       .where(
@@ -60,7 +65,7 @@ export class BootstrapRepository {
    * as an interrupted restore.
    */
   async beginRestore(dataset: CatalogDataset): Promise<void> {
-    await this.db
+    await this.getDb()
       .insert(bootstrapState)
       .values({ phase: 'restoring', dataset })
       .onConflictDoUpdate({
@@ -86,7 +91,7 @@ export class BootstrapRepository {
    */
   async clearMusicBrainz(): Promise<void> {
     const schemas = MBSLAVE_SCHEMAS.map((schema) => sql.identifier(schema));
-    await this.db.execute(
+    await this.getDb().execute(
       sql`drop schema if exists ${sql.join(schemas, sql`, `)} cascade`,
     );
   }

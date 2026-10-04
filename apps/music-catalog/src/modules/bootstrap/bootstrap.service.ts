@@ -1,6 +1,8 @@
 import type {
   CatalogDataset,
+  MusicCatalogReimportStatus,
   MusicCatalogStatusResult,
+  ReplicationStalled,
 } from '@notefinder/contracts';
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';
@@ -16,7 +18,26 @@ export type ReplicationStatusSource = {
   report: () => Promise<{
     replicationSequence: number | null;
     pendingOutbox: number;
+    replicationStalled?: ReplicationStalled;
   }>;
+};
+
+/**
+ * Where `getStatus` reads the reimport progress when one runs. Satisfied by
+ * `ReimportService`; absent without a parallel database.
+ */
+export type ReimportStatusSource = {
+  reportReimport: () => Promise<MusicCatalogReimportStatus | undefined>;
+};
+
+/**
+ * Adopts the reimported copy without restarting: flips this process's reads
+ * to the parallel database once `reimport_state` says `switched`. Runs on
+ * every `getStatus` (which every catalog read starts with), and short-
+ * circuits once adopted, so the steady state costs nothing.
+ */
+export type CutoverWatcher = {
+  adoptIfSwitched: () => Promise<void>;
 };
 
 export class BootstrapService {
@@ -26,6 +47,11 @@ export class BootstrapService {
     private readonly configuredDataset: CatalogDataset,
     /** Adds the replication numbers to `getStatus`; absent without them. */
     private readonly replication?: ReplicationStatusSource,
+    /** The reimport progress with the cutover; absent without a reimport. */
+    private readonly reimport?: {
+      status?: ReimportStatusSource;
+      cutover?: CutoverWatcher;
+    },
   ) {}
 
   /**
@@ -33,18 +59,24 @@ export class BootstrapService {
    * record it in the database; a server that starts before anything has been
    * written still answers, with the import as not started yet. With a
    * replication source, the answer also carries the last applied sequence
-   * and the outbox backlog, read together so they describe the same moment.
+   * and the outbox backlog, read together so they describe the same moment;
+   * while a reimport runs it also carries its phase and progress, and the
+   * first import's phase stays `ready` throughout.
    */
   async getStatus(): Promise<MusicCatalogStatusResult> {
+    await this.reimport?.cutover?.adoptIfSwitched();
     const state = await this.repository.getState();
     const base = state ?? {
       phase: 'restoring' as const,
       dataset: this.configuredDataset,
     };
-    if (!this.replication) {
-      return base;
-    }
-    return { ...base, ...(await this.replication.report()) };
+    const withReplication = this.replication
+      ? { ...base, ...(await this.replication.report()) }
+      : base;
+    const reimport = await this.reimport?.status?.reportReimport();
+    return reimport === undefined
+      ? withReplication
+      : { ...withReplication, reimport };
   }
 
   /**
