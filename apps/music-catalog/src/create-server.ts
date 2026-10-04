@@ -57,7 +57,7 @@ export type CreateServerOptions = {
  * reimported copy without restarting. In-flight requests finish on the
  * database object they started with.
  */
-export type DatabaseRef = {
+type DatabaseRef = {
   current: Database;
 };
 

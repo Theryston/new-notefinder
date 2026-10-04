@@ -10,7 +10,7 @@ import type { ReimportState } from './reimport-state.repository.js';
  * has the binary), the worker owns everything after it (it has the
  * Meilisearch write key).
  */
-export type ReimportRole = 'restore-container' | 'worker';
+type ReimportRole = 'restore-container' | 'worker';
 
 export type ReimportSituation = {
   role: ReimportRole;
@@ -41,7 +41,7 @@ export type ReimportDecision =
   | 'run-switch';
 
 /** The release marker missing from an image built before it existed. */
-export const UNKNOWN_MBSLAVE_REF = 'unknown';
+const UNKNOWN_MBSLAVE_REF = 'unknown';
 
 const mbslaveMajorOf = (ref: string): number | undefined => {
   const major = /^v(\d+)\.\d+\.\d+$/.exec(ref)?.[1];

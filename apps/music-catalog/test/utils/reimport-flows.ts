@@ -64,7 +64,7 @@ export const searchForMbids = async (
   return response.result.results.map((result) => result.mbid);
 };
 
-export const readRecordingLyrics = async (
+const readRecordingLyrics = async (
   client: TestClient,
   recordingMbid: string,
 ) => {
@@ -148,7 +148,7 @@ export const restoreParallelInto = async (
 // change. A closed port answers the LRCLIB listing, so any download attempt
 // fails the tick instead of hiding: the reimport must never download Lyrics
 // again.
-export const serveCatalogFlow = async (
+const serveCatalogFlow = async (
   server: TestServer,
   parallel: ParallelCopy,
 ): Promise<TestWorker> => {

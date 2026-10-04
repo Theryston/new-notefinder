@@ -3,18 +3,18 @@ import { RECORDINGS_NEXT_INDEX } from '../../lib/recordings-index.js';
 import type { Logger } from '../../logger.js';
 
 /** The outbox of the copy being retired: its entries die with it. */
-export type SwitchOutbox = {
+type SwitchOutbox = {
   clearAll: () => Promise<void>;
 };
 
 /** The flip record, written on both copies (see below). */
-export type SwitchState = {
+type SwitchState = {
   markSwitched: (servingDatabaseUrl: string) => Promise<void>;
   dropDatabase: (databaseName: string) => Promise<void>;
 };
 
 /** The stall, forgotten once the new copy serves. */
-export type SwitchSequences = {
+type SwitchSequences = {
   clearStall: () => Promise<void>;
 };
 
