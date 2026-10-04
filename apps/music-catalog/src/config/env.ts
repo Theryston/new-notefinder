@@ -69,6 +69,27 @@ const workerEnvSchema = envSchema.extend({
   LRCLIB_LISTING_URL: z
     .url({ protocol: /^https?$/ })
     .default('https://lrclib-db-dumps.bu3nnyut4y9jfkdg.workers.dev'),
+  // The public LRCLIB API new and changed Recordings get their Lyrics from
+  // between dump refreshes. Points at a fake HTTP server in tests.
+  LRCLIB_API_BASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .default('https://lrclib.net'),
+  // How often the worker polls the dump listing for a newer dump. The poll
+  // itself is cheap (one small JSON document); the download only follows
+  // when the minimum interval below has passed and the key is new.
+  LRCLIB_REFRESH_CHECK_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3_600_000),
+  // At most one dump refresh per this many days: dumps are published by hand
+  // every few weeks to months, so polling daily would only re-download the
+  // same file.
+  LRCLIB_REFRESH_MIN_INTERVAL_DAYS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;

@@ -73,24 +73,27 @@ export class LyricsRepository {
       .where(gt(recording.id, afterId))
       .orderBy(asc(recording.id))
       .limit(limit);
-    if (rows.length === 0) {
+    return this.withMatchData(rows);
+  }
+
+  /** The given Recordings with their match data, in no particular order. */
+  async findMatchingByIds(ids: number[]): Promise<MatchingRecording[]> {
+    if (ids.length === 0) {
       return [];
     }
-    const creditIds = [...new Set(rows.map((row) => row.artistCreditId))];
-    const recordingIds = rows.map((row) => row.id);
-    const [names, albums] = await Promise.all([
-      this.findArtistNames(creditIds),
-      this.findAlbumTitles(recordingIds),
-    ]);
-    return rows.map((row) => ({
-      id: row.id,
-      mbid: row.mbid,
-      title: row.title,
-      lengthMs: row.lengthMs,
-      artistCredit: row.artistCredit,
-      artistNames: names.get(row.artistCreditId) ?? [],
-      albumTitles: albums.get(row.id) ?? [],
-    }));
+    const rows = await this.db
+      .select({
+        id: recording.id,
+        mbid: recording.gid,
+        title: recording.name,
+        lengthMs: recording.length,
+        artistCreditId: recording.artistCredit,
+        artistCredit: artistCredit.name,
+      })
+      .from(recording)
+      .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
+      .where(inArray(recording.id, ids));
+    return this.withMatchData(rows);
   }
 
   /** The kept Lyrics of one Recording, undefined when none matched. */
@@ -106,6 +109,26 @@ export class LyricsRepository {
       .where(eq(recordingLyrics.mbid, mbid))
       .limit(1);
     return row;
+  }
+
+  /** The kept Lyrics of the given Recordings, by MBID. */
+  async findKeptByMbids(
+    mbids: string[],
+  ): Promise<Map<string, { plain: string | null; synced: string | null }>> {
+    if (mbids.length === 0) {
+      return new Map();
+    }
+    const rows = await this.db
+      .select({
+        mbid: recordingLyrics.mbid,
+        plain: recordingLyrics.plainLyrics,
+        synced: recordingLyrics.syncedLyrics,
+      })
+      .from(recordingLyrics)
+      .where(inArray(recordingLyrics.mbid, mbids));
+    return new Map(
+      rows.map((row) => [row.mbid, { plain: row.plain, synced: row.synced }]),
+    );
   }
 
   /** The kept Lyrics of the next `limit` Recordings after `afterId`. */
@@ -148,6 +171,46 @@ export class LyricsRepository {
           },
         });
     }
+  }
+
+  /** Forgets the kept Lyrics of the given Recordings. */
+  async deleteLyrics(mbids: string[]): Promise<void> {
+    if (mbids.length === 0) {
+      return;
+    }
+    await this.db
+      .delete(recordingLyrics)
+      .where(inArray(recordingLyrics.mbid, mbids));
+  }
+
+  private async withMatchData(
+    rows: {
+      id: number;
+      mbid: string;
+      title: string;
+      lengthMs: number | null;
+      artistCreditId: number;
+      artistCredit: string;
+    }[],
+  ): Promise<MatchingRecording[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+    const creditIds = [...new Set(rows.map((row) => row.artistCreditId))];
+    const recordingIds = rows.map((row) => row.id);
+    const [names, albums] = await Promise.all([
+      this.findArtistNames(creditIds),
+      this.findAlbumTitles(recordingIds),
+    ]);
+    return rows.map((row) => ({
+      id: row.id,
+      mbid: row.mbid,
+      title: row.title,
+      lengthMs: row.lengthMs,
+      artistCredit: row.artistCredit,
+      artistNames: names.get(row.artistCreditId) ?? [],
+      albumTitles: albums.get(row.id) ?? [],
+    }));
   }
 
   private async findArtistNames(

@@ -4,7 +4,10 @@ import {
   createProcessMbslaveRun,
   MbslaveClient,
 } from './integrations/mbslave/mbslave-client.js';
-import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
+import {
+  createMeilisearchIndex,
+  type MeilisearchIndex,
+} from './integrations/meilisearch/meilisearch-index.js';
 import { LYRICS_INDEX, type LyricsDocument } from './lib/lyrics-index.js';
 import {
   RECORDINGS_INDEX,
@@ -16,9 +19,13 @@ import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { IndexingRepository } from './modules/indexing/indexing.repository.js';
 import { IndexingService } from './modules/indexing/indexing.service.js';
+import type { MatchingRecording } from './modules/lyrics/lyrics.repository.js';
 import { LyricsRepository } from './modules/lyrics/lyrics.repository.js';
 import { LyricsService } from './modules/lyrics/lyrics.service.js';
 import { LyricsImportService } from './modules/lyrics/lyrics-import.service.js';
+import { LyricsLookupService } from './modules/lyrics/lyrics-lookup.service.js';
+import { LyricsRefreshRepository } from './modules/lyrics/lyrics-refresh.repository.js';
+import { LyricsRefreshService } from './modules/lyrics/lyrics-refresh.service.js';
 import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
 import { RecordingRepository } from './modules/recording/recording.repository.js';
 import { RecordingService } from './modules/recording/recording.service.js';
@@ -134,23 +141,6 @@ export const createMusicCatalogWorker = (
     apiKey: env.MEILISEARCH_WRITE_API_KEY,
     ...RECORDINGS_INDEX,
   });
-  const indexing = new IndexingService({
-    bootstrap,
-    documents,
-    repository: new IndexingRepository(db),
-    index,
-    lyrics: {
-      documents: new LyricsService(new LyricsRepository(db)),
-      // The worker is the only writer of the index: its key can write.
-      index: createMeilisearchIndex<LyricsDocument>({
-        url: env.MEILISEARCH_URL,
-        apiKey: env.MEILISEARCH_WRITE_API_KEY,
-        ...LYRICS_INDEX,
-      }),
-    },
-    batchSize: env.INDEXING_BATCH_SIZE,
-    logger,
-  });
   const sync = new SyncService({
     bootstrap,
     outbox: new RecordingOutboxRepository(db),
@@ -159,33 +149,148 @@ export const createMusicCatalogWorker = (
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });
-  const lyricsImport = new LyricsImportService({
+  const lyrics = createWorkerLyrics({ env, db, logger, bootstrap, sync });
+  const indexing = new IndexingService({
     bootstrap,
-    recordings: new LyricsRepository(db),
-    dataset: env.CATALOG_DATASET,
-    lrclibBaseUrl: env.LRCLIB_BASE_URL,
-    lrclibListingUrl: env.LRCLIB_LISTING_URL,
+    documents,
+    repository: new IndexingRepository(db),
+    index,
+    lyrics: {
+      documents: new LyricsService(new LyricsRepository(db)),
+      index: lyrics.lyricsIndex,
+    },
+    batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });
+  // The drain runs before the initial indexing: entries the bulk has not
+  // written yet wait for the next tick, so one tick never indexes the same
+  // Recording twice, and a tick that finishes the bulk leaves the sync to
+  // the tick after it. The Lyrics import runs between the two, while the
+  // catalog is still being built: the indexing then sends the kept Lyrics
+  // to the `lyrics` index in the same run, and a failed import only logs
+  // (the catalog still becomes ready; the refresh below retries later).
+  // Once the catalog is ready, the lookup peeks the outbox Recordings
+  // without Lyrics before the drain and asks the public API for them after
+  // it, so a slow or failing API never holds the drain back, and the refresh
+  // imports a newer dump when one is due:
+  // only changed Lyrics are reindexed, the phase never moves, and every
+  // failure only logs, so `getRecording` and `search` keep answering.
+  return { tick: createWorkerTick({ sync, lyrics, indexing, signal, logger }) };
+};
+
+type WorkerTickOptions = {
+  sync: SyncService;
+  lyrics: WorkerLyrics;
+  indexing: IndexingService;
+  /** Aborting it stops the tick after the step in progress. */
+  signal: AbortSignal;
+  logger: Logger;
+};
+
+// One round of the worker's periodic work. Steps never overlap, so the work
+// a tick does needs no lock against itself. The Lyrics candidates are peeked
+// before the drain and filled after it: the drain never waits on the API,
+// however slow or broken it is, and the peek still sees the entries the
+// drain is about to carry to the index.
+const createWorkerTick = (
+  options: WorkerTickOptions,
+): (() => Promise<void>) => {
+  const { sync, lyrics, indexing, signal, logger } = options;
+  return async () => {
+    await sync.ensureTriggers();
+    let lyricless: MatchingRecording[] = [];
+    try {
+      lyricless = await lyrics.lookupService.peekLyricless(signal);
+    } catch (error) {
+      logger.error('LRCLIB API lookup failed, continuing without Lyrics', {
+        error,
+      });
+    }
+    await sync.drain(signal);
+    try {
+      await lyrics.lookupService.fillLyricless(lyricless, signal);
+    } catch (error) {
+      logger.error('LRCLIB API lookup failed, continuing without Lyrics', {
+        error,
+      });
+    }
+    try {
+      await lyrics.importService.importOnce(signal);
+    } catch (error) {
+      logger.error('LRCLIB import failed, continuing without Lyrics', {
+        error,
+      });
+    }
+    try {
+      await lyrics.refreshService.refreshOnce(signal);
+    } catch (error) {
+      logger.error('LRCLIB refresh failed, serving the kept Lyrics', {
+        error,
+      });
+    }
+    await indexing.run(signal);
+  };
+};
+
+type WorkerLyrics = {
+  importService: LyricsImportService;
+  refreshService: LyricsRefreshService;
+  lookupService: LyricsLookupService;
+  lyricsIndex: MeilisearchIndex<LyricsDocument>;
+};
+
+type WorkerLyricsOptions = {
+  env: WorkerEnv;
+  db: Database;
+  logger: Logger;
+  bootstrap: BootstrapService;
+  sync: SyncService;
+};
+
+// The worker's Lyrics steps: the once-per-bootstrap dump import, the
+// periodic refresh of newer dumps, and the API lookup for outbox Recordings
+// without kept Lyrics. Built together so they share the refresh state and
+// the lyrics index, which the initial indexing also writes through.
+const createWorkerLyrics = (options: WorkerLyricsOptions): WorkerLyrics => {
+  const { env, db, logger, bootstrap, sync } = options;
+  // The worker is the only writer of the lyrics index: its key can write.
+  const lyricsIndex = createMeilisearchIndex<LyricsDocument>({
+    url: env.MEILISEARCH_URL,
+    apiKey: env.MEILISEARCH_WRITE_API_KEY,
+    ...LYRICS_INDEX,
+  });
+  const refreshState = new LyricsRefreshRepository(db);
   return {
-    // The drain runs before the initial indexing: entries the bulk has not
-    // written yet wait for the next tick, so one tick never indexes the same
-    // Recording twice, and a tick that finishes the bulk leaves the sync to
-    // the tick after it. The Lyrics import runs between the two, while the
-    // catalog is still being built: the indexing then sends the kept Lyrics
-    // to the `lyrics` index in the same run, and a failed import only logs
-    // (the catalog still becomes ready; the refresh ticket retries later).
-    tick: async () => {
-      await sync.ensureTriggers();
-      await sync.drain(signal);
-      try {
-        await lyricsImport.importOnce(signal);
-      } catch (error) {
-        logger.error('LRCLIB import failed, continuing without Lyrics', {
-          error,
-        });
-      }
-      await indexing.run(signal);
-    },
+    importService: new LyricsImportService({
+      bootstrap,
+      recordings: new LyricsRepository(db),
+      dataset: env.CATALOG_DATASET,
+      lrclibBaseUrl: env.LRCLIB_BASE_URL,
+      lrclibListingUrl: env.LRCLIB_LISTING_URL,
+      logger,
+      refreshState,
+    }),
+    refreshService: new LyricsRefreshService({
+      bootstrap,
+      recordings: new LyricsRepository(db),
+      refreshState,
+      lyricsIndex,
+      dataset: env.CATALOG_DATASET,
+      lrclibBaseUrl: env.LRCLIB_BASE_URL,
+      lrclibListingUrl: env.LRCLIB_LISTING_URL,
+      checkIntervalMs: env.LRCLIB_REFRESH_CHECK_INTERVAL_MS,
+      minIntervalDays: env.LRCLIB_REFRESH_MIN_INTERVAL_DAYS,
+      logger,
+    }),
+    lookupService: new LyricsLookupService({
+      bootstrap,
+      sync,
+      recordings: new LyricsRepository(db),
+      lyricsIndex,
+      dataset: env.CATALOG_DATASET,
+      apiBaseUrl: env.LRCLIB_API_BASE_URL,
+      logger,
+    }),
+    lyricsIndex,
   };
 };

@@ -93,7 +93,8 @@ src/
     meilisearch/          MeilisearchIndex: the only code that imports the Meilisearch SDK
     mbslave/              MbslaveClient: the only code that spawns the mbslave binary
     lrclib/               the LRCLIB dump: download + stream-gunzip, open + schema
-                          check + track/Lyrics reads, and the fake-dump generator
+                          check + track/Lyrics reads, the public API client and
+                          the fake-dump generator
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
@@ -143,6 +144,12 @@ src/
       replication-token.ts        the full-mode token requirement (pure)
     lyrics/
       lyrics-import.service.ts  the worker's LRCLIB import: dump, two-pass match, copy
+      lyrics-refresh.service.ts the worker's LRCLIB refresh: newer dumps, changed Lyrics only
+      lyrics-refresh.repository.ts  the checked and imported dump keys
+      lyrics-lookup.service.ts  the worker's outbox lookup: Lyrics for new
+                                Recordings from LRCLIB's public API
+      match-batch.ts            pass one of the two-pass match, shared by the
+                                import and the refresh (pure)
       lyrics.service.ts         the kept Lyrics (for `getRecording`) and their
                                 documents (for indexing); the only way other
                                 modules use Lyrics
@@ -567,6 +574,30 @@ job, not this import's.
   null otherwise. `search` with `scope: lyrics` searches the `lyrics` index
   (primary key the MBID), in Meilisearch's relevance order; the default
   `metadata` scope never touches it.
+- **Refresh** (`LyricsRefreshService.refreshOnce`, one worker tick, `full`
+  only): once the catalog is `ready`, each tick polls `LRCLIB_LISTING_URL`
+  for a newer dump key (at most every `LRCLIB_REFRESH_CHECK_INTERVAL_MS`,
+  default hourly) and, at most once per `LRCLIB_REFRESH_MIN_INTERVAL_DAYS`
+  (default 30), imports it with the same two-pass strict match as the first
+  import (`matchRecordingsBatch`, shared with it). Dumps the first import or
+  an earlier refresh already brought in are skipped
+  (`music_catalog.lrclib_refresh_state` remembers the checked and imported
+  keys). Only Recordings whose Lyrics changed are written and reindexed in
+  the `lyrics` index (Lyrics a newer dump lost are forgotten from both); the
+  phase never moves, so `getRecording` and `search` keep answering
+  throughout. A failed check or download only logs: the catalog serves the
+  kept Lyrics until the next tick. In `tiny` the refresh never runs (it would
+  need the network; the fake dump is generated instead).
+- **Outbox lookup** (`LyricsLookupService`, one worker tick,
+  `full` only): Recordings the outbox reports that have no kept Lyrics get
+  them from LRCLIB's public API (`LRCLIB_API_BASE_URL`,
+  `/api/get?artist_name&track_name&album_name&duration`). The tick peeks the
+  candidates before the drain and fills them after it (`peekLyricless`, then
+  `fillLyricless`), so a slow or failing API never holds the drain back. The
+  one returned track goes through the same strict match; at most 10
+  Recordings are asked per tick, a second apart, every request with a
+  notefinder `User-Agent`. An API failure only logs: the Recording stays
+  without Lyrics until the next dump refresh.
 - **Disk and RAM.** About 260 GB of temp disk per `full` import (the steady
   state stays about 150-220 GB, see ADR 0002). Local development and tests
   use the generated fake dump and tiny fixtures, never the real one.
@@ -764,6 +795,9 @@ could not start there anyway).
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
   | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
   | `LRCLIB_LISTING_URL` | The endpoint listing the published LRCLIB dumps, read for the latest key (default: LRCLIB's own); worker, `full` only |
+  | `LRCLIB_API_BASE_URL` | The public LRCLIB API new and changed Recordings get their Lyrics from (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
+  | `LRCLIB_REFRESH_CHECK_INTERVAL_MS` | How often the worker polls the listing for a newer dump (default 3600000); worker, `full` only |
+  | `LRCLIB_REFRESH_MIN_INTERVAL_DAYS` | At most one dump refresh per this many days (default 30); worker, `full` only |
 
   The server and the worker parse different sets (`loadServerEnv`,
   `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
@@ -889,6 +923,19 @@ could not start there anyway).
   reaches `ready`, with null Lyrics. `useEmptyLyricsIndex()` (in
   `test/utils/test-worker.ts`) deletes the `lyrics` index before each test,
   next to `useEmptySearchIndex()`.
+- **The Lyrics refresh in e2e** (`test/lyrics-refresh.e2e-spec.ts`): in
+  `full` mode, with the dump listing and the public API behind fake HTTP
+  servers (`test/utils/fake-lrclib-server.ts` and
+  `test/utils/fake-lrclib-api-server.ts`). It covers the refresh from a newer
+  dump over a worker tick (`getRecording` returns the new Lyrics and the
+  lyrics scope finds the new text, still in Meilisearch's relevance order),
+  the skip of an already-imported dump (no second download), the wait past
+  the minimum interval (still imported once it passes), the Lyrics of an
+  outbox Recording from the API (with the `User-Agent` the fake server
+  records), including one added after `ready`, and the failure paths: an API
+  failure leaves the Recording without Lyrics while the outbox still drains
+  (even while a lookup hangs), a non-matching API track is rejected, and a
+  listing failure leaves the catalog ready with null Lyrics.
 
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
@@ -896,8 +943,9 @@ could not start there anyway).
   timers, the worker loop, the abortable sleep, the logger, building the Meilisearch document and
   the summary, re-sorting rows by Meilisearch's order, the sync plan and the
   tracked trigger set, the replication loop and its token gate, the Lyrics
-  normalization and match, the fake-dump generator, the dump download and
-  the Lyrics import). Services are tested
+  normalization and match, the shared match batch, the fake-dump generator,
+  the dump download, the public API client, the Lyrics import, refresh and
+  lookup). Services are tested
   with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
   e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
   and the schema (the exclusions are in `vitest.config.ts`).

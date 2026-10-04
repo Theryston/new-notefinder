@@ -12,17 +12,17 @@ import {
 } from '../../integrations/lrclib/lrclib-download.js';
 import {
   type LrclibDump,
-  type LrclibTrack,
   openLrclibDump,
 } from '../../integrations/lrclib/lrclib-dump.js';
-import { normalizeLyricsText } from '../../lib/normalize-text.js';
 import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
-import type {
-  LyricsRepository,
-  MatchingRecording,
-} from './lyrics.repository.js';
-import { matchLrclibTrack } from './match-lyrics.js';
+import type { LyricsRepository } from './lyrics.repository.js';
+import type { LyricsRefreshRepository } from './lyrics-refresh.repository.js';
+import {
+  type MatchedPair,
+  readMatchedLyrics,
+  walkMatchedBatches,
+} from './match-batch.js';
 
 export type LyricsImportDeps = {
   bootstrap: BootstrapService;
@@ -37,6 +37,12 @@ export type LyricsImportDeps = {
   tmpDir?: string;
   /** Recordings matched per batch. */
   matchBatchSize?: number;
+  /**
+   * Remembers the imported dump key, so the refresh skips it instead of
+   * downloading the same file again. Absent in unit contexts; the
+   * composition root always passes it.
+   */
+  refreshState?: LyricsRefreshRepository;
 };
 
 export type LyricsImportResult = {
@@ -46,15 +52,10 @@ export type LyricsImportResult = {
   saved: number;
 };
 
-type MatchedPair = { mbid: string; trackId: number };
-
 // How many Recordings the fake dump is generated from: all of `tiny`'s few
 // hundred, so the dev flow stays local.
 const FAKE_DUMP_RECORDINGS = 3000;
 const MATCH_BATCH_SIZE = 1000;
-// The dump lookup window around a Recording's length, wider than the ±2 s
-// rule: the exact boundary is applied in code, on milliseconds.
-const DURATION_WINDOW_S = 2.5;
 
 /**
  * Imports the LRCLIB dump into our schema, once per bootstrap: `tiny`
@@ -77,11 +78,14 @@ export class LyricsImportService {
       return { matched: 0, saved: 0 };
     }
     const startedAt = Date.now();
-    const path = await this.acquireDump(signal);
+    const acquired = await this.acquireDump(signal);
     try {
-      const dump = openLrclibDump(path);
+      const dump = openLrclibDump(acquired.path);
       try {
         const result = await this.importFromDump(dump, signal);
+        if (acquired.key !== undefined) {
+          await this.deps.refreshState?.recordImport(new Date(), acquired.key);
+        }
         this.deps.logger.info('LRCLIB import finished', {
           ...result,
           durationMs: Date.now() - startedAt,
@@ -91,14 +95,16 @@ export class LyricsImportService {
         dump.close();
       }
     } finally {
-      await rm(path, { force: true });
+      await rm(acquired.path, { force: true });
     }
   }
 
-  private async acquireDump(signal?: AbortSignal): Promise<string> {
+  private async acquireDump(
+    signal?: AbortSignal,
+  ): Promise<{ path: string; key?: string }> {
     const dir = this.deps.tmpDir ?? tmpdir();
     if (this.deps.dataset === 'tiny') {
-      return this.generateFakeDump(dir, signal);
+      return { path: await this.generateFakeDump(dir, signal) };
     }
     const key = await fetchLatestDumpKey(this.deps.lrclibListingUrl);
     this.deps.logger.info('Downloading the LRCLIB dump', { key });
@@ -108,7 +114,7 @@ export class LyricsImportService {
       dir,
       signal,
     });
-    return downloaded.path;
+    return { path: downloaded.path, key };
   }
 
   private async generateFakeDump(
@@ -153,108 +159,35 @@ export class LyricsImportService {
     dump: LrclibDump,
     signal?: AbortSignal,
   ): Promise<LyricsImportResult> {
-    let afterId = 0;
     let matched = 0;
     let saved = 0;
-    const batchSize = this.deps.matchBatchSize ?? MATCH_BATCH_SIZE;
-    for (;;) {
-      if (signal?.aborted ?? false) {
+    await walkMatchedBatches(dump, {
+      findMatchBatch: (afterId, limit) =>
+        this.deps.recordings.findMatchBatch(afterId, limit),
+      batchSize: this.deps.matchBatchSize ?? MATCH_BATCH_SIZE,
+      signal,
+      visit: async (_batch, pairs) => {
+        matched += pairs.length;
+        saved += await this.copyBatch(dump, pairs);
+      },
+      paused: () => {
         this.deps.logger.info('LRCLIB import paused: stopping', {
           matched,
           saved,
         });
-        break;
-      }
-      const batch = await this.deps.recordings.findMatchBatch(
-        afterId,
-        batchSize,
-      );
-      const last = batch[batch.length - 1];
-      if (last === undefined) {
-        break;
-      }
-      afterId = last.id;
-      const pairs = this.matchBatch(dump, batch);
-      matched += pairs.length;
-      saved += await this.copyBatch(dump, pairs);
-    }
-    return { matched, saved };
-  }
-
-  private matchBatch(
-    dump: LrclibDump,
-    batch: readonly MatchingRecording[],
-  ): MatchedPair[] {
-    const pairs: MatchedPair[] = [];
-    for (const recording of batch) {
-      const track = this.matchRecording(dump, recording);
-      if (track !== undefined) {
-        pairs.push({ mbid: recording.mbid, trackId: track.id });
-      }
-    }
-    return pairs;
-  }
-
-  private matchRecording(
-    dump: LrclibDump,
-    recording: MatchingRecording,
-  ): LrclibTrack | undefined {
-    if (recording.lengthMs === null) {
-      return undefined;
-    }
-    const seconds = recording.lengthMs / 1000;
-    const artists = [recording.artistCredit, ...recording.artistNames];
-    const seen = new Set<number>();
-    const candidates: LrclibTrack[] = [];
-    for (const artist of new Set(artists)) {
-      const found = dump.findCandidates({
-        titleLower: recording.title.toLowerCase(),
-        titleNormalized: normalizeLyricsText(recording.title),
-        artistLower: artist.toLowerCase(),
-        artistNormalized: normalizeLyricsText(artist),
-        minDuration: seconds - DURATION_WINDOW_S,
-        maxDuration: seconds + DURATION_WINDOW_S,
-      });
-      for (const track of found) {
-        if (!seen.has(track.id)) {
-          seen.add(track.id);
-          candidates.push(track);
-        }
-      }
-    }
-    return matchLrclibTrack(
-      {
-        mbid: recording.mbid,
-        title: recording.title,
-        lengthMs: recording.lengthMs,
-        artistNames: artists,
-        albumTitles: recording.albumTitles,
       },
-      candidates,
-    );
+    });
+    return { matched, saved };
   }
 
   private async copyBatch(
     dump: LrclibDump,
     pairs: readonly MatchedPair[],
   ): Promise<number> {
-    if (pairs.length === 0) {
+    const rows = readMatchedLyrics(dump, pairs);
+    if (rows.length === 0) {
       return 0;
     }
-    const byTrack = new Map(pairs.map((pair) => [pair.trackId, pair.mbid]));
-    const rows = dump
-      .readLyrics([...byTrack.keys()])
-      .filter(
-        (lyrics) =>
-          (lyrics.plain?.trim() ?? '') !== '' ||
-          (lyrics.synced?.trim() ?? '') !== '',
-      )
-      .map((lyrics) => ({
-        mbid: byTrack.get(lyrics.trackId) ?? '',
-        plainLyrics: lyrics.plain,
-        syncedLyrics: lyrics.synced,
-      }))
-      .filter((row) => row.mbid !== '');
     await this.deps.recordings.saveLyrics(rows);
     return rows.length;
   }
