@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # apps/web — Next.js frontend
 
-Read the root `AGENTS.md` first; this file only adds web-specific rules.
+Read the root `CLAUDE.md` first; this file only adds web-specific rules.
 
 Stack: Next.js 16 (App Router, **Cache Components** enabled), React 19,
 Tailwind CSS v4, shadcn/ui (`base-nova` style on **Base UI**, not Radix),
@@ -102,7 +102,7 @@ artists, albums) get new IDs: when the API answers a read with
 `RESOURCE_MOVED` (the ID is a legacy one, found in the entity's legacy ID
 map), the page issues a **permanent (308)** redirect to the same route with
 the new ID, keeping the query params (see "Legacy data import" in
-`apps/api/AGENTS.md`). When a catalog route ships, its e2e covers that case
+`apps/api/CLAUDE.md`). When a catalog route ships, its e2e covers that case
 too: a legacy ID redirects with 308 to the new one.
 
 Because every new route is under `[locale]`, a bare legacy path like

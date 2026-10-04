@@ -13,7 +13,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       // Entrypoints, the composition root, the WebSocket transport,
       // repositories and the DB schema are covered by the e2e suite (see
-      // AGENTS.md "Testing"), not by unit tests.
+      // CLAUDE.md "Testing"), not by unit tests.
       exclude: [
         'src/**/*.spec.ts',
         'src/**/*.repository.ts',

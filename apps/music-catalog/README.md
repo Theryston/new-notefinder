@@ -7,7 +7,7 @@ WebSocket. Today: the WebSocket server answering `status`, `getRecording`
 Meilisearch, results in its relevance order), its Postgres schema and the
 worker, which indexes the Recordings once MusicBrainz is restored. Full
 design: issue #55.
-Rules, layers and the protocol are in [`AGENTS.md`](./AGENTS.md).
+Rules, layers and the protocol are in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Running locally
 
@@ -26,7 +26,7 @@ nub run dev --filter=music-catalog                 # server on ws://localhost:33
 The sample restore takes about a dozen minutes the first time; `status`
 follows it (`restoring` → `restored` → `indexing` → `ready`), and `search`
 answers once it is `ready`. Bootstrap phases, dataset modes and resetting a
-local database are documented in [`AGENTS.md`](./AGENTS.md).
+local database are documented in [`CLAUDE.md`](./CLAUDE.md).
 
 Try it with any WebSocket client, sending the key from `.env` in the handshake:
 

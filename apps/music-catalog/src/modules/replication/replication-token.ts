@@ -32,6 +32,6 @@ export const assertReplicationToken = (
     'MusicBrainz replication needs a MetaBrainz access token in full mode: ' +
       'set MBSLAVE_MUSICBRAINZ_TOKEN (or MBSLAVE_MUSICBRAINZ_TOKEN_FILE) ' +
       'to the 40-character token from the MetaBrainz profile page ' +
-      '(free for non-commercial use; see apps/music-catalog/AGENTS.md).',
+      '(free for non-commercial use; see apps/music-catalog/CLAUDE.md).',
   );
 };

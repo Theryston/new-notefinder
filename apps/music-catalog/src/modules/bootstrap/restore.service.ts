@@ -84,7 +84,7 @@ export class RestoreService {
       throw new Error(
         `The catalog holds another dataset: refusing to switch to ${dataset} ` +
           '(that would silently re-download gigabytes). Reset the local ' +
-          'database first (see apps/music-catalog/AGENTS.md).',
+          'database first (see apps/music-catalog/CLAUDE.md).',
       );
     }
     if (plan === 'redo') {

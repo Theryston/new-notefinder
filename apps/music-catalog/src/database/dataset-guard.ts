@@ -8,7 +8,7 @@ import type { Database } from './database.js';
  * this a `db:migrate` on such a database dies with a raw cast error; this
  * fails first with where to go instead. There is no mapping of old rows:
  * switching datasets always means resetting the database (see
- * apps/music-catalog/AGENTS.md "Resetting a local database").
+ * apps/music-catalog/CLAUDE.md "Resetting a local database").
  */
 export const assertSupportedDatasets = (datasets: readonly string[]): void => {
   const removed = datasets.filter(
@@ -17,7 +17,7 @@ export const assertSupportedDatasets = (datasets: readonly string[]): void => {
   if (removed.length > 0) {
     throw new Error(
       `The catalog holds the removed ${removed.join(', ')} dataset: reset ` +
-        'the local database first (see apps/music-catalog/AGENTS.md ' +
+        'the local database first (see apps/music-catalog/CLAUDE.md ' +
         '"Resetting a local database"). The sample dump was dropped by ' +
         `#85; datasets are now ${CATALOG_DATASETS.join(' and ')}.`,
     );

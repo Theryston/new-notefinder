@@ -24,7 +24,7 @@ RUN pip install --break-system-packages --no-cache-dir --upgrade pip \
   && mbslave --help > /dev/null
 # The release running here, recorded with a schema-change stall so the
 # reimport starts once the container runs a newer release than the stalled
-# one (see apps/music-catalog/AGENTS.md "Yearly schema change"). Baked in
+# one (see apps/music-catalog/CLAUDE.md "Yearly schema change"). Baked in
 # from the build argument, so the bump PR touches no compose file.
 ENV MBSLAVE_REF=${MBSLAVE_REF}
 # The repo is mounted at /repo by the compose file (read-only: the restore
