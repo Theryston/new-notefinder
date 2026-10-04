@@ -1,5 +1,5 @@
 {
-  "id": "67d42885-c3cf-421f-9139-425b71f95e34",
+  "id": "b9e569ae-da82-4937-aadf-19e72e822809",
   "prevId": "b5a34ca4-6423-4358-a9d7-89249dc1e860",
   "version": "7",
   "dialect": "postgresql",
@@ -90,6 +90,49 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "music_catalog.lrclib_refresh_state": {
+      "name": "lrclib_refresh_state",
+      "schema": "music_catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "boolean",
+          "primaryKey": true,
+          "notNull": true,
+          "default": true
+        },
+        "last_dump_key": {
+          "name": "last_dump_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_imported_at": {
+          "name": "last_imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "lrclib_refresh_state_single_row": {
+          "name": "lrclib_refresh_state_single_row",
+          "value": "\"music_catalog\".\"lrclib_refresh_state\".\"id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
     "music_catalog.recording_lyrics": {
       "name": "recording_lyrics",
       "schema": "music_catalog",
@@ -163,10 +206,7 @@
       "compositePrimaryKeys": {
         "recording_outbox_recording_id_recording_mbid_pk": {
           "name": "recording_outbox_recording_id_recording_mbid_pk",
-          "columns": [
-            "recording_id",
-            "recording_mbid"
-          ]
+          "columns": ["recording_id", "recording_mbid"]
         }
       },
       "uniqueConstraints": {},
@@ -292,20 +332,12 @@
     "music_catalog.bootstrap_phase": {
       "name": "bootstrap_phase",
       "schema": "music_catalog",
-      "values": [
-        "restoring",
-        "restored",
-        "indexing",
-        "ready"
-      ]
+      "values": ["restoring", "restored", "indexing", "ready"]
     },
     "music_catalog.catalog_dataset": {
       "name": "catalog_dataset",
       "schema": "music_catalog",
-      "values": [
-        "full",
-        "tiny"
-      ]
+      "values": ["full", "tiny"]
     }
   },
   "schemas": {

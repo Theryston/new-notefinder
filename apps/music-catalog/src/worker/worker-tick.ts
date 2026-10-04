@@ -1,9 +1,9 @@
 import type { Logger } from '../logger.js';
 import type { IndexingService } from '../modules/indexing/indexing.service.js';
+import type { MatchingRecording } from '../modules/lyrics/lyrics.repository.js';
 import type { LyricsImportService } from '../modules/lyrics/lyrics-import.service.js';
 import type { LyricsLookupService } from '../modules/lyrics/lyrics-lookup.service.js';
 import type { LyricsRefreshService } from '../modules/lyrics/lyrics-refresh.service.js';
-import type { MatchingRecording } from '../modules/lyrics/lyrics.repository.js';
 import type { ReimportService } from '../modules/reimport/reimport.service.js';
 import type { SyncService } from '../modules/sync/sync.service.js';
 

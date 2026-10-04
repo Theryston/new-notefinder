@@ -277,6 +277,8 @@ export class LyricsRepository {
       // `gid` is a uuid column and the MBIDs text: compared as text.
       .where(inArray(sql`${recording.gid}::text`, [...mbids]));
     return this.withMatchData(rows);
+  }
+
   private async findArtistNames(
     creditIds: number[],
   ): Promise<Map<number, string[]>> {

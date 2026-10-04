@@ -40,7 +40,9 @@ const setup = (behaviors: TickBehaviors = {}) => {
       importService: {
         importOnce: async () => {
           calls.push('lyricsImport');
-          await (behaviors.importOnce ?? (async () => ({ matched: 0, saved: 0 })))();
+          await (
+            behaviors.importOnce ?? (async () => ({ matched: 0, saved: 0 }))
+          )();
         },
       } as unknown as LyricsImportService,
       refreshService: {
