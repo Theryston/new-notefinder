@@ -71,7 +71,7 @@ type LocaleSignals = {
 
 /**
  * Locale for a request without a locale prefix, in the order documented in
- * apps/web/AGENTS.md: previous choice → location → browser → default.
+ * apps/web/CLAUDE.md: previous choice → location → browser → default.
  */
 export function detectLocale({
   cookie,

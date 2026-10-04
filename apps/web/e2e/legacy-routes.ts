@@ -1,6 +1,6 @@
 /**
  * Every public route of the legacy web app (the "Legacy routes" table in
- * apps/web/AGENTS.md), with sample IDs, usernames and query params.
+ * apps/web/CLAUDE.md), with sample IDs, usernames and query params.
  *
  * This table is how "no legacy URL may return 404" is enforced:
  * - every entry must redirect from its unprefixed path to `/<locale>` + the
@@ -10,7 +10,7 @@
  *   path resolves, e.g. by seeding or mocking the record it points to).
  *   A PR that renames a route adds its 308 redirect here as well.
  *
- * Keep it in sync with the table in apps/web/AGENTS.md.
+ * Keep it in sync with the table in apps/web/CLAUDE.md.
  */
 export type LegacyRoute = {
   /** Unprefixed legacy URL, including a sample query string when relevant. */

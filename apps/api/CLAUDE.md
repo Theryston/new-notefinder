@@ -1,6 +1,6 @@
 # apps/api — NestJS REST API
 
-Read the root `AGENTS.md` first; this file only adds API-specific rules.
+Read the root `CLAUDE.md` first; this file only adds API-specific rules.
 
 Stack: NestJS 12 (Express, **ESM**), Drizzle ORM + PostgreSQL, Better Auth,
 BullMQ + Redis, Zod (via `@notefinder/contracts` + the in-house `src/common/zod/`), Vitest.

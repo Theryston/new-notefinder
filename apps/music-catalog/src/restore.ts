@@ -217,7 +217,7 @@ const warnWhenReimportUnconfigured = async (): Promise<void> => {
         '(DATABASE_URL=<new-url> nub run db:migrate from apps/music-catalog), ' +
         'set REIMPORT_DATABASE_URL to it on the mbslave container and the ' +
         'worker, then restart both',
-      runbook: 'apps/music-catalog/AGENTS.md (Yearly schema change)',
+      runbook: 'apps/music-catalog/CLAUDE.md (Yearly schema change)',
     },
   );
 };

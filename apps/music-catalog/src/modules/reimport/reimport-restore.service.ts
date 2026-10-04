@@ -120,7 +120,7 @@ export class ReimportRestoreService {
       throw new Error(
         'Refusing the parallel restore: REIMPORT_DATABASE_URL is the ' +
           'serving database. Create a fresh database per reimport ' +
-          '(see apps/music-catalog/AGENTS.md).',
+          '(see apps/music-catalog/CLAUDE.md).',
       );
     }
     const next = await nextState.getState();
@@ -132,7 +132,7 @@ export class ReimportRestoreService {
       throw new Error(
         `Refusing the parallel restore: REIMPORT_DATABASE_URL holds a ` +
           `catalog in phase ${next.phase}. Create a fresh database per ` +
-          `reimport (see apps/music-catalog/AGENTS.md).`,
+          `reimport (see apps/music-catalog/CLAUDE.md).`,
       );
     }
   }

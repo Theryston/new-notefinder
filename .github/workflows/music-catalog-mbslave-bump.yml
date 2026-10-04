@@ -1,7 +1,7 @@
 name: Music catalog mbslave bump
 
 # MusicBrainz changes its database schema about once a year, and replication
-# stops until mbslave is upgraded (apps/music-catalog/AGENTS.md "Yearly
+# stops until mbslave is upgraded (apps/music-catalog/CLAUDE.md "Yearly
 # schema change"). This job watches mbslave releases and opens a PR bumping
 # the pinned version; CI runs the music-catalog e2e suite against the new
 # schema on that PR, and the maintainer merges it and redeploys.
@@ -80,4 +80,4 @@ jobs:
             --head "$branch" \
             --base main \
             --title "chore(music-catalog): bump mbslave to $latest" \
-            --body "MusicBrainz's yearly schema change (issue #69): CI proposes the mbslave upgrade. CI runs the music-catalog e2e suite against the new schema on this PR. When it is green, merge it and run \`docker compose pull && docker compose up -d\` on the server (procedure in apps/music-catalog/AGENTS.md)."
+            --body "MusicBrainz's yearly schema change (issue #69): CI proposes the mbslave upgrade. CI runs the music-catalog e2e suite against the new schema on this PR. When it is green, merge it and run \`docker compose pull && docker compose up -d\` on the server (procedure in apps/music-catalog/CLAUDE.md)."

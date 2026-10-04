@@ -46,14 +46,14 @@ const meilisearchUrlSchema = z.url({ protocol: /^https?$/ });
 
 // Each process reads only the key it needs: the server can search, nothing
 // else, and the worker can write. Both are keys created in Meilisearch (see
-// AGENTS.md "Meilisearch"), scoped to what they do, not its master key.
+// CLAUDE.md "Meilisearch"), scoped to what they do, not its master key.
 const serverEnvSchema = envSchema.extend({
   MEILISEARCH_URL: meilisearchUrlSchema,
   MEILISEARCH_SEARCH_API_KEY: z.string().min(1),
   // The parallel database of a running reimport (same server, other
   // database). Only the boot fallback reads it: after a flip that dropped
   // the retired copy, a restarted server opens the new copy instead of the
-  // unreachable configured one (see apps/music-catalog/AGENTS.md).
+  // unreachable configured one (see apps/music-catalog/CLAUDE.md).
   REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
 });
 
@@ -97,10 +97,10 @@ const workerEnvSchema = envSchema.extend({
     .default(30),
   // The parallel database the blue-green reimport rebuilds the catalog in
   // after MusicBrainz's yearly schema change (same server, other database).
-  // Absent, the worker never reimports (see apps/music-catalog/AGENTS.md).
+  // Absent, the worker never reimports (see apps/music-catalog/CLAUDE.md).
   REIMPORT_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
   // Drop the retired database after the flip, the default path: only an
-  // explicit 'false' keeps it for inspection (same AGENTS.md section).
+  // explicit 'false' keeps it for inspection (same CLAUDE.md section).
   REIMPORT_CLEANUP_OLD_COPY: z.enum(['true', 'false']).optional(),
 });
 

@@ -25,7 +25,7 @@ describe('assertSupportedDatasets', () => {
 
   it('refuses the dropped sample dataset with where to go', () => {
     expect(() => assertSupportedDatasets(['sample'])).toThrow(
-      /The catalog holds the removed sample dataset: reset the local database first \(see apps\/music-catalog\/AGENTS\.md "Resetting a local database"\)\. The sample dump was dropped by #85; datasets are now full and tiny\./,
+      /The catalog holds the removed sample dataset: reset the local database first \(see apps\/music-catalog\/CLAUDE\.md "Resetting a local database"\)\. The sample dump was dropped by #85; datasets are now full and tiny\./,
     );
   });
 
