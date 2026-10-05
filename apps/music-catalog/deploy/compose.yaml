@@ -1,0 +1,308 @@
+# The Music catalog's PRODUCTION stack: one `docker compose up -d` on its own
+# server. Everything here comes from GHCR images and upstream images, so the
+# server needs neither the source code nor a build toolchain: copy this
+# folder's compose.yaml, Caddyfile and a filled-in .env (from .env.example)
+# there, log in to GHCR once, and run
+#
+#   docker compose pull && docker compose up -d
+#
+# The same two commands update it. The operations guide (provisioning, first
+# run, updates, key rotation, backups, troubleshooting) is
+# apps/music-catalog/CLAUDE.md, "Operations (production)". This file is not the dev
+# compose (../docker-compose.yml, started by `nub run infra:up`): nothing in
+# the dev loop reads it.
+#
+# Only Caddy publishes ports (80 and 443). Postgres, Meilisearch, mbslave, the
+# server and the worker are reachable only on this project's internal network.
+name: music-catalog
+
+x-logging: &logging
+  # Docker keeps every line forever unless told otherwise: rotate.
+  driver: json-file
+  options:
+    max-size: 50m
+    max-file: '5'
+
+# What every process that talks to the database shares.
+x-database-env: &database-env
+  NODE_ENV: production
+  # One Postgres role for mbslave, the server and the worker, as in the dev
+  # compose (the change triggers run as the role that writes the MusicBrainz
+  # tables, and `mbslave init` needs a superuser for the contrib extensions).
+  # The password sits in a URL: keep it to URL-safe characters (the example
+  # env generates one with `openssl rand -hex`). The database is the one
+  # Postgres creates (POSTGRES_DB) until a reimport moves the service to
+  # another one (CATALOG_DATABASE, see CLAUDE.md, "Yearly schema change").
+  DATABASE_URL: postgres://${POSTGRES_USER:?set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${CATALOG_DATABASE:-${POSTGRES_DB:?set POSTGRES_DB in .env}}
+  CATALOG_DATASET: ${CATALOG_DATASET:?set CATALOG_DATASET (tiny or full) in .env}
+  # The parallel database of the yearly reimport (see CLAUDE.md, "Yearly
+  # schema change"). A key with no value passes the variable through only
+  # when .env or the shell sets it: an empty string is not a valid URL, and
+  # the processes refuse to start on one, so it must be absent, not blank.
+  REIMPORT_DATABASE_URL:
+
+# The Node processes (the server, the worker and the migrations) also parse
+# the API keys at startup; mbslave does not, so it never receives them.
+x-app-env: &app-env
+  <<: *database-env
+  API_KEYS: ${API_KEYS:?set API_KEYS in .env}
+
+# The Node image: the server, the worker and the migrations run from it,
+# chosen by command.
+x-node-image: &node-image
+  image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/new-notefinder}/music-catalog:${IMAGE_TAG:?set IMAGE_TAG in .env}
+  logging: *logging
+
+services:
+  # TLS and the only door in. Caddy gets and renews the certificate for
+  # CATALOG_DOMAIN by itself (the domain must resolve to this server and
+  # ports 80 and 443 must be reachable), and proxies WebSocket upgrades to the
+  # server, which authenticates the handshake with its API keys. Its
+  # certificates live in a volume: losing it means asking the certificate
+  # authority again, which is rate limited.
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      CATALOG_DOMAIN: ${CATALOG_DOMAIN:?set CATALOG_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      # Caddy's admin API, on its own loopback inside the container.
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:2019/config/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+    # A starting point for the full MusicBrainz restore (the spike measured it
+    # with an 8 GB WAL ceiling; shared_buffers follows musicbrainz-docker).
+    # Scale them to the server's RAM (see CLAUDE.md, "Provisioning").
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      - -c
+      - max_wal_size=${POSTGRES_MAX_WAL_SIZE:-8GB}
+      - -c
+      - maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-1GB}
+    # Docker's default 64 MB /dev/shm is too small for parallel queries over
+    # tables this big.
+    shm_size: 1gb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # The search engine, pinned to the version the benchmark and the e2e suite
+  # use (keep the tag in sync with the dev compose and
+  # apps/music-catalog/test/setup/meilisearch.ts). Production mode refuses to
+  # start without a master key of at least 16 bytes. Its data dominates the
+  # disk and its latency depends on the index staying in the page cache.
+  meilisearch:
+    image: getmeili/meilisearch:v1.54.2
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:?set MEILISEARCH_MASTER_KEY in .env}
+      MEILI_NO_ANALYTICS: 'true'
+    volumes:
+      - meilisearch-data:/meili_data
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', 'http://127.0.0.1:7700/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # One-shot job: creates the two keys the service uses, with fixed uids. A
+  # key is derived from its uid and the master key (HMAC-SHA256), so the
+  # values the server and the worker read from MEILISEARCH_SEARCH_API_KEY and
+  # MEILISEARCH_WRITE_API_KEY are computed from the master key once, with
+  # `openssl` (see CLAUDE.md, "Meilisearch keys"), never read back from here.
+  # Idempotent (HTTP 409 means the key is already there), so it is safe on
+  # every `up -d`. Keep the uids in step with the dev compose.
+  meilisearch-init:
+    image: getmeili/meilisearch:v1.54.2
+    restart: 'no'
+    logging: *logging
+    depends_on:
+      meilisearch:
+        condition: service_healthy
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:?set MEILISEARCH_MASTER_KEY in .env}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        create_key() {
+          code=$$(curl -s -o /dev/null -w '%{http_code}' -X POST http://meilisearch:7700/keys \
+            -H "Authorization: Bearer $$MEILI_MASTER_KEY" -H 'Content-Type: application/json' -d "$$1")
+          [ "$$code" = 201 ] || [ "$$code" = 409 ] || { echo "Could not create a key (HTTP $$code)"; exit 1; }
+        }
+        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}' &&
+        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000002","name":"music-catalog-write","actions":["documents.*","indexes.*","settings.*","tasks.get"],"indexes":["*"],"expiresAt":null}'
+
+  # The migrations: a deploy step, never run by the server or the worker on
+  # boot. One-shot, and every process below waits for it to succeed, so a
+  # `pull && up -d` migrates before the new code starts.
+  migrate:
+    <<: *node-image
+    restart: 'no'
+    command: ['node', 'dist/database/migrate.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+
+  # The WebSocket endpoint, read-only on the database, with the search-only
+  # Meilisearch key. Plain HTTP answers 426, which is also its liveness
+  # signal (there is no health endpoint). It answers `status` and
+  # CATALOG_NOT_READY from the first minute, while the first import runs.
+  server:
+    <<: *node-image
+    restart: unless-stopped
+    command: ['node', 'dist/server.js']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      meilisearch-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *app-env
+      # Keep in step with the Caddyfile, which proxies to this port.
+      PORT: '3334'
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_SEARCH_API_KEY: ${MEILISEARCH_SEARCH_API_KEY:?set MEILISEARCH_SEARCH_API_KEY in .env}
+      HEARTBEAT_INTERVAL_MS: ${HEARTBEAT_INTERVAL_MS:-30000}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-10000}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:' + process.env.PORT, { signal: AbortSignal.timeout(4000) }).then((r) => process.exit(r.status === 426 ? 0 : 1), () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Bootstrap, indexing, the outbox drain and the LRCLIB import and refresh.
+  # Run exactly one: two would index the same batches twice. Its liveness
+  # signal is a heartbeat file the process keeps fresh (WORKER_HEARTBEAT_FILE).
+  # LRCLIB's dump is unpacked in /scratch (TMPDIR): about 260 GB in `full`,
+  # on its own volume so it is explicit and can be moved.
+  worker:
+    <<: *node-image
+    restart: unless-stopped
+    command: ['node', 'dist/worker.js']
+    # A tick finishes its batch before the process stops.
+    stop_grace_period: 60s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      meilisearch-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *app-env
+      TMPDIR: /scratch
+      WORKER_HEARTBEAT_FILE: /tmp/worker-heartbeat
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_WRITE_API_KEY: ${MEILISEARCH_WRITE_API_KEY:?set MEILISEARCH_WRITE_API_KEY in .env}
+      INDEXING_BATCH_SIZE: ${INDEXING_BATCH_SIZE:-2000}
+      LRCLIB_BASE_URL: ${LRCLIB_BASE_URL:-https://db-dumps.lrclib.net}
+      LRCLIB_LISTING_URL: ${LRCLIB_LISTING_URL:-https://lrclib-db-dumps.bu3nnyut4y9jfkdg.workers.dev}
+      LRCLIB_API_BASE_URL: ${LRCLIB_API_BASE_URL:-https://lrclib.net}
+      LRCLIB_REFRESH_CHECK_INTERVAL_MS: ${LRCLIB_REFRESH_CHECK_INTERVAL_MS:-3600000}
+      LRCLIB_REFRESH_MIN_INTERVAL_DAYS: ${LRCLIB_REFRESH_MIN_INTERVAL_DAYS:-30}
+      # Only an explicit `false` keeps the retired database after a reimport.
+      REIMPORT_CLEANUP_OLD_COPY:
+    volumes:
+      - lrclib-scratch:/scratch
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "process.exit(Date.now() - process.getBuiltinModule('node:fs').statSync(process.env.WORKER_HEARTBEAT_FILE).mtimeMs < 60000 ? 0 : 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # The first import and continuous replication. On the first start it
+  # restores the MusicBrainz dump (hours in `full`) and records `restored`;
+  # the worker takes it to `ready`; in `full` it then applies replication
+  # packets until stopped, and in `tiny` it exits once done. A crash exits
+  # non-zero and `on-failure` brings it back (a failed restore redoes from
+  # `restoring`, a failed sync resumes from mbslave's cursor); a clean exit is
+  # never restarted. No health check: it has no liveness signal and `tiny`
+  # exits by design, so watch `status` and its logs instead.
+  mbslave:
+    image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/new-notefinder}/music-catalog-mbslave:${IMAGE_TAG:?set IMAGE_TAG in .env}
+    restart: on-failure
+    logging: *logging
+    # Forwards signals to, and reaps, the mbslave and psql children it spawns.
+    init: true
+    # A sync in progress finishes before the container stops.
+    stop_grace_period: 2m
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *database-env
+      MUSICBRAINZ_DUMP_BASE_URL: ${MUSICBRAINZ_DUMP_BASE_URL:-https://data.metabrainz.org/pub/musicbrainz/data}
+      # The MetaBrainz access token replication authenticates with in `full`
+      # (required there, ignored in `tiny`): the token itself, or a path to a
+      # file holding it (mount the file with a compose override). Blank when
+      # unset, which the restore strips before spawning mbslave.
+      MBSLAVE_MUSICBRAINZ_TOKEN: ${MBSLAVE_MUSICBRAINZ_TOKEN:-}
+      MBSLAVE_MUSICBRAINZ_TOKEN_FILE: ${MBSLAVE_MUSICBRAINZ_TOKEN_FILE:-}
+      # What the mbslave binary itself connects with (it ignores the README's
+      # MBSLAVE_DB_NAME). The Postgres role is a superuser (it owns the
+      # database), which `init --empty` needs, so it doubles as the admin user.
+      # The binary reads its database from here and never follows a reimport's
+      # flip by itself: that is why the runbook moves CATALOG_DATABASE.
+      MBSLAVE_DB_HOST: postgres
+      MBSLAVE_DB_PORT: '5432'
+      MBSLAVE_DB_DB: ${CATALOG_DATABASE:-${POSTGRES_DB:?set POSTGRES_DB in .env}}
+      MBSLAVE_DB_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      MBSLAVE_DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      MBSLAVE_DB_ADMIN_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      MBSLAVE_DB_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      # mbslave downloads the dump archives (about 8 GB in `full`) into its
+      # work directory and resumes a partial download from what is there.
+      - dumps:/var/lib/mbslave
+
+volumes:
+  postgres-data:
+  meilisearch-data:
+  # The MusicBrainz dump archives mbslave downloads.
+  dumps:
+  # LRCLIB's unpacked dump: about 260 GB in `full` while an import runs.
+  lrclib-scratch:
+  caddy-data:
+  caddy-config:

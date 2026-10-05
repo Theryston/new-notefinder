@@ -102,6 +102,10 @@ const workerEnvSchema = envSchema.extend({
   // Drop the retired database after the flip, the default path: only an
   // explicit 'false' keeps it for inspection (same CLAUDE.md section).
   REIMPORT_CLEANUP_OLD_COPY: z.enum(['true', 'false']).optional(),
+  // A file the worker keeps touching while it runs, which the production
+  // container's health check reads (see CLAUDE.md, "Operations"). Absent,
+  // nothing is written: local development needs no health check.
+  WORKER_HEARTBEAT_FILE: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;

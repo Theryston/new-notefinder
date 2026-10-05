@@ -83,10 +83,13 @@ services:
   # `docker compose up --force-recreate music-catalog-mbslave`.
   music-catalog-mbslave:
     build:
-      # The repository root: the image only copies manifests and sources, and
-      # the container runs the compiled restore from a read-only mount below.
+      # The repository root. The `dev` target holds only mbslave and psql: the
+      # container runs the restore compiled on the host from a read-only mount
+      # below. (The default target, `production`, is the self-contained image
+      # CI publishes for deploy/compose.yaml.)
       context: ../..
       dockerfile: apps/music-catalog/mbslave.Dockerfile
+      target: dev
     # Rebuild the image on `up` when the Dockerfile changed (cached otherwise).
     pull_policy: build
     # Restarts after a crash (a failed restore is redone from `restoring`, a
@@ -125,10 +128,13 @@ services:
       MBSLAVE_DB_ADMIN_PASSWORD: music_catalog
       # The parallel database the blue-green reimport restores the new dump
       # into after MusicBrainz's yearly schema change (same server, other
-      # database, migrated like the serving one). Empty (the default) means
+      # database, migrated like the serving one). Unset (the default) means
       # the container never reimports: create the database and set this to
-      # enable it (see "Yearly schema change" in CLAUDE.md).
-      REIMPORT_DATABASE_URL: ${REIMPORT_DATABASE_URL:-}
+      # enable it (see "Yearly schema change" in CLAUDE.md). A key with no
+      # value passes the variable through only when the shell sets it: an
+      # empty string is not a valid URL, and the restore refuses to start on
+      # one, so it must be absent, not blank.
+      REIMPORT_DATABASE_URL:
     volumes:
       # The compiled restore and its dependencies, built on the host with
       # `nub run build --filter=music-catalog` (the repo's own toolchain, so

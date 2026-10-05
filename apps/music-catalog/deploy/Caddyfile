@@ -1,0 +1,20 @@
+# Caddy in front of the Music catalog (see compose.yaml). A site address that
+# is a domain turns on automatic HTTPS: Caddy gets and renews the certificate
+# for it and redirects port 80 to 443. `localhost` (or any name Caddy cannot
+# get a public certificate for) is signed by Caddy's own local authority
+# instead, which is what the smoke run in CLAUDE.md uses.
+{
+	servers {
+		# WebSocket clients speak HTTP/1.1. HTTP/3 needs UDP 443, which the
+		# compose file does not publish, so do not advertise it.
+		protocols h1 h2
+	}
+}
+
+# reverse_proxy carries WebSocket upgrades (the handshake's Authorization
+# header included) to the server with no extra setting. The server checks the
+# API key; Caddy only terminates TLS. No access log is configured on purpose:
+# the handshake header holds the API key.
+{$CATALOG_DOMAIN} {
+	reverse_proxy server:3334
+}
