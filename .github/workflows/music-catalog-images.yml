@@ -1,0 +1,143 @@
+name: Music catalog images
+
+# The Music catalog deploys from two images on GHCR (the Node image running
+# `server`, `worker` and the migrations, and the mbslave image) plus the
+# production compose in apps/music-catalog/deploy. Pull requests build both
+# images (nothing is pushed, so a broken Dockerfile is caught before merge)
+# and validate the compose; a push to main publishes the images. See
+# apps/music-catalog/CLAUDE.md, "Operations (production)".
+on:
+  pull_request:
+    paths:
+      - apps/music-catalog/**
+      - packages/contracts/**
+      - package.json
+      - nub.lock
+      - tsconfig.base.json
+      - .dockerignore
+      - .github/workflows/music-catalog-images.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/music-catalog/**
+      - packages/contracts/**
+      - package.json
+      - nub.lock
+      - tsconfig.base.json
+      - .dockerignore
+      - .github/workflows/music-catalog-images.yml
+
+concurrency:
+  group: music-catalog-images-${{ github.ref }}
+  # A newer push to main must not cancel the publish of an older one: the
+  # `sha-` tags are what a deploy pins.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE: docker compose -f apps/music-catalog/deploy/compose.yaml --env-file apps/music-catalog/deploy/.env.example
+    steps:
+      - uses: actions/checkout@v4
+
+      # The production compose must render against the example env, so the
+      # example always lists what the compose needs to start.
+      - name: Compose renders against the example env
+        run: $COMPOSE config --quiet
+
+      # Every variable the compose reads must be in the example (set or
+      # commented out), so an operator never has to read the compose to learn
+      # a setting exists.
+      - name: Every compose variable is in the example env
+        run: |
+          missing=0
+          for name in $($COMPOSE config --variables | tail -n +2 | awk '{print $1}'); do
+            if ! grep -Eq "^#? ?${name}=" apps/music-catalog/deploy/.env.example; then
+              echo "::error::${name} is read by deploy/compose.yaml but is missing from deploy/.env.example"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      # Every variable the app parses must be wired by the compose (or baked
+      # into an image), so a new setting cannot be forgotten in production.
+      - name: Every app variable is wired in the compose
+        run: |
+          missing=0
+          for name in $(grep -ohE '^\s+[A-Z][A-Z0-9_]{2,}:' apps/music-catalog/src/config/env.ts | tr -d ' :' | sort -u); do
+            if ! grep -qFw -- "$name" apps/music-catalog/deploy/compose.yaml apps/music-catalog/mbslave.Dockerfile; then
+              echo "::error::${name} is parsed by src/config/env.ts but wired nowhere in deploy/compose.yaml"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: The Caddyfile is valid
+        run: $COMPOSE run --rm --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile
+
+  images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: music-catalog
+            dockerfile: apps/music-catalog/Dockerfile
+            target: runtime
+          - image: music-catalog-mbslave
+            dockerfile: apps/music-catalog/mbslave.Dockerfile
+            target: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # GHCR names are lowercase; the repository's owner and name are not.
+      - name: Name the image
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      # The workflow's own token, scoped by `packages: write` above: no secret
+      # to create or rotate. Only a push to main ever publishes.
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # `sha-<short commit>` is the immutable tag a deploy pins; `latest`
+      # moves with main, which is what the example env follows.
+      - name: Tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # linux/amd64 only: the server is an x86-64 VPS, and building mbslave's
+      # psycopg2 under emulation for arm64 would cost far more than it saves.
+      - name: Build and publish
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # One manifest per tag: provenance attestations would add untagged
+          # entries next to each image on GHCR.
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
