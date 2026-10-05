@@ -5,15 +5,26 @@ import { createShutdownSignal } from './lib/shutdown-signal.js';
 import { createLogger } from './logger.js';
 import { readReimportStateOf } from './modules/reimport/read-reimport-state.js';
 import { resolveServingDatabaseUrl } from './modules/reimport/resolve-serving-url.js';
+import { startWorkerHeartbeat } from './worker/worker-heartbeat.js';
 import { runWorkerLoop } from './worker/worker-loop.js';
 
 const IDLE_INTERVAL_MS = 5000;
+// Well inside the 60 seconds the production health check tolerates.
+const HEARTBEAT_INTERVAL_MS = 15_000;
 
 const env = loadWorkerEnv();
 const logger = createLogger({
   name: 'worker',
   json: env.NODE_ENV === 'production',
 });
+const heartbeat =
+  env.WORKER_HEARTBEAT_FILE === undefined
+    ? undefined
+    : startWorkerHeartbeat({
+        path: env.WORKER_HEARTBEAT_FILE,
+        intervalMs: HEARTBEAT_INTERVAL_MS,
+        logger,
+      });
 // Like the server: open the database the flip record points at, when a
 // reimport already flipped the serving copy.
 const servingUrl = await resolveServingDatabaseUrl({
@@ -55,6 +66,7 @@ await runWorkerLoop({
   signal,
   logger,
 });
+heartbeat?.stop();
 await pool.end();
 await nextPool?.end();
 
