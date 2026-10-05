@@ -14,7 +14,6 @@ on:
       - package.json
       - nub.lock
       - tsconfig.base.json
-      - .dockerignore
       - .github/workflows/music-catalog-images.yml
   push:
     branches: [main]
@@ -24,7 +23,6 @@ on:
       - package.json
       - nub.lock
       - tsconfig.base.json
-      - .dockerignore
       - .github/workflows/music-catalog-images.yml
 
 concurrency:
