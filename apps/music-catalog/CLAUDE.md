@@ -9,25 +9,27 @@ others later) talk to it over one long-lived, authenticated **WebSocket**.
 The full design is in the parent spec, issue #55; this file documents what
 exists.
 
-**What exists today**: the authenticated WebSocket server answering
-`status`, `getRecording` and `search` (issues #57, #59 and #58), the protocol
-envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint, the recording outbox, the replication state and the reimport
-state), read-only declarations of the
-MusicBrainz tables the queries read, **Meilisearch** as the search engine
-behind a small integration, the `server` and `worker` entrypoints (the worker
-indexes every Recording once the MusicBrainz data is laid down, then keeps
-the index in sync with it through the outbox), the **first import** (issue
-#60, datasets reworked in #85: the mbslave container lays down `tiny` or
-`full` and records `restoring`/`restored`), **continuous replication**
-(issue #62: in `full` mode the same container keeps applying replication
-packets after the catalog is `ready`, records the sequence and reports it
-in `status`) and the **yearly schema-change reimport** (issue #69: a CI job
-proposes the mbslave bump, then the service rebuilds the catalog into a
-parallel copy with zero downtime) and the test and quality setup. Lyrics and the production
-compose are later tickets: do not
-build them here ahead of their ticket. `search` returns results in
-**Meilisearch's relevance order**, loaded from Postgres without re-ranking.
+**What exists today**: the whole service. The authenticated WebSocket server
+answering `status`, `getRecording` and `search` (issues #57, #59 and #58), the
+protocol envelope, our own Postgres schema (the bootstrap state, the indexing
+checkpoint, the recording outbox, the replication state, the reimport state
+and the kept Lyrics), read-only declarations of the MusicBrainz tables the
+queries read, **Meilisearch** as the search engine behind a small integration,
+the `server` and `worker` entrypoints (the worker indexes every Recording once
+the MusicBrainz data is laid down, then keeps the index in sync with it
+through the outbox), the **first import** (issue #60, datasets reworked in
+#85: the mbslave container lays down `tiny` or `full` and records
+`restoring`/`restored`), **continuous replication** (issue #62: in `full` mode
+the same container keeps applying replication packets after the catalog is
+`ready`, records the sequence and reports it in `status`), the **Lyrics** from
+LRCLIB (issues #63 and #64: the import, the strict match, the refresh and the
+lookup for new Recordings), the **yearly schema-change reimport** (issue #69:
+a CI job proposes the mbslave bump, then the service rebuilds the catalog
+into a parallel copy with zero downtime), the **production deploy** (issue
+#65: the two images CI publishes to GHCR and the single compose with Caddy in
+`deploy/`, operated as "Operations (production)" below) and the test and
+quality setup. `search` returns results in **Meilisearch's relevance order**,
+loaded from Postgres without re-ranking.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Meilisearch (its official JS client, behind `integrations/`), Zod
@@ -165,10 +167,20 @@ src/
       recording-outbox.repository.ts  pending entries, done marks, trigger installer
       sync.*.spec.ts              unit tests of the plan, the service and the tracked set
   worker/worker-loop.ts   the loop the worker's steps plug into
+  worker/worker-heartbeat.ts  the file the production health check reads (liveness)
+Dockerfile                the Node image (server, worker and the migrations, by command),
+                          built from the repo root; published to GHCR by CI
 mbslave.Dockerfile        the mbslave image: Node for dist/restore.js plus mbslave from
-                          git (pinned) and psql; run by the dev compose (below)
-docker-compose.yml        our Postgres (5433), Meilisearch (7700) with its key-creating
-                          job, and the one-shot mbslave service owning the restore
+                          git (pinned) and psql. `production` target (default): the
+                          compiled restore built in, published to GHCR; `dev` target:
+                          tooling only, run by the dev compose with the host's dist
+docker-compose.yml        the DEV stack: our Postgres (5433), Meilisearch (7700) with its
+                          key-creating job, and the one-shot mbslave service owning the
+                          restore (started by `nub run infra:up`)
+deploy/                   the PRODUCTION stack (see "Operations (production)"):
+  compose.yaml            Caddy, server, worker, mbslave, Postgres, Meilisearch, migrations
+  Caddyfile               TLS and the WebSocket proxy
+  .env.example            every variable the production stack reads, placeholders only
 drizzle/                  generated SQL migrations (committed)
 test/                     e2e specs + helpers (test server, ws client, Testcontainers setup,
                           MusicBrainz schema and fixture)
@@ -387,7 +399,8 @@ later), best match first:
 
 The mbslave container owns the restore (issue #60): the Node image has no
 Python or `psql`, so the server and the worker never run it. On start the
-container runs `dist/restore.js` (`src/restore.ts`, built on the host with
+container runs `dist/restore.js` (`src/restore.ts`: in production built into
+the published image, in the dev compose built on the host with
 `nub run build --filter=music-catalog` and mounted read-only), which restores
 when needed and then, in `full` mode, replicates continuously (see
 "Continuous replication" below; in `tiny` mode it exits instead):
@@ -663,18 +676,12 @@ After the first import, every change to the MusicBrainz tables reaches the
   `uid` and the master key (HMAC-SHA256), so a key created with a fixed `uid`
   is the same everywhere: the dev compose's `music-catalog-meilisearch-init`
   job creates both with fixed uids and `.env.example` lists the resulting
-  values for the dev master key. In production create them once with the
-  master key, for example:
-
-  ```sh
-  curl -X POST "$MEILISEARCH_URL/keys" -H "Authorization: Bearer $MEILI_MASTER_KEY" \
-    -H 'Content-Type: application/json' \
-    -d '{"name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}'
-  ```
-
-  and copy the `key` of each answer (the write one has the actions above and
+  values for the dev master key. The production compose has the same job
+  (`meilisearch-init`, the same uids); there the operator derives the two
+  values from the master key once, with `openssl`, and puts them in `.env`
+  (see "Meilisearch keys" under "Operations (production)"). The write key has
   `"indexes":["*"]`, since a blue-green reimport builds indexes under other
-  names).
+  names.
 
 ## Continuous replication
 
@@ -748,10 +755,11 @@ downtime and with a single human step (issue #69):
    `mbslave.Dockerfile`, `.env.example` and
    `test/setup/musicbrainz-schema.ts`. The music-catalog e2e suite runs on
    that PR against the new schema.
-2. **The maintainer merges and deploys.** Merge the PR, then on the server:
-   `docker compose pull && docker compose up -d` (the mbslave image
-   rebuilds with the new tag; `pull_policy: build` in the dev compose,
-   the published image in production).
+2. **The maintainer merges and deploys.** Merge the PR; CI builds and
+   publishes the new images (the mbslave image carries the new tag), and the
+   runbook below runs on the server (`docker compose pull && docker compose up
+   -d` is its fourth step). In the dev compose the image rebuilds itself
+   (`pull_policy: build`).
 3. **An automatic blue-green reimport follows.** The next `mbslave sync`
    still fails, but the container now runs a newer mbslave major than the
    stalled one (an older release, the stalled one or an unrelated same-major
@@ -782,33 +790,74 @@ downtime and with a single human step (issue #69):
   database plus the `*_next` indexes next to the serving ones), back to
   steady after the old copy is deleted. The LRCLIB temp disk is not needed:
   Lyrics are reused, never re-downloaded.
-- **Enabling it.** Set `REIMPORT_DATABASE_URL` (mbslave container and
-  worker; the compose file passes it through when set) to a fresh database
-  you migrated (`DATABASE_URL=<it> nub run db:migrate` from
-  `apps/music-catalog`), and create one fresh database per reimport: the
-  container refuses a parallel database that holds a serving or retired
-  catalog, and one that is the serving database itself. Without the
-  variable, nothing ever reimports: the container keeps crash-looping on the
-  stall and logs exactly what to set (`Replication stalled on the yearly
-  schema change but REIMPORT_DATABASE_URL is unset`, with the steps). The
-  database stays an explicit operator step on purpose: provisioning it means
-  migrating it, and migrations are a deploy step, never run on boot.
-  `tiny` mode never reimports either.
+- **Enabling it.** The reimport needs a **fresh, migrated parallel database**
+  (`REIMPORT_DATABASE_URL`, read by the mbslave container, the worker and the
+  server's boot fallback), one per reimport: the container refuses a parallel
+  database that holds a serving or retired catalog, and one that is the
+  serving database itself. Without the variable, nothing ever reimports: the
+  container keeps crash-looping on the stall and logs exactly what to set
+  (`Replication stalled on the yearly schema change but REIMPORT_DATABASE_URL
+  is unset`, with the steps). The database stays an explicit operator step on
+  purpose: provisioning it means migrating it, and migrations are a deploy
+  step, never run on boot. `tiny` mode never reimports either. In the dev
+  compose, create it and run `DATABASE_URL=<it> nub run db:migrate` from
+  `apps/music-catalog`; in production follow the runbook.
+- **Runbook (production).** From the `deploy/` folder on the server, with free
+  disk of about the steady state (see "Provisioning") and everything healthy
+  in `docker compose ps`. Steps 1 to 3 can be done any time before the deploy.
+  1. **Create the parallel database and migrate it** with the Node image (the
+     same `migrate` job, pointed at the new database). Name it after the year
+     of the reimport, `<POSTGRES_DB>_<year>` (`music_catalog_2027`, next year
+     `music_catalog_2028`): a name is never reused, which the container
+     requires, and it tells the copies apart.
+
+     ```sh
+     set -a; . ./.env; set +a
+     docker compose exec postgres createdb -U "$POSTGRES_USER" "${POSTGRES_DB}_2027"
+     docker compose run --rm \
+       -e DATABASE_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/${POSTGRES_DB}_2027" \
+       migrate
+     ```
+  2. **Point the stack at it.** In `.env` uncomment
+     `REIMPORT_DATABASE_URL=postgres://<user>:<password>@postgres:5432/<POSTGRES_DB>_2027`
+     (the server, the worker and `mbslave` all receive it; while it is absent
+     the variable is not set at all, which the processes require: a blank one
+     is rejected as an invalid URL).
+  3. **Delete the old dump archives** from the `dumps` volume, so the parallel
+     restore downloads the new dump instead of reusing a stale file of the
+     same name (see "The dumps volume" under "Operations (production)").
+  4. **Merge the bump PR**, wait for the "Music catalog images" run on `main`
+     to publish, then `docker compose pull && docker compose up -d`. The
+     recreated `mbslave` container starts the parallel restore (hours, like
+     the first import's restore); `docker compose logs -f mbslave` shows
+     `Starting the parallel restore for the schema change`.
+  5. **Watch** `status` (see "First run" for the command): `reimport` goes
+     `restoring` → `indexing` → `switching`, then the log says `Reimport
+     switched to the parallel copy` (`docker compose logs worker`).
+  6. **After the flip, point the stack at the new copy.** In `.env` set
+     `CATALOG_DATABASE=<POSTGRES_DB>_2027` and comment
+     `REIMPORT_DATABASE_URL` out again, then `docker compose up -d`. This
+     restarts `server`, `worker` and `mbslave` onto it, and it is required:
+     with the default cleanup the retired database is dropped, so their pools
+     fail (the flip's own tick ends failed and later ticks fail the same way:
+     that error is the signal to restart, not a broken flip); and the
+     `mbslave` binary reads its database name from its own environment
+     (`MBSLAVE_DB_DB`), which `restore.ts` overrides only for the parallel
+     restore, so the flip does not move it: replication stays down until it
+     names the new database, which `CATALOG_DATABASE` does in the compose
+     file. (`POSTGRES_DB` keeps naming the database Postgres created: it only
+     matters at first init.)
+  7. **Delete the dump archives again** (about 8 GB, and stale by next year),
+     and check `docker compose exec postgres psql -U <user> -l`: the retired
+     database is gone unless `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it
+     for inspection until you `docker compose exec postgres dropdb -U <user>
+     <old>` it.
 - **After the flip.** Replication resumes from the new dump's cursor on the
-  new copy (restart the mbslave container if it kept syncing the retired
-  one: with the default cleanup, its next sync fails and the compose restart
-  brings it back on the new copy by itself). With the default cleanup the
-  retired database is already gone, so restart the server and the worker
-  too: their pools still point at the dropped database, and on boot each
-  opens the new copy instead (the server reads `REIMPORT_DATABASE_URL` for
-  exactly this fallback). The flip's own tick ends failed on the dropped
-  database, and later ticks fail the same way until the restart: that error
-  is the signal to restart, not a broken flip. Clients reconnect by
+  new copy once the processes run on it (step 6). Clients reconnect by
   themselves; between the flip and the restart requests fail instead of
-  serving the old copy. With
-  `REIMPORT_CLEANUP_OLD_COPY=false` the retired database is kept for
-  inspection instead: drop it with `DROP DATABASE <old>` once verified —
-  the flip record survives in the new copy, so restarts keep opening it.
+  serving the old copy. With `REIMPORT_CLEANUP_OLD_COPY=false` the retired
+  database is kept for inspection instead: the flip record survives in the
+  new copy, so restarts keep opening it.
 - **Crash windows.** The index swap is one Meilisearch task, so there is no
   half-swapped catalog. The residual window is the flip record right after
   it: a crash there replays the flip, finds the swapped documents through a
@@ -824,6 +873,434 @@ downtime and with a single human step (issue #69):
   carried the kept Lyrics to the parallel copy` (with `carried`, `dropped`),
   `Reimport switched to the parallel copy` and `Adopted the reimported
   copy` once per process.
+
+## Operations (production)
+
+The production stack is `deploy/`: `compose.yaml`, `Caddyfile` and `.env.example`
+(every variable, placeholders only). It runs the two images CI publishes to
+GHCR (`music-catalog`, the Node image, and `music-catalog-mbslave`) plus
+Caddy, Postgres 17 and Meilisearch v1.54.2, so the server needs **no source
+code and no build toolchain**: copy those three files to it, fill `.env`, and
+run `docker compose pull && docker compose up -d` from that folder. The dev
+compose (`docker-compose.yml`, started by `nub run infra:up`) is a different
+stack with different service names (`music-catalog-mbslave` there, `mbslave`
+here); nothing in the dev loop reads `deploy/`.
+
+### What runs
+
+| Service | Image | Does | Liveness |
+| --- | --- | --- | --- |
+| `caddy` | `caddy:2.11-alpine` | TLS for `CATALOG_DOMAIN` (automatic HTTPS), proxies WebSocket upgrades to the server; the only published ports (80, 443) | its admin API |
+| `postgres` | `postgres:17-alpine` | the catalog's database (ours plus MusicBrainz's) | `pg_isready` |
+| `meilisearch` | `getmeili/meilisearch:v1.54.2` | the search engine, `MEILI_ENV=production`, master key from env | `/health` |
+| `meilisearch-init` | same | one-shot: creates the search and write keys (fixed uids, idempotent) | exits 0 |
+| `migrate` | `music-catalog` | one-shot: `node dist/database/migrate.js` | exits 0 |
+| `server` | `music-catalog` | `node dist/server.js`, the WebSocket endpoint | plain `GET /` answers 426 |
+| `worker` | `music-catalog` | `node dist/worker.js`; run exactly one | heartbeat file, see below |
+| `mbslave` | `music-catalog-mbslave` | the first import, then continuous replication in `full` | none (see below) |
+
+Only Caddy publishes ports; everything else is reachable on the project's
+internal network only. `docker compose ps` is the first thing to read:
+`migrate` and `meilisearch-init` end `Exited (0)` by design, and so does
+`mbslave` in `tiny` (it is long-running in `full`).
+
+- **Migrations are a deploy step.** `migrate` runs on every `docker compose up
+  -d` before `server`, `worker` and `mbslave` start (they wait for it to
+  succeed), so a `pull && up -d` migrates before the new code runs. The
+  processes never migrate on boot. **A failing migration stops `up -d`
+  half-way** (verified): `server` and `worker` are already recreated but are
+  never started, so the service is down until you fix the cause (`docker
+  compose logs migrate`) and run `up -d` again. To migrate before touching the
+  running containers, run `docker compose run --rm migrate` between `pull` and
+  `up -d` (see "Updates").
+- **Restarts and health.** Compose restarts a container that *exits*
+  (`unless-stopped`; `on-failure` for `mbslave`) but **does not restart one
+  only because it is unhealthy**, and this stack deliberately has no autoheal
+  sidecar and never mounts the Docker socket. So an `unhealthy` `server` or
+  `worker` is visibility, not self-healing: `docker compose restart server
+  worker`. (The spec's "Docker restarts unhealthy processes" cannot hold
+  literally with plain Compose.) The server check proves the process answers
+  HTTP, not that Postgres or Meilisearch are reachable (a `search` would
+  fail with `INTERNAL`; see Troubleshooting). The worker check reads
+  `WORKER_HEARTBEAT_FILE`, which a timer in the process keeps fresh every
+  15 s: it proves the event loop turns. It is a timer on purpose, not "once
+  per tick": a tick lasts hours during the first import (unpacking LRCLIB,
+  indexing tens of millions of Recordings), and a tick failure is only a log
+  line (`Worker tick failed`), so read the logs too. `mbslave` has no health
+  check: it has no liveness signal and `tiny` exits by design, so watch
+  `status` and its logs.
+
+### Provisioning
+
+The numbers for `full` come from the spike (`docs/research/music-catalog-spike.md`
+section 4), the search benchmark (issue #68) and ADR 0002; the `full`
+Meilisearch index and every timing are **extrapolated**, never measured at
+full scale (and `full` is never run in development or CI). `tiny` numbers
+were measured on the smoke run below.
+
+| | `full` | `tiny` |
+| --- | --- | --- |
+| Steady-state disk | about **150-220 GB**: Postgres about 64 GB (48-80), Meilisearch 79-149 GB, WAL up to `POSTGRES_MAX_WAL_SIZE` (8 GB by default), plus the dump archives kept in the `dumps` volume (about 8 GB) | 86 MB of Postgres volume, 1.2 MB of Meilisearch, images about 1.3 GB (Node 383 MB, mbslave 959 MB, plus the upstream ones) |
+| Temporary disk | about **260 GB** in the `lrclib-scratch` volume per LRCLIB import (the first import, then each refresh); about **2x the steady state** while a yearly reimport runs (the LRCLIB scratch is not needed then) | none |
+| One-disk total | **at least 500 GB of SSD** (220 + 260 + 8 stays under it, and so does 2x 220) | any |
+| RAM | **at least 16 GB**, more for lower search latency (below) | about 370 MiB for the five long-running containers at rest |
+| First run | hours (below) | 56 s from `docker compose up -d` to `ready`, warm base images, on the smoke machine |
+
+- **RAM and latency.** Meilisearch's latency depends on its index staying in
+  the OS page cache: on the benchmark's 2.95 M-Recording sample (5.8 GB of
+  data) p95 was 22 ms with the index in RAM and 97 ms with a 6 GiB memory
+  cap. The full index is extrapolated at 79-149 GB, so 16 GB cannot hold it:
+  most queries read the disk (use NVMe/SSD, never spinning disks), and the
+  benchmark's extrapolation is a p95 of about 52 ms if the index stays in RAM
+  (about 80 GB) up to about 4 s if it does not. 16 GB is the floor to run the
+  stack, not a latency guarantee: buy RAM against the latency you want, and
+  watch `docker stats` and the page cache (`free -h`) before and after
+  traffic. While indexing, Meilisearch uses up to two thirds of the RAM by
+  default and competes with Postgres (`POSTGRES_SHARED_BUFFERS`, 2 GB by
+  default); the Node processes need little (about 40 MiB each at rest).
+- **Network.** The first import downloads about 8.1 GB from MusicBrainz and
+  47.6 GB from LRCLIB; the spike measured 1.0-1.5 MB/s from MetaBrainz (1.5 to
+  2.2 hours) and about 16 MB/s from LRCLIB (about 50 minutes). Replication
+  packets afterwards are small and hourly.
+- **Other prerequisites.** A domain whose DNS record points at the server,
+  ports 80 and 443 open to the internet (Caddy's certificate challenge and
+  the clients), Docker with the Compose plugin, and a MetaBrainz token for
+  `full`.
+- **Where the volumes live.** Named volumes under Docker's data root
+  (`/var/lib/docker/volumes`). To put the 260 GB `lrclib-scratch` volume on
+  another disk, declare it in a `compose.override.yaml` with a bind mount or
+  `driver_opts`; it only needs to be writable by uid 1000 (`node`).
+
+### Before the first run
+
+1. **GHCR login.** The repository is private, so its packages are too: log in
+   once on the server with a GitHub **classic** personal access token that has
+   the `read:packages` scope (fine-grained tokens cannot read packages):
+   `echo "$TOKEN" | docker login ghcr.io -u <github-user> --password-stdin`.
+   Docker keeps it in `~/.docker/config.json`. CI needs no secret to publish
+   (it uses the workflow's own token).
+2. **Copy the files.** `deploy/compose.yaml`, `deploy/Caddyfile` and
+   `deploy/.env.example` (as `.env`, `chmod 600`) into one folder on the
+   server.
+3. **Fill `.env`.** Every value in the example is a placeholder, including the
+   API key and the Meilisearch keys derived from the placeholder master key:
+   replace them all.
+
+   ```sh
+   openssl rand -base64 32     # an API key (API_KEYS takes a comma-separated list)
+   openssl rand -hex 24        # POSTGRES_PASSWORD (it goes into a URL: hex is safe)
+   openssl rand -hex 32        # MEILISEARCH_MASTER_KEY
+   ```
+
+   then derive the two Meilisearch keys from the master key (see
+   "Meilisearch keys"), set `CATALOG_DOMAIN`, `IMAGE_TAG`, and the MetaBrainz
+   token (`MBSLAVE_MUSICBRAINZ_TOKEN`, free for non-commercial use, from the
+   profile page of a MetaBrainz account with a verified email).
+4. **Check it renders.** `docker compose config --quiet` fails with the name
+   of any required variable left unset.
+5. **Start.** `docker compose pull && docker compose up -d`.
+
+### First run (`full`)
+
+Expect **hours**: the spike estimated the MusicBrainz part at 4 to 8 hours on
+its network (download 1.5-2.2 h, restore 1-2.5 h), and the LRCLIB import and
+the Meilisearch indexing of 40.4 M Recordings come on top (the benchmark
+indexed 2.95 M in about 14 minutes with per-slice time growing, so full scale
+is several hours at least; no end-to-end figure exists). The service answers
+from the first minute: `status` works, and `search` and `getRecording` answer
+`CATALOG_NOT_READY` until `ready`. Do not restart the worker or reset the
+volumes while it runs (see Troubleshooting for what a restart costs).
+
+- **`status`** (works with no extra tooling, from the server):
+
+  ```sh
+  docker compose exec server node -e "
+  const WebSocket = require('ws');
+  const ws = new WebSocket('ws://127.0.0.1:' + process.env.PORT, {
+    headers: { Authorization: 'Bearer ' + process.env.API_KEYS.split(',')[0] },
+  });
+  ws.on('open', () => ws.send(JSON.stringify({ id: '1', type: 'status', payload: {} })));
+  ws.on('message', (message) => { console.log(String(message)); ws.close(); });
+  "
+  ```
+
+  From anywhere, any WebSocket client does the same through Caddy:
+  `wscat -c wss://<CATALOG_DOMAIN> -H "Authorization: Bearer <key>"`.
+- **Phases**: `restoring` (the `mbslave` container downloads and restores the
+  dump; `docker compose logs -f mbslave` shows `Restoring the MusicBrainz
+  dump`, then mbslave's own progress as `mbslave output`, then `Restore import
+  finished`), `restored`, `indexing` (the worker: **first the LRCLIB import**,
+  `Downloading the LRCLIB dump` then `LRCLIB import finished`, which can take
+  hours with no per-percent log; **then** `Indexed a batch of Recordings` with
+  `percent`) and `ready`. `Indexing finished: the catalog is ready` is the last
+  line.
+- **Disk**: watch `df -h` and `docker system df -v` (the `lrclib-scratch` volume
+  peaks near 260 GB during the import and is emptied by it).
+- **When it is `ready`**, the steady state is `status` with a growing
+  `replicationSequence` and `pendingOutbox` near zero (see "Continuous
+  replication").
+
+### Updates
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+`pull` fetches the tag in `IMAGE_TAG`; `up -d` runs `migrate`, then recreates
+only the containers whose image or settings changed (clients of a recreated
+`server` are closed with 1001 and reconnect by themselves). `mbslave` is
+recreated too when its image changed, and resumes from mbslave's own cursor.
+For a release whose migrations you have not read, run them first, while the
+old code still serves: `docker compose pull && docker compose run --rm migrate
+&& docker compose up -d` (`migrate` is the new image's job; the later `up -d`
+runs it again, a no-op).
+
+- **Tag pinning.** `IMAGE_TAG=latest` (the example's value) follows the last
+  build of `main`; for a reproducible deploy pin `sha-<short commit>` (CI
+  tags every build with both, in the Actions run "Music catalog images" and
+  on the GHCR package page). Both images always share a tag, so one value
+  moves them together; the images are `linux/amd64` only. A tag exists only
+  for commits that touched the app, its contracts, the lockfile or the
+  workflow.
+- **Rolling back** is the previous `sha-` tag and `up -d`. Migrations are
+  forward-only: roll back across one only after reading its SQL in `drizzle/`.
+- Check `docker compose ps` afterwards, then `docker image prune` the old
+  layers.
+
+### Meilisearch keys
+
+The server never gets the master key: it uses a search-only key, and the
+worker a key that can write. A Meilisearch key is **HMAC-SHA256 of its `uid`
+with the master key**, and `meilisearch-init` creates both with fixed uids
+(`5ea2c4a1-0000-4000-8000-000000000001` search, `...0002` write), so their
+values are computed once with `openssl` and put in `.env` (verified against a
+real Meilisearch v1.54.2, and against the dev values in `.env.example`):
+
+```sh
+MASTER=<the MEILISEARCH_MASTER_KEY value>
+printf '%s' '5ea2c4a1-0000-4000-8000-000000000001' | openssl dgst -sha256 -hmac "$MASTER" -hex   # MEILISEARCH_SEARCH_API_KEY
+printf '%s' '5ea2c4a1-0000-4000-8000-000000000002' | openssl dgst -sha256 -hmac "$MASTER" -hex   # MEILISEARCH_WRITE_API_KEY
+```
+
+Keep only the 64-character hex value of each output line (after
+`SHA2-256(stdin)= `). No `curl` is needed, and the init job is idempotent (HTTP
+409 means the key exists), so it is safe on every `up -d`.
+
+### Key rotation
+
+- **API keys** (`API_KEYS`): list the new key next to the old one
+  (`new,old`), `docker compose up -d`, move the clients to the new one, then
+  drop the old one and `up -d` again. Each `up -d` that changes the list
+  recreates `server`, `worker` and `migrate`; clients reconnect by themselves.
+- **Meilisearch**: the search and write keys are derived from the master key,
+  so they rotate **together**. Put the new master in `MEILISEARCH_MASTER_KEY`,
+  derive both keys again (above), update the three values in `.env` and `docker
+  compose up -d`. Verified on a real Meilisearch with the same data volume:
+  the old derived keys are refused (`invalid_api_key`), the new ones are
+  accepted, `GET /keys` lists the same uids with the new values, and nothing
+  is reindexed. Searches fail between Meilisearch's restart and the server's.
+  Rotating only one of the two needs a new `uid` (a change to the init job).
+- **Postgres password**: `POSTGRES_PASSWORD` only applies when the volume is
+  first created, so change it in the database first, then in `.env`:
+  `docker compose exec postgres psql -U <user> -d <db> -c "ALTER ROLE <user>
+  PASSWORD '<new>'"`, set `POSTGRES_PASSWORD` to the same value, `docker
+  compose up -d`. Changing only `.env` makes every process fail with
+  `password authentication failed for user` (verified).
+- **MetaBrainz token**: change `MBSLAVE_MUSICBRAINZ_TOKEN`, `docker compose up
+  -d mbslave`. A revoked or wrong token is mbslave's HTTP 403 in its log.
+- **Caddy's certificates** are renewed by Caddy itself and live in the
+  `caddy-data` volume; losing that volume only means asking the certificate
+  authority again (which is rate limited).
+
+### The dumps volume (read this before any redo or reimport)
+
+mbslave downloads the MusicBrainz archives into `/var/lib/mbslave` (the
+`dumps` volume) as `mbdump.tar.bz2` and `mbdump-derived.tar.bz2`, **keeps
+them after the restore**, and its downloader resumes from whatever file of
+the same name is there (a `Range` request from its current size). The name
+does not include the dump's date, and MusicBrainz publishes a new full export
+twice a week. Verified with mbslave v31.0.1's own downloader against a local
+server: a stale archive at least as big as the new one is silently reused
+(the new dump is never downloaded), and a smaller one gets the tail of the new
+file appended to its head, a corrupt tarball. So the archives are **stale
+after the first import**: delete them once the catalog is `ready` (it frees
+about 8 GB), and **always before** a redo or a reimport restores again:
+
+```sh
+docker compose run --rm --no-deps --entrypoint rm mbslave -f \
+  /var/lib/mbslave/mbdump.tar.bz2 /var/lib/mbslave/mbdump-derived.tar.bz2
+```
+
+(Leave them while a download is merely being resumed after a restart: that is
+what they are for.)
+
+### Backups and recovery
+
+Everything in the catalog is **rebuilt from public data** (MusicBrainz and
+LRCLIB), so the baseline is: back up the configuration, not the data, and
+accept hours of rebuild after a total loss. What is not rebuildable is the
+**`.env`** (the API keys, the Meilisearch master key and the MetaBrainz
+token: keep it in a password manager) and, politely, the `caddy-data` volume
+(certificates; re-issuing is rate limited). Beyond that:
+
+- **A consistent cold backup** (fastest recovery): `docker compose stop
+  worker mbslave server`, then copy the `postgres-data` **and**
+  `meilisearch-data` volumes together (for example `docker run --rm -v
+  music-catalog_postgres-data:/data -v "$PWD":/backup alpine tar czf
+  /backup/postgres.tgz -C /data .`, and the same for Meilisearch), then
+  `docker compose start`. They must come from the same moment: the index and
+  the database drift otherwise. (Meilisearch has its own snapshot and dump
+  features, which this stack does not set up.)
+- **Postgres only** (`pg_dump`, a volume copy, a replica) is the common case,
+  and **restoring it next to an empty Meilisearch volume does not rebuild the
+  index by itself**. Verified on the `tiny` stack: with the Meilisearch volume
+  deleted and Postgres intact, `status` still says `ready` (the worker thinks
+  everything is indexed: the checkpoint lives in Postgres and indexing is a
+  no-op once `ready`), the worker only drains new outbox entries, and every
+  `search` answers `INTERNAL`, with "Index `recordings` not found" in the
+  server log. Force the reindex by putting the catalog back in `indexing` and
+  clearing the checkpoint:
+
+  ```sh
+  docker compose exec postgres psql -U <user> -d <db> \
+    -c "UPDATE music_catalog.bootstrap_state SET phase = 'indexing'" \
+    -c "DELETE FROM music_catalog.indexing_checkpoint"
+  ```
+
+  The worker's next ticks reindex every Recording and the kept Lyrics from
+  Postgres and the catalog is `ready` again (`search` answers
+  `CATALOG_NOT_READY` meanwhile; `tiny` took 36 s). **In `full` that also
+  re-downloads LRCLIB's dump** (about 48 GB, 260 GB unpacked, hours): the
+  import runs whenever the phase is `indexing`, with no check for Lyrics
+  already kept. That is the price of not backing the two up together.
+- **Starting from nothing**: `docker compose down -v` deletes the volumes,
+  and the next `up -d` is a first run. Never run it against a catalog worth
+  keeping.
+
+### Troubleshooting
+
+Logs: `docker compose logs -f --tail 200 <service>` (JSON lines, one per
+event; grep the quoted messages).
+
+| Symptom | Look at | Cause and fix |
+| --- | --- | --- |
+| `docker compose` refuses with `required variable ... is missing` | `.env` | set it (the message names it) |
+| `pull` fails with `denied` or `unauthorized` | `docker login ghcr.io` | log in with a `read:packages` token (see "Before the first run") |
+| `migrate` ends `Exited (1)`, `server` and `worker` stay `Created` | `logs migrate` | the service is down until this is fixed and `up -d` runs again; `password authentication failed` is a `POSTGRES_PASSWORD` that does not match the database (see "Key rotation"); a dataset error means a database from the dropped `sample` dataset |
+| Caddy serves no certificate, TLS errors | `logs caddy`, DNS, ports 80/443 | the domain must resolve to this server and 80/443 must be open; certificates are rate limited, so fix DNS before retrying |
+| `server` or `worker` `unhealthy` | `logs server` / `logs worker` | read the error, then `docker compose restart <service>`; Compose will not restart it for you |
+| `status` stuck in `restoring` | `logs -f mbslave` | `Restore failed, the next start redoes it`: the container restarts by itself and redoes it from a clean state; check the disk (`df -h`), the MetaBrainz URL, and that the archives in the `dumps` volume are not stale (see above) |
+| `status` stuck in `indexing` for hours | `logs worker` | normal while the LRCLIB import runs (no per-percent log); `LRCLIB import failed, continuing without Lyrics` means a bad dump (the catalog still becomes `ready`); `Worker tick failed` repeating is a failing step (Meilisearch down, disk full): the error is in the line |
+| Disk full during the first import or a refresh | `docker system df -v`, `ls -la` of `lrclib-scratch` | the worker deletes its unpacked dump when an import ends, **not when it is killed or crashes**: `docker compose run --rm --no-deps --entrypoint ls worker -la /scratch`, then `... --entrypoint rm worker -f /scratch/lrclib-dump-<n>.sqlite3` for leftovers. A worker restart in the middle of `indexing` also restarts the whole LRCLIB download (there is no resume) |
+| `search` answers `INTERNAL` while `status` is `ready` | `logs server` | "Index recordings not found": Meilisearch lost its data (see "Backups and recovery"); a connection error is Meilisearch down (`docker compose ps meilisearch`); `invalid_api_key` is a Meilisearch key that does not match the master key (derive them again) |
+| `replicationSequence` stops advancing | `logs mbslave` | 403 is a bad token; `Mismatched schema` / `Replication stalled on the yearly schema change` is the yearly schema change ("Yearly schema change"); see "Continuous replication" for the log lines |
+| Port 80 or 443 already in use | `docker compose up -d` error | another web server on the host: stop it, Caddy needs both |
+
+### Licence
+
+notefinder is **non-commercial**, which is what the free MetaBrainz token
+requires. The replication packets and the derived dump (tags and genres) are
+**CC BY-NC-SA 3.0**: attribution is owed wherever genres and tags are shown
+(web work, outside this service), and if notefinder ever becomes commercial
+the MetaBrainz tier and that data must be revisited first (ADR 0002). LRCLIB's
+dump is CC0. This is not legal advice.
+
+### CI and images
+
+`.github/workflows/music-catalog-images.yml` builds both images on every pull
+request that touches the app, its contracts, the lockfile or the workflow
+(nothing is pushed), validates the compose against `deploy/.env.example`
+(`docker compose config`, the Caddyfile, that every variable the compose reads
+is in the example, and that every variable `src/config/env.ts` parses is
+wired in the compose), and on a push to `main` publishes
+`ghcr.io/<owner>/<repo>/music-catalog` and `.../music-catalog-mbslave` tagged
+`sha-<short commit>` and `latest` with the workflow's own `GITHUB_TOKEN` (no
+secret to create). `apps/music-catalog/Dockerfile` and `mbslave.Dockerfile`
+build from the repository root, inside the image (`nub install --frozen-lockfile`
+and `tsc`), so a local `docker build -f apps/music-catalog/Dockerfile .`
+reproduces CI. Keep the two Dockerfiles' build stages in step.
+
+### Smoke run (`tiny`), the procedure to check a change to the stack
+
+Repeat it after any change to the compose, the Dockerfiles or the health
+checks. Never run `full` for this. It needs only Docker and free ports 80 and
+443: the images are built in the image and nothing is pulled from or pushed to
+GHCR. From the repository root:
+
+```sh
+docker build -f apps/music-catalog/Dockerfile -t mcsmoke/music-catalog:local .
+docker build -f apps/music-catalog/mbslave.Dockerfile -t mcsmoke/music-catalog-mbslave:local .
+
+# What differs from the example env: the tiny dataset, a local-only domain
+# (Caddy signs it with its own authority) and the local images.
+printf '%s\n' COMPOSE_PROJECT_NAME=mcsmoke CATALOG_DATASET=tiny CATALOG_DOMAIN=localhost \
+  IMAGE_REPOSITORY=mcsmoke IMAGE_TAG=local > /tmp/mcsmoke.env
+cd apps/music-catalog/deploy
+docker compose --env-file .env.example --env-file /tmp/mcsmoke.env up -d
+```
+
+Then wait for `ready` and run one `search` and one `getRecording` through
+Caddy with the example's API key, from a throwaway container on the host
+network (no certificate check: the local authority is not trusted):
+
+```sh
+docker run --rm --network host -e KEY=change-me-api-key-0123456789abcdef0123456789abcdef \
+  mcsmoke/music-catalog:local node -e "
+const WebSocket = require('ws');
+const ws = new WebSocket('wss://localhost', {
+  headers: { Authorization: 'Bearer ' + process.env.KEY },
+  rejectUnauthorized: false,
+});
+const call = (type, payload) => new Promise((resolve) => {
+  const id = String(Math.random());
+  const onMessage = (message) => {
+    const reply = JSON.parse(String(message));
+    if (reply.id !== id) return;
+    ws.off('message', onMessage);
+    resolve(reply);
+  };
+  ws.on('message', onMessage);
+  ws.send(JSON.stringify({ id, type, payload }));
+});
+const show = (reply) => console.log(JSON.stringify(reply).slice(0, 150));
+ws.on('open', async () => {
+  let status;
+  let shown;
+  do {
+    status = await call('status', {});
+    if (status.result.phase !== shown) show(status);
+    shown = status.result.phase;
+    if (shown !== 'ready') await new Promise((r) => setTimeout(r, 2000));
+  } while (shown !== 'ready');
+  const search = await call('search', { query: 'Tiny Song 042', limit: 1 });
+  show(search);
+  show(await call('getRecording', { mbid: search.result.results[0].mbid }));
+  ws.close();
+});"
+
+# still in apps/music-catalog/deploy
+docker compose --env-file .env.example --env-file /tmp/mcsmoke.env ps -a   # server, worker, caddy healthy; migrate, meilisearch-init Exited (0)
+docker compose --env-file .env.example --env-file /tmp/mcsmoke.env down -v # removes the stack and every volume of the smoke project
+docker image rm mcsmoke/music-catalog:local mcsmoke/music-catalog-mbslave:local
+rm /tmp/mcsmoke.env
+```
+
+(The upstream images it pulled, `caddy:2.11-alpine` and the Postgres and
+Meilisearch ones, are shared cache: remove them only if nothing else on the
+machine uses them.) `status` shows `restored`, then `indexing` (the worker
+imports the fake LRCLIB dump, then indexes the 300 Recordings), then `ready`,
+and the search finds `Tiny Song 042`.
+
+Measured on the machine that wrote this ticket (15 GB RAM, Docker 29.7, base
+images already pulled), from the commands above on a clean project: **56 s
+from `docker compose up -d` to `ready`** (the migrations at +10 s, the `tiny`
+restore done at +23 s, then about 30 s of the worker generating and importing
+the fake LRCLIB dump and 2 s indexing), a cold build (no layer cache) of the
+Node image in **79 s** and of the mbslave image in **148 s**, **86 MB** of
+Postgres volume, **1.2 MB** of Meilisearch, an empty `dumps` and
+`lrclib-scratch`, and under 0.5 GB of RAM for the five long-running
+containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
+(mbslave).
 
 ## Database (Drizzle + Postgres)
 
@@ -903,6 +1380,12 @@ downtime and with a single human step (issue #69):
   | `LRCLIB_API_BASE_URL` | The public LRCLIB API new and changed Recordings get their Lyrics from (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
   | `LRCLIB_REFRESH_CHECK_INTERVAL_MS` | How often the worker polls the listing for a newer dump (default 3600000); worker, `full` only |
   | `LRCLIB_REFRESH_MIN_INTERVAL_DAYS` | At most one dump refresh per this many days (default 30); worker, `full` only |
+  | `WORKER_HEARTBEAT_FILE` | A file the worker keeps touching (every 15 s) for the production health check; unset, nothing is written (see "Operations (production)") |
+
+  The production stack's own variables (the domain, the image tag, Postgres
+  and Meilisearch settings, and these ones as the compose passes them) are
+  listed, with placeholders, in `deploy/.env.example`; CI checks that every
+  variable above is wired in `deploy/compose.yaml`.
 
   The server and the worker parse different sets (`loadServerEnv`,
   `loadWorkerEnv`) on top of the shared one, so each fails fast on what it
@@ -1065,10 +1548,18 @@ downtime and with a single human step (issue #69):
   (even while a lookup hangs), a non-matching API track is rejected, and a
   listing failure leaves the catalog ready with null Lyrics.
 
+- **The production deploy** (`deploy/`, the two Dockerfiles) has no spec of
+  its own: the "Music catalog images" workflow builds both images on every
+  pull request that touches them and checks the compose (it renders against
+  `deploy/.env.example`, every variable it reads is in the example, every
+  variable `src/config/env.ts` parses is wired in it, and the Caddyfile is
+  valid). The behavior itself is verified by the smoke run under "Operations
+  (production)", which a change to the compose, the Dockerfiles or the health
+  checks must repeat.
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
-  validation, the dispatcher with its timeout, the heartbeat with fake
-  timers, the worker loop, the abortable sleep, the logger, building the Meilisearch document and
+  validation, the dispatcher with its timeout, the WebSocket heartbeat with
+  fake timers, the worker loop and its heartbeat file, the abortable sleep, the logger, building the Meilisearch document and
   the summary, re-sorting rows by Meilisearch's order, the sync plan and the
   tracked trigger set, the replication loop and its token gate, the Lyrics
   normalization and match, the shared match batch, the fake-dump generator,
