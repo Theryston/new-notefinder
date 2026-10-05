@@ -312,7 +312,7 @@ the maintainer changes these files.
   Don't bypass hooks with `--no-verify`.
 - One logical change per PR; tooling/refactors separated from features.
 
-## Agent skills
+## Agent guidance
 
 ### Issue tracker
 
@@ -328,12 +328,13 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, shared by `ap
 
 ### Asking the maintainer
 
-Put decisions to the maintainer through the AskUserQuestion tool (clickable
+Put decisions to the maintainer through the AskUserQuestion tool (Claude Code)
+or the `question` tool (OpenCode) (clickable
 options, recommended one first, at most 4 per call), or one question at a
-time. Never a long numbered list of questions in plain text, even when a
-skill (e.g. `grilling`) says to ask a whole round at once.
+time. Never a long numbered list of questions in plain text.
 
 ### Subagents
 
-`.claude/agents/ticket-implementer.md` implements one `ready-for-agent`
-issue end to end in its own worktree and opens a PR (Sonnet, `xhigh` effort).
+`ticket-implementer` (`.claude/agents/ticket-implementer.md` in Claude Code,
+`.opencode/agents/ticket-implementer.md` in OpenCode) implements one
+`ready-for-agent` issue end to end in its own worktree and opens a PR.

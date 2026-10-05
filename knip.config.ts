@@ -3,8 +3,6 @@ import type { KnipConfig } from 'knip';
 // Unused files, exports and dependencies fail CI (`nub run knip`). Before
 // adding to an ignore list here, delete the dead code instead.
 const config: KnipConfig = {
-  // Skill files are templates and documentation, not app entry points.
-  ignore: ['.claude/skills/**'],
   workspaces: {
     'apps/api': {
       // drizzle.config.ts parses the app's env when imported, which fails
