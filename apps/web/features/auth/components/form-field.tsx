@@ -27,7 +27,14 @@ export function FormField({
   hint?: ReactNode;
   children: ReactNode;
 }) {
-  const fieldLabel = <FieldLabel htmlFor={id}>{label}</FieldLabel>;
+  const fieldLabel = (
+    <FieldLabel
+      htmlFor={id}
+      className="font-semibold text-[0.8125rem] text-foreground"
+    >
+      {label}
+    </FieldLabel>
+  );
 
   return (
     <Field data-invalid={error ? true : undefined} className="gap-2">

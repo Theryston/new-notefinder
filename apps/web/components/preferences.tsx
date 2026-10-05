@@ -7,7 +7,7 @@ import {
   SunIcon,
   SunMoonIcon,
 } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 
 import {
@@ -17,10 +17,10 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePathname, useRouter } from '@/lib/i18n/navigation';
-import { isLocale, routing } from '@/lib/i18n/routing';
+import { routing } from '@/lib/i18n/routing';
 import { cn } from '@/lib/utils';
 
+import { useSetLocale } from './language-switcher';
 import { menuItemClassName, menuSurfaceClassName } from './menu-styles';
 
 const themes = [
@@ -32,21 +32,8 @@ const themes = [
 /** Current theme and language, and how to change them. */
 function usePreferences() {
   const { theme, setTheme } = useTheme();
-  const locale = useLocale();
-  const pathname = usePathname();
-  const router = useRouter();
 
-  return {
-    theme: theme ?? 'system',
-    setTheme,
-    locale,
-    // Same page and query in the other locale; next-intl remembers the
-    // choice in the locale cookie that `proxy.ts` reads.
-    setLocale: (next: string) => {
-      if (!isLocale(next) || next === locale) return;
-      router.replace(`${pathname}${window.location.search}`, { locale: next });
-    },
-  };
+  return { theme: theme ?? 'system', setTheme, ...useSetLocale() };
 }
 
 /** Theme and language submenus for a dropdown menu. */

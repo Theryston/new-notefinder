@@ -13,14 +13,14 @@ import {
 import { flushSync } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useRouter } from '@/lib/i18n/navigation';
-import { cn } from '@/lib/utils';
 
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
 import { SearchHotkeyHint } from './search-hotkey-hint';
 
-/** The pill search field, with the shortcut hint from `md` up. */
+/** The pill search field, with the `⌘K` keycap from `md` up. */
 function SearchField({
   inputRef,
   onSubmit,
@@ -33,12 +33,8 @@ function SearchField({
   const t = useTranslations('header.search');
 
   return (
-    <form onSubmit={onSubmit} className="relative flex-1">
-      <SearchIcon
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground"
-      />
-      <input
+    <form onSubmit={onSubmit} className="flex-1">
+      <Input
         ref={inputRef}
         type="search"
         name="q"
@@ -52,12 +48,11 @@ function SearchField({
           event.currentTarget.blur();
           onEscape();
         }}
-        className={cn(
-          'h-10 w-full rounded-full border border-transparent bg-muted pr-4 pl-10 text-base outline-none transition-[border-color,box-shadow] duration-150 ease-out placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:pr-16 md:text-sm',
-          '[&::-webkit-search-cancel-button]:hidden',
-        )}
+        start={<SearchIcon aria-hidden="true" className="size-5" />}
+        end={<SearchHotkeyHint className="hidden md:inline-flex" />}
+        className="pr-2 pl-3.5"
+        inputClassName="[&::-webkit-search-cancel-button]:hidden"
       />
-      <SearchHotkeyHint className="absolute top-1/2 right-3 hidden -translate-y-1/2 md:inline-flex" />
     </form>
   );
 }
@@ -108,14 +103,14 @@ export function HeaderSearch() {
         variant="ghost"
         size="icon"
         aria-label={t('open')}
-        className="md:hidden"
+        className="ml-auto md:hidden"
         onClick={expandAndFocus}
       >
         <SearchIcon className="size-5" />
       </Button>
       <search
         data-expanded={expanded || undefined}
-        className="absolute inset-0 z-10 hidden items-center gap-1 rounded-full bg-popover p-2 data-expanded:flex md:static md:flex md:max-w-md md:flex-1 md:bg-transparent md:p-0"
+        className="absolute inset-0 z-10 hidden items-center gap-1 rounded-full bg-popover p-2 data-expanded:flex md:static md:flex md:max-w-105 md:flex-1 md:bg-transparent md:p-0"
       >
         <SearchField
           inputRef={inputRef}

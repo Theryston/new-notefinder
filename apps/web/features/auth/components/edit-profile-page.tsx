@@ -13,7 +13,7 @@ export async function EditProfilePage() {
   const { errors, auth, profile } = await getMessages();
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-8 px-4 py-10 md:px-6 md:py-12">
+    <div className="mx-auto flex max-w-xl flex-col gap-8 py-10 md:py-12">
       <header className="flex flex-col gap-3">
         <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
           {t('overline')}

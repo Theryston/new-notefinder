@@ -16,7 +16,7 @@ export function SiteHeaderFrame({ children }: { children: ReactNode }) {
     <header
       ref={ref}
       data-hidden={hidden || undefined}
-      className="sticky top-0 z-40 px-2 pt-2 transition-transform duration-300 ease-out-soft focus-within:translate-y-0 data-hidden:-translate-y-full md:px-6 md:pt-3"
+      className="sticky top-0 z-40 pt-2 transition-transform duration-300 ease-out-soft focus-within:translate-y-0 data-hidden:-translate-y-full md:pt-3"
     >
       {children}
     </header>

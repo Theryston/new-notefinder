@@ -1,5 +1,6 @@
 'use client';
 
+import { MailIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
@@ -30,6 +31,7 @@ export function EmailField({ registration, errorType }: CredentialFieldProps) {
       <Input
         id="email"
         type="email"
+        start={<MailIcon aria-hidden="true" />}
         inputMode="email"
         autoComplete="email"
         autoCapitalize="none"

@@ -21,8 +21,6 @@
     },
     "account": {
       "signIn": "Sign in",
-      "signUp": "Sign up",
-      "menu": "Menu",
       "accountMenu": "Account menu",
       "myProfile": "My profile",
       "editProfile": "Edit profile",
