@@ -83,10 +83,13 @@ services:
   # `docker compose up --force-recreate music-catalog-mbslave`.
   music-catalog-mbslave:
     build:
-      # The repository root: the image only copies manifests and sources, and
-      # the container runs the compiled restore from a read-only mount below.
+      # The repository root. The `dev` target holds only mbslave and psql: the
+      # container runs the restore compiled on the host from a read-only mount
+      # below. (The default target, `production`, is the self-contained image
+      # CI publishes for deploy/compose.yaml.)
       context: ../..
       dockerfile: apps/music-catalog/mbslave.Dockerfile
+      target: dev
     # Rebuild the image on `up` when the Dockerfile changed (cached otherwise).
     pull_policy: build
     # Restarts after a crash (a failed restore is redone from `restoring`, a

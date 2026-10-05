@@ -1,0 +1,32 @@
+# The Music catalog images build from the repository root (see
+# apps/music-catalog/Dockerfile and mbslave.Dockerfile): the monorepo
+# workspace they need is part of the build context. Everything else stays
+# out of it, so the context is a few megabytes instead of the whole checkout
+# (node_modules, .git, the other apps).
+*
+
+# What `nub install` needs to resolve the workspace: the root manifest, the
+# lockfile and every workspace's manifest (the lockfile lists them all).
+!package.json
+!nub.lock
+!tsconfig.base.json
+!apps/*/package.json
+!packages/*/package.json
+
+# The two packages the Music catalog is built from.
+!packages/contracts
+!apps/music-catalog
+
+# Inside them: no installed or built output (the image builds its own), no
+# local env files, no tests, reports or the production deploy files.
+**/node_modules
+**/dist
+**/coverage
+**/coverage-e2e
+**/reports
+**/.stryker-tmp
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+apps/music-catalog/test
+apps/music-catalog/deploy
