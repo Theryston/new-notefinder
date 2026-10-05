@@ -74,6 +74,28 @@ jobs:
           done
           exit $missing
 
+      # The restore, the worker and the server parse REIMPORT_DATABASE_URL as an
+      # optional URL, and an empty string is not one: they refuse to start. So
+      # neither compose may pass it with a blank default
+      # (`${REIMPORT_DATABASE_URL:-}`); a key with no value is left absent
+      # when the variable is unset, which is what `config` renders as null.
+      - name: Neither compose passes a blank REIMPORT_DATABASE_URL
+        run: |
+          unset REIMPORT_DATABASE_URL
+          dev="$(docker compose -f apps/music-catalog/docker-compose.yml config --format json)"
+          prod="$($COMPOSE config --format json)"
+          filter='.services | to_entries[] | select((.value.environment // {}).REIMPORT_DATABASE_URL == "") | .key'
+          blank=0
+          for service in $(jq -r "$filter" <<< "$dev"); do
+            echo "::error::${service} gets an empty REIMPORT_DATABASE_URL from apps/music-catalog/docker-compose.yml (the processes reject a blank URL): pass it with a key that has no value instead of a default"
+            blank=1
+          done
+          for service in $(jq -r "$filter" <<< "$prod"); do
+            echo "::error::${service} gets an empty REIMPORT_DATABASE_URL from apps/music-catalog/deploy/compose.yaml (the processes reject a blank URL): pass it with a key that has no value instead of a default"
+            blank=1
+          done
+          exit $blank
+
       - name: The Caddyfile is valid
         run: $COMPOSE run --rm --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile
 
