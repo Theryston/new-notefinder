@@ -1,36 +1,19 @@
-'use client';
-
-import { useSyncExternalStore } from 'react';
+import { CommandIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-import { searchHotkeyLabel } from '../search-hotkey';
-
-const noSubscription = () => () => {};
-
 /**
- * `⌘K` or `Ctrl K`, depending on the platform. The server can't know it, so
- * the hint shows up after hydration (same width either way, no shift).
+ * The `⌘K` keycap. It is the same on every platform (`Ctrl K` works too, see
+ * `isSearchHotkey`), so the server can render it as is.
  */
 export function SearchHotkeyHint({ className }: { className?: string }) {
-  const label = useSyncExternalStore(
-    noSubscription,
-    () => searchHotkeyLabel(navigator.platform),
-    () => null,
-  );
-
   return (
     // Hidden from screen readers: the field announces the shortcut through
     // `aria-keyshortcuts`.
-    <span
-      aria-hidden="true"
-      className={cn(
-        'pointer-events-none h-6 min-w-12 items-center justify-center rounded-full bg-background px-2 font-medium text-muted-foreground text-xs shadow-xs',
-        label ? '' : 'invisible',
-        className,
-      )}
-    >
-      <kbd className="font-sans">{label ?? 'Ctrl K'}</kbd>
+    <span aria-hidden="true" className={cn('pointer-events-none', className)}>
+      <kbd className="inline-flex items-center gap-0.5 rounded-xs border border-border bg-background px-1.5 py-px font-medium font-mono text-[0.6875rem] text-muted-foreground">
+        <CommandIcon className="size-3" />K
+      </kbd>
     </span>
   );
 }

@@ -31,7 +31,7 @@ export function ReadOnlyField({
         value={value}
         readOnly
         aria-readonly="true"
-        className="text-muted-foreground"
+        inputClassName="text-muted-foreground"
       />
     </FormField>
   );

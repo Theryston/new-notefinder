@@ -37,30 +37,26 @@ function UsernameInput({
   invalid: boolean;
 }) {
   return (
-    <div className="relative">
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 font-medium text-muted-foreground"
-      >
-        @
-      </span>
-      <Input
-        id="username"
-        autoComplete="username"
-        autoCapitalize="none"
-        spellCheck={false}
-        maxLength={USERNAME_MAX_LENGTH}
-        placeholder={placeholder}
-        className="pl-8"
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? 'username-error' : undefined}
-        {...registration}
-        onChange={(event) => {
-          event.target.value = normalizeUsernameInput(event.target.value);
-          return registration.onChange(event);
-        }}
-      />
-    </div>
+    <Input
+      id="username"
+      autoComplete="username"
+      autoCapitalize="none"
+      spellCheck={false}
+      maxLength={USERNAME_MAX_LENGTH}
+      placeholder={placeholder}
+      start={
+        <span aria-hidden="true" className="font-medium">
+          @
+        </span>
+      }
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? 'username-error' : undefined}
+      {...registration}
+      onChange={(event) => {
+        event.target.value = normalizeUsernameInput(event.target.value);
+        return registration.onChange(event);
+      }}
+    />
   );
 }
 

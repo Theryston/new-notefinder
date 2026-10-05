@@ -13,8 +13,3 @@ export function isSearchHotkey(event: HotkeyEvent): boolean {
     event.key.toLowerCase() === 'k'
   );
 }
-
-/** The shortcut hint for `platform` (`navigator.platform`). */
-export function searchHotkeyLabel(platform: string): string {
-  return /mac|iphone|ipad/i.test(platform) ? '⌘K' : 'Ctrl K';
-}

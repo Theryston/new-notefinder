@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
  */
 export function TermsShell({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-prose px-4 pt-8 pb-16 md:px-6 md:pb-24">
+    <div className="mx-auto w-full max-w-prose pt-8 pb-16 md:pb-24">
       {children}
     </div>
   );

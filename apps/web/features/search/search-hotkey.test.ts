@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSearchHotkey, searchHotkeyLabel } from './search-hotkey';
+import { isSearchHotkey } from './search-hotkey';
 
 const key = (overrides: Partial<Parameters<typeof isSearchHotkey>[0]>) => ({
   key: 'k',
@@ -33,19 +33,5 @@ describe('isSearchHotkey', () => {
       false,
     );
     expect(isSearchHotkey(key({ metaKey: true, repeat: true }))).toBe(false);
-  });
-});
-
-describe('searchHotkeyLabel', () => {
-  it('shows ⌘K on Apple platforms', () => {
-    expect(searchHotkeyLabel('MacIntel')).toBe('⌘K');
-    expect(searchHotkeyLabel('iPhone')).toBe('⌘K');
-    expect(searchHotkeyLabel('iPad')).toBe('⌘K');
-  });
-
-  it('shows Ctrl K elsewhere', () => {
-    expect(searchHotkeyLabel('Win32')).toBe('Ctrl K');
-    expect(searchHotkeyLabel('Linux x86_64')).toBe('Ctrl K');
-    expect(searchHotkeyLabel('')).toBe('Ctrl K');
   });
 });

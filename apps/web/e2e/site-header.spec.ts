@@ -12,8 +12,6 @@ const PNG = Buffer.from(
   'base64',
 );
 
-const menuButton = (page: Page) =>
-  page.getByRole('button', { name: header.account.menu, exact: true });
 const accountButton = (page: Page) =>
   page.getByRole('button', { name: header.account.accountMenu });
 
@@ -27,19 +25,19 @@ const headerReady = (page: Page) =>
   ).toBeVisible();
 
 test.describe('site header (desktop)', () => {
-  test('offers sign in and sign up that come back to the page', async ({
-    page,
-  }) => {
+  test('offers only sign in, coming back to the page', async ({ page }) => {
     await mockAuthApi(page);
     await page.goto('/en?x=1');
+    await headerReady(page);
 
     const banner = page.getByRole('banner');
     await expect(
       banner.getByRole('link', { name: header.account.signIn }),
     ).toHaveAttribute('href', '/en/sign-in?redirectTo=%2F%3Fx%3D1');
-    await expect(
-      banner.getByRole('link', { name: header.account.signUp }),
-    ).toHaveAttribute('href', '/en/sign-up?redirectTo=%2F%3Fx%3D1');
+    // The brand and sign in; sign up is one link away on the sign-in page.
+    await expect(banner.getByRole('link')).toHaveCount(2);
+    // The theme toggle's three buttons, and no "…" menu.
+    await expect(banner.getByRole('button')).toHaveCount(3);
     await expect(accountButton(page)).toHaveCount(0);
   });
 
@@ -111,39 +109,41 @@ test.describe('site header (desktop)', () => {
     await expect(page).toHaveURL(/\/en\/search\?q=bohemian\+rhapsody$/);
   });
 
-  test('switches the theme', async ({ page }) => {
+  test('switches the theme from the header toggle', async ({ page }) => {
     await mockAuthApi(page);
     await page.goto('/en');
+    await headerReady(page);
 
-    await menuButton(page).click();
-    await page
-      .getByRole('menuitem', { name: header.preferences.theme })
-      .click();
-    await page
-      .getByRole('menuitemradio', { name: header.preferences.themes.dark })
-      .click();
+    const toggle = page
+      .getByRole('banner')
+      .getByRole('group', { name: header.preferences.theme });
+    const dark = toggle.getByRole('button', {
+      name: header.preferences.themes.dark,
+    });
+    const light = toggle.getByRole('button', {
+      name: header.preferences.themes.light,
+    });
+
+    await dark.click();
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    await expect(dark).toHaveAttribute('aria-pressed', 'true');
+    await expect(light).toHaveAttribute('aria-pressed', 'false');
+
+    await light.click();
+    await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
+    await expect(light).toHaveAttribute('aria-pressed', 'true');
+    await expect(dark).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('switches the language, keeping the page and query', async ({
+  test('hints the shortcut with the ⌘ keycap on every platform', async ({
     page,
   }) => {
     await mockAuthApi(page);
-    await page.goto('/en?x=1');
+    await page.goto('/en');
 
-    await menuButton(page).click();
-    await page
-      .getByRole('menuitem', { name: header.preferences.language })
-      .click();
-    await page
-      .getByRole('menuitemradio', {
-        name: header.preferences.languages['pt-BR'],
-      })
-      .click();
-    await expect(page).toHaveURL(/\/pt-BR\?x=1$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      messages['pt-BR'].home.title,
-    );
+    const keycap = page.getByRole('banner').locator('kbd');
+    await expect(keycap).toHaveText('K');
+    await expect(keycap.locator('svg')).toBeVisible();
   });
 
   test('hides while scrolling down and comes back on scroll up', async ({
@@ -193,29 +193,26 @@ test.describe('site header (mobile)', () => {
     await expect(page).toHaveURL(/\/en\/search\?q=queen$/);
   });
 
-  test('signed out: sign in in the bar, sign up in the sheet', async ({
+  test('signed out: search and sign in only, the theme is in the footer', async ({
     page,
   }) => {
     await mockAuthApi(page);
     await page.goto('/en');
+    await headerReady(page);
 
     const banner = page.getByRole('banner');
     await expect(
-      banner.getByRole('link', { name: header.account.signIn }),
+      banner.getByRole('button', { name: header.search.open }),
     ).toBeVisible();
     await expect(
-      banner.getByRole('link', { name: header.account.signUp }),
-    ).toBeHidden();
-
-    await menuButton(page).click();
-    const sheet = page.getByRole('dialog', { name: header.account.menu });
-    await expect(
-      sheet.getByRole('link', { name: header.account.signUp }),
-    ).toBeVisible();
-    await sheet
-      .getByRole('button', { name: header.preferences.themes.dark })
-      .click();
-    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+      banner.getByRole('group', { name: header.preferences.theme }),
+    ).toHaveCount(0);
+    await expect(accountButton(page)).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
   });
 
   test('signed in: the avatar opens the account sheet', async ({ page }) => {

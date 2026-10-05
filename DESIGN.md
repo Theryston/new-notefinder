@@ -186,7 +186,9 @@ phone, so targets are large and lists breathe.
 - Minimum touch target 40px (`h-10`); list rows are at least 56px tall with
   48px covers.
 - Page gutter: `px-4` on mobile, `px-6` from `md`, content max width
-  `max-w-7xl`.
+  `max-w-7xl`. The header bar, the page content and the footer share one
+  column (`components/container.tsx`) so their edges line up; a page never
+  adds its own horizontal padding.
 - Vertical rhythm between page sections: `gap-12` (mobile `gap-10`).
 - Card padding `p-4`, dialogs `p-6`.
 
@@ -211,9 +213,55 @@ phone, so targets are large and lists breathe.
 
 ### Inputs
 
-Pill shaped, `bg-muted` fill with a transparent border in their resting
-state, `border-ring` + `ring-3 ring-ring/50` on focus. The search field has a
-leading search icon and a `⌘K` hint on desktop.
+The field is a **pill group**: a `rounded-full` `bg-muted` pill (40px, `px-4`,
+transparent border at rest) that holds the native input plus optional
+adornments **inside** it, so the focus ring wraps all of it:
+
+- A **start** slot for a 16px icon in `text-muted-foreground` (search, mail)
+  or a short prefix (`@` on usernames). Only add one when it helps to
+  recognize the field.
+- An **end** slot for a hint or a control: the `⌘K` keycap on search, the
+  show/hide toggle on passwords.
+- Focus is `border-ring` + `ring-3 ring-ring/50` on the pill, only for
+  keyboard-style focus on the input itself. There is no hover border, no
+  shadow and no fill change.
+- Invalid is `border-destructive` + `ring-3 ring-destructive/20`, set by
+  `aria-invalid`. The error below the field is `text-xs` destructive with a
+  14px alert icon; the label keeps its color.
+
+Labels sit above the field in `text-[0.8125rem] font-semibold`.
+
+The **`⌘K` keycap** is a `rounded-xs` (6px) box with a hairline border,
+`bg-background`, Geist Mono 11px, the Lucide `Command` icon plus `K`. It is
+the same on every platform (Ctrl+K works too), so it needs no platform check.
+
+### Segmented control
+
+A pill track (`bg-muted`, 3px padding, 2px gap) with 30px-tall options. The
+pressed one is a `bg-background` thumb with `shadow-sm` and `text-foreground`;
+the rest are `text-muted-foreground`. Icon-only options (theme: sun, monitor,
+moon) are 16px icons with `px-2`, and their track is airier (`gap-3.5`, 14px between options); text options (language: `EN`, `PT`) are
+`text-[0.8125rem] font-semibold` with `px-2.5`. It carries the visible
+state, so never use orange for it.
+
+### Site header
+
+One floating glass pill (`glass`, `rounded-full`, `p-1.5`, `max-w-7xl`)
+with only what a visitor needs, in this order: the logo and wordmark, the
+search field (up to `max-w-105`, with the `⌘K` keycap from `md`), then pushed
+to the right the theme toggle (a segmented control of icons, from `md`) and **one**
+primary `sm` button: "Sign in" for visitors, the avatar for signed-in users.
+No "Sign up" button (it is one link away on the sign-in page), no overflow
+"…" menu and no other links. The wordmark appears from `sm`; below `md` the
+search collapses to an icon button that expands over the bar.
+
+### Site footer
+
+The quiet end of every site page, `max-w-7xl`, `py-10`: the "Terms of use"
+link on the left and the language segmented control (`EN` | `PT`) on the
+right. Below `md` it stacks (terms, then the controls) and also holds the
+theme toggle, which the header drops there to stay minimal. Language and
+terms live here instead of in a menu.
 
 ### Track cards
 

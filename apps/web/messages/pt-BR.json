@@ -21,8 +21,6 @@
     },
     "account": {
       "signIn": "Entrar",
-      "signUp": "Criar conta",
-      "menu": "Menu",
       "accountMenu": "Menu da conta",
       "myProfile": "Meu perfil",
       "editProfile": "Editar perfil",
