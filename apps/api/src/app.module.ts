@@ -6,6 +6,7 @@ import { StorageModule } from './integrations/storage/storage.module.js';
 import { WebRevalidationModule } from './integrations/web-revalidation/web-revalidation.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { TracksModule } from './modules/tracks/tracks.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { QueueModule } from './queue/queue.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -23,6 +24,7 @@ import { RedisModule } from './redis/redis.module.js';
     WebRevalidationModule,
     StorageModule,
     HealthModule,
+    TracksModule,
     UsersModule,
   ],
 })

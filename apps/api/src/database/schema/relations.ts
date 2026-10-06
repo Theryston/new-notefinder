@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { accounts, sessions } from './auth.js';
+import { legacyTrackIds, tracks } from './tracks.js';
 import { users } from './users.js';
 
 // Relations for the relational query API live in one file so the table files
@@ -16,4 +17,15 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
+}));
+
+export const tracksRelations = relations(tracks, ({ many }) => ({
+  legacyIds: many(legacyTrackIds),
+}));
+
+export const legacyTrackIdsRelations = relations(legacyTrackIds, ({ one }) => ({
+  track: one(tracks, {
+    fields: [legacyTrackIds.trackId],
+    references: [tracks.id],
+  }),
 }));
