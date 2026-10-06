@@ -1,13 +1,16 @@
 import bcrypt from 'bcryptjs';
 import type { Database } from '../../src/database/database.js';
 import { accounts } from '../../src/database/schema/auth.js';
+import { tracks } from '../../src/database/schema/tracks.js';
 import { users } from '../../src/database/schema/users.js';
 import { hashPassword } from '../../src/modules/auth/password.js';
 
 export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
+export type Track = typeof tracks.$inferSelect;
 
 type NewUser = typeof users.$inferInsert;
+type NewTrack = typeof tracks.$inferInsert;
 
 // Per-entity counters make default values unique and predictable within a
 // spec ("User 1", "User 2", …). `resetDatabase` restarts them.
@@ -99,4 +102,22 @@ export const createPasswordUser = async (
   const user = await createUser(db, overrides);
   await createCredentialAccount(db, user);
   return user;
+};
+
+/** Deterministic version-4 UUIDs for seeded recording references. */
+export const testMbid = (n: number): string =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
+
+/** A processed Track for the n-th test Recording (`testMbid(n)`). */
+export const createTrack = (
+  db: Database,
+  overrides: Partial<NewTrack> = {},
+): Promise<Track> => {
+  const n = next('track');
+  return insertOne(
+    db
+      .insert(tracks)
+      .values({ recordingMbid: testMbid(n), ...overrides })
+      .returning(),
+  );
 };
