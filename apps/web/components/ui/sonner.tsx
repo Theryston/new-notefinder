@@ -1,14 +1,19 @@
 'use client';
 
+import { cn } from 'cn';
 import {
-  CircleCheckIcon,
+  CheckIcon,
   InfoIcon,
   Loader2Icon,
-  OctagonXIcon,
   TriangleAlertIcon,
+  XIcon,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import type { CSSProperties } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
+
+const statusBadgeClassName =
+  'flex size-5 shrink-0 items-center justify-center rounded-full text-white [&_svg]:size-3';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
@@ -17,24 +22,54 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps['theme']}
       className="toaster group"
+      position="bottom-center"
+      gap={8}
       icons={{
-        success: <CircleCheckIcon className="size-4 text-success" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
+        success: (
+          <span className={cn(statusBadgeClassName, 'bg-success')}>
+            <CheckIcon aria-hidden="true" />
+          </span>
+        ),
+        info: (
+          <span
+            className={cn(
+              statusBadgeClassName,
+              'bg-foreground text-background',
+            )}
+          >
+            <InfoIcon aria-hidden="true" />
+          </span>
+        ),
+        warning: (
+          <span className={cn(statusBadgeClassName, 'bg-warning')}>
+            <TriangleAlertIcon aria-hidden="true" />
+          </span>
+        ),
+        error: (
+          <span className={cn(statusBadgeClassName, 'bg-destructive')}>
+            <XIcon aria-hidden="true" />
+          </span>
+        ),
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
       style={
         {
           '--normal-bg': 'var(--glass)',
-          '--normal-text': 'var(--popover-foreground)',
+          '--normal-text': 'var(--foreground)',
           '--normal-border': 'var(--glass-border)',
           '--border-radius': 'var(--radius-xl)',
-        } as React.CSSProperties
+        } as CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: 'font-medium backdrop-blur-xl backdrop-saturate-150',
+          toast: 'glass rounded-xl px-4 py-3 font-medium text-sm',
+          title: 'font-medium text-sm',
+          description: 'text-muted-foreground text-sm',
+          actionButton:
+            'rounded-full px-3 py-1 font-semibold text-sm hover:bg-foreground/10',
+          cancelButton:
+            'rounded-full px-3 py-1 font-semibold text-sm hover:bg-foreground/10',
+          icon: 'm-0',
         },
       }}
       {...props}
