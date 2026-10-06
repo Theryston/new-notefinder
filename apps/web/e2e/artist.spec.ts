@@ -91,11 +91,12 @@ for (const { locale, messages } of cases) {
         ],
       });
 
-      await page.goto(`/${locale}/artists/${id}`);
-
+      // Assert while loading: `goto` only resolves once the header lands.
+      const navigation = page.goto(`/${locale}/artists/${id}`);
       await expect(
         page.getByRole('status', { name: messages.artists.header.loading }),
       ).toBeVisible();
+      await navigation;
       await expect(
         page.getByRole('heading', { level: 1, name: 'Queen' }),
       ).toBeVisible();
@@ -104,6 +105,7 @@ for (const { locale, messages } of cases) {
     test('legacy ID redirects with 308 keeping the query', async ({
       page,
       request,
+      baseURL,
     }) => {
       await mockAuthApi(page);
       const newId = `artist-308-new-${locale}`;
@@ -126,9 +128,11 @@ for (const { locale, messages } of cases) {
         maxRedirects: 0,
       });
       expect(raw.status()).toBe(308);
-      const location = new URL(raw.headers().location ?? '');
-      expect(location.pathname).toBe(`/${locale}/artists/${newId}`);
-      expect(location.searchParams.get('x')).toBe('1');
+      const location = raw.headers().location;
+      expect(location).toBeTruthy();
+      const url = new URL(location ?? '', baseURL);
+      expect(url.pathname).toBe(`/${locale}/artists/${newId}`);
+      expect(url.searchParams.get('x')).toBe('1');
 
       await page.goto(`/${locale}/artists/${legacyId}?x=1`);
 
