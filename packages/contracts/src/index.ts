@@ -1,3 +1,4 @@
+export * from './artists.js';
 export * from './auth.js';
 export * from './auth-rules.js';
 export * from './avatar-rules.js';

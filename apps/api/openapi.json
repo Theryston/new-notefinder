@@ -32,6 +32,34 @@
         ]
       }
     },
+    "/v1/artists/{id}": {
+      "get": {
+        "operationId": "ArtistsController_getArtist_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist header detail."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "artists"
+        ]
+      }
+    },
     "/v1/search": {
       "get": {
         "operationId": "SearchController_search_v1",

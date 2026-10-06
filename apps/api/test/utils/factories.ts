@@ -1,5 +1,10 @@
 import bcrypt from 'bcryptjs';
 import type { Database } from '../../src/database/database.js';
+import {
+  artists,
+  legacyArtistIds,
+  trackArtists,
+} from '../../src/database/schema/artists.js';
 import { accounts } from '../../src/database/schema/auth.js';
 import { tracks } from '../../src/database/schema/tracks.js';
 import { users } from '../../src/database/schema/users.js';
@@ -8,9 +13,11 @@ import { hashPassword } from '../../src/modules/auth/password.js';
 export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
+export type Artist = typeof artists.$inferSelect;
 
 type NewUser = typeof users.$inferInsert;
 type NewTrack = typeof tracks.$inferInsert;
+type NewArtist = typeof artists.$inferInsert;
 
 // Per-entity counters make default values unique and predictable within a
 // spec ("User 1", "User 2", …). `resetDatabase` restarts them.
@@ -120,4 +127,45 @@ export const createTrack = (
       .values({ recordingMbid: testMbid(n), ...overrides })
       .returning(),
   );
+};
+
+/** A catalog Artist with display fields the header needs. */
+export const createArtist = (
+  db: Database,
+  overrides: Partial<NewArtist> = {},
+): Promise<Artist> => {
+  const n = next('artist');
+  return insertOne(
+    db
+      .insert(artists)
+      .values({
+        mbid: testMbid(1000 + n),
+        name: `Artist ${n}`,
+        genres: ['rock', 'pop'],
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+/** A legacy ID pointing at an Artist, for the redirect path. */
+export const createLegacyArtistId = (
+  db: Database,
+  artistId: string,
+  legacyId: string,
+): Promise<void> => {
+  return insertOne(
+    db.insert(legacyArtistIds).values({ legacyId, artistId }).returning(),
+  ).then(() => undefined);
+};
+
+/** Links a processed Track to an Artist, counting toward `trackCount`. */
+export const linkTrackArtist = (
+  db: Database,
+  trackId: string,
+  artistId: string,
+): Promise<void> => {
+  return insertOne(
+    db.insert(trackArtists).values({ trackId, artistId }).returning(),
+  ).then(() => undefined);
 };

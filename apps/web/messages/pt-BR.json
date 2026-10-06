@@ -382,6 +382,20 @@
     "RATE_LIMITED": "Muitas requisições. Aguarde um momento e tente novamente.",
     "SERVICE_UNAVAILABLE": "O serviço está temporariamente indisponível. Tente novamente em instantes.",
     "GATEWAY_TIMEOUT": "O serviço demorou demais para responder. Tente novamente.",
-    "INTERNAL_ERROR": "Algo deu errado. Tente novamente."
+    "INTERNAL_ERROR": "Algo deu errado. Tente novamente.",
+    "RESOURCE_MOVED": "Este link mudou para um novo endereço. Redirecionando…"
+  },
+  "artists": {
+    "metaTitle": "{name}",
+    "metaDescription": "{name} com {count, plural, one {# faixa} other {# faixas}} no NoteFinder.",
+    "header": {
+      "trackCount": "{count, plural, one {# faixa} other {# faixas}}",
+      "genresLabel": "Gêneros",
+      "loading": "Carregando artista…"
+    },
+    "notFound": {
+      "title": "Artista não encontrado",
+      "description": "Não encontramos este artista. Ele pode ter sido removido ou o link está errado."
+    }
   }
 }
