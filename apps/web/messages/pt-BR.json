@@ -372,6 +372,8 @@
     "NOT_FOUND": "Não encontramos o que você está procurando.",
     "CONFLICT": "Isso entra em conflito com algo que já existe.",
     "RATE_LIMITED": "Muitas requisições. Aguarde um momento e tente novamente.",
+    "SERVICE_UNAVAILABLE": "O serviço está temporariamente indisponível. Tente novamente em instantes.",
+    "GATEWAY_TIMEOUT": "O serviço demorou demais para responder. Tente novamente.",
     "INTERNAL_ERROR": "Algo deu errado. Tente novamente."
   }
 }

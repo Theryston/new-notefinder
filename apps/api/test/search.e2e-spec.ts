@@ -90,7 +90,13 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
   // Supertest connects from loopback, a trusted proxy by default, so
   // X-Forwarded-For sets the client IP and isolates each test's rate-limit
   // bucket (the search route allows 30/min per IP).
-  const searchAs = (clientIp: string, query: Record<string, string>) =>
+  type SearchParams = {
+    query: string;
+    scope?: string;
+    limit?: string;
+    offset?: string;
+  };
+  const searchAs = (clientIp: string, query: SearchParams) =>
     testApp.http
       .get('/v1/search')
       .set('X-Forwarded-For', clientIp)
@@ -143,10 +149,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
     { query: 'queen', limit: '101' },
     { query: 'queen', offset: '-1' },
   ])('rejects the invalid query %j with VALIDATION_FAILED', async (query) => {
-    const response = await searchAs(
-      '203.0.113.14',
-      query as Record<string, string>,
-    ).expect(400);
+    const response = await searchAs('203.0.113.14', query).expect(400);
 
     expect(response.body).toMatchObject({
       statusCode: 400,
