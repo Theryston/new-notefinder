@@ -265,10 +265,20 @@ terms live here instead of in a menu.
 
 ### Track cards
 
-- **Default: cover grid** (Spotify): square cover, title (`text-sm
-  font-semibold`, 1 line, truncated), artist (`text-xs
-  text-muted-foreground`). On hover the card gets `bg-accent` and a round
-  orange play button slides up over the cover's bottom-right corner.
+- **Default: cover grid** (Spotify): seven per row on desktop
+  (`grid-cols-2 sm:3 md:4 lg:6 xl:7`), square cover (`aspect-square w-full
+  h-auto`), title (`text-sm font-semibold`, 1 line, truncated), artist
+  (`text-xs text-muted-foreground`). On hover the card gets `bg-accent`
+  and a round orange play button (`size-8`) slides up over the cover's
+  bottom-right corner. The hover and the play badge exist with or without
+  a link; without a `trackId` the card is a static `group` and only the
+  play `button` (`aria-label` "Play/ Tocar {title}") focuses.
+- **Missing cover: geometric placeholder**: never a music icon. A
+  deterministic curated palette (`--c1` dark, `--c2` vivid, `--c3` light,
+  by Recording id, 6 sets) plus one shape per set: dark disc, light band,
+  hollow square, ring, diagonal stripes, offset disc. Real covers still
+  render as photos; the hex palettes stand in for artwork only, like the
+  photos they replace.
 - **Featured lists: cover with overlay**: the cover fills the card
   (`aspect-[3/4]`), title and artist sit on a bottom gradient
   (`from-black/80`), vocal range in a small glass chip at the top. Only for

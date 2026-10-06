@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { SearchCardSkeleton } from './search-card-skeleton';
 
 const PLACEHOLDERS = Array.from(
-  { length: 8 },
+  { length: 14 },
   (_, index) => `skeleton-${index}`,
 );
 
@@ -20,7 +20,7 @@ export function SearchSkeleton() {
     <div
       role="status"
       aria-label={t('loading')}
-      className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7"
     >
       {PLACEHOLDERS.map((key) => (
         <SearchCardSkeleton key={key} />

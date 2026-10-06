@@ -1,55 +1,67 @@
 'use client';
 
 import type { SearchResultItem } from '@notefinder/contracts';
-import { MusicIcon, PlayIcon } from 'lucide-react';
+import { PlayIcon } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 
-import { coverFallbackStyle } from '../track-cover';
+import { TrackCoverPlaceholder } from './track-cover-placeholder';
+
+const PLAY_BADGE_CLASS =
+  'absolute right-2 bottom-2 flex size-10 translate-y-1 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-xs transition-[opacity,transform] duration-500 ease-spring group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100';
+
+function CoverPlay({ label }: { label: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      tabIndex={0}
+      className={PLAY_BADGE_CLASS}
+    >
+      <PlayIcon className="size-4 fill-current" />
+    </button>
+  );
+}
 
 /**
  * One search hit as a cover-grid card (Spotify): the primary release art
- * (or a deterministic gradient when there is none), the title plus the
- * artist credit, and a hover-only play affordance with no playback behind
- * it. When notefinder already processed the Recording (`trackId`), the
- * whole card links to the Track page; otherwise it is a static card with
- * no hover or play action.
+ * (or a deterministic geometric placeholder when there is none), the title
+ * plus the artist credit, and a hover-only play affordance. The hover and
+ * the play badge exist whether or not the Recording already has a
+ * `trackId`: with one the whole card links to the Track page, without one
+ * the card is static and only the play button focuses.
  */
 export function TrackCard({ result }: { result: SearchResultItem }) {
+  const t = useTranslations('search');
   const [artFailed, setArtFailed] = useState(false);
   const coverUrl = result.primaryRelease?.coverArtUrl;
   const showArt = coverUrl && !artFailed;
+  const playLabel = t('card.play', { title: result.title });
 
   const cover = (
-    <span
-      className="relative block aspect-square w-full overflow-hidden rounded-xl bg-muted"
-      style={showArt ? undefined : coverFallbackStyle(result.mbid)}
-    >
+    <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
       {showArt ? (
         <Image
           src={coverUrl}
           alt=""
           fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw"
           className="object-cover"
           onError={() => setArtFailed(true)}
         />
       ) : (
-        <MusicIcon
-          aria-hidden="true"
-          className="absolute inset-0 m-auto size-10 text-white/80"
-        />
+        <TrackCoverPlaceholder seed={result.mbid} />
       )}
       {result.trackId ? (
-        <span
-          aria-hidden="true"
-          className="absolute right-2 bottom-2 flex size-10 translate-y-1 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-md transition-[opacity,transform] duration-250 ease-spring group-hover:translate-y-0 group-hover:opacity-100"
-        >
+        <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
           <PlayIcon className="size-4 fill-current" />
         </span>
-      ) : null}
+      ) : (
+        <CoverPlay label={playLabel} />
+      )}
     </span>
   );
 
@@ -64,7 +76,7 @@ export function TrackCard({ result }: { result: SearchResultItem }) {
 
   if (!result.trackId) {
     return (
-      <div className="flex flex-col gap-2 rounded-2xl p-3">
+      <div className="group flex flex-col gap-1.5 rounded-2xl p-2 outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
         {cover}
         {text}
       </div>
@@ -75,7 +87,7 @@ export function TrackCard({ result }: { result: SearchResultItem }) {
     <Link
       href={`/tracks/${result.trackId}`}
       className={cn(
-        'group flex flex-col gap-2 rounded-2xl p-3 outline-none',
+        'group flex flex-col gap-1.5 rounded-2xl p-2 outline-none',
         'transition-colors duration-150 ease-out hover:bg-accent',
         'focus-visible:ring-3 focus-visible:ring-ring/50',
       )}

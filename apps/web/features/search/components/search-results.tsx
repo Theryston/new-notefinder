@@ -14,11 +14,19 @@ import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
 import { SearchSkeleton } from './search-skeleton';
 
-/** Four more card blocks appended while the next page loads. */
+/** Seven more card blocks appended while the next page loads. */
 function MoreSkeletonCards() {
   return (
     <>
-      {['more-0', 'more-1', 'more-2', 'more-3'].map((key) => (
+      {[
+        'more-0',
+        'more-1',
+        'more-2',
+        'more-3',
+        'more-4',
+        'more-5',
+        'more-6',
+      ].map((key) => (
         <SearchCardSkeleton key={key} />
       ))}
     </>
@@ -82,7 +90,7 @@ export function SearchResults({
         aria-busy={stale}
         inert={stale}
         className={cn(
-          'grid grid-cols-2 gap-1 transition-opacity duration-150 sm:grid-cols-3 lg:grid-cols-4',
+          'grid grid-cols-2 gap-2 transition-opacity duration-150 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6',
           stale && 'pointer-events-none opacity-50',
         )}
       >

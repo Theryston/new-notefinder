@@ -36,7 +36,10 @@
       "description": "Something went wrong. Check your connection and try again.",
       "retry": "Try again"
     },
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "card": {
+      "play": "Play {title}"
+    }
   },
   "header": {
     "home": "NoteFinder home",

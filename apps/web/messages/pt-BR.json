@@ -36,7 +36,10 @@
       "description": "Algo deu errado. Confira sua conexão e tente novamente.",
       "retry": "Tentar novamente"
     },
-    "loadMore": "Carregar mais"
+    "loadMore": "Carregar mais",
+    "card": {
+      "play": "Tocar {title}"
+    }
   },
   "header": {
     "home": "Início do NoteFinder",
