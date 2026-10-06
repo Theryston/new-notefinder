@@ -19,16 +19,16 @@ import { Spinner } from '@/components/ui/spinner';
 import { fieldErrorKey } from '../field-error';
 import { lazyResolver } from '../lazy-resolver';
 import type { UpdateProfileResult } from '../update-profile';
+import { AccountSection } from './account-section';
 import {
   AvatarPicker,
   type AvatarPickerState,
   useAvatarPicker,
 } from './avatar-picker';
+import { EditSection } from './edit-section';
 import { FormAlert } from './form-alert';
 import { FormField, fieldErrorProps } from './form-field';
-import { ProfileSummary, type ProfileUser } from './profile-summary';
-import { ReadOnlyField } from './read-only-field';
-import { TextLink } from './text-link';
+import { ProfileAvatar, type ProfileUser } from './profile-avatar';
 
 const updateMeResolver = lazyResolver<UpdateMeBody>(() =>
   import('@notefinder/contracts').then((m) => m.updateMeBodySchema),
@@ -85,33 +85,8 @@ function useProfileForm(
   return { form, onSubmit, errorCode };
 }
 
-function PasswordRow() {
-  const t = useTranslations('profile.edit');
-  const tFields = useTranslations('auth.fields');
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-medium text-sm leading-snug">
-          {tFields('password.label')}
-        </p>
-        <TextLink href="/forgot-password" className="text-sm">
-          {t('changePassword')}
-        </TextLink>
-      </div>
-      <p className="font-medium text-muted-foreground text-xs">
-        {t('passwordHint')}
-      </p>
-    </div>
-  );
-}
-
-/**
- * The Name and the Avatar are editable, saved together with `PATCH /v1/me`
- * (`onSaved` gets the updated user); Username, email and password are shown
- * for reference (the password leads to the recovery flow).
- */
-export function EditProfileForm({
+/** The editable part: the Avatar and the Name, with the Save that sends them. */
+function ProfileSection({
   user,
   onSaved,
 }: {
@@ -127,47 +102,61 @@ export function EditProfileForm({
   const pending = form.formState.isSubmitting;
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-6">
-      <ProfileSummary user={user} previewUrl={picker.previewUrl}>
-        <AvatarPicker picker={picker} />
-      </ProfileSummary>
-      {errorCode && <FormAlert>{tErrors(errorCode)}</FormAlert>}
-      <FormField
-        id="name"
-        label={tFields('name.label')}
-        error={nameError && tFields(fieldErrorKey('name', nameError.type))}
-      >
-        <Input
+    <EditSection title={t('sections.profile')}>
+      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-6">
+        <ProfileAvatar user={user} previewUrl={picker.previewUrl}>
+          <AvatarPicker picker={picker} />
+        </ProfileAvatar>
+        {errorCode && <FormAlert>{tErrors(errorCode)}</FormAlert>}
+        <FormField
           id="name"
-          autoComplete="name"
-          placeholder={tFields('name.placeholder')}
-          {...fieldErrorProps('name', Boolean(nameError))}
-          {...form.register('name')}
-        />
-      </FormField>
-      <ReadOnlyField
-        id="username"
-        label={tFields('username.label')}
-        value={user.username}
-        hint={t('usernameHint')}
-      />
-      <ReadOnlyField
-        id="email"
-        label={tFields('email.label')}
-        value={user.email}
-      />
-      <PasswordRow />
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full sm:w-fit"
-        disabled={pending}
-        aria-busy={pending}
-      >
-        {pending && <Spinner aria-label={t('saving')} />}
-        {t('save')}
-      </Button>
-      <Toaster />
-    </form>
+          label={tFields('name.label')}
+          error={nameError && tFields(fieldErrorKey('name', nameError.type))}
+        >
+          <Input
+            id="name"
+            autoComplete="name"
+            placeholder={tFields('name.placeholder')}
+            {...fieldErrorProps('name', Boolean(nameError))}
+            {...form.register('name')}
+          />
+        </FormField>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full sm:w-fit"
+          disabled={pending}
+          aria-busy={pending}
+        >
+          {pending && <Spinner aria-label={t('saving')} />}
+          {t('save')}
+        </Button>
+        {/* Out of flow: its empty region would otherwise add a form gap. */}
+        <div className="absolute">
+          <Toaster />
+        </div>
+      </form>
+    </EditSection>
+  );
+}
+
+/**
+ * The Name and the Avatar are editable, saved together with `PATCH /v1/me`
+ * (`onSaved` gets the updated user); Username, email and password are shown
+ * for reference below (the password leads to the recovery flow).
+ */
+export function EditProfileForm({
+  user,
+  onSaved,
+}: {
+  user: ProfileUser;
+  onSaved: (user: CurrentUser) => void;
+}) {
+  return (
+    // `items-start`: the card keeps its own height beside the taller form.
+    <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
+      <ProfileSection user={user} onSaved={onSaved} />
+      <AccountSection user={user} />
+    </div>
   );
 }

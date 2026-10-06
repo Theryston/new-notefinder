@@ -162,6 +162,10 @@
       "title": "Edit profile",
       "description": "Change how you appear to other singers on NoteFinder.",
       "loading": "Loading your profile",
+      "sections": {
+        "profile": "Public profile",
+        "account": "Sign-in details"
+      },
       "usernameHint": "Your username is your profile link, so it can't be changed.",
       "passwordHint": "We'll email you a code to choose a new one.",
       "changePassword": "Change password",

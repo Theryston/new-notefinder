@@ -76,7 +76,7 @@ export function AvatarPicker({ picker }: { picker: AvatarPickerState }) {
   };
 
   return (
-    <div className="flex flex-col items-start gap-1.5">
+    <div className="flex flex-col items-center gap-1.5 text-center sm:items-start sm:text-left">
       <input
         ref={inputRef}
         type="file"

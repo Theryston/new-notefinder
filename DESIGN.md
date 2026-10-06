@@ -235,6 +235,24 @@ The **`⌘K` keycap** is a `rounded-xs` (6px) box with a hairline border,
 `bg-background`, Geist Mono 11px, the Lucide `Command` icon plus `K`. It is
 the same on every platform (Ctrl+K works too), so it needs no platform check.
 
+### Detail rows
+
+Values the user can see but not edit on that screen (username, email, a
+password that leads to its own flow) are **rows of text, not inputs**: a
+pill that looks editable and isn't is noise. Group them in one card
+(`rounded-2xl bg-card shadow-sm`, rows divided by `divide-border`), each row at
+least 56px tall: the label (`text-[0.8125rem] font-semibold`) on the left,
+the value or one action (an orange link) on the right and, only when it
+explains something, a `text-xs` muted caption under both. Below `sm`, a row
+whose value is long text (an email) stacks the value under the label; a row
+whose right side is a short action stays on one line. Editable fields stay
+outside the card, in their own titled section (`text-lg font-semibold`) with
+the button that saves them at its end.
+
+Account pages use the whole `Container` column, never a narrow centered one:
+one column up to `md`, and from `lg` two equal columns with the editable
+section on the left and the detail card on the right, top-aligned.
+
 ### Segmented control
 
 A pill track (`bg-muted`, 3px padding, 2px gap) with 30px-tall options. The

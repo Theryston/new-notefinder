@@ -67,12 +67,11 @@ test.describe('edit profile: the page', () => {
       page.getByRole('heading', { level: 1, name: edit.title }),
     ).toBeVisible();
     await expect(nameInput(page)).toHaveValue('Ada Lovelace');
-    const username = page.getByLabel(auth.fields.username.label);
-    await expect(username).toHaveValue('ada');
-    await expect(username).toHaveAttribute('readonly', '');
-    const email = page.getByLabel(auth.fields.email.label);
-    await expect(email).toHaveValue('ada@example.com');
-    await expect(email).toHaveAttribute('readonly', '');
+    // Username and email are text rows, not fields: nothing there to edit.
+    const account = main.getByRole('region', { name: edit.sections.account });
+    await expect(account.getByText('@ada')).toBeVisible();
+    await expect(account.getByText('ada@example.com')).toBeVisible();
+    await expect(account.getByRole('textbox')).toHaveCount(0);
     await expect(
       main.getByRole('link', { name: edit.changePassword }),
     ).toHaveAttribute('href', '/en/forgot-password');
@@ -95,6 +94,43 @@ test.describe('edit profile: the page', () => {
 
     await page.getByRole('button', { name: pt.profile.edit.save }).click();
     await expect(page.getByText(pt.profile.edit.saved)).toBeVisible();
+  });
+});
+
+const sectionBox = async (page: Page, name: string) => {
+  const box = await page.getByRole('region', { name }).boundingBox();
+  if (!box) throw new Error(`Section "${name}" is not on screen`);
+  return box;
+};
+const scrollsSideways = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+
+test.describe('edit profile: layout', () => {
+  test('puts the two sections side by side on a desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openAsAda(page);
+
+    const profile = await sectionBox(page, edit.sections.profile);
+    const account = await sectionBox(page, edit.sections.account);
+
+    // Wider than the old narrow column, with the card beside the form.
+    expect(profile.width).toBeGreaterThan(576);
+    expect(account.x).toBeGreaterThanOrEqual(profile.x + profile.width);
+    expect(Math.abs(account.y - profile.y)).toBeLessThan(2);
+  });
+
+  test('stacks them on a phone without scrolling sideways', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await openAsAda(page);
+
+    const profile = await sectionBox(page, edit.sections.profile);
+    const account = await sectionBox(page, edit.sections.account);
+
+    expect(account.y).toBeGreaterThanOrEqual(profile.y + profile.height);
+    expect(Math.abs(account.x - profile.x)).toBeLessThan(2);
+    expect(await scrollsSideways(page)).toBe(false);
   });
 });
 

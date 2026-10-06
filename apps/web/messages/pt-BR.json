@@ -162,6 +162,10 @@
       "title": "Editar perfil",
       "description": "Mude como você aparece para outros cantores no NoteFinder.",
       "loading": "Carregando seu perfil",
+      "sections": {
+        "profile": "Perfil público",
+        "account": "Dados de acesso"
+      },
       "usernameHint": "Seu nome de usuário é o link do seu perfil, então não pode ser alterado.",
       "passwordHint": "Enviaremos um código por email para você escolher uma nova.",
       "changePassword": "Alterar senha",
