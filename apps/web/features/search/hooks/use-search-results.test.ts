@@ -108,6 +108,16 @@ describe('searchInfiniteQueryOptions', () => {
     ).toMatchObject({ enabled: true });
   });
 
+  it('keys every blank the same while disabled', async () => {
+    const { searchInfiniteQueryOptions } = await import('./use-search-results');
+
+    expect(
+      searchInfiniteQueryOptions({ query: ' ', scope: 'metadata' }).queryKey,
+    ).toEqual(
+      searchInfiniteQueryOptions({ query: '   ', scope: 'metadata' }).queryKey,
+    );
+  });
+
   it('pages while full pages arrive and stops on a short one', async () => {
     const { searchInfiniteQueryOptions } = await import('./use-search-results');
     const options = searchInfiniteQueryOptions({

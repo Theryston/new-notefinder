@@ -11,7 +11,7 @@ import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/browser';
 
 import { searchKeys } from '../query-keys';
-import { isSearchableQuery } from '../search-params';
+import { isSearchableQuery, normalizeSearchQuery } from '../search-params';
 
 export type SearchPageParams = {
   query: string;
@@ -58,9 +58,15 @@ export function searchInfiniteQueryOptions({
 }: SearchInfiniteInput) {
   const enabled = isSearchableQuery(query);
   return infiniteQueryOptions({
+    // A disabled query never fetches, but it still needs a stable key: the
+    // normalized blank, so every blank spells the same key.
     queryKey: enabled
       ? searchKeys.infiniteResults({ query, scope, limit })
-      : ([...searchKeys.all, 'infinite', { query, scope, limit }] as const),
+      : ([
+          ...searchKeys.all,
+          'infinite',
+          { query: normalizeSearchQuery(query), scope, limit },
+        ] as const),
     queryFn: ({
       pageParam,
       signal,

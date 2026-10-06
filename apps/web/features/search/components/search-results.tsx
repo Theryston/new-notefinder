@@ -4,6 +4,7 @@ import type { SearchScope } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { TrackCard } from '@/features/tracks/components/track-card';
 
 import { useSearchResults } from '../hooks/use-search-results';
@@ -78,14 +79,15 @@ export function SearchResults({
       </div>
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       {hasNextPage ? (
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => void fetchNextPage()}
           disabled={isFetchingNextPage}
-          className="mx-auto h-10 rounded-full bg-secondary px-6 font-semibold text-secondary-foreground text-sm outline-none transition-[background-color,transform] duration-200 ease-spring hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50"
+          className="mx-auto"
         >
           {t('loadMore')}
-        </button>
+        </Button>
       ) : null}
     </div>
   );
