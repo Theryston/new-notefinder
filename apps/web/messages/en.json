@@ -372,6 +372,8 @@
     "NOT_FOUND": "We couldn't find what you're looking for.",
     "CONFLICT": "This conflicts with something that already exists.",
     "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "SERVICE_UNAVAILABLE": "The service is temporarily unavailable. Try again in a moment.",
+    "GATEWAY_TIMEOUT": "The service took too long to answer. Try again.",
     "INTERNAL_ERROR": "Something went wrong. Please try again."
   }
 }

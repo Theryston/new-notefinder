@@ -139,12 +139,12 @@ describe('MusicCatalogClient', () => {
         offset: 0,
       }),
     ).rejects.toMatchObject({
-      code: 'INTERNAL_ERROR',
+      code: 'GATEWAY_TIMEOUT',
       message: 'Music catalog request timed out',
     });
   });
 
-  it('turns a catalog error into an AppException', async () => {
+  it('maps a not-ready catalog to SERVICE_UNAVAILABLE for retry', async () => {
     fake = await startFakeMusicCatalog(() => ({
       error: { code: 'CATALOG_NOT_READY', message: 'Not ready yet' },
     }));
@@ -159,8 +159,28 @@ describe('MusicCatalogClient', () => {
         offset: 0,
       }),
     ).rejects.toMatchObject({
-      code: 'INTERNAL_ERROR',
+      code: 'SERVICE_UNAVAILABLE',
       message: 'Not ready yet',
+    });
+  });
+
+  it('keeps other catalog errors as INTERNAL_ERROR', async () => {
+    fake = await startFakeMusicCatalog(() => ({
+      error: { code: 'INTERNAL', message: 'Catalog broke' },
+    }));
+    const created = await createClient(fake.url);
+    moduleRef = created.moduleRef;
+
+    await expect(
+      created.client.search({
+        query: 'song',
+        scope: 'metadata',
+        limit: 20,
+        offset: 0,
+      }),
+    ).rejects.toMatchObject({
+      code: 'INTERNAL_ERROR',
+      message: 'Catalog broke',
     });
   });
 
@@ -254,7 +274,7 @@ describe('MusicCatalogClient', () => {
         limit: 20,
         offset: 0,
       }),
-    ).rejects.toMatchObject({ code: 'INTERNAL_ERROR' });
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
   });
 
   it('boots without a catalog when the initial dial fails', async () => {
@@ -268,7 +288,7 @@ describe('MusicCatalogClient', () => {
         limit: 20,
         offset: 0,
       }),
-    ).rejects.toMatchObject({ code: 'INTERNAL_ERROR' });
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
   });
 
   it('refuses to boot in production without a catalog', () => {

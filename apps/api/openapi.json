@@ -88,6 +88,15 @@
           },
           "400": {
             "description": "The query, scope or paging is bad."
+          },
+          "429": {
+            "description": "Per-IP search rate exceeded."
+          },
+          "503": {
+            "description": "The Music catalog is down."
+          },
+          "504": {
+            "description": "The Music catalog took too long."
           }
         },
         "tags": [

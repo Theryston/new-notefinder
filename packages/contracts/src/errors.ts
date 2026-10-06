@@ -15,6 +15,10 @@ export const apiErrorCodeSchema = z.enum([
   'NOT_FOUND',
   'CONFLICT',
   'RATE_LIMITED',
+  // Retryable downstream outages (the Music catalog for search): the client
+  // retries with backoff instead of showing a dead end.
+  'SERVICE_UNAVAILABLE',
+  'GATEWAY_TIMEOUT',
   'INTERNAL_ERROR',
 ]);
 
