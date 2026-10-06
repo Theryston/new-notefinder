@@ -9,6 +9,35 @@
     "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback.",
     "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
   },
+  "search": {
+    "metaTitle": "Search",
+    "metaDescription": "Search every recording by title, artist or lyrics and open its notes when NoteFinder already processed it.",
+    "title": "Search",
+    "field": {
+      "label": "Search songs and artists",
+      "placeholder": "Search songs, artists…"
+    },
+    "scope": {
+      "label": "Search in",
+      "metadata": "Metadata",
+      "lyrics": "Lyrics"
+    },
+    "prompt": {
+      "title": "Find your next song",
+      "description": "Type at least 2 characters to search by title, artist or release."
+    },
+    "loading": "Loading results…",
+    "empty": {
+      "title": "No matches",
+      "description": "Nothing matched “{query}”. Try another title, artist or lyric."
+    },
+    "error": {
+      "title": "Search is unavailable",
+      "description": "Something went wrong. Check your connection and try again.",
+      "retry": "Try again"
+    },
+    "loadMore": "Load more"
+  },
   "header": {
     "home": "NoteFinder home",
     "wordmark": "NoteFinder",

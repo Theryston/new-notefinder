@@ -9,6 +9,35 @@
     "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real.",
     "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
   },
+  "search": {
+    "metaTitle": "Buscar",
+    "metaDescription": "Busque qualquer gravação por título, artista ou letra e abra suas notas quando o NoteFinder já a processou.",
+    "title": "Buscar",
+    "field": {
+      "label": "Buscar músicas e artistas",
+      "placeholder": "Buscar músicas, artistas…"
+    },
+    "scope": {
+      "label": "Buscar em",
+      "metadata": "Metadados",
+      "lyrics": "Letras"
+    },
+    "prompt": {
+      "title": "Encontre sua próxima música",
+      "description": "Digite pelo menos 2 caracteres para buscar por título, artista ou lançamento."
+    },
+    "loading": "Carregando resultados…",
+    "empty": {
+      "title": "Nenhum resultado",
+      "description": "Nada corresponde a “{query}”. Tente outro título, artista ou trecho da letra."
+    },
+    "error": {
+      "title": "Busca indisponível",
+      "description": "Algo deu errado. Confira sua conexão e tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "loadMore": "Carregar mais"
+  },
   "header": {
     "home": "Início do NoteFinder",
     "wordmark": "NoteFinder",

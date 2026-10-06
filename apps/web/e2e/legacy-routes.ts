@@ -29,8 +29,8 @@ const sitemapTodo =
 
 export const legacyRoutes: LegacyRoute[] = [
   { path: '/', implemented: true },
-  { path: '/search?q=queen', implemented: false },
-  { path: '/search?q=bohemian%20rhapsody&page=2', implemented: false },
+  { path: '/search?q=queen', implemented: true },
+  { path: '/search?q=bohemian%20rhapsody&page=2', implemented: true },
   { path: '/tracks/clx123abc', implemented: false },
   { path: '/tracks/clx123abc?x=1', implemented: false },
   { path: '/artists/clx456def', implemented: false },
