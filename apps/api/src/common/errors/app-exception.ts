@@ -10,6 +10,8 @@ export const API_ERROR_HTTP_STATUS = {
   NOT_FOUND: HttpStatus.NOT_FOUND,
   CONFLICT: HttpStatus.CONFLICT,
   RATE_LIMITED: HttpStatus.TOO_MANY_REQUESTS,
+  SERVICE_UNAVAILABLE: HttpStatus.SERVICE_UNAVAILABLE,
+  GATEWAY_TIMEOUT: HttpStatus.GATEWAY_TIMEOUT,
   INTERNAL_ERROR: HttpStatus.INTERNAL_SERVER_ERROR,
 } as const satisfies Record<ApiErrorCode, HttpStatus>;
 
@@ -29,6 +31,10 @@ export const errorCodeFromHttpStatus = (status: number): ApiErrorCode => {
       return 'CONFLICT';
     case HttpStatus.TOO_MANY_REQUESTS:
       return 'RATE_LIMITED';
+    case HttpStatus.SERVICE_UNAVAILABLE:
+      return 'SERVICE_UNAVAILABLE';
+    case HttpStatus.GATEWAY_TIMEOUT:
+      return 'GATEWAY_TIMEOUT';
     default:
       return status >= 500 ? 'INTERNAL_ERROR' : 'BAD_REQUEST';
   }

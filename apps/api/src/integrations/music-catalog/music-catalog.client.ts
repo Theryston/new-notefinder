@@ -81,7 +81,9 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Searches the catalog, keeping the catalog's relevance order. Every hit
-   * is returned untouched; the caller adds the Track link.
+   * is returned untouched; the caller adds the Track link. A dead catalog
+   * surfaces as `SERVICE_UNAVAILABLE` (retryable) and a slow one as
+   * `GATEWAY_TIMEOUT`, so the web can retry instead of showing a dead end.
    */
   async search(
     params: MusicCatalogSearchParams,
@@ -101,14 +103,14 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
         }`,
       );
       throw new AppException(
-        'INTERNAL_ERROR',
+        'SERVICE_UNAVAILABLE',
         'Music catalog is not connected',
       );
     }
     const socket = this.socket;
     if (socket === undefined || socket.readyState !== WebSocket.OPEN) {
       throw new AppException(
-        'INTERNAL_ERROR',
+        'SERVICE_UNAVAILABLE',
         'Music catalog is not connected',
       );
     }
@@ -120,7 +122,10 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(
-          new AppException('INTERNAL_ERROR', 'Music catalog request timed out'),
+          new AppException(
+            'GATEWAY_TIMEOUT',
+            'Music catalog request timed out',
+          ),
         );
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
@@ -130,7 +135,10 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
         this.pending.delete(id);
         clearTimeout(timer);
         reject(
-          new AppException('INTERNAL_ERROR', 'Music catalog is not connected'),
+          new AppException(
+            'SERVICE_UNAVAILABLE',
+            'Music catalog is not connected',
+          ),
         );
       }
     });
@@ -246,6 +254,12 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       pending.resolve(response.data.result);
       return;
     }
+    if (response.data.error.code === 'CATALOG_NOT_READY') {
+      pending.reject(
+        new AppException('SERVICE_UNAVAILABLE', response.data.error.message),
+      );
+      return;
+    }
     pending.reject(
       new AppException('INTERNAL_ERROR', response.data.error.message),
     );
@@ -257,7 +271,7 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
     }
     this.socket = undefined;
     this.failPending(
-      new AppException('INTERNAL_ERROR', 'Music catalog disconnected'),
+      new AppException('SERVICE_UNAVAILABLE', 'Music catalog disconnected'),
     );
     if (this.stopped) {
       return;

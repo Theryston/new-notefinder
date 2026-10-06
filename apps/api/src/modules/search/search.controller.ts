@@ -1,5 +1,13 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiGatewayTimeoutResponse,
+  ApiOkResponse,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+} from '@nestjs/swagger';
+import { seconds, Throttle } from '@nestjs/throttler';
 import { type SearchResult, searchResultSchema } from '@notefinder/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
@@ -13,12 +21,20 @@ export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
   // Unauthenticated on purpose: visitors search before they sign up. Abuse
-  // is bounded by the global per-IP rate limit; a stricter per-route limit
-  // arrives with issue #95.
+  // is bounded by a stricter per-IP limit than the global one (realtime
+  // typing stays usable while sustained floods answer 429 `RATE_LIMITED`).
+  // A down catalog answers 503 `SERVICE_UNAVAILABLE` and a slow one 504
+  // `GATEWAY_TIMEOUT`, so the web retries instead of showing a dead end.
   @Get()
+  @Throttle({ default: { limit: 30, ttl: seconds(60) } })
   @ZodSerializerDto(searchResultSchema)
   @ApiOkResponse({ description: 'Catalog matches, best first.' })
   @ApiBadRequestResponse({ description: 'The query, scope or paging is bad.' })
+  @ApiTooManyRequestsResponse({ description: 'Per-IP search rate exceeded.' })
+  @ApiServiceUnavailableResponse({ description: 'The Music catalog is down.' })
+  @ApiGatewayTimeoutResponse({
+    description: 'The Music catalog took too long.',
+  })
   search(@Query() query: SearchQueryDto): Promise<SearchResult> {
     return this.searchService.search(query);
   }
