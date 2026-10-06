@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { MusicCatalogModule } from './integrations/music-catalog/music-catalog.module.js';
 import { StorageModule } from './integrations/storage/storage.module.js';
 import { WebRevalidationModule } from './integrations/web-revalidation/web-revalidation.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { SearchModule } from './modules/search/search.module.js';
 import { TracksModule } from './modules/tracks/tracks.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { QueueModule } from './queue/queue.module.js';
@@ -23,7 +25,9 @@ import { RedisModule } from './redis/redis.module.js';
     AuthModule,
     WebRevalidationModule,
     StorageModule,
+    MusicCatalogModule,
     HealthModule,
+    SearchModule,
     TracksModule,
     UsersModule,
   ],
