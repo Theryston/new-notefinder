@@ -117,6 +117,20 @@ const envSchema = z
         .url({ protocol: /^https?$/ })
         .transform((url) => url.replace(/\/+$/, '')),
     ),
+    // Private Music catalog WebSocket (`ws://host:port`), dialed once at
+    // boot and multiplexed for every public search. Optional so existing
+    // suites boot without a catalog; the search endpoint fails with
+    // `INTERNAL_ERROR` until it is set. Required in production.
+    MUSIC_CATALOG_URL: optional(z.url({ protocol: /^wss?$/ })),
+    // API key sent as `Authorization: Bearer <key>` in the catalog
+    // handshake. At least 32 characters, like the catalog's own keys.
+    MUSIC_CATALOG_API_KEY: optional(z.string().min(32)),
+    // How long one catalog search may take before the API gives up.
+    // No default in the schema (so existing env snapshots keep passing);
+    // the client falls back to {@link MUSIC_CATALOG_DEFAULT_TIMEOUT_MS}.
+    MUSIC_CATALOG_REQUEST_TIMEOUT_MS: optional(
+      z.coerce.number().int().positive(),
+    ),
   })
   .check((ctx) => {
     const env = ctx.value;
