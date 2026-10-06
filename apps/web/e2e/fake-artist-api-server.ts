@@ -1,0 +1,242 @@
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from 'node:http';
+
+/**
+ * Fake API for the artist Playwright suite and the legacy-routes suite.
+ *
+ * Server Components fetch from the Next server, not the browser, so
+ * `page.route` cannot mock them. Instead Playwright starts this server on
+ * the same `API_URL` the e2e Next server uses (`webServerEnv`) and tests
+ * drive it through `POST /__artist-mock/set`.
+ *
+ * Run directly: `node e2e/fake-artist-api-server.ts` (Node 26 strips
+ * types). Specs import {@link defaultArtist} and
+ * {@link setArtistMock} so the file stays in the dependency graph.
+ */
+
+export type FakeArtist = {
+  id: string;
+  mbid: string;
+  name: string;
+  genres: string[];
+  trackCount: number;
+  /** Artificial latency per reply, so the loading skeleton can be seen. */
+  delayMs?: number;
+};
+
+export type ArtistMockState = {
+  artists?: FakeArtist[];
+  legacyMap?: Record<string, string>;
+};
+
+/** Resolves the legacy-routes sample without any per-test setup. */
+export const defaultArtist: FakeArtist = {
+  id: 'clx456def',
+  mbid: '00000000-0000-4000-8000-000000001001',
+  name: 'Queen',
+  genres: ['rock', 'pop'],
+  trackCount: 2,
+};
+
+const defaultLegacyMap: Record<string, string> = {
+  'legacy-queen-1': defaultArtist.id,
+};
+
+const artists = new Map<string, FakeArtist>();
+const legacyMap = new Map<string, string>();
+
+const resetDefaults = (): void => {
+  artists.clear();
+  legacyMap.clear();
+  artists.set(defaultArtist.id, { ...defaultArtist });
+  for (const [legacyId, artistId] of Object.entries(defaultLegacyMap)) {
+    legacyMap.set(legacyId, artistId);
+  }
+};
+
+resetDefaults();
+
+const readBody = (request: IncomingMessage): Promise<unknown> =>
+  new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    request.on('data', (chunk: Buffer) => chunks.push(chunk));
+    request.on('end', () => {
+      const text = Buffer.concat(chunks).toString('utf8');
+      if (!text) {
+        resolve(undefined);
+        return;
+      }
+      try {
+        resolve(JSON.parse(text) as unknown);
+      } catch (error) {
+        reject(error);
+      }
+    });
+    request.on('error', reject);
+  });
+
+const json = (
+  response: ServerResponse,
+  status: number,
+  body: unknown,
+): void => {
+  response.writeHead(status, {
+    'content-type': 'application/json',
+    // Harmless for server-side fetch; lets direct browser calls work too.
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end(JSON.stringify(body));
+};
+
+const notFound = (response: ServerResponse): void =>
+  json(response, 404, {
+    statusCode: 404,
+    code: 'NOT_FOUND',
+    message: 'Artist not found',
+  });
+
+const serveArtist = async (
+  id: string,
+  response: ServerResponse,
+): Promise<void> => {
+  const artist = artists.get(id);
+  if (artist) {
+    if (artist.delayMs) {
+      await new Promise((resolve) => setTimeout(resolve, artist.delayMs));
+    }
+    const { delayMs: _ignored, ...body } = artist;
+    json(response, 200, body);
+    return;
+  }
+  const newId = legacyMap.get(id);
+  if (newId) {
+    json(response, 404, {
+      statusCode: 404,
+      code: 'RESOURCE_MOVED',
+      message: 'Artist moved',
+      details: { id: newId },
+    });
+    return;
+  }
+  notFound(response);
+};
+
+const serveMockSet = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> => {
+  const state = (await readBody(request)) as ArtistMockState;
+  for (const artist of state.artists ?? []) {
+    artists.set(artist.id, artist);
+  }
+  for (const [legacyId, artistId] of Object.entries(state.legacyMap ?? {})) {
+    legacyMap.set(legacyId, artistId);
+  }
+  json(response, 200, { ok: true });
+};
+
+/**
+ * Point the e2e Next server at this fake by setting its fixtures:
+ * upserts artists and legacy mappings (merged, never reset, so parallel
+ * workers with distinct IDs never race).
+ */
+export const setArtistMock = async (
+  state: ArtistMockState,
+  baseUrl = 'http://127.0.0.1:3333',
+): Promise<void> => {
+  const response = await fetch(`${baseUrl}/__artist-mock/set`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(state),
+  });
+  if (!response.ok) {
+    throw new Error(`setArtistMock failed with ${response.status}`);
+  }
+};
+
+type Route = {
+  method: string;
+  pathname: string;
+  serve: (
+    request: IncomingMessage,
+    response: ServerResponse,
+    pathname: string,
+  ) => Promise<void>;
+};
+
+const routes: Route[] = [
+  {
+    method: 'OPTIONS',
+    pathname: '*',
+    serve: (_request, response) => {
+      json(response, 204, {});
+      return Promise.resolve();
+    },
+  },
+  {
+    method: 'GET',
+    pathname: '/__health',
+    serve: (_request, response) => {
+      json(response, 200, { ok: true });
+      return Promise.resolve();
+    },
+  },
+  {
+    method: 'POST',
+    pathname: '/__artist-mock/set',
+    serve: (request, response) => serveMockSet(request, response),
+  },
+];
+
+const serveRequest = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+  host: string,
+  port: number,
+): Promise<void> => {
+  const url = new URL(request.url ?? '/', `http://${host}:${port}`);
+  for (const route of routes) {
+    if (route.method !== request.method) continue;
+    if (route.pathname !== '*' && route.pathname !== url.pathname) continue;
+    await route.serve(request, response, url.pathname);
+    return;
+  }
+  const match = /^\/v1\/artists\/([^/]+)$/.exec(url.pathname);
+  if (match?.[1] && request.method === 'GET') {
+    await serveArtist(decodeURIComponent(match[1]), response);
+    return;
+  }
+  notFound(response);
+};
+
+const startFakeArtistApi = (
+  port = 3333,
+  host = '127.0.0.1',
+): Promise<Server> => {
+  const server = createServer((request, response) => {
+    serveRequest(request, response, host, port).catch(() => {
+      if (!response.headersSent) {
+        json(response, 500, {
+          statusCode: 500,
+          code: 'INTERNAL_ERROR',
+          message: 'Fake artist API failed',
+        });
+      }
+    });
+  });
+  return new Promise((resolve) => {
+    server.listen(port, host, () => resolve(server));
+  });
+};
+
+const isMain = (process.argv[1] ?? '').endsWith('fake-artist-api-server.ts');
+
+if (isMain) {
+  await startFakeArtistApi();
+}

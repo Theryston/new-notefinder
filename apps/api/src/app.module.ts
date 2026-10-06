@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { MusicCatalogModule } from './integrations/music-catalog/music-catalog.module.js';
 import { StorageModule } from './integrations/storage/storage.module.js';
 import { WebRevalidationModule } from './integrations/web-revalidation/web-revalidation.module.js';
+import { ArtistsModule } from './modules/artists/artists.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SearchModule } from './modules/search/search.module.js';
@@ -27,6 +28,7 @@ import { RedisModule } from './redis/redis.module.js';
     StorageModule,
     MusicCatalogModule,
     HealthModule,
+    ArtistsModule,
     SearchModule,
     TracksModule,
     UsersModule,

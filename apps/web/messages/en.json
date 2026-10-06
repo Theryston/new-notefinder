@@ -382,6 +382,20 @@
     "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
     "SERVICE_UNAVAILABLE": "The service is temporarily unavailable. Try again in a moment.",
     "GATEWAY_TIMEOUT": "The service took too long to answer. Try again.",
-    "INTERNAL_ERROR": "Something went wrong. Please try again."
+    "INTERNAL_ERROR": "Something went wrong. Please try again.",
+    "RESOURCE_MOVED": "This link moved to a new address. Redirecting…"
+  },
+  "artists": {
+    "metaTitle": "{name}",
+    "metaDescription": "{name} with {count, plural, one {# track} other {# tracks}} on NoteFinder.",
+    "header": {
+      "trackCount": "{count, plural, one {# track} other {# tracks}}",
+      "genresLabel": "Genres",
+      "loading": "Loading artist…"
+    },
+    "notFound": {
+      "title": "Artist not found",
+      "description": "We couldn't find this artist. It may have been removed or the link is wrong."
+    }
   }
 }

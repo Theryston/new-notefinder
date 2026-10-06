@@ -33,7 +33,7 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/search?q=bohemian%20rhapsody&page=2', implemented: true },
   { path: '/tracks/clx123abc', implemented: false },
   { path: '/tracks/clx123abc?x=1', implemented: false },
-  { path: '/artists/clx456def', implemented: false },
+  { path: '/artists/clx456def', implemented: true },
   { path: '/albums/clx789ghi', implemented: false },
   { path: '/users/john.doe', implemented: false },
   { path: '/me/edit', implemented: true },

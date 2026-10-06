@@ -13,6 +13,9 @@ export const apiErrorCodeSchema = z.enum([
   // user to pick one (the only private action allowed until then).
   'USERNAME_REQUIRED',
   'NOT_FOUND',
+  // A catalog ID from the legacy app: the record was reprocessed under a
+  // new ID (in `details.id`), so the client redirects instead of 404ing.
+  'RESOURCE_MOVED',
   'CONFLICT',
   'RATE_LIMITED',
   // Retryable downstream outages (the Music catalog for search): the client

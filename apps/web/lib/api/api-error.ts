@@ -40,3 +40,19 @@ export function internalApiError(message: string, cause?: unknown): ApiError {
     { cause },
   );
 }
+
+/**
+ * Whether the failure is an API error envelope. Matches structurally, not
+ * just by class: errors thrown from a `'use cache'` fetcher cross a
+ * serialization boundary that drops the prototype, so `instanceof` alone
+ * misses them while `statusCode`, `code` and `details` survive.
+ */
+export function isApiError(error: unknown): error is ApiError {
+  if (error instanceof ApiError) return true;
+  if (typeof error !== 'object' || error === null) return false;
+  const { statusCode, code } = error as {
+    statusCode?: unknown;
+    code?: unknown;
+  };
+  return typeof statusCode === 'number' && typeof code === 'string';
+}

@@ -40,14 +40,26 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: `next start --port ${port}`,
-    url: baseURL,
-    env: webServerEnv,
-    // Never attach to a `next dev` server left running on the same port:
-    // its behavior differs from production and would hide real failures.
-    reuseExistingServer: false,
-    stdout: 'pipe',
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: `next start --port ${port}`,
+      url: baseURL,
+      env: webServerEnv,
+      // Never attach to a `next dev` server left running on the same port:
+      // its behavior differs from production and would hide real failures.
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      timeout: 60_000,
+    },
+    // Server Components fetch from the Next server, not the browser, so
+    // `page.route` cannot mock them. Artist specs drive this fake through
+    // `POST /__artist-mock/set` instead (see fake-artist-api-server.ts).
+    {
+      command: 'node e2e/fake-artist-api-server.ts',
+      url: 'http://127.0.0.1:3333/__health',
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      timeout: 30_000,
+    },
+  ],
 });
