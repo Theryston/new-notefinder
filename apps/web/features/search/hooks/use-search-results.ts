@@ -7,7 +7,11 @@ import {
   type SearchScope,
   searchResultSchema,
 } from '@notefinder/contracts';
-import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/browser';
 
 import { searchKeys } from '../query-keys';
@@ -48,8 +52,8 @@ export type SearchInfiniteInput = {
 
 /**
  * Infinite results keyed by query text plus scope (the offset travels as
- * the page param). Disabled below 2 non-blank characters, so the API only
- * sees queries worth answering.
+ * the page param). Disabled while blank, so the API only sees queries worth
+ * answering.
  */
 export function searchInfiniteQueryOptions({
   query,
@@ -58,6 +62,9 @@ export function searchInfiniteQueryOptions({
 }: SearchInfiniteInput) {
   const enabled = isSearchableQuery(query);
   return infiniteQueryOptions({
+    // While a new query loads, the previous page stays on screen (the grid
+    // dims it), so typing never flashes a skeleton over known results.
+    placeholderData: keepPreviousData,
     // A disabled query never fetches, but it still needs a stable key: the
     // normalized blank, so every blank spells the same key.
     queryKey: enabled

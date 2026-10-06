@@ -14,7 +14,7 @@ export function SearchPrompt() {
       icon={
         <SearchIcon
           aria-hidden="true"
-          className="size-10 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
       }
       title={t('title')}

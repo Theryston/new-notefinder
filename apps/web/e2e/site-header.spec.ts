@@ -99,10 +99,13 @@ test.describe('site header (desktop)', () => {
     await page.keyboard.press('Control+k');
     await expect(field).toBeFocused();
 
-    // A blank query goes nowhere.
+    // Focusing alone falls into the search page at once.
+    await expect(page).toHaveURL(/\/en\/search$/);
+
+    // A blank query stays there, showing the prompt.
     await field.fill('   ');
     await field.press('Enter');
-    await expect(page).toHaveURL(/\/en$/);
+    await expect(page).toHaveURL(/\/en\/search$/);
 
     await field.fill('  bohemian   rhapsody ');
     await field.press('Enter');

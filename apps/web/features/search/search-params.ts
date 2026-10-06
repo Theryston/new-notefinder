@@ -1,7 +1,7 @@
 import type { SearchScope } from '@notefinder/contracts';
 
-/** A query shorter than this never hits the API (fast feedback, no spam). */
-export const SEARCH_MIN_QUERY_LENGTH = 2;
+/** A blank query never hits the API (fast feedback, no spam). */
+export const SEARCH_MIN_QUERY_LENGTH = 1;
 
 /** How long typing waits before the URL (and the fetch) updates. */
 export const SEARCH_DEBOUNCE_MS = 230;
@@ -14,7 +14,7 @@ export function normalizeSearchQuery(value: string | null | undefined): string {
   return (value ?? '').trim().replace(/\s+/g, ' ');
 }
 
-/** Whether the query is worth a request (at least 2 non-blank characters). */
+/** Whether the query is worth a request (at least 1 non-blank character). */
 export function isSearchableQuery(value: string): boolean {
   return normalizeSearchQuery(value).length >= SEARCH_MIN_QUERY_LENGTH;
 }

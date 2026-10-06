@@ -24,11 +24,10 @@ describe('normalizeSearchQuery', () => {
 });
 
 describe('isSearchableQuery', () => {
-  it(`needs at least ${SEARCH_MIN_QUERY_LENGTH} non-blank characters`, () => {
-    expect(isSearchableQuery('q')).toBe(false);
-    expect(isSearchableQuery('  q  ')).toBe(false);
+  it(`needs at least ${SEARCH_MIN_QUERY_LENGTH} non-blank character`, () => {
+    expect(isSearchableQuery('q')).toBe(true);
+    expect(isSearchableQuery('  q  ')).toBe(true);
     expect(isSearchableQuery('queen')).toBe(true);
-    expect(isSearchableQuery('  ab  ')).toBe(true);
     expect(isSearchableQuery('')).toBe(false);
     expect(isSearchableQuery('   ')).toBe(false);
   });

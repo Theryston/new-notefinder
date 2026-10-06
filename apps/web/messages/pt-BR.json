@@ -24,7 +24,7 @@
     },
     "prompt": {
       "title": "Encontre sua próxima música",
-      "description": "Digite pelo menos 2 caracteres para buscar por título, artista ou lançamento."
+      "description": "Digite para buscar por título, artista ou lançamento."
     },
     "loading": "Carregando resultados…",
     "empty": {
@@ -45,6 +45,7 @@
     "search": {
       "label": "Buscar músicas e artistas",
       "placeholder": "Buscar músicas, artistas…",
+      "loading": "Buscando…",
       "open": "Buscar",
       "cancel": "Cancelar"
     },

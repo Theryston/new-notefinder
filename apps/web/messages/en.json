@@ -24,7 +24,7 @@
     },
     "prompt": {
       "title": "Find your next song",
-      "description": "Type at least 2 characters to search by title, artist or release."
+      "description": "Type to search by title, artist or release."
     },
     "loading": "Loading results…",
     "empty": {
@@ -45,6 +45,7 @@
     "search": {
       "label": "Search songs and artists",
       "placeholder": "Search songs, artists…",
+      "loading": "Searching…",
       "open": "Search",
       "cancel": "Cancel"
     },

@@ -17,10 +17,10 @@ export function SearchState({
   children?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-prose flex-col items-center gap-3 py-16 text-center">
+    <div className="mx-auto flex max-w-prose flex-col items-center gap-1 py-16 text-center">
       {icon}
-      <h2 className="font-bold text-2xl tracking-tight">{title}</h2>
-      <p className="text-muted-foreground">{description}</p>
+      <h2 className="font-bold text-xl tracking-tight">{title}</h2>
+      <p className="text-muted-foreground text-xs">{description}</p>
       {children}
     </div>
   );

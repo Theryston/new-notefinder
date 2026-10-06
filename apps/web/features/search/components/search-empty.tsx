@@ -14,7 +14,7 @@ export function SearchEmpty({ query }: { query: string }) {
       icon={
         <SearchXIcon
           aria-hidden="true"
-          className="size-10 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
       }
       title={t('title')}

@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { TrackCard } from '@/features/tracks/components/track-card';
+import { cn } from '@/lib/utils';
 
 import { useSearchResults } from '../hooks/use-search-results';
 import { SearchCardSkeleton } from './search-card-skeleton';
@@ -42,6 +43,7 @@ export function SearchResults({
     error,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
     isPending,
     refetch,
@@ -69,9 +71,21 @@ export function SearchResults({
   const items = data.pages.flatMap((page) => page.results);
   if (items.length === 0) return <SearchEmpty query={query} />;
 
+  // A new query over known results: keep them on screen, dimmed and inert,
+  // while the fetch runs. Paging appends skeletons instead, as before.
+  const stale = isFetching && !isPending && !isFetchingNextPage;
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+      <div
+        data-stale={stale || undefined}
+        aria-busy={stale}
+        inert={stale}
+        className={cn(
+          'grid grid-cols-2 gap-1 transition-opacity duration-150 sm:grid-cols-3 lg:grid-cols-4',
+          stale && 'pointer-events-none opacity-50',
+        )}
+      >
         {items.map((item) => (
           <TrackCard key={item.mbid} result={item} />
         ))}

@@ -16,7 +16,7 @@ export function SearchError({ onRetry }: { onRetry: () => void }) {
       icon={
         <TriangleAlertIcon
           aria-hidden="true"
-          className="size-10 text-muted-foreground"
+          className="size-6 text-muted-foreground"
         />
       }
       title={t('title')}
