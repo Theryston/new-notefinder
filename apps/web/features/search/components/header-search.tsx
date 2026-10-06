@@ -18,6 +18,7 @@ import { useRouter } from '@/lib/i18n/navigation';
 
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
+import { parseSearchScope } from '../search-params';
 import { SearchHotkeyHint } from './search-hotkey-hint';
 
 /** The pill search field, with the `⌘K` keycap from `md` up. */
@@ -89,7 +90,18 @@ export function HeaderSearch() {
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const href = searchHref(inputRef.current?.value ?? '');
+    // Lyrics mode survives header submits: when already on the search page,
+    // keep its scope, otherwise the header (which has no toggle) searches
+    // metadata. Read from the live location at submit time, so the header
+    // stays prerenderable without a search-params suspense boundary.
+    let scope: 'lyrics' | undefined;
+    if (/(^|\/)search\/?$/.test(window.location.pathname)) {
+      const current = parseSearchScope(
+        new URLSearchParams(window.location.search).get('scope'),
+      );
+      if (current === 'lyrics') scope = current;
+    }
+    const href = searchHref(inputRef.current?.value ?? '', scope);
     if (!href) return;
     inputRef.current?.blur();
     collapse();

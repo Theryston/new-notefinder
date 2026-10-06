@@ -21,4 +21,30 @@ describe('searchHref', () => {
     expect(searchHref('')).toBeNull();
     expect(searchHref('   ')).toBeNull();
   });
+
+  it('keeps lyrics scope from the search page', () => {
+    expect(searchHref('queen', 'lyrics')).toEqual({
+      pathname: '/search',
+      query: { q: 'queen', scope: 'lyrics' },
+    });
+  });
+
+  it('omits the default metadata scope', () => {
+    expect(searchHref('queen', 'metadata')).toEqual({
+      pathname: '/search',
+      query: { q: 'queen' },
+    });
+    expect(searchHref('queen', null)).toEqual({
+      pathname: '/search',
+      query: { q: 'queen' },
+    });
+    expect(searchHref('queen', undefined)).toEqual({
+      pathname: '/search',
+      query: { q: 'queen' },
+    });
+  });
+
+  it('returns null for a blank query even with a scope', () => {
+    expect(searchHref('   ', 'lyrics')).toBeNull();
+  });
 });
