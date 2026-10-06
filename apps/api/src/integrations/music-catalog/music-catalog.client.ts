@@ -94,7 +94,12 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
     }
     try {
       await this.ensureConnected();
-    } catch {
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Music catalog dial failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       throw new AppException(
         'INTERNAL_ERROR',
         'Music catalog is not connected',
@@ -119,7 +124,15 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
         );
       }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
-      socket.send(JSON.stringify({ id, type: 'search', payload: params }));
+      try {
+        socket.send(JSON.stringify({ id, type: 'search', payload: params }));
+      } catch {
+        this.pending.delete(id);
+        clearTimeout(timer);
+        reject(
+          new AppException('INTERNAL_ERROR', 'Music catalog is not connected'),
+        );
+      }
     });
   }
 
@@ -137,6 +150,7 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+      this.scheduleReconnect();
     });
   }
 
@@ -163,10 +177,32 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       headers: { Authorization: `Bearer ${key}` },
     });
     await new Promise<void>((resolve, reject) => {
-      socket.once('open', () => resolve());
-      socket.once('error', (error) => reject(error));
-      socket.once('close', () => reject(new Error('Connection closed')));
+      const onOpen = (): void => {
+        socket.off('error', onError);
+        socket.off('close', onClose);
+        resolve();
+      };
+      const onError = (error: Error): void => {
+        socket.off('open', onOpen);
+        socket.off('close', onClose);
+        reject(error);
+      };
+      const onClose = (): void => {
+        socket.off('open', onOpen);
+        socket.off('error', onError);
+        reject(new Error('Connection closed'));
+      };
+      socket.once('open', onOpen);
+      socket.once('error', onError);
+      socket.once('close', onClose);
     });
+    if (this.stopped) {
+      socket.close();
+      throw new AppException(
+        'INTERNAL_ERROR',
+        'Music catalog is shutting down',
+      );
+    }
     this.attachSocket(socket);
     this.socket = socket;
     this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
@@ -174,7 +210,13 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
   }
 
   private attachSocket(socket: WebSocket): void {
-    socket.on('message', (data) => this.handleMessage(String(data)));
+    socket.on('message', (data, isBinary) => {
+      if (isBinary === true) {
+        this.logger.warn('Dropping a binary frame from the Music catalog');
+        return;
+      }
+      this.handleMessage(String(data));
+    });
     socket.on('close', () => this.handleClose(socket));
     socket.on('error', (error: Error) => {
       this.logger.warn(`Music catalog socket error: ${error.message}`);
@@ -221,30 +263,33 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       return;
     }
     this.logger.warn('Lost the Music catalog connection, redialing');
-    const delay = this.reconnectDelayMs;
-    this.reconnectDelayMs = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS);
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined;
-      this.ensureConnected().catch((error: unknown) => {
-        this.logger.warn(
-          `Music catalog redial failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-        this.handleRedialFailure();
-      });
-    }, delay);
+    this.scheduleReconnect();
   }
 
-  private handleRedialFailure(): void {
-    if (this.stopped || this.socket !== undefined) {
+  /**
+   * Redials with exponential backoff until it succeeds or the module stops:
+   * every failed attempt schedules the next one, so a sustained outage never
+   * stalls the client.
+   */
+  private scheduleReconnect(): void {
+    if (this.stopped || this.reconnectTimer !== undefined) {
       return;
     }
     const delay = this.reconnectDelayMs;
     this.reconnectDelayMs = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = undefined;
-      this.dialInBackground();
+      if (this.stopped) {
+        return;
+      }
+      this.ensureConnected().catch((error: unknown) => {
+        this.logger.warn(
+          `Music catalog redial failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        this.scheduleReconnect();
+      });
     }, delay);
   }
 

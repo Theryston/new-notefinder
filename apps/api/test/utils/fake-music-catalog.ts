@@ -65,6 +65,8 @@ export const startFakeMusicCatalog = async (
   return {
     url: `ws://127.0.0.1:${port}`,
     seenAuth,
+    // `server.close` waits for open peers, so specs close their app (and
+    // its catalog socket) before calling this.
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));

@@ -1,15 +1,13 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { WebSocketServer } from 'ws';
+import {
+  type FakeMusicCatalog,
+  startFakeMusicCatalog,
+} from '../../../test/utils/fake-music-catalog.js';
 import { ENV } from '../../config/env.js';
 import { MusicCatalogClient } from './music-catalog.client.js';
 
 const API_KEY = 'test-music-catalog-api-key-change-me-00';
-
-type SearchHandler = (payload: unknown) => {
-  delayMs?: number;
-  result?: unknown;
-  error?: { code: string; message: string };
-};
 
 const testSummary = (mbid: string, title: string) => ({
   mbid,
@@ -29,60 +27,6 @@ const testSummary = (mbid: string, title: string) => ({
 
 const MBID_1 = '11111111-1111-1111-8111-111111111111';
 const MBID_2 = '22222222-2222-2222-8222-222222222222';
-
-const createFakeCatalog = async (
-  handler: SearchHandler,
-  seenAuth: string[] = [],
-): Promise<{ url: string; close: () => Promise<void> }> => {
-  const server = new WebSocketServer({ port: 0 });
-  await new Promise<void>((resolve) => server.on('listening', () => resolve()));
-  const address = server.address();
-  const port =
-    typeof address === 'object' && address !== null ? address.port : 0;
-
-  server.on('connection', (socket, request) => {
-    seenAuth.push(String(request.headers.authorization ?? ''));
-    socket.on('message', (data) => {
-      const message = JSON.parse(String(data)) as {
-        id: string;
-        type: string;
-        payload: unknown;
-      };
-      const answer = handler(message.payload);
-      const respond = () => {
-        if (socket.readyState !== socket.OPEN) {
-          return;
-        }
-        if (answer.error !== undefined) {
-          socket.send(
-            JSON.stringify({
-              id: message.id,
-              ok: false,
-              error: answer.error,
-            }),
-          );
-          return;
-        }
-        socket.send(
-          JSON.stringify({ id: message.id, ok: true, result: answer.result }),
-        );
-      };
-      if (answer.delayMs !== undefined) {
-        setTimeout(respond, answer.delayMs);
-        return;
-      }
-      respond();
-    });
-  });
-
-  return {
-    url: `ws://127.0.0.1:${port}`,
-    close: () =>
-      new Promise<void>((resolve, reject) => {
-        server.close((error) => (error ? reject(error) : resolve()));
-      }),
-  };
-};
 
 const createClient = async (
   url: string | undefined,
@@ -107,9 +51,11 @@ const createClient = async (
 
 describe('MusicCatalogClient', () => {
   let moduleRef: TestingModule | undefined;
-  let fake: { url: string; close: () => Promise<void> } | undefined;
+  let fake: FakeMusicCatalog | undefined;
 
   afterEach(async () => {
+    // The app closes first so its socket is gone before the fake server
+    // stops waiting for connections (`server.close` waits for open peers).
     await moduleRef?.close();
     moduleRef = undefined;
     await fake?.close();
@@ -117,18 +63,11 @@ describe('MusicCatalogClient', () => {
   });
 
   it('searches with key auth and keeps the catalog order', async () => {
-    const seenAuth: string[] = [];
-    fake = await createFakeCatalog(
-      () => ({
-        result: {
-          results: [
-            testSummary(MBID_1, 'First'),
-            testSummary(MBID_2, 'Second'),
-          ],
-        },
-      }),
-      seenAuth,
-    );
+    fake = await startFakeMusicCatalog(() => ({
+      result: {
+        results: [testSummary(MBID_1, 'First'), testSummary(MBID_2, 'Second')],
+      },
+    }));
     const created = await createClient(fake.url);
     moduleRef = created.moduleRef;
 
@@ -139,7 +78,7 @@ describe('MusicCatalogClient', () => {
       offset: 0,
     });
 
-    expect(seenAuth).toEqual([`Bearer ${API_KEY}`]);
+    expect(fake.seenAuth).toEqual([`Bearer ${API_KEY}`]);
     expect(result.results.map((item) => item.title)).toEqual([
       'First',
       'Second',
@@ -147,8 +86,8 @@ describe('MusicCatalogClient', () => {
   });
 
   it('multiplexes concurrent searches with out-of-order responses', async () => {
-    fake = await createFakeCatalog((payload) => {
-      const query = (payload as { query: string }).query;
+    fake = await startFakeMusicCatalog((payload) => {
+      const query = String(payload.query ?? '');
       // The first request answers last: matching by id still routes each
       // answer to its own caller.
       if (query === 'first') {
@@ -185,7 +124,7 @@ describe('MusicCatalogClient', () => {
   });
 
   it('times out when the catalog is too slow', async () => {
-    fake = await createFakeCatalog(() => ({
+    fake = await startFakeMusicCatalog(() => ({
       delayMs: 200,
       result: { results: [] },
     }));
@@ -206,7 +145,7 @@ describe('MusicCatalogClient', () => {
   });
 
   it('turns a catalog error into an AppException', async () => {
-    fake = await createFakeCatalog(() => ({
+    fake = await startFakeMusicCatalog(() => ({
       error: { code: 'CATALOG_NOT_READY', message: 'Not ready yet' },
     }));
     const created = await createClient(fake.url);
@@ -247,6 +186,7 @@ describe('MusicCatalogClient', () => {
     const address = server.address();
     const port =
       typeof address === 'object' && address !== null ? address.port : 0;
+    const url = `ws://127.0.0.1:${port}`;
     server.on('connection', (socket) => {
       socket.on('message', (data) => {
         const message = JSON.parse(String(data)) as { id: string };
@@ -262,13 +202,14 @@ describe('MusicCatalogClient', () => {
       });
     });
     fake = {
-      url: `ws://127.0.0.1:${port}`,
+      url,
+      seenAuth: [],
       close: () =>
         new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         }),
     };
-    const created = await createClient(fake.url);
+    const created = await createClient(url);
     moduleRef = created.moduleRef;
 
     const result = await created.client.search({
@@ -289,19 +230,21 @@ describe('MusicCatalogClient', () => {
     const address = server.address();
     const port =
       typeof address === 'object' && address !== null ? address.port : 0;
+    const url = `ws://127.0.0.1:${port}`;
     server.on('connection', (socket) => {
       socket.on('message', () => {
         socket.close();
       });
     });
     fake = {
-      url: `ws://127.0.0.1:${port}`,
+      url,
+      seenAuth: [],
       close: () =>
         new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         }),
     };
-    const created = await createClient(fake.url);
+    const created = await createClient(url);
     moduleRef = created.moduleRef;
 
     await expect(
