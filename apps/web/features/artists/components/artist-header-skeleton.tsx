@@ -21,7 +21,7 @@ export async function ArtistHeaderSkeleton() {
         <div className="flex min-w-0 flex-col gap-2">
           <Skeleton className="h-12 w-48 rounded-md md:h-16 md:w-64" />
           <Skeleton className="h-5 w-24 rounded-md" />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Skeleton className="h-6 w-16 rounded-full" />
             <Skeleton className="h-6 w-20 rounded-full" />
           </div>
