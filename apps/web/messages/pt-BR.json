@@ -393,6 +393,32 @@
       "genresLabel": "Gêneros",
       "loading": "Carregando artista…"
     },
+    "tracks": {
+      "title": "Faixas",
+      "columns": {
+        "title": "Título",
+        "artists": "Artistas",
+        "duration": "Duração",
+        "isrcs": "ISRCs",
+        "genres": "Gêneros"
+      },
+      "video": "Vídeo",
+      "unknownDuration": "—",
+      "noIsrcs": "—",
+      "noGenres": "—",
+      "loading": "Carregando faixas…",
+      "loadingMore": "Carregando mais faixas…",
+      "loadMore": "Carregar mais",
+      "empty": {
+        "title": "Nenhuma faixa ainda",
+        "description": "Este artista ainda não tem faixas processadas."
+      },
+      "error": {
+        "title": "Faixas indisponíveis",
+        "description": "Algo deu errado. Confira sua conexão e tente novamente.",
+        "retry": "Tentar novamente"
+      }
+    },
     "notFound": {
       "title": "Artista não encontrado",
       "description": "Não encontramos este artista. Ele pode ter sido removido ou o link está errado."

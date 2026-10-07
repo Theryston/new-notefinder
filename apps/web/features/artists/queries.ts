@@ -1,6 +1,11 @@
 import 'server-only';
 
-import { artistSchema, cacheTags } from '@notefinder/contracts';
+import {
+  type ArtistTracksPage,
+  artistSchema,
+  artistTracksPageSchema,
+  cacheTags,
+} from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
@@ -34,4 +39,29 @@ export async function getArtistResult(artistId: string): Promise<ArtistResult> {
     if (result) return result;
     throw error;
   }
+}
+
+export type ArtistTracksPageInput = {
+  cursor?: string;
+  limit?: number;
+};
+
+/**
+ * One page of the artist's track table, cached per artist plus cursor.
+ * Only called for a found artist (the page redirects moved/missing via
+ * `getArtistResult` first), so failures throw and the table shows its
+ * error UI with a retry.
+ */
+export async function getArtistTracksPage(
+  artistId: string,
+  input: ArtistTracksPageInput = {},
+): Promise<ArtistTracksPage> {
+  'use cache';
+  cacheTag(cacheTags.artistTracks(artistId));
+  cacheLife('max');
+
+  return serverApi(`/artists/${encodeURIComponent(artistId)}/tracks`, {
+    schema: artistTracksPageSchema,
+    query: { cursor: input.cursor, limit: input.limit ?? 20 },
+  });
 }

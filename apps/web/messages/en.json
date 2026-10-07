@@ -393,6 +393,32 @@
       "genresLabel": "Genres",
       "loading": "Loading artist…"
     },
+    "tracks": {
+      "title": "Tracks",
+      "columns": {
+        "title": "Title",
+        "artists": "Artists",
+        "duration": "Duration",
+        "isrcs": "ISRCs",
+        "genres": "Genres"
+      },
+      "video": "Video",
+      "unknownDuration": "—",
+      "noIsrcs": "—",
+      "noGenres": "—",
+      "loading": "Loading tracks…",
+      "loadingMore": "Loading more tracks…",
+      "loadMore": "Load more",
+      "empty": {
+        "title": "No tracks yet",
+        "description": "This artist has no processed tracks so far."
+      },
+      "error": {
+        "title": "Tracks are unavailable",
+        "description": "Something went wrong. Check your connection and try again.",
+        "retry": "Try again"
+      }
+    },
     "notFound": {
       "title": "Artist not found",
       "description": "We couldn't find this artist. It may have been removed or the link is wrong."
