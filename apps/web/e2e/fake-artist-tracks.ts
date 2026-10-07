@@ -1,5 +1,5 @@
 /**
- * Fake track-table fixtures for the artist Playwright suite.
+ * Fake track-grid fixtures for the artist Playwright suite.
  *
  * Kept separate so `fake-artist-api-server.ts` stays under the file-size
  * gate: pure pagination over in-memory tracks, no HTTP here.

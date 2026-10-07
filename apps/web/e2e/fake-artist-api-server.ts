@@ -38,7 +38,7 @@ export type ArtistMockState = {
   artists?: FakeArtist[];
   legacyMap?: Record<string, string>;
   tracksByArtist?: Record<string, FakeTrack[]>;
-  /** Artists whose track table answers a fixed error (error-UI specs). */
+  /** Artists whose track list answers a fixed error (error-UI specs). */
   tracksErrorByArtist?: Record<string, { status: number; code: string }>;
 };
 

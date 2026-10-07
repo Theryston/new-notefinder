@@ -58,7 +58,7 @@ describe('getArtistTracksPage', () => {
     });
   });
 
-  it('rethows fetch failures for the table error UI', async () => {
+  it('rethows fetch failures for the grid error UI', async () => {
     const failure = new Error('Broken');
     mockServerApi.mockRejectedValue(failure);
     const getArtistTracksPage = await loadTracksQuery();

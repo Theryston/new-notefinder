@@ -397,17 +397,6 @@
     },
     "tracks": {
       "title": "Faixas",
-      "columns": {
-        "title": "Título",
-        "artists": "Artistas",
-        "duration": "Duração",
-        "isrcs": "ISRCs",
-        "genres": "Gêneros"
-      },
-      "video": "Vídeo",
-      "unknownDuration": "—",
-      "noIsrcs": "—",
-      "noGenres": "—",
       "loading": "Carregando faixas…",
       "loadingMore": "Carregando mais faixas…",
       "loadMore": "Carregar mais",
@@ -419,20 +408,6 @@
         "title": "Faixas indisponíveis",
         "description": "Algo deu errado. Confira sua conexão e tente novamente.",
         "retry": "Tentar novamente"
-      },
-      "details": {
-        "expand": "Mostrar detalhes de {title}",
-        "collapse": "Ocultar detalhes de {title}",
-        "releases": "Lançamentos",
-        "works": "Obras",
-        "tags": "Tags",
-        "links": "Links externos",
-        "noReleases": "Nenhum lançamento listado.",
-        "noWorks": "Nenhuma obra listada.",
-        "noTags": "Nenhuma tag listada.",
-        "noLinks": "Nenhum link externo listado.",
-        "coverAlt": "Capa de {title}",
-        "openExternal": "Abrir link {linkType}"
       }
     },
     "notFound": {
