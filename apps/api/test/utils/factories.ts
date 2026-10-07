@@ -193,7 +193,7 @@ export const linkTrackArtist = (
   ).then(() => undefined);
 };
 
-/** A release a Track's Recording appears on, for the expandable section. */
+/** A release a Track's Recording appears on, for the Track page. */
 export const createTrackRelease = (
   db: Database,
   trackId: string,
@@ -215,7 +215,7 @@ export const createTrackRelease = (
   );
 };
 
-/** A work a Track's Recording links to, for the expandable section. */
+/** A work a Track's Recording links to, for the Track page. */
 export const createTrackWork = (
   db: Database,
   trackId: string,
@@ -235,7 +235,7 @@ export const createTrackWork = (
   );
 };
 
-/** A tag of a Track's Recording, for the expandable section. */
+/** A tag of a Track's Recording, for the Track page. */
 export const createTrackTag = (
   db: Database,
   trackId: string,
@@ -255,7 +255,7 @@ export const createTrackTag = (
   );
 };
 
-/** An external URL of a Track's Recording, for the expandable section. */
+/** An external URL of a Track's Recording, for the Track page. */
 export const createTrackExternalLink = (
   db: Database,
   trackId: string,

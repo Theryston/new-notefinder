@@ -138,9 +138,8 @@ export const SEED_TRACK_ARTISTS = [
 ] satisfies TrackArtistRow[];
 
 /**
- * Development releases (the "albums" of the seed): what the expandable
- * releases section shows. There is no `albums` table; releases hang off
- * each track.
+ * Development releases (the "albums" of the seed): what the Track page
+ * shows. There is no `albums` table; releases hang off each track.
  */
 export const SEED_TRACK_RELEASES = [
   {
@@ -190,7 +189,7 @@ export const SEED_TRACK_RELEASES = [
   },
 ] satisfies TrackReleaseRow[];
 
-/** Development works for the expandable works section. */
+/** Development works for the Track page. */
 export const SEED_TRACK_WORKS = [
   {
     id: 'seedwork01',
@@ -221,7 +220,7 @@ export const SEED_TRACK_TAGS = [
   { id: 'seedtag05', trackId: 'seedtrack05', name: 'alternative', count: 85 },
 ] satisfies TrackTagRow[];
 
-/** Development external links for the expandable links section. */
+/** Development external links for the Track page. */
 export const SEED_TRACK_EXTERNAL_LINKS = [
   {
     id: 'seedlink01',

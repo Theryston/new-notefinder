@@ -70,9 +70,9 @@ export class ArtistsRepository {
   /**
    * One page of the Artist's processed Tracks in stable `id` order, one
    * entry per Recording with its deeper MusicBrainz sections (releases,
-   * works, tags, links) for the expandable rows. Keyset over the link
-   * table: the cursor is a Track ID the service already decoded,
-   * `limit + 1` rows decide the next cursor.
+   * works, tags, links) for the Track page. Keyset over the link table:
+   * the cursor is a Track ID the service already decoded, `limit + 1`
+   * rows decide the next cursor.
    */
   async findTracksByArtistId(
     artistId: string,

@@ -15,8 +15,8 @@ import {
   testMbid,
 } from './utils/factories.js';
 
-// Nested MusicBrainz sections of the artist track table over a real
-// Postgres: every row carries its releases, works, tags and external
+// Nested MusicBrainz sections of the artist track list over a real
+// Postgres: every entry carries its releases, works, tags and external
 // links, validated against the contracts schemas.
 describe('Artist track details (e2e)', () => {
   let testApp: TestApp;

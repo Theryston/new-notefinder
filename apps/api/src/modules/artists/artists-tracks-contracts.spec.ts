@@ -5,9 +5,9 @@ import {
 } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
-// Locks the nested track-table contract: one entry per processed Recording
-// with its core display columns, cursor-paginated, and the cache tag the
-// web caches it with.
+// Locks the nested track-list contract: one entry per processed Recording
+// with its core fields, cursor-paginated, and the cache tag the web caches
+// it with.
 describe('artist tracks contracts', () => {
   const track = {
     id: 'track-1',
@@ -20,11 +20,11 @@ describe('artist tracks contracts', () => {
     genres: ['rock', 'pop'],
   };
 
-  it('parses a core track row', () => {
+  it('parses a core track entry', () => {
     expect(artistTrackSchema.parse(track)).toEqual(track);
   });
 
-  it('parses a row without optional display data', () => {
+  it('parses an entry without optional display data', () => {
     const minimal = {
       id: 'track-2',
       title: 'Unknown Take',
@@ -89,7 +89,7 @@ describe('artist tracks contracts', () => {
     );
   });
 
-  it('uses a valid MBID fixture for linked rows', () => {
+  it('uses a valid MBID fixture for linked entries', () => {
     expect(() => testMbid(7)).not.toThrow();
   });
 });
