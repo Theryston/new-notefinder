@@ -92,30 +92,52 @@ const readBody = (request: IncomingMessage): Promise<unknown> =>
     request.on('error', reject);
   });
 
+/**
+ * CORS headers for the reply. The browser calls the API cross-origin with
+ * cookies, so it needs its origin echoed with credentials (a `*` origin
+ * plus credentials is rejected); server-to-server calls carry no origin
+ * and keep the wildcard.
+ */
+const cors = (request: IncomingMessage): Record<string, string> => {
+  const origin = request.headers.origin;
+  return origin
+    ? {
+        'access-control-allow-origin': origin,
+        'access-control-allow-credentials': 'true',
+      }
+    : { 'access-control-allow-origin': '*' };
+};
+
 const json = (
   response: ServerResponse,
   status: number,
   body: unknown,
+  request: IncomingMessage,
 ): void => {
   response.writeHead(status, {
     'content-type': 'application/json',
-    // Harmless for server-side fetch; lets direct browser calls work too.
-    'access-control-allow-origin': '*',
+    ...cors(request),
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': 'content-type',
   });
   response.end(JSON.stringify(body));
 };
 
-const notFound = (response: ServerResponse): void =>
-  json(response, 404, {
-    statusCode: 404,
-    code: 'NOT_FOUND',
-    message: 'Artist not found',
-  });
+const notFound = (request: IncomingMessage, response: ServerResponse): void =>
+  json(
+    response,
+    404,
+    {
+      statusCode: 404,
+      code: 'NOT_FOUND',
+      message: 'Artist not found',
+    },
+    request,
+  );
 
 const serveArtist = async (
   id: string,
+  request: IncomingMessage,
   response: ServerResponse,
 ): Promise<void> => {
   const artist = artists.get(id);
@@ -124,52 +146,68 @@ const serveArtist = async (
       await new Promise((resolve) => setTimeout(resolve, artist.delayMs));
     }
     const { delayMs: _ignored, ...body } = artist;
-    json(response, 200, body);
+    json(response, 200, body, request);
     return;
   }
   const newId = legacyMap.get(id);
   if (newId) {
-    json(response, 404, {
-      statusCode: 404,
-      code: 'RESOURCE_MOVED',
-      message: 'Artist moved',
-      details: { id: newId },
-    });
+    json(
+      response,
+      404,
+      {
+        statusCode: 404,
+        code: 'RESOURCE_MOVED',
+        message: 'Artist moved',
+        details: { id: newId },
+      },
+      request,
+    );
     return;
   }
-  notFound(response);
+  notFound(request, response);
 };
 
 const serveArtistTracks = (
   id: string,
   search: URLSearchParams,
+  request: IncomingMessage,
   response: ServerResponse,
 ): void => {
   if (!artists.get(id)) {
     const newId = legacyMap.get(id);
     if (newId) {
-      json(response, 404, {
-        statusCode: 404,
-        code: 'RESOURCE_MOVED',
-        message: 'Artist moved',
-        details: { id: newId },
-      });
+      json(
+        response,
+        404,
+        {
+          statusCode: 404,
+          code: 'RESOURCE_MOVED',
+          message: 'Artist moved',
+          details: { id: newId },
+        },
+        request,
+      );
       return;
     }
-    notFound(response);
+    notFound(request, response);
     return;
   }
   const failure = tracksErrorByArtist.get(id);
   if (failure) {
-    json(response, failure.status, {
-      statusCode: failure.status,
-      code: failure.code,
-      message: 'Fake tracks failure',
-    });
+    json(
+      response,
+      failure.status,
+      {
+        statusCode: failure.status,
+        code: failure.code,
+        message: 'Fake tracks failure',
+      },
+      request,
+    );
     return;
   }
   const page = paginateFakeTracks(tracksByArtist.get(id) ?? [], search);
-  json(response, page.status, page.body);
+  json(response, page.status, page.body, request);
 };
 
 const serveMockSet = async (
@@ -189,7 +227,7 @@ const serveMockSet = async (
   )) {
     tracksErrorByArtist.set(artistId, failure);
   }
-  json(response, 200, { ok: true });
+  json(response, 200, { ok: true }, request);
 };
 
 /**
@@ -225,16 +263,16 @@ const routes: Route[] = [
   {
     method: 'OPTIONS',
     pathname: '*',
-    serve: (_request, response) => {
-      json(response, 204, {});
+    serve: (request, response) => {
+      json(response, 204, {}, request);
       return Promise.resolve();
     },
   },
   {
     method: 'GET',
     pathname: '/__health',
-    serve: (_request, response) => {
-      json(response, 200, { ok: true });
+    serve: (request, response) => {
+      json(response, 200, { ok: true }, request);
       return Promise.resolve();
     },
   },
@@ -263,16 +301,17 @@ const serveRequest = async (
     serveArtistTracks(
       decodeURIComponent(tracksMatch[1]),
       url.searchParams,
+      request,
       response,
     );
     return;
   }
   const match = /^\/v1\/artists\/([^/]+)$/.exec(url.pathname);
   if (match?.[1] && request.method === 'GET') {
-    await serveArtist(decodeURIComponent(match[1]), response);
+    await serveArtist(decodeURIComponent(match[1]), request, response);
     return;
   }
-  notFound(response);
+  notFound(request, response);
 };
 
 const startFakeArtistApi = (
@@ -282,11 +321,16 @@ const startFakeArtistApi = (
   const server = createServer((request, response) => {
     serveRequest(request, response, host, port).catch(() => {
       if (!response.headersSent) {
-        json(response, 500, {
-          statusCode: 500,
-          code: 'INTERNAL_ERROR',
-          message: 'Fake artist API failed',
-        });
+        json(
+          response,
+          500,
+          {
+            statusCode: 500,
+            code: 'INTERNAL_ERROR',
+            message: 'Fake artist API failed',
+          },
+          request,
+        );
       }
     });
   });
