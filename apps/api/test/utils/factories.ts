@@ -6,7 +6,13 @@ import {
   trackArtists,
 } from '../../src/database/schema/artists.js';
 import { accounts } from '../../src/database/schema/auth.js';
-import { tracks } from '../../src/database/schema/tracks.js';
+import {
+  trackExternalLinks,
+  trackReleases,
+  tracks,
+  trackTags,
+  trackWorks,
+} from '../../src/database/schema/tracks.js';
 import { users } from '../../src/database/schema/users.js';
 import { hashPassword } from '../../src/modules/auth/password.js';
 
@@ -14,10 +20,18 @@ export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type Artist = typeof artists.$inferSelect;
+export type TrackRelease = typeof trackReleases.$inferSelect;
+export type TrackWork = typeof trackWorks.$inferSelect;
+export type TrackTag = typeof trackTags.$inferSelect;
+export type TrackExternalLink = typeof trackExternalLinks.$inferSelect;
 
 type NewUser = typeof users.$inferInsert;
 type NewTrack = typeof tracks.$inferInsert;
 type NewArtist = typeof artists.$inferInsert;
+type NewTrackRelease = typeof trackReleases.$inferInsert;
+type NewTrackWork = typeof trackWorks.$inferInsert;
+type NewTrackTag = typeof trackTags.$inferInsert;
+type NewTrackExternalLink = typeof trackExternalLinks.$inferInsert;
 
 // Per-entity counters make default values unique and predictable within a
 // spec ("User 1", "User 2", …). `resetDatabase` restarts them.
@@ -177,4 +191,86 @@ export const linkTrackArtist = (
   return insertOne(
     db.insert(trackArtists).values({ trackId, artistId }).returning(),
   ).then(() => undefined);
+};
+
+/** A release a Track's Recording appears on, for the expandable section. */
+export const createTrackRelease = (
+  db: Database,
+  trackId: string,
+  overrides: Partial<NewTrackRelease> = {},
+): Promise<TrackRelease> => {
+  const n = next('track-release');
+  return insertOne(
+    db
+      .insert(trackReleases)
+      .values({
+        trackId,
+        mbid: testMbid(2000 + n),
+        title: `Release ${n}`,
+        year: 1975 + (n % 50),
+        coverArtUrl: `https://coverartarchive.org/release/${testMbid(2000 + n)}/front-500`,
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+/** A work a Track's Recording links to, for the expandable section. */
+export const createTrackWork = (
+  db: Database,
+  trackId: string,
+  overrides: Partial<NewTrackWork> = {},
+): Promise<TrackWork> => {
+  const n = next('track-work');
+  return insertOne(
+    db
+      .insert(trackWorks)
+      .values({
+        trackId,
+        mbid: testMbid(3000 + n),
+        title: `Work ${n}`,
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+/** A tag of a Track's Recording, for the expandable section. */
+export const createTrackTag = (
+  db: Database,
+  trackId: string,
+  overrides: Partial<NewTrackTag> = {},
+): Promise<TrackTag> => {
+  const n = next('track-tag');
+  return insertOne(
+    db
+      .insert(trackTags)
+      .values({
+        trackId,
+        name: `tag-${n}`,
+        count: 10 + n,
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+/** An external URL of a Track's Recording, for the expandable section. */
+export const createTrackExternalLink = (
+  db: Database,
+  trackId: string,
+  overrides: Partial<NewTrackExternalLink> = {},
+): Promise<TrackExternalLink> => {
+  const n = next('track-link');
+  return insertOne(
+    db
+      .insert(trackExternalLinks)
+      .values({
+        trackId,
+        url: `https://musicbrainz.org/recording/${testMbid(4000 + n)}`,
+        linkType: 'musicbrainz',
+        ...overrides,
+      })
+      .returning(),
+  );
 };

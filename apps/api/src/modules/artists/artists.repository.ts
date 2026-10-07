@@ -1,14 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { Artist, ArtistTrack } from '@notefinder/contracts';
-import { and, asc, count, eq, gt, inArray } from 'drizzle-orm';
+import type {
+  Artist,
+  ArtistTrack,
+  ArtistTrackExternalLink,
+  ArtistTrackRelease,
+  ArtistTrackTag,
+  ArtistTrackWork,
+} from '@notefinder/contracts';
+import { and, asc, count, desc, eq, gt, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   artists,
   legacyArtistIds,
   trackArtists,
 } from '../../database/schema/artists.js';
-import { tracks } from '../../database/schema/tracks.js';
+import {
+  trackExternalLinks,
+  trackReleases,
+  tracks,
+  trackTags,
+  trackWorks,
+} from '../../database/schema/tracks.js';
 
 @Injectable()
 export class ArtistsRepository {
@@ -56,9 +69,10 @@ export class ArtistsRepository {
 
   /**
    * One page of the Artist's processed Tracks in stable `id` order, one
-   * entry per Recording. Keyset over the link table: the cursor is a
-   * Track ID the service already decoded, `limit + 1` rows decide the
-   * next cursor.
+   * entry per Recording with its deeper MusicBrainz sections (releases,
+   * works, tags, links) for the expandable rows. Keyset over the link
+   * table: the cursor is a Track ID the service already decoded,
+   * `limit + 1` rows decide the next cursor.
    */
   async findTracksByArtistId(
     artistId: string,
@@ -91,6 +105,50 @@ export class ArtistsRepository {
       return { items: [], nextCursor: null };
     }
     const trackIds = page.map((row) => row.id);
+    const items = await this.buildTrackItems(page, trackIds);
+
+    const last = page[page.length - 1];
+    if (!last || !hasMore) {
+      return { items, nextCursor: null };
+    }
+    return {
+      items,
+      nextCursor: Buffer.from(last.id, 'utf8').toString('base64url'),
+    };
+  }
+
+  private async buildTrackItems(
+    page: {
+      id: string;
+      title: string;
+      lengthMs: number | null;
+      disambiguation: string;
+      video: boolean;
+      isrcs: string[];
+      genres: string[];
+    }[],
+    trackIds: string[],
+  ): Promise<ArtistTrack[]> {
+    const [credits, releases, works, tags, links] = await Promise.all([
+      this.fetchCredits(trackIds),
+      this.fetchReleases(trackIds),
+      this.fetchWorks(trackIds),
+      this.fetchTags(trackIds),
+      this.fetchExternalLinks(trackIds),
+    ]);
+    return page.map((row) => ({
+      ...row,
+      artists: credits.get(row.id) ?? [],
+      releases: releases.get(row.id) ?? [],
+      works: works.get(row.id) ?? [],
+      tags: tags.get(row.id) ?? [],
+      externalLinks: links.get(row.id) ?? [],
+    }));
+  }
+
+  private async fetchCredits(
+    trackIds: string[],
+  ): Promise<Map<string, { id: string; name: string }[]>> {
     const creditRows = await this.txHost.tx
       .select({
         trackId: trackArtists.trackId,
@@ -101,26 +159,81 @@ export class ArtistsRepository {
       .innerJoin(artists, eq(trackArtists.artistId, artists.id))
       .where(inArray(trackArtists.trackId, trackIds))
       .orderBy(asc(artists.name));
+    return this.groupByTrack(creditRows);
+  }
 
-    const byTrack = new Map<string, { id: string; name: string }[]>();
-    for (const row of creditRows) {
-      const list = byTrack.get(row.trackId) ?? [];
-      list.push({ id: row.id, name: row.name });
-      byTrack.set(row.trackId, list);
+  private async fetchReleases(
+    trackIds: string[],
+  ): Promise<Map<string, ArtistTrackRelease[]>> {
+    const rows = await this.txHost.tx
+      .select({
+        trackId: trackReleases.trackId,
+        mbid: trackReleases.mbid,
+        title: trackReleases.title,
+        year: trackReleases.year,
+        coverArtUrl: trackReleases.coverArtUrl,
+      })
+      .from(trackReleases)
+      .where(inArray(trackReleases.trackId, trackIds))
+      .orderBy(asc(trackReleases.title), asc(trackReleases.mbid));
+    return this.groupByTrack(rows);
+  }
+
+  private async fetchWorks(
+    trackIds: string[],
+  ): Promise<Map<string, ArtistTrackWork[]>> {
+    const rows = await this.txHost.tx
+      .select({
+        trackId: trackWorks.trackId,
+        mbid: trackWorks.mbid,
+        title: trackWorks.title,
+      })
+      .from(trackWorks)
+      .where(inArray(trackWorks.trackId, trackIds))
+      .orderBy(asc(trackWorks.title), asc(trackWorks.mbid));
+    return this.groupByTrack(rows);
+  }
+
+  private async fetchTags(
+    trackIds: string[],
+  ): Promise<Map<string, ArtistTrackTag[]>> {
+    const rows = await this.txHost.tx
+      .select({
+        trackId: trackTags.trackId,
+        name: trackTags.name,
+        count: trackTags.count,
+      })
+      .from(trackTags)
+      .where(inArray(trackTags.trackId, trackIds))
+      .orderBy(desc(trackTags.count), asc(trackTags.name));
+    return this.groupByTrack(rows);
+  }
+
+  private async fetchExternalLinks(
+    trackIds: string[],
+  ): Promise<Map<string, ArtistTrackExternalLink[]>> {
+    const rows = await this.txHost.tx
+      .select({
+        trackId: trackExternalLinks.trackId,
+        url: trackExternalLinks.url,
+        linkType: trackExternalLinks.linkType,
+      })
+      .from(trackExternalLinks)
+      .where(inArray(trackExternalLinks.trackId, trackIds))
+      .orderBy(asc(trackExternalLinks.linkType), asc(trackExternalLinks.url));
+    return this.groupByTrack(rows);
+  }
+
+  private groupByTrack<T extends { trackId: string }>(
+    rows: (T & { trackId: string })[],
+  ): Map<string, Omit<T, 'trackId'>[]> {
+    const byTrack = new Map<string, Omit<T, 'trackId'>[]>();
+    for (const row of rows) {
+      const { trackId, ...rest } = row;
+      const list = byTrack.get(trackId) ?? [];
+      list.push(rest as Omit<T, 'trackId'>);
+      byTrack.set(trackId, list);
     }
-
-    const items: ArtistTrack[] = page.map((row) => ({
-      ...row,
-      artists: byTrack.get(row.id) ?? [],
-    }));
-
-    const last = page[page.length - 1];
-    if (!last || !hasMore) {
-      return { items, nextCursor: null };
-    }
-    return {
-      items,
-      nextCursor: Buffer.from(last.id, 'utf8').toString('base64url'),
-    };
+    return byTrack;
   }
 }
