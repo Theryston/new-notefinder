@@ -102,8 +102,18 @@ for (const { locale, messages } of cases) {
       ).toHaveAttribute('href', `/${locale}/tracks/track-core-2-${locale}`);
     });
 
-    test('paginates without a full-page reload', async ({ page }) => {
+    test('loads the next page from the button without a full-page reload', async ({
+      page,
+    }) => {
       await mockAuthApi(page);
+      // The infinite-scroll sentinel would race the explicit button, so
+      // neutralize it: this test covers the button path only.
+      await page.addInitScript(() => {
+        const RealObserver = window.IntersectionObserver;
+        window.IntersectionObserver = class extends RealObserver {
+          override observe(): void {}
+        };
+      });
       const id = `artist-pages-${locale}`;
       const tracks: FakeTrack[] = [];
       for (let index = 0; index < 22; index += 1) {
@@ -139,9 +149,49 @@ for (const { locale, messages } of cases) {
       const urlBefore = page.url();
 
       await loadMore.click();
-      await expect(table.getByText('Paged Track 20')).toBeVisible();
+      await expect(table.getByText('Paged Track 21')).toBeVisible();
       expect(page.url()).toBe(urlBefore);
       await expect(table.getByText('Paged Track 00')).toBeVisible();
+    });
+
+    test('loads the next page on scroll without a full-page reload', async ({
+      page,
+    }) => {
+      await mockAuthApi(page);
+      const id = `artist-scroll-${locale}`;
+      const tracks: FakeTrack[] = [];
+      for (let index = 0; index < 22; index += 1) {
+        const padded = String(index).padStart(2, '0');
+        tracks.push(
+          makeTrack(id, 'Queen', index, {
+            id: `track-scroll-${locale}-${padded}`,
+            title: `Scrolled Track ${padded}`,
+          }),
+        );
+      }
+      await setArtistMock({
+        artists: [
+          {
+            id,
+            mbid: mbidOf(3005),
+            name: 'Queen',
+            genres: [],
+            trackCount: 22,
+          },
+        ],
+        tracksByArtist: { [id]: tracks },
+      });
+
+      await page.goto(`/${locale}/artists/${id}`);
+
+      const table = page.getByRole('table');
+      await expect(table.getByText('Scrolled Track 00')).toBeVisible();
+      const urlBefore = page.url();
+
+      await table.getByText('Scrolled Track 19').scrollIntoViewIfNeeded();
+      await expect(table.getByText('Scrolled Track 21')).toBeVisible();
+      expect(page.url()).toBe(urlBefore);
+      await expect(table.getByText('Scrolled Track 00')).toBeVisible();
     });
 
     test('stays readable on small screens', async ({ page }) => {
@@ -204,19 +254,20 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/${id}`);
 
-      // The header still paints; only the table shows the error UI.
+      // The header still paints; only the table shows the error UI. The
+      // query client retries 500s, so the error surfaces after ~7s.
       await expect(
         page.getByRole('heading', { level: 1, name: 'Queen' }),
       ).toBeVisible();
       await expect(
         page.getByText(messages.artists.tracks.error.title),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 20_000 });
       await page
         .getByRole('button', { name: messages.artists.tracks.error.retry })
         .click();
       await expect(
         page.getByText(messages.artists.tracks.error.title),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 20_000 });
     });
   });
 }
