@@ -39,7 +39,7 @@ export const resourceMovedDetailsSchema = z.object({
 
 export type ResourceMovedDetails = z.infer<typeof resourceMovedDetailsSchema>;
 
-/** One Artist of a Track row, in display order. */
+/** One Artist credited on a Track, in display order. */
 export const artistTrackArtistSchema = z.object({
   id: z.string().min(1).max(128),
   name: z.string().min(1).max(200),
@@ -48,12 +48,12 @@ export const artistTrackArtistSchema = z.object({
 export type ArtistTrackArtist = z.infer<typeof artistTrackArtistSchema>;
 
 /**
- * One processed Track on the artist page table: the core display columns
- * the singer scans to pick a song (title, artists, duration, ISRCs,
- * genres) plus the deeper MusicBrainz sections the row expands to show
- * (releases, works, tags, links). Stored in the API database when a
- * Recording is reprocessed, so reads never touch the Music catalog. One
- * entry per Recording. The deeper sections are optional for backward
+ * One processed Track listed on the artist page grid: the card shows the
+ * title, the performer names and the first-release cover, while the full
+ * shape also carries the catalog details the Track page shows (duration,
+ * ISRCs, genres, releases, works, tags, links). Stored in the API database
+ * when a Recording is reprocessed, so reads never touch the Music catalog.
+ * One entry per Recording. The deeper sections are optional for backward
  * compatibility and empty when the catalog has none.
  */
 export const artistTrackReleaseSchema = z.object({

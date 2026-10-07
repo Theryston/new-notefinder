@@ -18,7 +18,7 @@ export const cacheTags = {
   trackNotes: (trackId: string) => `track:${trackId}:notes`,
   trackLyrics: (trackId: string) => `track:${trackId}:lyrics`,
   artist: (artistId: string) => `artist:${artistId}`,
-  /** Paginated track table of one artist (`GET /v1/artists/:id/tracks`). */
+  /** Paginated track list of one artist (`GET /v1/artists/:id/tracks`). */
   artistTracks: (artistId: string) => `artist:${artistId}:tracks`,
   album: (albumId: string) => `album:${albumId}`,
   user: (userId: string) => `user:${userId}`,
