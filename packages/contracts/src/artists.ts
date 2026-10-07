@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { mbidSchema } from './music-catalog.js';
+import { cursorPageSchema } from './pagination.js';
 
 // The notefinder catalog's Artist: a public entity with its own URL,
 // distinct from a MusicBrainz artist credit. Created when a Recording is
@@ -37,3 +38,46 @@ export const resourceMovedDetailsSchema = z.object({
 });
 
 export type ResourceMovedDetails = z.infer<typeof resourceMovedDetailsSchema>;
+
+/** One Artist of a Track row, in display order. */
+export const artistTrackArtistSchema = z.object({
+  id: z.string().min(1).max(128),
+  name: z.string().min(1).max(200),
+});
+
+export type ArtistTrackArtist = z.infer<typeof artistTrackArtistSchema>;
+
+/**
+ * One processed Track on the artist page table: the core display columns
+ * the singer scans to pick a song (title, artists, duration, ISRCs,
+ * genres). Stored in the API database when a Recording is reprocessed, so
+ * reads never touch the Music catalog. One entry per Recording; the deeper
+ * MusicBrainz sections (releases, works, tags, links) arrive in a later
+ * slice as new optional fields.
+ */
+export const artistTrackSchema = z.object({
+  id: z.string().min(1).max(128),
+  title: z.string().min(1).max(500),
+  /** In milliseconds; null when MusicBrainz has none. */
+  lengthMs: z.number().int().nonnegative().nullable(),
+  /** Tells apart Recordings with the same title and artist; '' when none. */
+  disambiguation: z.string().max(500),
+  /** Whether the Recording is a video. */
+  video: z.boolean(),
+  isrcs: z.array(z.string().min(1).max(32)).max(30),
+  /** Every linked Artist, in alphabetical order; never empty. */
+  artists: z.array(artistTrackArtistSchema).min(1).max(30),
+  /** Display genres, most relevant first; empty when unknown. */
+  genres: z.array(z.string().min(1).max(100)).max(30),
+});
+
+export type ArtistTrack = z.infer<typeof artistTrackSchema>;
+
+/**
+ * One page of `GET /v1/artists/:id/tracks`: cursor-paginated with one
+ * entry per processed Recording, in stable `id` order. Cursors are opaque
+ * base64url strings, never raw offsets.
+ */
+export const artistTracksPageSchema = cursorPageSchema(artistTrackSchema);
+
+export type ArtistTracksPage = z.infer<typeof artistTracksPageSchema>;

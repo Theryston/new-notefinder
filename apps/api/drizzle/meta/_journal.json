@@ -22,6 +22,13 @@
       "when": 1791320108255,
       "tag": "0002_artists-catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791337494806,
+      "tag": "0003_faulty_toro",
+      "breakpoints": true
     }
   ]
 }

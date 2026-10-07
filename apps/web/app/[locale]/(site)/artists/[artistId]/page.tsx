@@ -3,7 +3,11 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { ArtistHeader } from '@/features/artists/components/artist-header';
-import { getArtistResult } from '@/features/artists/queries';
+import { ArtistTracksSection } from '@/features/artists/components/artist-tracks-section';
+import {
+  getArtistResult,
+  getArtistTracksPage,
+} from '@/features/artists/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
 
@@ -66,10 +70,10 @@ export async function generateMetadata({
 
 /**
  * Thin artist route: reads the ID, fetches the cached header outcome and
- * renders it. A legacy ID permanently redirects (308) to the new ID with
- * the query kept; an unknown ID is a real 404. Both are normally decided
- * by the proxy before this renders (see above); the checks below are its
- * fallback.
+ * its first track-table page, then renders both. A legacy ID permanently
+ * redirects (308) to the new ID with the query kept; an unknown ID is a
+ * real 404. Both are normally decided by the proxy before this renders
+ * (see above); the checks below are its fallback.
  */
 export default async function ArtistRoutePage({
   params,
@@ -89,5 +93,19 @@ export default async function ArtistRoutePage({
   if (result.status === 'missing') {
     notFound();
   }
-  return <ArtistHeader artist={result.artist} />;
+  // The table brings its own loading/error/empty UI through the client
+  // query below, so a tracks failure must not take the header with it:
+  // fall back to a client-side fetch instead of rejecting the whole page.
+  const initialPage = await getArtistTracksPage(result.artist.id).catch(
+    () => undefined,
+  );
+  return (
+    <div className="flex flex-col gap-8">
+      <ArtistHeader artist={result.artist} />
+      <ArtistTracksSection
+        artistId={result.artist.id}
+        initialPage={initialPage}
+      />
+    </div>
+  );
 }

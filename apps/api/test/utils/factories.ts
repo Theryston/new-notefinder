@@ -124,7 +124,16 @@ export const createTrack = (
   return insertOne(
     db
       .insert(tracks)
-      .values({ recordingMbid: testMbid(n), ...overrides })
+      .values({
+        recordingMbid: testMbid(n),
+        title: `Track ${n}`,
+        lengthMs: 180_000 + n * 1_000,
+        disambiguation: '',
+        video: false,
+        isrcs: [`USRC${String(n).padStart(9, '0')}`],
+        genres: ['rock'],
+        ...overrides,
+      })
       .returning(),
   );
 };

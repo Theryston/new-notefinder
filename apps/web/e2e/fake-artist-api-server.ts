@@ -5,6 +5,12 @@ import {
   type ServerResponse,
 } from 'node:http';
 
+import {
+  defaultArtistTracks,
+  type FakeTrack,
+  paginateFakeTracks,
+} from './fake-artist-tracks.ts';
+
 /**
  * Fake API for the artist Playwright suite and the legacy-routes suite.
  *
@@ -31,6 +37,9 @@ export type FakeArtist = {
 export type ArtistMockState = {
   artists?: FakeArtist[];
   legacyMap?: Record<string, string>;
+  tracksByArtist?: Record<string, FakeTrack[]>;
+  /** Artists whose track table answers a fixed error (error-UI specs). */
+  tracksErrorByArtist?: Record<string, { status: number; code: string }>;
 };
 
 /** Resolves the legacy-routes sample without any per-test setup. */
@@ -48,11 +57,15 @@ const defaultLegacyMap: Record<string, string> = {
 
 const artists = new Map<string, FakeArtist>();
 const legacyMap = new Map<string, string>();
+const tracksByArtist = new Map<string, FakeTrack[]>();
+const tracksErrorByArtist = new Map<string, { status: number; code: string }>();
 
 const resetDefaults = (): void => {
   artists.clear();
   legacyMap.clear();
+  tracksByArtist.clear();
   artists.set(defaultArtist.id, { ...defaultArtist });
+  tracksByArtist.set(defaultArtist.id, [...defaultArtistTracks]);
   for (const [legacyId, artistId] of Object.entries(defaultLegacyMap)) {
     legacyMap.set(legacyId, artistId);
   }
@@ -127,24 +140,62 @@ const serveArtist = async (
   notFound(response);
 };
 
+const serveArtistTracks = (
+  id: string,
+  search: URLSearchParams,
+  response: ServerResponse,
+): void => {
+  if (!artists.get(id)) {
+    const newId = legacyMap.get(id);
+    if (newId) {
+      json(response, 404, {
+        statusCode: 404,
+        code: 'RESOURCE_MOVED',
+        message: 'Artist moved',
+        details: { id: newId },
+      });
+      return;
+    }
+    notFound(response);
+    return;
+  }
+  const failure = tracksErrorByArtist.get(id);
+  if (failure) {
+    json(response, failure.status, {
+      statusCode: failure.status,
+      code: failure.code,
+      message: 'Fake tracks failure',
+    });
+    return;
+  }
+  const page = paginateFakeTracks(tracksByArtist.get(id) ?? [], search);
+  json(response, page.status, page.body);
+};
+
 const serveMockSet = async (
   request: IncomingMessage,
   response: ServerResponse,
 ): Promise<void> => {
   const state = (await readBody(request)) as ArtistMockState;
-  for (const artist of state.artists ?? []) {
-    artists.set(artist.id, artist);
-  }
+  for (const artist of state.artists ?? []) artists.set(artist.id, artist);
   for (const [legacyId, artistId] of Object.entries(state.legacyMap ?? {})) {
     legacyMap.set(legacyId, artistId);
+  }
+  for (const [artistId, tracks] of Object.entries(state.tracksByArtist ?? {})) {
+    tracksByArtist.set(artistId, tracks);
+  }
+  for (const [artistId, failure] of Object.entries(
+    state.tracksErrorByArtist ?? {},
+  )) {
+    tracksErrorByArtist.set(artistId, failure);
   }
   json(response, 200, { ok: true });
 };
 
 /**
  * Point the e2e Next server at this fake by setting its fixtures:
- * upserts artists and legacy mappings (merged, never reset, so parallel
- * workers with distinct IDs never race).
+ * upserts artists, tracks and legacy mappings (merged, never reset, so
+ * parallel workers with distinct IDs never race).
  */
 export const setArtistMock = async (
   state: ArtistMockState,
@@ -205,6 +256,15 @@ const serveRequest = async (
     if (route.method !== request.method) continue;
     if (route.pathname !== '*' && route.pathname !== url.pathname) continue;
     await route.serve(request, response, url.pathname);
+    return;
+  }
+  const tracksMatch = /^\/v1\/artists\/([^/]+)\/tracks$/.exec(url.pathname);
+  if (tracksMatch?.[1] && request.method === 'GET') {
+    serveArtistTracks(
+      decodeURIComponent(tracksMatch[1]),
+      url.searchParams,
+      response,
+    );
     return;
   }
   const match = /^\/v1\/artists\/([^/]+)$/.exec(url.pathname);
