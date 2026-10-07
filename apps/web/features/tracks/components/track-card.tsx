@@ -1,6 +1,5 @@
 'use client';
 
-import type { SearchResultItem } from '@notefinder/contracts';
 import { PlayIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -26,26 +25,39 @@ function CoverPlay({ label }: { label: string }) {
   );
 }
 
+export type TrackCardProps = {
+  trackId: string | null;
+  title: string;
+  subtitle: string;
+  coverArtUrl?: string | null;
+  placeholderSeed: string;
+};
+
 /**
- * One search hit as a cover-grid card (Spotify): the primary release art
- * (or a deterministic geometric placeholder when there is none), the title
- * plus the artist credit, and a hover-only play affordance. The hover and
- * the play badge exist whether or not the Recording already has a
- * `trackId`: with one the whole card links to the Track page, without one
- * the card is static and only the play button focuses.
+ * One track as a cover-grid card (Spotify): the cover art (or a
+ * deterministic geometric placeholder when there is none), the title plus
+ * the subtitle, and a hover-only play affordance. The hover and the play
+ * badge exist whether or not the card already has a `trackId`: with one
+ * the whole card links to the Track page, without one the card is static
+ * and only the play button focuses.
  */
-export function TrackCard({ result }: { result: SearchResultItem }) {
-  const t = useTranslations('search');
+export function TrackCard({
+  trackId,
+  title,
+  subtitle,
+  coverArtUrl,
+  placeholderSeed,
+}: TrackCardProps) {
+  const t = useTranslations('tracks');
   const [artFailed, setArtFailed] = useState(false);
-  const coverUrl = result.primaryRelease?.coverArtUrl;
-  const showArt = coverUrl && !artFailed;
-  const playLabel = t('card.play', { title: result.title });
+  const showArt = coverArtUrl && !artFailed;
+  const playLabel = t('card.play', { title });
 
   const cover = (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
       {showArt ? (
         <Image
-          src={coverUrl}
+          src={coverArtUrl}
           alt=""
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw"
@@ -53,9 +65,9 @@ export function TrackCard({ result }: { result: SearchResultItem }) {
           onError={() => setArtFailed(true)}
         />
       ) : (
-        <TrackCoverPlaceholder seed={result.mbid} />
+        <TrackCoverPlaceholder seed={placeholderSeed} />
       )}
-      {result.trackId ? (
+      {trackId ? (
         <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
           <PlayIcon className="size-4 fill-current" />
         </span>
@@ -67,14 +79,14 @@ export function TrackCard({ result }: { result: SearchResultItem }) {
 
   const text = (
     <span className="flex min-w-0 flex-col gap-0.5 px-1">
-      <span className="truncate font-semibold text-sm">{result.title}</span>
+      <span className="truncate font-semibold text-sm">{title}</span>
       <span className="truncate font-medium text-muted-foreground text-xs">
-        {result.artistCredit.name}
+        {subtitle}
       </span>
     </span>
   );
 
-  if (!result.trackId) {
+  if (!trackId) {
     return (
       <div className="group flex flex-col gap-1.5 rounded-2xl p-2 outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50">
         {cover}
@@ -85,7 +97,7 @@ export function TrackCard({ result }: { result: SearchResultItem }) {
 
   return (
     <Link
-      href={`/tracks/${result.trackId}`}
+      href={`/tracks/${trackId}`}
       className={cn(
         'group flex flex-col gap-1.5 rounded-2xl p-2 outline-none',
         'transition-colors duration-150 ease-out hover:bg-accent',

@@ -36,7 +36,9 @@
       "description": "Algo deu errado. Confira sua conexão e tente novamente.",
       "retry": "Tentar novamente"
     },
-    "loadMore": "Carregar mais",
+    "loadMore": "Carregar mais"
+  },
+  "tracks": {
     "card": {
       "play": "Tocar {title}"
     }

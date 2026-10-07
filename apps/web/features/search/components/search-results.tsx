@@ -9,6 +9,7 @@ import { TrackCard } from '@/features/tracks/components/track-card';
 import { cn } from '@/lib/utils';
 
 import { useSearchResults } from '../hooks/use-search-results';
+import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchCardSkeleton } from './search-card-skeleton';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
@@ -95,7 +96,7 @@ export function SearchResults({
         )}
       >
         {items.map((item) => (
-          <TrackCard key={item.mbid} result={item} />
+          <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
         ))}
         {isFetchingNextPage ? <MoreSkeletonCards /> : null}
       </div>
