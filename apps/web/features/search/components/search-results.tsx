@@ -6,11 +6,11 @@ import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { TrackCard } from '@/features/tracks/components/track-card';
-import { cn } from '@/lib/utils';
+import { TrackCardGrid } from '@/features/tracks/components/track-card-grid';
+import { TrackCardSkeleton } from '@/features/tracks/components/track-card-skeleton';
 
 import { useSearchResults } from '../hooks/use-search-results';
 import { toTrackCardProps } from '../search-result-to-track-card';
-import { SearchCardSkeleton } from './search-card-skeleton';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
 import { SearchSkeleton } from './search-skeleton';
@@ -28,7 +28,7 @@ function MoreSkeletonCards() {
         'more-5',
         'more-6',
       ].map((key) => (
-        <SearchCardSkeleton key={key} />
+        <TrackCardSkeleton key={key} />
       ))}
     </>
   );
@@ -86,20 +86,12 @@ export function SearchResults({
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        data-stale={stale || undefined}
-        aria-busy={stale}
-        inert={stale}
-        className={cn(
-          'grid grid-cols-2 gap-2 transition-opacity duration-150 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6',
-          stale && 'pointer-events-none opacity-50',
-        )}
-      >
+      <TrackCardGrid stale={stale}>
         {items.map((item) => (
           <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
         ))}
         {isFetchingNextPage ? <MoreSkeletonCards /> : null}
-      </div>
+      </TrackCardGrid>
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       {hasNextPage ? (
         <Button
