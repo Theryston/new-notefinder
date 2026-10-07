@@ -12,7 +12,7 @@ import { id, timestamps } from '../columns.js';
  * Track catalog row with its core display columns: what the artist page
  * table scans (title, duration, ISRCs, genres) plus the disambiguation and
  * video flag that tell takes apart. The deeper MusicBrainz sections
- * (releases, works, tags, links) live in companion tables in a later slice.
+ * (releases, works, tags, links) live in the companion tables below.
  * Starts empty: every search hit is unlinked until data is processed. One
  * Track per Recording (Recordings are never grouped).
  */
@@ -39,6 +39,84 @@ export const tracks = pgTable(
     ...timestamps,
   },
   (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],
+);
+
+/**
+ * Every release a Track's Recording appears on: what the expandable
+ * releases section shows (title, year, cover art URL with fallback).
+ * One Recording that is on two tracks of one release appears once per
+ * release here (the track position is a Music catalog concern, not a
+ * display one). Ordered by title in reads.
+ */
+export const trackReleases = pgTable(
+  'track_releases',
+  {
+    id: id(),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    mbid: text().notNull(),
+    title: text().notNull(),
+    year: integer(),
+    coverArtUrl: text(),
+    ...timestamps,
+  },
+  (table) => [index().on(table.trackId)],
+);
+
+/**
+ * Every work a Track's Recording links to: what the expandable works
+ * section shows. Ordered by title in reads.
+ */
+export const trackWorks = pgTable(
+  'track_works',
+  {
+    id: id(),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    mbid: text().notNull(),
+    title: text().notNull(),
+    ...timestamps,
+  },
+  (table) => [index().on(table.trackId)],
+);
+
+/**
+ * Every tag of a Track's Recording: what the expandable tags section
+ * shows, most voted first. Genres stay on the core row; tags are the
+ * deeper exploration list.
+ */
+export const trackTags = pgTable(
+  'track_tags',
+  {
+    id: id(),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    name: text().notNull(),
+    count: integer().notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [index().on(table.trackId)],
+);
+
+/**
+ * Every external URL of a Track's Recording: what the expandable links
+ * section shows (streaming, MusicBrainz). Ordered by link type in reads.
+ */
+export const trackExternalLinks = pgTable(
+  'track_external_links',
+  {
+    id: id(),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    url: text().notNull(),
+    linkType: text().notNull(),
+    ...timestamps,
+  },
+  (table) => [index().on(table.trackId)],
 );
 
 /**

@@ -50,11 +50,47 @@ export type ArtistTrackArtist = z.infer<typeof artistTrackArtistSchema>;
 /**
  * One processed Track on the artist page table: the core display columns
  * the singer scans to pick a song (title, artists, duration, ISRCs,
- * genres). Stored in the API database when a Recording is reprocessed, so
- * reads never touch the Music catalog. One entry per Recording; the deeper
- * MusicBrainz sections (releases, works, tags, links) arrive in a later
- * slice as new optional fields.
+ * genres) plus the deeper MusicBrainz sections the row expands to show
+ * (releases, works, tags, links). Stored in the API database when a
+ * Recording is reprocessed, so reads never touch the Music catalog. One
+ * entry per Recording. The deeper sections are optional for backward
+ * compatibility and empty when the catalog has none.
  */
+export const artistTrackReleaseSchema = z.object({
+  mbid: mbidSchema,
+  title: z.string().min(1).max(500),
+  /** Release year derived from the earliest release event; null when unknown. */
+  year: z.number().int().min(1000).max(9999).nullable(),
+  /** Cover Art Archive URL built from the release MBID; null when unknown. */
+  coverArtUrl: z.string().min(1).max(2000).nullable(),
+});
+
+export type ArtistTrackRelease = z.infer<typeof artistTrackReleaseSchema>;
+
+export const artistTrackWorkSchema = z.object({
+  mbid: mbidSchema,
+  title: z.string().min(1).max(500),
+});
+
+export type ArtistTrackWork = z.infer<typeof artistTrackWorkSchema>;
+
+export const artistTrackTagSchema = z.object({
+  name: z.string().min(1).max(100),
+  count: z.number().int().nonnegative(),
+});
+
+export type ArtistTrackTag = z.infer<typeof artistTrackTagSchema>;
+
+export const artistTrackExternalLinkSchema = z.object({
+  url: z.string().min(1).max(2000),
+  /** MusicBrainz's name for the relationship, e.g. "streaming music". */
+  linkType: z.string().min(1).max(100),
+});
+
+export type ArtistTrackExternalLink = z.infer<
+  typeof artistTrackExternalLinkSchema
+>;
+
 export const artistTrackSchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().min(1).max(500),
@@ -69,6 +105,14 @@ export const artistTrackSchema = z.object({
   artists: z.array(artistTrackArtistSchema).min(1).max(30),
   /** Display genres, most relevant first; empty when unknown. */
   genres: z.array(z.string().min(1).max(100)).max(30),
+  /** Every release the Recording appears on, in title order; empty when none. */
+  releases: z.array(artistTrackReleaseSchema).max(30).optional(),
+  /** Every linked work, in title order; empty when none. */
+  works: z.array(artistTrackWorkSchema).max(30).optional(),
+  /** Every tag, most voted first; empty when none. */
+  tags: z.array(artistTrackTagSchema).max(30).optional(),
+  /** Every external URL, in link-type order; empty when none. */
+  externalLinks: z.array(artistTrackExternalLinkSchema).max(30).optional(),
 });
 
 export type ArtistTrack = z.infer<typeof artistTrackSchema>;

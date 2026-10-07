@@ -5,6 +5,19 @@
  * gate: pure pagination over in-memory tracks, no HTTP here.
  */
 
+type FakeTrackRelease = {
+  mbid: string;
+  title: string;
+  year: number | null;
+  coverArtUrl: string | null;
+};
+
+type FakeTrackWork = { mbid: string; title: string };
+
+type FakeTrackTag = { name: string; count: number };
+
+type FakeTrackExternalLink = { url: string; linkType: string };
+
 export type FakeTrack = {
   id: string;
   title: string;
@@ -14,6 +27,10 @@ export type FakeTrack = {
   isrcs: string[];
   artists: { id: string; name: string }[];
   genres: string[];
+  releases?: FakeTrackRelease[];
+  works?: FakeTrackWork[];
+  tags?: FakeTrackTag[];
+  externalLinks?: FakeTrackExternalLink[];
 };
 
 export const defaultArtistTracks: FakeTrack[] = [
@@ -26,6 +43,24 @@ export const defaultArtistTracks: FakeTrack[] = [
     isrcs: ['GBUM71029604'],
     artists: [{ id: 'clx456def', name: 'Queen' }],
     genres: ['rock'],
+    releases: [
+      {
+        mbid: '00000000-0000-4000-8000-000000002101',
+        title: 'A Night at the Opera',
+        year: 1975,
+        coverArtUrl: 'https://coverartarchive.org/release/2101/front-500',
+      },
+    ],
+    works: [
+      {
+        mbid: '00000000-0000-4000-8000-000000003101',
+        title: 'Bohemian Rhapsody work',
+      },
+    ],
+    tags: [{ name: 'rock', count: 10 }],
+    externalLinks: [
+      { url: 'https://open.spotify.com/track/123', linkType: 'streaming' },
+    ],
   },
   {
     id: 'track-default-2',
@@ -36,6 +71,10 @@ export const defaultArtistTracks: FakeTrack[] = [
     isrcs: [],
     artists: [{ id: 'clx456def', name: 'Queen' }],
     genres: ['pop'],
+    releases: [],
+    works: [],
+    tags: [],
+    externalLinks: [],
   },
 ];
 
