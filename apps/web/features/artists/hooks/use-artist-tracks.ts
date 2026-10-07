@@ -23,7 +23,7 @@ type ArtistTracksPageParams = {
 };
 
 /**
- * One cursor page of the artist track table
+ * One cursor page of the artist track list
  * (`GET /v1/artists/:id/tracks`), in stable `id` order. The signal aborts
  * superseded fetches, so stale pages never overwrite fresh ones.
  */
@@ -47,9 +47,9 @@ export type ArtistTracksInfiniteInput = {
 };
 
 /**
- * Infinite track rows keyed by artist plus page size (the cursor travels
+ * Infinite track cards keyed by artist plus page size (the cursor travels
  * as the page param). The server-rendered first page hydrates it, so the
- * table shows instantly and only later pages hit the network.
+ * grid shows instantly and only later pages hit the network.
  */
 export function artistTracksInfiniteQueryOptions({
   artistId,
@@ -82,7 +82,7 @@ export function artistTracksInfiniteQueryOptions({
   });
 }
 
-/** Paginated track rows for the artist page table. */
+/** Paginated track cards for the artist page grid. */
 export function useArtistTracks(input: ArtistTracksInfiniteInput) {
   return useInfiniteQuery(artistTracksInfiniteQueryOptions(input));
 }

@@ -7,32 +7,13 @@ import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { TrackCard } from '@/features/tracks/components/track-card';
 import { TrackCardGrid } from '@/features/tracks/components/track-card-grid';
-import { TrackCardSkeleton } from '@/features/tracks/components/track-card-skeleton';
+import { TrackCardMoreSkeletons } from '@/features/tracks/components/track-card-skeleton';
 
 import { useSearchResults } from '../hooks/use-search-results';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
 import { SearchSkeleton } from './search-skeleton';
-
-/** Seven more card blocks appended while the next page loads. */
-function MoreSkeletonCards() {
-  return (
-    <>
-      {[
-        'more-0',
-        'more-1',
-        'more-2',
-        'more-3',
-        'more-4',
-        'more-5',
-        'more-6',
-      ].map((key) => (
-        <TrackCardSkeleton key={key} />
-      ))}
-    </>
-  );
-}
 
 /**
  * The result grid for a searchable query: best-first cards, infinite
@@ -90,7 +71,7 @@ export function SearchResults({
         {items.map((item) => (
           <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
         ))}
-        {isFetchingNextPage ? <MoreSkeletonCards /> : null}
+        {isFetchingNextPage ? <TrackCardMoreSkeletons /> : null}
       </TrackCardGrid>
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       {hasNextPage ? (

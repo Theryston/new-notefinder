@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 
-/** Empty track table: the artist has no processed tracks yet. */
+/** Empty track grid: the artist has no processed tracks yet. */
 export function ArtistTracksEmpty() {
   const t = useTranslations('artists');
   return (
@@ -17,7 +17,7 @@ export function ArtistTracksEmpty() {
   );
 }
 
-/** Track table error with a retry, for network or API failures. */
+/** Track grid error with a retry, for network or API failures. */
 export function ArtistTracksError({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('artists');
   return (

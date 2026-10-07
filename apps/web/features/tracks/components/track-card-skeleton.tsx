@@ -16,3 +16,28 @@ export function TrackCardSkeleton() {
     </div>
   );
 }
+
+const MORE_SKELETON_KEYS = [
+  'more-0',
+  'more-1',
+  'more-2',
+  'more-3',
+  'more-4',
+  'more-5',
+  'more-6',
+];
+
+/**
+ * Card blocks appended while the next page loads. Shared by every
+ * paginated cover grid (Search, Artist) so the paging append looks
+ * identical everywhere.
+ */
+export function TrackCardMoreSkeletons() {
+  return (
+    <>
+      {MORE_SKELETON_KEYS.map((key) => (
+        <TrackCardSkeleton key={key} />
+      ))}
+    </>
+  );
+}

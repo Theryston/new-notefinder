@@ -397,17 +397,6 @@
     },
     "tracks": {
       "title": "Tracks",
-      "columns": {
-        "title": "Title",
-        "artists": "Artists",
-        "duration": "Duration",
-        "isrcs": "ISRCs",
-        "genres": "Genres"
-      },
-      "video": "Video",
-      "unknownDuration": "—",
-      "noIsrcs": "—",
-      "noGenres": "—",
       "loading": "Loading tracks…",
       "loadingMore": "Loading more tracks…",
       "loadMore": "Load more",
@@ -419,20 +408,6 @@
         "title": "Tracks are unavailable",
         "description": "Something went wrong. Check your connection and try again.",
         "retry": "Try again"
-      },
-      "details": {
-        "expand": "Show details for {title}",
-        "collapse": "Hide details for {title}",
-        "releases": "Releases",
-        "works": "Works",
-        "tags": "Tags",
-        "links": "External links",
-        "noReleases": "No releases listed.",
-        "noWorks": "No works listed.",
-        "noTags": "No tags listed.",
-        "noLinks": "No external links listed.",
-        "coverAlt": "Cover art for {title}",
-        "openExternal": "Open {linkType} link"
       }
     },
     "notFound": {

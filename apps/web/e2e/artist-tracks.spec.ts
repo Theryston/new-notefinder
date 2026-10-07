@@ -19,7 +19,7 @@ const makeTrack = (
   index: number,
   overrides: Partial<FakeTrack> = {},
 ): FakeTrack => ({
-  id: `track-table-${index}`,
+  id: `track-card-${index}`,
   title: `Track ${index}`,
   lengthMs: 180_000 + index * 1_000,
   disambiguation: '',
@@ -31,12 +31,12 @@ const makeTrack = (
 });
 
 for (const { locale, messages } of cases) {
-  test.describe(`artist track table (${locale})`, () => {
-    test('renders core columns with row links to the track page', async ({
+  test.describe(`artist track cards (${locale})`, () => {
+    test('renders cards with title, artists subtitle and track links', async ({
       page,
     }) => {
       await mockAuthApi(page);
-      const id = `artist-tracks-${locale}`;
+      const id = `artist-cards-${locale}`;
       await setArtistMock({
         artists: [
           {
@@ -50,20 +50,26 @@ for (const { locale, messages } of cases) {
         tracksByArtist: {
           [id]: [
             makeTrack(id, 'Queen', 1, {
-              id: `track-core-1-${locale}`,
+              id: `track-card-1-${locale}`,
               title: 'Bohemian Rhapsody',
-              lengthMs: 354_000,
-              disambiguation: 'live',
-              video: true,
-              isrcs: ['GBUM71029604'],
-              genres: ['rock', 'pop'],
+              artists: [
+                { id, name: 'Queen' },
+                { id: 'artist-collab', name: 'David Bowie' },
+              ],
+              releases: [
+                {
+                  mbid: mbidOf(2101),
+                  title: 'A Night at the Opera',
+                  year: 1975,
+                  coverArtUrl:
+                    'https://coverartarchive.org/release/2101/front-500',
+                },
+              ],
             }),
             makeTrack(id, 'Queen', 2, {
-              id: `track-core-2-${locale}`,
+              id: `track-card-2-${locale}`,
               title: 'Unknown Take',
-              lengthMs: null,
-              isrcs: [],
-              genres: [],
+              releases: [],
             }),
           ],
         },
@@ -71,35 +77,32 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/${id}`);
 
-      const table = page.getByRole('table');
-      await expect(table).toBeVisible();
-      for (const header of [
-        messages.artists.tracks.columns.title,
-        messages.artists.tracks.columns.artists,
-        messages.artists.tracks.columns.duration,
-        messages.artists.tracks.columns.isrcs,
-        messages.artists.tracks.columns.genres,
-      ]) {
-        await expect(
-          table.getByRole('columnheader', { name: header }),
-        ).toBeVisible();
-      }
-
-      await expect(table.getByText('Bohemian Rhapsody')).toBeVisible();
-      await expect(table.getByText('live')).toBeVisible();
       await expect(
-        table.getByText(messages.artists.tracks.video),
+        page.getByRole('heading', {
+          level: 2,
+          name: messages.artists.tracks.title,
+        }),
       ).toBeVisible();
-      await expect(table.getByText('5:54')).toBeVisible();
-      await expect(table.getByText('GBUM71029604')).toBeVisible();
-      // Unknown length, ISRCs and genres render the translated placeholder.
-      await expect(table.getByText('—')).toHaveCount(3);
-      await expect(
-        table.getByRole('link', { name: /Bohemian Rhapsody/ }),
-      ).toHaveAttribute('href', `/${locale}/tracks/track-core-1-${locale}`);
-      await expect(
-        table.getByRole('link', { name: /Unknown Take/ }),
-      ).toHaveAttribute('href', `/${locale}/tracks/track-core-2-${locale}`);
+
+      const first = page.getByRole('link', { name: /Bohemian Rhapsody/ });
+      await expect(first).toBeVisible();
+      await expect(first).toContainText('Queen, David Bowie');
+      await expect(first).toHaveAttribute(
+        'href',
+        `/${locale}/tracks/track-card-1-${locale}`,
+      );
+
+      const second = page.getByRole('link', { name: /Unknown Take/ });
+      await expect(second).toBeVisible();
+      await expect(second).toContainText('Queen');
+      await expect(second).toHaveAttribute(
+        'href',
+        `/${locale}/tracks/track-card-2-${locale}`,
+      );
+
+      // Keyboard-focusable with a visible focus (no mouse needed).
+      await first.focus();
+      await expect(first).toBeFocused();
     });
 
     test('loads the next page from the button without a full-page reload', async ({
@@ -140,8 +143,7 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/${id}`);
 
-      const table = page.getByRole('table');
-      await expect(table.getByText('Paged Track 00')).toBeVisible();
+      await expect(page.getByText('Paged Track 00')).toBeVisible();
       const loadMore = page.getByRole('button', {
         name: messages.artists.tracks.loadMore,
       });
@@ -149,9 +151,9 @@ for (const { locale, messages } of cases) {
       const urlBefore = page.url();
 
       await loadMore.click();
-      await expect(table.getByText('Paged Track 21')).toBeVisible();
+      await expect(page.getByText('Paged Track 21')).toBeVisible();
       expect(page.url()).toBe(urlBefore);
-      await expect(table.getByText('Paged Track 00')).toBeVisible();
+      await expect(page.getByText('Paged Track 00')).toBeVisible();
     });
 
     test('loads the next page on scroll without a full-page reload', async ({
@@ -184,14 +186,13 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/${id}`);
 
-      const table = page.getByRole('table');
-      await expect(table.getByText('Scrolled Track 00')).toBeVisible();
+      await expect(page.getByText('Scrolled Track 00')).toBeVisible();
       const urlBefore = page.url();
 
-      await table.getByText('Scrolled Track 19').scrollIntoViewIfNeeded();
-      await expect(table.getByText('Scrolled Track 21')).toBeVisible();
+      await page.getByText('Scrolled Track 19').scrollIntoViewIfNeeded();
+      await expect(page.getByText('Scrolled Track 21')).toBeVisible();
       expect(page.url()).toBe(urlBefore);
-      await expect(table.getByText('Scrolled Track 00')).toBeVisible();
+      await expect(page.getByText('Scrolled Track 00')).toBeVisible();
     });
 
     test('stays readable on small screens', async ({ page }) => {
@@ -200,7 +201,9 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/clx456def`);
 
-      await expect(page.getByRole('table')).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /Bohemian Rhapsody/ }),
+      ).toBeVisible();
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - window.innerWidth,
       );
@@ -228,6 +231,12 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/artists/${id}`);
 
       await expect(
+        page.getByRole('heading', {
+          level: 2,
+          name: messages.artists.tracks.title,
+        }),
+      ).toBeVisible();
+      await expect(
         page.getByText(messages.artists.tracks.empty.title),
       ).toBeVisible();
     });
@@ -254,10 +263,16 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/artists/${id}`);
 
-      // The header still paints; only the table shows the error UI. The
+      // The header still paints; only the grid shows the error UI. The
       // query client retries 500s, so the error surfaces after ~7s.
       await expect(
         page.getByRole('heading', { level: 1, name: 'Queen' }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('heading', {
+          level: 2,
+          name: messages.artists.tracks.title,
+        }),
       ).toBeVisible();
       await expect(
         page.getByText(messages.artists.tracks.error.title),
@@ -272,18 +287,16 @@ for (const { locale, messages } of cases) {
   });
 }
 
-test.describe('artist track table defaults', () => {
+test.describe('artist track cards defaults', () => {
   test('default artist lists its sample tracks with links', async ({
     page,
   }) => {
     await mockAuthApi(page);
     await page.goto('/en/artists/clx456def');
 
-    const table = page.getByRole('table');
-    await expect(table).toBeVisible();
     for (const track of defaultArtistTracks) {
       await expect(
-        table.getByRole('link', { name: new RegExp(track.title) }),
+        page.getByRole('link', { name: new RegExp(track.title) }),
       ).toHaveAttribute('href', `/en/tracks/${track.id}`);
     }
   });

@@ -47,9 +47,9 @@ export type ArtistTracksPageInput = {
 };
 
 /**
- * One page of the artist's track table, cached per artist plus cursor.
+ * One page of the artist's track grid, cached per artist plus cursor.
  * Only called for a found artist (the page redirects moved/missing via
- * `getArtistResult` first), so failures throw and the table shows its
+ * `getArtistResult` first), so failures throw and the grid shows its
  * error UI with a retry.
  */
 export async function getArtistTracksPage(
