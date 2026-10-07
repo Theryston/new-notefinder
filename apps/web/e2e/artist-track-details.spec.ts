@@ -95,16 +95,20 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/artists/${id}`);
 
       const details = messages.artists.tracks.details;
-      const expand = page.getByRole('button', {
-        name: details.expand.replace('{title}', 'Bohemian Rhapsody'),
-      });
+      const expandName = details.expand.replace('{title}', 'Bohemian Rhapsody');
+      const collapseName = details.collapse.replace(
+        '{title}',
+        'Bohemian Rhapsody',
+      );
+      const expand = page.getByRole('button', { name: expandName });
       await expect(expand).toHaveAttribute('aria-expanded', 'false');
 
       // Hidden until expanded.
       await expect(page.getByText('A Night at the Opera')).toHaveCount(0);
 
       await expand.click();
-      await expect(expand).toHaveAttribute('aria-expanded', 'true');
+      const collapse = page.getByRole('button', { name: collapseName });
+      await expect(collapse).toHaveAttribute('aria-expanded', 'true');
       await expect(page.getByText('A Night at the Opera')).toBeVisible();
       await expect(page.getByText('Greatest Hits')).toBeVisible();
       await expect(page.getByText('(1975)')).toBeVisible();
@@ -125,11 +129,10 @@ for (const { locale, messages } of cases) {
         ).toBeVisible();
       }
 
-      const collapse = page.getByRole('button', {
-        name: details.collapse.replace('{title}', 'Bohemian Rhapsody'),
-      });
       await collapse.click();
-      await expect(expand).toHaveAttribute('aria-expanded', 'false');
+      await expect(
+        page.getByRole('button', { name: expandName }),
+      ).toHaveAttribute('aria-expanded', 'false');
       await expect(page.getByText('A Night at the Opera')).toHaveCount(0);
     });
 
@@ -159,13 +162,15 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/artists/${id}`);
 
       const details = messages.artists.tracks.details;
-      const expand = page.getByRole('button', {
-        name: details.expand.replace('{title}', 'Unknown Take'),
-      });
+      const expandName = details.expand.replace('{title}', 'Unknown Take');
+      const collapseName = details.collapse.replace('{title}', 'Unknown Take');
+      const expand = page.getByRole('button', { name: expandName });
 
       await expand.focus();
       await page.keyboard.press('Enter');
-      await expect(expand).toHaveAttribute('aria-expanded', 'true');
+      await expect(
+        page.getByRole('button', { name: collapseName }),
+      ).toHaveAttribute('aria-expanded', 'true');
 
       for (const empty of [
         details.noReleases,
@@ -177,7 +182,9 @@ for (const { locale, messages } of cases) {
       }
 
       await page.keyboard.press('Enter');
-      await expect(expand).toHaveAttribute('aria-expanded', 'false');
+      await expect(
+        page.getByRole('button', { name: expandName }),
+      ).toHaveAttribute('aria-expanded', 'false');
     });
   });
 }
