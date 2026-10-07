@@ -64,15 +64,19 @@ describe('Artist tracks (e2e)', () => {
     expect(page).toEqual(response.body);
     expect(page.nextCursor).toBeNull();
     expect(page.items).toHaveLength(2);
-    expect(page.items[0]).toMatchObject({
+    // Stable `id` order, not creation order: look each track up by ID.
+    const byId = new Map(page.items.map((item) => [item.id, item]));
+    expect(byId.get(first.id)).toMatchObject({
       id: first.id,
       title: 'Bohemian Rhapsody',
       lengthMs: 354_000,
       isrcs: ['GBUM71029604'],
       genres: ['rock'],
     });
-    expect(page.items[0]?.artists).toEqual([{ id: artist.id, name: 'Queen' }]);
-    expect(page.items[1]).toMatchObject({ id: second.id });
+    expect(byId.get(first.id)?.artists).toEqual([
+      { id: artist.id, name: 'Queen' },
+    ]);
+    expect(byId.get(second.id)).toMatchObject({ id: second.id });
   });
 
   it('paginates with opaque cursors without repeating rows', async () => {
