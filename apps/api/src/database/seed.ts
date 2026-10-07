@@ -5,10 +5,25 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import { loadEnv } from '../config/env.js';
 import { hashPassword } from '../modules/auth/password.js';
 import { createDatabase, createPool, type Database } from './database.js';
+import { artists, trackArtists } from './schema/artists.js';
 import { accounts } from './schema/auth.js';
+import {
+  trackExternalLinks,
+  trackReleases,
+  tracks,
+  trackTags,
+  trackWorks,
+} from './schema/tracks.js';
 import { users } from './schema/users.js';
 import {
   assertSeedAllowed,
+  SEED_ARTISTS,
+  SEED_TRACK_ARTISTS,
+  SEED_TRACK_EXTERNAL_LINKS,
+  SEED_TRACK_RELEASES,
+  SEED_TRACK_TAGS,
+  SEED_TRACK_WORKS,
+  SEED_TRACKS,
   SEED_USER,
   SEED_USER_PASSWORD,
 } from './seed-data.js';
@@ -41,29 +56,108 @@ const seedCredential = async () => ({
   password: await hashPassword(SEED_USER_PASSWORD),
 });
 
+/** Minimal insert surface the seed helpers need (both Database and its tx). */
+type SeedTx = Pick<Database, 'insert'>;
+
+const seedUser = async (
+  tx: SeedTx,
+  credential: Awaited<ReturnType<typeof seedCredential>>,
+): Promise<void> => {
+  await tx
+    .insert(users)
+    .values(SEED_USER)
+    .onConflictDoUpdate({
+      target: users.id,
+      set: overwriteOnConflict(users),
+    });
+  await tx
+    .insert(accounts)
+    .values(credential)
+    .onConflictDoUpdate({
+      target: accounts.id,
+      set: overwriteOnConflict(accounts),
+    });
+};
+
+const seedArtistsAndTracks = async (tx: SeedTx): Promise<void> => {
+  for (const artist of SEED_ARTISTS) {
+    await tx
+      .insert(artists)
+      .values(artist)
+      .onConflictDoUpdate({
+        target: artists.id,
+        set: overwriteOnConflict(artists),
+      });
+  }
+  for (const track of SEED_TRACKS) {
+    await tx
+      .insert(tracks)
+      .values(track)
+      .onConflictDoUpdate({
+        target: tracks.id,
+        set: overwriteOnConflict(tracks),
+      });
+  }
+  await tx
+    .insert(trackArtists)
+    .values(SEED_TRACK_ARTISTS)
+    .onConflictDoNothing();
+};
+
+const seedTrackDetails = async (tx: SeedTx): Promise<void> => {
+  for (const release of SEED_TRACK_RELEASES) {
+    await tx
+      .insert(trackReleases)
+      .values(release)
+      .onConflictDoUpdate({
+        target: trackReleases.id,
+        set: overwriteOnConflict(trackReleases),
+      });
+  }
+  for (const work of SEED_TRACK_WORKS) {
+    await tx
+      .insert(trackWorks)
+      .values(work)
+      .onConflictDoUpdate({
+        target: trackWorks.id,
+        set: overwriteOnConflict(trackWorks),
+      });
+  }
+  for (const tag of SEED_TRACK_TAGS) {
+    await tx
+      .insert(trackTags)
+      .values(tag)
+      .onConflictDoUpdate({
+        target: trackTags.id,
+        set: overwriteOnConflict(trackTags),
+      });
+  }
+  for (const link of SEED_TRACK_EXTERNAL_LINKS) {
+    await tx
+      .insert(trackExternalLinks)
+      .values(link)
+      .onConflictDoUpdate({
+        target: trackExternalLinks.id,
+        set: overwriteOnConflict(trackExternalLinks),
+      });
+  }
+};
+
 const seed = async (db: Database): Promise<void> => {
   const credential = await seedCredential();
 
   await db.transaction(async (tx) => {
-    await tx
-      .insert(users)
-      .values(SEED_USER)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: overwriteOnConflict(users),
-      });
-    await tx
-      .insert(accounts)
-      .values(credential)
-      .onConflictDoUpdate({
-        target: accounts.id,
-        set: overwriteOnConflict(accounts),
-      });
+    await seedUser(tx, credential);
+    await seedArtistsAndTracks(tx);
+    await seedTrackDetails(tx);
   });
 
   new Logger('Seed').log(
     `Seeded the development user. Sign in as ${SEED_USER.email} / ` +
       `${SEED_USER_PASSWORD}`,
+  );
+  new Logger('Seed').log(
+    `Seeded ${SEED_ARTISTS.length} artists and ${SEED_TRACKS.length} tracks.`,
   );
 };
 
