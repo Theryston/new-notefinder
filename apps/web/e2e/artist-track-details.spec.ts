@@ -113,7 +113,8 @@ for (const { locale, messages } of cases) {
       await expect(page.getByText('Greatest Hits')).toBeVisible();
       await expect(page.getByText('(1975)')).toBeVisible();
       await expect(page.getByText('Bohemian Rhapsody work')).toBeVisible();
-      await expect(page.getByText('rock')).toBeVisible();
+      await expect(page.getByText('rock (10)')).toBeVisible();
+      await expect(page.getByText('classic (5)')).toBeVisible();
       await expect(
         page.getByRole('link', { name: 'streaming' }),
       ).toHaveAttribute('href', 'https://open.spotify.com/track/123');
@@ -166,8 +167,7 @@ for (const { locale, messages } of cases) {
       const collapseName = details.collapse.replace('{title}', 'Unknown Take');
       const expand = page.getByRole('button', { name: expandName });
 
-      await expand.focus();
-      await page.keyboard.press('Enter');
+      await expand.press('Enter');
       await expect(
         page.getByRole('button', { name: collapseName }),
       ).toHaveAttribute('aria-expanded', 'true');
@@ -181,7 +181,7 @@ for (const { locale, messages } of cases) {
         await expect(page.getByText(empty)).toBeVisible();
       }
 
-      await page.keyboard.press('Enter');
+      await page.getByRole('button', { name: collapseName }).press('Enter');
       await expect(
         page.getByRole('button', { name: expandName }),
       ).toHaveAttribute('aria-expanded', 'false');
