@@ -36,7 +36,9 @@
       "description": "Something went wrong. Check your connection and try again.",
       "retry": "Try again"
     },
-    "loadMore": "Load more",
+    "loadMore": "Load more"
+  },
+  "tracks": {
     "card": {
       "play": "Play {title}"
     }
