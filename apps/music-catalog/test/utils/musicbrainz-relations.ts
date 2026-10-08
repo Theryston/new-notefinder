@@ -34,6 +34,8 @@ export type ReleaseInput = {
   artistCredit: number;
   mbid?: string;
   releaseGroupMbid?: string;
+  /** An existing release group to put the release in, instead of a new one. */
+  releaseGroup?: FixtureRelease['releaseGroup'];
   /** Album, Single, EP, ... */
   primaryType?: string;
   /** Official, Promotion, ... */
@@ -88,12 +90,15 @@ export const addRelease = async (
       : await ensureNamed(db, 'release_group_primary_type', input.primaryType, {
           gid: randomUUID(),
         });
-  const releaseGroup = await insertRowWithId(db, 'release_group', {
-    gid: releaseGroupMbid,
-    name: input.name,
-    artist_credit: input.artistCredit,
-    type,
-  });
+  const releaseGroup = input.releaseGroup ?? {
+    id: await insertRowWithId(db, 'release_group', {
+      gid: releaseGroupMbid,
+      name: input.name,
+      artist_credit: input.artistCredit,
+      type,
+    }),
+    mbid: releaseGroupMbid,
+  };
   const status =
     input.status === undefined
       ? null
@@ -105,7 +110,7 @@ export const addRelease = async (
     gid: releaseMbid,
     name: input.name,
     artist_credit: input.artistCredit,
-    release_group: releaseGroup,
+    release_group: releaseGroup.id,
     status,
   });
   for (const event of input.events ?? []) {
@@ -114,7 +119,7 @@ export const addRelease = async (
   return {
     id,
     mbid: releaseMbid,
-    releaseGroup: { id: releaseGroup, mbid: releaseGroupMbid },
+    releaseGroup,
   };
 };
 
@@ -123,6 +128,8 @@ export type TrackInput = {
   recording: FixtureRecording;
   /** Defaults to the first medium. */
   mediumPosition?: number;
+  /** The medium's own title, used when the medium is created. */
+  mediumTitle?: string;
   /** Defaults to the first track. */
   position?: number;
 };
@@ -143,6 +150,7 @@ export const addTrack = async (
     (await insertRowWithId(db, 'medium', {
       release: input.release.id,
       position: mediumPosition,
+      name: input.mediumTitle ?? '',
       gid: randomUUID(),
     }));
   await insertRow(db, 'track', {
@@ -228,6 +236,36 @@ const insertRelationship = async (
     link,
     entity0: input.entity0,
     entity1: input.entity1,
+  });
+};
+
+/** Makes `oldMbid` an MBID MusicBrainz merged into the given release group. */
+export const addReleaseGroupRedirect = async (
+  db: Database,
+  oldMbid: string,
+  into: FixtureRelease['releaseGroup'],
+): Promise<void> => {
+  await insertRow(db, 'release_group_gid_redirect', {
+    gid: oldMbid,
+    new_id: into.id,
+  });
+};
+
+/** Gives the release group a secondary type (Compilation, Live, ...). */
+export const addSecondaryType = async (
+  db: Database,
+  releaseGroup: FixtureRelease['releaseGroup'],
+  name: string,
+): Promise<void> => {
+  const secondaryType = await ensureNamed(
+    db,
+    'release_group_secondary_type',
+    name,
+    { gid: randomUUID() },
+  );
+  await insertRow(db, 'release_group_secondary_type_join', {
+    release_group: releaseGroup.id,
+    secondary_type: secondaryType,
   });
 };
 

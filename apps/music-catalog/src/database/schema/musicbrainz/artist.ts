@@ -8,6 +8,12 @@ export const artist = musicbrainz.table('artist', {
   sortName: varchar().notNull(),
 });
 
+/** An MBID that MusicBrainz merged away: `gid` now resolves to `newId`. */
+export const artistGidRedirect = musicbrainz.table('artist_gid_redirect', {
+  gid: uuid().notNull(),
+  newId: integer().notNull(),
+});
+
 /** Another name an artist is known by (a translation, a stage name, ...). */
 export const artistAlias = musicbrainz.table('artist_alias', {
   artist: integer().notNull(),

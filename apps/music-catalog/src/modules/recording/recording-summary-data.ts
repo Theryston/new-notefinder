@@ -1,4 +1,5 @@
-import type { CreditedArtistRow, TagLevels } from './recording-data.js';
+import type { CreditedArtistRow } from '../../database/credited-artists.js';
+import type { TagLevels } from './recording-data.js';
 
 // What the summary query reads for one Recording, before it is assembled into
 // the protocol's `RecordingSummary`. Everything comes from one query.

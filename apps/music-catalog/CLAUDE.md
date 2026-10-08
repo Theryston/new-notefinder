@@ -29,7 +29,9 @@ into a parallel copy with zero downtime), the **production deploy** (issue
 #65: the two images CI publishes to GHCR and the single compose with Caddy in
 `deploy/`, operated as "Operations (production)" below) and the test and
 quality setup. `search` returns results in **Meilisearch's relevance order**,
-loaded from Postgres without re-ranking.
+loaded from Postgres without re-ranking. `getReleaseGroup` and `getArtist`
+(issue #138) read one release group (an Album, ADR 0003) and one artist by
+MBID, for the API's metadata import.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Meilisearch (its official JS client, behind `integrations/`), Zod
@@ -89,7 +91,8 @@ src/
                           ws server) and the worker (services -> `tick`)
   config/env.ts           Zod schemas for process.env: shared, server, worker and restore sets
   logger.ts               minimal structured logger (JSON in production)
-  errors/                 CatalogError: an expected failure with a protocol error code
+  errors/                 CatalogError: an expected failure with a protocol error code;
+                          missing-entity-error.ts: the NOT_FOUND / MOVED pair of an MBID
   lib/                    small pure helpers shared by modules (text comparison, cover art URL,
                           grouping) and the definition of the recordings index
                           (`recordings-index.ts`) and of the lyrics index
@@ -138,6 +141,16 @@ src/
       assemble-summary.ts       summary row -> the protocol's RecordingSummary (pure)
       recording-document.*      the documents of a batch of Recordings, for the indexing module
       recording-document.ts     rows -> the document Meilisearch indexes (pure)
+    artist/
+      artist.handler.ts         the `getArtist` handler
+      artist.service.ts         readiness, not found / moved, the genres
+      artist.repository.ts      the artist and the votes of its tags
+    release-group/
+      release-group.handler.ts  the `getReleaseGroup` handler
+      release-group.service.ts  readiness, not found / moved, the representative release
+      release-group.repository.ts  the release group, its releases, events and media
+      assemble-release-group.ts rows -> the protocol's release group (pure)
+      representative-release.ts the earliest Official release, else of any status (pure)
     search/
       search.handler.ts         the `search` handler
       search.service.ts         readiness, scope, Meilisearch, summaries, order
@@ -262,8 +275,9 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   requests can be in flight on one connection and responses may arrive in any
   order: match them by `id`. `id` is `null` in a failure only when the
   message was too broken to read one from it.
-- `type` is `status`, `getRecording` or `search`. `payload` is validated per
-  type; `status` takes none (missing or `{}`).
+- `type` is `status`, `getRecording`, `search`, `getReleaseGroup` or
+  `getArtist`. `payload` is validated per type; `status` takes none (missing
+  or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
   dataset: 'tiny' | 'full', replicationSequence?, pendingOutbox? }`, read
   from the bootstrap state row in our schema. The phases run in that order:
@@ -277,9 +291,11 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   when the service answers without replication state.
 - Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
-  `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`, `INTERNAL`.
-  `message` is an English developer message. `RECORDING_MOVED` also carries
-  `error.newMbid` (the only error with an extra field): a `CatalogError`
+  `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`,
+  `RELEASE_GROUP_NOT_FOUND`, `RELEASE_GROUP_MOVED`, `ARTIST_NOT_FOUND`,
+  `ARTIST_MOVED`, `INTERNAL`.
+  `message` is an English developer message. The `*_MOVED` codes also carry
+  `error.newMbid` (the only errors with an extra field): a `CatalogError`
   built with `{ newMbid }` becomes it. Anything a handler throws that is not
   a `CatalogError` is answered `INTERNAL` with the fixed message "Internal
   error" and logged; its own message never reaches the client.
@@ -396,6 +412,47 @@ later), best match first:
   paging on an empty page.
 - Before `ready` it answers `CATALOG_NOT_READY` (after validating).
   Meilisearch being down is `INTERNAL`.
+
+## `getReleaseGroup`
+
+Payload `{ mbid }` (as for `getRecording`). The result is the contract's
+`MusicCatalogReleaseGroup` (`music-catalog-release-group.ts`): a release group
+is an Album (ADR 0003), so the answer is its header, not one edition.
+
+- `title`, `primaryType` (null when MusicBrainz has none), `secondaryTypes`
+  (by name, empty when none), `artistCredit` (as a Recording's: the whole
+  credit in credit order).
+- `firstReleaseYear`: the year of the earliest release event of **any**
+  release of the group, whatever its status; null when none has a year. It
+  matches MusicBrainz's first release date, and it can predate the
+  representative release, which is chosen among the Official releases first.
+- `genres`: the group's own genres (`lib/tag-votes.ts`: the voted tags that
+  MusicBrainz also lists as genres, most voted first, by name on a tie).
+- `coverArtUrl`: `https://coverartarchive.org/release-group/<MBID>/front-500`,
+  built by `releaseGroupCoverArtUrl` from the MBID alone, so always set, never
+  null. It may answer 404: that means there is no cover, and consumers must
+  treat it so (the API does, from #143).
+- `representativeRelease`: the **earliest Official** release or, when none is
+  Official, the earliest release of **any** status, by its earliest release
+  event (undated last), ties by MBID. The pure `pickRepresentativeRelease`
+  chooses it, so repeated calls agree. Its `media` lists each medium (position,
+  title, `''` when none) with each track's position and Recording MBID. `null`
+  only when the group has no releases.
+- Errors: `RELEASE_GROUP_NOT_FOUND`, and `RELEASE_GROUP_MOVED` with `newMbid`
+  for an MBID in `release_group_gid_redirect` whose target exists.
+
+## `getArtist`
+
+Payload `{ mbid }`. The result is `{ mbid, name, genres }`: the artist's own
+name and its genres, most voted first, by name on a tie (the same rule as a
+release group's genres). Errors: `ARTIST_NOT_FOUND`, and `ARTIST_MOVED` with
+`newMbid` for an MBID in `artist_gid_redirect` whose target exists.
+
+Both operations start with `BootstrapService.assertReady()` and build their
+merged and not-found answers with `missingEntityError` (the Recording's
+`RECORDING_*` pair uses it too), so the four `*_MOVED` / `*_NOT_FOUND` codes
+follow one pattern. Their e2e specs are `test/get-release-group.e2e-spec.ts`
+and `test/get-artist.e2e-spec.ts` (fixtures in `test/utils/musicbrainz*.ts`).
 
 ## First import
 

@@ -1,30 +1,6 @@
 import { compareTextNullsLast } from '../../lib/compare.js';
+import { formatPartialDate } from '../../lib/partial-date.js';
 import type { ReleaseEventRow } from './recording-data.js';
-
-type PartialDate = Pick<ReleaseEventRow, 'year' | 'month' | 'day'>;
-
-const pad = (value: number, length: number): string =>
-  String(value).padStart(length, '0');
-
-/**
- * A MusicBrainz date as `YYYY`, `YYYY-MM` or `YYYY-MM-DD`, keeping the
- * precision it was entered with. Without a year there is no date: MusicBrainz
- * does not record a month or day alone.
- */
-export const formatPartialDate = ({
-  year,
-  month,
-  day,
-}: PartialDate): string | null => {
-  if (year === null) {
-    return null;
-  }
-  if (month === null) {
-    return pad(year, 4);
-  }
-  const yearAndMonth = `${pad(year, 4)}-${pad(month, 2)}`;
-  return day === null ? yearAndMonth : `${yearAndMonth}-${pad(day, 2)}`;
-};
 
 type FormattedEvent = { date: string | null; country: string | null };
 

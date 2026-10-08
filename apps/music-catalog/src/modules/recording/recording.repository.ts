@@ -1,8 +1,11 @@
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
+import {
+  type CreditedArtistRow,
+  selectCreditedArtists,
+} from '../../database/credited-artists.js';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import {
-  artist,
   artistCredit,
   artistCreditName,
   artistTag,
@@ -37,7 +40,6 @@ import {
   work,
 } from '../../database/schema/musicbrainz/work.js';
 import type {
-  CreditedArtistRow,
   ExternalUrlRow,
   RecordingRow,
   ReleaseEventRow,
@@ -93,17 +95,7 @@ export class RecordingRepository {
   }
 
   findCreditedArtists(artistCreditId: number): Promise<CreditedArtistRow[]> {
-    return this.getDb()
-      .select({
-        mbid: artist.gid,
-        name: artist.name,
-        creditedName: artistCreditName.name,
-        joinPhrase: artistCreditName.joinPhrase,
-      })
-      .from(artistCreditName)
-      .innerJoin(artist, eq(artist.id, artistCreditName.artist))
-      .where(eq(artistCreditName.artistCredit, artistCreditId))
-      .orderBy(asc(artistCreditName.position));
+    return selectCreditedArtists(this.getDb(), artistCreditId);
   }
 
   async findIsrcs(recordingId: number): Promise<string[]> {
