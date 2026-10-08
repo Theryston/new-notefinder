@@ -6,7 +6,7 @@ import { PaginatedTrackGrid } from '@/features/tracks/components/paginated-track
 import type { TrackGridMessages } from '@/features/tracks/components/track-grid-messages';
 
 import { toCatalogTrackCardProps } from '../artist-track-to-track-card';
-import { artistTracksInfiniteQueryOptions } from '../hooks/use-artist-tracks';
+import { artistTracksInfiniteQueryOptions } from '../artist-tracks-query';
 
 /**
  * The artist page's track grid: the shared paginated grid bound to the

@@ -8,7 +8,7 @@ import {
 import { browserApi } from '@/lib/api/browser';
 import { cursorPagesQueryOptions } from '@/lib/cursor-pages-query';
 
-import { artistKeys } from '../query-keys';
+import { artistKeys } from './query-keys';
 
 const ARTIST_TRACKS_DEFAULT_LIMIT = 20;
 

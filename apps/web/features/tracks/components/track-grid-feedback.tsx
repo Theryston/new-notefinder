@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 
 import { TrackCardGrid } from './track-card-grid';
 import { TrackCardSkeleton } from './track-card-skeleton';
+import type { TrackGridMessages } from './track-grid-messages';
 
 /** Twelve placeholders fill the grid at every breakpoint. */
 const SKELETON_KEYS = Array.from(
@@ -32,7 +33,7 @@ export function TrackGridSkeleton({ label }: { label: string }) {
 export function TrackGridEmpty({
   messages,
 }: {
-  messages: { title: string; description: string };
+  messages: TrackGridMessages['empty'];
 }) {
   return (
     <div className="rounded-2xl border border-border px-4 py-8 text-center">
@@ -49,7 +50,7 @@ export function TrackGridError({
   messages,
   onRetry,
 }: {
-  messages: { title: string; description: string; retry: string };
+  messages: TrackGridMessages['error'];
   onRetry: () => void;
 }) {
   return (

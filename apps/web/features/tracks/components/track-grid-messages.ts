@@ -1,3 +1,4 @@
+// In components/ because features may import each other only through it.
 /**
  * Every string the shared paginated track grid shows. The page that owns the
  * grid resolves them from its own messages block, so the grid itself knows

@@ -17,7 +17,10 @@ import {
 } from './track-grid-feedback';
 import type { TrackGridMessages } from './track-grid-messages';
 
-type TrackGridBodyProps<TItem extends { id: string }> = {
+/** Anything the grid can list: every item carries the id it is keyed by. */
+type GridItem = { id: string };
+
+type TrackGridBodyProps<TItem extends GridItem> = {
   messages: TrackGridMessages;
   /** The list's query key, page fetcher and server-rendered first page. */
   query: CursorPagesQuery<TItem>;
@@ -25,7 +28,7 @@ type TrackGridBodyProps<TItem extends { id: string }> = {
   groupBy?: (item: TItem) => string | null;
 };
 
-type PaginatedTrackGridProps<TItem extends { id: string }> =
+type PaginatedTrackGridProps<TItem extends GridItem> =
   TrackGridBodyProps<TItem> & {
     /** Id of the section heading, which the section is labelled by. */
     headingId: string;
@@ -39,7 +42,7 @@ type PaginatedTrackGridProps<TItem extends { id: string }> =
  * loaded items span more than one group. Callers supply the query, so the
  * grid never knows which entity it lists.
  */
-export function PaginatedTrackGrid<TItem extends { id: string }>({
+export function PaginatedTrackGrid<TItem extends GridItem>({
   headingId,
   ...body
 }: PaginatedTrackGridProps<TItem>) {
@@ -74,7 +77,7 @@ function TracksSection({
   );
 }
 
-function TrackGridBody<TItem extends { id: string }>({
+function TrackGridBody<TItem extends GridItem>({
   messages,
   query,
   toCardProps,
@@ -124,7 +127,7 @@ function TrackGridBody<TItem extends { id: string }>({
  * One cover grid per group, each under its heading when there is one. The
  * placeholders for a page in flight close the last group.
  */
-function TrackGroups<TItem extends { id: string }>({
+function TrackGroups<TItem extends GridItem>({
   groups,
   toCardProps,
   loadingMore,

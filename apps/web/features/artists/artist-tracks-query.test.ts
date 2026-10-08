@@ -3,20 +3,52 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { browserApi } from '@/lib/api/browser';
 
-import { artistTracksInfiniteQueryOptions } from './use-artist-tracks';
+import {
+  artistTracksInfiniteQueryOptions,
+  fetchArtistTracksPage,
+} from './artist-tracks-query';
 
 vi.mock('@/lib/api/browser', () => ({ browserApi: vi.fn() }));
 
 const mockBrowserApi = vi.mocked(browserApi);
 
-const firstPage = { items: [], nextCursor: 'cursor-2' };
+const page = {
+  items: [
+    {
+      id: 'track-1',
+      title: 'Bohemian Rhapsody',
+      lengthMs: 354_000,
+      disambiguation: '',
+      video: false,
+      isrcs: [],
+      artists: [{ id: 'artist-1', name: 'Queen' }],
+      genres: [],
+    },
+  ],
+  nextCursor: 'cursor-2',
+};
+
 const lastPage = { items: [], nextCursor: null };
 
-describe('artistTracksInfiniteQueryOptions fetching', () => {
+describe('artistTracksInfiniteQueryOptions', () => {
+  it('keys pages by artist and limit with the cursor as page param', () => {
+    const options = artistTracksInfiniteQueryOptions({
+      artistId: 'artist-1',
+      limit: 20,
+    });
+
+    expect(options.queryKey).toEqual([
+      'artists',
+      'artist-1',
+      'tracks',
+      'infinite',
+      { limit: 20 },
+    ]);
+    expect(options.initialPageParam).toBeUndefined();
+  });
+
   it('fetches the artist track endpoint page by page, following the cursor', async () => {
-    mockBrowserApi
-      .mockResolvedValueOnce(firstPage)
-      .mockResolvedValueOnce(lastPage);
+    mockBrowserApi.mockResolvedValueOnce(page).mockResolvedValueOnce(lastPage);
     const client = new QueryClient();
 
     const result = await client.fetchInfiniteQuery({
@@ -42,7 +74,7 @@ describe('artistTracksInfiniteQueryOptions fetching', () => {
         signal: expect.any(AbortSignal),
       },
     );
-    expect(result.pages).toEqual([firstPage, lastPage]);
+    expect(result.pages).toEqual([page, lastPage]);
   });
 
   it('uses the default page size when no limit is given', async () => {
@@ -57,6 +89,27 @@ describe('artistTracksInfiniteQueryOptions fetching', () => {
       schema: expect.anything(),
       query: { cursor: undefined, limit: 20 },
       signal: expect.any(AbortSignal),
+    });
+  });
+});
+
+describe('fetchArtistTracksPage', () => {
+  it('fetches one cursor page through the browser client', async () => {
+    mockBrowserApi.mockResolvedValue(page);
+    const signal = AbortSignal.timeout(1000);
+
+    await expect(
+      fetchArtistTracksPage({
+        artistId: 'artist-1',
+        cursor: 'cursor-1',
+        limit: 20,
+        signal,
+      }),
+    ).resolves.toEqual(page);
+    expect(mockBrowserApi).toHaveBeenCalledWith('/artists/artist-1/tracks', {
+      schema: expect.anything(),
+      query: { cursor: 'cursor-1', limit: 20 },
+      signal,
     });
   });
 });
