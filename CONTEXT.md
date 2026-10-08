@@ -53,6 +53,13 @@ The words sung in a Recording, plain or synced to time, matched to the
 Recording from an open lyrics source.
 _Avoid_: Letra, text
 
+**Album**:
+A notefinder catalog entity with its own public URL, backed by one MusicBrainz
+release group: the album across all of its editions, so every edition of one
+album shares one URL. It exists once its Recordings are reprocessed (see
+`docs/adr/0003-album-is-a-release-group.md`).
+_Avoid_: Release (an edition of an album), record, LP
+
 ### Legacy
 
 **Legacy ID**:
