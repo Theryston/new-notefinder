@@ -1,19 +1,58 @@
 'use client';
 
-import type { SearchScope } from '@notefinder/contracts';
+import type { SearchResultItem, SearchScope } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/sonner';
+import { SessionUserBoundary } from '@/features/auth/components/session-user';
+import { RequestTrackCard } from '@/features/tracks/components/request-track-card';
 import { TrackCard } from '@/features/tracks/components/track-card';
 import { TrackCardGrid } from '@/features/tracks/components/track-card-grid';
 import { TrackCardMoreSkeletons } from '@/features/tracks/components/track-card-skeleton';
 
 import { useSearchResults } from '../hooks/use-search-results';
+import { offersTrackRequest } from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
 import { SearchSkeleton } from './search-skeleton';
+
+/**
+ * The cards of the loaded hits. Signed-in visitors can ask for the notes of a
+ * Recording without a Track; everyone else sees the static cards.
+ */
+function SearchResultCards({
+  items,
+  stale,
+  loadingMore,
+}: {
+  items: SearchResultItem[];
+  stale: boolean;
+  loadingMore: boolean;
+}) {
+  return (
+    <SessionUserBoundary
+      render={(user) => (
+        <TrackCardGrid stale={stale}>
+          {items.map((item) =>
+            offersTrackRequest(item, user) ? (
+              <RequestTrackCard
+                key={item.mbid}
+                recordingMbid={item.mbid}
+                {...toTrackCardProps(item)}
+              />
+            ) : (
+              <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
+            ),
+          )}
+          {loadingMore ? <TrackCardMoreSkeletons /> : null}
+        </TrackCardGrid>
+      )}
+    />
+  );
+}
 
 /**
  * The result grid for a searchable query: best-first cards, infinite
@@ -67,12 +106,12 @@ export function SearchResults({
 
   return (
     <div className="flex flex-col gap-4">
-      <TrackCardGrid stale={stale}>
-        {items.map((item) => (
-          <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
-        ))}
-        {isFetchingNextPage ? <TrackCardMoreSkeletons /> : null}
-      </TrackCardGrid>
+      <SearchResultCards
+        items={items}
+        stale={stale}
+        loadingMore={isFetchingNextPage}
+      />
+      <Toaster />
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       {hasNextPage ? (
         <Button

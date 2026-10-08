@@ -40,7 +40,61 @@
   },
   "tracks": {
     "card": {
-      "play": "Tocar {title}"
+      "play": "Tocar {title}",
+      "generate": "Gerar notas",
+      "generateLabel": "Gerar notas de {title}",
+      "generating": "Gerando…"
+    },
+    "processing": {
+      "metaTitle": "{title}",
+      "metaDescription": "Acompanhe o processamento de {title} e abra as notas quando estiverem prontas.",
+      "artists": "Artistas",
+      "steps": {
+        "label": "Etapas do processamento",
+        "FINDING_VIDEO": "Buscando o vídeo",
+        "DOWNLOADING_AUDIO": "Baixando o áudio",
+        "EXTRACTING_VOCALS": "Separando os vocais",
+        "DETECTING_NOTES": "Detectando as notas",
+        "EXTRACTING_LYRICS": "Transcrevendo a letra",
+        "state": {
+          "done": "Concluída",
+          "current": "Em andamento",
+          "pending": "Aguardando",
+          "failed": "Falhou"
+        }
+      },
+      "progress": {
+        "label": "Progresso do processamento",
+        "value": "{percent}%"
+      },
+      "status": {
+        "QUEUED": "Na fila",
+        "COMPLETED": "As notas estão prontas",
+        "FAILED": "O processamento falhou"
+      },
+      "closeNote": "Você pode fechar esta página. Os colaboradores recebem um e-mail quando as notas estiverem prontas.",
+      "completed": {
+        "title": "As notas estão prontas",
+        "description": "A linha do tempo que as mostra chega em uma atualização futura."
+      },
+      "failed": {
+        "title": "Este processamento falhou",
+        "reason": {
+          "VIDEO_NOT_FOUND": "Não encontramos um vídeo que corresponda a esta gravação.",
+          "TOO_LONG": "Esta gravação é longa demais para processar.",
+          "DOWNLOAD_FAILED": "Não conseguimos baixar o áudio.",
+          "NOTE_DETECTION_FAILED": "Não conseguimos detectar as notas.",
+          "INTERNAL": "Algo deu errado ao processar esta faixa."
+        }
+      },
+      "contributors": {
+        "heading": "Colaboradores"
+      },
+      "none": "Nenhum processamento foi registrado para esta faixa.",
+      "notFound": {
+        "title": "Faixa não encontrada",
+        "description": "Não encontramos esta faixa."
+      }
     }
   },
   "header": {

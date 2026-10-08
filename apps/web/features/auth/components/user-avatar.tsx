@@ -4,12 +4,17 @@ import { cn } from '@/lib/utils';
 import { initials } from '../initials';
 import type { SessionUser } from '../session';
 
-/** The signed-in user's picture, or their initials without one. */
+/**
+ * A User's picture, or their initials without one. The email is only the last
+ * resort for initials (when there is no name), so a page that shows other
+ * Users, who are never sent with their email, leaves it out.
+ */
 export function UserAvatar({
   user,
   className,
 }: {
-  user: Pick<SessionUser, 'name' | 'email' | 'username' | 'image'>;
+  user: Pick<SessionUser, 'name' | 'username' | 'image'> &
+    Partial<Pick<SessionUser, 'email'>>;
   className?: string;
 }) {
   return (
@@ -20,7 +25,7 @@ export function UserAvatar({
         <AvatarImage src={user.image} alt="" referrerPolicy="no-referrer" />
       ) : null}
       <AvatarFallback className="bg-primary/15 font-semibold text-primary">
-        {initials(user.name, user.username ?? user.email)}
+        {initials(user.name, user.username ?? user.email ?? '')}
       </AvatarFallback>
     </Avatar>
   );
