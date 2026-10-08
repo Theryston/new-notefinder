@@ -304,6 +304,8 @@ const createWorkerLyrics = (options: WorkerLyricsOptions): WorkerLyrics => {
       dataset: env.CATALOG_DATASET,
       lrclibBaseUrl: env.LRCLIB_BASE_URL,
       lrclibListingUrl: env.LRCLIB_LISTING_URL,
+      tinySource: env.LRCLIB_TINY_SOURCE,
+      apiBaseUrl: env.LRCLIB_API_BASE_URL,
       logger,
       refreshState,
     }),

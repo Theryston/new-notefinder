@@ -122,8 +122,10 @@ src/
       restore.service.ts        the first import mbslave owns: skip, redo, seed or restore
       restore-plan.ts           which of those a start has to do (pure)
       dump-urls.ts              the full-export archives under the base URL (pure + LATEST)
-      tiny-seed.ts              the deterministic Recordings `tiny` seeds (pure)
-      tiny-seed.repository.ts   writing those Recordings with plain SQL
+      tiny-seed.ts              the real MusicBrainz slice `tiny` seeds (pure) + its shape check
+      tiny-seed-data.json       that slice: artists, Recordings, albums, releases, tracks
+      tiny-seed.repository.ts   writing it with plain SQL, table by table
+      musicbrainz-rows.repository.ts  the bulk-insert helper behind it
     recording/
       recording.handler.ts      the `getRecording` handler
       recording.service.ts      readiness, not found / moved, loading the parts
@@ -410,7 +412,7 @@ when needed and then, in `full` mode, replicates continuously (see
   and restores the archives with `mbslave init --empty` followed by
   `mbslave import <urls>` (plain `init` is neither idempotent nor
   URL-configurable). `tiny` runs `mbslave init --empty` for the same
-  schema and seeds the deterministic Recordings with plain SQL,
+  schema and seeds the real MusicBrainz slice with plain SQL,
   downloading nothing. Either way it then records `restored`. A failure
   leaves `restoring` behind, so the next start redoes it; `ready` is the
   worker's to record, never the restore's.
@@ -447,14 +449,24 @@ first import records it in the bootstrap state. `tiny` never touches the
 network; `full` restores through `mbslave import <urls>`
 (`src/modules/bootstrap/dump-urls.ts`):
 
-- `tiny`: the same mbslave schema scripts plus 300 deterministic Recordings
-  written with plain SQL (`tiny-seed.ts` + `TinySeedRepository`, no Drizzle
-  tables, so a wrong column there fails the suite instead of passing
-  twice). Development mode, seeded in seconds: about 1.5 s for the schema
-  scripts and well under a second for the seed on a local Postgres, about
-  24 MB of database, megabytes of Meilisearch index. The Lyrics import
-  generates its fake dump from exactly these Recordings (same MBIDs
-  and titles). There is no replication in this mode: the seed writes no
+- `tiny`: the same mbslave schema scripts plus a small slice of the **real**
+  MusicBrainz catalog, written with plain SQL (`tiny-seed.ts` +
+  `TinySeedRepository`, no Drizzle tables, so a wrong column there fails the
+  suite instead of passing twice): ten albums (Queen, Adele, Coldplay,
+  Elis & Tom, Legião Urbana, Michael Jackson and a bootleg without art), their
+  artists and aliases, about 110 Recordings with ISRCs, release groups with
+  tags and genres, releases with their events, media and tracks. Every MBID is
+  the real one, so the Cover Art Archive URLs built from a release MBID load,
+  an MBID resolves on musicbrainz.org and the Lyrics LRCLIB knows match. The
+  data lives in `tiny-seed-data.json`, checked against a Zod schema on load;
+  it was collected once from the MusicBrainz web service (one release per
+  release group, the earliest official one with a front cover) and is
+  committed, so a restore never touches the network. It covers the cases the
+  UI needs: a Recording on two albums, a two-artist credit, a named second
+  disc, an album with no cover, type or genres. Development mode, seeded in
+  seconds, a few MB of database and index. The Lyrics import builds its dump
+  from exactly these Recordings (see `LRCLIB_TINY_SOURCE` under "Lyrics").
+  There is no replication in this mode: the seed writes no
   `replication_control` row, so the replication worker stays off.
 - `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2`
   under `<base>/fullexport/`), no edit history. Production mode: about
@@ -558,9 +570,14 @@ job, not this import's.
   `LRCLIB_LISTING_URL`, downloads `${LRCLIB_BASE_URL}/${key}` and gunzips it
   **as a stream** straight to its SQLite file: the `.gz` is never kept
   (about 260 GB of temp disk, deleted after the import). In `tiny` nothing
-  is downloaded: a deterministic, seeded generator
-  (`src/integrations/lrclib/fake-lrclib-dump.ts`) writes an SQLite file in the
-  **real LRCLIB schema** from the seeded Recordings, with
+  is downloaded. `LRCLIB_TINY_SOURCE` picks the source: `api` (the dev
+  `.env.example`) asks LRCLIB's public API for the real Lyrics of each seeded
+  Recording (`api-lrclib-dump.ts`, a second apart, about two minutes the first
+  time, one row per answer carrying LRCLIB's own metadata, so the strict
+  match below decides for real); `fake` (the default, what the tests use)
+  is a deterministic, seeded generator
+  (`src/integrations/lrclib/fake-lrclib-dump.ts`) that writes an SQLite file
+  in the **real LRCLIB schema** from the seeded Recordings, with
   placeholder plain and synced Lyrics. It deliberately includes near-misses
   that must **not** match: a length just outside ±2 s, "(Live)" and remix
   titles, and an album tie on other albums. The same generator builds the e2e
@@ -1272,7 +1289,7 @@ ws.on('open', async () => {
     shown = status.result.phase;
     if (shown !== 'ready') await new Promise((r) => setTimeout(r, 2000));
   } while (shown !== 'ready');
-  const search = await call('search', { query: 'Tiny Song 042', limit: 1 });
+  const search = await call('search', { query: 'Bohemian Rhapsody', limit: 1 });
   show(search);
   show(await call('getRecording', { mbid: search.result.results[0].mbid }));
   ws.close();
@@ -1288,8 +1305,8 @@ rm /tmp/mcsmoke.env
 (The upstream images it pulled, `caddy:2.11-alpine` and the Postgres and
 Meilisearch ones, are shared cache: remove them only if nothing else on the
 machine uses them.) `status` shows `restored`, then `indexing` (the worker
-imports the fake LRCLIB dump, then indexes the 300 Recordings), then `ready`,
-and the search finds `Tiny Song 042`.
+imports the fake LRCLIB dump, then indexes the real Recordings), then `ready`,
+and the search finds `Bohemian Rhapsody`.
 
 Measured on the machine that wrote this ticket (15 GB RAM, Docker 29.7, base
 images already pulled), from the commands above on a clean project: **56 s
@@ -1377,6 +1394,7 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
   | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
   | `LRCLIB_LISTING_URL` | The endpoint listing the published LRCLIB dumps, read for the latest key (default: LRCLIB's own); worker, `full` only |
+  | `LRCLIB_TINY_SOURCE` | `fake` (default) or `api`: where `tiny` gets its Lyrics; worker (see "Lyrics (LRCLIB)") |
   | `LRCLIB_API_BASE_URL` | The public LRCLIB API new and changed Recordings get their Lyrics from (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
   | `LRCLIB_REFRESH_CHECK_INTERVAL_MS` | How often the worker polls the listing for a newer dump (default 3600000); worker, `full` only |
   | `LRCLIB_REFRESH_MIN_INTERVAL_DAYS` | At most one dump refresh per this many days (default 30); worker, `full` only |

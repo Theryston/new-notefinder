@@ -1,0 +1,4281 @@
+{
+  "areas": [
+    {
+      "mbid": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+      "name": "United Kingdom",
+      "code": "GB"
+    },
+    {
+      "mbid": "489ce91b-6658-3307-9877-795b68554c98",
+      "name": "United States",
+      "code": "US"
+    },
+    {
+      "mbid": "50cc7852-862e-30ae-aa82-385fe7135b7f",
+      "name": "South Africa",
+      "code": "ZA"
+    },
+    {
+      "mbid": "08310658-51eb-3801-80de-5a0739207115",
+      "name": "France",
+      "code": "FR"
+    },
+    {
+      "mbid": "85752fda-13c4-31a3-bee5-0e5cb1f51dad",
+      "name": "Germany",
+      "code": "DE"
+    },
+    {
+      "mbid": "525d4e18-3d00-31b9-a58b-a146a916de8f",
+      "name": "[Worldwide]",
+      "code": "XW"
+    },
+    {
+      "mbid": "f45b47f8-5796-386e-b172-6c31b009a5d8",
+      "name": "Brazil",
+      "code": "BR"
+    }
+  ],
+  "artists": [
+    {
+      "mbid": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+      "name": "Queen",
+      "sortName": "Queen",
+      "aliases": [
+        {
+          "name": "クイーン",
+          "sortName": "クイーン"
+        },
+        {
+          "name": "皇后乐队",
+          "sortName": "皇后乐队"
+        }
+      ]
+    },
+    {
+      "mbid": "5441c29d-3602-4898-b1a1-b77fa23b8e50",
+      "name": "David Bowie",
+      "sortName": "Bowie, David",
+      "aliases": [
+        {
+          "name": "Bowie",
+          "sortName": "Bowie"
+        },
+        {
+          "name": "David Jones",
+          "sortName": "David Jones"
+        },
+        {
+          "name": "David Robert Jones",
+          "sortName": "Jones, David Robert"
+        },
+        {
+          "name": "Davie Bowie",
+          "sortName": "Davie Bowie"
+        },
+        {
+          "name": "Davis Bowie",
+          "sortName": "Davis Bowie"
+        },
+        {
+          "name": "Davy Jones",
+          "sortName": "Jones, Davy"
+        },
+        {
+          "name": "Harry the Butcher",
+          "sortName": "Harry the Butcher"
+        },
+        {
+          "name": "The Thin White Duke",
+          "sortName": "The Thin White Duke"
+        },
+        {
+          "name": "Ziggy Stardust",
+          "sortName": "Ziggy Stardust"
+        },
+        {
+          "name": "Дэвид Боуи",
+          "sortName": "Дэвид Боуи"
+        },
+        {
+          "name": "데이비드 보위",
+          "sortName": "데이비드 보위"
+        },
+        {
+          "name": "デヴィッド・ボウイ",
+          "sortName": "デヴィッド・ボウイ"
+        },
+        {
+          "name": "デビッド・ボウイ",
+          "sortName": "デビッド・ボウイ"
+        }
+      ]
+    },
+    {
+      "mbid": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+      "name": "Adele",
+      "sortName": "Adele",
+      "aliases": [
+        {
+          "name": "Adèle",
+          "sortName": "Adèle"
+        },
+        {
+          "name": "Adele Adkins",
+          "sortName": "Adele Adkins"
+        },
+        {
+          "name": "Adele Laurie Blue Adkins",
+          "sortName": "Adkins, Adele Laurie Blue"
+        },
+        {
+          "name": "아델",
+          "sortName": "아델"
+        },
+        {
+          "name": "アデル",
+          "sortName": "アデル"
+        },
+        {
+          "name": "阿黛尔",
+          "sortName": "阿黛尔"
+        }
+      ]
+    },
+    {
+      "mbid": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+      "name": "Coldplay",
+      "sortName": "Coldplay",
+      "aliases": [
+        {
+          "name": "Cold Play",
+          "sortName": "Cold Play"
+        },
+        {
+          "name": "Coolplay",
+          "sortName": "Coolplay"
+        },
+        {
+          "name": "The Coldplay",
+          "sortName": "Coldplay, The"
+        },
+        {
+          "name": "콜드플레이",
+          "sortName": "콜드플레이"
+        },
+        {
+          "name": "コールドプレイ",
+          "sortName": "コールドプレイ"
+        }
+      ]
+    },
+    {
+      "mbid": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+      "name": "Elis Regina",
+      "sortName": "Elis Regina",
+      "aliases": [
+        {
+          "name": "Elis",
+          "sortName": "Elis"
+        },
+        {
+          "name": "Elis Regina Carvalho Costa",
+          "sortName": "Carvalho Costa, Elis Regina"
+        },
+        {
+          "name": "Elisa Regina",
+          "sortName": "Elisa Regina"
+        }
+      ]
+    },
+    {
+      "mbid": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+      "name": "Antônio Carlos Jobim",
+      "sortName": "Jobim, Antônio Carlos",
+      "aliases": [
+        {
+          "name": "A. C. Jobim",
+          "sortName": "A. C. Jobim"
+        },
+        {
+          "name": "A. Carlos Jobim",
+          "sortName": "Jobim, A. Carlos"
+        },
+        {
+          "name": "A.C. Jochim",
+          "sortName": "Jochim, A.C."
+        },
+        {
+          "name": "AC Jobim",
+          "sortName": "AC Jobim"
+        },
+        {
+          "name": "Antônio Carlos Brasileiro de Almeida Jobim",
+          "sortName": "Jobim, Antônio Carlos Brasileiro de Almeida"
+        },
+        {
+          "name": "Antonio Carlos Jobim",
+          "sortName": "Jobim, Antonio Carlos"
+        },
+        {
+          "name": "Antônio Jobim",
+          "sortName": "Jobim, Antônio"
+        },
+        {
+          "name": "C. Jobin",
+          "sortName": "Jobin, C."
+        },
+        {
+          "name": "Jobim",
+          "sortName": "Jobim"
+        },
+        {
+          "name": "Jobin",
+          "sortName": "Jobin"
+        },
+        {
+          "name": "Tom Jobim",
+          "sortName": "Tom Jobim"
+        },
+        {
+          "name": "アントニオ・カルロス・ジョビン",
+          "sortName": "アントニオ・カルロス・ジョビン"
+        }
+      ]
+    },
+    {
+      "mbid": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+      "name": "Legião Urbana",
+      "sortName": "Legião Urbana",
+      "aliases": [
+        {
+          "name": "Legi o Urbana",
+          "sortName": "Legi o Urbana"
+        },
+        {
+          "name": "Legião",
+          "sortName": "Legião"
+        },
+        {
+          "name": "Legiao Urbana",
+          "sortName": "Legiao Urbana"
+        },
+        {
+          "name": "Leigão Urbana",
+          "sortName": "Leigão Urbana"
+        }
+      ]
+    },
+    {
+      "mbid": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+      "name": "Michael Jackson",
+      "sortName": "Jackson, Michael",
+      "aliases": [
+        {
+          "name": "JACKSON MICHAEL JOE",
+          "sortName": "JACKSON MICHAEL JOE"
+        },
+        {
+          "name": "Majkl Džekson",
+          "sortName": "Džekson, Majkl"
+        },
+        {
+          "name": "Michaël Jackson",
+          "sortName": "Michaël Jackson"
+        },
+        {
+          "name": "Michael Joe Jackson",
+          "sortName": "Jackson, Michael Joe"
+        },
+        {
+          "name": "Michael Joseph Jackson",
+          "sortName": "Jackson, Michael Joseph"
+        },
+        {
+          "name": "Micheal",
+          "sortName": "Micheal"
+        },
+        {
+          "name": "Michel Jackson",
+          "sortName": "Michel Jackson"
+        },
+        {
+          "name": "MJ",
+          "sortName": "MJ"
+        },
+        {
+          "name": "W.A. Mozart",
+          "sortName": "Mozart, W.A."
+        },
+        {
+          "name": "Майкл Джексон",
+          "sortName": "Майкл Джексон"
+        },
+        {
+          "name": "Мајкл Џексон",
+          "sortName": "Џексон, Мајкл"
+        },
+        {
+          "name": "마이클 잭슨",
+          "sortName": "마이클 잭슨"
+        },
+        {
+          "name": "マイケル・ジャクソン",
+          "sortName": "マイケル・ジャクソン"
+        },
+        {
+          "name": "迈克尔·杰克逊",
+          "sortName": "迈克尔·杰克逊"
+        }
+      ]
+    },
+    {
+      "mbid": "ba550d0e-adac-4864-b88b-407cab5e76af",
+      "name": "Paul McCartney",
+      "sortName": "McCartney, Paul",
+      "aliases": [
+        {
+          "name": "A. Smith",
+          "sortName": "A. Smith"
+        },
+        {
+          "name": "Apollo C. Vermouth",
+          "sortName": "Apollo C. Vermouth"
+        },
+        {
+          "name": "Bernard Webb",
+          "sortName": "Webb, Bernard"
+        },
+        {
+          "name": "James Paul McCartney",
+          "sortName": "McCartney, James Paul"
+        },
+        {
+          "name": "McCARTNEY, Paul",
+          "sortName": "McCARTNEY, Paul"
+        },
+        {
+          "name": "P.Makartnijs",
+          "sortName": "Makartnijs, P."
+        },
+        {
+          "name": "Paul Mac Cartney",
+          "sortName": "Paul Mac Cartney"
+        },
+        {
+          "name": "Paul MacCartney",
+          "sortName": "Paul MacCartney"
+        },
+        {
+          "name": "Paul Mc Cartney",
+          "sortName": "Paul Mc Cartney"
+        },
+        {
+          "name": "Paul Ramon",
+          "sortName": "Ramon, Paul"
+        },
+        {
+          "name": "Pecan Army Cult",
+          "sortName": "Pecan Army Cult"
+        },
+        {
+          "name": "Pete Mitchell",
+          "sortName": "Mitchell, Pete"
+        },
+        {
+          "name": "Racy Tune Clamp",
+          "sortName": "Racy Tune Clamp"
+        },
+        {
+          "name": "Sir James Paul McCartney",
+          "sortName": "Sir James Paul McCartney"
+        },
+        {
+          "name": "Superweed",
+          "sortName": "Superweed"
+        },
+        {
+          "name": "Tuna Cycle Pram",
+          "sortName": "Tuna Cycle Pram"
+        },
+        {
+          "name": "Пол Маккартни",
+          "sortName": "Маккартни, Пол"
+        },
+        {
+          "name": "ポール・マッカートニー",
+          "sortName": "ポール・マッカートニー"
+        }
+      ]
+    }
+  ],
+  "genres": [
+    {
+      "mbid": "e096efc6-6c9c-4240-b627-d7bbb5e8fa2a",
+      "name": "alternative punk"
+    },
+    {
+      "mbid": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+      "name": "alternative rock"
+    },
+    {
+      "mbid": "608b0471-7531-4854-a348-e698c69cb699",
+      "name": "ambient"
+    },
+    {
+      "mbid": "26af3760-750a-4b5e-a699-78c87697585a",
+      "name": "arena rock"
+    },
+    {
+      "mbid": "930ef127-3653-4677-9b95-ecc90c7c1a14",
+      "name": "art pop"
+    },
+    {
+      "mbid": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+      "name": "art rock"
+    },
+    {
+      "mbid": "150eb95a-7739-4fde-a5fe-b62ca576a928",
+      "name": "baroque pop"
+    },
+    {
+      "mbid": "650bda08-20ca-4012-b873-3b68c5768bdf",
+      "name": "blue-eyed soul"
+    },
+    {
+      "mbid": "10fd28e3-51aa-4110-a3dd-032d8a141f99",
+      "name": "boogie"
+    },
+    {
+      "mbid": "573a284f-2ae3-4636-af36-10fc1078d295",
+      "name": "bossa nova"
+    },
+    {
+      "mbid": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+      "name": "britpop"
+    },
+    {
+      "mbid": "93244085-20e5-4f16-9067-1d19143b3810",
+      "name": "classic rock"
+    },
+    {
+      "mbid": "4bb4043a-0ee5-4b84-93fa-6ba4567a6ba0",
+      "name": "contemporary r&b"
+    },
+    {
+      "mbid": "b739a895-85ed-4ad3-8717-4e9ef5387dd8",
+      "name": "dance-pop"
+    },
+    {
+      "mbid": "a04d680b-b5c5-4f6a-87a3-f9f1ff98e3ea",
+      "name": "disco"
+    },
+    {
+      "mbid": "6242615b-5620-465b-b6fb-2e593e90cbad",
+      "name": "dream pop"
+    },
+    {
+      "mbid": "fe4ba6a1-9873-4fd0-a12b-a70c81818514",
+      "name": "funk"
+    },
+    {
+      "mbid": "54d89e62-5bfb-42bc-a321-9230e6fdcd75",
+      "name": "glam rock"
+    },
+    {
+      "mbid": "51cb9f91-e6a2-41bf-891f-e78e3f1e52ab",
+      "name": "hard rock"
+    },
+    {
+      "mbid": "a2782cb6-1cd0-477c-a61d-b3f8b42dd1b3",
+      "name": "house"
+    },
+    {
+      "mbid": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7",
+      "name": "indie rock"
+    },
+    {
+      "mbid": "a715278f-1580-409f-8078-4ffbc800e08b",
+      "name": "jazz"
+    },
+    {
+      "mbid": "7369bb8b-3399-4180-8cb2-4e37e0e7b0e7",
+      "name": "latin"
+    },
+    {
+      "mbid": "7b447f98-1e94-4e57-9bb8-373743fbcdd8",
+      "name": "mpb"
+    },
+    {
+      "mbid": "3b389785-3857-4316-9e80-3bbaaa2778ab",
+      "name": "music hall"
+    },
+    {
+      "mbid": "34cd43be-4711-4e77-a25c-c6d6a4bf3cb4",
+      "name": "piano rock"
+    },
+    {
+      "mbid": "911c7bbb-172d-4df8-9478-dbff4296e791",
+      "name": "pop"
+    },
+    {
+      "mbid": "797e2e85-5ffd-495c-a757-8b4079052f0e",
+      "name": "pop rock"
+    },
+    {
+      "mbid": "64e0bd76-822f-4549-a6fe-9858561282d1",
+      "name": "pop soul"
+    },
+    {
+      "mbid": "a493b79c-4072-4371-a14c-446b1027982a",
+      "name": "post-britpop"
+    },
+    {
+      "mbid": "ae9b8279-3959-48d8-8a88-741a7f6d4a48",
+      "name": "progressive rock"
+    },
+    {
+      "mbid": "27b1c4a7-07f9-4dee-9362-b16530b5c73a",
+      "name": "quiet storm"
+    },
+    {
+      "mbid": "31be54b2-4d0c-42df-aa44-c496c7b4c3c3",
+      "name": "r&b"
+    },
+    {
+      "mbid": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+      "name": "rock"
+    },
+    {
+      "mbid": "1b5e7b16-336b-473e-a364-5120413a9827",
+      "name": "soul"
+    },
+    {
+      "mbid": "f729e6f8-30dc-4b81-9ff4-f4e7de82225d",
+      "name": "symphonic rock"
+    },
+    {
+      "mbid": "4dcf868a-cbcb-4969-beff-d75c91d0bd47",
+      "name": "synth funk"
+    },
+    {
+      "mbid": "988e91a3-3341-416d-b7f8-7dbef6848dac",
+      "name": "synth-pop"
+    },
+    {
+      "mbid": "2afc2320-384f-43a4-a71e-1b763c485045",
+      "name": "trance"
+    }
+  ],
+  "releaseStatuses": [
+    {
+      "mbid": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "name": "Official"
+    },
+    {
+      "mbid": "1156806e-d06a-38bd-83f0-cf2284a808b9",
+      "name": "Bootleg"
+    }
+  ],
+  "releaseGroupPrimaryTypes": [
+    {
+      "mbid": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+      "name": "Album"
+    }
+  ],
+  "recordings": [
+    {
+      "mbid": "a46d027a-39e0-4b47-b19b-bb7682839ac5",
+      "title": "Death on Two Legs (Dedicated to…)",
+      "lengthMs": 223293,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500365", "GBCEE0900014", "GBCEE7500004", "GBUM71100668"]
+    },
+    {
+      "mbid": "a69ca3a1-65ff-491a-b25e-fa2010963e26",
+      "title": "Lazing on a Sunday Afternoon",
+      "lengthMs": 67400,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500366", "GBCEE0900015", "GBCEE7500005", "GBUM71100535"]
+    },
+    {
+      "mbid": "8c8cc498-39e7-440f-b937-21d1481cc3a0",
+      "title": "I’m in Love With My Car",
+      "lengthMs": 185053,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500367", "GBCEE0900016", "GBCEE7500003", "GBUM71100534"]
+    },
+    {
+      "mbid": "471dc436-80be-4f06-bc8f-7e2685876cfc",
+      "title": "You’re My Best Friend",
+      "lengthMs": 172000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100117",
+        "GBCEE0500375",
+        "GBCEE0900017",
+        "GBCEE0900138",
+        "GBCEE7500019",
+        "GBCEE9300010",
+        "GBUM71029609"
+      ]
+    },
+    {
+      "mbid": "16d2c90d-d688-4465-bb76-4a9e94b80729",
+      "title": "’39",
+      "lengthMs": 210853,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0500368",
+        "GBCEE0900018",
+        "GBCEE7500007",
+        "GBUM71100531",
+        "GBUM71404712"
+      ]
+    },
+    {
+      "mbid": "e787ac41-3aba-41b6-ad05-63ddb02b50b8",
+      "title": "Sweet Lady",
+      "lengthMs": 243693,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500369", "GBCEE0900019", "GBCEE7500008", "GBUM71100538"]
+    },
+    {
+      "mbid": "e26a4230-72bf-4fbe-b86b-2f045ebb2cb7",
+      "title": "Seaside Rendezvous",
+      "lengthMs": 136826,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500370", "GBCEE0900020", "GBCEE7500009", "GBUM71100537"]
+    },
+    {
+      "mbid": "1709306b-e1a4-471f-ab6d-6c78ab0a55be",
+      "title": "The Prophet’s Song",
+      "lengthMs": 501000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500371", "GBCEE0900021", "GBCEE7500010", "GBUM71100539"]
+    },
+    {
+      "mbid": "aae7c914-d58d-4e25-b3a3-21bd0f565a54",
+      "title": "Love of My Life",
+      "lengthMs": 218560,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500372", "GBCEE0900022", "GBCEE7500011", "GBUM71100536"]
+    },
+    {
+      "mbid": "d002ad96-7eac-4ca5-9b45-d89b8c7f15ee",
+      "title": "Good Company",
+      "lengthMs": 203440,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500373", "GBCEE0900023", "GBCEE7500012", "GBUM71100533"]
+    },
+    {
+      "mbid": "b1a9c0e9-d987-4042-ae91-78d6a3267d69",
+      "title": "Bohemian Rhapsody",
+      "lengthMs": 355106,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100112",
+        "GBCEE0500364",
+        "GBCEE0900148",
+        "GBCEE7500015",
+        "GBCEE9300005",
+        "GBCEE9800022",
+        "GBUM71029604"
+      ]
+    },
+    {
+      "mbid": "4112acb8-7ac0-4047-9c02-6e02226003e7",
+      "title": "God Save the Queen",
+      "lengthMs": 75000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEE0500374", "GBCEE0900024", "GBCEE7500013", "GBUM71100532"]
+    },
+    {
+      "mbid": "b0ba8001-b17d-4b52-9396-6fde70c830da",
+      "title": "Mustapha",
+      "lengthMs": 181626,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800003", "GBCEG9800001", "GBUM71103324"]
+    },
+    {
+      "mbid": "0d538e7c-9261-46ec-bde9-cae13e42372c",
+      "title": "Fat Bottomed Girls",
+      "lengthMs": 257000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG9800002", "GBUM71029607"]
+    },
+    {
+      "mbid": "cca05c80-3941-4e26-a855-d4316c9cad6d",
+      "title": "Jealousy",
+      "lengthMs": 193600,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800005", "GBCEG9800003", "GBUM71103320"]
+    },
+    {
+      "mbid": "135214af-6058-4705-9f17-18d396f36191",
+      "title": "Bicycle Race",
+      "lengthMs": 182000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100116",
+        "GBCEE9300008",
+        "GBCEG7800006",
+        "GBCEG9800004",
+        "GBUM71029608"
+      ]
+    },
+    {
+      "mbid": "085c26e0-678a-4d40-9dc7-4a66e86093ab",
+      "title": "If You Can’t Beat Them",
+      "lengthMs": 255360,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800007", "GBCEG9800005", "GBUM71103317"]
+    },
+    {
+      "mbid": "6913253e-f3ad-4fc5-8a2a-470239b1c357",
+      "title": "Let Me Entertain You",
+      "lengthMs": 182000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800008", "GBCEG9800006", "GBUM71103322"]
+    },
+    {
+      "mbid": "087b1dc8-6386-4be4-8e40-656458c3089a",
+      "title": "Dead on Time",
+      "lengthMs": 203333,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800009", "GBCEG9800007", "GBUM71103313"]
+    },
+    {
+      "mbid": "ef3b7b77-6fca-48bf-b094-09dafc763a74",
+      "title": "In Only Seven Days",
+      "lengthMs": 150000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800010", "GBCEG9800008", "GBUM71103319"]
+    },
+    {
+      "mbid": "baeb8ea6-1970-4198-bd51-fc4200d2dfd3",
+      "title": "Dreamers Ball",
+      "lengthMs": 210773,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800011", "GBCEG9800009", "GBUM71103314"]
+    },
+    {
+      "mbid": "9dcb8979-72c2-4381-bbd3-31da8408afb9",
+      "title": "Fun It",
+      "lengthMs": 209826,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800012", "GBCEG9800010", "GBUM71103315"]
+    },
+    {
+      "mbid": "e2a178e6-45b4-4509-bba7-1e98abd1a4bb",
+      "title": "Leaving Home Ain’t Easy",
+      "lengthMs": 195040,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800013", "GBCEG9800011", "GBUM71103321"]
+    },
+    {
+      "mbid": "d4009c09-a339-4b89-bc45-d91ab649acb6",
+      "title": "Don’t Stop Me Now",
+      "lengthMs": 210146,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100118",
+        "GBCEE0900139",
+        "GBCEE9300011",
+        "GBCEG0100076",
+        "GBCEG0800003",
+        "GBCEG7800014",
+        "GBCEG9800012",
+        "GBUM71029610"
+      ]
+    },
+    {
+      "mbid": "4ad7ca0a-1247-448d-ab45-d44acdc876e1",
+      "title": "More of That Jazz",
+      "lengthMs": 256600,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBCEG7800015", "GBCEG9800013", "GBUM71103323"]
+    },
+    {
+      "mbid": "6b235773-16bd-4fc5-b57e-c966f9d1db6d",
+      "title": "Another One Bites the Dust",
+      "lengthMs": 215053,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100113",
+        "GBCEE0900132",
+        "GBCEE8000027",
+        "GBCEE9300006",
+        "GBCEE9400028",
+        "GBUM71029605",
+        "USRHD0532298"
+      ]
+    },
+    {
+      "mbid": "fd125370-5ac9-45eb-86ad-ab99e258404b",
+      "title": "Crazy Little Thing Called Love",
+      "lengthMs": 163706,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100120",
+        "GBCEE0900134",
+        "GBCEE8000029",
+        "GBCEE9300013",
+        "GBUM71029612"
+      ]
+    },
+    {
+      "mbid": "7b3d96c9-3e22-4337-be32-f8a26b816685",
+      "title": "Killer Queen",
+      "lengthMs": 180906,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100114",
+        "GBCEE0900140",
+        "GBCEE7400013",
+        "GBCEE9300004",
+        "GBUM71029606"
+      ]
+    },
+    {
+      "mbid": "32c7e292-14f1-4080-bddf-ef852e0a4c59",
+      "title": "Under Pressure",
+      "lengthMs": 243000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "5441c29d-3602-4898-b1a1-b77fa23b8e50",
+          "name": "David Bowie",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "CBCEG8100001",
+        "GBCEE0900136",
+        "GBCEG0100041",
+        "GBCEG8100001",
+        "GBCEG9400046",
+        "GBUM71029622",
+        "GBUM71106916",
+        "GBUM71404523"
+      ]
+    },
+    {
+      "mbid": "f8581c2b-61ac-465d-82ae-0fa2916a4799",
+      "title": "We Will Rock You",
+      "lengthMs": 122000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100127",
+        "GBCEE0900129",
+        "GBCEE7700017",
+        "GBCEE7700030",
+        "GBCEE9300001",
+        "GBCEE9300019",
+        "GBCEE9800057",
+        "GBUM71029618",
+        "USEE10503137",
+        "USHR10320404",
+        "USHR10320405"
+      ]
+    },
+    {
+      "mbid": "3604eb06-4bc2-4416-9b31-ceadae51bc70",
+      "title": "We Are the Champions",
+      "lengthMs": 181026,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100128",
+        "GBCEE0900130",
+        "GBCEE7700016",
+        "GBCEE9300002",
+        "GBCEE9300020",
+        "GBCEE9800058",
+        "GBUM71029619",
+        "USRH10652606"
+      ]
+    },
+    {
+      "mbid": "e61e12a1-118a-4441-9a58-b5eaff2ce9bc",
+      "title": "Flash",
+      "lengthMs": 168426,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100125",
+        "GBCEE8000036",
+        "GBCEE9300009",
+        "GBUM71029616",
+        "GBUM71103537"
+      ]
+    },
+    {
+      "mbid": "3b286fbf-0dc9-45b8-bf4a-5036ac72526d",
+      "title": "Somebody to Love",
+      "lengthMs": 296466,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100121",
+        "GBCEE0900145",
+        "GBCEE7600011",
+        "GBCEE9300014",
+        "GBUM71029613",
+        "GBUM71404710"
+      ]
+    },
+    {
+      "mbid": "1231a0c3-7090-4216-baf9-44cb9b05ebe7",
+      "title": "Keep Yourself Alive",
+      "lengthMs": 212000,
+      "disambiguation": "mono single",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "fd69655e-91e3-42d5-8cb5-27e3a3784067",
+      "title": "Play the Game",
+      "lengthMs": 212066,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": [
+        "GBCEE0100124",
+        "GBCEE8000025",
+        "GBCEE9300017",
+        "GBCEE9400026",
+        "GBUM71029615"
+      ]
+    },
+    {
+      "mbid": "1a13c710-4b7e-4701-8968-cd61f2e58110",
+      "title": "Rolling in the Deep",
+      "lengthMs": 228293,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000335"]
+    },
+    {
+      "mbid": "797ae656-81d4-4d89-bddb-eca56f77ba72",
+      "title": "Rumour Has It",
+      "lengthMs": 223266,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000349"]
+    },
+    {
+      "mbid": "9bed2307-9a25-4960-be46-79bce5acc267",
+      "title": "Turning Tables",
+      "lengthMs": 250133,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000346"]
+    },
+    {
+      "mbid": "f5057d26-1aac-47fe-b766-18c5a28927b1",
+      "title": "Don’t You Remember",
+      "lengthMs": 243200,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000344"]
+    },
+    {
+      "mbid": "d1e0a99e-1894-457b-ba6a-985eeef4d0c4",
+      "title": "Set Fire to the Rain",
+      "lengthMs": 241693,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000348", "GBBKS1000357"]
+    },
+    {
+      "mbid": "4dd209b9-80fd-4e11-8093-3bab2db810fc",
+      "title": "He Won’t Go",
+      "lengthMs": 277946,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000353"]
+    },
+    {
+      "mbid": "4f515654-052b-4631-8a78-57ea362cd18a",
+      "title": "Take It All",
+      "lengthMs": 228213,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000347"]
+    },
+    {
+      "mbid": "dd2d2073-50c4-438a-91cc-a1fea1c81b12",
+      "title": "I’ll Be Waiting",
+      "lengthMs": 241653,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000345"]
+    },
+    {
+      "mbid": "04f96056-91ac-4b64-af89-24c596013f05",
+      "title": "One and Only",
+      "lengthMs": 348160,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000358"]
+    },
+    {
+      "mbid": "7932ba40-a0d3-4a7e-8d85-b351fd33317e",
+      "title": "Lovesong",
+      "lengthMs": 316280,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000352"]
+    },
+    {
+      "mbid": "028efe7f-cdfb-4135-846f-848f2fff15b1",
+      "title": "Someone Like You",
+      "lengthMs": 285040,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBBKS1000351", "NLD141100065"]
+    },
+    {
+      "mbid": "fb81a071-9c63-4e8c-ab60-77403e81c01d",
+      "title": "Don’t Panic",
+      "lengthMs": 137000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000566", "GBAYE1600166"]
+    },
+    {
+      "mbid": "71557258-6534-4b56-8007-3903ace2d869",
+      "title": "Shiver",
+      "lengthMs": 299693,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000046", "GBAYE0000567", "GBAYE1600167"]
+    },
+    {
+      "mbid": "50369905-68ca-48d2-912d-b37330ff7dc3",
+      "title": "Spies",
+      "lengthMs": 318773,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000568", "GBAYE1600168"]
+    },
+    {
+      "mbid": "22d49305-4e35-4a69-8638-05ac5f734065",
+      "title": "Sparks",
+      "lengthMs": 227093,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000569", "GBAYE1600169"]
+    },
+    {
+      "mbid": "729cf505-94eb-4fbe-bc76-cbae44cff091",
+      "title": "Yellow",
+      "lengthMs": 269110,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000267", "GBAYE1600170", "USLIC0600482", "USNO11400531"]
+    },
+    {
+      "mbid": "1aa7ebc0-25ee-47b2-8efd-6074307c5b14",
+      "title": "Trouble",
+      "lengthMs": 270906,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000528", "GBAYE0000560", "GBAYE1600171"]
+    },
+    {
+      "mbid": "3451489e-ea50-4e4e-9043-df1e30ce37b5",
+      "title": "Parachutes",
+      "lengthMs": 46200,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000529", "GBAYE1600172"]
+    },
+    {
+      "mbid": "94909689-459c-4d15-8e31-678854c48f22",
+      "title": "High Speed",
+      "lengthMs": 254360,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE1600173", "GBAYE9901817"]
+    },
+    {
+      "mbid": "7e52d1a9-6c02-4f2e-b30e-dc22ef219f3f",
+      "title": "We Never Change",
+      "lengthMs": 249400,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000571", "GBAYE1600174"]
+    },
+    {
+      "mbid": "78485fd1-136d-4f2b-ae93-d9815d828e26",
+      "title": "Everything’s Not Lost / Life Is for Living",
+      "lengthMs": 435333,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0000531", "GBAYE0001716", "GBAYE1600175"]
+    },
+    {
+      "mbid": "fe33d06e-ffd4-4ad9-9474-023ac977d63e",
+      "title": "Life in Technicolor",
+      "lengthMs": 149986,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800253", "GBAYE1600211"]
+    },
+    {
+      "mbid": "a89d3e81-cf59-4da2-a1ca-4d45811dabb7",
+      "title": "Cemeteries of London",
+      "lengthMs": 201106,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800254", "GBAYE1600212"]
+    },
+    {
+      "mbid": "8353cabb-9649-4964-bb36-a3fd2382bae8",
+      "title": "Lost!",
+      "lengthMs": 235066,
+      "disambiguation": "album version",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800255", "GBAYE1600213"]
+    },
+    {
+      "mbid": "fc5f3234-18b3-4218-bc73-aad533dfaeb3",
+      "title": "42",
+      "lengthMs": 237400,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800259", "GBAYE1600214"]
+    },
+    {
+      "mbid": "e4a59629-1abc-4fa4-9deb-760411368273",
+      "title": "Lovers in Japan / Reign of Love",
+      "lengthMs": 411013,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800256", "GBAYE1600215"]
+    },
+    {
+      "mbid": "eb027f97-e23f-4e33-914f-e0ce3b5f9c7d",
+      "title": "Yes / Chinese Sleep Chant",
+      "lengthMs": 426653,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800257", "GBAYE1600216"]
+    },
+    {
+      "mbid": "307ce9da-5690-4e21-ab71-9d12ea106e52",
+      "title": "Viva la vida",
+      "lengthMs": 241445,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GABAY0080086", "GBAYE0800265", "GBAYE0800867", "GBAYE1600217"]
+    },
+    {
+      "mbid": "ba4bcf45-fcdf-4ff7-a19e-be3fdffae337",
+      "title": "Violet Hill",
+      "lengthMs": 222653,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800269", "GBAYE1600218"]
+    },
+    {
+      "mbid": "0b778271-1901-472c-95fa-8996535e4c8f",
+      "title": "Strawberry Swing",
+      "lengthMs": 249666,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800264", "GBAYE1600219"]
+    },
+    {
+      "mbid": "41e8b7d6-ad5c-47d7-a72d-290f4e2d1959",
+      "title": "Death and All His Friends / The Escapist",
+      "lengthMs": 378853,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800261", "GBAYE1600220"]
+    },
+    {
+      "mbid": "df254587-24f2-4b13-9a67-292acf1a2aca",
+      "title": "Life in Technicolor ii",
+      "lengthMs": 245933,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0801695", "GBAYE1600221"]
+    },
+    {
+      "mbid": "231631cb-faef-4997-b9fa-250ec4279a68",
+      "title": "Postcards From Far Away",
+      "lengthMs": 48293,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800258", "GBAYE1600222"]
+    },
+    {
+      "mbid": "6f77f0d6-2293-4390-884d-bb49a2e17fe3",
+      "title": "Glass of Water",
+      "lengthMs": 284733,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800410", "GBAYE1600223"]
+    },
+    {
+      "mbid": "a3fc4ff4-f0dd-4df6-89c9-d1712c0d5e0c",
+      "title": "Rainy Day",
+      "lengthMs": 206000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800268", "GBAYE1600224"]
+    },
+    {
+      "mbid": "bac33bd0-8dd6-4813-a0f8-4cdd92ffc39f",
+      "title": "Prospekt’s March / Poppyfields",
+      "lengthMs": 219226,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800267", "GBAYE1600225"]
+    },
+    {
+      "mbid": "15c35433-4253-44e3-b8c5-d50db5ed8177",
+      "title": "Lost+",
+      "lengthMs": 258986,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0801490", "GBAYE1600226"]
+    },
+    {
+      "mbid": "f134a21a-5f5a-4503-8125-e56b8914ea98",
+      "title": "Lovers in Japan (Osaka Sun mix)",
+      "lengthMs": 238320,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0801802", "GBAYE1600227"]
+    },
+    {
+      "mbid": "84a89bef-55a8-4fcd-91d3-fd1740725d5e",
+      "title": "Now My Feet Won’t Touch the Ground",
+      "lengthMs": 149680,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAYE0800272", "GBAYE1600228"]
+    },
+    {
+      "mbid": "58b20cb0-34d8-46d7-8782-4d2865a36b2a",
+      "title": "Águas De Março",
+      "lengthMs": 214004,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "28361163-7c3b-481f-af17-71cfa97e3bca",
+      "title": "Pois É",
+      "lengthMs": 104107,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "125d92a9-3011-4b6c-95fc-2bb0be014ca8",
+      "title": "Só Tinha De Ser Com Você",
+      "lengthMs": 233016,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "04002fc3-1dd0-4459-81de-6fe39c481988",
+      "title": "Modinha",
+      "lengthMs": 138006,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "9d15e1ec-224f-4571-bb8d-4cb1cfed359f",
+      "title": "Triste",
+      "lengthMs": 162369,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "10ad371a-2bfc-414a-9c0e-cfc419d1be23",
+      "title": "Corcovado",
+      "lengthMs": 237025,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "9313c671-6d70-4bd6-862e-9780dd4b1814",
+      "title": "O Que Tinha De Ser",
+      "lengthMs": 103020,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "8f175f95-5416-4804-9697-de07ef20256e",
+      "title": "Retrato Em Branco E Preto",
+      "lengthMs": 186014,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "caa2664f-1477-4f3a-980d-ba47c97fae81",
+      "title": "Brigas Nunca Mais",
+      "lengthMs": 102008,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "34fc6be7-7f01-47eb-b7b2-5d597320a3b1",
+      "title": "Por Toda A Minha Vida (Exaltação Ao Amor)",
+      "lengthMs": 124151,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "49144e98-7300-4327-b717-39d8f20fd1e9",
+      "title": "Fotografia",
+      "lengthMs": 169050,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "7275f8cb-80e4-49fd-a781-bb4ef1070e9b",
+      "title": "Soneto De Separação",
+      "lengthMs": 142008,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "d5ddb3ef-7c42-4654-b93f-5dbdcf893c1c",
+      "title": "Chovendo Na Roseira",
+      "lengthMs": 194030,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "e7b48031-b62e-4981-b5f4-5fff926a1c83",
+      "title": "Inútil Paisagem",
+      "lengthMs": 186041,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "António Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "edc72a26-5491-44ec-b2ea-dcfb301df429",
+      "title": "Daniel Na Cova Dos Leões",
+      "lengthMs": 240000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "4bc73644-04b7-4b6b-9786-5745fc5dd354",
+      "title": "Quase Sem Querer",
+      "lengthMs": 282000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "0cce4b4e-f637-455c-8c37-794a5b3cc82c",
+      "title": "Acrilic On Canvas",
+      "lengthMs": 280000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "3d35e1c2-a132-4499-9d25-8bdc3cae39dd",
+      "title": "Eduardo e Mônica",
+      "lengthMs": 272000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["BREMI8600023"]
+    },
+    {
+      "mbid": "022162d7-558b-4d20-8922-0c73eaf5964c",
+      "title": "Central Do Brasil",
+      "lengthMs": 94000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "a57d1cf7-5140-4889-a123-288b406429cf",
+      "title": "Tempo Perdido",
+      "lengthMs": 300000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "81bb47e9-b24b-4abe-b58c-a430ce0156dc",
+      "title": "Metrópole",
+      "lengthMs": 170000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "bfe024fa-adf8-449d-9606-bdd4419b4fc9",
+      "title": "Plantas Embaixo Do Aquário",
+      "lengthMs": 175000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "5285433f-b572-43f2-b0f6-e8ffe54623cf",
+      "title": "Música Urbana 2",
+      "lengthMs": 162000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "f34dc830-d683-43b9-8b76-d2e0ea67a5f5",
+      "title": "Andrea Doria",
+      "lengthMs": 298000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "be6b8251-0c45-4eb0-967c-1913da93da22",
+      "title": "Fábrica",
+      "lengthMs": 296000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "70fecd8e-8847-4c66-8df5-82e9a7ecdac7",
+      "title": "Índios",
+      "lengthMs": 263000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "acce5b31-c4a0-47da-bf7d-d59808821f37",
+      "title": "Química",
+      "lengthMs": 140000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "2460a241-6ff4-49f1-80f9-36051534e9ae",
+      "title": "Wanna Be Startin’ Somethin’",
+      "lengthMs": 363272,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200005", "USSM19902986"]
+    },
+    {
+      "mbid": "170f236a-f9e5-4632-8543-dd0142eaf242",
+      "title": "Baby Be Mine",
+      "lengthMs": 260467,
+      "disambiguation": "album version",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM19902987"]
+    },
+    {
+      "mbid": "bdc55bab-f300-42f9-b2dc-10f035e536a9",
+      "title": "The Girl Is Mine",
+      "lengthMs": 222000,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": " with "
+        },
+        {
+          "artist": "ba550d0e-adac-4864-b88b-407cab5e76af",
+          "name": "Paul McCartney",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200004", "USSM19902988"]
+    },
+    {
+      "mbid": "8403caf8-3714-46da-934c-1fe91a049540",
+      "title": "Thriller",
+      "lengthMs": 357753,
+      "disambiguation": "album version",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200002", "USSM19902989"]
+    },
+    {
+      "mbid": "de798de6-70fc-49f6-b580-339cd2e62052",
+      "title": "Beat It",
+      "lengthMs": 258173,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200003", "USSM18200197", "USSM19902990"]
+    },
+    {
+      "mbid": "f980fc14-e29b-481d-ad3a-5ed9b4ab6340",
+      "title": "Billie Jean",
+      "lengthMs": 294000,
+      "disambiguation": "album / single version",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200001", "USSM18200612", "USSM19902991"]
+    },
+    {
+      "mbid": "40a43f5e-d4f4-4253-a42d-364d47208c64",
+      "title": "Human Nature",
+      "lengthMs": 246000,
+      "disambiguation": "album version",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM18200399", "USSM19902992"]
+    },
+    {
+      "mbid": "7e82e767-94a3-4b72-8d79-4623aa4ac584",
+      "title": "P.Y.T. (Pretty Young Thing)",
+      "lengthMs": 238973,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM19902993"]
+    },
+    {
+      "mbid": "2bff76c1-0b98-4643-9ed3-063511ef9383",
+      "title": "The Lady in My Life",
+      "lengthMs": 299017,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["USSM12210587", "USSM18200398", "USSM19902994"]
+    },
+    {
+      "mbid": "476a8466-1f82-46a8-8706-648a41c98d3c",
+      "title": "Hometown Glory",
+      "lengthMs": 216000,
+      "disambiguation": "live, 2008-09-22: BBC Radio 1's Live Lounge, London, UK",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "7085949e-a0f3-4cd6-b5ce-bd186bd24073",
+      "title": "Make You Feel My Love",
+      "lengthMs": 219000,
+      "disambiguation": "live, 2008-09-22: BBC Radio 1's Live Lounge, London, UK",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    },
+    {
+      "mbid": "d668dd40-adb6-4c10-9edf-1f5a4dcef1ce",
+      "title": "Black & Gold",
+      "lengthMs": 187000,
+      "disambiguation": "live, 2008-09-22: BBC Radio 1's Live Lounge, London, UK",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": []
+    }
+  ],
+  "releaseGroups": [
+    {
+      "mbid": "6b47c9a0-b9e1-3df9-a5e8-50a6ce0dbdbd",
+      "title": "A Night at the Opera",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "1–4 wochen",
+          "count": 1
+        },
+        {
+          "name": "album rock",
+          "count": 2
+        },
+        {
+          "name": "arena rock",
+          "count": 3
+        },
+        {
+          "name": "art rock",
+          "count": 9
+        },
+        {
+          "name": "baroque pop",
+          "count": 5
+        },
+        {
+          "name": "classic rock",
+          "count": 4
+        },
+        {
+          "name": "english",
+          "count": 1
+        },
+        {
+          "name": "glam rock",
+          "count": 7
+        },
+        {
+          "name": "hard rock",
+          "count": 18
+        },
+        {
+          "name": "music hall",
+          "count": 1
+        },
+        {
+          "name": "offizielle charts",
+          "count": 1
+        },
+        {
+          "name": "pop",
+          "count": 3
+        },
+        {
+          "name": "pop rock",
+          "count": 3
+        },
+        {
+          "name": "progressive rock",
+          "count": 4
+        },
+        {
+          "name": "rock",
+          "count": 14
+        }
+      ]
+    },
+    {
+      "mbid": "c192ea46-7377-34f0-b332-dd9810edd560",
+      "title": "Jazz",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "aor classic rock",
+          "count": 3
+        },
+        {
+          "name": "arena rock",
+          "count": 1
+        },
+        {
+          "name": "art rock",
+          "count": 1
+        },
+        {
+          "name": "classic rock",
+          "count": 1
+        },
+        {
+          "name": "glam rock",
+          "count": 3
+        },
+        {
+          "name": "hard rock",
+          "count": 9
+        },
+        {
+          "name": "pop",
+          "count": 2
+        },
+        {
+          "name": "pop rock",
+          "count": 4
+        },
+        {
+          "name": "rock",
+          "count": 7
+        }
+      ]
+    },
+    {
+      "mbid": "69ce61c8-127f-3809-95d8-62fdf3ae1347",
+      "title": "Greatest Hits",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "album rock",
+          "count": 2
+        },
+        {
+          "name": "arena rock",
+          "count": 2
+        },
+        {
+          "name": "art rock",
+          "count": 2
+        },
+        {
+          "name": "compilation",
+          "count": 2
+        },
+        {
+          "name": "glam rock",
+          "count": 5
+        },
+        {
+          "name": "hard rock",
+          "count": 3
+        },
+        {
+          "name": "pop rock",
+          "count": 7
+        },
+        {
+          "name": "rock",
+          "count": 14
+        },
+        {
+          "name": "symphonic rock",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "e4174758-d333-4a8e-a31f-dd0edd51518e",
+      "title": "21",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "5+ wochen",
+          "count": 1
+        },
+        {
+          "name": "adult alternative pop/rock",
+          "count": 4
+        },
+        {
+          "name": "adult contemporary",
+          "count": 1
+        },
+        {
+          "name": "alternative/indie rock",
+          "count": 1
+        },
+        {
+          "name": "blue-eyed soul",
+          "count": 4
+        },
+        {
+          "name": "english",
+          "count": 1
+        },
+        {
+          "name": "indie pop / neo soul / r&b / funk",
+          "count": 1
+        },
+        {
+          "name": "jahrescharts 2024",
+          "count": 1
+        },
+        {
+          "name": "offizielle charts",
+          "count": 1
+        },
+        {
+          "name": "pop",
+          "count": 15
+        },
+        {
+          "name": "pop / soul",
+          "count": 3
+        },
+        {
+          "name": "pop soul",
+          "count": 9
+        },
+        {
+          "name": "pop/rock",
+          "count": 2
+        },
+        {
+          "name": "soul",
+          "count": 3
+        },
+        {
+          "name": "поп",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "1dc4c347-a1db-32aa-b14f-bc9cc507b843",
+      "title": "Parachutes",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "alternative",
+          "count": 3
+        },
+        {
+          "name": "alternative rock",
+          "count": 12
+        },
+        {
+          "name": "ambient",
+          "count": 1
+        },
+        {
+          "name": "dream pop",
+          "count": 2
+        },
+        {
+          "name": "indie rock",
+          "count": 1
+        },
+        {
+          "name": "jazz",
+          "count": 1
+        },
+        {
+          "name": "nocturnal",
+          "count": 1
+        },
+        {
+          "name": "offizielle charts",
+          "count": 1
+        },
+        {
+          "name": "piano rock",
+          "count": 2
+        },
+        {
+          "name": "pop rock",
+          "count": 5
+        },
+        {
+          "name": "post-britpop",
+          "count": 3
+        },
+        {
+          "name": "rock",
+          "count": 8
+        },
+        {
+          "name": "uplifting",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "a1084754-8bb5-3ebc-bbd2-6a27d48e798a",
+      "title": "Viva la Vida or Death and All His Friends",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "acoustic",
+          "count": 4
+        },
+        {
+          "name": "alternative",
+          "count": 4
+        },
+        {
+          "name": "alternative punk",
+          "count": 1
+        },
+        {
+          "name": "alternative rock",
+          "count": 12
+        },
+        {
+          "name": "art pop",
+          "count": 4
+        },
+        {
+          "name": "art rock",
+          "count": 1
+        },
+        {
+          "name": "brit rock",
+          "count": 2
+        },
+        {
+          "name": "britannique",
+          "count": 1
+        },
+        {
+          "name": "britpop",
+          "count": 4
+        },
+        {
+          "name": "piano rock",
+          "count": 2
+        },
+        {
+          "name": "pop",
+          "count": 3
+        },
+        {
+          "name": "pop rock",
+          "count": 12
+        },
+        {
+          "name": "rock",
+          "count": 9
+        },
+        {
+          "name": "uk",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "f9520003-6075-310e-b650-bbaa8aaeab4d",
+      "title": "Elis & Tom",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "Tom Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "bossa nova",
+          "count": 5
+        },
+        {
+          "name": "jazz",
+          "count": 3
+        },
+        {
+          "name": "latin",
+          "count": 1
+        },
+        {
+          "name": "mpb",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "mbid": "51d5ae33-82c1-3d3c-8e25-c88a2cf2c208",
+      "title": "Dois",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "80s",
+          "count": 1
+        },
+        {
+          "name": "alternative rock",
+          "count": 1
+        },
+        {
+          "name": "pop rock",
+          "count": 2
+        },
+        {
+          "name": "rock",
+          "count": 2
+        },
+        {
+          "name": "synth-pop",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "f32fab67-77dd-3937-addc-9062e28e4c37",
+      "title": "Thriller",
+      "primaryType": "Album",
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "name": "adult contemporary r&b",
+          "count": 3
+        },
+        {
+          "name": "ambient",
+          "count": 1
+        },
+        {
+          "name": "boogie",
+          "count": 1
+        },
+        {
+          "name": "contemporary r&b",
+          "count": 13
+        },
+        {
+          "name": "dance-pop",
+          "count": 8
+        },
+        {
+          "name": "disco",
+          "count": 7
+        },
+        {
+          "name": "funk",
+          "count": 3
+        },
+        {
+          "name": "funk / soul",
+          "count": 1
+        },
+        {
+          "name": "house",
+          "count": 1
+        },
+        {
+          "name": "jazz",
+          "count": 1
+        },
+        {
+          "name": "pop",
+          "count": 38
+        },
+        {
+          "name": "pop soul",
+          "count": 2
+        },
+        {
+          "name": "quiet storm",
+          "count": 1
+        },
+        {
+          "name": "r&b",
+          "count": 3
+        },
+        {
+          "name": "rock",
+          "count": 2
+        },
+        {
+          "name": "synth funk",
+          "count": 1
+        },
+        {
+          "name": "trance",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "mbid": "11ce3c93-0325-439e-8de7-fab397ba839c",
+      "title": "2008-09-22: BBC Radio 1's Live Lounge: London, UK",
+      "primaryType": null,
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": []
+    }
+  ],
+  "releases": [
+    {
+      "mbid": "6defd963-fe91-4550-b18e-82c685603c2b",
+      "title": "A Night at the Opera",
+      "releaseGroup": "6b47c9a0-b9e1-3df9-a5e8-50a6ce0dbdbd",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "GB",
+          "year": 1975,
+          "month": 11,
+          "day": 21
+        }
+      ],
+      "media": [
+        {
+          "mbid": "706c2634-d2f7-334e-b22a-901712def4eb",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "4a7e3b12-68d7-3880-b3a9-cd38a95a5794",
+              "position": 1,
+              "number": "A1",
+              "title": "Death on Two Legs (Dedicated to…)",
+              "lengthMs": 223733,
+              "recording": "a46d027a-39e0-4b47-b19b-bb7682839ac5"
+            },
+            {
+              "mbid": "432c2120-1a86-3cca-8c7f-b6e770ad03ea",
+              "position": 2,
+              "number": "A2",
+              "title": "Lazing on a Sunday Afternoon",
+              "lengthMs": 67426,
+              "recording": "a69ca3a1-65ff-491a-b25e-fa2010963e26"
+            },
+            {
+              "mbid": "bf0fac02-4f3e-3a6e-9432-a89d5d30f4ab",
+              "position": 3,
+              "number": "A3",
+              "title": "I’m in Love With My Car",
+              "lengthMs": 185440,
+              "recording": "8c8cc498-39e7-440f-b937-21d1481cc3a0"
+            },
+            {
+              "mbid": "99f3fddf-3d26-34a0-9af1-f8570cf502b2",
+              "position": 4,
+              "number": "A4",
+              "title": "You’re My Best Friend",
+              "lengthMs": 172666,
+              "recording": "471dc436-80be-4f06-bc8f-7e2685876cfc"
+            },
+            {
+              "mbid": "39755dfb-da50-3ecb-9210-2c68179a456a",
+              "position": 5,
+              "number": "A5",
+              "title": "’39",
+              "lengthMs": 211000,
+              "recording": "16d2c90d-d688-4465-bb76-4a9e94b80729"
+            },
+            {
+              "mbid": "43132ea6-71d5-31ed-b0f9-7a8ea3fc2fa8",
+              "position": 6,
+              "number": "A6",
+              "title": "Sweet Lady",
+              "lengthMs": 244400,
+              "recording": "e787ac41-3aba-41b6-ad05-63ddb02b50b8"
+            },
+            {
+              "mbid": "10595d85-01ef-3f7e-84e5-c14dfe4f8f32",
+              "position": 7,
+              "number": "A7",
+              "title": "Seaside Rendezvous",
+              "lengthMs": 136826,
+              "recording": "e26a4230-72bf-4fbe-b86b-2f045ebb2cb7"
+            },
+            {
+              "mbid": "6b4dd7c2-7097-3233-9bad-22222c392595",
+              "position": 8,
+              "number": "B1",
+              "title": "The Prophet’s Song",
+              "lengthMs": 501466,
+              "recording": "1709306b-e1a4-471f-ab6d-6c78ab0a55be"
+            },
+            {
+              "mbid": "4d8f0ad5-c9e2-37a2-87bc-f8abae219847",
+              "position": 9,
+              "number": "B2",
+              "title": "Love of My Life",
+              "lengthMs": 219240,
+              "recording": "aae7c914-d58d-4e25-b3a3-21bd0f565a54"
+            },
+            {
+              "mbid": "b8c17bfa-92f0-364c-8180-565291672384",
+              "position": 10,
+              "number": "B3",
+              "title": "Good Company",
+              "lengthMs": 203893,
+              "recording": "d002ad96-7eac-4ca5-9b45-d89b8c7f15ee"
+            },
+            {
+              "mbid": "b8c2cf90-83f9-3b5f-8ccd-31fb866fcf37",
+              "position": 11,
+              "number": "B4",
+              "title": "Bohemian Rhapsody",
+              "lengthMs": 355106,
+              "recording": "b1a9c0e9-d987-4042-ae91-78d6a3267d69"
+            },
+            {
+              "mbid": "3f133b18-5e4f-3c5e-91ab-d15b37e7f7dc",
+              "position": 12,
+              "number": "B5",
+              "title": "God Save the Queen",
+              "lengthMs": 75800,
+              "recording": "4112acb8-7ac0-4047-9c02-6e02226003e7"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "993f394d-895d-4fbb-9733-f9e98e0afdd6",
+      "title": "Jazz",
+      "releaseGroup": "c192ea46-7377-34f0-b332-dd9810edd560",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "GB",
+          "year": 1978,
+          "month": 11,
+          "day": 10
+        }
+      ],
+      "media": [
+        {
+          "mbid": "3f8e4c94-1c14-3f5d-8bf5-bb8708ae6616",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "9dc255bc-7ca3-3607-89ed-136314649f96",
+              "position": 1,
+              "number": "1",
+              "title": "Mustapha",
+              "lengthMs": 181626,
+              "recording": "b0ba8001-b17d-4b52-9396-6fde70c830da"
+            },
+            {
+              "mbid": "6ce13a1b-88ce-3059-9660-07a6534a3db7",
+              "position": 2,
+              "number": "2",
+              "title": "Fat Bottomed Girls",
+              "lengthMs": 257266,
+              "recording": "0d538e7c-9261-46ec-bde9-cae13e42372c"
+            },
+            {
+              "mbid": "f18f49c7-2e4f-3d56-bedb-b98af6a98d16",
+              "position": 3,
+              "number": "3",
+              "title": "Jealousy",
+              "lengthMs": 193600,
+              "recording": "cca05c80-3941-4e26-a855-d4316c9cad6d"
+            },
+            {
+              "mbid": "c3a3d444-8218-3434-912a-17aae8e87900",
+              "position": 4,
+              "number": "4",
+              "title": "Bicycle Race",
+              "lengthMs": 183906,
+              "recording": "135214af-6058-4705-9f17-18d396f36191"
+            },
+            {
+              "mbid": "22a99021-6204-3921-b162-1e23749f47e5",
+              "position": 5,
+              "number": "5",
+              "title": "If You Can’t Beat Them",
+              "lengthMs": 255360,
+              "recording": "085c26e0-678a-4d40-9dc7-4a66e86093ab"
+            },
+            {
+              "mbid": "2f9d095e-a578-3da3-9d95-2ec9e55d14d4",
+              "position": 6,
+              "number": "6",
+              "title": "Let Me Entertain You",
+              "lengthMs": 182000,
+              "recording": "6913253e-f3ad-4fc5-8a2a-470239b1c357"
+            },
+            {
+              "mbid": "9d7eb109-2b55-30c8-8bd0-de7368b0c289",
+              "position": 7,
+              "number": "7",
+              "title": "Dead on Time",
+              "lengthMs": 203333,
+              "recording": "087b1dc8-6386-4be4-8e40-656458c3089a"
+            },
+            {
+              "mbid": "dcb86dc1-6b02-3474-a521-e984ec97e5f6",
+              "position": 8,
+              "number": "8",
+              "title": "In Only Seven Days",
+              "lengthMs": 150266,
+              "recording": "ef3b7b77-6fca-48bf-b094-09dafc763a74"
+            },
+            {
+              "mbid": "33a3e7c1-989c-350d-bb9c-582da4a33d4c",
+              "position": 9,
+              "number": "9",
+              "title": "Dreamers Ball",
+              "lengthMs": 210773,
+              "recording": "baeb8ea6-1970-4198-bd51-fc4200d2dfd3"
+            },
+            {
+              "mbid": "ed1f70a6-cb97-3c91-8a7c-28be2e3fa39c",
+              "position": 10,
+              "number": "10",
+              "title": "Fun It",
+              "lengthMs": 209826,
+              "recording": "9dcb8979-72c2-4381-bbd3-31da8408afb9"
+            },
+            {
+              "mbid": "0bdddc6b-345c-3fb2-9f51-c5b8ca9d57d1",
+              "position": 11,
+              "number": "11",
+              "title": "Leaving Home Ain’t Easy",
+              "lengthMs": 195200,
+              "recording": "e2a178e6-45b4-4509-bba7-1e98abd1a4bb"
+            },
+            {
+              "mbid": "13042d0d-ccfa-3392-9d97-ce84c79e551e",
+              "position": 12,
+              "number": "12",
+              "title": "Don’t Stop Me Now",
+              "lengthMs": 209573,
+              "recording": "d4009c09-a339-4b89-bc45-d91ab649acb6"
+            },
+            {
+              "mbid": "e1bd2b3e-83c3-3845-9e19-1c32f163905d",
+              "position": 13,
+              "number": "13",
+              "title": "More of That Jazz",
+              "lengthMs": 256600,
+              "recording": "4ad7ca0a-1247-448d-ab45-d44acdc876e1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "bab57bb1-67a7-460a-a5c4-15c9a1df7d2d",
+      "title": "Greatest Hits",
+      "releaseGroup": "69ce61c8-127f-3809-95d8-62fdf3ae1347",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "0383dadf-2a4e-4d10-a46a-e9e041da8eb3",
+          "name": "Queen",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "US",
+          "year": 1981,
+          "month": 11,
+          "day": 3
+        }
+      ],
+      "media": [
+        {
+          "mbid": "d00a3c2c-0fa1-34eb-9f9f-62e296de264c",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "127d2e56-4bba-3d05-b5ed-aa453e177f37",
+              "position": 1,
+              "number": "1",
+              "title": "Another One Bites the Dust",
+              "lengthMs": 216000,
+              "recording": "6b235773-16bd-4fc5-b57e-c966f9d1db6d"
+            },
+            {
+              "mbid": "28f53d2a-a04a-3380-bb97-827362703457",
+              "position": 2,
+              "number": "2",
+              "title": "Bohemian Rhapsody",
+              "lengthMs": 355893,
+              "recording": "b1a9c0e9-d987-4042-ae91-78d6a3267d69"
+            },
+            {
+              "mbid": "9da239fc-2c6b-3278-9749-6cf2072fca55",
+              "position": 3,
+              "number": "3",
+              "title": "Crazy Little Thing Called Love",
+              "lengthMs": 163826,
+              "recording": "fd125370-5ac9-45eb-86ad-ab99e258404b"
+            },
+            {
+              "mbid": "db82788c-6110-3222-8186-75e478720766",
+              "position": 4,
+              "number": "4",
+              "title": "Killer Queen",
+              "lengthMs": 181000,
+              "recording": "7b3d96c9-3e22-4337-be32-f8a26b816685"
+            },
+            {
+              "mbid": "ac3debd1-049e-3fdf-9fd2-a87f38419e3f",
+              "position": 5,
+              "number": "5",
+              "title": "Fat Bottomed Girls",
+              "lengthMs": 257266,
+              "recording": "0d538e7c-9261-46ec-bde9-cae13e42372c"
+            },
+            {
+              "mbid": "91e2fecb-3bf7-344b-bcfc-5322014a44b9",
+              "position": 6,
+              "number": "6",
+              "title": "Bicycle Race",
+              "lengthMs": 182493,
+              "recording": "135214af-6058-4705-9f17-18d396f36191"
+            },
+            {
+              "mbid": "7680344d-c974-3999-ba4f-255aa66f97e0",
+              "position": 7,
+              "number": "7",
+              "title": "Under Pressure",
+              "lengthMs": 237933,
+              "recording": "32c7e292-14f1-4080-bddf-ef852e0a4c59"
+            },
+            {
+              "mbid": "3861a432-b684-33a5-b1de-742e3fdc6a86",
+              "position": 8,
+              "number": "8",
+              "title": "We Will Rock You",
+              "lengthMs": 122133,
+              "recording": "f8581c2b-61ac-465d-82ae-0fa2916a4799"
+            },
+            {
+              "mbid": "5416842c-87a9-3b19-b232-fa1f049e65d4",
+              "position": 9,
+              "number": "9",
+              "title": "We Are the Champions",
+              "lengthMs": 181400,
+              "recording": "3604eb06-4bc2-4416-9b31-ceadae51bc70"
+            },
+            {
+              "mbid": "9af3a5ca-d9da-3a5f-8e08-c94ce2c104f3",
+              "position": 10,
+              "number": "10",
+              "title": "Flash",
+              "lengthMs": 168400,
+              "recording": "e61e12a1-118a-4441-9a58-b5eaff2ce9bc"
+            },
+            {
+              "mbid": "9e94c49d-6413-3b5e-8847-334f424a61b4",
+              "position": 11,
+              "number": "11",
+              "title": "Somebody to Love",
+              "lengthMs": 296866,
+              "recording": "3b286fbf-0dc9-45b8-bf4a-5036ac72526d"
+            },
+            {
+              "mbid": "1cee1da6-7b9b-3cbc-a3cb-ba15aa2f254f",
+              "position": 12,
+              "number": "12",
+              "title": "You’re My Best Friend",
+              "lengthMs": 172066,
+              "recording": "471dc436-80be-4f06-bc8f-7e2685876cfc"
+            },
+            {
+              "mbid": "b189cd73-7972-335a-b00f-455cd6ea5c40",
+              "position": 13,
+              "number": "13",
+              "title": "Keep Yourself Alive",
+              "lengthMs": 212000,
+              "recording": "1231a0c3-7090-4216-baf9-44cb9b05ebe7"
+            },
+            {
+              "mbid": "7087c93c-5267-3a05-a870-8e53d5855293",
+              "position": 14,
+              "number": "14",
+              "title": "Play the Game",
+              "lengthMs": 212066,
+              "recording": "fd69655e-91e3-42d5-8cb5-27e3a3784067"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "2c8c8c15-e106-4584-9e51-963c480d8d89",
+      "title": "21",
+      "releaseGroup": "e4174758-d333-4a8e-a31f-dd0edd51518e",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "ZA",
+          "year": 2011,
+          "month": 1,
+          "day": 19
+        }
+      ],
+      "media": [
+        {
+          "mbid": "7db44f26-5ce8-35a1-879d-87511bda062a",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "6037bcb0-3b9b-4f48-b33f-f49273967234",
+              "position": 1,
+              "number": "1",
+              "title": "Rolling in the Deep",
+              "lengthMs": 229293,
+              "recording": "1a13c710-4b7e-4701-8968-cd61f2e58110"
+            },
+            {
+              "mbid": "2b47ace0-f074-41ef-8459-0599c0562de4",
+              "position": 2,
+              "number": "2",
+              "title": "Rumour Has It",
+              "lengthMs": 223266,
+              "recording": "797ae656-81d4-4d89-bddb-eca56f77ba72"
+            },
+            {
+              "mbid": "d207350b-7c0b-44b8-b0ba-5ff4e0727e93",
+              "position": 3,
+              "number": "3",
+              "title": "Turning Tables",
+              "lengthMs": 250133,
+              "recording": "9bed2307-9a25-4960-be46-79bce5acc267"
+            },
+            {
+              "mbid": "9ab220ec-8f92-4f25-91ee-09d48921a4aa",
+              "position": 4,
+              "number": "4",
+              "title": "Don’t You Remember",
+              "lengthMs": 243200,
+              "recording": "f5057d26-1aac-47fe-b766-18c5a28927b1"
+            },
+            {
+              "mbid": "23fa618d-f0aa-4f51-b670-2f48a217f9bf",
+              "position": 5,
+              "number": "5",
+              "title": "Set Fire to the Rain",
+              "lengthMs": 241693,
+              "recording": "d1e0a99e-1894-457b-ba6a-985eeef4d0c4"
+            },
+            {
+              "mbid": "e7cd3216-29a3-4b24-bb33-dc3f4bf657c7",
+              "position": 6,
+              "number": "6",
+              "title": "He Won’t Go",
+              "lengthMs": 277946,
+              "recording": "4dd209b9-80fd-4e11-8093-3bab2db810fc"
+            },
+            {
+              "mbid": "d23a494b-f461-46d1-a623-eaceab0e485c",
+              "position": 7,
+              "number": "7",
+              "title": "Take It All",
+              "lengthMs": 228213,
+              "recording": "4f515654-052b-4631-8a78-57ea362cd18a"
+            },
+            {
+              "mbid": "3902fc29-10cf-4d5d-8b50-f72fa7e4c004",
+              "position": 8,
+              "number": "8",
+              "title": "I’ll Be Waiting",
+              "lengthMs": 241653,
+              "recording": "dd2d2073-50c4-438a-91cc-a1fea1c81b12"
+            },
+            {
+              "mbid": "eb03a5e8-dbe8-46eb-baeb-ad410a9810b5",
+              "position": 9,
+              "number": "9",
+              "title": "One and Only",
+              "lengthMs": 348160,
+              "recording": "04f96056-91ac-4b64-af89-24c596013f05"
+            },
+            {
+              "mbid": "2fc348bb-a993-4ea1-a4a0-b43d0e89d878",
+              "position": 10,
+              "number": "10",
+              "title": "Lovesong",
+              "lengthMs": 316280,
+              "recording": "7932ba40-a0d3-4a7e-8d85-b351fd33317e"
+            },
+            {
+              "mbid": "d7b6ff64-6ce4-437f-9e05-b5215b492033",
+              "position": 11,
+              "number": "11",
+              "title": "Someone Like You",
+              "lengthMs": 287546,
+              "recording": "028efe7f-cdfb-4135-846f-848f2fff15b1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "435fc965-9121-461e-b8da-d9b505c9dc9b",
+      "title": "Parachutes",
+      "releaseGroup": "1dc4c347-a1db-32aa-b14f-bc9cc507b843",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "GB",
+          "year": 2000,
+          "month": 7,
+          "day": 10
+        },
+        {
+          "country": "FR",
+          "year": 2000,
+          "month": 7,
+          "day": 16
+        },
+        {
+          "country": "DE",
+          "year": 2000,
+          "month": 7,
+          "day": 21
+        }
+      ],
+      "media": [
+        {
+          "mbid": "435cf3d6-e227-37b8-b5d4-334f29bced2a",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "1dabad60-2bda-3676-920c-24b3cdc57f82",
+              "position": 1,
+              "number": "1",
+              "title": "Don’t Panic",
+              "lengthMs": 137266,
+              "recording": "fb81a071-9c63-4e8c-ab60-77403e81c01d"
+            },
+            {
+              "mbid": "c29f6591-bf5f-3bb7-8a49-e19222ed4b4f",
+              "position": 2,
+              "number": "2",
+              "title": "Shiver",
+              "lengthMs": 299666,
+              "recording": "71557258-6534-4b56-8007-3903ace2d869"
+            },
+            {
+              "mbid": "4d1fa1e7-2a4e-3258-bc2d-e262428f7937",
+              "position": 3,
+              "number": "3",
+              "title": "Spies",
+              "lengthMs": 318800,
+              "recording": "50369905-68ca-48d2-912d-b37330ff7dc3"
+            },
+            {
+              "mbid": "19835f2c-9698-316c-8fc5-bba3b562634e",
+              "position": 4,
+              "number": "4",
+              "title": "Sparks",
+              "lengthMs": 227066,
+              "recording": "22d49305-4e35-4a69-8638-05ac5f734065"
+            },
+            {
+              "mbid": "128359c3-b7e6-3561-8984-281fadc47675",
+              "position": 5,
+              "number": "5",
+              "title": "Yellow",
+              "lengthMs": 269200,
+              "recording": "729cf505-94eb-4fbe-bc76-cbae44cff091"
+            },
+            {
+              "mbid": "68e8845d-401d-3c14-94a7-75783243711e",
+              "position": 6,
+              "number": "6",
+              "title": "Trouble",
+              "lengthMs": 270893,
+              "recording": "1aa7ebc0-25ee-47b2-8efd-6074307c5b14"
+            },
+            {
+              "mbid": "06560e2c-de60-3a7c-bbfd-44f390362abe",
+              "position": 7,
+              "number": "7",
+              "title": "Parachutes",
+              "lengthMs": 46333,
+              "recording": "3451489e-ea50-4e4e-9043-df1e30ce37b5"
+            },
+            {
+              "mbid": "7db4668c-aa1e-3ce3-88e4-f7f221cf494f",
+              "position": 8,
+              "number": "8",
+              "title": "High Speed",
+              "lengthMs": 254240,
+              "recording": "94909689-459c-4d15-8e31-678854c48f22"
+            },
+            {
+              "mbid": "60525865-c757-3de6-8da4-67c686497b72",
+              "position": 9,
+              "number": "9",
+              "title": "We Never Change",
+              "lengthMs": 249426,
+              "recording": "7e52d1a9-6c02-4f2e-b30e-dc22ef219f3f"
+            },
+            {
+              "mbid": "c281090f-9d5a-3753-b649-750fafeac806",
+              "position": 10,
+              "number": "10",
+              "title": "Everything’s Not Lost / Life Is for Living",
+              "lengthMs": 435333,
+              "recording": "78485fd1-136d-4f2b-ae93-d9815d828e26"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "2f49e119-55f4-4086-81f9-6eaac0735e6f",
+      "title": "Viva la Vida: Prospekt's March Edition",
+      "releaseGroup": "a1084754-8bb5-3ebc-bbd2-6a27d48e798a",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "cc197bad-dc9c-440d-a5b5-d52ba2e14234",
+          "name": "Coldplay",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "US",
+          "year": 2008,
+          "month": 11,
+          "day": 24
+        }
+      ],
+      "media": [
+        {
+          "mbid": "ae7ec880-3be0-3adb-ad49-6b31e8bca852",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "4d77b4f6-e5b3-445c-98bd-a4358ab44648",
+              "position": 1,
+              "number": "1",
+              "title": "Life in Technicolor",
+              "lengthMs": 149986,
+              "recording": "fe33d06e-ffd4-4ad9-9474-023ac977d63e"
+            },
+            {
+              "mbid": "d36062dd-5df3-4a8b-adad-40b542dd5e3d",
+              "position": 2,
+              "number": "2",
+              "title": "Cemeteries of London",
+              "lengthMs": 201106,
+              "recording": "a89d3e81-cf59-4da2-a1ca-4d45811dabb7"
+            },
+            {
+              "mbid": "ba154ad3-64e4-4f4e-967c-716bfce3b33d",
+              "position": 3,
+              "number": "3",
+              "title": "Lost!",
+              "lengthMs": 235066,
+              "recording": "8353cabb-9649-4964-bb36-a3fd2382bae8"
+            },
+            {
+              "mbid": "5f070125-c201-46ec-8b6b-c99610538f90",
+              "position": 4,
+              "number": "4",
+              "title": "42",
+              "lengthMs": 237400,
+              "recording": "fc5f3234-18b3-4218-bc73-aad533dfaeb3"
+            },
+            {
+              "mbid": "cdc8c522-00bc-49a5-be4c-5ec8459a6928",
+              "position": 5,
+              "number": "5",
+              "title": "Lovers in Japan / Reign of Love",
+              "lengthMs": 411013,
+              "recording": "e4a59629-1abc-4fa4-9deb-760411368273"
+            },
+            {
+              "mbid": "81dff84d-b291-4051-9b06-1be3fce3a165",
+              "position": 6,
+              "number": "6",
+              "title": "Yes / Chinese Sleep Chant",
+              "lengthMs": 426653,
+              "recording": "eb027f97-e23f-4e33-914f-e0ce3b5f9c7d"
+            },
+            {
+              "mbid": "4c649b06-6262-4d8f-89f7-12a932c256d3",
+              "position": 7,
+              "number": "7",
+              "title": "Viva la Vida",
+              "lengthMs": 241426,
+              "recording": "307ce9da-5690-4e21-ab71-9d12ea106e52"
+            },
+            {
+              "mbid": "19ccaef5-691b-451b-a1aa-d49d3764a240",
+              "position": 8,
+              "number": "8",
+              "title": "Violet Hill",
+              "lengthMs": 222653,
+              "recording": "ba4bcf45-fcdf-4ff7-a19e-be3fdffae337"
+            },
+            {
+              "mbid": "75755277-da19-4733-ad4a-4ec5fc8416a8",
+              "position": 9,
+              "number": "9",
+              "title": "Strawberry Swing",
+              "lengthMs": 249666,
+              "recording": "0b778271-1901-472c-95fa-8996535e4c8f"
+            },
+            {
+              "mbid": "f0971709-09b9-422a-8a7b-4b914cd77dad",
+              "position": 10,
+              "number": "10",
+              "title": "Death and All His Friends / The Escapist",
+              "lengthMs": 378853,
+              "recording": "41e8b7d6-ad5c-47d7-a72d-290f4e2d1959"
+            }
+          ]
+        },
+        {
+          "mbid": "7918c303-4917-3fce-a7e2-32d25a3deb0c",
+          "position": 2,
+          "title": "Prospekt’s March EP",
+          "tracks": [
+            {
+              "mbid": "a1a3bcee-ba93-4f8f-b722-34ac873cafc6",
+              "position": 1,
+              "number": "1",
+              "title": "Life in Technicolor ii",
+              "lengthMs": 245933,
+              "recording": "df254587-24f2-4b13-9a67-292acf1a2aca"
+            },
+            {
+              "mbid": "11ff8d71-1382-4ec2-a0ce-6d4d88e5dd02",
+              "position": 2,
+              "number": "2",
+              "title": "Postcards From Far Away",
+              "lengthMs": 48293,
+              "recording": "231631cb-faef-4997-b9fa-250ec4279a68"
+            },
+            {
+              "mbid": "27b89753-e796-44d2-bbc6-874c66072152",
+              "position": 3,
+              "number": "3",
+              "title": "Glass of Water",
+              "lengthMs": 284733,
+              "recording": "6f77f0d6-2293-4390-884d-bb49a2e17fe3"
+            },
+            {
+              "mbid": "bdcdfcb5-f8f7-42d2-a513-ff9a7534f4fc",
+              "position": 4,
+              "number": "4",
+              "title": "Rainy Day",
+              "lengthMs": 206000,
+              "recording": "a3fc4ff4-f0dd-4df6-89c9-d1712c0d5e0c"
+            },
+            {
+              "mbid": "3dcb855b-7c38-4ca4-b273-316121db739a",
+              "position": 5,
+              "number": "5",
+              "title": "Prospekt’s March / Poppyfields",
+              "lengthMs": 219226,
+              "recording": "bac33bd0-8dd6-4813-a0f8-4cdd92ffc39f"
+            },
+            {
+              "mbid": "c27ee9ef-e035-4828-a76a-3ab6ce11680c",
+              "position": 6,
+              "number": "6",
+              "title": "Lost+",
+              "lengthMs": 258986,
+              "recording": "15c35433-4253-44e3-b8c5-d50db5ed8177"
+            },
+            {
+              "mbid": "658de92a-9559-45ab-b683-cc79b507ce4c",
+              "position": 7,
+              "number": "7",
+              "title": "Lovers in Japan (Osaka Sun Mix)",
+              "lengthMs": 238320,
+              "recording": "f134a21a-5f5a-4503-8125-e56b8914ea98"
+            },
+            {
+              "mbid": "636ef952-a00f-4a6e-bc25-3c1d09e4a265",
+              "position": 8,
+              "number": "8",
+              "title": "Now My Feet Won’t Touch the Ground",
+              "lengthMs": 149680,
+              "recording": "84a89bef-55a8-4fcd-91d3-fd1740725d5e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "fba00637-79c1-441f-aeaf-3668ac928c5d",
+      "title": "Elis & Tom",
+      "releaseGroup": "f9520003-6075-310e-b650-bbaa8aaeab4d",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "e9e85a54-074c-4d29-a886-bcaaa9d44f9f",
+          "name": "Elis Regina",
+          "joinPhrase": " & "
+        },
+        {
+          "artist": "7a8dbe84-f4c0-4457-bfa3-edced1f8cde0",
+          "name": "Antonio Carlos Jobim",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "XW",
+          "year": 1974,
+          "month": 1,
+          "day": 1
+        }
+      ],
+      "media": [
+        {
+          "mbid": "a83f7d63-d904-43e4-a813-d5a8fd4c5eba",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "8541d340-5bdf-498e-ad83-4bc8b4632fd1",
+              "position": 1,
+              "number": "1",
+              "title": "Águas De Março",
+              "lengthMs": 214004,
+              "recording": "58b20cb0-34d8-46d7-8782-4d2865a36b2a"
+            },
+            {
+              "mbid": "ad68b1b2-ab77-471d-9ee7-0f6e8f541f35",
+              "position": 2,
+              "number": "2",
+              "title": "Pois É",
+              "lengthMs": 104107,
+              "recording": "28361163-7c3b-481f-af17-71cfa97e3bca"
+            },
+            {
+              "mbid": "ecdbbc6e-ef14-4471-8fb6-9ff061e519ea",
+              "position": 3,
+              "number": "3",
+              "title": "Só Tinha De Ser Com Você",
+              "lengthMs": 233016,
+              "recording": "125d92a9-3011-4b6c-95fc-2bb0be014ca8"
+            },
+            {
+              "mbid": "ba806dd1-3473-4cd4-8337-07ae15780c73",
+              "position": 4,
+              "number": "4",
+              "title": "Modinha",
+              "lengthMs": 138006,
+              "recording": "04002fc3-1dd0-4459-81de-6fe39c481988"
+            },
+            {
+              "mbid": "6a1e9901-7391-4a9a-9bba-22f957be8cde",
+              "position": 5,
+              "number": "5",
+              "title": "Triste",
+              "lengthMs": 162369,
+              "recording": "9d15e1ec-224f-4571-bb8d-4cb1cfed359f"
+            },
+            {
+              "mbid": "72c85e3e-a1d7-4efe-ab45-4ad4895f5e5c",
+              "position": 6,
+              "number": "6",
+              "title": "Corcovado",
+              "lengthMs": 237025,
+              "recording": "10ad371a-2bfc-414a-9c0e-cfc419d1be23"
+            },
+            {
+              "mbid": "b0bd2923-7de2-4d22-9317-a0ce8fcc0b84",
+              "position": 7,
+              "number": "7",
+              "title": "O Que Tinha De Ser",
+              "lengthMs": 103020,
+              "recording": "9313c671-6d70-4bd6-862e-9780dd4b1814"
+            },
+            {
+              "mbid": "bbaa08e3-137a-4db2-a5e7-b362addca1d9",
+              "position": 8,
+              "number": "8",
+              "title": "Retrato Em Branco E Preto",
+              "lengthMs": 186014,
+              "recording": "8f175f95-5416-4804-9697-de07ef20256e"
+            },
+            {
+              "mbid": "b593bffb-b0d9-43e2-9726-8f9ff3e9c50f",
+              "position": 9,
+              "number": "9",
+              "title": "Brigas Nunca Mais",
+              "lengthMs": 102008,
+              "recording": "caa2664f-1477-4f3a-980d-ba47c97fae81"
+            },
+            {
+              "mbid": "07afaacc-99ab-42c7-90dc-008e9f421fba",
+              "position": 10,
+              "number": "10",
+              "title": "Por Toda A Minha Vida (Exaltação Ao Amor)",
+              "lengthMs": 124151,
+              "recording": "34fc6be7-7f01-47eb-b7b2-5d597320a3b1"
+            },
+            {
+              "mbid": "3e6b33f2-9187-4b42-a832-689dec858b71",
+              "position": 11,
+              "number": "11",
+              "title": "Fotografia",
+              "lengthMs": 169050,
+              "recording": "49144e98-7300-4327-b717-39d8f20fd1e9"
+            },
+            {
+              "mbid": "4acd6c32-efe3-4024-8ede-b6a088084e1e",
+              "position": 12,
+              "number": "12",
+              "title": "Soneto De Separação",
+              "lengthMs": 142008,
+              "recording": "7275f8cb-80e4-49fd-a781-bb4ef1070e9b"
+            },
+            {
+              "mbid": "ba22ea9a-da31-4037-bb4c-8e9b7e4251bf",
+              "position": 13,
+              "number": "13",
+              "title": "Chovendo Na Roseira",
+              "lengthMs": 194030,
+              "recording": "d5ddb3ef-7c42-4654-b93f-5dbdcf893c1c"
+            },
+            {
+              "mbid": "06dd8615-83fe-4e25-8df1-6d07fc6651bf",
+              "position": 14,
+              "number": "14",
+              "title": "Inútil Paisagem",
+              "lengthMs": 186041,
+              "recording": "e7b48031-b62e-4981-b5f4-5fff926a1c83"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "1749dd07-5aa9-436e-babc-e3e982deb273",
+      "title": "Dois",
+      "releaseGroup": "51d5ae33-82c1-3d3c-8e25-c88a2cf2c208",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "47685be0-926f-4be9-b1ae-e32da47a3b99",
+          "name": "Legião Urbana",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "BR",
+          "year": 1986,
+          "month": 7,
+          "day": null
+        }
+      ],
+      "media": [
+        {
+          "mbid": "91decd6f-fbf1-327f-a7f1-c06ba718c058",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "b0646500-2db8-4ff7-9dde-8761664e0625",
+              "position": 1,
+              "number": "A1",
+              "title": "Daniel Na Cova Dos Leões",
+              "lengthMs": 240000,
+              "recording": "edc72a26-5491-44ec-b2ea-dcfb301df429"
+            },
+            {
+              "mbid": "73322c39-21ca-4b78-8e4a-217933221843",
+              "position": 2,
+              "number": "A2",
+              "title": "Quase Sem Querer",
+              "lengthMs": 282000,
+              "recording": "4bc73644-04b7-4b6b-9786-5745fc5dd354"
+            },
+            {
+              "mbid": "eeda3a84-0879-4a56-83cc-06c2aa5d3007",
+              "position": 3,
+              "number": "A3",
+              "title": "Acrilic On Canvas",
+              "lengthMs": 280000,
+              "recording": "0cce4b4e-f637-455c-8c37-794a5b3cc82c"
+            },
+            {
+              "mbid": "5ce3fbc5-44fc-417a-88a0-eb5979c28a55",
+              "position": 4,
+              "number": "A4",
+              "title": "Eduardo E Monica",
+              "lengthMs": 272000,
+              "recording": "3d35e1c2-a132-4499-9d25-8bdc3cae39dd"
+            },
+            {
+              "mbid": "c4f6d41a-dd9f-4862-b4e4-516b0fd9a9b5",
+              "position": 5,
+              "number": "A5",
+              "title": "Central Do Brasil",
+              "lengthMs": 94000,
+              "recording": "022162d7-558b-4d20-8922-0c73eaf5964c"
+            },
+            {
+              "mbid": "efd425f4-0251-4937-83b7-d9f3012209e1",
+              "position": 6,
+              "number": "A6",
+              "title": "Tempo Perdido",
+              "lengthMs": 300000,
+              "recording": "a57d1cf7-5140-4889-a123-288b406429cf"
+            },
+            {
+              "mbid": "1dd3e928-0d56-4fad-8a2f-c4435da8b069",
+              "position": 7,
+              "number": "B1",
+              "title": "Metrópole",
+              "lengthMs": 170000,
+              "recording": "81bb47e9-b24b-4abe-b58c-a430ce0156dc"
+            },
+            {
+              "mbid": "0293bee3-f07a-4aba-bf17-fb4969a2f920",
+              "position": 8,
+              "number": "B2",
+              "title": "Plantas Embaixo Do Aquário",
+              "lengthMs": 175000,
+              "recording": "bfe024fa-adf8-449d-9606-bdd4419b4fc9"
+            },
+            {
+              "mbid": "d64da689-dcdb-4079-96a9-9d3fe85b5272",
+              "position": 9,
+              "number": "B3",
+              "title": "Música Urbana 2",
+              "lengthMs": 162000,
+              "recording": "5285433f-b572-43f2-b0f6-e8ffe54623cf"
+            },
+            {
+              "mbid": "041a91ec-2612-4da5-bd6b-71e4dac4beaf",
+              "position": 10,
+              "number": "B4",
+              "title": "Andrea Doria",
+              "lengthMs": 298000,
+              "recording": "f34dc830-d683-43b9-8b76-d2e0ea67a5f5"
+            },
+            {
+              "mbid": "4a961c18-8ffd-4391-a928-4af7bfc5314e",
+              "position": 11,
+              "number": "B5",
+              "title": "Fábrica",
+              "lengthMs": 296000,
+              "recording": "be6b8251-0c45-4eb0-967c-1913da93da22"
+            },
+            {
+              "mbid": "d174eb1f-3341-44ea-879e-266ed689c1e5",
+              "position": 12,
+              "number": "B6",
+              "title": "Índios",
+              "lengthMs": 263000,
+              "recording": "70fecd8e-8847-4c66-8df5-82e9a7ecdac7"
+            },
+            {
+              "mbid": "26aae7ff-50ae-4515-acd1-85490d210e45",
+              "position": 13,
+              "number": "B7",
+              "title": "Química",
+              "lengthMs": 140000,
+              "recording": "acce5b31-c4a0-47da-bf7d-d59808821f37"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "39898f04-c6a6-45c7-a785-31b4143dd7e1",
+      "title": "Thriller",
+      "releaseGroup": "f32fab67-77dd-3937-addc-9062e28e4c37",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "f27ec8db-af05-4f36-916e-3d57f91ecf5e",
+          "name": "Michael Jackson",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "GB",
+          "year": 1982,
+          "month": 11,
+          "day": 30
+        }
+      ],
+      "media": [
+        {
+          "mbid": "05432f63-e4a9-3264-b1c1-a5c72ba377af",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "81df9e5a-642d-498d-9904-b2d7996b47c2",
+              "position": 1,
+              "number": "A1",
+              "title": "Wanna Be Startin’ Somethin’",
+              "lengthMs": 364000,
+              "recording": "2460a241-6ff4-49f1-80f9-36051534e9ae"
+            },
+            {
+              "mbid": "634c1355-1a43-4fde-8842-123a61f505b1",
+              "position": 2,
+              "number": "A2",
+              "title": "Baby Be Mine",
+              "lengthMs": 261000,
+              "recording": "170f236a-f9e5-4632-8543-dd0142eaf242"
+            },
+            {
+              "mbid": "50663fa9-e8c6-424c-8a62-489fa8d2900b",
+              "position": 3,
+              "number": "A3",
+              "title": "The Girl Is Mine",
+              "lengthMs": 222000,
+              "recording": "bdc55bab-f300-42f9-b2dc-10f035e536a9"
+            },
+            {
+              "mbid": "3f205a75-d733-480c-b34b-214e58810a2c",
+              "position": 4,
+              "number": "A4",
+              "title": "Thriller",
+              "lengthMs": 359000,
+              "recording": "8403caf8-3714-46da-934c-1fe91a049540"
+            },
+            {
+              "mbid": "8b6d9224-0168-4974-bec2-1c2e01ab7091",
+              "position": 5,
+              "number": "B1",
+              "title": "Beat It",
+              "lengthMs": 259000,
+              "recording": "de798de6-70fc-49f6-b580-339cd2e62052"
+            },
+            {
+              "mbid": "12ba2989-0546-4bac-9d4a-f79dbfcacfa0",
+              "position": 6,
+              "number": "B2",
+              "title": "Billie Jean",
+              "lengthMs": 294000,
+              "recording": "f980fc14-e29b-481d-ad3a-5ed9b4ab6340"
+            },
+            {
+              "mbid": "ae367b37-c89f-4a87-9add-cfd5beecae61",
+              "position": 7,
+              "number": "B3",
+              "title": "Human Nature",
+              "lengthMs": 246000,
+              "recording": "40a43f5e-d4f4-4253-a42d-364d47208c64"
+            },
+            {
+              "mbid": "f8edd550-e052-4adc-96cf-3d39ff913cc3",
+              "position": 8,
+              "number": "B4",
+              "title": "P.Y.T. (Pretty Young Thing)",
+              "lengthMs": 239000,
+              "recording": "7e82e767-94a3-4b72-8d79-4623aa4ac584"
+            },
+            {
+              "mbid": "d06d8d04-54b4-4e44-88a0-e5f7db43380d",
+              "position": 9,
+              "number": "B5",
+              "title": "The Lady in My Life",
+              "lengthMs": 300000,
+              "recording": "2bff76c1-0b98-4643-9ed3-063511ef9383"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "8e2255bc-ce64-4e03-8dda-6089d77ebe0b",
+      "title": "2008-09-22: BBC Radio 1's Live Lounge: London, UK",
+      "releaseGroup": "11ce3c93-0325-439e-8de7-fab397ba839c",
+      "status": "Bootleg",
+      "artistCredit": [
+        {
+          "artist": "cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493",
+          "name": "Adele",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "GB",
+          "year": 2008,
+          "month": null,
+          "day": null
+        }
+      ],
+      "media": [
+        {
+          "mbid": "522a5190-25f1-3262-815d-6dd8ccac0aeb",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "74c2af12-8124-39de-be22-795ac37fdbbf",
+              "position": 1,
+              "number": "1",
+              "title": "Hometown Glory",
+              "lengthMs": 216000,
+              "recording": "476a8466-1f82-46a8-8706-648a41c98d3c"
+            },
+            {
+              "mbid": "9e2a83c1-4f03-31f3-b600-72f2986a4652",
+              "position": 2,
+              "number": "2",
+              "title": "Make You Feel My Love",
+              "lengthMs": 219000,
+              "recording": "7085949e-a0f3-4cd6-b5ce-bd186bd24073"
+            },
+            {
+              "mbid": "bb308ade-ea57-3bec-a862-47fc8064901d",
+              "position": 3,
+              "number": "3",
+              "title": "Black & Gold",
+              "lengthMs": 187000,
+              "recording": "d668dd40-adb6-4c10-9edf-1f5a4dcef1ce"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

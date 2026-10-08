@@ -235,6 +235,7 @@ services:
       LRCLIB_BASE_URL: ${LRCLIB_BASE_URL:-https://db-dumps.lrclib.net}
       LRCLIB_LISTING_URL: ${LRCLIB_LISTING_URL:-https://lrclib-db-dumps.bu3nnyut4y9jfkdg.workers.dev}
       LRCLIB_API_BASE_URL: ${LRCLIB_API_BASE_URL:-https://lrclib.net}
+      LRCLIB_TINY_SOURCE: ${LRCLIB_TINY_SOURCE:-fake}
       LRCLIB_REFRESH_CHECK_INTERVAL_MS: ${LRCLIB_REFRESH_CHECK_INTERVAL_MS:-3600000}
       LRCLIB_REFRESH_MIN_INTERVAL_DAYS: ${LRCLIB_REFRESH_MIN_INTERVAL_DAYS:-30}
       # Only an explicit `false` keeps the retired database after a reimport.

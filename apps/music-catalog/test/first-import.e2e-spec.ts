@@ -11,7 +11,7 @@ import {
 } from '../src/modules/bootstrap/restore.service.js';
 import {
   TINY_RECORDING_COUNT,
-  tinyRecordingMbid,
+  tinySeed,
 } from '../src/modules/bootstrap/tiny-seed.js';
 import { TinySeedRepository } from '../src/modules/bootstrap/tiny-seed.repository.js';
 import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
@@ -144,7 +144,7 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       dataset: 'tiny',
     });
     await expect(
-      requestSearch(client(), { query: 'tiny song' }),
+      requestSearch(client(), { query: 'bohemian rhapsody' }),
     ).resolves.toMatchObject({
       ok: false,
       error: { code: 'CATALOG_NOT_READY' },
@@ -169,8 +169,12 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       phase: 'ready',
       dataset: 'tiny',
     });
-    const seededMbid = tinyRecordingMbid(1);
-    await expect(searchMbids('Tiny Song 001')).resolves.toContain(seededMbid);
+    // Seed order is id order, which is the order the fake dump is built in.
+    const [first, second, third] = tinySeed.recordings;
+    const seededMbid = first?.mbid ?? '';
+    await expect(searchMbids(first?.title ?? '')).resolves.toContain(
+      seededMbid,
+    );
     // The tick generated the fake LRCLIB dump from the seeded Recordings
     // and kept only the matched Lyrics: recording 1 has them, recording 2
     // (an album tie) stays null.
@@ -179,7 +183,7 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
     ).resolves.toMatchObject({
       ok: true,
       result: {
-        title: 'Tiny Song 001',
+        title: first?.title,
         lyrics: {
           plain: expect.stringContaining('fake-lrclib-0'),
           synced: expect.stringContaining('[00:01.00]'),
@@ -187,14 +191,14 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       },
     });
     await expect(
-      requestRecording(client(), { mbid: tinyRecordingMbid(2) }),
+      requestRecording(client(), { mbid: second?.mbid ?? '' }),
     ).resolves.toMatchObject({
       ok: true,
       result: { lyrics: { plain: null, synced: null } },
     });
     await expect(
       searchMbids('fake-lrclib-2 drifting', 'lyrics'),
-    ).resolves.toContain(tinyRecordingMbid(3));
+    ).resolves.toContain(third?.mbid);
     // The metadata scope never matches on Lyrics.
     await expect(
       searchMbids('fake-lrclib-0 drifting', 'metadata'),

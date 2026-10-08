@@ -79,6 +79,11 @@ const workerEnvSchema = envSchema.extend({
   LRCLIB_API_BASE_URL: z
     .url({ protocol: /^https?$/ })
     .default('https://lrclib.net'),
+  // Where `tiny` gets its Lyrics. `fake` (the default) writes placeholder
+  // text locally, deterministic and offline, which is what the tests use;
+  // `api` asks the public API above for the real Lyrics of the seeded
+  // Recordings, a second apart, so a dev catalog shows real songs.
+  LRCLIB_TINY_SOURCE: z.enum(['fake', 'api']).default('fake'),
   // How often the worker polls the dump listing for a newer dump. The poll
   // itself is cheap (one small JSON document); the download only follows
   // when the minimum interval below has passed and the key is new.
