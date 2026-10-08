@@ -1,7 +1,13 @@
 'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Fragment, type ReactNode, useEffect, useRef } from 'react';
+import {
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { CursorPagesQuery } from '@/lib/cursor-pages-query';
@@ -92,6 +98,10 @@ function TrackGridBody<TItem extends GridItem>({
     isPending,
     refetch,
   } = useInfiniteQuery(query);
+  // Paging is only offered once the whole grid has hydrated. A next page that
+  // lands earlier makes React discard the server-rendered cards and render
+  // them again, which replaces nodes a reader or a test is already using.
+  const ready = useMounted();
 
   if (isPending) return <TrackGridSkeleton label={messages.loading} />;
   if (error) {
@@ -115,6 +125,7 @@ function TrackGridBody<TItem extends GridItem>({
       />
       <TracksGridMore
         messages={messages}
+        ready={ready}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         onLoadMore={() => void fetchNextPage()}
@@ -163,20 +174,28 @@ function TrackGroups<TItem extends GridItem>({
  */
 function TracksGridMore({
   messages,
+  ready,
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
 }: {
   messages: Pick<TrackGridMessages, 'loadingMore' | 'loadMore'>;
+  /** Whether the grid has hydrated, so paging may start. */
+  ready: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
 }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // The server renders the button, but its click handler only exists once the
+  // client has hydrated. Until then the button is disabled, so it reads as
+  // unavailable rather than silently ignoring a press; clients (and Playwright's
+  // actionability checks) wait for it to enable.
+  const unavailable = !ready || isFetchingNextPage;
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasNextPage) return;
+    if (!sentinel || !ready || !hasNextPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && !isFetchingNextPage) {
@@ -187,7 +206,7 @@ function TracksGridMore({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+  }, [ready, hasNextPage, isFetchingNextPage, onLoadMore]);
 
   return (
     <>
@@ -202,12 +221,28 @@ function TracksGridMore({
           type="button"
           variant="secondary"
           onClick={onLoadMore}
-          disabled={isFetchingNextPage}
+          disabled={unavailable}
+          aria-disabled={unavailable}
           className="mx-auto"
         >
           {messages.loadMore}
         </Button>
       ) : null}
     </>
+  );
+}
+
+const noSubscription = () => () => {};
+
+/**
+ * False while rendering on the server and during hydration, true from the
+ * first client render after it. Reads without an effect, so the first paint
+ * already matches the server HTML.
+ */
+function useMounted(): boolean {
+  return useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
   );
 }

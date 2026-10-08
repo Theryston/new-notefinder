@@ -1,7 +1,7 @@
 import type { CatalogTrack } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { toCatalogTrackCardProps } from './artist-track-to-track-card';
+import { toCatalogTrackCardProps } from './catalog-track-to-track-card';
 
 function makeTrack(overrides: Partial<CatalogTrack> = {}): CatalogTrack {
   return {

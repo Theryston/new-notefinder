@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { catalogTracksPageSchema } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
+import { TracksService } from '../tracks/tracks.service.js';
 import { ArtistsRepository } from './artists.repository.js';
 import { ArtistsService } from './artists.service.js';
 
@@ -43,15 +44,20 @@ describe('ArtistsService track details', () => {
     findArtistIdByLegacyId: vi.fn(),
     findTracksByArtistId: vi.fn(),
   };
+  const tracksService = {
+    getCatalogTracks: vi.fn(),
+  };
 
   beforeEach(async () => {
     repository.findArtistById.mockReset();
     repository.findArtistIdByLegacyId.mockReset();
     repository.findTracksByArtistId.mockReset();
+    tracksService.getCatalogTracks.mockReset();
     const moduleRef = await Test.createTestingModule({
       providers: [
         ArtistsService,
         { provide: ArtistsRepository, useValue: repository },
+        { provide: TracksService, useValue: tracksService },
       ],
     }).compile();
     service = moduleRef.get(ArtistsService);
@@ -60,9 +66,10 @@ describe('ArtistsService track details', () => {
   it('returns the contracted page with its deeper sections', async () => {
     repository.findArtistById.mockResolvedValue(artist);
     repository.findTracksByArtistId.mockResolvedValue({
-      items: [track],
+      trackIds: [track.id],
       nextCursor: null,
     });
+    tracksService.getCatalogTracks.mockResolvedValue([track]);
 
     const result = await service.getArtistTracks('artist-1', { limit: 20 });
 
@@ -80,9 +87,10 @@ describe('ArtistsService track details', () => {
       externalLinks: [],
     };
     repository.findTracksByArtistId.mockResolvedValue({
-      items: [minimal],
+      trackIds: [minimal.id],
       nextCursor: null,
     });
+    tracksService.getCatalogTracks.mockResolvedValue([minimal]);
 
     const result = await service.getArtistTracks('artist-1', { limit: 20 });
 

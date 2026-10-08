@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { albumSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { TracksService } from '../tracks/tracks.service.js';
 import { AlbumsRepository } from './albums.repository.js';
 import { AlbumsService } from './albums.service.js';
 
@@ -13,6 +14,7 @@ const album = {
   year: 1975,
   genres: ['rock'],
   coverArtUrl: null,
+  trackCount: 0,
   artists: [{ id: 'artist-1', name: 'Queen' }],
 };
 
@@ -36,6 +38,7 @@ describe('AlbumsService', () => {
       providers: [
         AlbumsService,
         { provide: AlbumsRepository, useValue: repository },
+        { provide: TracksService, useValue: {} },
       ],
     }).compile();
     service = moduleRef.get(AlbumsService);

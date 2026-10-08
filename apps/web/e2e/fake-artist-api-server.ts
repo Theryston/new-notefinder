@@ -262,7 +262,10 @@ const serveRequest = async (
     await serveArtist(decodeURIComponent(match[1]), request, response);
     return;
   }
-  if (await serveAlbumRequest(request, response, url.pathname)) return;
+  if (
+    await serveAlbumRequest(request, response, url.pathname, url.searchParams)
+  )
+    return;
   notFound(request, response);
 };
 

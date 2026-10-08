@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  CatalogTrack,
   Mbid,
   RecordingSummary,
   SearchResultItem,
@@ -9,6 +10,21 @@ import { TracksRepository } from './tracks.repository.js';
 @Injectable()
 export class TracksService {
   constructor(private readonly tracksRepository: TracksRepository) {}
+
+  /**
+   * The catalog details of the Tracks given, in the order given. Every list
+   * of catalog tracks (an artist's, an album's) reads them through here, so
+   * they all show the same `CatalogTrack`. IDs with no Track are left out.
+   * Reads never touch the Music catalog.
+   */
+  async getCatalogTracks(trackIds: readonly string[]): Promise<CatalogTrack[]> {
+    const found = await this.tracksRepository.findCatalogTracks([...trackIds]);
+    const byId = new Map(found.map((track) => [track.id, track]));
+    return trackIds.flatMap((trackId) => {
+      const track = byId.get(trackId);
+      return track ? [track] : [];
+    });
+  }
 
   /**
    * Track ids keyed by recording MBID, for the MBIDs given. Only processed

@@ -1,5 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-
+import {
+  type FakeAlbumTrack,
+  paginateFakeAlbumTracks,
+} from './fake-album-tracks.ts';
 import { json, readBody } from './fake-api-http.ts';
 
 /**
@@ -21,6 +24,8 @@ export type FakeAlbum = {
   year: number | null;
   genres: string[];
   coverArtUrl: string | null;
+  /** Defaults to the number of tracks mocked for the album. */
+  trackCount?: number;
   /** In credit order. */
   artists: FakeAlbumArtist[];
   /** Artificial latency per reply, so the loading skeleton can be seen. */
@@ -30,6 +35,9 @@ export type FakeAlbum = {
 export type AlbumMockState = {
   albums?: FakeAlbum[];
   legacyMap?: Record<string, string>;
+  tracksByAlbum?: Record<string, FakeAlbumTrack[]>;
+  /** Albums whose track list answers a fixed error (error-UI specs). */
+  tracksErrorByAlbum?: Record<string, { status: number; code: string }>;
 };
 
 /** Resolves the legacy-routes sample without any per-test setup. */
@@ -47,21 +55,15 @@ export const defaultAlbum: FakeAlbum = {
 
 const albums = new Map<string, FakeAlbum>([[defaultAlbum.id, defaultAlbum]]);
 const legacyMap = new Map<string, string>();
+const tracksByAlbum = new Map<string, FakeAlbumTrack[]>();
+const tracksErrorByAlbum = new Map<string, { status: number; code: string }>();
 
-const serveAlbum = async (
+/** The redirect or the real 404 for an ID that is not a current album. */
+const answerMissingAlbum = (
   id: string,
   request: IncomingMessage,
   response: ServerResponse,
-): Promise<void> => {
-  const album = albums.get(id);
-  if (album) {
-    if (album.delayMs) {
-      await new Promise((resolve) => setTimeout(resolve, album.delayMs));
-    }
-    const { delayMs: _ignored, ...body } = album;
-    json(response, 200, body, request);
-    return;
-  }
+): void => {
   const newId = legacyMap.get(id);
   if (newId) {
     json(
@@ -85,6 +87,56 @@ const serveAlbum = async (
   );
 };
 
+const serveAlbum = async (
+  id: string,
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> => {
+  const album = albums.get(id);
+  if (!album) {
+    answerMissingAlbum(id, request, response);
+    return;
+  }
+  if (album.delayMs) {
+    await new Promise((resolve) => setTimeout(resolve, album.delayMs));
+  }
+  const { delayMs: _ignored, trackCount, ...body } = album;
+  json(
+    response,
+    200,
+    { ...body, trackCount: trackCount ?? tracksByAlbum.get(id)?.length ?? 0 },
+    request,
+  );
+};
+
+const serveAlbumTracks = (
+  id: string,
+  search: URLSearchParams,
+  request: IncomingMessage,
+  response: ServerResponse,
+): void => {
+  if (!albums.has(id)) {
+    answerMissingAlbum(id, request, response);
+    return;
+  }
+  const failure = tracksErrorByAlbum.get(id);
+  if (failure) {
+    json(
+      response,
+      failure.status,
+      {
+        statusCode: failure.status,
+        code: failure.code,
+        message: 'Fake album tracks failure',
+      },
+      request,
+    );
+    return;
+  }
+  const page = paginateFakeAlbumTracks(tracksByAlbum.get(id) ?? [], search);
+  json(response, page.status, page.body, request);
+};
+
 const serveMockSet = async (
   request: IncomingMessage,
   response: ServerResponse,
@@ -94,12 +146,20 @@ const serveMockSet = async (
   for (const [legacyId, albumId] of Object.entries(state.legacyMap ?? {})) {
     legacyMap.set(legacyId, albumId);
   }
+  for (const [albumId, tracks] of Object.entries(state.tracksByAlbum ?? {})) {
+    tracksByAlbum.set(albumId, tracks);
+  }
+  for (const [albumId, failure] of Object.entries(
+    state.tracksErrorByAlbum ?? {},
+  )) {
+    tracksErrorByAlbum.set(albumId, failure);
+  }
   json(response, 200, { ok: true }, request);
 };
 
 /**
- * Point the e2e Next server at album fixtures: upserts albums and legacy
- * mappings (merged, never reset, like `setArtistMock`).
+ * Point the e2e Next server at album fixtures: upserts albums, their tracks
+ * and legacy mappings (merged, never reset, like `setArtistMock`).
  */
 export const setAlbumMock = async (
   state: AlbumMockState,
@@ -142,9 +202,15 @@ export const serveAlbumRequest = async (
   request: IncomingMessage,
   response: ServerResponse,
   pathname: string,
+  search: URLSearchParams,
 ): Promise<boolean> => {
   if (request.method === 'POST' && pathname === '/__album-mock/set') {
     await serveMockSet(request, response);
+    return true;
+  }
+  const tracks = /^\/v1\/albums\/([^/]+)\/tracks$/.exec(pathname);
+  if (tracks?.[1] && request.method === 'GET') {
+    serveAlbumTracks(decodeURIComponent(tracks[1]), search, request, response);
     return true;
   }
   const match = /^\/v1\/albums\/([^/]+)$/.exec(pathname);

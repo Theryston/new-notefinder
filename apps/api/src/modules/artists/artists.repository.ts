@@ -1,27 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type {
-  Artist,
-  CatalogTrack,
-  CatalogTrackExternalLink,
-  CatalogTrackRelease,
-  CatalogTrackTag,
-  CatalogTrackWork,
-} from '@notefinder/contracts';
-import { and, asc, count, desc, eq, gt, inArray } from 'drizzle-orm';
+import type { Artist } from '@notefinder/contracts';
+import { and, asc, count, eq, gt } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   artists,
   legacyArtistIds,
   trackArtists,
 } from '../../database/schema/artists.js';
-import {
-  trackExternalLinks,
-  trackReleases,
-  tracks,
-  trackTags,
-  trackWorks,
-} from '../../database/schema/tracks.js';
+import { tracks } from '../../database/schema/tracks.js';
 
 @Injectable()
 export class ArtistsRepository {
@@ -68,31 +55,22 @@ export class ArtistsRepository {
   }
 
   /**
-   * One page of the Artist's processed Tracks in stable `id` order, one
-   * entry per Recording with its deeper MusicBrainz sections (releases,
-   * works, tags, links) for the Track page. Keyset over the link table:
-   * the cursor is a Track ID the service already decoded, `limit + 1`
+   * One page of the Artist's processed Track IDs in stable `id` order. The
+   * service loads the catalog details of those Tracks. Keyset over the link
+   * table: the cursor is a Track ID the service already decoded, `limit + 1`
    * rows decide the next cursor.
    */
   async findTracksByArtistId(
     artistId: string,
     options: { cursorTrackId?: string; limit: number },
-  ): Promise<{ items: CatalogTrack[]; nextCursor: string | null }> {
+  ): Promise<{ trackIds: string[]; nextCursor: string | null }> {
     const { cursorTrackId, limit } = options;
     const conditions = cursorTrackId
       ? and(eq(trackArtists.artistId, artistId), gt(tracks.id, cursorTrackId))
       : eq(trackArtists.artistId, artistId);
 
     const rows = await this.txHost.tx
-      .select({
-        id: tracks.id,
-        title: tracks.title,
-        lengthMs: tracks.lengthMs,
-        disambiguation: tracks.disambiguation,
-        video: tracks.video,
-        isrcs: tracks.isrcs,
-        genres: tracks.genres,
-      })
+      .select({ id: tracks.id })
       .from(trackArtists)
       .innerJoin(tracks, eq(trackArtists.trackId, tracks.id))
       .where(conditions)
@@ -101,139 +79,13 @@ export class ArtistsRepository {
 
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
-    if (page.length === 0) {
-      return { items: [], nextCursor: null };
-    }
-    const trackIds = page.map((row) => row.id);
-    const items = await this.buildTrackItems(page, trackIds);
-
-    const last = page[page.length - 1];
-    if (!last || !hasMore) {
-      return { items, nextCursor: null };
-    }
+    const last = page.at(-1);
     return {
-      items,
-      nextCursor: Buffer.from(last.id, 'utf8').toString('base64url'),
+      trackIds: page.map((row) => row.id),
+      nextCursor:
+        hasMore && last
+          ? Buffer.from(last.id, 'utf8').toString('base64url')
+          : null,
     };
-  }
-
-  private async buildTrackItems(
-    page: {
-      id: string;
-      title: string;
-      lengthMs: number | null;
-      disambiguation: string;
-      video: boolean;
-      isrcs: string[];
-      genres: string[];
-    }[],
-    trackIds: string[],
-  ): Promise<CatalogTrack[]> {
-    const [credits, releases, works, tags, links] = await Promise.all([
-      this.fetchCredits(trackIds),
-      this.fetchReleases(trackIds),
-      this.fetchWorks(trackIds),
-      this.fetchTags(trackIds),
-      this.fetchExternalLinks(trackIds),
-    ]);
-    return page.map((row) => ({
-      ...row,
-      artists: credits.get(row.id) ?? [],
-      releases: releases.get(row.id) ?? [],
-      works: works.get(row.id) ?? [],
-      tags: tags.get(row.id) ?? [],
-      externalLinks: links.get(row.id) ?? [],
-    }));
-  }
-
-  private async fetchCredits(
-    trackIds: string[],
-  ): Promise<Map<string, { id: string; name: string }[]>> {
-    const creditRows = await this.txHost.tx
-      .select({
-        trackId: trackArtists.trackId,
-        id: artists.id,
-        name: artists.name,
-      })
-      .from(trackArtists)
-      .innerJoin(artists, eq(trackArtists.artistId, artists.id))
-      .where(inArray(trackArtists.trackId, trackIds))
-      .orderBy(asc(artists.name));
-    return this.groupByTrack(creditRows);
-  }
-
-  private async fetchReleases(
-    trackIds: string[],
-  ): Promise<Map<string, CatalogTrackRelease[]>> {
-    const rows = await this.txHost.tx
-      .select({
-        trackId: trackReleases.trackId,
-        mbid: trackReleases.mbid,
-        title: trackReleases.title,
-        year: trackReleases.year,
-        coverArtUrl: trackReleases.coverArtUrl,
-      })
-      .from(trackReleases)
-      .where(inArray(trackReleases.trackId, trackIds))
-      .orderBy(asc(trackReleases.title), asc(trackReleases.mbid));
-    return this.groupByTrack(rows);
-  }
-
-  private async fetchWorks(
-    trackIds: string[],
-  ): Promise<Map<string, CatalogTrackWork[]>> {
-    const rows = await this.txHost.tx
-      .select({
-        trackId: trackWorks.trackId,
-        mbid: trackWorks.mbid,
-        title: trackWorks.title,
-      })
-      .from(trackWorks)
-      .where(inArray(trackWorks.trackId, trackIds))
-      .orderBy(asc(trackWorks.title), asc(trackWorks.mbid));
-    return this.groupByTrack(rows);
-  }
-
-  private async fetchTags(
-    trackIds: string[],
-  ): Promise<Map<string, CatalogTrackTag[]>> {
-    const rows = await this.txHost.tx
-      .select({
-        trackId: trackTags.trackId,
-        name: trackTags.name,
-        count: trackTags.count,
-      })
-      .from(trackTags)
-      .where(inArray(trackTags.trackId, trackIds))
-      .orderBy(desc(trackTags.count), asc(trackTags.name));
-    return this.groupByTrack(rows);
-  }
-
-  private async fetchExternalLinks(
-    trackIds: string[],
-  ): Promise<Map<string, CatalogTrackExternalLink[]>> {
-    const rows = await this.txHost.tx
-      .select({
-        trackId: trackExternalLinks.trackId,
-        url: trackExternalLinks.url,
-        linkType: trackExternalLinks.linkType,
-      })
-      .from(trackExternalLinks)
-      .where(inArray(trackExternalLinks.trackId, trackIds))
-      .orderBy(asc(trackExternalLinks.linkType), asc(trackExternalLinks.url));
-    return this.groupByTrack(rows);
-  }
-
-  private groupByTrack<T extends { trackId: string }>(
-    rows: (T & { trackId: string })[],
-  ): Map<string, Omit<T, 'trackId'>[]> {
-    const byTrack = new Map<string, Omit<T, 'trackId'>[]>();
-    for (const row of rows) {
-      const { trackId, ...rest } = row;
-      const list = byTrack.get(trackId) ?? [];
-      list.push(rest as Omit<T, 'trackId'>);
-      byTrack.set(trackId, list);
-    }
-    return byTrack;
   }
 }

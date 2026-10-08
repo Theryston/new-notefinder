@@ -427,7 +427,8 @@
         "less": "Mostrar menos artistas"
       },
       "separator": " · ",
-      "artistSeparator": ", "
+      "artistSeparator": ", ",
+      "trackCount": "{count, plural, =0 {# faixas} one {# faixa} other {# faixas}}"
     },
     "types": {
       "primary": {
@@ -450,6 +451,25 @@
         "mixtapeStreet": "Mixtape/Street",
         "demo": "Demo",
         "fieldRecording": "Gravação de campo"
+      }
+    },
+    "tracks": {
+      "title": "Faixas",
+      "loading": "Carregando faixas…",
+      "loadingMore": "Carregando mais faixas…",
+      "loadMore": "Carregar mais",
+      "empty": {
+        "title": "Nenhuma faixa ainda",
+        "description": "Este álbum ainda não tem faixas processadas."
+      },
+      "error": {
+        "title": "Faixas indisponíveis",
+        "description": "Algo deu errado. Confira sua conexão e tente novamente.",
+        "retry": "Tentar novamente"
+      },
+      "disc": {
+        "numbered": "Disco {number}",
+        "named": "Disco {number} · {title}"
       }
     },
     "notFound": {

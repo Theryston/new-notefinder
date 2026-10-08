@@ -52,6 +52,7 @@ describe('Albums detail (e2e)', () => {
       year: 1975,
       genres: ['rock', 'pop'],
       coverArtUrl: album.coverArtUrl,
+      trackCount: 0,
       artists: [],
     });
   });

@@ -3,7 +3,8 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { AlbumHeader } from '@/features/albums/components/album-header';
-import { getAlbumResult } from '@/features/albums/queries';
+import { AlbumTracksSection } from '@/features/albums/components/album-tracks-section';
+import { getAlbumResult, getAlbumTracksPage } from '@/features/albums/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
 import { queryStringOf } from '@/lib/query-string';
@@ -50,10 +51,10 @@ export async function generateMetadata({
 
 /**
  * Thin album route: reads the ID, fetches the cached header outcome and
- * renders it. A legacy ID permanently redirects (308) to the new ID with
- * the query kept; an unknown ID is a real 404. Both are normally decided by
- * the proxy before this renders (see above); the checks below are its
- * fallback.
+ * its first tracks page, then renders both. A legacy ID permanently
+ * redirects (308) to the new ID with the query kept; an unknown ID is a
+ * real 404. Both are normally decided by the proxy before this renders
+ * (see above); the checks below are its fallback.
  */
 export default async function AlbumRoutePage({
   params,
@@ -73,5 +74,16 @@ export default async function AlbumRoutePage({
   if (result.status === 'missing') {
     notFound();
   }
-  return <AlbumHeader album={result.album} />;
+  // The grid brings its own loading/error/empty UI through the client
+  // query below, so a tracks failure must not take the header with it:
+  // fall back to a client-side fetch instead of rejecting the whole page.
+  const initialPage = await getAlbumTracksPage(result.album.id).catch(
+    () => undefined,
+  );
+  return (
+    <div className="flex flex-col gap-8">
+      <AlbumHeader album={result.album} />
+      <AlbumTracksSection albumId={result.album.id} initialPage={initialPage} />
+    </div>
+  );
 }

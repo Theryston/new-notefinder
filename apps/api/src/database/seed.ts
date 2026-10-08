@@ -5,7 +5,13 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import { loadEnv } from '../config/env.js';
 import { hashPassword } from '../modules/auth/password.js';
 import { createDatabase, createPool, type Database } from './database.js';
-import { albumArtists, albums, legacyAlbumIds } from './schema/albums.js';
+import {
+  albumArtists,
+  albumDiscs,
+  albums,
+  albumTracks,
+  legacyAlbumIds,
+} from './schema/albums.js';
 import { artists, trackArtists } from './schema/artists.js';
 import { accounts } from './schema/auth.js';
 import {
@@ -18,6 +24,8 @@ import {
 import { users } from './schema/users.js';
 import {
   SEED_ALBUM_ARTISTS,
+  SEED_ALBUM_DISCS,
+  SEED_ALBUM_TRACKS,
   SEED_ALBUMS,
   SEED_LEGACY_ALBUM_IDS,
 } from './seed-albums.js';
@@ -125,6 +133,24 @@ const seedAlbums = async (tx: SeedTx): Promise<void> => {
     .insert(albumArtists)
     .values(SEED_ALBUM_ARTISTS)
     .onConflictDoNothing();
+  for (const disc of SEED_ALBUM_DISCS) {
+    await tx
+      .insert(albumDiscs)
+      .values(disc)
+      .onConflictDoUpdate({
+        target: [albumDiscs.albumId, albumDiscs.position],
+        set: overwriteOnConflict(albumDiscs),
+      });
+  }
+  for (const track of SEED_ALBUM_TRACKS) {
+    await tx
+      .insert(albumTracks)
+      .values(track)
+      .onConflictDoUpdate({
+        target: [albumTracks.albumId, albumTracks.trackId],
+        set: overwriteOnConflict(albumTracks),
+      });
+  }
   await tx
     .insert(legacyAlbumIds)
     .values(SEED_LEGACY_ALBUM_IDS)

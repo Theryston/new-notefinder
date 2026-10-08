@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { catalogTracksPageSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { TracksService } from '../tracks/tracks.service.js';
 import { ArtistsRepository } from './artists.repository.js';
 import { ArtistsService } from './artists.service.js';
 
@@ -30,15 +31,21 @@ describe('ArtistsService tracks', () => {
     findArtistIdByLegacyId: vi.fn(),
     findTracksByArtistId: vi.fn(),
   };
+  const tracksService = {
+    getCatalogTracks: vi.fn(),
+  };
 
   beforeEach(async () => {
     repository.findArtistById.mockReset();
     repository.findArtistIdByLegacyId.mockReset();
     repository.findTracksByArtistId.mockReset();
+    tracksService.getCatalogTracks.mockReset();
+    tracksService.getCatalogTracks.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         ArtistsService,
         { provide: ArtistsRepository, useValue: repository },
+        { provide: TracksService, useValue: tracksService },
       ],
     }).compile();
     service = moduleRef.get(ArtistsService);
@@ -47,9 +54,10 @@ describe('ArtistsService tracks', () => {
   it('returns the contracted page for a known artist', async () => {
     repository.findArtistById.mockResolvedValue(artist);
     repository.findTracksByArtistId.mockResolvedValue({
-      items: [track],
+      trackIds: [track.id],
       nextCursor: null,
     });
+    tracksService.getCatalogTracks.mockResolvedValue([track]);
 
     const result = await service.getArtistTracks('artist-1', { limit: 20 });
 
@@ -57,6 +65,7 @@ describe('ArtistsService tracks', () => {
       cursorTrackId: undefined,
       limit: 20,
     });
+    expect(tracksService.getCatalogTracks).toHaveBeenCalledWith(['track-1']);
     expect(result).toEqual({ items: [track], nextCursor: null });
     expect(catalogTracksPageSchema.parse(result)).toEqual(result);
   });
@@ -64,7 +73,7 @@ describe('ArtistsService tracks', () => {
   it('decodes an opaque cursor before listing', async () => {
     repository.findArtistById.mockResolvedValue(artist);
     repository.findTracksByArtistId.mockResolvedValue({
-      items: [],
+      trackIds: [],
       nextCursor: null,
     });
     const cursor = Buffer.from('track-1', 'utf8').toString('base64url');
