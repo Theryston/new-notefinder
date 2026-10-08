@@ -34,9 +34,10 @@ video has to be found for it, and there is no Trigger.dev.
   changes. The RapidAPI service handles that on its side.
 - **`nfp-audio` moves into the monorepo as `apps/nfp-audio`** (Python, still a
   RunPod serverless image published to GHCR; the model weights are a regular
-  git blob, not Git LFS, by maintainer decision). It no longer calls the API: it reads the audio from a URL, uploads the vocals
-  through a presigned URL, reports its two stages with RunPod progress updates
-  and returns the notes as the job output. The API starts it with `/run` and
+  git blob, not Git LFS, by maintainer decision). It no longer calls the API:
+  it reads the audio from a URL, uploads the vocals through a presigned URL,
+  reports its two stages with RunPod progress updates and returns the notes as
+  the job output. The API starts it with `/run` and
   **polls `/status`** with delayed BullMQ jobs, so there is no inbound
   endpoint and no lost callback. The AWS SQS path and the runtime toggle are
   dropped.
