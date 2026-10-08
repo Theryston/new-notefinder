@@ -30,7 +30,37 @@ describe('trackRowsFromRecording', () => {
       video: false,
       isrcs: ['GBUM71029604'],
       genres: ['rock'],
+      artistCredit: [],
     });
+  });
+
+  it('keeps the artist credit in order, under the names it prints', () => {
+    const rows = trackRowsFromRecording(
+      recording({
+        artistCredit: {
+          name: 'Queen feat. David Bowie',
+          artists: [
+            {
+              mbid: testMbid(70),
+              name: 'Queen',
+              creditedName: 'Queen',
+              joinPhrase: ' feat. ',
+            },
+            {
+              mbid: testMbid(71),
+              name: 'David Bowie',
+              creditedName: 'D. Bowie',
+              joinPhrase: '',
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(rows.track.artistCredit).toEqual([
+      { name: 'Queen', joinPhrase: ' feat. ' },
+      { name: 'D. Bowie', joinPhrase: '' },
+    ]);
   });
 
   it('keeps one release row per release, in catalog order, with its year', () => {

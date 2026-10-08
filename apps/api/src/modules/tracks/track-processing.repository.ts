@@ -3,6 +3,7 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
+  trackContributionKind,
   trackContributions,
   trackContributors,
 } from '../../database/schema/track-contributors.js';
@@ -10,7 +11,8 @@ import { trackProcessings } from '../../database/schema/track-processings.js';
 import type { TrackProcessingRow } from './track-processing-view.js';
 
 /** A Contribution's kind, as the schema stores it. */
-export type TrackContributionKind = 'CREATE' | 'RETRY';
+export type TrackContributionKind =
+  (typeof trackContributionKind.enumValues)[number];
 
 /**
  * Processings, Contributors and Contributions of Tracks. The Track itself is
@@ -99,13 +101,12 @@ export class TrackProcessingRepository {
     await this.txHost.tx.insert(trackContributions).values(row);
   }
 
-  /** The Users who contributed to a Track, in the order they first did. */
-  async findContributorUserIds(trackId: string): Promise<string[]> {
-    const rows = await this.txHost.tx
-      .select({ userId: trackContributors.userId })
+  /** The Contributors of a Track, in the order they first contributed. */
+  findContributors(trackId: string): Promise<{ id: string; userId: string }[]> {
+    return this.txHost.tx
+      .select({ id: trackContributors.id, userId: trackContributors.userId })
       .from(trackContributors)
       .where(eq(trackContributors.trackId, trackId))
       .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
-    return rows.map((row) => row.userId);
   }
 }

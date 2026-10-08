@@ -7,6 +7,7 @@ import type {
   CatalogTrackTag,
   CatalogTrackWork,
   Mbid,
+  TrackArtistCreditEntry,
 } from '@notefinder/contracts';
 import { asc, desc, eq, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
@@ -25,6 +26,28 @@ type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
 
 /** The companion rows of a new Track (everything but the core row). */
 type NewTrackDetails = Omit<NewTrackRows, 'track'>;
+
+/** The Track fields the Processing page's header shows. */
+export type TrackHeaderRow = {
+  id: string;
+  title: string;
+  coverUrl: string | null;
+  artistCredit: TrackArtistCreditEntry[];
+};
+
+/** Inserts the rows with `insert` when there are any, and does nothing otherwise. */
+async function insertIfAny<TRow>(
+  rows: readonly TRow[],
+  insert: (rows: TRow[]) => Promise<unknown>,
+): Promise<void> {
+  if (rows.length > 0) {
+    await insert([...rows]);
+  }
+}
+
+/** The rows of one Track, each carrying its Track ID. */
+const onTrack = <TRow extends object>(rows: readonly TRow[], trackId: string) =>
+  rows.map((row) => ({ ...row, trackId }));
 
 @Injectable()
 export class TracksRepository {
@@ -68,54 +91,36 @@ export class TracksRepository {
     details: NewTrackDetails,
   ): Promise<void> {
     const db = this.txHost.tx;
-    if (details.releases.length > 0) {
-      await db
-        .insert(trackReleases)
-        .values(details.releases.map((release) => ({ ...release, trackId })));
-    }
-    if (details.works.length > 0) {
-      await db
-        .insert(trackWorks)
-        .values(details.works.map((work) => ({ ...work, trackId })));
-    }
-    if (details.tags.length > 0) {
-      await db
-        .insert(trackTags)
-        .values(details.tags.map((tag) => ({ ...tag, trackId })));
-    }
-    if (details.externalLinks.length > 0) {
-      await db
-        .insert(trackExternalLinks)
-        .values(details.externalLinks.map((link) => ({ ...link, trackId })));
-    }
+    await insertIfAny(details.releases, (rows) =>
+      db.insert(trackReleases).values(onTrack(rows, trackId)),
+    );
+    await insertIfAny(details.works, (rows) =>
+      db.insert(trackWorks).values(onTrack(rows, trackId)),
+    );
+    await insertIfAny(details.tags, (rows) =>
+      db.insert(trackTags).values(onTrack(rows, trackId)),
+    );
+    await insertIfAny(details.externalLinks, (rows) =>
+      db.insert(trackExternalLinks).values(onTrack(rows, trackId)),
+    );
   }
 
-  /** The header of a Track (title and cover), or undefined for an unknown ID. */
-  async findTrackHeader(
-    trackId: string,
-  ): Promise<
-    { id: string; title: string; coverUrl: string | null } | undefined
-  > {
+  /**
+   * The header of a Track (title, cover and artist credit), or undefined for an
+   * unknown ID.
+   */
+  async findTrackHeader(trackId: string): Promise<TrackHeaderRow | undefined> {
     const [row] = await this.txHost.tx
       .select({
         id: tracks.id,
         title: tracks.title,
         coverUrl: tracks.coverUrl,
+        artistCredit: tracks.artistCredit,
       })
       .from(tracks)
       .where(eq(tracks.id, trackId))
       .limit(1);
     return row;
-  }
-
-  /** The Artists linked to a Track, in name order. */
-  findTrackArtists(trackId: string): Promise<{ id: string; name: string }[]> {
-    return this.txHost.tx
-      .select({ id: artists.id, name: artists.name })
-      .from(trackArtists)
-      .innerJoin(artists, eq(trackArtists.artistId, artists.id))
-      .where(eq(trackArtists.trackId, trackId))
-      .orderBy(asc(artists.name));
   }
 
   /** The Track a legacy Track ID was reprocessed into, if it was. */

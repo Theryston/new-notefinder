@@ -5,7 +5,13 @@ import {
   trackContributors,
 } from '../src/database/schema/track-contributors.js';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
-import { trackReleases, tracks } from '../src/database/schema/tracks.js';
+import {
+  trackExternalLinks,
+  trackReleases,
+  tracks,
+  trackTags,
+  trackWorks,
+} from '../src/database/schema/tracks.js';
 import { users } from '../src/database/schema/users.js';
 import { type AuthClient, createAuthClient, signIn } from './utils/auth.js';
 import {
@@ -60,6 +66,23 @@ describe('POST /v1/tracks (e2e)', () => {
 
   const trackRowsOf = (mbid: string) =>
     testApp.db.select().from(tracks).where(eq(tracks.recordingMbid, mbid));
+
+  /** The locale stored on a User's account. */
+  const storedLocaleOf = async (userId: string) => {
+    const [stored] = await testApp.db
+      .select({ locale: users.locale })
+      .from(users)
+      .where(eq(users.id, userId));
+    return stored;
+  };
+
+  /** A new signed-in User who requests the Track of a Recording (202). */
+  const requestAsNewUser = async (mbid = testMbid(1)): Promise<User> => {
+    const user = await createPasswordUser(testApp.db);
+    const client = await signedInClient(user);
+    await client.post('/v1/tracks').send(body(mbid)).expect(202);
+    return user;
+  };
 
   beforeAll(async () => {
     catalog = await startFakeMusicCatalog((payload) => {
@@ -188,7 +211,7 @@ describe('POST /v1/tracks (e2e)', () => {
       expect(contributions).toEqual([{ kind: 'CREATE' }]);
     });
 
-    it('writes the companion rows of the Recording: releases, tags and links', async () => {
+    it('writes the companion rows of the Recording: releases, works, tags and links', async () => {
       recordings.set(
         testMbid(1),
         recordingFixture({
@@ -206,6 +229,8 @@ describe('POST /v1/tracks (e2e)', () => {
               coverArtUrl: 'https://coverartarchive.org/release/a/front-500',
             },
           ],
+          works: [{ mbid: testMbid(60), title: 'Bohemian Rhapsody' }],
+          tags: [{ name: 'classic rock', count: 4 }],
           externalUrls: [
             {
               url: 'https://musicbrainz.org/recording/x',
@@ -214,25 +239,74 @@ describe('POST /v1/tracks (e2e)', () => {
           ],
         }),
       );
-      const user = await createPasswordUser(testApp.db);
-      const client = await signedInClient(user);
-
-      await client
-        .post('/v1/tracks')
-        .send(body(testMbid(1)))
-        .expect(202);
+      await requestAsNewUser();
 
       const [track] = await trackRowsOf(testMbid(1));
-      const releases = await testApp.db
-        .select()
-        .from(trackReleases)
-        .where(eq(trackReleases.trackId, track?.id ?? ''));
-      expect(releases).toMatchObject([
+      const trackId = track?.id ?? '';
+      expect(
+        await testApp.db
+          .select()
+          .from(trackReleases)
+          .where(eq(trackReleases.trackId, trackId)),
+      ).toMatchObject([
         {
           mbid: testMbid(101),
           title: 'A Night at the Opera',
           year: 1975,
         },
+      ]);
+      expect(
+        await testApp.db
+          .select()
+          .from(trackWorks)
+          .where(eq(trackWorks.trackId, trackId)),
+      ).toMatchObject([{ mbid: testMbid(60), title: 'Bohemian Rhapsody' }]);
+      expect(
+        await testApp.db
+          .select()
+          .from(trackTags)
+          .where(eq(trackTags.trackId, trackId)),
+      ).toMatchObject([{ name: 'classic rock', count: 4 }]);
+      expect(
+        await testApp.db
+          .select()
+          .from(trackExternalLinks)
+          .where(eq(trackExternalLinks.trackId, trackId)),
+      ).toMatchObject([
+        { url: 'https://musicbrainz.org/recording/x', linkType: 'musicbrainz' },
+      ]);
+    });
+
+    it('stores the artist credit of the Recording in credit order', async () => {
+      recordings.set(
+        testMbid(1),
+        recordingFixture({
+          mbid: testMbid(1),
+          artistCredit: {
+            name: 'Queen feat. David Bowie',
+            artists: [
+              {
+                mbid: testMbid(70),
+                name: 'Queen',
+                creditedName: 'Queen',
+                joinPhrase: ' feat. ',
+              },
+              {
+                mbid: testMbid(71),
+                name: 'David Bowie',
+                creditedName: 'David Bowie',
+                joinPhrase: '',
+              },
+            ],
+          },
+        }),
+      );
+      await requestAsNewUser();
+
+      const [track] = await trackRowsOf(testMbid(1));
+      expect(track?.artistCredit).toEqual([
+        { name: 'Queen', joinPhrase: ' feat. ' },
+        { name: 'David Bowie', joinPhrase: '' },
       ]);
     });
 
@@ -245,11 +319,7 @@ describe('POST /v1/tracks (e2e)', () => {
         .send(body(testMbid(1), 'en'))
         .expect(202);
 
-      const [stored] = await testApp.db
-        .select({ locale: users.locale })
-        .from(users)
-        .where(eq(users.id, user.id));
-      expect(stored).toEqual({ locale: 'en' });
+      expect(await storedLocaleOf(user.id)).toEqual({ locale: 'en' });
     });
 
     it('follows a merged Recording to the MBID it moved to', async () => {
@@ -336,11 +406,7 @@ describe('POST /v1/tracks (e2e)', () => {
       expect(response.body).toEqual({ trackId: existing.id });
       expect(catalogCalls).toEqual([]);
       expect(await testApp.db.select().from(trackProcessings)).toEqual([]);
-      const [stored] = await testApp.db
-        .select({ locale: users.locale })
-        .from(users)
-        .where(eq(users.id, user.id));
-      expect(stored).toEqual({ locale: 'pt-BR' });
+      expect(await storedLocaleOf(user.id)).toEqual({ locale: 'pt-BR' });
     });
 
     it('answers with the Track of the MBID a merged Recording moved to', async () => {

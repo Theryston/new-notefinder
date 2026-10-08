@@ -1,9 +1,9 @@
-import type { Recording } from '@notefinder/contracts';
+import type { Recording, TrackArtistCreditEntry } from '@notefinder/contracts';
 
 // The rows a new Track is made of, mapped from the Music catalog's Recording:
 // the core row and the companion tables that the Track page shows. Pure, so
-// the rules (one row per release, the first year of a release) are tested
-// without a database.
+// the rules (one row per release, the first year of a release, the credit in
+// order) are tested without a database.
 
 export type NewTrackCoreRow = {
   recordingMbid: string;
@@ -13,6 +13,7 @@ export type NewTrackCoreRow = {
   video: boolean;
   isrcs: string[];
   genres: string[];
+  artistCredit: TrackArtistCreditEntry[];
 };
 
 type NewTrackRelease = {
@@ -70,6 +71,12 @@ export function trackRowsFromRecording(recording: Recording): NewTrackRows {
       video: recording.video,
       isrcs: recording.isrcs,
       genres: recording.genres.map((genre) => genre.name),
+      // The credit as printed: each artist under the name the credit gives it,
+      // with the text that joins it to the next one.
+      artistCredit: recording.artistCredit.artists.map((artist) => ({
+        name: artist.creditedName,
+        joinPhrase: artist.joinPhrase,
+      })),
     },
     releases: uniqueBy(recording.releases, (release) => release.mbid).map(
       (release) => ({

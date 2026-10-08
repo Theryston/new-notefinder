@@ -2,12 +2,7 @@ import { trackProcessingStateSchema } from '@notefinder/contracts';
 import request from 'supertest';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
-import {
-  createArtist,
-  createPasswordUser,
-  createTrack,
-  linkTrackArtist,
-} from './utils/factories.js';
+import { createPasswordUser, createTrack } from './utils/factories.js';
 import {
   createLegacyTrackId,
   createTrackContributor,
@@ -51,7 +46,7 @@ describe('GET /v1/tracks/:trackId/processing (e2e)', () => {
         id: track.id,
         title: 'Bohemian Rhapsody',
         coverUrl: null,
-        artists: [],
+        artistCredit: [],
       },
       processing: {
         status: 'QUEUED',
@@ -66,18 +61,22 @@ describe('GET /v1/tracks/:trackId/processing (e2e)', () => {
     });
   });
 
-  it('lists the linked Artists of the Track in name order', async () => {
-    const track = await createTrack(testApp.db);
-    const queen = await createArtist(testApp.db, { name: 'Queen' });
-    const abba = await createArtist(testApp.db, { name: 'ABBA' });
-    await linkTrackArtist(testApp.db, track.id, queen.id);
-    await linkTrackArtist(testApp.db, track.id, abba.id);
+  it('shows the artist credit the Track was created with, in credit order', async () => {
+    // Stored at creation from the Recording, so the header has it before any
+    // Processing has started.
+    const track = await createTrack(testApp.db, {
+      artistCredit: [
+        { name: 'Queen', joinPhrase: ' feat. ' },
+        { name: 'David Bowie', joinPhrase: '' },
+      ],
+    });
+    await createTrackProcessing(testApp.db, track.id);
 
     const response = await processingOf(track.id).expect(200);
 
-    expect(response.body.track.artists).toEqual([
-      { id: abba.id, name: 'ABBA' },
-      { id: queen.id, name: 'Queen' },
+    expect(response.body.track.artistCredit).toEqual([
+      { name: 'Queen', joinPhrase: ' feat. ' },
+      { name: 'David Bowie', joinPhrase: '' },
     ]);
   });
 
@@ -146,30 +145,48 @@ describe('GET /v1/tracks/:trackId/processing (e2e)', () => {
       username: 'grace',
       image: null,
     });
-    await createTrackContributor(testApp.db, track.id, ada.id);
-    await createTrackContributor(testApp.db, track.id, grace.id);
+    const adaContributor = await createTrackContributor(
+      testApp.db,
+      track.id,
+      ada.id,
+    );
+    const graceContributor = await createTrackContributor(
+      testApp.db,
+      track.id,
+      grace.id,
+    );
 
     const response = await processingOf(track.id).expect(200);
 
     expect(response.body.contributors).toEqual([
       {
+        id: adaContributor.id,
         username: 'ada',
         name: 'Ada Lovelace',
         image: 'https://images.example.com/ada.png',
       },
-      { username: 'grace', name: 'Grace Hopper', image: null },
+      {
+        id: graceContributor.id,
+        username: 'grace',
+        name: 'Grace Hopper',
+        image: null,
+      },
     ]);
   });
 
   it('shows a Contributor without a Username unlinked, with a null Username', async () => {
     const track = await createTrack(testApp.db);
     const user = await createPasswordUser(testApp.db, { username: null });
-    await createTrackContributor(testApp.db, track.id, user.id);
+    const contributor = await createTrackContributor(
+      testApp.db,
+      track.id,
+      user.id,
+    );
 
     const response = await processingOf(track.id).expect(200);
 
     expect(response.body.contributors).toEqual([
-      { username: null, name: user.name, image: null },
+      { id: contributor.id, username: null, name: user.name, image: null },
     ]);
   });
 

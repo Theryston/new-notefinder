@@ -7,12 +7,11 @@ import { TracksRepository } from './tracks.repository.js';
 
 const tracks = {
   findTrackHeader: vi.fn(),
-  findTrackArtists: vi.fn(),
   findTrackIdByLegacyId: vi.fn(),
 };
 const processings = {
   findLatestProcessing: vi.fn(),
-  findContributorUserIds: vi.fn(),
+  findContributors: vi.fn(),
 };
 const users = { findPublicUsers: vi.fn() };
 
@@ -20,6 +19,7 @@ const header = {
   id: 'track-1',
   title: 'Bohemian Rhapsody',
   coverUrl: null,
+  artistCredit: [{ name: 'Queen', joinPhrase: '' }],
 };
 
 const latestRow = {
@@ -47,9 +47,8 @@ describe('TrackProcessingService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     tracks.findTrackHeader.mockResolvedValue(undefined);
-    tracks.findTrackArtists.mockResolvedValue([]);
     processings.findLatestProcessing.mockResolvedValue(undefined);
-    processings.findContributorUserIds.mockResolvedValue([]);
+    processings.findContributors.mockResolvedValue([]);
     users.findPublicUsers.mockResolvedValue(new Map());
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -64,11 +63,11 @@ describe('TrackProcessingService', () => {
 
   it('shows the header, the latest Processing and the Contributors', async () => {
     tracks.findTrackHeader.mockResolvedValue(header);
-    tracks.findTrackArtists.mockResolvedValue([
-      { id: 'artist-1', name: 'Queen' },
-    ]);
     processings.findLatestProcessing.mockResolvedValue(latestRow);
-    processings.findContributorUserIds.mockResolvedValue(['user-1', 'user-2']);
+    processings.findContributors.mockResolvedValue([
+      { id: 'contributor-1', userId: 'user-1' },
+      { id: 'contributor-2', userId: 'user-2' },
+    ]);
     users.findPublicUsers.mockResolvedValue(
       new Map([
         ['user-1', profile('user-1', 'Ada', 'ada')],
@@ -83,7 +82,7 @@ describe('TrackProcessingService', () => {
         id: 'track-1',
         title: 'Bohemian Rhapsody',
         coverUrl: null,
-        artists: [{ id: 'artist-1', name: 'Queen' }],
+        artistCredit: [{ name: 'Queen', joinPhrase: '' }],
       },
       processing: expect.objectContaining({
         id: 'processing-2',
@@ -95,8 +94,18 @@ describe('TrackProcessingService', () => {
         createdAt: '2026-10-08T12:00:00.000Z',
       }),
       contributors: [
-        { username: 'ada', name: 'Ada', image: null },
-        { username: null, name: 'Grace', image: null },
+        {
+          id: 'contributor-1',
+          username: 'ada',
+          name: 'Ada',
+          image: null,
+        },
+        {
+          id: 'contributor-2',
+          username: null,
+          name: 'Grace',
+          image: null,
+        },
       ],
     });
     expect(trackProcessingStateSchema.parse(state)).toEqual(state);
@@ -114,7 +123,10 @@ describe('TrackProcessingService', () => {
 
   it('leaves out a Contributor whose account no longer exists', async () => {
     tracks.findTrackHeader.mockResolvedValue(header);
-    processings.findContributorUserIds.mockResolvedValue(['user-1', 'gone']);
+    processings.findContributors.mockResolvedValue([
+      { id: 'contributor-1', userId: 'user-1' },
+      { id: 'contributor-2', userId: 'gone' },
+    ]);
     users.findPublicUsers.mockResolvedValue(
       new Map([['user-1', profile('user-1', 'Ada', 'ada')]]),
     );
@@ -122,7 +134,7 @@ describe('TrackProcessingService', () => {
     const state = await service.getProcessingState('track-1');
 
     expect(state.contributors).toEqual([
-      { username: 'ada', name: 'Ada', image: null },
+      { id: 'contributor-1', username: 'ada', name: 'Ada', image: null },
     ]);
   });
 

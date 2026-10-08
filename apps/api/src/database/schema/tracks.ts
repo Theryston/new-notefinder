@@ -1,7 +1,10 @@
+import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   unique,
@@ -36,6 +39,12 @@ export const tracks = pgTable(
     isrcs: text().array().notNull().default([]),
     // Display genres, most relevant first; empty when unknown.
     genres: text().array().notNull().default([]),
+    // The Recording's artist credit in credit order, written when the Track is
+    // created so the header shows its artists before any metadata import.
+    artistCredit: jsonb()
+      .$type<TrackArtistCreditEntry[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     // The cover in our own storage, set when a Processing finds one; null
     // until then, so the page shows a placeholder.
     coverUrl: text(),

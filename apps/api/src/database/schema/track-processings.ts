@@ -4,6 +4,7 @@ import {
   TRACK_PROCESSING_STEPS,
   TRACK_PROCESSING_VIDEO_SOURCES,
 } from '@notefinder/contracts';
+import { sql } from 'drizzle-orm';
 import { index, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
@@ -61,6 +62,14 @@ export const trackProcessings = pgTable(
     finishedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
-  // The latest Processing of a Track is the newest row of its Track.
-  (table) => [index().on(table.trackId, table.createdAt)],
+  (table) => [
+    // The latest Processing of a Track is the newest row of its Track.
+    index().on(table.trackId, table.createdAt),
+    // "Active Processings per User" joins a User's Contributions to the
+    // Processings that have not ended. Only those rows are indexed, so the
+    // join stays small however many Processings have completed.
+    index('track_processings_active_index')
+      .on(table.id)
+      .where(sql`${table.status} not in ('COMPLETED', 'FAILED')`),
+  ],
 );

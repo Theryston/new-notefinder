@@ -4,8 +4,7 @@ import type {
   TrackProcessingState,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
-import type { PublicUserRow } from '../users/users.repository.js';
-import { UsersService } from '../users/users.service.js';
+import { type PublicUser, UsersService } from '../users/users.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { toTrackProcessing } from './track-processing-view.js';
 import { TracksRepository } from './tracks.repository.js';
@@ -33,18 +32,21 @@ export class TrackProcessingService {
     if (header === undefined) {
       return this.throwMovedOrMissing(trackId);
     }
-    const [artists, latest, contributorIds] = await Promise.all([
-      this.tracks.findTrackArtists(trackId),
+    const [latest, contributors] = await Promise.all([
       this.processings.findLatestProcessing(trackId),
-      this.processings.findContributorUserIds(trackId),
+      this.processings.findContributors(trackId),
     ]);
-    const profiles = await this.users.findPublicUsers(contributorIds);
+    const profiles = await this.users.findPublicUsers(
+      contributors.map((contributor) => contributor.userId),
+    );
     return {
-      track: { ...header, artists },
+      track: header,
       processing: latest === undefined ? null : toTrackProcessing(latest),
-      contributors: contributorIds.flatMap((userId) => {
-        const profile = profiles.get(userId);
-        return profile === undefined ? [] : [toContributor(profile)];
+      contributors: contributors.flatMap((contributor) => {
+        const profile = profiles.get(contributor.userId);
+        return profile === undefined
+          ? []
+          : [toContributor(contributor.id, profile)];
       }),
     };
   }
@@ -59,8 +61,9 @@ export class TrackProcessingService {
 }
 
 /** The Contributor as the page shows it: the link, the name and the Avatar. */
-function toContributor(profile: PublicUserRow): TrackContributor {
+function toContributor(id: string, profile: PublicUser): TrackContributor {
   return {
+    id,
     username: profile.username,
     name: profile.name,
     image: profile.image,

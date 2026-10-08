@@ -9,11 +9,18 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
-import {
-  type CurrentUserRow,
-  type PublicUserRow,
-  UsersRepository,
-} from './users.repository.js';
+import { type CurrentUserRow, UsersRepository } from './users.repository.js';
+
+/**
+ * The public fields of a User that other features may show (a Track's
+ * Contributors). No email and no role: those never leave the users module.
+ */
+export type PublicUser = {
+  id: string;
+  username: string | null;
+  name: string;
+  image: string | null;
+};
 
 const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
   ...user,
@@ -91,7 +98,7 @@ export class UsersService {
    */
   async findPublicUsers(
     userIds: readonly string[],
-  ): Promise<Map<string, PublicUserRow>> {
+  ): Promise<Map<string, PublicUser>> {
     const rows = await this.usersRepository.findPublicUsers([...userIds]);
     return new Map(rows.map((row) => [row.id, row]));
   }
