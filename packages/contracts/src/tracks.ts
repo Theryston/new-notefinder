@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { catalogTrackArtistSchema } from './artists.js';
 import { localeSchema } from './locales.js';
 import { mbidSchema } from './music-catalog.js';
 import { trackProcessingSchema } from './track-processing.js';
@@ -34,24 +33,40 @@ export const createTrackResultSchema = z.object({
 export type CreateTrackResult = z.infer<typeof createTrackResultSchema>;
 
 /**
+ * One credited artist of a Track, in credit order: the name as the credit
+ * prints it and the text that joins it to the next one ("feat. ", " & ", or '').
+ * The whole credit is what the header shows, from the moment the Track exists.
+ */
+export const trackArtistCreditEntrySchema = z.object({
+  name: z.string().min(1).max(200),
+  joinPhrase: z.string().max(100),
+});
+
+export type TrackArtistCreditEntry = z.infer<
+  typeof trackArtistCreditEntrySchema
+>;
+
+/**
  * The Track header the Processing page shows. The cover is null until a
- * Processing finds one, and the artists are the Track's linked Artists (empty
- * until the metadata import has run).
+ * Processing finds one; the artist credit comes from the Recording the Track
+ * was created from.
  */
 export const trackHeaderSchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().min(1).max(500),
   coverUrl: z.string().min(1).max(2000).nullable(),
-  artists: z.array(catalogTrackArtistSchema).max(30),
+  artistCredit: z.array(trackArtistCreditEntrySchema).max(30),
 });
 
 export type TrackHeader = z.infer<typeof trackHeaderSchema>;
 
 /**
- * A User who did a Contribution to the Track. `username` is the link to their
+ * A User who did a Contribution to the Track. `id` identifies the Contributor
+ * (one per Track and User) and keys the list; `username` is the link to their
  * Profile; `image` is their Avatar's URL, null without one.
  */
 export const trackContributorSchema = z.object({
+  id: z.string().min(1).max(128),
   username: z.string().min(1).max(100).nullable(),
   name: z.string().min(1).max(200),
   image: z.string().min(1).max(2000).nullable(),
