@@ -338,3 +338,6 @@ time. Never a long numbered list of questions in plain text.
 `ticket-implementer` (`.claude/agents/ticket-implementer.md` in Claude Code,
 `.opencode/agents/ticket-implementer.md` in OpenCode) implements one
 `ready-for-agent` issue end to end in its own worktree and opens a PR.
+`/subagents-implement <issue numbers>` runs one per issue in parallel, then
+reviews each PR, sends fixes back to its implementer and has it drive CI to
+green before reporting the PR links.
