@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MusicCatalogModule } from '../../integrations/music-catalog/music-catalog.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { TrackLimitsService } from './track-limits.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
@@ -17,6 +18,7 @@ import { TracksService } from './tracks.service.js';
     TrackProcessingRepository,
     TrackRequestService,
     TrackProcessingService,
+    TrackLimitsService,
   ],
   exports: [TracksService],
 })

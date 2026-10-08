@@ -20,6 +20,14 @@ const MAX_MERGE_HOPS = 3;
 export type RequestedTrack = { trackId: string; created: boolean };
 
 /**
+ * Checks that must pass before a new Track is written (the User's limits).
+ * It runs inside the write transaction, first, so a refusal writes nothing.
+ */
+export type TrackRequestAdmission = () => Promise<void>;
+
+const admitEveryone: TrackRequestAdmission = () => Promise.resolve();
+
+/**
  * Asks for a Recording to become a Track (ADR 0005). The Track exists from
  * this request: its first Processing is queued and the requesting User is
  * its Contributor through a CREATE Contribution. A Recording that already has a
@@ -37,11 +45,14 @@ export class TrackRequestService {
   /**
    * Reads the Recording from the Music catalog (following a merge), then
    * creates the Track unless one already has that Recording. The catalog call
-   * stays outside the transaction: only the writes are one unit.
+   * stays outside the transaction: only the writes are one unit. `admit` runs
+   * only when a Track would be created, so a Recording that already has one is
+   * never refused (for instance over the User's limits).
    */
   async requestTrack(
     userId: string,
     body: CreateTrackBody,
+    admit: TrackRequestAdmission = admitEveryone,
   ): Promise<RequestedTrack> {
     const existing = await this.findTrackId(body.recordingMbid);
     if (existing !== undefined) {
@@ -55,7 +66,7 @@ export class TrackRequestService {
     if (existingByCurrentMbid !== undefined) {
       return { trackId: existingByCurrentMbid, created: false };
     }
-    return this.createTrack(userId, recording, body.locale);
+    return this.createTrack(userId, recording, body.locale, admit);
   }
 
   /**
@@ -88,7 +99,9 @@ export class TrackRequestService {
     userId: string,
     recording: Recording,
     locale: Locale,
+    admit: TrackRequestAdmission,
   ): Promise<RequestedTrack> {
+    await admit();
     const { track, ...details } = trackRowsFromRecording(recording);
     const trackId = await this.tracks.insertTrack(track);
     if (trackId === undefined) {

@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
@@ -31,6 +32,7 @@ import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js
 import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
+import { TrackLimitsService } from './track-limits.service.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
 
@@ -40,6 +42,7 @@ export class TracksController {
   constructor(
     private readonly trackRequests: TrackRequestService,
     private readonly trackProcessing: TrackProcessingService,
+    private readonly trackLimits: TrackLimitsService,
   ) {}
 
   // A Recording becomes a Track on the first request (202, its Processing is
@@ -58,6 +61,11 @@ export class TracksController {
   @ApiNotFoundResponse({
     description: 'The Music catalog does not know the Recording.',
   })
+  @ApiTooManyRequestsResponse({
+    description:
+      'The User reached a limit on Track requests (`PROCESSING_LIMIT_REACHED`, ' +
+      'with the limit in `details`). Admins are exempt.',
+  })
   @ApiServiceUnavailableResponse({ description: 'The Music catalog is down.' })
   @ApiGatewayTimeoutResponse({
     description: 'The Music catalog took too long.',
@@ -67,7 +75,9 @@ export class TracksController {
     @Body() body: CreateTrackBodyDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CreateTrackResult> {
-    const requested = await this.trackRequests.requestTrack(user.id, body);
+    const requested = await this.trackRequests.requestTrack(user.id, body, () =>
+      this.trackLimits.assertCanRequestTrack(user),
+    );
     response.status(requested.created ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return { trackId: requested.trackId };
   }
