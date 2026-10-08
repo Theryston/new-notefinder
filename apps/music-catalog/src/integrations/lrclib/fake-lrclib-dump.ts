@@ -1,5 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
-import { normalizeLyricsText } from '../../lib/normalize-text.js';
+import { type DumpTrack, writeLrclibDump } from './write-lrclib-dump.js';
 
 /** One Recording the fake dump is generated from. */
 export type FakeDumpRecording = {
@@ -25,21 +24,6 @@ const mulberry32 = (seed: number): (() => number) => {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 };
-
-const CREATED_AT = '2026-01-01T00:00:00.000Z';
-
-const CREATE_TABLES = `
-  CREATE TABLE tracks (id INTEGER PRIMARY KEY, name TEXT NOT NULL,
-    name_lower TEXT NOT NULL, artist_name TEXT NOT NULL,
-    artist_name_lower TEXT NOT NULL, album_name TEXT NOT NULL,
-    album_name_lower TEXT NOT NULL, duration FLOAT NOT NULL,
-    last_lyrics_id INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
-  CREATE TABLE lyrics (id INTEGER PRIMARY KEY, track_id INTEGER NOT NULL,
-    plain_lyrics TEXT, synced_lyrics TEXT, has_plain_lyrics INTEGER NOT NULL,
-    has_synced_lyrics INTEGER NOT NULL, instrumental INTEGER NOT NULL,
-    source TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-    lyricsfile TEXT, has_lyricsfile INTEGER NOT NULL);
-`;
 
 type PendingTrack = {
   title: string;
@@ -136,50 +120,18 @@ export const writeFakeLrclibDump = (
       tracks.push(...nearMisses(recording, duration));
     }
   });
-  const db = new DatabaseSync(path);
-  try {
-    db.exec(CREATE_TABLES);
-    const insertTrack = db.prepare(`
-      INSERT INTO tracks (name, name_lower, artist_name, artist_name_lower,
-        album_name, album_name_lower, duration, last_lyrics_id,
-        created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const insertLyrics = db.prepare(`
-      INSERT INTO lyrics (track_id, plain_lyrics, synced_lyrics,
-        has_plain_lyrics, has_synced_lyrics, instrumental, source,
-        created_at, updated_at, lyricsfile, has_lyricsfile)
-      VALUES (?, ?, ?, 1, 1, 0, 'fake', ?, ?, NULL, 0)
-    `);
-    for (const track of tracks) {
-      const plain = plainLyrics(track);
-      const synced = syncedLyrics(track);
-      const trackId = Number(
-        insertTrack.run(
-          track.title,
-          // The `_lower` columns hold the normalized spelling, the way the
-          // strict match compares: pass one and pass two agree on them.
-          normalizeLyricsText(track.title),
-          track.artist,
-          normalizeLyricsText(track.artist),
-          track.album,
-          normalizeLyricsText(track.album),
-          track.duration,
-          null,
-          CREATED_AT,
-          CREATED_AT,
-        ).lastInsertRowid,
-      );
-      const lyricId = Number(
-        insertLyrics.run(trackId, plain, synced, CREATED_AT, CREATED_AT)
-          .lastInsertRowid,
-      );
-      db.prepare('UPDATE tracks SET last_lyrics_id = ? WHERE id = ?').run(
-        lyricId,
-        trackId,
-      );
-    }
-  } finally {
-    db.close();
-  }
+  writeLrclibDump(
+    path,
+    tracks.map(
+      (track): DumpTrack => ({
+        title: track.title,
+        artist: track.artist,
+        album: track.album,
+        duration: track.duration,
+        plain: plainLyrics(track),
+        synced: syncedLyrics(track),
+        source: 'fake',
+      }),
+    ),
+  );
 };

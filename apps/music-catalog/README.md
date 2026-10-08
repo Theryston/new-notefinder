@@ -23,8 +23,8 @@ nub run infra:up                                   # Postgres (5433) and Meilise
 nub run dev --filter=music-catalog                 # server on ws://localhost:3334, plus the worker
 ```
 
-The `tiny` dataset (300 deterministic Recordings, no download) is seeded in
-seconds the first time; `status` follows it (`restoring` → `restored` →
+The `tiny` dataset (about a hundred real MusicBrainz Recordings on ten albums,
+no download) is seeded in seconds the first time; `status` follows it (`restoring` → `restored` →
 `indexing` → `ready`), and `search` answers once it is `ready`. Bootstrap
 phases, dataset modes and resetting a local database are documented in
 [`CLAUDE.md`](./CLAUDE.md).

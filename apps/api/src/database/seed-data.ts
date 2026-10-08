@@ -1,17 +1,16 @@
 import type { artists, trackArtists } from './schema/artists.js';
-import type {
-  trackExternalLinks,
-  trackReleases,
-  tracks,
-  trackTags,
-  trackWorks,
-} from './schema/tracks.js';
+import type { tracks } from './schema/tracks.js';
 import type { users } from './schema/users.js';
 
 /**
  * Deterministic development data for `db:seed`. Everything here is pure (no
  * database access) so it can be unit tested; `seed.ts` writes it. It grows
  * with the features that add tables.
+ *
+ * The catalog rows are real MusicBrainz data (artist, Recording, release,
+ * release group and Work MBIDs), a subset of the Music catalog's `tiny`
+ * dataset, so covers load from the Cover Art Archive and every MBID resolves
+ * on musicbrainz.org.
  */
 
 type UserRow = typeof users.$inferInsert & { id: string };
@@ -32,7 +31,7 @@ export const SEED_USER = {
 // Development only: `assertSeedAllowed` keeps the seed away from production.
 export const SEED_USER_PASSWORD = 'notefinder-seed';
 
-/** The seed writes fake data, so it must never touch a production database. */
+/** The seed writes development data (a known password), never to production. */
 export const assertSeedAllowed = (nodeEnv: string): void => {
   if (nodeEnv === 'production') {
     throw new Error('Refusing to seed the database when NODE_ENV=production');
@@ -42,202 +41,159 @@ export const assertSeedAllowed = (nodeEnv: string): void => {
 type ArtistRow = typeof artists.$inferInsert & { id: string };
 type TrackRow = typeof tracks.$inferInsert & { id: string };
 type TrackArtistRow = typeof trackArtists.$inferInsert;
-type TrackReleaseRow = typeof trackReleases.$inferInsert & { id: string };
-type TrackWorkRow = typeof trackWorks.$inferInsert & { id: string };
-type TrackTagRow = typeof trackTags.$inferInsert & { id: string };
-type TrackExternalLinkRow = typeof trackExternalLinks.$inferInsert & {
-  id: string;
-};
 
-/**
- * Development artists with real MusicBrainz artist MBIDs, so linked search
- * hits resolve during local development.
- */
+/** Development artists: their real MusicBrainz MBIDs and top genres. */
 export const SEED_ARTISTS = [
   {
     id: 'seedartist01',
     mbid: '0383dadf-2a4e-4d10-a46a-e9e041da8eb3',
     name: 'Queen',
-    genres: ['rock', 'pop'],
+    genres: ['rock', 'glam rock'],
   },
   {
     id: 'seedartist02',
-    mbid: '6be1c793-9d40-4d2e-92f2-6f502ced7bdb',
+    mbid: 'cc2c9c3c-b7bc-4b8b-84d8-4fbd8779e493',
     name: 'Adele',
     genres: ['pop', 'soul'],
   },
   {
     id: 'seedartist03',
-    mbid: '9fff2f8a-414e-47cd-ab65-90ff02791d70',
+    mbid: 'cc197bad-dc9c-440d-a5b5-d52ba2e14234',
     name: 'Coldplay',
-    genres: ['rock', 'alternative'],
+    genres: ['alternative rock', 'pop'],
+  },
+  {
+    id: 'seedartist04',
+    mbid: '5441c29d-3602-4898-b1a1-b77fa23b8e50',
+    name: 'David Bowie',
+    genres: ['art rock', 'glam rock'],
+  },
+  {
+    id: 'seedartist05',
+    mbid: 'e9e85a54-074c-4d29-a886-bcaaa9d44f9f',
+    name: 'Elis Regina',
+    genres: ['mpb', 'bossa nova'],
+  },
+  {
+    id: 'seedartist06',
+    mbid: '7a8dbe84-f4c0-4457-bfa3-edced1f8cde0',
+    name: 'Antônio Carlos Jobim',
+    genres: ['bossa nova', 'latin jazz'],
   },
 ] satisfies ArtistRow[];
 
-/** Development tracks: one row per fake Recording MBID. */
+/**
+ * Development tracks: one row per real Recording MBID. Genres are the
+ * Recording's own most voted ones, else its release group's, else its
+ * artists' (the Music catalog's fallback).
+ */
 export const SEED_TRACKS = [
   {
     id: 'seedtrack01',
-    recordingMbid: '11111111-1111-4111-8111-111111111111',
+    recordingMbid: 'b1a9c0e9-d987-4042-ae91-78d6a3267d69',
     title: 'Bohemian Rhapsody',
-    lengthMs: 354_000,
+    lengthMs: 355_106,
     disambiguation: '',
     video: false,
-    isrcs: ['GBUM71029604'],
-    genres: ['rock'],
+    isrcs: ['GBCEE0100112', 'GBCEE0500364'],
+    genres: ['rock', 'hard rock'],
   },
   {
     id: 'seedtrack02',
-    recordingMbid: '22222222-2222-4222-8222-222222222222',
-    title: "Don't Stop Me Now",
-    lengthMs: 209_000,
+    recordingMbid: 'd4009c09-a339-4b89-bc45-d91ab649acb6',
+    title: 'Don’t Stop Me Now',
+    lengthMs: 210_146,
     disambiguation: '',
     video: false,
-    isrcs: ['GBUM71029605'],
-    genres: ['rock', 'pop'],
+    isrcs: ['GBCEE0100118', 'GBCEE0900139'],
+    genres: ['rock', 'hard rock'],
   },
   {
     id: 'seedtrack03',
-    recordingMbid: '33333333-3333-4333-8333-333333333333',
+    recordingMbid: '1a13c710-4b7e-4701-8968-cd61f2e58110',
     title: 'Rolling in the Deep',
-    lengthMs: 228_000,
+    lengthMs: 228_293,
     disambiguation: '',
     video: false,
-    isrcs: ['GBBKS1000358'],
-    genres: ['pop', 'soul'],
+    isrcs: ['GBBKS1000335'],
+    genres: ['pop', 'pop soul'],
   },
   {
     id: 'seedtrack04',
-    recordingMbid: '44444444-4444-4444-8444-444444444444',
+    recordingMbid: '729cf505-94eb-4fbe-bc76-cbae44cff091',
     title: 'Yellow',
-    lengthMs: 266_000,
-    disambiguation: 'album version',
+    lengthMs: 269_110,
+    disambiguation: '',
     video: false,
-    isrcs: ['GBAYE0000563'],
-    genres: ['rock', 'alternative'],
+    isrcs: ['GBAYE0000267', 'GBAYE1600170'],
+    genres: ['alternative rock', 'pop rock'],
   },
   {
     id: 'seedtrack05',
-    recordingMbid: '55555555-5555-4555-8555-555555555555',
-    title: 'Viva la Vida',
-    lengthMs: 242_000,
+    recordingMbid: '307ce9da-5690-4e21-ab71-9d12ea106e52',
+    title: 'Viva la vida',
+    lengthMs: 241_445,
     disambiguation: '',
     video: false,
-    isrcs: ['GBAYE0801010'],
-    genres: ['rock', 'pop'],
+    isrcs: ['GABAY0080086', 'GBAYE0800265'],
+    genres: ['pop', 'pop rock'],
+  },
+  {
+    id: 'seedtrack06',
+    recordingMbid: '32c7e292-14f1-4080-bddf-ef852e0a4c59',
+    title: 'Under Pressure',
+    lengthMs: 243_000,
+    disambiguation: '',
+    video: false,
+    isrcs: ['CBCEG8100001', 'GBCEE0900136'],
+    genres: ['rock', 'pop rock'],
+  },
+  {
+    id: 'seedtrack07',
+    recordingMbid: 'df254587-24f2-4b13-9a67-292acf1a2aca',
+    title: 'Life in Technicolor ii',
+    lengthMs: 245_933,
+    disambiguation: '',
+    video: false,
+    isrcs: ['GBAYE0801695', 'GBAYE1600221'],
+    genres: ['rock', 'alternative rock'],
+  },
+  {
+    id: 'seedtrack08',
+    recordingMbid: '58b20cb0-34d8-46d7-8782-4d2865a36b2a',
+    title: 'Águas De Março',
+    lengthMs: 214_004,
+    disambiguation: '',
+    video: false,
+    isrcs: [],
+    genres: ['bossa nova', 'jazz'],
+  },
+  {
+    id: 'seedtrack09',
+    recordingMbid: '476a8466-1f82-46a8-8706-648a41c98d3c',
+    title: 'Hometown Glory',
+    lengthMs: 216_000,
+    disambiguation: '',
+    video: false,
+    isrcs: [],
+    genres: ['pop', 'soul'],
   },
 ] satisfies TrackRow[];
 
-/** Which artists credit which tracks (drives each header `trackCount`). */
+/**
+ * Which artists credit which tracks (drives each header `trackCount`):
+ * "Queen & David Bowie" and "Elis Regina & António Carlos Jobim" credit two.
+ */
 export const SEED_TRACK_ARTISTS = [
   { trackId: 'seedtrack01', artistId: 'seedartist01' },
   { trackId: 'seedtrack02', artistId: 'seedartist01' },
   { trackId: 'seedtrack03', artistId: 'seedartist02' },
   { trackId: 'seedtrack04', artistId: 'seedartist03' },
   { trackId: 'seedtrack05', artistId: 'seedartist03' },
+  { trackId: 'seedtrack06', artistId: 'seedartist01' },
+  { trackId: 'seedtrack06', artistId: 'seedartist04' },
+  { trackId: 'seedtrack07', artistId: 'seedartist03' },
+  { trackId: 'seedtrack08', artistId: 'seedartist05' },
+  { trackId: 'seedtrack08', artistId: 'seedartist06' },
+  { trackId: 'seedtrack09', artistId: 'seedartist02' },
 ] satisfies TrackArtistRow[];
-
-/**
- * Development releases (the "albums" of the seed): what the Track page
- * shows. There is no `albums` table; releases hang off each track.
- */
-export const SEED_TRACK_RELEASES = [
-  {
-    id: 'seedrelease01',
-    trackId: 'seedtrack01',
-    mbid: 'a1b2c3d4-e5f6-4a7b-8c9d-e0f123456789',
-    title: 'A Night at the Opera',
-    year: 1975,
-    coverArtUrl:
-      'https://coverartarchive.org/release/a1b2c3d4-e5f6-4a7b-8c9d-e0f123456789/front-500',
-  },
-  {
-    id: 'seedrelease02',
-    trackId: 'seedtrack02',
-    mbid: 'b2c3d4e5-f6a7-4b8c-9d0e-f12345678901',
-    title: 'Jazz',
-    year: 1978,
-    coverArtUrl:
-      'https://coverartarchive.org/release/b2c3d4e5-f6a7-4b8c-9d0e-f12345678901/front-500',
-  },
-  {
-    id: 'seedrelease03',
-    trackId: 'seedtrack03',
-    mbid: 'c3d4e5f6-a7b8-4c9d-8e0f-123456789012',
-    title: '21',
-    year: 2011,
-    coverArtUrl:
-      'https://coverartarchive.org/release/c3d4e5f6-a7b8-4c9d-8e0f-123456789012/front-500',
-  },
-  {
-    id: 'seedrelease04',
-    trackId: 'seedtrack04',
-    mbid: 'd4e5f6a7-b8c9-4d0e-8f12-234567890123',
-    title: 'Parachutes',
-    year: 2000,
-    coverArtUrl:
-      'https://coverartarchive.org/release/d4e5f6a7-b8c9-4d0e-8f12-234567890123/front-500',
-  },
-  {
-    id: 'seedrelease05',
-    trackId: 'seedtrack05',
-    mbid: 'e5f6a7b8-c9d0-4e1f-8234-345678901234',
-    title: 'Viva la Vida or Death and All His Friends',
-    year: 2008,
-    coverArtUrl:
-      'https://coverartarchive.org/release/e5f6a7b8-c9d0-4e1f-8234-345678901234/front-500',
-  },
-] satisfies TrackReleaseRow[];
-
-/** Development works for the Track page. */
-export const SEED_TRACK_WORKS = [
-  {
-    id: 'seedwork01',
-    trackId: 'seedtrack01',
-    mbid: 'f6a7b8c9-d0e1-4f23-8456-456789012345',
-    title: 'Bohemian Rhapsody',
-  },
-  {
-    id: 'seedwork02',
-    trackId: 'seedtrack03',
-    mbid: 'a7b8c9d0-e1f2-4a34-8567-567890123456',
-    title: 'Rolling in the Deep',
-  },
-  {
-    id: 'seedwork03',
-    trackId: 'seedtrack05',
-    mbid: 'b8c9d0e1-f2a3-4b45-8678-678901234567',
-    title: 'Viva la Vida',
-  },
-] satisfies TrackWorkRow[];
-
-/** Development tags, most voted first per track. */
-export const SEED_TRACK_TAGS = [
-  { id: 'seedtag01', trackId: 'seedtrack01', name: 'rock', count: 100 },
-  { id: 'seedtag02', trackId: 'seedtrack01', name: 'classic rock', count: 80 },
-  { id: 'seedtag03', trackId: 'seedtrack03', name: 'pop', count: 90 },
-  { id: 'seedtag04', trackId: 'seedtrack03', name: 'soul', count: 70 },
-  { id: 'seedtag05', trackId: 'seedtrack05', name: 'alternative', count: 85 },
-] satisfies TrackTagRow[];
-
-/** Development external links for the Track page. */
-export const SEED_TRACK_EXTERNAL_LINKS = [
-  {
-    id: 'seedlink01',
-    trackId: 'seedtrack01',
-    url: 'https://musicbrainz.org/recording/11111111-1111-4111-8111-111111111111',
-    linkType: 'musicbrainz',
-  },
-  {
-    id: 'seedlink02',
-    trackId: 'seedtrack03',
-    url: 'https://musicbrainz.org/recording/33333333-3333-4333-8333-333333333333',
-    linkType: 'musicbrainz',
-  },
-  {
-    id: 'seedlink03',
-    trackId: 'seedtrack05',
-    url: 'https://musicbrainz.org/recording/55555555-5555-4555-8555-555555555555',
-    linkType: 'musicbrainz',
-  },
-] satisfies TrackExternalLinkRow[];

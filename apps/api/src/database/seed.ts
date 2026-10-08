@@ -33,14 +33,16 @@ import {
   assertSeedAllowed,
   SEED_ARTISTS,
   SEED_TRACK_ARTISTS,
-  SEED_TRACK_EXTERNAL_LINKS,
-  SEED_TRACK_RELEASES,
-  SEED_TRACK_TAGS,
-  SEED_TRACK_WORKS,
   SEED_TRACKS,
   SEED_USER,
   SEED_USER_PASSWORD,
 } from './seed-data.js';
+import {
+  SEED_TRACK_EXTERNAL_LINKS,
+  SEED_TRACK_RELEASES,
+  SEED_TRACK_TAGS,
+  SEED_TRACK_WORKS,
+} from './seed-track-details.js';
 
 /**
  * `nub run db:seed`: writes the deterministic development data from

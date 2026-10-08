@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { CatalogDataset } from '@notefinder/contracts';
+import { writeApiLrclibDump } from '../../integrations/lrclib/api-lrclib-dump.js';
 import {
   type FakeDumpRecording,
   writeFakeLrclibDump,
@@ -33,6 +34,14 @@ export type LyricsImportDeps = {
   /** The listing endpoint the latest dump key is read from. */
   lrclibListingUrl: string;
   logger: Logger;
+  /**
+   * Where `tiny` gets its Lyrics: `fake` (the default) generates placeholder
+   * text locally; `api` asks LRCLIB's public API for the real Lyrics of the
+   * seeded Recordings, at `apiBaseUrl` (`LRCLIB_API_BASE_URL`).
+   */
+  tinySource?: 'fake' | 'api';
+  apiBaseUrl?: string;
+  fetchFn?: typeof fetch;
   /** Where the dump file lands while it is imported. */
   tmpDir?: string;
   /** Recordings matched per batch. */
@@ -147,7 +156,17 @@ export class LyricsImportService {
       }
     }
     const path = join(dir, `lrclib-fake-${Date.now()}.sqlite3`);
-    writeFakeLrclibDump(path, recordings.slice(0, FAKE_DUMP_RECORDINGS));
+    const seeded = recordings.slice(0, FAKE_DUMP_RECORDINGS);
+    if (this.deps.tinySource === 'api' && this.deps.apiBaseUrl !== undefined) {
+      await writeApiLrclibDump(path, seeded, {
+        apiBaseUrl: this.deps.apiBaseUrl,
+        logger: this.deps.logger,
+        fetchFn: this.deps.fetchFn,
+        signal,
+      });
+      return path;
+    }
+    writeFakeLrclibDump(path, seeded);
     this.deps.logger.info('Generated the fake LRCLIB dump', {
       path,
       recordings: recordings.length,
