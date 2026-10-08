@@ -151,35 +151,38 @@ describe('getReleaseGroup: the release group (e2e)', () => {
       name: 'Bohemian Rhapsody',
       artists: [{ artist: queen }],
     });
-    const releaseGroupMbid = mbid(300);
     const common = {
-      releaseGroupMbid,
       artistCredit: recording.artistCredit,
       name: 'A Night at the Opera',
       status: 'Official',
     };
-    await addRelease(db, {
+    // The three releases share one release group: the fixture inserts a new
+    // release group per call unless it is given one.
+    const { releaseGroup } = await addRelease(db, {
       ...common,
+      releaseGroupMbid: mbid(300),
       mbid: mbid(220),
       events: [{ country: 'GB', year: 1980 }],
     });
     await addRelease(db, {
       ...common,
+      releaseGroup,
       mbid: mbid(205),
       events: [{ country: 'US', year: 1980 }],
     });
     await addRelease(db, {
       ...common,
+      releaseGroup,
       mbid: mbid(201),
       status: 'Bootleg',
       events: [{ year: 1970 }],
     });
 
     const first = await requestReleaseGroup(client(), {
-      mbid: releaseGroupMbid,
+      mbid: mbid(300),
     });
     const second = await requestReleaseGroup(client(), {
-      mbid: releaseGroupMbid,
+      mbid: mbid(300),
     });
 
     expect(first).toMatchObject({

@@ -34,6 +34,8 @@ export type ReleaseInput = {
   artistCredit: number;
   mbid?: string;
   releaseGroupMbid?: string;
+  /** An existing release group to put the release in, instead of a new one. */
+  releaseGroup?: FixtureRelease['releaseGroup'];
   /** Album, Single, EP, ... */
   primaryType?: string;
   /** Official, Promotion, ... */
@@ -88,12 +90,15 @@ export const addRelease = async (
       : await ensureNamed(db, 'release_group_primary_type', input.primaryType, {
           gid: randomUUID(),
         });
-  const releaseGroup = await insertRowWithId(db, 'release_group', {
-    gid: releaseGroupMbid,
-    name: input.name,
-    artist_credit: input.artistCredit,
-    type,
-  });
+  const releaseGroup = input.releaseGroup ?? {
+    id: await insertRowWithId(db, 'release_group', {
+      gid: releaseGroupMbid,
+      name: input.name,
+      artist_credit: input.artistCredit,
+      type,
+    }),
+    mbid: releaseGroupMbid,
+  };
   const status =
     input.status === undefined
       ? null
@@ -105,7 +110,7 @@ export const addRelease = async (
     gid: releaseMbid,
     name: input.name,
     artist_credit: input.artistCredit,
-    release_group: releaseGroup,
+    release_group: releaseGroup.id,
     status,
   });
   for (const event of input.events ?? []) {
@@ -114,7 +119,7 @@ export const addRelease = async (
   return {
     id,
     mbid: releaseMbid,
-    releaseGroup: { id: releaseGroup, mbid: releaseGroupMbid },
+    releaseGroup,
   };
 };
 
