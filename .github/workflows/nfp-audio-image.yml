@@ -33,6 +33,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The hosted runner has roughly 14 GB free, and the CUDA wheels plus the
+      # build cache need more. Remove the preinstalled toolchains this job never
+      # uses. `df` prints what is left, so a failure can be read against it.
+      - name: Free disk space on the runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo docker image prune --all --force
+          df -h /
+
       # GHCR names are lowercase; the repository's owner and name are not.
       - name: Name the image
         id: name
