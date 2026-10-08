@@ -3,23 +3,25 @@ import {
   resourceMovedDetailsSchema,
 } from '@notefinder/contracts';
 
+import { isApiError } from '@/lib/api/api-error';
+
 import type { Locale } from './i18n/routing';
 import { isLocale } from './i18n/routing';
 
 /**
- * Catalog-entity route verdicts for `proxy.ts`, which must decide 308s and
- * 404s before anything streams: with Cache Components every dynamic route
- * streams a static shell first, so a `permanentRedirect`/`notFound` issued
- * from the page degrades to a 200 (meta refresh / in-place UI) and crawlers
- * and legacy bookmarks never see the real status. The proxy check runs
- * before the first byte instead. Artists and albums share these rules.
+ * Catalog-entity route rules, shared by `proxy.ts` and the artist and album
+ * result mappers. The proxy must decide 308s and 404s before anything streams:
+ * with Cache Components every dynamic route streams a static shell first, so a
+ * `permanentRedirect`/`notFound` issued from the page degrades to a 200 (meta
+ * refresh / in-place UI) and crawlers and legacy bookmarks never see the real
+ * status. The proxy check runs before the first byte instead.
  */
 
 const entityCollections = ['artists', 'albums'] as const;
 
-export type EntityCollection = (typeof entityCollections)[number];
+type EntityCollection = (typeof entityCollections)[number];
 
-export type EntityRoute = {
+type EntityRoute = {
   locale: Locale;
   collection: EntityCollection;
   id: string;
@@ -50,16 +52,21 @@ export function parseEntityRoute(pathname: string): EntityRoute | undefined {
   return { locale: first, collection: second, id };
 }
 
-/** Same URL with the entity ID swapped for the new one, query kept. */
-export function entityRedirectUrl(requestUrl: URL, newId: string): URL {
-  const url = new URL(requestUrl);
-  const segments = url.pathname.split('/');
-  segments[segments.length - 1] = encodeURIComponent(newId);
-  url.pathname = segments.join('/');
+/**
+ * The URL a legacy ID redirects to: the same URL with the entity path swapped
+ * for the new ID, so the locale, the collection and the query are kept.
+ */
+export function entityRedirectUrl(
+  requestHref: string,
+  route: EntityRoute,
+  newId: string,
+): URL {
+  const url = new URL(requestHref);
+  url.pathname = `/${route.locale}/${route.collection}/${encodeURIComponent(newId)}`;
   return url;
 }
 
-export type EntityRouteVerdict =
+type EntityRouteVerdict =
   /** A 200 or anything unexpected: let the page render (fail open). */
   | { kind: 'pass' }
   /** A legacy ID: permanent redirect to the new ID. */
@@ -68,13 +75,12 @@ export type EntityRouteVerdict =
   | { kind: 'missing' };
 
 /**
- * What the proxy answers an entity API check with. Only 404s decide
- * anything (the page renders every other outcome, including its own error
- * UI on 500s, so outages are never masked as redirects or 404s). A 404 the
- * contract cannot parse is passed through: the page re-fetches and surfaces
- * it as an error instead of presenting an API bug as a 404.
+ * Only 404s decide anything: the page renders every other outcome, including
+ * its own error UI on 500s, so outages are never masked as redirects or 404s.
+ * A 404 the contract cannot parse is passed through: the page re-fetches and
+ * surfaces it as an error instead of presenting an API bug as a 404.
  */
-export function classifyEntityResponse(
+function classifyEntityResponse(
   status: number,
   body: unknown,
 ): EntityRouteVerdict {
@@ -92,7 +98,7 @@ export function classifyEntityResponse(
 /** How long the proxy's entity check may take before letting through. */
 const ENTITY_CHECK_TIMEOUT_MS = 3000;
 
-export type EntityCheckFetch = (
+type EntityCheckFetch = (
   input: string,
   init?: { signal?: AbortSignal },
 ) => Promise<{ status: number; json: () => Promise<unknown> }>;
@@ -122,4 +128,30 @@ export async function fetchEntityRouteVerdict(
     return { kind: 'pass' };
   }
   return classifyEntityResponse(status, body);
+}
+
+/**
+ * Maps a failed fetch of an entity to the outcome the page acts on: the new
+ * ID of a legacy ID, or a real 404. Undefined when the failure is not a domain
+ * outcome (a 500, a network error, a malformed envelope), so those still throw
+ * and surface as errors instead of wrong pages. Uses the proxy's classifier,
+ * so both agree on every outcome.
+ */
+export function entityOutcomeFromError(
+  error: unknown,
+): { status: 'moved'; newId: string } | { status: 'missing' } | undefined {
+  if (!isApiError(error)) return undefined;
+  const verdict = classifyEntityResponse(error.statusCode, {
+    statusCode: error.statusCode,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+  });
+  if (verdict.kind === 'moved') {
+    return { status: 'moved', newId: verdict.newId };
+  }
+  if (verdict.kind === 'missing') {
+    return { status: 'missing' };
+  }
+  return undefined;
 }

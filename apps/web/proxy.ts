@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { fetchEntityRouteVerdict, parseEntityRoute } from '@/lib/entity-route';
+import {
+  entityRedirectUrl,
+  fetchEntityRouteVerdict,
+  parseEntityRoute,
+} from '@/lib/entity-route';
 import { getServerEnv } from '@/lib/env/server';
 import { detectLocale } from '@/lib/i18n/detect-locale';
 import { isLocale, localeCookieName } from '@/lib/i18n/routing';
@@ -35,9 +39,10 @@ async function checkEntityRoute(
     route.id,
   );
   if (verdict.kind === 'moved') {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${route.locale}/${route.collection}/${verdict.newId}`;
-    return NextResponse.redirect(url, 308);
+    return NextResponse.redirect(
+      entityRedirectUrl(request.nextUrl.href, route, verdict.newId),
+      308,
+    );
   }
   if (verdict.kind === 'missing') {
     return NextResponse.rewrite(new URL('/_not-found', request.url));

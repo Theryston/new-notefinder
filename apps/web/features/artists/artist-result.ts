@@ -1,7 +1,6 @@
 import type { Artist } from '@notefinder/contracts';
 
-import { isApiError } from '@/lib/api/api-error';
-import { classifyArtistResponse } from '@/lib/artist-route';
+import { entityOutcomeFromError } from '@/lib/entity-route';
 
 /**
  * What the cached artist fetcher answers. Plain data only: errors thrown
@@ -24,26 +23,11 @@ export const artistFound = (artist: Artist): ArtistResult => ({
 });
 
 /**
- * Maps a fetch failure to its `ArtistResult`, or undefined when it is not
- * a domain outcome (a 500, a network error, a malformed envelope): those
- * still throw, so they surface as errors instead of wrong pages. Uses the
- * same classifier as the proxy, so both agree on every outcome.
+ * Maps a fetch failure to its `ArtistResult`, or undefined when it is not a
+ * domain outcome (see `entityOutcomeFromError`): those still throw.
  */
 export function artistResultFromError(
   error: unknown,
 ): ArtistResult | undefined {
-  if (!isApiError(error)) return undefined;
-  const verdict = classifyArtistResponse(error.statusCode, {
-    statusCode: error.statusCode,
-    code: error.code,
-    message: error.message,
-    details: error.details,
-  });
-  if (verdict.kind === 'moved') {
-    return { status: 'moved', newId: verdict.newId };
-  }
-  if (verdict.kind === 'missing') {
-    return { status: 'missing' };
-  }
-  return undefined;
+  return entityOutcomeFromError(error);
 }
