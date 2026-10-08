@@ -10,6 +10,7 @@ import {
 } from '@/features/artists/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
+import { queryStringOf } from '@/lib/query-string';
 
 type ArtistRouteParams = { locale: Locale; artistId: string };
 
@@ -23,20 +24,6 @@ type ArtistRouteSearchParams = Record<string, string | string[] | undefined>;
 // caches through `getArtistResult`, so repeat visits stay instant; the
 // skeleton below covers the header while it streams.
 export const instant = false;
-
-/** `?a=1&b=2` for the current query, or `''` when there is none. */
-function queryStringOf(searchParams: ArtistRouteSearchParams): string {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (Array.isArray(value)) {
-      for (const item of value) params.append(key, item);
-    } else if (value !== undefined) {
-      params.set(key, value);
-    }
-  }
-  const query = params.toString();
-  return query ? `?${query}` : '';
-}
 
 export async function generateMetadata({
   params,

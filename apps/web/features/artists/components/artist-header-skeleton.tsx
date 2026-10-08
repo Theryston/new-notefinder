@@ -1,5 +1,9 @@
 import { getTranslations } from 'next-intl/server';
 
+import {
+  entityBannerClass,
+  entityBannerRowClass,
+} from '@/components/entity-header';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
@@ -14,9 +18,9 @@ export async function ArtistHeaderSkeleton() {
     <div
       role="status"
       aria-label={t('header.loading')}
-      className="overflow-hidden rounded-2xl bg-gradient-to-b from-muted via-muted/50 to-background px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10"
+      className={entityBannerClass}
     >
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <div className={entityBannerRowClass}>
         <Skeleton className="size-24 shrink-0 rounded-full sm:size-32 md:size-40" />
         <div className="flex min-w-0 flex-col gap-2">
           <Skeleton className="h-12 w-48 rounded-md md:h-16 md:w-64" />
