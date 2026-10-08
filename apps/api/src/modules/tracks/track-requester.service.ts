@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { Locale } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
+import { UsersService } from '../users/users.service.js';
 import {
   exceededTrackRequestLimit,
   type TrackLimits,
@@ -16,19 +18,24 @@ import { TrackProcessingRepository } from './track-processing.repository.js';
 export type TrackRequester = { id: string; role?: string | null };
 
 /**
- * Holds a User's Track requests to their limits: at most a few non-terminal
- * Processings started by them at once, and a few new Tracks per UTC day.
- * ADMIN is exempt. The request calls this inside its write transaction and
- * after taking the User's row lock, so two of the User's requests can't both
- * pass the check for the last free slot.
+ * What a Track request needs to know about the User who makes it: whether
+ * their limits allow one more Track (CONTEXT.md "Processing"), and the
+ * language they browse in, which their emails follow.
+ *
+ * Holds a User to at most a few non-terminal Processings started by them at
+ * once, and a few new Tracks per UTC day. ADMIN is exempt. The request calls
+ * `assertCanRequestTrack` inside its write transaction, after taking the User's
+ * lock, so two of the User's requests can't both pass the check for the last
+ * free slot.
  */
 @Injectable()
-export class TrackLimitsService {
+export class TrackRequesterService {
   private readonly limits: TrackLimits;
 
   constructor(
     @Inject(ENV) env: Env,
     private readonly processings: TrackProcessingRepository,
+    private readonly users: UsersService,
   ) {
     this.limits = trackLimitsFrom(env);
   }
@@ -62,5 +69,10 @@ export class TrackLimitsService {
         exceeded,
       );
     }
+  }
+
+  /** Records the language the User browses in on their account. */
+  recordLocale(userId: string, locale: Locale): Promise<void> {
+    return this.users.setLocale(userId, locale);
   }
 }

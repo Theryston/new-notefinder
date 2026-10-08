@@ -1,13 +1,15 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { ENV } from '../../config/env.js';
-import { TrackLimitsService } from './track-limits.service.js';
+import { UsersService } from '../users/users.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
+import { TrackRequesterService } from './track-requester.service.js';
 
 const repository = {
   lockRequester: vi.fn(),
   countActiveProcessings: vi.fn(),
   countNewTracksBetween: vi.fn(),
 };
+const users = { setLocale: vi.fn() };
 
 const NOW = new Date('2026-10-08T12:00:00Z');
 const USER = { id: 'user-1', role: 'USER' };
@@ -16,20 +18,22 @@ const USER = { id: 'user-1', role: 'USER' };
 const build = async (env: Record<string, number> = {}) => {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
-      TrackLimitsService,
+      TrackRequesterService,
       { provide: ENV, useValue: env },
       { provide: TrackProcessingRepository, useValue: repository },
+      { provide: UsersService, useValue: users },
     ],
   }).compile();
-  return moduleRef.get(TrackLimitsService);
+  return moduleRef.get(TrackRequesterService);
 };
 
-describe('TrackLimitsService', () => {
+describe('TrackRequesterService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repository.lockRequester.mockResolvedValue(undefined);
     repository.countActiveProcessings.mockResolvedValue(0);
     repository.countNewTracksBetween.mockResolvedValue(0);
+    users.setLocale.mockResolvedValue(undefined);
   });
 
   it('lets an ADMIN request past both limits without locking or counting', async () => {
@@ -100,5 +104,13 @@ describe('TrackLimitsService', () => {
     await expect(service.assertCanRequestTrack(USER, NOW)).resolves.toBe(
       undefined,
     );
+  });
+
+  it('records the language the User browses in on their account', async () => {
+    const service = await build();
+
+    await service.recordLocale('user-1', 'pt-BR');
+
+    expect(users.setLocale).toHaveBeenCalledWith('user-1', 'pt-BR');
   });
 });

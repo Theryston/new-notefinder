@@ -11,6 +11,7 @@ import {
   gte,
   lt,
   notInArray,
+  sql,
 } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
@@ -19,8 +20,10 @@ import {
   trackContributors,
 } from '../../database/schema/track-contributors.js';
 import { trackProcessings } from '../../database/schema/track-processings.js';
-import { users } from '../../database/schema/users.js';
 import type { TrackProcessingRow } from './track-processing-view.js';
+
+/** The namespace of the Track request locks, so they don't collide with other advisory locks. */
+const TRACK_REQUEST_LOCK_SCOPE = 'tracks.requests';
 
 /** A Contribution's kind, as the schema stores it. */
 export type TrackContributionKind =
@@ -123,15 +126,16 @@ export class TrackProcessingRepository {
   }
 
   /**
-   * Locks the User's row until the transaction ends, so the User's Track
-   * requests check their limits one at a time (see `TrackLimitsService`).
+   * Serializes the User's Track requests until the transaction ends, so their
+   * limits are checked one request at a time (see `TrackRequesterService`). A
+   * transaction-scoped advisory lock keyed by the User's ID: it never touches
+   * `users`, which Better Auth owns. Two Users with colliding hashes share a
+   * lock for a moment, which only serializes them, never breaks a limit.
    */
   async lockRequester(userId: string): Promise<void> {
-    await this.txHost.tx
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, userId))
-      .for('update');
+    await this.txHost.tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${TRACK_REQUEST_LOCK_SCOPE}), hashtext(${userId}))`,
+    );
   }
 
   /** The non-terminal Processings that the User's Contributions started. */

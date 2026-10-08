@@ -32,7 +32,6 @@ import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js
 import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
-import { TrackLimitsService } from './track-limits.service.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
 
@@ -42,7 +41,6 @@ export class TracksController {
   constructor(
     private readonly trackRequests: TrackRequestService,
     private readonly trackProcessing: TrackProcessingService,
-    private readonly trackLimits: TrackLimitsService,
   ) {}
 
   // A Recording becomes a Track on the first request (202, its Processing is
@@ -75,9 +73,7 @@ export class TracksController {
     @Body() body: CreateTrackBodyDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CreateTrackResult> {
-    const requested = await this.trackRequests.requestTrack(user.id, body, () =>
-      this.trackLimits.assertCanRequestTrack(user),
-    );
+    const requested = await this.trackRequests.requestTrack(user, body);
     response.status(requested.created ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return { trackId: requested.trackId };
   }

@@ -5,14 +5,15 @@ import { recordingFixture } from '../../../test/utils/recording-fixtures.js';
 import { DATABASE, DATABASE_POOL } from '../../database/database.js';
 import { DatabaseModule } from '../../database/database.module.js';
 import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';
-import { UsersService } from '../users/users.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackRequestService } from './track-request.service.js';
+import { TrackRequesterService } from './track-requester.service.js';
 import { TracksRepository } from './tracks.repository.js';
 
-// The admission check (the User's limits) runs inside the write transaction:
-// these specs pin when it runs and what a refusal leaves behind. The
-// transaction is a stand-in, as in track-request.service.spec.ts.
+// The request checks the requester's limits before it writes a new Track, and
+// only then. The limits themselves are unit-tested in
+// track-requester.service.spec.ts; here the service only has to ask at the
+// right moment. The transaction is a stand-in, as in track-request.service.spec.ts.
 const tx = { name: 'tx' };
 const db = {
   name: 'db',
@@ -33,12 +34,12 @@ const processings = {
   insertContribution: vi.fn(),
 };
 const catalog = { getRecording: vi.fn() };
-const users = { setLocale: vi.fn() };
+const requesters = { assertCanRequestTrack: vi.fn(), recordLocale: vi.fn() };
 
-const USER_ID = 'user-1';
+const REQUESTER = { id: 'user-1', role: 'USER' };
 const body: CreateTrackBody = { recordingMbid: testMbid(1), locale: 'en' };
 
-describe('TrackRequestService admission', () => {
+describe('TrackRequestService and the requester limits', () => {
   let service: TrackRequestService;
   let moduleRef: TestingModule;
 
@@ -48,6 +49,8 @@ describe('TrackRequestService admission', () => {
     tracks.insertTrack.mockResolvedValue('track-new');
     processings.insertQueuedProcessing.mockResolvedValue('processing-1');
     processings.findOrInsertContributor.mockResolvedValue('contributor-1');
+    requesters.assertCanRequestTrack.mockResolvedValue(undefined);
+    requesters.recordLocale.mockResolvedValue(undefined);
     catalog.getRecording.mockResolvedValue({
       status: 'found',
       recording: recordingFixture({ mbid: testMbid(1) }),
@@ -59,7 +62,7 @@ describe('TrackRequestService admission', () => {
         { provide: TracksRepository, useValue: tracks },
         { provide: TrackProcessingRepository, useValue: processings },
         { provide: MusicCatalogClient, useValue: catalog },
-        { provide: UsersService, useValue: users },
+        { provide: TrackRequesterService, useValue: requesters },
       ],
     })
       .overrideProvider(DATABASE_POOL)
@@ -74,40 +77,37 @@ describe('TrackRequestService admission', () => {
     await moduleRef.close();
   });
 
-  it('runs the admission before the Track is written', async () => {
-    const admit = vi.fn(() => Promise.resolve());
+  it('asks the limits about the requester before the Track is written', async () => {
+    await service.requestTrack(REQUESTER, body);
 
-    await service.requestTrack(USER_ID, body, admit);
-
-    expect(admit).toHaveBeenCalledTimes(1);
-    const admittedFirst = admit.mock.invocationCallOrder[0] ?? Infinity;
+    expect(requesters.assertCanRequestTrack).toHaveBeenCalledWith(REQUESTER);
+    const checkedFirst =
+      requesters.assertCanRequestTrack.mock.invocationCallOrder[0] ?? Infinity;
     const insertedAt = tracks.insertTrack.mock.invocationCallOrder[0] ?? 0;
-    expect(admittedFirst).toBeLessThan(insertedAt);
+    expect(checkedFirst).toBeLessThan(insertedAt);
   });
 
-  it('writes nothing when the admission refuses the request', async () => {
+  it('writes nothing when the limits refuse the request', async () => {
     const refusal = new Error('limit reached');
+    requesters.assertCanRequestTrack.mockRejectedValue(refusal);
 
-    await expect(
-      service.requestTrack(USER_ID, body, () => Promise.reject(refusal)),
-    ).rejects.toBe(refusal);
+    await expect(service.requestTrack(REQUESTER, body)).rejects.toBe(refusal);
 
     expect(tracks.insertTrack).not.toHaveBeenCalled();
     expect(processings.insertQueuedProcessing).not.toHaveBeenCalled();
     expect(processings.insertContribution).not.toHaveBeenCalled();
-    expect(users.setLocale).not.toHaveBeenCalled();
+    expect(requesters.recordLocale).not.toHaveBeenCalled();
   });
 
-  it('never asks the admission about a Recording that already has a Track', async () => {
+  it('never asks the limits about a Recording that already has a Track', async () => {
     tracks.findTrackIdsByRecordingMbids.mockResolvedValue(
       new Map([[testMbid(1), 'track-existing']]),
     );
-    const admit = vi.fn(() => Promise.resolve());
 
-    await expect(service.requestTrack(USER_ID, body, admit)).resolves.toEqual({
+    await expect(service.requestTrack(REQUESTER, body)).resolves.toEqual({
       trackId: 'track-existing',
       created: false,
     });
-    expect(admit).not.toHaveBeenCalled();
+    expect(requesters.assertCanRequestTrack).not.toHaveBeenCalled();
   });
 });
