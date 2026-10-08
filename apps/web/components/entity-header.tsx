@@ -13,8 +13,7 @@ export const entityBannerRowClass =
   'flex min-w-0 flex-col gap-4 sm:flex-row-reverse sm:items-center sm:justify-between sm:gap-6';
 
 /** Sizes the visual (circle or cover) of a header, with its lift. */
-export const entityVisualClass =
-  'size-24 shrink-0 shadow-xl sm:size-32 md:size-40';
+export const entityVisualClass = 'size-24 shrink-0 sm:size-32 md:size-48';
 
 /** Skeleton blocks on the orange banner, where `bg-muted` would clash. */
 export const entitySkeletonClass = 'bg-primary-foreground/20';

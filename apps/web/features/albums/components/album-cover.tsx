@@ -27,7 +27,7 @@ export function AlbumCover({
     <span
       className={cn(
         entityVisualClass,
-        'relative block aspect-square overflow-hidden rounded-xl bg-muted sm:rotate-3',
+        'relative block aspect-square overflow-hidden rounded-xl sm:rotate-3',
       )}
     >
       {artUrl ? (
