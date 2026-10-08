@@ -4,5 +4,7 @@ export * from './albums.js';
 export * from './artists.js';
 export * from './auth.js';
 export * from './relations.js';
+export * from './track-contributors.js';
+export * from './track-processings.js';
 export * from './tracks.js';
 export * from './users.js';

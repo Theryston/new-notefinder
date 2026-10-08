@@ -12,14 +12,19 @@ import { asc, desc, eq, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import {
+  legacyTrackIds,
   trackExternalLinks,
   trackReleases,
   tracks,
   trackTags,
   trackWorks,
 } from '../../database/schema/tracks.js';
+import type { NewTrackCoreRow, NewTrackRows } from './track-from-recording.js';
 
 type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
+
+/** The companion rows of a new Track (everything but the core row). */
+type NewTrackDetails = Omit<NewTrackRows, 'track'>;
 
 @Injectable()
 export class TracksRepository {
@@ -40,6 +45,87 @@ export class TracksRepository {
       .from(tracks)
       .where(inArray(tracks.recordingMbid, mbids));
     return new Map(rows.map((row) => [row.recordingMbid, row.id]));
+  }
+
+  /**
+   * Inserts the core row of a new Track and returns its ID. When a Track
+   * already has the Recording, nothing is written and the answer is undefined:
+   * the request that lost a race reads the winner's Track instead. The unique
+   * Recording MBID is what makes concurrent requests end in one Track.
+   */
+  async insertTrack(row: NewTrackCoreRow): Promise<string | undefined> {
+    const [inserted] = await this.txHost.tx
+      .insert(tracks)
+      .values(row)
+      .onConflictDoNothing({ target: tracks.recordingMbid })
+      .returning({ id: tracks.id });
+    return inserted?.id;
+  }
+
+  /** The companion rows of a new Track: releases, works, tags and links. */
+  async insertTrackDetails(
+    trackId: string,
+    details: NewTrackDetails,
+  ): Promise<void> {
+    const db = this.txHost.tx;
+    if (details.releases.length > 0) {
+      await db
+        .insert(trackReleases)
+        .values(details.releases.map((release) => ({ ...release, trackId })));
+    }
+    if (details.works.length > 0) {
+      await db
+        .insert(trackWorks)
+        .values(details.works.map((work) => ({ ...work, trackId })));
+    }
+    if (details.tags.length > 0) {
+      await db
+        .insert(trackTags)
+        .values(details.tags.map((tag) => ({ ...tag, trackId })));
+    }
+    if (details.externalLinks.length > 0) {
+      await db
+        .insert(trackExternalLinks)
+        .values(details.externalLinks.map((link) => ({ ...link, trackId })));
+    }
+  }
+
+  /** The header of a Track (title and cover), or undefined for an unknown ID. */
+  async findTrackHeader(
+    trackId: string,
+  ): Promise<
+    { id: string; title: string; coverUrl: string | null } | undefined
+  > {
+    const [row] = await this.txHost.tx
+      .select({
+        id: tracks.id,
+        title: tracks.title,
+        coverUrl: tracks.coverUrl,
+      })
+      .from(tracks)
+      .where(eq(tracks.id, trackId))
+      .limit(1);
+    return row;
+  }
+
+  /** The Artists linked to a Track, in name order. */
+  findTrackArtists(trackId: string): Promise<{ id: string; name: string }[]> {
+    return this.txHost.tx
+      .select({ id: artists.id, name: artists.name })
+      .from(trackArtists)
+      .innerJoin(artists, eq(trackArtists.artistId, artists.id))
+      .where(eq(trackArtists.trackId, trackId))
+      .orderBy(asc(artists.name));
+  }
+
+  /** The Track a legacy Track ID was reprocessed into, if it was. */
+  async findTrackIdByLegacyId(legacyId: string): Promise<string | undefined> {
+    const [row] = await this.txHost.tx
+      .select({ trackId: legacyTrackIds.trackId })
+      .from(legacyTrackIds)
+      .where(eq(legacyTrackIds.legacyId, legacyId))
+      .limit(1);
+    return row?.trackId;
   }
 
   /**

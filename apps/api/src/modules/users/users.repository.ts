@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { CurrentUser } from '@notefinder/contracts';
-import { and, eq, isNull } from 'drizzle-orm';
+import type { CurrentUser, Locale } from '@notefinder/contracts';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { users } from '../../database/schema/users.js';
 import { isUniqueViolation } from '../../database/unique-violation.js';
 
 export type CurrentUserRow = Omit<CurrentUser, 'createdAt'> & {
   createdAt: Date;
+};
+
+/** The fields other Users see of an account: no email, no role. */
+export type PublicUserRow = {
+  id: string;
+  username: string | null;
+  name: string;
+  image: string | null;
 };
 
 // Named in migration 0000_init.
@@ -71,6 +79,27 @@ export class UsersRepository {
       .where(eq(users.id, id))
       .returning(currentUserColumns);
     return row;
+  }
+
+  /** Sets the language the User's emails follow. */
+  async setLocale(id: string, locale: Locale): Promise<void> {
+    await this.txHost.tx.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
+  /** The public fields of the Users given, for the ones that exist. */
+  async findPublicUsers(ids: string[]): Promise<PublicUserRow[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.txHost.tx
+      .select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        image: users.image,
+      })
+      .from(users)
+      .where(inArray(users.id, ids));
   }
 
   /**

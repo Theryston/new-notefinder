@@ -36,6 +36,11 @@ export const tracks = pgTable(
     isrcs: text().array().notNull().default([]),
     // Display genres, most relevant first; empty when unknown.
     genres: text().array().notNull().default([]),
+    // The cover in our own storage, set when a Processing finds one; null
+    // until then, so the page shows a placeholder.
+    coverUrl: text(),
+    // The YouTube video the timeline plays, set when a Processing chooses it.
+    youtubeVideoId: text(),
     ...timestamps,
   },
   (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],

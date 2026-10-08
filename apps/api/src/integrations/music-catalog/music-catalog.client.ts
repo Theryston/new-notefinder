@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import {
   Inject,
   Injectable,
@@ -7,48 +6,43 @@ import {
   type OnModuleInit,
 } from '@nestjs/common';
 import {
+  type Mbid,
+  type MusicCatalogError,
+  type MusicCatalogGetRecordingPayload,
   type MusicCatalogSearchParams,
   type MusicCatalogSearchResult,
+  musicCatalogGetRecordingResponseSchema,
   musicCatalogSearchResponseSchema,
+  type Recording,
 } from '@notefinder/contracts';
-import WebSocket from 'ws';
+import type { z } from 'zod';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
-
-// First reconnect waits this long, then doubles up to the maximum below.
-const INITIAL_RECONNECT_DELAY_MS = 500;
-const MAX_RECONNECT_DELAY_MS = 10_000;
-
-/** How long one catalog search may take when the env leaves it unset. */
-const MUSIC_CATALOG_DEFAULT_TIMEOUT_MS = 5_000;
-
-type PendingSearch = {
-  resolve: (result: MusicCatalogSearchResult) => void;
-  reject: (error: Error) => void;
-  timer: NodeJS.Timeout;
-};
+import { MusicCatalogConnection } from './music-catalog.connection.js';
 
 /**
- * Single persistent WebSocket to the private Music catalog service. The API
- * dials once at boot with key auth and multiplexes many simultaneous
- * searches over it, matched by request id (responses may arrive out of
- * order). A dropped connection is redialed with exponential backoff; the
- * requests in flight then fail so callers can retry.
- *
- * Heartbeat needs no code: the `ws` client answers the server's pings by
- * itself, and a dead peer surfaces as a close, which redials.
+ * What the catalog answers for one Recording. `moved` carries the MBID the
+ * Recording was merged into, which the caller should follow.
+ */
+export type CatalogRecordingLookup =
+  | { status: 'found'; recording: Recording }
+  | { status: 'not-found' }
+  | { status: 'moved'; newMbid: Mbid };
+
+/**
+ * The typed operations of the Music catalog, over one persistent connection
+ * (`MusicCatalogConnection`). Every answer that is not a result becomes an
+ * `AppException`: a dead catalog is `SERVICE_UNAVAILABLE` (retryable) and a
+ * slow one `GATEWAY_TIMEOUT`, so the web can retry instead of a dead end.
  */
 @Injectable()
 export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MusicCatalogClient.name);
-  private socket: WebSocket | undefined;
-  private connecting: Promise<void> | undefined;
-  private readonly pending = new Map<string, PendingSearch>();
-  private reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
-  private reconnectTimer: NodeJS.Timeout | undefined;
-  private stopped = false;
+  private readonly connection: MusicCatalogConnection;
 
-  constructor(@Inject(ENV) private readonly env: Env) {}
+  constructor(@Inject(ENV) private readonly env: Env) {
+    this.connection = new MusicCatalogConnection(env);
+  }
 
   onModuleInit(): void {
     if (!this.isConfigured()) {
@@ -63,85 +57,68 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       );
       return;
     }
-    this.dialInBackground();
+    this.connection.start();
   }
 
   onModuleDestroy(): void {
-    this.stopped = true;
-    if (this.reconnectTimer !== undefined) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-    }
-    this.socket?.close();
-    this.socket = undefined;
-    this.failPending(
-      new AppException('INTERNAL_ERROR', 'Music catalog is shutting down'),
-    );
+    this.connection.stop();
   }
 
   /**
    * Searches the catalog, keeping the catalog's relevance order. Every hit
-   * is returned untouched; the caller adds the Track link. A dead catalog
-   * surfaces as `SERVICE_UNAVAILABLE` (retryable) and a slow one as
-   * `GATEWAY_TIMEOUT`, so the web can retry instead of showing a dead end.
+   * is returned untouched; the caller adds the Track link.
    */
   async search(
     params: MusicCatalogSearchParams,
   ): Promise<MusicCatalogSearchResult> {
+    return resultOrThrow(
+      await this.requestOrFail(
+        'search',
+        params,
+        musicCatalogSearchResponseSchema,
+      ),
+    );
+  }
+
+  /**
+   * Looks one Recording up by its MBID. A Recording the catalog does not know
+   * is `not-found`, and one merged into another Recording is `moved`; both are
+   * answers, not failures, so the caller decides what they mean.
+   */
+  async getRecording(mbid: Mbid): Promise<CatalogRecordingLookup> {
+    const payload: MusicCatalogGetRecordingPayload = { mbid };
+    const response = await this.requestOrFail(
+      'getRecording',
+      payload,
+      musicCatalogGetRecordingResponseSchema,
+    );
+    if (response.ok) {
+      return { status: 'found', recording: response.result };
+    }
+    if (response.error.code === 'RECORDING_NOT_FOUND') {
+      return { status: 'not-found' };
+    }
+    if (
+      response.error.code === 'RECORDING_MOVED' &&
+      response.error.newMbid !== undefined
+    ) {
+      return { status: 'moved', newMbid: response.error.newMbid };
+    }
+    throw catalogErrorOf(response.error);
+  }
+
+  private requestOrFail<TOutput>(
+    type: string,
+    payload: unknown,
+    responseSchema: z.ZodType<TOutput>,
+  ): Promise<TOutput> {
     if (!this.isConfigured()) {
       throw new AppException(
         'INTERNAL_ERROR',
         'Music catalog is not configured',
       );
     }
-    try {
-      await this.ensureConnected();
-    } catch (error: unknown) {
-      this.logger.warn(
-        `Music catalog dial failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      throw new AppException(
-        'SERVICE_UNAVAILABLE',
-        'Music catalog is not connected',
-      );
-    }
-    const socket = this.socket;
-    if (socket === undefined || socket.readyState !== WebSocket.OPEN) {
-      throw new AppException(
-        'SERVICE_UNAVAILABLE',
-        'Music catalog is not connected',
-      );
-    }
-    const id = randomUUID();
-    const timeoutMs =
-      this.env.MUSIC_CATALOG_REQUEST_TIMEOUT_MS ??
-      MUSIC_CATALOG_DEFAULT_TIMEOUT_MS;
-    return new Promise<MusicCatalogSearchResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(
-          new AppException(
-            'GATEWAY_TIMEOUT',
-            'Music catalog request timed out',
-          ),
-        );
-      }, timeoutMs);
-      this.pending.set(id, { resolve, reject, timer });
-      try {
-        socket.send(JSON.stringify({ id, type: 'search', payload: params }));
-      } catch {
-        this.pending.delete(id);
-        clearTimeout(timer);
-        reject(
-          new AppException(
-            'SERVICE_UNAVAILABLE',
-            'Music catalog is not connected',
-          ),
-        );
-      }
-    });
+    return this.connection.request(type, payload, responseSchema);
   }
 
   private isConfigured(): boolean {
@@ -150,168 +127,27 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
       this.env.MUSIC_CATALOG_API_KEY !== undefined
     );
   }
+}
 
-  private dialInBackground(): void {
-    this.ensureConnected().catch((error: unknown) => {
-      this.logger.warn(
-        `Music catalog initial dial failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      this.scheduleReconnect();
-    });
+/** The result of a successful answer, or the exception its error becomes. */
+function resultOrThrow<TResult>(
+  response:
+    | { ok: true; result: TResult }
+    | { ok: false; error: MusicCatalogError },
+): TResult {
+  if (response.ok) {
+    return response.result;
   }
+  throw catalogErrorOf(response.error);
+}
 
-  private ensureConnected(): Promise<void> {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      return Promise.resolve();
-    }
-    this.connecting ??= this.dialOnce().finally(() => {
-      this.connecting = undefined;
-    });
-    return this.connecting;
+/**
+ * Maps a protocol error to the API's error. A catalog that is still starting
+ * is retryable; every other error is an internal one.
+ */
+function catalogErrorOf(error: MusicCatalogError): AppException {
+  if (error.code === 'CATALOG_NOT_READY') {
+    return new AppException('SERVICE_UNAVAILABLE', error.message);
   }
-
-  private async dialOnce(): Promise<void> {
-    const url = this.env.MUSIC_CATALOG_URL;
-    const key = this.env.MUSIC_CATALOG_API_KEY;
-    if (url === undefined || key === undefined) {
-      throw new AppException(
-        'INTERNAL_ERROR',
-        'Music catalog is not configured',
-      );
-    }
-    const socket = new WebSocket(url, {
-      headers: { Authorization: `Bearer ${key}` },
-    });
-    await new Promise<void>((resolve, reject) => {
-      const onOpen = (): void => {
-        socket.off('error', onError);
-        socket.off('close', onClose);
-        resolve();
-      };
-      const onError = (error: Error): void => {
-        socket.off('open', onOpen);
-        socket.off('close', onClose);
-        reject(error);
-      };
-      const onClose = (): void => {
-        socket.off('open', onOpen);
-        socket.off('error', onError);
-        reject(new Error('Connection closed'));
-      };
-      socket.once('open', onOpen);
-      socket.once('error', onError);
-      socket.once('close', onClose);
-    });
-    if (this.stopped) {
-      socket.close();
-      throw new AppException(
-        'INTERNAL_ERROR',
-        'Music catalog is shutting down',
-      );
-    }
-    this.attachSocket(socket);
-    this.socket = socket;
-    this.reconnectDelayMs = INITIAL_RECONNECT_DELAY_MS;
-    this.logger.log('Connected to the Music catalog');
-  }
-
-  private attachSocket(socket: WebSocket): void {
-    socket.on('message', (data, isBinary) => {
-      if (isBinary === true) {
-        this.logger.warn('Dropping a binary frame from the Music catalog');
-        return;
-      }
-      this.handleMessage(String(data));
-    });
-    socket.on('close', () => this.handleClose(socket));
-    socket.on('error', (error: Error) => {
-      this.logger.warn(`Music catalog socket error: ${error.message}`);
-    });
-  }
-
-  private handleMessage(text: string): void {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      this.logger.warn('Dropping a non-JSON frame from the Music catalog');
-      return;
-    }
-    const response = musicCatalogSearchResponseSchema.safeParse(parsed);
-    if (!response.success || response.data.id === null) {
-      this.logger.warn('Dropping an unreadable frame from the Music catalog');
-      return;
-    }
-    const pending = this.pending.get(response.data.id);
-    if (pending === undefined) {
-      return;
-    }
-    this.pending.delete(response.data.id);
-    clearTimeout(pending.timer);
-    if (response.data.ok) {
-      pending.resolve(response.data.result);
-      return;
-    }
-    if (response.data.error.code === 'CATALOG_NOT_READY') {
-      pending.reject(
-        new AppException('SERVICE_UNAVAILABLE', response.data.error.message),
-      );
-      return;
-    }
-    pending.reject(
-      new AppException('INTERNAL_ERROR', response.data.error.message),
-    );
-  }
-
-  private handleClose(socket: WebSocket): void {
-    if (this.socket !== socket) {
-      return;
-    }
-    this.socket = undefined;
-    this.failPending(
-      new AppException('SERVICE_UNAVAILABLE', 'Music catalog disconnected'),
-    );
-    if (this.stopped) {
-      return;
-    }
-    this.logger.warn('Lost the Music catalog connection, redialing');
-    this.scheduleReconnect();
-  }
-
-  /**
-   * Redials with exponential backoff until it succeeds or the module stops:
-   * every failed attempt schedules the next one, so a sustained outage never
-   * stalls the client.
-   */
-  private scheduleReconnect(): void {
-    if (this.stopped || this.reconnectTimer !== undefined) {
-      return;
-    }
-    const delay = this.reconnectDelayMs;
-    this.reconnectDelayMs = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS);
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined;
-      if (this.stopped) {
-        return;
-      }
-      this.ensureConnected().catch((error: unknown) => {
-        this.logger.warn(
-          `Music catalog redial failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-        this.scheduleReconnect();
-      });
-    }, delay);
-  }
-
-  private failPending(error: Error): void {
-    for (const [id, pending] of this.pending) {
-      this.pending.delete(id);
-      clearTimeout(pending.timer);
-      pending.reject(error);
-    }
-  }
+  return new AppException('INTERNAL_ERROR', error.message);
 }
