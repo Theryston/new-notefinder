@@ -192,7 +192,11 @@ describe('getReleaseGroup: the release group (e2e)', () => {
         firstReleaseYear: 1970,
       },
     });
-    expect(second).toEqual(first);
+    // Each request has its own id, so the two answers are compared by result.
+    expect(second).toMatchObject({
+      ok: true,
+      result: first.ok ? first.result : undefined,
+    });
   });
 
   it('falls back to the earliest release of any status when no release of the group is Official', async () => {
