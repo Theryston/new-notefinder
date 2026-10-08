@@ -13,6 +13,7 @@ const album = {
   year: 1975,
   genres: ['rock'],
   coverArtUrl: null,
+  trackCount: 0,
   artists: [{ id: 'artist-1', name: 'Queen' }],
 };
 
