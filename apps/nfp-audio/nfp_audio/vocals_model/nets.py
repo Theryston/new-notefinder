@@ -1,5 +1,5 @@
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as functional
 from torch import nn
 
 from nfp_audio.vocals_model import layers
@@ -117,7 +117,7 @@ class CascadedNet(nn.Module):
         else:
             mask = torch.sigmoid(self.out(f3))
 
-        mask = F.pad(
+        mask = functional.pad(
             input=mask,
             pad=(0, 0, 0, self.output_bin - mask.size()[2]),
             mode="replicate",

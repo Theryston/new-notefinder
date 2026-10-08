@@ -26,10 +26,6 @@ def frames(*segments):
     )
 
 
-def note(name: str, octave: int, start: float, end: float, freq: float):
-    return Note(name, octave, start, end, freq)
-
-
 class TestFreqToNote:
     @pytest.mark.parametrize(
         ("frequency", "expected"),
@@ -56,7 +52,7 @@ class TestGroupNotes:
 
         notes = group_notes(time, freq, conf, confidence_threshold=0.85)
 
-        assert notes == [note("A", 4, 0.0, 0.03, 440.0)]
+        assert notes == [Note("A", 4, 0.0, 0.03, 440.0)]
 
     def test_splits_when_the_pitch_changes(self):
         time, freq, conf = frames(
@@ -107,26 +103,26 @@ class TestGroupNotes:
 
 class TestFilterShortNotes:
     def test_drops_notes_shorter_than_the_minimum(self):
-        notes = [note("A", 4, 0.0, 0.04, 440.0), note("A", 4, 2.0, 2.5, 440.0)]
+        notes = [Note("A", 4, 0.0, 0.04, 440.0), Note("A", 4, 2.0, 2.5, 440.0)]
 
         assert filter_short_notes(notes, min_duration=0.05) == [notes[1]]
 
 
 class TestMergeCloseNotes:
     def test_joins_the_same_pitch_across_a_small_gap(self):
-        notes = [note("A", 4, 0.0, 0.5, 440.0), note("A", 4, 0.6, 1.0, 450.0)]
+        notes = [Note("A", 4, 0.0, 0.5, 440.0), Note("A", 4, 0.6, 1.0, 450.0)]
 
         merged = merge_close_notes(notes, max_gap=0.2)
 
-        assert merged == [note("A", 4, 0.0, 1.0, 445.0)]
+        assert merged == [Note("A", 4, 0.0, 1.0, 445.0)]
 
     def test_keeps_the_same_pitch_apart_across_a_large_gap(self):
-        notes = [note("A", 4, 0.0, 0.5, 440.0), note("A", 4, 1.0, 1.5, 440.0)]
+        notes = [Note("A", 4, 0.0, 0.5, 440.0), Note("A", 4, 1.0, 1.5, 440.0)]
 
         assert merge_close_notes(notes, max_gap=0.2) == notes
 
     def test_never_joins_different_pitches(self):
-        notes = [note("A", 4, 0.0, 0.5, 440.0), note("C", 4, 0.5, 1.0, 261.63)]
+        notes = [Note("A", 4, 0.0, 0.5, 440.0), Note("C", 4, 0.5, 1.0, 261.63)]
 
         assert merge_close_notes(notes, max_gap=0.2) == notes
 

@@ -1,5 +1,5 @@
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as functional
 from torch import nn
 
 from nfp_audio.vocals_model import spec_utils
@@ -51,7 +51,7 @@ class Decoder(nn.Module):
         self.dropout = nn.Dropout2d(0.1) if dropout else None
 
     def __call__(self, x, skip=None):
-        x = F.interpolate(
+        x = functional.interpolate(
             x, scale_factor=2, mode="bilinear", align_corners=True
         )
 
@@ -92,7 +92,7 @@ class ASPPModule(nn.Module):
 
     def forward(self, x):
         _, _, h, w = x.size()
-        feat1 = F.interpolate(
+        feat1 = functional.interpolate(
             self.conv1(x), size=(h, w), mode="bilinear", align_corners=True
         )
         feat2 = self.conv2(x)
@@ -120,12 +120,12 @@ class LSTMModule(nn.Module):
         )
 
     def forward(self, x):
-        N, _, nbins, nframes = x.size()
-        h = self.conv(x)[:, 0]  # N, nbins, nframes
-        h = h.permute(2, 0, 1)  # nframes, N, nbins
+        batch, _, nbins, nframes = x.size()
+        h = self.conv(x)[:, 0]  # batch, nbins, nframes
+        h = h.permute(2, 0, 1)  # nframes, batch, nbins
         h, _ = self.lstm(h)
-        h = self.dense(h.reshape(-1, h.size()[-1]))  # nframes * N, nbins
-        h = h.reshape(nframes, N, 1, nbins)
+        h = self.dense(h.reshape(-1, h.size()[-1]))  # nframes * batch, nbins
+        h = h.reshape(nframes, batch, 1, nbins)
         h = h.permute(1, 2, 3, 0)
 
         return h

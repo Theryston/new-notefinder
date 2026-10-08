@@ -61,11 +61,33 @@ line-length = 80
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+# The repo's limits, as Ruff enforces them: cyclomatic complexity 15, 4
+# arguments and 50 statements per function, and pep8 naming. Ruff has no
+# lines-per-function rule, so statements is the closest limit it can check.
+select = ["E", "F", "I", "B", "UP", "C90", "N", "PLR0913", "PLR0915"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+# The network is ported from the legacy worker, and its constructors take the
+# architecture's sizes positionally (nout, nin_lstm, dilations, ...). The
+# signatures stay as they are so the model, and the state dict its weights
+# load into, does not change; the rest of the app follows the limit.
+"nfp_audio/vocals_model/**" = ["PLR0913"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.coverage.report]
+# The measured modules are at 100% today; this is the ratchet, so any new
+# uncovered line in them fails the run.
+fail_under = 100
 
 [tool.coverage.run]
 source = ["nfp_audio"]
