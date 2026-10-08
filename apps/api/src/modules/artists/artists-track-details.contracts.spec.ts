@@ -7,9 +7,9 @@ import {
 } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
-// Locks the expandable MusicBrainz sections of a track row: releases,
-// works, tags and external links travel with every nested track, empty
-// when the catalog has none.
+// Locks the MusicBrainz sections of a track entry: releases, works, tags
+// and external links travel with every nested track, empty when the
+// catalog has none.
 describe('artist track details contracts', () => {
   const base = {
     id: 'track-1',
@@ -22,7 +22,7 @@ describe('artist track details contracts', () => {
     genres: ['rock'],
   };
 
-  it('parses a row with its deeper sections', () => {
+  it('parses an entry with its deeper sections', () => {
     const track = {
       ...base,
       releases: [
@@ -43,11 +43,11 @@ describe('artist track details contracts', () => {
     expect(artistTrackSchema.parse(track)).toEqual(track);
   });
 
-  it('parses a row without the deeper sections', () => {
+  it('parses an entry without the deeper sections', () => {
     expect(artistTrackSchema.parse(base)).toEqual(base);
   });
 
-  it('parses a row with empty sections', () => {
+  it('parses an entry with empty sections', () => {
     const track = {
       ...base,
       releases: [],

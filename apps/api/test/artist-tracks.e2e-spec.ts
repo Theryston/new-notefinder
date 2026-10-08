@@ -14,9 +14,9 @@ import {
 const encodeCursor = (id: string): string =>
   Buffer.from(id, 'utf8').toString('base64url');
 
-// Public nested track table over a real Postgres: the contracted
-// cursor-paginated shape with one entry per processed Recording, the
-// core display columns, and the same legacy-ID fallback as the header.
+// Public nested track list over a real Postgres: the contracted
+// cursor-paginated shape with one entry per processed Recording, the core
+// fields, and the same legacy-ID fallback as the header.
 describe('Artist tracks (e2e)', () => {
   let testApp: TestApp;
 
@@ -32,7 +32,7 @@ describe('Artist tracks (e2e)', () => {
     await resetDatabase(testApp.db);
   });
 
-  it('lists the core columns with one entry per track', async () => {
+  it('lists the core fields with one entry per track', async () => {
     const artist = await createArtist(testApp.db, { name: 'Queen' });
     const other = await createArtist(testApp.db, { name: 'Other' });
     const first = await createTrack(testApp.db, {
@@ -79,7 +79,7 @@ describe('Artist tracks (e2e)', () => {
     expect(byId.get(second.id)).toMatchObject({ id: second.id });
   });
 
-  it('paginates with opaque cursors without repeating rows', async () => {
+  it('paginates with opaque cursors without repeating entries', async () => {
     const artist = await createArtist(testApp.db);
     const made = [];
     for (let index = 0; index < 3; index += 1) {

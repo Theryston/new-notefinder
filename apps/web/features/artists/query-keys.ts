@@ -1,5 +1,5 @@
 /**
- * TanStack Query keys for the artist track table. One infinite key per
+ * TanStack Query keys for the artist track grid. One infinite key per
  * artist plus page size; the cursor travels as the page param, so every
  * page of one artist shares the key and the cache stays per artist.
  */
