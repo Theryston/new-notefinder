@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Toaster } from '@/components/ui/sonner';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { RequestTrackCard } from '@/features/tracks/components/request-track-card';
 import { TrackCard } from '@/features/tracks/components/track-card';
@@ -13,6 +12,7 @@ import { TrackCardGrid } from '@/features/tracks/components/track-card-grid';
 import { TrackCardMoreSkeletons } from '@/features/tracks/components/track-card-skeleton';
 
 import { useSearchResults } from '../hooks/use-search-results';
+import { offersSignInToRequest, signInToRequestHref } from '../request-sign-in';
 import { offersTrackRequest } from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchEmpty } from './search-empty';
@@ -20,33 +20,50 @@ import { SearchError } from './search-error';
 import { SearchSkeleton } from './search-skeleton';
 
 /**
- * The cards of the loaded hits. Signed-in visitors can ask for the notes of a
- * Recording without a Track; everyone else sees the static cards.
+ * The cards of the loaded hits. A Recording without a Track asks for its notes
+ * on click: signed-in visitors request them, signed-out ones go to sign in
+ * first and come back to `searchPath` with the request marker. Hits with a
+ * Track stay plain links.
  */
 function SearchResultCards({
   items,
   stale,
   loadingMore,
+  searchPath,
 }: {
   items: SearchResultItem[];
   stale: boolean;
   loadingMore: boolean;
+  searchPath: string;
 }) {
   return (
     <SessionUserBoundary
       render={(user) => (
         <TrackCardGrid stale={stale}>
-          {items.map((item) =>
-            offersTrackRequest(item, user) ? (
-              <RequestTrackCard
-                key={item.mbid}
-                recordingMbid={item.mbid}
-                {...toTrackCardProps(item)}
-              />
-            ) : (
-              <TrackCard key={item.mbid} {...toTrackCardProps(item)} />
-            ),
-          )}
+          {items.map((item) => {
+            const card = toTrackCardProps(item);
+            if (offersTrackRequest(item, user)) {
+              return (
+                <RequestTrackCard
+                  key={item.mbid}
+                  recordingMbid={item.mbid}
+                  {...card}
+                />
+              );
+            }
+            if (offersSignInToRequest(item, user)) {
+              return (
+                <TrackCard
+                  key={item.mbid}
+                  {...card}
+                  signIn={{
+                    href: signInToRequestHref(searchPath, item.mbid),
+                  }}
+                />
+              );
+            }
+            return <TrackCard key={item.mbid} {...card} />;
+          })}
           {loadingMore ? <TrackCardMoreSkeletons /> : null}
         </TrackCardGrid>
       )}
@@ -57,13 +74,16 @@ function SearchResultCards({
 /**
  * The result grid for a searchable query: best-first cards, infinite
  * scroll over limit plus offset, with loading, empty and retry states.
+ * `searchPath` is this search as the URL has it, for the sign-in round trip.
  */
 export function SearchResults({
   query,
   scope,
+  searchPath,
 }: {
   query: string;
   scope: SearchScope;
+  searchPath: string;
 }) {
   const t = useTranslations('search');
   const results = useSearchResults({ query, scope });
@@ -110,8 +130,8 @@ export function SearchResults({
         items={items}
         stale={stale}
         loadingMore={isFetchingNextPage}
+        searchPath={searchPath}
       />
-      <Toaster />
       <div ref={sentinelRef} aria-hidden="true" className="h-px" />
       {hasNextPage ? (
         <Button
