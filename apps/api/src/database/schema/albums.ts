@@ -1,4 +1,5 @@
 import {
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -8,6 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { artists } from './artists.js';
+import { tracks } from './tracks.js';
 
 /**
  * Notefinder catalog Album: a public entity with its own URL, backed by one
@@ -76,5 +78,50 @@ export const albumArtists = pgTable(
     primaryKey({ columns: [table.albumId, table.artistId] }),
     unique('album_artists_position_unique').on(table.albumId, table.position),
     index().on(table.artistId),
+  ],
+);
+
+/**
+ * The discs (MusicBrainz media) of an Album, numbered the way MusicBrainz
+ * numbers them, from 1. `title` is the disc's own name, null when it has
+ * none. An Album with one untitled disc needs no heading in the UI.
+ */
+export const albumDiscs = pgTable(
+  'album_discs',
+  {
+    albumId: text()
+      .notNull()
+      .references(() => albums.id, { onDelete: 'cascade' }),
+    position: integer().notNull(),
+    title: text(),
+  },
+  (table) => [primaryKey({ columns: [table.albumId, table.position] })],
+);
+
+/**
+ * The processed Tracks on an Album, with their place in it. A Recording that
+ * appears twice on one Album is stored once, at its lowest position, which is
+ * why the key is (album, track). `(album, discPosition)` points at the disc
+ * the track sits on. Positions follow MusicBrainz's numbering, from 1.
+ */
+export const albumTracks = pgTable(
+  'album_tracks',
+  {
+    albumId: text()
+      .notNull()
+      .references(() => albums.id, { onDelete: 'cascade' }),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    discPosition: integer().notNull(),
+    trackPosition: integer().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.albumId, table.trackId] }),
+    foreignKey({
+      columns: [table.albumId, table.discPosition],
+      foreignColumns: [albumDiscs.albumId, albumDiscs.position],
+    }).onDelete('cascade'),
+    index().on(table.trackId),
   ],
 );

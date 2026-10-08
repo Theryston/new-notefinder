@@ -43,6 +43,13 @@
       "when": 1791428348465,
       "tag": "0005_albums-catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791462834327,
+      "tag": "0006_album-tracks-discs",
+      "breakpoints": true
     }
   ]
 }
