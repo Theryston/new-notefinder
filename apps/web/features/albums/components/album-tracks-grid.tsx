@@ -3,11 +3,11 @@
 import type { AlbumTracksPage } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
+import { toCatalogTrackCardProps } from '@/features/tracks/components/catalog-track-to-track-card';
 import { PaginatedTrackGrid } from '@/features/tracks/components/paginated-track-grid';
 import type { TrackGridMessages } from '@/features/tracks/components/track-grid-messages';
 
 import { albumTrackGroupBy } from '../album-disc-headings';
-import { toAlbumTrackCardProps } from '../album-track-to-track-card';
 import { albumTracksInfiniteQueryOptions } from '../album-tracks-query';
 
 /**
@@ -36,7 +36,7 @@ export function AlbumTracksGrid({
       headingId="album-tracks-title"
       messages={messages}
       query={albumTracksInfiniteQueryOptions({ albumId, initialPage })}
-      toCardProps={toAlbumTrackCardProps}
+      toCardProps={toCatalogTrackCardProps}
       groupBy={groupBy}
     />
   );
