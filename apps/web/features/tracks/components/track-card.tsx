@@ -78,13 +78,14 @@ type TrackCardRequest = {
   onRequest: () => void;
 };
 
-/**
- * Sends a signed-out visitor who clicks a card without a Track to sign in.
- * `href` carries `redirectTo`, back to the search with the request marker.
- */
-type TrackCardSignIn = {
-  href: { pathname: '/sign-in'; query: Record<string, string> };
+/** The sign-in page, with `redirectTo` back to the search and its request marker. */
+export type SignInHref = {
+  pathname: '/sign-in';
+  query: Record<string, string>;
 };
+
+/** Sends a signed-out visitor who clicks a card without a Track to sign in. */
+type TrackCardSignIn = { href: SignInHref };
 
 export type TrackCardProps = {
   trackId: string | null;
@@ -189,7 +190,7 @@ export function TrackCard(props: TrackCardProps) {
     return (
       <Link
         href={signIn.href}
-        aria-label={t('card.signInToGenerate')}
+        aria-label={t('card.signInLabel', { title })}
         className={REQUEST_CARD_CLASS}
       >
         {cover(<RequestBadge pending={false} hint={t('card.generate')} />)}

@@ -276,7 +276,7 @@ for (const { locale, messages } of cases) {
       await expect(main.getByText('Bohemian Rhapsody')).toBeVisible();
     });
 
-    test('links processed recordings and keeps others static', async ({
+    test('links processed recordings and sends others to sign in first', async ({
       page,
     }) => {
       await mockAuthApi(page);
@@ -296,9 +296,20 @@ for (const { locale, messages } of cases) {
 
       await page.goBack();
       await expect(main.getByText('Unreleased Demo')).toBeVisible();
-      await expect(
-        main.getByRole('link', { name: /Unreleased Demo/ }),
-      ).toHaveCount(0);
+      // Signed out, a result without a Track is a link to sign in first (named
+      // after the result), which returns to this search with the request marker.
+      const signIn = main.getByRole('link', {
+        name: messages.tracks.card.signInLabel.replace(
+          '{title}',
+          'Unreleased Demo',
+        ),
+      });
+      await expect(signIn).toHaveAttribute(
+        'href',
+        `/${locale}/sign-in?redirectTo=${encodeURIComponent(
+          '/search?q=queen&process=00000000-0000-4000-8000-000000000002',
+        )}`,
+      );
     });
 
     test('pages through more results', async ({ page }) => {

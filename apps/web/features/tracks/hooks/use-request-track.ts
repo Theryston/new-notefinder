@@ -13,6 +13,11 @@ import { browserApi } from '@/lib/api/browser';
 import { useRouter } from '@/lib/i18n/navigation';
 
 import { requestErrorMessage } from '../request-error';
+import {
+  markRequested,
+  tabRequestMarks,
+  unmarkRequested,
+} from '../request-once';
 
 /** Asks the API for a Recording to become a Track (`POST /v1/tracks`). */
 function requestTrack(
@@ -36,11 +41,16 @@ export function useRequestTrack() {
   const locale = useLocale();
   const t = useTranslations();
   return useMutation({
-    mutationFn: (recordingMbid: string) => requestTrack(recordingMbid, locale),
+    mutationFn: (recordingMbid: string) => {
+      markRequested(tabRequestMarks(), recordingMbid);
+      return requestTrack(recordingMbid, locale);
+    },
     onSuccess: ({ trackId }) => {
       router.push(`/tracks/${trackId}`);
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, recordingMbid: string) => {
+      // A request that failed created nothing, so it may be asked again.
+      unmarkRequested(tabRequestMarks(), recordingMbid);
       const message = requestErrorMessage(error);
       toast.error(t(message.key, message.values));
     },

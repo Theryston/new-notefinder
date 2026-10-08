@@ -5,13 +5,15 @@ import { useEffect, useRef } from 'react';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 
 import { useRequestTrack } from '../hooks/use-request-track';
-import { recordingToRequestOnArrival } from '../request-on-arrival';
+import { arrivalStep } from '../request-on-arrival';
+import { hasRequested, tabRequestMarks } from '../request-once';
 
 /**
- * Requests the Track of `recordingMbid` when a visitor arrives signed in with
- * its request marker in the URL. `onStart` runs before the request goes out,
- * so the caller can take the marker out of the URL first; the request then
- * takes the visitor to the Track's Processing page.
+ * Acts on the request marker a visitor arrives with: asks for the Track of
+ * `recordingMbid` once a signed-in visitor has a username, or only clears the
+ * marker when this tab already asked (see `arrivalStep`). `onStart` runs before
+ * anything else, so the caller takes the marker out of the URL first; the
+ * request then takes the visitor to the Track's Processing page.
  */
 export function RequestOnArrival({
   recordingMbid,
@@ -43,20 +45,21 @@ function ArrivalRequest({
   onStart: () => void;
 }) {
   const { mutate } = useRequestTrack();
-  // What this page already requested: a re-run of the effect (Strict Mode, or
-  // a re-render before the marker leaves the URL) must not request it again.
-  const requested = useRef<string | null>(null);
+  // The marker this page already acted on: a re-run of the effect (Strict Mode,
+  // or a re-render before the marker leaves the URL) must not act twice.
+  const handled = useRef<string | null>(null);
 
   useEffect(() => {
-    const target = recordingToRequestOnArrival({
+    const step = arrivalStep({
       marker: recordingMbid,
       signedIn,
-      requested: requested.current,
+      handled: handled.current,
+      alreadyRequested: hasRequested(tabRequestMarks(), recordingMbid),
     });
-    if (target === null) return;
-    requested.current = target;
+    if (step === 'wait') return;
+    handled.current = recordingMbid;
     onStart();
-    mutate(target);
+    if (step === 'request') mutate(recordingMbid);
   }, [recordingMbid, signedIn, onStart, mutate]);
 
   return null;

@@ -1,3 +1,5 @@
+import type { SignInHref } from '@/features/tracks/components/track-card';
+
 /** The search URL parameter that asks for a Track once the visitor is signed in. */
 export const PROCESS_PARAM = 'process';
 
@@ -40,21 +42,9 @@ export function searchPathWithRequest(
 export function signInToRequestHref(
   searchPath: string,
   recordingMbid: string,
-): { pathname: '/sign-in'; query: Record<string, string> } {
+): SignInHref {
   return {
     pathname: '/sign-in',
     query: { redirectTo: searchPathWithRequest(searchPath, recordingMbid) },
   };
-}
-
-/**
- * Whether a result's click asks the visitor to sign in first: a Recording with
- * no Track, for a visitor who is signed out. Signed-in visitors get the request
- * itself (see `offersTrackRequest`).
- */
-export function offersSignInToRequest(
-  result: { trackId: string | null },
-  user: { username: string | null } | null,
-): boolean {
-  return result.trackId === null && user === null;
 }

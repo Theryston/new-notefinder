@@ -44,7 +44,7 @@
       "generate": "Gerar notas",
       "generateLabel": "Gerar notas de {title}",
       "generating": "Gerando…",
-      "signInToGenerate": "Entre para gerar notas"
+      "signInLabel": "Entre para gerar notas de {title}"
     },
     "processing": {
       "metaTitle": "{title}",

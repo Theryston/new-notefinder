@@ -1,70 +1,86 @@
 import { describe, expect, it } from 'vitest';
 
-import { recordingToRequestOnArrival } from './request-on-arrival';
+import { arrivalStep } from './request-on-arrival';
 
 const MBID = '00000000-0000-4000-8000-000000000002';
+const OTHER = '00000000-0000-4000-8000-000000000003';
 const ADA = { username: 'ada' };
 
-describe('recordingToRequestOnArrival', () => {
+describe('arrivalStep', () => {
   it('requests the marked Recording for a signed-in User with a username', () => {
     expect(
-      recordingToRequestOnArrival({
+      arrivalStep({
         marker: MBID,
         signedIn: ADA,
-        requested: null,
+        handled: null,
+        alreadyRequested: false,
       }),
-    ).toBe(MBID);
+    ).toBe('request');
   });
 
-  it('asks nothing without a marker', () => {
+  it('does nothing without a marker', () => {
     expect(
-      recordingToRequestOnArrival({
+      arrivalStep({
         marker: null,
         signedIn: ADA,
-        requested: null,
+        handled: null,
+        alreadyRequested: false,
       }),
-    ).toBeNull();
+    ).toBe('wait');
   });
 
   it('waits while the session is still loading or the visitor is signed out', () => {
     expect(
-      recordingToRequestOnArrival({
+      arrivalStep({
         marker: MBID,
         signedIn: null,
-        requested: null,
+        handled: null,
+        alreadyRequested: false,
       }),
-    ).toBeNull();
+    ).toBe('wait');
   });
 
   it('waits for the username step, which the API requires before a request', () => {
     expect(
-      recordingToRequestOnArrival({
+      arrivalStep({
         marker: MBID,
         signedIn: { username: null },
-        requested: null,
+        handled: null,
+        alreadyRequested: false,
       }),
-    ).toBeNull();
+    ).toBe('wait');
   });
 
-  it('requests a marker once: the same one again is not asked twice', () => {
+  it('acts on a marker once: the same one again is left alone', () => {
     expect(
-      recordingToRequestOnArrival({
+      arrivalStep({
         marker: MBID,
         signedIn: ADA,
-        requested: MBID,
+        handled: MBID,
+        alreadyRequested: false,
       }),
-    ).toBeNull();
+    ).toBe('wait');
   });
 
-  it('requests a different marker even after another one was requested', () => {
-    const other = '00000000-0000-4000-8000-000000000003';
-
+  it('acts on a different marker even after another one was handled', () => {
     expect(
-      recordingToRequestOnArrival({
-        marker: other,
+      arrivalStep({
+        marker: OTHER,
         signedIn: ADA,
-        requested: MBID,
+        handled: MBID,
+        alreadyRequested: false,
       }),
-    ).toBe(other);
+    ).toBe('request');
+  });
+
+  it('clears a marker the tab already requested, without asking again', () => {
+    expect(
+      arrivalStep({
+        marker: MBID,
+        signedIn: ADA,
+        handled: null,
+        alreadyRequested: true,
+      }),
+    ).toBe('clear');
   });
 });

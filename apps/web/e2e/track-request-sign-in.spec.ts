@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
+import { ADA, type MockUser, mockAuthApi, RIGHT_OTP } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
 import { messages as catalogs } from './messages';
 import { mockSearchApi } from './search-api-mock';
@@ -9,6 +9,8 @@ const cases = [
   { locale: 'en', messages: catalogs.en },
   { locale: 'pt-BR', messages: catalogs['pt-BR'] },
 ] as const;
+
+type Messages = (typeof catalogs)['en'];
 
 // The search mock names its hits by position, and the fake API shares its
 // answers across every spec. So these specs use the third hit, a Recording of
@@ -23,6 +25,7 @@ const SEARCH = {
 };
 const UNLINKED_MBID = '00000000-0000-4000-8000-000000000003';
 const UNLINKED_TITLE = 'Song 3';
+const SEARCH_PATH = '/search?q=queen';
 
 /** A signed-in User with a username: the one who can ask for notes. */
 const SINGER: MockUser = { ...ADA, username: 'ada_singer' };
@@ -66,11 +69,31 @@ function countTrackRequests(page: Page): () => number {
   return () => count;
 }
 
+/** Fills the sign-in form on the page and submits it, as SINGER. */
+async function signInAsSinger(page: Page, messages: Messages) {
+  await page
+    .getByLabel(messages.auth.signIn.emailOrUsername.label)
+    .fill(SINGER.email);
+  await page
+    .getByLabel(messages.auth.fields.password.label, { exact: true })
+    .fill('analytical-1843');
+  await page.getByRole('button', { name: messages.auth.signIn.submit }).click();
+}
+
+/** The name of the sign-up link on the sign-in page (its text sits in a `<link>` tag). */
+const signUpLinkName = (messages: Messages): string =>
+  /<link>(.*)<\/link>/.exec(messages.auth.signIn.noAccount)?.[1] ?? '';
+
 for (const { locale, messages } of cases) {
   const generateName = messages.tracks.card.generateLabel.replace(
     '{title}',
     UNLINKED_TITLE,
   );
+  const signInName = messages.tracks.card.signInLabel.replace(
+    '{title}',
+    UNLINKED_TITLE,
+  );
+  const requestKey = `${UNLINKED_MBID}:${locale}`;
 
   test.describe(`request a Track after signing in (${locale})`, () => {
     // Each test sets the answer its request gets, so they run in order.
@@ -84,32 +107,20 @@ for (const { locale, messages } of cases) {
       const trackId = `clx-signin-${locale}`;
       await setTrackMock({
         tracks: [trackFixture(trackId)],
-        requests: {
-          [`${UNLINKED_MBID}:${locale}`]: { trackId, created: true },
-        },
+        requests: { [requestKey]: { trackId, created: true } },
       });
       const requestsMade = countTrackRequests(page);
-      await page.goto(`/${locale}/search?q=queen`);
+      await page.goto(`/${locale}${SEARCH_PATH}`);
 
-      await page
-        .getByRole('link', { name: messages.tracks.card.signInToGenerate })
-        .click();
+      await page.getByRole('link', { name: signInName }).click();
 
       // The sign-in page returns to this search, with the request marker.
       await expect(page).toHaveURL(
         `/${locale}/sign-in?redirectTo=${encodeURIComponent(
-          `/search?q=queen&process=${UNLINKED_MBID}`,
+          `${SEARCH_PATH}&process=${UNLINKED_MBID}`,
         )}`,
       );
-      await page
-        .getByLabel(messages.auth.signIn.emailOrUsername.label)
-        .fill(SINGER.email);
-      await page
-        .getByLabel(messages.auth.fields.password.label, { exact: true })
-        .fill('analytical-1843');
-      await page
-        .getByRole('button', { name: messages.auth.signIn.submit })
-        .click();
+      await signInAsSinger(page, messages);
 
       await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
       expect(requestsMade()).toBe(1);
@@ -117,11 +128,119 @@ for (const { locale, messages } of cases) {
       // The marker left the search's history entry, so going back, or
       // reloading it, does not request the Track again.
       await page.goBack();
-      await expect(page).toHaveURL(`/${locale}/search?q=queen`);
+      await expect(page).toHaveURL(`/${locale}${SEARCH_PATH}`);
       await page.reload();
       await expect(
         page.getByRole('main').getByText(UNLINKED_TITLE, { exact: true }),
       ).toBeVisible();
+      expect(requestsMade()).toBe(1);
+    });
+
+    test('going back past the sign-in page does not request the Track again', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { overrides: signInOverrides(SINGER) });
+      await mockSearchApi(page, SEARCH);
+      const trackId = `clx-back-${locale}`;
+      await setTrackMock({
+        tracks: [trackFixture(trackId)],
+        requests: { [requestKey]: { trackId, created: true } },
+      });
+      const requestsMade = countTrackRequests(page);
+      await page.goto(`/${locale}${SEARCH_PATH}`);
+      await page.getByRole('link', { name: signInName }).click();
+      await signInAsSinger(page, messages);
+      await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
+      expect(requestsMade()).toBe(1);
+
+      // Back to the search, then back past it to the sign-in page the visitor
+      // came from. Signed in now, that page goes on to the search, which still
+      // carries the marker in that history entry: it must not ask again.
+      await page.goBack();
+      await expect(page).toHaveURL(`/${locale}${SEARCH_PATH}`);
+      await page.goBack();
+      await expect(page).toHaveURL(`/${locale}${SEARCH_PATH}`);
+      expect(requestsMade()).toBe(1);
+    });
+
+    test('a visitor who signs up from the sign-in step picks a username, then gets the Track once', async ({
+      page,
+    }) => {
+      await mockAuthApi(page);
+      await mockSearchApi(page, SEARCH);
+      const trackId = `clx-signup-${locale}`;
+      await setTrackMock({
+        tracks: [trackFixture(trackId)],
+        requests: { [requestKey]: { trackId, created: true } },
+      });
+      const requestsMade = countTrackRequests(page);
+      await page.goto(`/${locale}${SEARCH_PATH}`);
+      await page.getByRole('link', { name: signInName }).click();
+      await page.getByRole('link', { name: signUpLinkName(messages) }).click();
+
+      // Sign-up keeps the marker in `redirectTo`, through verification too.
+      await expect(page).toHaveURL(
+        new RegExp(`/${locale}/sign-up\\?redirectTo=`),
+      );
+      // Exact labels: "Email" also matches the sign-in field's "Email or username".
+      await page
+        .getByLabel(messages.auth.fields.name.label, { exact: true })
+        .fill('Ada Lovelace');
+      await page
+        .getByLabel(messages.auth.fields.email.label, { exact: true })
+        .fill(SINGER.email);
+      await page
+        .getByLabel(messages.auth.fields.password.label, { exact: true })
+        .fill('analytical-1843');
+      await page
+        .getByRole('button', { name: messages.auth.signUp.submit })
+        .click();
+
+      await expect(page).toHaveURL(new RegExp(`/${locale}/verify-email\\?`));
+      await page
+        .getByLabel(messages.auth.verifyEmail.codeLabel)
+        .pressSequentially(RIGHT_OTP);
+
+      await expect(page).toHaveURL(
+        new RegExp(`/${locale}/setup-username\\?redirectTo=`),
+      );
+      await page
+        .getByLabel(messages.auth.fields.username.label)
+        .fill(SINGER.username ?? '');
+      await page
+        .getByRole('button', { name: messages.auth.setupUsername.submit })
+        .click();
+
+      await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
+      expect(requestsMade()).toBe(1);
+    });
+
+    test('a Google user without a username picks one first, then gets the Track once', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: { ...SINGER, username: null } });
+      await mockSearchApi(page, SEARCH);
+      const trackId = `clx-username-${locale}`;
+      await setTrackMock({
+        tracks: [trackFixture(trackId)],
+        requests: { [requestKey]: { trackId, created: true } },
+      });
+      const requestsMade = countTrackRequests(page);
+
+      await page.goto(`/${locale}${SEARCH_PATH}&process=${UNLINKED_MBID}`);
+
+      // The username step keeps the marker in `redirectTo`, then returns.
+      await expect(page).toHaveURL(
+        new RegExp(`/${locale}/setup-username\\?redirectTo=`),
+      );
+      await page
+        .getByLabel(messages.auth.fields.username.label)
+        .fill(SINGER.username ?? '');
+      await page
+        .getByRole('button', { name: messages.auth.setupUsername.submit })
+        .click();
+
+      await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
       expect(requestsMade()).toBe(1);
     });
 
@@ -133,18 +252,16 @@ for (const { locale, messages } of cases) {
       const trackId = `clx-arrive-${locale}`;
       await setTrackMock({
         tracks: [trackFixture(trackId)],
-        requests: {
-          [`${UNLINKED_MBID}:${locale}`]: { trackId, created: true },
-        },
+        requests: { [requestKey]: { trackId, created: true } },
       });
       const requestsMade = countTrackRequests(page);
 
-      await page.goto(`/${locale}/search?q=queen&process=${UNLINKED_MBID}`);
+      await page.goto(`/${locale}${SEARCH_PATH}&process=${UNLINKED_MBID}`);
 
       await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
       expect(requestsMade()).toBe(1);
       await page.goBack();
-      await expect(page).toHaveURL(`/${locale}/search?q=queen`);
+      await expect(page).toHaveURL(`/${locale}${SEARCH_PATH}`);
       expect(requestsMade()).toBe(1);
     });
 
@@ -159,14 +276,14 @@ for (const { locale, messages } of cases) {
         await mockSearchApi(page, SEARCH);
         await setTrackMock({
           requests: {
-            [`${UNLINKED_MBID}:${locale}`]: {
+            [requestKey]: {
               status: 429,
               code: 'PROCESSING_LIMIT_REACHED',
               details: { limit, max },
             },
           },
         });
-        await page.goto(`/${locale}/search?q=queen`);
+        await page.goto(`/${locale}${SEARCH_PATH}`);
 
         await page.getByRole('button', { name: generateName }).click();
 

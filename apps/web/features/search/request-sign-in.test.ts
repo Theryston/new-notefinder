@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-
 import {
-  offersSignInToRequest,
   searchPathFrom,
   searchPathWithRequest,
   signInToRequestHref,
 } from './request-sign-in';
+import { offersSignInToRequest } from './search-result-action';
 
 const MBID = '00000000-0000-4000-8000-000000000002';
 

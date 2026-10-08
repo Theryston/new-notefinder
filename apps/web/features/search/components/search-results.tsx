@@ -12,8 +12,11 @@ import { TrackCardGrid } from '@/features/tracks/components/track-card-grid';
 import { TrackCardMoreSkeletons } from '@/features/tracks/components/track-card-skeleton';
 
 import { useSearchResults } from '../hooks/use-search-results';
-import { offersSignInToRequest, signInToRequestHref } from '../request-sign-in';
-import { offersTrackRequest } from '../search-result-action';
+import { signInToRequestHref } from '../request-sign-in';
+import {
+  offersSignInToRequest,
+  offersTrackRequest,
+} from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
