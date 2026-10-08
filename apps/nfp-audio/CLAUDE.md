@@ -44,10 +44,14 @@ Output (`COMPLETED`):
 {
   "vocalsUrl": "https://…/vocals.wav",
   "notes": [
-    { "note": "A#", "octave": 4, "start": 1.23, "end": 1.61, "frequency_mean": 468.2 }
+    { "note": "A#", "octave": 4, "start": 1.23, "end": 1.61, "frequencyMean": 468.2 }
   ]
 }
 ```
+
+The fields of each note are camelCase on the wire, `frequencyMean` included
+(a maintainer decision; the issue text said `frequency_mean`). In Python the
+attribute stays `frequency_mean`, and `Note.to_dict` maps it.
 
 `vocalsUrl` is the `publicUrl` it was given: the file is uploaded with the
 presigned PUT and the `Content-Type` from the input. `notes` is ordered by

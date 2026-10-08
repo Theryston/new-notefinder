@@ -111,7 +111,7 @@ def test_answers_with_the_public_vocals_url_and_the_notes():
                 "octave": 4,
                 "start": 0.0,
                 "end": 0.5,
-                "frequency_mean": 440.0,
+                "frequencyMean": 440.0,
             }
         ],
     }

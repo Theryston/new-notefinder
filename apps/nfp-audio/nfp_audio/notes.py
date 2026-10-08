@@ -7,7 +7,7 @@ monorepo.
 """
 
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 
 import numpy as np
 from numpy.typing import NDArray
@@ -32,7 +32,15 @@ class Note:
     frequency_mean: float
 
     def to_dict(self) -> dict[str, str | int | float]:
-        return asdict(self)
+        # camelCase on the wire, like every other field the API reads (the
+        # maintainer's decision: the issue text said frequency_mean).
+        return {
+            "note": self.note,
+            "octave": self.octave,
+            "start": self.start,
+            "end": self.end,
+            "frequencyMean": self.frequency_mean,
+        }
 
 
 def freq_to_note(freq_hz: float) -> tuple[str, int] | None:
