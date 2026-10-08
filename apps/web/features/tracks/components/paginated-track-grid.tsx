@@ -1,0 +1,210 @@
+'use client';
+
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { Fragment, type ReactNode, useEffect, useRef } from 'react';
+
+import { Button } from '@/components/ui/button';
+import type { CursorPagesQuery } from '@/lib/cursor-pages-query';
+
+import { groupTracksByHeading, type TrackGroup } from '../track-groups';
+import { TrackCard, type TrackCardProps } from './track-card';
+import { TrackCardGrid } from './track-card-grid';
+import { TrackCardMoreSkeletons } from './track-card-skeleton';
+import {
+  TrackGridEmpty,
+  TrackGridError,
+  TrackGridSkeleton,
+} from './track-grid-feedback';
+import type { TrackGridMessages } from './track-grid-messages';
+
+type TrackGridBodyProps<TItem extends { id: string }> = {
+  messages: TrackGridMessages;
+  /** The list's query key, page fetcher and server-rendered first page. */
+  query: CursorPagesQuery<TItem>;
+  toCardProps: (item: TItem) => TrackCardProps;
+  groupBy?: (item: TItem) => string | null;
+};
+
+type PaginatedTrackGridProps<TItem extends { id: string }> =
+  TrackGridBodyProps<TItem> & {
+    /** Id of the section heading, which the section is labelled by. */
+    headingId: string;
+  };
+
+/**
+ * The paginated cover grid behind every track list (artist, album). It
+ * keeps the server-rendered first page, paginates in place (infinite scroll
+ * plus an explicit button) and owns the loading, error and empty states.
+ * With `groupBy`, a heading opens each group of items, shown only when the
+ * loaded items span more than one group. Callers supply the query, so the
+ * grid never knows which entity it lists.
+ */
+export function PaginatedTrackGrid<TItem extends { id: string }>({
+  headingId,
+  ...body
+}: PaginatedTrackGridProps<TItem>) {
+  return (
+    <TracksSection headingId={headingId} title={body.messages.title}>
+      <TrackGridBody {...body} />
+    </TracksSection>
+  );
+}
+
+/**
+ * The section frame: the heading stays mounted through loading, error and
+ * empty states, so assistive tech keeps the context whatever the grid is
+ * doing.
+ */
+function TracksSection({
+  headingId,
+  title,
+  children,
+}: {
+  headingId: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-4">
+      <h2 id={headingId} className="font-bold text-xl">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function TrackGridBody<TItem extends { id: string }>({
+  messages,
+  query,
+  toCardProps,
+  groupBy,
+}: TrackGridBodyProps<TItem>) {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending,
+    refetch,
+  } = useInfiniteQuery(query);
+
+  if (isPending) return <TrackGridSkeleton label={messages.loading} />;
+  if (error) {
+    return (
+      <TrackGridError
+        messages={messages.error}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
+
+  const items = data.pages.flatMap((page) => page.items);
+  if (items.length === 0) return <TrackGridEmpty messages={messages.empty} />;
+
+  return (
+    <>
+      <TrackGroups
+        groups={groupTracksByHeading(items, groupBy)}
+        toCardProps={toCardProps}
+        loadingMore={isFetchingNextPage}
+      />
+      <TracksGridMore
+        messages={messages}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={() => void fetchNextPage()}
+      />
+    </>
+  );
+}
+
+/**
+ * One cover grid per group, each under its heading when there is one. The
+ * placeholders for a page in flight close the last group.
+ */
+function TrackGroups<TItem extends { id: string }>({
+  groups,
+  toCardProps,
+  loadingMore,
+}: {
+  groups: TrackGroup<TItem>[];
+  toCardProps: (item: TItem) => TrackCardProps;
+  loadingMore: boolean;
+}) {
+  return (
+    <>
+      {groups.map((group, index) => (
+        <Fragment key={group.items[0]?.id}>
+          {group.heading ? (
+            <h3 className="font-semibold text-lg">{group.heading}</h3>
+          ) : null}
+          <TrackCardGrid>
+            {group.items.map((item) => (
+              <TrackCard key={item.id} {...toCardProps(item)} />
+            ))}
+            {loadingMore && index === groups.length - 1 ? (
+              <TrackCardMoreSkeletons />
+            ) : null}
+          </TrackCardGrid>
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Pagination controls below the grid: an infinite-scroll sentinel plus
+ * an explicit button, with a status line while the next page loads.
+ */
+function TracksGridMore({
+  messages,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+}: {
+  messages: Pick<TrackGridMessages, 'loadingMore' | 'loadMore'>;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '600px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+
+  return (
+    <>
+      <div ref={sentinelRef} aria-hidden="true" className="h-px" />
+      {isFetchingNextPage ? (
+        <p role="status" className="text-center text-muted-foreground text-sm">
+          {messages.loadingMore}
+        </p>
+      ) : null}
+      {hasNextPage ? (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onLoadMore}
+          disabled={isFetchingNextPage}
+          className="mx-auto"
+        >
+          {messages.loadMore}
+        </Button>
+      ) : null}
+    </>
+  );
+}

@@ -1,15 +1,16 @@
 import type { CatalogTracksPage } from '@notefinder/contracts';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
+
+import { trackGridMessages } from '@/features/tracks/components/track-grid-messages';
 
 import { ArtistTracksGrid } from './artist-tracks-grid';
 
 /**
- * The track-grid section of the artist page: scopes the `artists` and
- * `tracks` messages to the client grid (the `(site)` layout only provides
- * `errors` and `header`, deliberately, to keep the RSC payload small).
- * `tracks` is the namespace of the `TrackCard` each row renders, like the
- * search page does for the same card.
+ * The track-grid section of the artist page. The grid's strings come from
+ * the `artists.tracks` block, resolved here so the client grid gets plain
+ * strings. `tracks` is the namespace of the `TrackCard` each row renders,
+ * like the search page does for the same card.
  */
 export async function ArtistTracksSection({
   artistId,
@@ -18,11 +19,16 @@ export async function ArtistTracksSection({
   artistId: string;
   initialPage?: CatalogTracksPage;
 }) {
-  const { errors, artists, tracks } = await getMessages();
+  const { tracks } = await getMessages();
+  const messages = trackGridMessages(await getTranslations('artists.tracks'));
 
   return (
-    <NextIntlClientProvider messages={{ errors, artists, tracks }}>
-      <ArtistTracksGrid artistId={artistId} initialPage={initialPage} />
+    <NextIntlClientProvider messages={{ tracks }}>
+      <ArtistTracksGrid
+        artistId={artistId}
+        initialPage={initialPage}
+        messages={messages}
+      />
     </NextIntlClientProvider>
   );
 }

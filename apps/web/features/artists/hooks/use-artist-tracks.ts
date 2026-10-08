@@ -1,19 +1,16 @@
 'use client';
 
 import {
+  type CatalogTrack,
   type CatalogTracksPage,
   catalogTracksPageSchema,
 } from '@notefinder/contracts';
-import {
-  infiniteQueryOptions,
-  keepPreviousData,
-  useInfiniteQuery,
-} from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/browser';
+import { cursorPagesQueryOptions } from '@/lib/cursor-pages-query';
 
 import { artistKeys } from '../query-keys';
 
-export const ARTIST_TRACKS_DEFAULT_LIMIT = 20;
+const ARTIST_TRACKS_DEFAULT_LIMIT = 20;
 
 type ArtistTracksPageParams = {
   artistId: string;
@@ -47,42 +44,19 @@ export type ArtistTracksInfiniteInput = {
 };
 
 /**
- * Infinite track cards keyed by artist plus page size (the cursor travels
- * as the page param). The server-rendered first page hydrates it, so the
- * grid shows instantly and only later pages hit the network.
+ * The artist's track list as shared cursor paging, keyed by artist plus
+ * page size. This binds the artist's key and endpoint; the paging itself
+ * lives in `lib/cursor-pages-query`, shared with every other track list.
  */
 export function artistTracksInfiniteQueryOptions({
   artistId,
   limit = ARTIST_TRACKS_DEFAULT_LIMIT,
   initialPage,
 }: ArtistTracksInfiniteInput) {
-  return infiniteQueryOptions({
-    placeholderData: keepPreviousData,
+  return cursorPagesQueryOptions<CatalogTrack>({
     queryKey: artistKeys.infiniteTracks(artistId, limit),
-    queryFn: ({
-      pageParam,
-      signal,
-    }: {
-      pageParam: string | undefined;
-      signal: AbortSignal;
-    }) =>
-      fetchArtistTracksPage({
-        artistId,
-        cursor: pageParam,
-        limit,
-        signal,
-      }),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: CatalogTracksPage) =>
-      lastPage.nextCursor ?? undefined,
-    initialData: initialPage
-      ? { pages: [initialPage], pageParams: [undefined] }
-      : undefined,
-    staleTime: 60 * 1000,
+    fetchPage: ({ cursor, signal }) =>
+      fetchArtistTracksPage({ artistId, cursor, limit, signal }),
+    initialPage,
   });
-}
-
-/** Paginated track cards for the artist page grid. */
-export function useArtistTracks(input: ArtistTracksInfiniteInput) {
-  return useInfiniteQuery(artistTracksInfiniteQueryOptions(input));
 }
