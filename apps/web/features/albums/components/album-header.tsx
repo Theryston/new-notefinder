@@ -18,16 +18,19 @@ import { AlbumCover } from './album-cover';
  * The album banner: the artist banner layout with a square cover in place
  * of the initials circle, the oversized title, the credited artists (the
  * first three linked, the rest behind "and N more"), the info line (type,
- * secondary types, year, with unknown parts left out) and the genre chips.
- * Info only, no playback actions.
+ * secondary types, year, with unknown parts left out, then the track count)
+ * and the genre chips. Info only, no playback actions.
  */
 export async function AlbumHeader({ album }: { album: Album }) {
   const t = await getTranslations('albums');
   const { visible, hidden } = splitAlbumArtists(album.artists);
-  const info = albumInfoItems(album, {
-    primaryType: (key) => t(`types.primary.${key}`),
-    secondaryType: (key) => t(`types.secondary.${key}`),
-  });
+  const info = [
+    ...albumInfoItems(album, {
+      primaryType: (key) => t(`types.primary.${key}`),
+      secondaryType: (key) => t(`types.secondary.${key}`),
+    }),
+    t('header.trackCount', { count: album.trackCount }),
+  ];
 
   return (
     <section aria-labelledby="album-title" className={entityBannerClass}>
