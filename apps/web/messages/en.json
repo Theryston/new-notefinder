@@ -40,7 +40,60 @@
   },
   "tracks": {
     "card": {
-      "play": "Play {title}"
+      "play": "Play {title}",
+      "generate": "Generate notes",
+      "generateLabel": "Generate notes for {title}",
+      "generating": "Generating…"
+    },
+    "processing": {
+      "metaTitle": "{title}",
+      "metaDescription": "Follow the processing of {title} and open its notes when they are ready.",
+      "steps": {
+        "label": "Processing steps",
+        "FINDING_VIDEO": "Finding the video",
+        "DOWNLOADING_AUDIO": "Downloading the audio",
+        "EXTRACTING_VOCALS": "Separating the vocals",
+        "DETECTING_NOTES": "Detecting the notes",
+        "EXTRACTING_LYRICS": "Transcribing the lyrics",
+        "state": {
+          "done": "Done",
+          "current": "In progress",
+          "pending": "Waiting",
+          "failed": "Failed"
+        }
+      },
+      "progress": {
+        "label": "Processing progress",
+        "value": "{percent, number}%"
+      },
+      "status": {
+        "QUEUED": "Queued",
+        "COMPLETED": "Notes are ready",
+        "FAILED": "Processing failed"
+      },
+      "closeNote": "You can close this page. Contributors get an email when the notes are ready.",
+      "completed": {
+        "title": "Notes are ready",
+        "description": "The timeline that shows them arrives in a later update."
+      },
+      "failed": {
+        "title": "This processing failed",
+        "reason": {
+          "VIDEO_NOT_FOUND": "We couldn't find a video that matches this recording.",
+          "TOO_LONG": "This recording is too long to process.",
+          "DOWNLOAD_FAILED": "We couldn't download the audio.",
+          "NOTE_DETECTION_FAILED": "We couldn't detect the notes.",
+          "INTERNAL": "Something went wrong while processing this track."
+        }
+      },
+      "contributors": {
+        "heading": "Contributors"
+      },
+      "none": "No processing has been recorded for this track.",
+      "notFound": {
+        "title": "Track not found",
+        "description": "We couldn't find this track."
+      }
     }
   },
   "header": {

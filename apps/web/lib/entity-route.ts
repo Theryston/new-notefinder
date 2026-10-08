@@ -9,12 +9,12 @@ import type { Locale } from './i18n/routing';
 import { isLocale } from './i18n/routing';
 
 /**
- * Catalog-entity route rules, shared by `proxy.ts` and the artist and album
- * result mappers. The proxy must decide 308s and 404s before anything streams:
- * with Cache Components every dynamic route streams a static shell first, so a
- * `permanentRedirect`/`notFound` issued from the page degrades to a 200 (meta
- * refresh / in-place UI) and crawlers and legacy bookmarks never see the real
- * status. The proxy check runs before the first byte instead.
+ * Catalog-entity route rules, shared by `proxy.ts` and the artist, album and
+ * track result mappers. The proxy must decide 308s and 404s before anything
+ * streams: with Cache Components every dynamic route streams a static shell
+ * first, so a `permanentRedirect`/`notFound` issued from the page degrades to a
+ * 200 (meta refresh / in-place UI) and crawlers and legacy bookmarks never see
+ * the real status. The proxy check runs before the first byte instead.
  */
 
 const entityCollections = ['artists', 'albums'] as const;
@@ -27,38 +27,77 @@ type EntityRoute = {
   id: string;
 };
 
+/** `/<locale>/tracks/<id>`: the Processing page of a Track. */
+export type TrackRoute = {
+  locale: Locale;
+  collection: 'tracks';
+  id: string;
+};
+
+/** Any catalog route the proxy checks before the page streams. */
+export type CatalogRoute = EntityRoute | TrackRoute;
+
 const isEntityCollection = (value: string): value is EntityCollection =>
   (entityCollections as readonly string[]).includes(value);
 
 /**
- * `/<locale>/<collection>/<id>` with a single non-empty ID segment, or
- * undefined for anything else. Only called for locale-prefixed paths (the
- * proxy turns bare legacy paths into those with a 307 first, uncached).
+ * The locale, the collection and the decoded ID of `/<locale>/<collection>/<id>`
+ * with a single non-empty ID segment (an optional trailing slash changes
+ * nothing), or undefined for anything else.
  */
-export function parseEntityRoute(pathname: string): EntityRoute | undefined {
+function idRouteParts(
+  pathname: string,
+): { locale: string | undefined; collection: string; id: string } | undefined {
   const [, first, second, third, rest] = pathname.split('/');
-  if (!second || !isEntityCollection(second) || !third) return undefined;
-  // A single ID segment (an optional trailing slash changes nothing).
+  if (!second || !third) return undefined;
   if (rest !== undefined && rest !== '') return undefined;
-  if (!isLocale(first)) return undefined;
-  let id: string;
   try {
-    id = decodeURIComponent(third);
+    return {
+      locale: first,
+      collection: second,
+      id: decodeURIComponent(third),
+    };
   } catch {
     return undefined;
   }
-  // Decoding never empties a non-empty segment, and `!third` ruled out the
-  // empty one above.
-  return { locale: first, collection: second, id };
 }
 
 /**
- * The URL a legacy ID redirects to: the same URL with the entity path swapped
+ * `/<locale>/<artists|albums>/<id>`, or undefined for anything else. Only called
+ * for locale-prefixed paths (the proxy turns bare legacy paths into those with a
+ * 307 first, uncached).
+ */
+export function parseEntityRoute(pathname: string): EntityRoute | undefined {
+  const parts = idRouteParts(pathname);
+  if (!parts || !isEntityCollection(parts.collection)) return undefined;
+  if (!isLocale(parts.locale)) return undefined;
+  return {
+    locale: parts.locale,
+    collection: parts.collection,
+    id: parts.id,
+  };
+}
+
+/** `/<locale>/tracks/<id>`, or undefined for anything else. */
+export function parseTrackRoute(pathname: string): TrackRoute | undefined {
+  const parts = idRouteParts(pathname);
+  if (parts?.collection !== 'tracks') return undefined;
+  if (!isLocale(parts.locale)) return undefined;
+  return { locale: parts.locale, collection: 'tracks', id: parts.id };
+}
+
+/** The catalog route a path is, if it is one the proxy checks. */
+export function parseCatalogRoute(pathname: string): CatalogRoute | undefined {
+  return parseEntityRoute(pathname) ?? parseTrackRoute(pathname);
+}
+
+/**
+ * The URL a legacy ID redirects to: the same URL with the route's ID swapped
  * for the new ID, so the locale, the collection and the query are kept.
  */
 export function entityRedirectUrl(
   requestHref: string,
-  route: EntityRoute,
+  route: CatalogRoute,
   newId: string,
 ): URL {
   const url = new URL(requestHref);
@@ -104,30 +143,45 @@ type EntityCheckFetch = (
 ) => Promise<{ status: number; json: () => Promise<unknown> }>;
 
 /**
- * Asks the API for one entity and classifies the answer for the proxy.
- * Never throws: anything unexpected (timeout, network error, unparsable
- * body) is a `pass`, so the page renders its own outcome instead of a
- * wrong redirect or 404. The fetch is injectable for tests.
+ * Asks the API for the route's record and classifies the answer for the proxy.
+ * Never throws: anything unexpected (timeout, network error, unparsable body)
+ * is a `pass`, so the page renders its own outcome instead of a wrong redirect
+ * or 404. The fetch is injectable for tests.
  */
-export async function fetchEntityRouteVerdict(
+async function verdictForPath(
   apiUrl: string,
-  collection: EntityCollection,
-  id: string,
-  fetchFn: EntityCheckFetch = fetch,
+  path: string,
+  fetchFn: EntityCheckFetch,
 ): Promise<EntityRouteVerdict> {
   let status: number;
   let body: unknown;
   try {
-    const response = await fetchFn(
-      `${apiUrl.replace(/\/+$/, '')}/v1/${collection}/${encodeURIComponent(id)}`,
-      { signal: AbortSignal.timeout(ENTITY_CHECK_TIMEOUT_MS) },
-    );
+    const response = await fetchFn(`${apiUrl.replace(/\/+$/, '')}/v1/${path}`, {
+      signal: AbortSignal.timeout(ENTITY_CHECK_TIMEOUT_MS),
+    });
     status = response.status;
     body = await response.json().catch(() => undefined);
   } catch {
     return { kind: 'pass' };
   }
   return classifyEntityResponse(status, body);
+}
+
+/**
+ * The verdict for a catalog route: an artist or album on its own endpoint, a
+ * track on its Processing endpoint. Both answer the same 404s (`RESOURCE_MOVED`,
+ * `NOT_FOUND`).
+ */
+export function fetchCatalogRouteVerdict(
+  apiUrl: string,
+  route: CatalogRoute,
+  fetchFn: EntityCheckFetch = fetch,
+): Promise<EntityRouteVerdict> {
+  const path =
+    route.collection === 'tracks'
+      ? `tracks/${encodeURIComponent(route.id)}/processing`
+      : `${route.collection}/${encodeURIComponent(route.id)}`;
+  return verdictForPath(apiUrl, path, fetchFn);
 }
 
 /**

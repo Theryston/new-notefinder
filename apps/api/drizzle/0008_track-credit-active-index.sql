@@ -1,0 +1,2 @@
+ALTER TABLE "tracks" ADD COLUMN "artist_credit" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+CREATE INDEX "track_processings_active_index" ON "track_processings" USING btree ("id") WHERE "track_processings"."status" not in ('COMPLETED', 'FAILED');

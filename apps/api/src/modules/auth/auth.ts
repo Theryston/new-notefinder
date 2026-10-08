@@ -29,6 +29,7 @@ import {
   isLegacyPasswordHash,
   verifyPassword,
 } from './password.js';
+import { signUpLocale } from './sign-up-locale.js';
 import { enforceSignUpRules } from './sign-up-rules.js';
 
 const DAY_SECONDS = 24 * 60 * 60;
@@ -67,6 +68,21 @@ const staticOptions = {
         type: 'number',
         required: false,
         input: false,
+      },
+      // Set by `databaseHooks` from the sign-up request, never by the body.
+      locale: {
+        type: 'string',
+        required: false,
+        input: false,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user, context) => ({
+          data: { ...user, locale: signUpLocale(context) },
+        }),
       },
     },
   },

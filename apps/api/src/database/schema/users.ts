@@ -1,8 +1,12 @@
+import { LOCALES } from '@notefinder/contracts';
 import { boolean, integer, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 
 // Same values as the legacy Prisma `Role` enum, so the import copies them.
 export const userRole = pgEnum('user_role', ['USER', 'ADMIN']);
+
+// The languages of the web app and the emails (`en` is the source of truth).
+export const userLocale = pgEnum('user_locale', LOCALES);
 
 /**
  * Better Auth's `user` model plus notefinder's own fields. Better Auth reads
@@ -25,6 +29,13 @@ export const users = pgTable('users', {
   // "setup username" step.
   username: text().unique(),
   role: userRole().notNull().default('USER'),
+  // The language the User browses in, which their emails follow. Sign-up sets
+  // it from the request language (`modules/auth/sign-up-locale.ts`), and a
+  // Track request or retry updates it from the locale the web sends.
+  // Legacy import: legacy users have no locale of their own, so the import
+  // keeps this default and every imported user gets `pt-BR`, the language the
+  // legacy app was written in.
+  locale: userLocale().notNull().default('pt-BR'),
   dailyPracticeTargetSeconds: integer(),
   ...timestamps,
 });

@@ -111,6 +111,160 @@
         ]
       }
     },
+    "/v1/tracks": {
+      "post": {
+        "operationId": "TracksController_requestTrack_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTrackBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The Recording already has a Track; nothing was written."
+          },
+          "202": {
+            "description": "The Track was created and its Processing queued."
+          },
+          "400": {
+            "description": "The Recording or the locale is bad."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The user has no username yet."
+          },
+          "404": {
+            "description": "The Music catalog does not know the Recording."
+          },
+          "503": {
+            "description": "The Music catalog is down."
+          },
+          "504": {
+            "description": "The Music catalog took too long."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/v1/tracks/{trackId}/processing": {
+      "get": {
+        "operationId": "TracksController_getProcessing_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Track header, its latest Processing and Contributors."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "UsersController_getMe_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The signed-in user."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateMe_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The signed-in user, updated."
+          },
+          "400": {
+            "description": "The Name is empty or too long, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The user has no username yet."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/me/username": {
+      "put": {
+        "operationId": "UsersController_setUsername_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUsernameBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user, with the username set."
+          },
+          "400": {
+            "description": "The username is not valid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "409": {
+            "description": "The user already has a username, or another user has it."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/artists/{id}": {
       "get": {
         "operationId": "ArtistsController_getArtist_v1",
@@ -261,87 +415,6 @@
           "search"
         ]
       }
-    },
-    "/v1/me": {
-      "get": {
-        "operationId": "UsersController_getMe_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The signed-in user."
-          },
-          "401": {
-            "description": "No valid session."
-          }
-        },
-        "tags": [
-          "users"
-        ]
-      },
-      "patch": {
-        "operationId": "UsersController_updateMe_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMeBodyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The signed-in user, updated."
-          },
-          "400": {
-            "description": "The Name is empty or too long, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image."
-          },
-          "401": {
-            "description": "No valid session."
-          },
-          "403": {
-            "description": "The user has no username yet."
-          }
-        },
-        "tags": [
-          "users"
-        ]
-      }
-    },
-    "/v1/me/username": {
-      "put": {
-        "operationId": "UsersController_setUsername_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetUsernameBodyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The user, with the username set."
-          },
-          "400": {
-            "description": "The username is not valid."
-          },
-          "401": {
-            "description": "No valid session."
-          },
-          "409": {
-            "description": "The user already has a username, or another user has it."
-          }
-        },
-        "tags": [
-          "users"
-        ]
-      }
     }
   },
   "info": {
@@ -354,6 +427,27 @@
   "servers": [],
   "components": {
     "schemas": {
+      "CreateTrackBodyDto": {
+        "type": "object",
+        "properties": {
+          "recordingMbid": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          }
+        },
+        "required": [
+          "recordingMbid",
+          "locale"
+        ]
+      },
       "UpdateMeBodyDto": {
         "type": "object",
         "properties": {

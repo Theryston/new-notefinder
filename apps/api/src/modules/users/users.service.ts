@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   type CurrentUser,
   cacheTags,
+  type Locale,
   type UpdateMeBody,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
@@ -9,6 +10,17 @@ import { StorageService } from '../../integrations/storage/storage.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
 import { type CurrentUserRow, UsersRepository } from './users.repository.js';
+
+/**
+ * The public fields of a User that other features may show (a Track's
+ * Contributors). No email and no role: those never leave the users module.
+ */
+export type PublicUser = {
+  id: string;
+  username: string | null;
+  name: string;
+  image: string | null;
+};
 
 const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
   ...user,
@@ -70,6 +82,25 @@ export class UsersService {
     // username.
     requireUser(await this.usersRepository.findCurrentUser(userId));
     throw new AppException('CONFLICT', 'Username is already set');
+  }
+
+  /**
+   * Records the language the User is browsing in, which their emails follow.
+   * Only a request made from the web (a Track request or retry) calls it.
+   */
+  setLocale(userId: string, locale: Locale): Promise<void> {
+    return this.usersRepository.setLocale(userId, locale);
+  }
+
+  /**
+   * The public fields of the Users given, keyed by ID. A User that no longer
+   * exists is simply missing from the map.
+   */
+  async findPublicUsers(
+    userIds: readonly string[],
+  ): Promise<Map<string, PublicUser>> {
+    const rows = await this.usersRepository.findPublicUsers([...userIds]);
+    return new Map(rows.map((row) => [row.id, row]));
   }
 
   /**
