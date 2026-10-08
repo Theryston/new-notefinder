@@ -47,7 +47,6 @@ class Decoder(nn.Module):
     ):
         super().__init__()
         self.conv1 = Conv2DBNActiv(nin, nout, ksize, 1, pad, activ=activ)
-        # self.conv2 = Conv2DBNActiv(nout, nout, ksize, 1, pad, activ=activ)
         self.dropout = nn.Dropout2d(0.1) if dropout else None
 
     def __call__(self, x, skip=None):
@@ -60,7 +59,6 @@ class Decoder(nn.Module):
             x = torch.cat([x, skip], dim=1)
 
         h = self.conv1(x)
-        # h = self.conv2(h)
 
         if self.dropout is not None:
             h = self.dropout(h)

@@ -50,20 +50,18 @@ class BaseNet(nn.Module):
 
 
 class CascadedNet(nn.Module):
-    def __init__(
-        self, n_fft, hop_length, nout=32, nout_lstm=128, is_complex=False
-    ):
+    def __init__(self, n_fft, hop_length, nout=32, nout_lstm=128):
         super().__init__()
         self.n_fft = n_fft
         self.hop_length = hop_length
-        self.is_complex = is_complex
 
         self.max_bin = n_fft // 2
         self.output_bin = n_fft // 2 + 1
         self.nin_lstm = self.max_bin // 2
         self.offset = 64
 
-        nin = 4 if is_complex else 2
+        # The left and right magnitude spectrograms.
+        nin = 2
 
         self.stg1_low_band_net = nn.Sequential(
             BaseNet(nin, nout // 2, self.nin_lstm // 2, nout_lstm),
@@ -86,12 +84,11 @@ class CascadedNet(nn.Module):
         )
 
         self.out = nn.Conv2d(nout, nin, 1, bias=False)
+        # Not used at inference, but its weights are in the checkpoint, and
+        # loading the state dict strictly needs the module to exist.
         self.aux_out = nn.Conv2d(3 * nout // 4, nin, 1, bias=False)
 
-    def forward(self, x):
-        if self.is_complex:
-            x = torch.cat([x.real, x.imag], dim=1)
-
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x[:, :, : self.max_bin]
 
         bandw = x.size()[2] // 2
@@ -110,12 +107,7 @@ class CascadedNet(nn.Module):
         f3_in = torch.cat([x, aux1, aux2], dim=1)
         f3 = self.stg3_full_band_net(f3_in)
 
-        if self.is_complex:
-            mask = self.out(f3)
-            mask = torch.complex(mask[:, :2], mask[:, 2:])
-            mask = self.bounded_mask(mask)
-        else:
-            mask = torch.sigmoid(self.out(f3))
+        mask = torch.sigmoid(self.out(f3))
 
         mask = functional.pad(
             input=mask,
@@ -125,26 +117,10 @@ class CascadedNet(nn.Module):
 
         return mask
 
-    def bounded_mask(self, mask, eps=1e-8):
-        mask_mag = torch.abs(mask)
-        mask = torch.tanh(mask_mag) * mask / (mask_mag + eps)
+    def predict_mask(self, x: torch.Tensor) -> torch.Tensor:
+        # Drops the `offset` frames at both edges of each crop, as the legacy
+        # worker did.
+        mask = self.forward(x)[:, :, :, self.offset : -self.offset]
+        if mask.size()[3] == 0:
+            raise ValueError("the input is too short for the model's offset")
         return mask
-
-    def predict_mask(self, x):
-        mask = self.forward(x)
-
-        if self.offset > 0:
-            mask = mask[:, :, :, self.offset : -self.offset]
-            assert mask.size()[3] > 0
-
-        return mask
-
-    def predict(self, x):
-        mask = self.forward(x)
-        pred = x * mask
-
-        if self.offset > 0:
-            pred = pred[:, :, :, self.offset : -self.offset]
-            assert pred.size()[3] > 0
-
-        return pred

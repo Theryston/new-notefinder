@@ -15,6 +15,7 @@ import numpy as np
 import soundfile as sf
 import torch
 
+from nfp_audio.padding import make_padding
 from nfp_audio.vocals_model import nets, spec_utils
 
 logger = logging.getLogger(__name__)
@@ -55,16 +56,6 @@ def extract_vocals(music: Path, vocals: Path) -> None:
     logger.info("separated vocals into %s", vocals)
 
 
-def make_padding(width, cropsize, offset):
-    left = offset
-    roi_size = cropsize - offset * 2
-    if roi_size == 0:
-        roi_size = cropsize
-    right = roi_size - (width % roi_size) + left
-
-    return left, right, roi_size
-
-
 def _pick_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda:0")
@@ -82,7 +73,9 @@ def _load_model(device: torch.device) -> nets.CascadedNet:
     return model
 
 
-def _vocal_spectrogram(model, device, mixture_spec):
+def _vocal_spectrogram(
+    model: nets.CascadedNet, device: torch.device, mixture_spec: np.ndarray
+) -> np.ndarray:
     """The vocal part of the mixture: everything the mask does not keep."""
     n_frame = mixture_spec.shape[2]
     offset = model.offset
@@ -100,7 +93,12 @@ def _vocal_spectrogram(model, device, mixture_spec):
     return (1 - mask) * magnitude * np.exp(1.0j * phase)
 
 
-def _predict_mask(model, device, padded_spec, roi_size):
+def _predict_mask(
+    model: nets.CascadedNet,
+    device: torch.device,
+    padded_spec: np.ndarray,
+    roi_size: int,
+) -> np.ndarray:
     offset = model.offset
     patches = (padded_spec.shape[2] - 2 * offset) // roi_size
     crops = np.asarray(

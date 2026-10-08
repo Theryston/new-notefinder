@@ -33,12 +33,8 @@ def wave_to_spectrogram(wave, hop_length, n_fft):
     return spec
 
 
-def spectrogram_to_wave(spec, hop_length=1024):
-    if spec.ndim == 2:
-        wave = librosa.istft(spec, hop_length=hop_length)
-    elif spec.ndim == 3:
-        wave_left = librosa.istft(spec[0], hop_length=hop_length)
-        wave_right = librosa.istft(spec[1], hop_length=hop_length)
-        wave = np.asarray([wave_left, wave_right])
-
-    return wave
+def spectrogram_to_wave(spec: np.ndarray, hop_length: int) -> np.ndarray:
+    """The stereo waveform of a stereo spectrogram (channels first)."""
+    wave_left = librosa.istft(spec[0], hop_length=hop_length)
+    wave_right = librosa.istft(spec[1], hop_length=hop_length)
+    return np.asarray([wave_left, wave_right])
