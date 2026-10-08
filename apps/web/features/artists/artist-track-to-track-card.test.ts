@@ -1,9 +1,9 @@
-import type { ArtistTrack } from '@notefinder/contracts';
+import type { CatalogTrack } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { toArtistTrackCardProps } from './artist-track-to-track-card';
+import { toCatalogTrackCardProps } from './artist-track-to-track-card';
 
-function makeTrack(overrides: Partial<ArtistTrack> = {}): ArtistTrack {
+function makeTrack(overrides: Partial<CatalogTrack> = {}): CatalogTrack {
   return {
     id: 'track-1',
     title: 'Bohemian Rhapsody',
@@ -34,9 +34,9 @@ function makeTrack(overrides: Partial<ArtistTrack> = {}): ArtistTrack {
   };
 }
 
-describe('toArtistTrackCardProps', () => {
+describe('toCatalogTrackCardProps', () => {
   it('joins performer names and picks the first-release cover', () => {
-    const props = toArtistTrackCardProps(makeTrack());
+    const props = toCatalogTrackCardProps(makeTrack());
 
     expect(props).toEqual({
       trackId: 'track-1',
@@ -48,21 +48,21 @@ describe('toArtistTrackCardProps', () => {
   });
 
   it('falls back to a null cover when there are no releases', () => {
-    const props = toArtistTrackCardProps(makeTrack({ releases: [] }));
+    const props = toCatalogTrackCardProps(makeTrack({ releases: [] }));
 
     expect(props.coverArtUrl).toBeNull();
     expect(props.placeholderSeed).toBe('track-1');
   });
 
   it('falls back to a null cover when releases are missing', () => {
-    const props = toArtistTrackCardProps(makeTrack({ releases: undefined }));
+    const props = toCatalogTrackCardProps(makeTrack({ releases: undefined }));
 
     expect(props.coverArtUrl).toBeNull();
     expect(props.placeholderSeed).toBe('track-1');
   });
 
   it('always links to the Track page', () => {
-    const props = toArtistTrackCardProps(makeTrack());
+    const props = toCatalogTrackCardProps(makeTrack());
 
     expect(props.trackId).toBe('track-1');
   });

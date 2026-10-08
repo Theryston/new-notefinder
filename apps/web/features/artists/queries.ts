@@ -1,10 +1,10 @@
 import 'server-only';
 
 import {
-  type ArtistTracksPage,
   artistSchema,
-  artistTracksPageSchema,
+  type CatalogTracksPage,
   cacheTags,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
@@ -55,13 +55,13 @@ export type ArtistTracksPageInput = {
 export async function getArtistTracksPage(
   artistId: string,
   input: ArtistTracksPageInput = {},
-): Promise<ArtistTracksPage> {
+): Promise<CatalogTracksPage> {
   'use cache';
   cacheTag(cacheTags.artistTracks(artistId));
   cacheLife('max');
 
   return serverApi(`/artists/${encodeURIComponent(artistId)}/tracks`, {
-    schema: artistTracksPageSchema,
+    schema: catalogTracksPageSchema,
     query: { cursor: input.cursor, limit: input.limit ?? 20 },
   });
 }

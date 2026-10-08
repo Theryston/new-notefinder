@@ -1,6 +1,6 @@
 import {
-  type ArtistTrack,
-  artistTracksPageSchema,
+  type CatalogTrack,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -83,10 +83,10 @@ describe('Artist track details (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks`)
       .expect(200);
 
-    const page = artistTracksPageSchema.parse(response.body);
+    const page = catalogTracksPageSchema.parse(response.body);
     expect(page).toEqual(response.body);
     expect(page.items).toHaveLength(1);
-    const item = page.items[0] as ArtistTrack;
+    const item = page.items[0] as CatalogTrack;
     expect(item.releases).toEqual([
       {
         mbid: testMbid(2101),
@@ -130,8 +130,8 @@ describe('Artist track details (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks`)
       .expect(200);
 
-    const page = artistTracksPageSchema.parse(response.body);
-    const item = page.items[0] as ArtistTrack;
+    const page = catalogTracksPageSchema.parse(response.body);
+    const item = page.items[0] as CatalogTrack;
     expect(item.releases).toEqual([]);
     expect(item.works).toEqual([]);
     expect(item.tags).toEqual([]);
@@ -155,7 +155,7 @@ describe('Artist track details (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks`)
       .expect(200);
 
-    const page = artistTracksPageSchema.parse(response.body);
+    const page = catalogTracksPageSchema.parse(response.body);
     const byId = new Map(page.items.map((entry) => [entry.id, entry]));
     expect(byId.get(first.id)?.releases).toHaveLength(1);
     expect(byId.get(second.id)?.releases).toEqual([]);

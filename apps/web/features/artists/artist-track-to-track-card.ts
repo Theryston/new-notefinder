@@ -1,4 +1,4 @@
-import type { ArtistTrack } from '@notefinder/contracts';
+import type { CatalogTrack } from '@notefinder/contracts';
 
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
 
@@ -8,7 +8,7 @@ import type { TrackCardProps } from '@/features/tracks/components/track-card';
  * the Track identifier seeds the placeholder and always links to the
  * Track page.
  */
-export function toArtistTrackCardProps(track: ArtistTrack): TrackCardProps {
+export function toCatalogTrackCardProps(track: CatalogTrack): TrackCardProps {
   return {
     trackId: track.id,
     title: track.title,

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ArtistTracksPage } from '@notefinder/contracts';
+import type { CatalogTracksPage } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef } from 'react';
 
@@ -12,7 +12,7 @@ import {
   TrackCardSkeleton,
 } from '@/features/tracks/components/track-card-skeleton';
 
-import { toArtistTrackCardProps } from '../artist-track-to-track-card';
+import { toCatalogTrackCardProps } from '../artist-track-to-track-card';
 import {
   ARTIST_TRACKS_DEFAULT_LIMIT,
   useArtistTracks,
@@ -129,7 +129,7 @@ export function ArtistTracksGrid({
   initialPage,
 }: {
   artistId: string;
-  initialPage?: ArtistTracksPage;
+  initialPage?: CatalogTracksPage;
 }) {
   const {
     data,
@@ -173,7 +173,7 @@ export function ArtistTracksGrid({
     <TracksSection>
       <TrackCardGrid>
         {items.map((track) => (
-          <TrackCard key={track.id} {...toArtistTrackCardProps(track)} />
+          <TrackCard key={track.id} {...toCatalogTrackCardProps(track)} />
         ))}
         {isFetchingNextPage ? <TrackCardMoreSkeletons /> : null}
       </TrackCardGrid>

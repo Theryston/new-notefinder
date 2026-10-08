@@ -1,6 +1,6 @@
 import {
-  type ArtistTracksPage,
-  artistTracksPageSchema,
+  type CatalogTracksPage,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -60,7 +60,9 @@ describe('Artist tracks (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks`)
       .expect(200);
 
-    const page: ArtistTracksPage = artistTracksPageSchema.parse(response.body);
+    const page: CatalogTracksPage = catalogTracksPageSchema.parse(
+      response.body,
+    );
     expect(page).toEqual(response.body);
     expect(page.nextCursor).toBeNull();
     expect(page.items).toHaveLength(2);
@@ -93,7 +95,7 @@ describe('Artist tracks (e2e)', () => {
     const firstResponse = await testApp.http
       .get(`/v1/artists/${artist.id}/tracks?limit=2`)
       .expect(200);
-    const first = artistTracksPageSchema.parse(firstResponse.body);
+    const first = catalogTracksPageSchema.parse(firstResponse.body);
     expect(first.items).toHaveLength(2);
     expect(typeof first.nextCursor).toBe('string');
 
@@ -102,7 +104,7 @@ describe('Artist tracks (e2e)', () => {
         `/v1/artists/${artist.id}/tracks?limit=2&cursor=${encodeURIComponent(first.nextCursor ?? '')}`,
       )
       .expect(200);
-    const second = artistTracksPageSchema.parse(secondResponse.body);
+    const second = catalogTracksPageSchema.parse(secondResponse.body);
     expect(second.items).toHaveLength(1);
     expect(second.nextCursor).toBeNull();
 
@@ -117,7 +119,7 @@ describe('Artist tracks (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks`)
       .expect(200);
 
-    expect(artistTracksPageSchema.parse(response.body)).toEqual({
+    expect(catalogTracksPageSchema.parse(response.body)).toEqual({
       items: [],
       nextCursor: null,
     });
@@ -198,7 +200,7 @@ describe('Artist tracks (e2e)', () => {
       .get(`/v1/artists/${queen.id}/tracks`)
       .expect(200);
 
-    const page = artistTracksPageSchema.parse(response.body);
+    const page = catalogTracksPageSchema.parse(response.body);
     expect(page.items).toHaveLength(1);
     expect(page.items[0]?.artists).toEqual([
       { id: bowie.id, name: 'David Bowie' },
@@ -220,7 +222,7 @@ describe('Artist tracks (e2e)', () => {
       .get(`/v1/artists/${artist.id}/tracks?limit=1`)
       .expect(200);
 
-    const page = artistTracksPageSchema.parse(response.body);
+    const page = catalogTracksPageSchema.parse(response.body);
     expect(page.nextCursor).toBe(expected);
   });
 });

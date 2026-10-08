@@ -7,9 +7,9 @@ import {
 } from '@nestjs/swagger';
 import {
   type Artist,
-  type ArtistTracksPage,
   artistSchema,
-  artistTracksPageSchema,
+  type CatalogTracksPage,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
@@ -42,7 +42,7 @@ export class ArtistsController {
   // Recording in stable order. Same legacy fallback as the header (moved
   // with the new ID, else a real 404), so old bookmarks redirect too.
   @Get(':id/tracks')
-  @ZodSerializerDto(artistTracksPageSchema)
+  @ZodSerializerDto(catalogTracksPageSchema)
   @ApiOkResponse({ description: "The artist's processed tracks, paginated." })
   @ApiBadRequestResponse({ description: 'The cursor or limit is bad.' })
   @ApiNotFoundResponse({
@@ -53,7 +53,7 @@ export class ArtistsController {
   getArtistTracks(
     @Param() params: ArtistIdParamDto,
     @Query() query: ArtistTracksQueryDto,
-  ): Promise<ArtistTracksPage> {
+  ): Promise<CatalogTracksPage> {
     return this.artistsService.getArtistTracks(params.id, query);
   }
 }

@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { artistTracksPageSchema } from '@notefinder/contracts';
+import { catalogTracksPageSchema } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { ArtistsRepository } from './artists.repository.js';
 import { ArtistsService } from './artists.service.js';
@@ -67,7 +67,7 @@ describe('ArtistsService track details', () => {
     const result = await service.getArtistTracks('artist-1', { limit: 20 });
 
     expect(result).toEqual({ items: [track], nextCursor: null });
-    expect(artistTracksPageSchema.parse(result)).toEqual(result);
+    expect(catalogTracksPageSchema.parse(result)).toEqual(result);
   });
 
   it('returns empty sections when the catalog has none', async () => {
@@ -86,6 +86,6 @@ describe('ArtistsService track details', () => {
 
     const result = await service.getArtistTracks('artist-1', { limit: 20 });
 
-    expect(artistTracksPageSchema.parse(result)).toEqual(result);
+    expect(catalogTracksPageSchema.parse(result)).toEqual(result);
   });
 });

@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  type ArtistTracksPage,
-  artistTracksPageSchema,
+  type CatalogTracksPage,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import {
   infiniteQueryOptions,
@@ -32,9 +32,9 @@ export function fetchArtistTracksPage({
   cursor,
   limit,
   signal,
-}: ArtistTracksPageParams): Promise<ArtistTracksPage> {
+}: ArtistTracksPageParams): Promise<CatalogTracksPage> {
   return browserApi(`/artists/${encodeURIComponent(artistId)}/tracks`, {
-    schema: artistTracksPageSchema,
+    schema: catalogTracksPageSchema,
     query: { cursor, limit },
     signal,
   });
@@ -43,7 +43,7 @@ export function fetchArtistTracksPage({
 export type ArtistTracksInfiniteInput = {
   artistId: string;
   limit?: number;
-  initialPage?: ArtistTracksPage;
+  initialPage?: CatalogTracksPage;
 };
 
 /**
@@ -73,7 +73,7 @@ export function artistTracksInfiniteQueryOptions({
         signal,
       }),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: ArtistTracksPage) =>
+    getNextPageParam: (lastPage: CatalogTracksPage) =>
       lastPage.nextCursor ?? undefined,
     initialData: initialPage
       ? { pages: [initialPage], pageParams: [undefined] }
