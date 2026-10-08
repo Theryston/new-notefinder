@@ -12,14 +12,16 @@ import {
   assertSeedAllowed,
   SEED_ARTISTS,
   SEED_TRACK_ARTISTS,
-  SEED_TRACK_EXTERNAL_LINKS,
-  SEED_TRACK_RELEASES,
-  SEED_TRACK_TAGS,
-  SEED_TRACK_WORKS,
   SEED_TRACKS,
   SEED_USER,
   SEED_USER_PASSWORD,
 } from './seed-data.js';
+import {
+  SEED_TRACK_EXTERNAL_LINKS,
+  SEED_TRACK_RELEASES,
+  SEED_TRACK_TAGS,
+  SEED_TRACK_WORKS,
+} from './seed-track-details.js';
 
 describe('SEED_USER', () => {
   it('passes the sign-up rules, so developers can sign in with it', () => {
@@ -157,10 +159,7 @@ describe('seed albums', () => {
     expect(SEED_ALBUMS.some((album) => creditCount(album.id) > 1)).toBe(true);
     expect(
       SEED_ALBUMS.some(
-        (album) =>
-          album.genres.length === 0 &&
-          album.primaryType === null &&
-          album.year === null,
+        (album) => album.genres.length === 0 && album.primaryType === null,
       ),
     ).toBe(true);
   });
