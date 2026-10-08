@@ -2,12 +2,10 @@ import { z } from 'zod';
 import {
   mbidSchema,
   musicCatalogErrorResponseSchema,
+  musicCatalogGenreSchema,
   musicCatalogSuccessResponseSchema,
 } from './music-catalog.js';
-import {
-  recordingArtistCreditSchema,
-  recordingGenreSchema,
-} from './music-catalog-recording.js';
+import { recordingArtistCreditSchema } from './music-catalog-recording.js';
 
 // The release group (an Album, ADR 0003) as the Music catalog describes it,
 // returned by `getReleaseGroup`. Part of the Music catalog protocol
@@ -47,9 +45,10 @@ export type MusicCatalogReleaseMedium = z.infer<
 >;
 
 /**
- * The release the album's track order is taken from: the Official release
- * with the earliest release event, ties by MBID (chosen once, by the
- * catalog, so repeated calls agree).
+ * The release the album's track order is taken from: the earliest Official
+ * release, or the earliest release of any status when none is Official, by
+ * its earliest release event (dated before undated), ties by MBID. Chosen by
+ * the catalog, so repeated calls agree.
  */
 export const musicCatalogRepresentativeReleaseSchema = z.object({
   mbid: mbidSchema,
@@ -69,20 +68,23 @@ export const musicCatalogReleaseGroupSchema = z.object({
   /** Compilation, Live, Remix, ... by name; empty when there are none. */
   secondaryTypes: z.array(z.string()),
   /**
-   * The year of the earliest release event of any release in the group, null
-   * when none of its releases has a year.
+   * The year of the earliest release event of any release in the group, of
+   * any status: it matches MusicBrainz's first release date, and it can
+   * predate the representative release (which prefers Official releases).
+   * Null when none of the group's releases has a year.
    */
   firstReleaseYear: z.number().int().nullable(),
   /** The group's own genres, most voted first, by name on a tie. */
-  genres: z.array(recordingGenreSchema),
+  genres: z.array(musicCatalogGenreSchema),
   /** The whole credit as printed, in credit order. */
   artistCredit: recordingArtistCreditSchema,
   /**
-   * Cover Art Archive URL built from the release group MBID. The catalog does
-   * not know which groups have art, so it may answer 404.
+   * Cover Art Archive front cover of the release group, built from its MBID
+   * alone, so always set (never null). The catalog does not know which groups
+   * have art: a 404 means there is no cover, and consumers must treat it so.
    */
   coverArtUrl: z.string(),
-  /** null when no release of the group is Official. */
+  /** null only when the group has no releases. */
   representativeRelease: musicCatalogRepresentativeReleaseSchema.nullable(),
 });
 

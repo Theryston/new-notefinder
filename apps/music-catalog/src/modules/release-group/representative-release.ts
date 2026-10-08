@@ -14,16 +14,18 @@ const earliestDate = (release: ReleaseWithEvents): string | null =>
 
 /**
  * The release a release group's tracks are taken from: its earliest Official
- * release, dated before undated, ties broken by MBID. The choice depends only
- * on the data, so every call answers the same release. Undefined when none of
- * the group's releases is Official.
+ * release or, when none of its releases is Official, its earliest release of
+ * any status. Earliest means by the earliest release event: dated before
+ * undated, ties broken by MBID. The choice depends only on the data, so every
+ * call answers the same release. Undefined only when the group has no releases.
  */
 export const pickRepresentativeRelease = (
   releases: readonly ReleaseWithEvents[],
 ): ReleaseWithEvents | undefined => {
-  const candidates = releases
-    .filter((release) => release.status === OFFICIAL)
-    .map((release) => ({ release, date: earliestDate(release) }));
+  const official = releases.filter((release) => release.status === OFFICIAL);
+  const candidates = (official.length > 0 ? official : releases).map(
+    (release) => ({ release, date: earliestDate(release) }),
+  );
   candidates.sort(
     (a, b) =>
       compareTextNullsLast(a.date, b.date) ||

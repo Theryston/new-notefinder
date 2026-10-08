@@ -1,4 +1,7 @@
 import type { RecordingTagsSource } from '@notefinder/contracts';
+import type { CreditedArtistRow } from '../../database/credited-artists.js';
+import type { PartialDate } from '../../lib/partial-date.js';
+import type { TagVotes } from '../../lib/tag-votes.js';
 
 // What the repository reads for one Recording, before it is assembled into
 // the protocol's `Recording`. Plain rows: no rule is applied to them yet.
@@ -16,13 +19,6 @@ export type RecordingRow = {
   artistCreditName: string;
 };
 
-export type CreditedArtistRow = {
-  mbid: string;
-  name: string;
-  creditedName: string;
-  joinPhrase: string;
-};
-
 /** A release the Recording is on, at one of its tracks. */
 export type ReleaseRow = {
   id: number;
@@ -35,26 +31,19 @@ export type ReleaseRow = {
   trackPosition: number;
 };
 
-/** One release event; any part of the date may be unknown. */
-export type ReleaseEventRow = {
+/** One release event: its date (any part may be unknown) and its country. */
+export type ReleaseEventRow = PartialDate & {
   releaseId: number;
   /** ISO 3166-1 alpha-2 code, null for an unknown country. */
   country: string | null;
-  year: number | null;
-  month: number | null;
-  day: number | null;
 };
 
 export type WorkRow = { mbid: string; title: string };
 
 export type ExternalUrlRow = { url: string; linkType: string };
 
-/** A tag with its vote count; `genreMbid` is set when it is also a genre. */
-export type TagVotesRow = {
-  name: string;
-  count: number;
-  genreMbid: string | null;
-};
+/** A tag with its vote count, as the Recording's repository reads it. */
+export type TagVotesRow = TagVotes;
 
 /** The tags at each level a Recording's genres may come from. */
 export type TagLevels = Record<RecordingTagsSource, TagVotesRow[]>;

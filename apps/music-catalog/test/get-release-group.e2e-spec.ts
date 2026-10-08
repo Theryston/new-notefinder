@@ -192,7 +192,7 @@ describe('getReleaseGroup: the release group (e2e)', () => {
     expect(second).toEqual(first);
   });
 
-  it('answers no representative release when no release of the group is Official', async () => {
+  it('falls back to the earliest release of any status when no release of the group is Official', async () => {
     const db = server().db;
     const queen = await addArtist(db, { name: 'Queen', mbid: mbid(1) });
     const recording = await addRecording(db, {
@@ -213,7 +213,14 @@ describe('getReleaseGroup: the release group (e2e)', () => {
 
     expect(response).toMatchObject({
       ok: true,
-      result: { representativeRelease: null, firstReleaseYear: 1974 },
+      result: {
+        representativeRelease: {
+          mbid: mbid(200),
+          title: 'A Night at the Opera',
+          media: [],
+        },
+        firstReleaseYear: 1974,
+      },
     });
   });
 
@@ -256,7 +263,12 @@ describe('getReleaseGroup: the release group (e2e)', () => {
           ],
         },
         coverArtUrl: coverOf(mbid(300)),
-        representativeRelease: null,
+        // The only release is the fallback: it has no status, not even Official.
+        representativeRelease: {
+          mbid: mbid(200),
+          title: 'Untitled',
+          media: [],
+        },
       },
     });
   });

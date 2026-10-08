@@ -49,6 +49,19 @@ export const musicCatalogErrorSchema = z.object({
 
 export type MusicCatalogError = z.infer<typeof musicCatalogErrorSchema>;
 
+/**
+ * A genre of a music entity (a Recording, an artist, a release group): a tag
+ * that MusicBrainz also lists as a genre, with its vote count. `mbid` is the
+ * genre's own MBID.
+ */
+export const musicCatalogGenreSchema = z.object({
+  mbid: mbidSchema,
+  name: z.string(),
+  count: z.number().int(),
+});
+
+export type MusicCatalogGenre = z.infer<typeof musicCatalogGenreSchema>;
+
 /** Chosen by the client and echoed by the response that answers the request. */
 export const musicCatalogRequestIdSchema = z.string().min(1).max(128);
 

@@ -1,5 +1,8 @@
 import { asc, eq, inArray } from 'drizzle-orm';
-import { selectCreditedArtists } from '../../database/credited-artists.js';
+import {
+  type CreditedArtistRow,
+  selectCreditedArtists,
+} from '../../database/credited-artists.js';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import { artistCredit } from '../../database/schema/musicbrainz/artist.js';
@@ -22,7 +25,6 @@ import { genre, tag } from '../../database/schema/musicbrainz/tag.js';
 import type { PartialDate } from '../../lib/partial-date.js';
 import type { TagVotes } from '../../lib/tag-votes.js';
 import type {
-  CreditedArtistRow,
   MediumTrackRow,
   ReleaseGroupRow,
   ReleaseWithEvents,

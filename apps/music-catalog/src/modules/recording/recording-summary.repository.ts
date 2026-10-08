@@ -1,5 +1,6 @@
 import { type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn, AnyPgTable } from 'drizzle-orm/pg-core';
+import type { CreditedArtistRow } from '../../database/credited-artists.js';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import {
@@ -21,7 +22,7 @@ import {
   track,
 } from '../../database/schema/musicbrainz/release.js';
 import { genre, tag } from '../../database/schema/musicbrainz/tag.js';
-import type { CreditedArtistRow, TagVotesRow } from './recording-data.js';
+import type { TagVotesRow } from './recording-data.js';
 import type {
   PrimaryReleaseRow,
   RecordingSummaryRow,

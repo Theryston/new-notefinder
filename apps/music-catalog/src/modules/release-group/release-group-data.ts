@@ -16,13 +16,6 @@ export type ReleaseGroupRow = {
   artistCreditName: string;
 };
 
-export type CreditedArtistRow = {
-  mbid: string;
-  name: string;
-  creditedName: string;
-  joinPhrase: string;
-};
-
 /** A release of the group, with the dates of all its release events. */
 export type ReleaseWithEvents = {
   id: number;

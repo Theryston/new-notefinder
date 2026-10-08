@@ -2,9 +2,9 @@ import { z } from 'zod';
 import {
   mbidSchema,
   musicCatalogErrorResponseSchema,
+  musicCatalogGenreSchema,
   musicCatalogSuccessResponseSchema,
 } from './music-catalog.js';
-import { recordingGenreSchema } from './music-catalog-recording.js';
 
 // The artist as the Music catalog describes it, returned by `getArtist`. Part
 // of the Music catalog protocol (music-catalog.ts), kept in its own file like
@@ -24,7 +24,7 @@ export const musicCatalogArtistSchema = z.object({
   /** The artist's own name, as MusicBrainz has it. */
   name: z.string(),
   /** The artist's own genres, most voted first, by name on a tie. */
-  genres: z.array(recordingGenreSchema),
+  genres: z.array(musicCatalogGenreSchema),
 });
 
 export type MusicCatalogArtist = z.infer<typeof musicCatalogArtistSchema>;

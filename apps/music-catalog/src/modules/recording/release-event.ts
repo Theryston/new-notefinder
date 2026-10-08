@@ -2,11 +2,6 @@ import { compareTextNullsLast } from '../../lib/compare.js';
 import { formatPartialDate } from '../../lib/partial-date.js';
 import type { ReleaseEventRow } from './recording-data.js';
 
-// The date formatting is shared with the release group's representative
-// release (a sibling module), so it lives in lib/; re-exported for this file's
-// callers.
-export { formatPartialDate };
-
 type FormattedEvent = { date: string | null; country: string | null };
 
 // Dated events first, earliest first: the partial dates sort as text, since

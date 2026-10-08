@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   mbidSchema,
   musicCatalogErrorResponseSchema,
+  musicCatalogGenreSchema,
   musicCatalogSuccessResponseSchema,
 } from './music-catalog.js';
 
@@ -86,12 +87,8 @@ export const recordingWorkSchema = z.object({
 
 export type RecordingWork = z.infer<typeof recordingWorkSchema>;
 
-/** A tag that MusicBrainz also lists as a genre. `count` is the vote count. */
-export const recordingGenreSchema = z.object({
-  mbid: mbidSchema,
-  name: z.string(),
-  count: z.number().int(),
-});
+/** A genre of the Recording: the shared shape, see `musicCatalogGenreSchema`. */
+export const recordingGenreSchema = musicCatalogGenreSchema;
 
 export type RecordingGenre = z.infer<typeof recordingGenreSchema>;
 

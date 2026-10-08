@@ -105,11 +105,57 @@ describe('pickRepresentativeRelease', () => {
     expect(backward?.mbid).toBe(forward?.mbid);
   });
 
-  it('answers nothing when no release is Official', () => {
-    const bootleg = release({ id: 1, mbid: mbid(1), status: 'Bootleg' });
-    const withoutStatus = release({ id: 2, mbid: mbid(2), status: null });
+  it('falls back to the earliest release of any status when none is Official', () => {
+    const bootleg = release({
+      id: 1,
+      mbid: mbid(1),
+      status: 'Bootleg',
+      events: [dated(1990)],
+    });
+    const earliest = release({
+      id: 2,
+      mbid: mbid(2),
+      status: null,
+      events: [dated(1975, 4)],
+    });
 
-    expect(pickRepresentativeRelease([bootleg, withoutStatus])).toBeUndefined();
+    expect(pickRepresentativeRelease([bootleg, earliest])?.id).toBe(2);
+  });
+
+  it('breaks a fallback tie by MBID and puts undated releases last, as for Official ones', () => {
+    const undated = release({ id: 1, mbid: mbid(1), status: 'Bootleg' });
+    const largerMbid = release({
+      id: 2,
+      mbid: mbid(9),
+      status: 'Promotion',
+      events: [dated(2001)],
+    });
+    const smallerMbid = release({
+      id: 3,
+      mbid: mbid(3),
+      status: 'Bootleg',
+      events: [dated(2001)],
+    });
+
+    expect(
+      pickRepresentativeRelease([undated, largerMbid, smallerMbid])?.id,
+    ).toBe(3);
+  });
+
+  it('still prefers an Official release to an earlier one of another status', () => {
+    const bootleg = release({
+      id: 1,
+      mbid: mbid(1),
+      status: 'Bootleg',
+      events: [dated(1970)],
+    });
+    const official = release({
+      id: 2,
+      mbid: mbid(2),
+      events: [dated(1980)],
+    });
+
+    expect(pickRepresentativeRelease([bootleg, official])?.id).toBe(2);
   });
 
   it('answers nothing for a release group without releases', () => {

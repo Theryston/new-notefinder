@@ -1,5 +1,8 @@
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
-import { selectCreditedArtists } from '../../database/credited-artists.js';
+import {
+  type CreditedArtistRow,
+  selectCreditedArtists,
+} from '../../database/credited-artists.js';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import {
@@ -37,7 +40,6 @@ import {
   work,
 } from '../../database/schema/musicbrainz/work.js';
 import type {
-  CreditedArtistRow,
   ExternalUrlRow,
   RecordingRow,
   ReleaseEventRow,

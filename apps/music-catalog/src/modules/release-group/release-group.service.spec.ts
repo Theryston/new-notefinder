@@ -99,15 +99,29 @@ describe('ReleaseGroupService', () => {
     expect(result.representativeRelease?.mbid).toBe(OFFICIAL_RELEASE);
   });
 
-  it('reads no media and has no representative release without an Official release', async () => {
+  it('falls back to the earliest release of any status when none is Official', async () => {
     const { service, repository } = setup({
       findReleases: vi.fn(async () => [bootlegRelease]),
     });
 
     const result = await service.getReleaseGroup(MBID);
 
+    expect(repository.findMedia).toHaveBeenCalledExactlyOnceWith(
+      bootlegRelease.id,
+    );
+    expect(result.representativeRelease?.mbid).toBe(BOOTLEG_RELEASE);
+    expect(result.firstReleaseYear).toBe(1974);
+  });
+
+  it('answers no representative release only when the group has no releases', async () => {
+    const { service, repository } = setup({
+      findReleases: vi.fn(async () => []),
+    });
+
+    const result = await service.getReleaseGroup(MBID);
+
     expect(repository.findMedia).not.toHaveBeenCalled();
     expect(result.representativeRelease).toBeNull();
-    expect(result.firstReleaseYear).toBe(1974);
+    expect(result.firstReleaseYear).toBeNull();
   });
 });

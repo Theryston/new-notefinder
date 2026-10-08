@@ -148,7 +148,7 @@ src/
       release-group.service.ts  readiness, not found / moved, the representative release
       release-group.repository.ts  the release group, its releases, events and media
       assemble-release-group.ts rows -> the protocol's release group (pure)
-      representative-release.ts the earliest Official release, ties by MBID (pure)
+      representative-release.ts the earliest Official release, else of any status (pure)
     search/
       search.handler.ts         the `search` handler
       search.service.ts         readiness, scope, Meilisearch, summaries, order
@@ -421,16 +421,21 @@ is an Album (ADR 0003), so the answer is its header, not one edition.
   (by name, empty when none), `artistCredit` (as a Recording's: the whole
   credit in credit order).
 - `firstReleaseYear`: the year of the earliest release event of **any**
-  release of the group, Official or not; null when none has a year.
+  release of the group, whatever its status; null when none has a year. It
+  matches MusicBrainz's first release date, and it can predate the
+  representative release, which is chosen among the Official releases first.
 - `genres`: the group's own genres (`lib/tag-votes.ts`: the voted tags that
   MusicBrainz also lists as genres, most voted first, by name on a tie).
 - `coverArtUrl`: `https://coverartarchive.org/release-group/<MBID>/front-500`,
-  built by `releaseGroupCoverArtUrl` from the MBID alone (it may answer 404).
-- `representativeRelease`: the **earliest Official** release, by its earliest
-  release event (undated last), ties by MBID, chosen by the pure
-  `pickRepresentativeRelease`, so repeated calls agree. Its `media` lists each
-  medium (position, title, `''` when none) with each track's position and
-  Recording MBID. `null` when no release of the group is Official.
+  built by `releaseGroupCoverArtUrl` from the MBID alone, so always set, never
+  null. It may answer 404: that means there is no cover, and consumers must
+  treat it so (the API does, from #143).
+- `representativeRelease`: the **earliest Official** release or, when none is
+  Official, the earliest release of **any** status, by its earliest release
+  event (undated last), ties by MBID. The pure `pickRepresentativeRelease`
+  chooses it, so repeated calls agree. Its `media` lists each medium (position,
+  title, `''` when none) with each track's position and Recording MBID. `null`
+  only when the group has no releases.
 - Errors: `RELEASE_GROUP_NOT_FOUND`, and `RELEASE_GROUP_MOVED` with `newMbid`
   for an MBID in `release_group_gid_redirect` whose target exists.
 

@@ -1,4 +1,4 @@
-import type { RecordingGenre } from '@notefinder/contracts';
+import type { MusicCatalogGenre } from '@notefinder/contracts';
 import { compareText } from './compare.js';
 
 /** A tag with its vote count; `genreMbid` is set when it is also a genre. */
@@ -22,7 +22,7 @@ export const votedTags = <T extends Voted>(rows: readonly T[]): T[] =>
   rows.filter((row) => row.count > 0).sort(byVotesThenName);
 
 /** The voted tags that MusicBrainz also lists as genres, most voted first. */
-export const votedGenres = (rows: readonly TagVotes[]): RecordingGenre[] =>
+export const votedGenres = (rows: readonly TagVotes[]): MusicCatalogGenre[] =>
   votedTags(rows).flatMap((row) =>
     row.genreMbid === null
       ? []
