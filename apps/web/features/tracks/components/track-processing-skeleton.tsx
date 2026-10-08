@@ -1,4 +1,3 @@
-import { cn } from 'cn';
 import { getTranslations } from 'next-intl/server';
 
 import {
@@ -7,11 +6,12 @@ import {
   entitySkeletonClass,
 } from '@/components/entity-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 /**
  * Same-dimension stand-in for the Processing page while the state streams in:
- * the banner (cover, title, artists) and the progress bar, so loading never
- * moves the layout.
+ * the banner (cover, title, artist credit) and the progress bar, so loading
+ * never moves the layout.
  */
 export async function TrackProcessingSkeleton() {
   const t = await getTranslations('tracks.processing');

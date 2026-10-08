@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  type CatalogRoute,
   entityRedirectUrl,
-  fetchEntityRouteVerdict,
+  fetchCatalogRouteVerdict,
   parseEntityRoute,
 } from './entity-route';
 
@@ -87,6 +88,17 @@ describe('entityRedirectUrl', () => {
     expect(url.search).toBe('?x=1');
   });
 
+  it('swaps the track ID and keeps locale, collection and query', () => {
+    const url = entityRedirectUrl(
+      'http://localhost:3000/pt-BR/tracks/legacy-1?x=1',
+      { locale: 'pt-BR', collection: 'tracks', id: 'legacy-1' },
+      'track-1',
+    );
+
+    expect(url.pathname).toBe('/pt-BR/tracks/track-1');
+    expect(url.search).toBe('?x=1');
+  });
+
   it('encodes the new ID', () => {
     const url = entityRedirectUrl(
       'http://localhost:3000/en/artists/legacy-1',
@@ -98,7 +110,7 @@ describe('entityRedirectUrl', () => {
   });
 });
 
-describe('fetchEntityRouteVerdict', () => {
+describe('fetchCatalogRouteVerdict', () => {
   const movedBody = {
     statusCode: 404,
     code: 'RESOURCE_MOVED',
@@ -106,59 +118,77 @@ describe('fetchEntityRouteVerdict', () => {
     details: { id: 'new-1' },
   };
 
-  const reply = (status: number, body: unknown) => async (input: string) => {
-    expect(input).toBe('https://api.test/v1/artists/legacy-1');
-    return { status, json: async () => body };
-  };
+  const catalogRoute = (
+    collection: CatalogRoute['collection'],
+    id = 'legacy-1',
+  ): CatalogRoute => ({ locale: 'en', collection, id });
 
-  it.each(['artists', 'albums'] as const)(
+  // The endpoint a route is checked on, relative to `/v1/`.
+  const endpointOf = (collection: CatalogRoute['collection'], id: string) =>
+    collection === 'tracks' ? `tracks/${id}/processing` : `${collection}/${id}`;
+
+  const reply =
+    (path: string, status: number, body: unknown) => async (input: string) => {
+      expect(input).toBe(`https://api.test/v1/${path}`);
+      return { status, json: async () => body };
+    };
+
+  it.each(['artists', 'albums', 'tracks'] as const)(
     'asks the versioned %s endpoint with the encoded ID',
     async (collection) => {
       const seen: string[] = [];
-      await fetchEntityRouteVerdict(
+      await fetchCatalogRouteVerdict(
         'https://api.test/',
-        collection,
-        'a/b',
+        catalogRoute(collection, 'a/b'),
         async (input: string) => {
           seen.push(input);
           return { status: 200, json: async () => ({}) };
         },
       );
 
-      expect(seen).toEqual([`https://api.test/v1/${collection}/a%2Fb`]);
+      expect(seen).toEqual([
+        `https://api.test/v1/${endpointOf(collection, 'a%2Fb')}`,
+      ]);
     },
   );
 
   it('maps a legacy artist ID to its redirect', async () => {
     await expect(
-      fetchEntityRouteVerdict(
+      fetchCatalogRouteVerdict(
         'https://api.test',
-        'artists',
-        'legacy-1',
-        reply(404, movedBody),
+        catalogRoute('artists'),
+        reply('artists/legacy-1', 404, movedBody),
       ),
     ).resolves.toEqual({ kind: 'moved', newId: 'new-1' });
   });
 
   it('maps a legacy album ID to its redirect', async () => {
     await expect(
-      fetchEntityRouteVerdict(
+      fetchCatalogRouteVerdict(
         'https://api.test',
-        'albums',
-        'legacy-1',
-        async () => ({ status: 404, json: async () => movedBody }),
+        catalogRoute('albums'),
+        reply('albums/legacy-1', 404, movedBody),
       ),
     ).resolves.toEqual({ kind: 'moved', newId: 'new-1' });
   });
 
-  it.each(['artists', 'albums'] as const)(
+  it('maps a legacy track ID to its redirect, read from its Processing endpoint', async () => {
+    await expect(
+      fetchCatalogRouteVerdict(
+        'https://api.test',
+        catalogRoute('tracks'),
+        reply('tracks/legacy-1/processing', 404, movedBody),
+      ),
+    ).resolves.toEqual({ kind: 'moved', newId: 'new-1' });
+  });
+
+  it.each(['artists', 'albums', 'tracks'] as const)(
     'maps an unknown %s ID to a real 404',
     async (collection) => {
       await expect(
-        fetchEntityRouteVerdict(
+        fetchCatalogRouteVerdict(
           'https://api.test',
-          collection,
-          'legacy-1',
+          catalogRoute(collection),
           async () => ({
             status: 404,
             json: async () => ({
@@ -177,10 +207,9 @@ describe('fetchEntityRouteVerdict', () => {
     ['a 500', 500, { code: 'INTERNAL_ERROR' }],
   ])('lets %s through to the page', async (_label, status, body) => {
     await expect(
-      fetchEntityRouteVerdict(
+      fetchCatalogRouteVerdict(
         'https://api.test',
-        'artists',
-        'legacy-1',
+        catalogRoute('artists'),
         async () => ({
           status,
           json: async () => body,
@@ -191,10 +220,9 @@ describe('fetchEntityRouteVerdict', () => {
 
   it('lets an unparsable 404 body through to the page', async () => {
     await expect(
-      fetchEntityRouteVerdict(
+      fetchCatalogRouteVerdict(
         'https://api.test',
-        'artists',
-        'legacy-1',
+        catalogRoute('artists'),
         async () => ({
           status: 404,
           json: async (): Promise<unknown> => {
@@ -212,10 +240,9 @@ describe('fetchEntityRouteVerdict', () => {
     'lets a 404 with %s through instead of inventing a verdict',
     async (_label, body) => {
       await expect(
-        fetchEntityRouteVerdict(
+        fetchCatalogRouteVerdict(
           'https://api.test',
-          'artists',
-          'legacy-1',
+          catalogRoute('artists'),
           async () => ({
             status: 404,
             json: async () => body,
@@ -229,10 +256,9 @@ describe('fetchEntityRouteVerdict', () => {
     const fetchFn = vi.fn().mockRejectedValue(new Error('aborted'));
 
     await expect(
-      fetchEntityRouteVerdict(
+      fetchCatalogRouteVerdict(
         'https://api.test',
-        'artists',
-        'legacy-1',
+        catalogRoute('artists'),
         fetchFn,
       ),
     ).resolves.toEqual({ kind: 'pass' });

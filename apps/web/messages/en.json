@@ -48,7 +48,6 @@
     "processing": {
       "metaTitle": "{title}",
       "metaDescription": "Follow the processing of {title} and open its notes when they are ready.",
-      "artists": "Artists",
       "steps": {
         "label": "Processing steps",
         "FINDING_VIDEO": "Finding the video",
@@ -65,7 +64,7 @@
       },
       "progress": {
         "label": "Processing progress",
-        "value": "{percent}%"
+        "value": "{percent, number}%"
       },
       "status": {
         "QUEUED": "Queued",

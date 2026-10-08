@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  displayedPercent,
   progressPercent,
   type StepState,
   stepStates,
 } from './processing-steps';
+
+const RUNNING_STEPS = [
+  'FINDING_VIDEO',
+  'DOWNLOADING_AUDIO',
+  'EXTRACTING_VOCALS',
+  'DETECTING_NOTES',
+  'EXTRACTING_LYRICS',
+] as const;
+
+const DAY_MS = 24 * 60 * 60_000;
 
 const statesOf = (
   status: Parameters<typeof stepStates>[0],
@@ -109,5 +120,58 @@ describe('progressPercent', () => {
 
   it('is nothing for a failure with no step to resume from', () => {
     expect(progressPercent('FAILED', null)).toBe(0);
+  });
+});
+
+describe('displayedPercent', () => {
+  it('starts a step at the value the step starts at', () => {
+    expect(displayedPercent('DOWNLOADING_AUDIO', null, 0)).toBe(30);
+    expect(displayedPercent('EXTRACTING_VOCALS', null, 0)).toBe(50);
+  });
+
+  it('creeps toward the next step: about 63% of the gap after the time constant', () => {
+    // 30 + (50 - 30) * (1 - e^-1), floored.
+    expect(displayedPercent('DOWNLOADING_AUDIO', null, 40_000)).toBe(42);
+    // 0 + (10 - 0) * (1 - e^-1), floored.
+    expect(displayedPercent('QUEUED', null, 40_000)).toBe(6);
+  });
+
+  it('never moves backwards while the step runs', () => {
+    for (const status of RUNNING_STEPS) {
+      const samples = Array.from({ length: 601 }, (_, second) =>
+        displayedPercent(status, null, second * 1_000),
+      );
+      expect([...samples].sort((a, b) => a - b)).toEqual(samples);
+    }
+  });
+
+  it('never reaches the next step by itself, however long the step runs', () => {
+    expect(displayedPercent('QUEUED', null, DAY_MS)).toBe(9);
+    expect(displayedPercent('DOWNLOADING_AUDIO', null, DAY_MS)).toBe(49);
+    expect(displayedPercent('EXTRACTING_LYRICS', null, DAY_MS)).toBe(99);
+  });
+
+  it.each([
+    ['FINDING_VIDEO', 'DOWNLOADING_AUDIO'],
+    ['DOWNLOADING_AUDIO', 'EXTRACTING_VOCALS'],
+    ['EXTRACTING_VOCALS', 'DETECTING_NOTES'],
+    ['DETECTING_NOTES', 'EXTRACTING_LYRICS'],
+  ] as const)(
+    'keeps %s below the start of %s, so a status change is a jump forward',
+    (status, next) => {
+      expect(displayedPercent(status, null, DAY_MS)).toBeLessThan(
+        displayedPercent(next, null, 0),
+      );
+    },
+  );
+
+  it('treats a negative elapsed time as none', () => {
+    expect(displayedPercent('DOWNLOADING_AUDIO', null, -5_000)).toBe(30);
+  });
+
+  it('holds a completed Processing at 100 and a failed one where it stopped', () => {
+    expect(displayedPercent('COMPLETED', null, DAY_MS)).toBe(100);
+    expect(displayedPercent('FAILED', 'DOWNLOADING_AUDIO', DAY_MS)).toBe(30);
+    expect(displayedPercent('FAILED', null, DAY_MS)).toBe(0);
   });
 });

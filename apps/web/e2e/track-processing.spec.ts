@@ -24,9 +24,16 @@ const trackFixture = (
 ): FakeTrack => ({
   id,
   title: UNLINKED_TITLE,
-  artists: [],
+  artistCredit: [],
   processing: { status: 'QUEUED' },
-  contributors: [{ username: 'ada_singer', name: 'Ada Lovelace', image: null }],
+  contributors: [
+    {
+      id: `contributor-${id}`,
+      username: 'ada_singer',
+      name: 'Ada Lovelace',
+      image: null,
+    },
+  ],
   ...overrides,
 });
 
@@ -130,6 +137,30 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByText(messages.tracks.processing.closeNote),
       ).toHaveCount(0);
+    });
+
+    test('shows the artist credit in the header while the Processing has not started', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-credit-${locale}`;
+      await setTrackMock({
+        tracks: [
+          trackFixture(trackId, {
+            artistCredit: [
+              { name: 'Queen', joinPhrase: ' feat. ' },
+              { name: 'David Bowie', joinPhrase: '' },
+            ],
+          }),
+        ],
+      });
+
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      await expect(
+        page.getByText('Queen feat. David Bowie', { exact: true }),
+      ).toBeVisible();
+      await expect(progress(page)).toHaveAttribute('aria-valuenow', '0');
     });
 
     test('shows the translated reason of a failed Processing', async ({

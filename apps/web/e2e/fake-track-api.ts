@@ -22,10 +22,12 @@ export type FakeTrack = {
   id: string;
   title: string;
   coverUrl?: string | null;
-  artists?: { id: string; name: string }[];
+  /** The artist credit as the Recording printed it, stored at creation. */
+  artistCredit?: { name: string; joinPhrase: string }[];
   /** `null` for a Track that never had a Processing. */
   processing: FakeTrackProcessing | null;
   contributors?: {
+    id: string;
     username: string | null;
     name: string;
     image: string | null;
@@ -48,7 +50,7 @@ export type TrackMockState = {
 const defaultTrack: FakeTrack = {
   id: 'clx123abc',
   title: 'Bohemian Rhapsody',
-  artists: [{ id: 'clx456def', name: 'Queen' }],
+  artistCredit: [{ name: 'Queen', joinPhrase: '' }],
   processing: { status: 'QUEUED' },
 };
 
@@ -64,7 +66,7 @@ function stateOf(track: FakeTrack) {
       id: track.id,
       title: track.title,
       coverUrl: track.coverUrl ?? null,
-      artists: track.artists ?? [],
+      artistCredit: track.artistCredit ?? [],
     },
     processing:
       processing === null

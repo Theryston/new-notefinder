@@ -1,6 +1,5 @@
 import type { TrackHeader } from '@notefinder/contracts';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
 
 import {
   entityBannerClass,
@@ -9,9 +8,9 @@ import {
   entityTitleClass,
   entityVisualClass,
 } from '@/components/entity-header';
-import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 
+import { creditText } from '../track-credit';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 
 /**
@@ -45,12 +44,10 @@ function TrackHeaderCover({ track }: { track: TrackHeader }) {
 
 /**
  * The Track banner of the Processing page, a featured block like the artist
- * and album headers: the cover, the title and the linked Artists. The Artists
- * are empty until the metadata import has run.
+ * and album headers: the cover, the title and the artist credit. The credit is
+ * stored when the Track is requested, so it is there from the first second.
  */
 export function TrackProcessingHeader({ track }: { track: TrackHeader }) {
-  const t = useTranslations('tracks.processing');
-
   return (
     <section aria-labelledby="track-title" className={entityBannerClass}>
       <div className={entityBannerRowClass}>
@@ -59,22 +56,8 @@ export function TrackProcessingHeader({ track }: { track: TrackHeader }) {
           <h1 id="track-title" className={entityTitleClass}>
             {track.title}
           </h1>
-          {track.artists.length > 0 ? (
-            <ul
-              aria-label={t('artists')}
-              className={cn(entityInfoClass, 'flex flex-wrap gap-x-3')}
-            >
-              {track.artists.map((artist) => (
-                <li key={artist.id}>
-                  <Link
-                    href={`/artists/${artist.id}`}
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {artist.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {track.artistCredit.length > 0 ? (
+            <p className={entityInfoClass}>{creditText(track.artistCredit)}</p>
           ) : null}
         </div>
       </div>

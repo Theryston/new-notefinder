@@ -97,7 +97,7 @@ export function parseCatalogRoute(pathname: string): CatalogRoute | undefined {
  */
 export function entityRedirectUrl(
   requestHref: string,
-  route: { locale: Locale; collection: string; id: string },
+  route: CatalogRoute,
   newId: string,
 ): URL {
   const url = new URL(requestHref);
@@ -167,24 +167,10 @@ async function verdictForPath(
   return classifyEntityResponse(status, body);
 }
 
-/** Asks the API for one entity by its collection and ID (see `verdictForPath`). */
-export function fetchEntityRouteVerdict(
-  apiUrl: string,
-  collection: EntityCollection,
-  id: string,
-  fetchFn: EntityCheckFetch = fetch,
-): Promise<EntityRouteVerdict> {
-  return verdictForPath(
-    apiUrl,
-    `${collection}/${encodeURIComponent(id)}`,
-    fetchFn,
-  );
-}
-
 /**
- * The verdict for a catalog route. A track is checked on its Processing
- * endpoint, which answers the same 404s (`RESOURCE_MOVED`, `NOT_FOUND`) as the
- * entity routes.
+ * The verdict for a catalog route: an artist or album on its own endpoint, a
+ * track on its Processing endpoint. Both answer the same 404s (`RESOURCE_MOVED`,
+ * `NOT_FOUND`).
  */
 export function fetchCatalogRouteVerdict(
   apiUrl: string,

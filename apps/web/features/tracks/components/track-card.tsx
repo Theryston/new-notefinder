@@ -16,16 +16,13 @@ const PLAY_BADGE_CLASS =
 const REQUEST_HINT_CLASS =
   'glass absolute bottom-2 left-2 rounded-full px-2.5 py-1 font-semibold text-xs transition-opacity duration-150 ease-out';
 
-const REQUEST_CARD_CLASS =
-  'group flex w-full flex-col gap-1.5 rounded-2xl p-2 text-left outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-progress';
-
-const STATIC_CARD_CLASS =
+/** The surface every card shares: a rounded hover tint and a focus ring. */
+const CARD_CLASS =
   'group flex flex-col gap-1.5 rounded-2xl p-2 outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50';
 
-const LINKED_CARD_CLASS = cn(
-  'group flex flex-col gap-1.5 rounded-2xl p-2 outline-none',
-  'transition-colors duration-150 ease-out hover:bg-accent',
-  'focus-visible:ring-3 focus-visible:ring-ring/50',
+const REQUEST_CARD_CLASS = cn(
+  CARD_CLASS,
+  'w-full text-left disabled:cursor-progress',
 );
 
 function CoverPlay({ label }: { label: string }) {
@@ -166,7 +163,7 @@ export function TrackCard(props: TrackCardProps) {
 
   if (trackId) {
     return (
-      <Link href={`/tracks/${trackId}`} className={LINKED_CARD_CLASS}>
+      <Link href={`/tracks/${trackId}`} className={CARD_CLASS}>
         {cover(
           <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
             <PlayIcon className="size-4 fill-current" />
@@ -199,7 +196,7 @@ export function TrackCard(props: TrackCardProps) {
   }
 
   return (
-    <div className={STATIC_CARD_CLASS}>
+    <div className={CARD_CLASS}>
       {cover(<CoverPlay label={t('card.play', { title })} />)}
       {text}
     </div>

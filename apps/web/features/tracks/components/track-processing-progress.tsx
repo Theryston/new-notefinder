@@ -8,8 +8,9 @@ import { useTranslations } from 'next-intl';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
+import { useElapsedSince } from '../hooks/use-step-elapsed';
 import {
-  progressPercent,
+  displayedPercent,
   type StepState,
   stepStates,
 } from '../processing-steps';
@@ -70,10 +71,12 @@ function StepItem({
 }
 
 /**
- * What the Processing page shows of a Processing: the progress bar (it eases
- * between the fixed percentages of each step), the step it is on, the list of
- * steps and the outcome once there is one. A failed Processing shows its
- * translated reason; a completed one a placeholder until the timeline exists.
+ * What the Processing page shows of a Processing: the progress bar, the step it
+ * is on, the list of steps and the outcome once there is one. The bar starts
+ * each step at its known percentage and creeps toward the next one while the
+ * step runs (see `displayedPercent`); a status change jumps it forward. A
+ * failed Processing shows its translated reason; a completed one a placeholder
+ * until the timeline exists.
  */
 export function TrackProcessingProgress({
   processing,
@@ -81,7 +84,14 @@ export function TrackProcessingProgress({
   processing: TrackProcessing;
 }) {
   const t = useTranslations('tracks.processing');
-  const percent = progressPercent(processing.status, processing.resumeFrom);
+  const elapsedMs = useElapsedSince(
+    `${processing.id}/${processing.status}/${processing.resumeFrom ?? ''}`,
+  );
+  const percent = displayedPercent(
+    processing.status,
+    processing.resumeFrom,
+    elapsedMs,
+  );
   const steps = stepStates(processing.status, processing.resumeFrom);
   const failed = processing.status === 'FAILED';
   const statusLabel =

@@ -13,7 +13,7 @@ const stateWith = (
     id: 'track-1',
     title: 'Bohemian Rhapsody',
     coverUrl: null,
-    artists: [],
+    artistCredit: [],
   },
   processing:
     status === null

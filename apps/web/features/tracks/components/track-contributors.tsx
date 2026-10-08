@@ -46,7 +46,7 @@ export function TrackContributors({
       </h2>
       <ul className="flex flex-wrap gap-4">
         {contributors.map((contributor) => (
-          <li key={contributor.username ?? contributor.name}>
+          <li key={contributor.id}>
             {contributor.username === null ? (
               <span className="flex items-center gap-2 pr-2">
                 <ContributorLabel contributor={contributor} />
