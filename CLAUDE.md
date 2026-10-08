@@ -20,6 +20,8 @@ apps/
   api/          NestJS 12 REST API (Drizzle, Better Auth, BullMQ). Port 3333.
   music-catalog/  Private Music catalog service: Node + ws WebSocket server and worker,
                   no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
+  nfp-audio/    Python RunPod serverless worker (uv, not Node): vocal separation and
+                  note detection for a Processing. No port. See apps/nfp-audio/CLAUDE.md.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
 ```
