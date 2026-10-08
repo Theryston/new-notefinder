@@ -41,13 +41,14 @@ export async function AlbumHeader({ album }: { album: Album }) {
               visible={visible}
               hidden={hidden}
               artistsLabel={t('header.artistsLabel')}
+              artistSeparator={t('header.artistSeparator')}
               moreLabel={t('header.artists.more', { count: hidden.length })}
               lessLabel={t('header.artists.less')}
             />
           ) : null}
           {info.length > 0 ? (
             <p className="font-medium text-muted-foreground text-sm">
-              {info.join(' · ')}
+              {info.join(t('header.separator'))}
             </p>
           ) : null}
           <EntityGenreChips

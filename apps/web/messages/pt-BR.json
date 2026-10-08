@@ -425,7 +425,9 @@
       "artists": {
         "more": "e mais {count}",
         "less": "Mostrar menos artistas"
-      }
+      },
+      "separator": " · ",
+      "artistSeparator": ", "
     },
     "types": {
       "primary": {

@@ -11,6 +11,8 @@ export type AlbumArtistLinksProps = {
   /** The artists behind the "and N more" control, in credit order. */
   hidden: AlbumArtist[];
   artistsLabel: string;
+  /** Between two artists, from the translations (e.g. ", "). */
+  artistSeparator: string;
   /** The collapsed control, e.g. "and 2 more". */
   moreLabel: string;
   /** The expanded control. */
@@ -23,21 +25,21 @@ const ARTIST_LINK_CLASS =
 const MORE_BUTTON_CLASS =
   'rounded-sm font-semibold text-muted-foreground text-sm outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50';
 
-/** One credited artist as a link to its page, comma-separated from the one before. */
+/** One credited artist as a link to its page, after a separator from the one before. */
 function ArtistItem({
   artist,
-  separated,
+  separator,
 }: {
   artist: AlbumArtist;
-  separated: boolean;
+  separator: string | null;
 }) {
   return (
     <li className="text-sm">
-      {separated ? (
+      {separator === null ? null : (
         <span aria-hidden="true" className="text-muted-foreground">
-          {', '}
+          {separator}
         </span>
-      ) : null}
+      )}
       <Link href={`/artists/${artist.id}`} className={ARTIST_LINK_CLASS}>
         {artist.name}
       </Link>
@@ -55,6 +57,7 @@ export function AlbumArtistLinks({
   visible,
   hidden,
   artistsLabel,
+  artistSeparator,
   moreLabel,
   lessLabel,
 }: AlbumArtistLinksProps) {
@@ -66,7 +69,11 @@ export function AlbumArtistLinks({
     <div className="flex flex-wrap items-baseline gap-x-2">
       <ul id={listId} aria-label={artistsLabel} className="flex flex-wrap">
         {shown.map((artist, index) => (
-          <ArtistItem key={artist.id} artist={artist} separated={index > 0} />
+          <ArtistItem
+            key={artist.id}
+            artist={artist}
+            separator={index > 0 ? artistSeparator : null}
+          />
         ))}
       </ul>
       {hidden.length > 0 ? (
