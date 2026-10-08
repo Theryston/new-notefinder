@@ -310,6 +310,12 @@ Solid `bg-primary`, white text, `rounded-2xl`, display type, a single white
 or black pill CTA. Optional oversized geometric shape (circle/ring) in
 `white/10`–`black/15` as the only decoration. One per screen at most.
 
+The artist and album page headers are featured blocks too (they are the
+page's one block): the visual (initials circle or cover, lifted with
+`shadow-xl`, the cover tilted `rotate-3`) sits on the right, the title in
+display type and the info lines (`font-semibold`, white) on the left, genre
+chips as outlined white pills, and one `black/15` ring behind the visual.
+
 ### Menus, popovers, toasts
 
 `glass`, `rounded-xl`, 4px padding, items `rounded-lg` `px-3 py-2` with an

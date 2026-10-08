@@ -1,17 +1,20 @@
 import type { Artist } from '@notefinder/contracts';
+import { cn } from 'cn';
 import { getTranslations } from 'next-intl/server';
 
 import {
   EntityGenreChips,
   entityBannerClass,
   entityBannerRowClass,
+  entityInfoClass,
   entityTitleClass,
+  entityVisualClass,
 } from '@/components/entity-header';
 
 import { artistInitials } from '../artist-initials';
 
 /**
- * Spotify-style artist banner: a gradient surface with a large initials
+ * Artist banner, a featured block: solid orange with a large initials
  * visual (the catalog holds no artist images, so no photo is ever fetched),
  * the oversized name, the processed-track count and the genre chips. Info
  * only, no playback actions. The banner itself is shared with the album
@@ -25,15 +28,18 @@ export async function ArtistHeader({ artist }: { artist: Artist }) {
       <div className={entityBannerRowClass}>
         <div
           aria-hidden="true"
-          className="flex size-24 shrink-0 items-center justify-center rounded-full bg-background font-bold text-2xl text-muted-foreground shadow-sm sm:size-32 md:size-40 md:text-3xl"
+          className={cn(
+            entityVisualClass,
+            'flex items-center justify-center rounded-full bg-primary-foreground font-bold text-2xl text-primary md:text-3xl',
+          )}
         >
           {artistInitials(artist.name)}
         </div>
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-1">
           <h1 id="artist-name" className={entityTitleClass}>
             {artist.name}
           </h1>
-          <p className="font-medium text-muted-foreground text-sm">
+          <p className={entityInfoClass}>
             {t('header.trackCount', { count: artist.trackCount })}
           </p>
           <EntityGenreChips

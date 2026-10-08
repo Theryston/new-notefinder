@@ -5,6 +5,7 @@ import {
   EntityGenreChips,
   entityBannerClass,
   entityBannerRowClass,
+  entityInfoClass,
   entityTitleClass,
 } from '@/components/entity-header';
 
@@ -32,7 +33,7 @@ export async function AlbumHeader({ album }: { album: Album }) {
     <section aria-labelledby="album-title" className={entityBannerClass}>
       <div className={entityBannerRowClass}>
         <AlbumCover albumId={album.id} coverArtUrl={album.coverArtUrl} />
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-1">
           <h1 id="album-title" className={entityTitleClass}>
             {album.title}
           </h1>
@@ -47,7 +48,7 @@ export async function AlbumHeader({ album }: { album: Album }) {
             />
           ) : null}
           {info.length > 0 ? (
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className={entityInfoClass}>
               {info.join(t('header.separator'))}
             </p>
           ) : null}

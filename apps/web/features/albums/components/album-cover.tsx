@@ -1,8 +1,10 @@
 'use client';
 
+import { cn } from 'cn';
 import Image from 'next/image';
 import { useState } from 'react';
 
+import { entityVisualClass } from '@/components/entity-header';
 import { TrackCoverPlaceholder } from '@/features/tracks/components/track-cover-placeholder';
 
 /**
@@ -22,7 +24,12 @@ export function AlbumCover({
   const artUrl = artFailed ? null : coverArtUrl;
 
   return (
-    <span className="relative block aspect-square size-24 shrink-0 overflow-hidden rounded-xl bg-muted shadow-sm sm:size-32 md:size-40">
+    <span
+      className={cn(
+        entityVisualClass,
+        'relative block aspect-square overflow-hidden rounded-xl sm:rotate-3',
+      )}
+    >
       {artUrl ? (
         <Image
           src={artUrl}
