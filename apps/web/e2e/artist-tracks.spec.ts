@@ -284,6 +284,55 @@ for (const { locale, messages } of cases) {
         page.getByText(messages.artists.tracks.error.title),
       ).toBeVisible({ timeout: 20_000 });
     });
+
+    test('renders its cards without missing-message errors', async ({
+      page,
+    }) => {
+      await mockAuthApi(page);
+      const id = `artist-messages-${locale}`;
+      await setArtistMock({
+        artists: [
+          {
+            id,
+            mbid: mbidOf(3006),
+            name: 'Queen',
+            genres: [],
+            trackCount: 1,
+          },
+        ],
+        tracksByArtist: {
+          [id]: [
+            makeTrack(id, 'Queen', 1, {
+              id: `track-messages-${locale}`,
+              title: 'Messages Track',
+            }),
+          ],
+        },
+      });
+      // Each card reads the `tracks` namespace in the browser. When the
+      // page's client provider doesn't scope it, next-intl logs
+      // MISSING_MESSAGE and the UI falls back to raw keys without visible
+      // breakage, so only the console can show it.
+      const missingMessages: string[] = [];
+      page.on('console', (message) => {
+        if (
+          message.type() === 'error' &&
+          message.text().includes('MISSING_MESSAGE')
+        ) {
+          missingMessages.push(message.text());
+        }
+      });
+
+      await page.goto(`/${locale}/artists/${id}`);
+
+      await expect(
+        page.getByRole('link', { name: /Messages Track/ }),
+      ).toBeVisible();
+      // The server-rendered cards are visible before hydration, which is
+      // when the client-side translations run and can log the error.
+      await page.waitForLoadState('networkidle');
+      expect(missingMessages).toEqual([]);
+    });
   });
 }
 
