@@ -83,14 +83,13 @@ export type CatalogTrackExternalLink = z.infer<
 >;
 
 /**
- * One processed Track in a catalog listing (the artist page now, the album
- * page later): the card shows the title, the performer names and the
- * first-release cover, while the full shape also carries the catalog details
- * the Track page shows (duration, ISRCs, genres, releases, works, tags,
- * links). Stored in the API database when a Recording is reprocessed, so
- * reads never touch the Music catalog. One entry per Recording. The deeper
- * sections are optional for backward compatibility and empty when the
- * catalog has none.
+ * The shape every catalog track listing returns for one processed Track: the
+ * card shows the title, the performer names and the first-release cover,
+ * while the full shape also carries the catalog details the Track page shows
+ * (duration, ISRCs, genres, releases, works, tags, links). Stored in the API
+ * database when a Recording is reprocessed, so reads never touch the Music
+ * catalog. One entry per Recording. The deeper sections are optional for
+ * backward compatibility and empty when the catalog has none.
  */
 export const catalogTrackSchema = z.object({
   id: z.string().min(1).max(128),
@@ -119,9 +118,9 @@ export const catalogTrackSchema = z.object({
 export type CatalogTrack = z.infer<typeof catalogTrackSchema>;
 
 /**
- * One page of `GET /v1/artists/:id/tracks`: cursor-paginated with one
- * entry per processed Recording, in stable `id` order. Cursors are opaque
- * base64url strings, never raw offsets.
+ * One cursor page of catalog Tracks, with one entry per processed Recording,
+ * in stable `id` order. Cursors are opaque base64url strings, never raw
+ * offsets. `GET /v1/artists/:id/tracks` is its current use.
  */
 export const catalogTracksPageSchema = cursorPageSchema(catalogTrackSchema);
 
