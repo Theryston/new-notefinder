@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { artistSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { TracksService } from '../tracks/tracks.service.js';
 import { ArtistsRepository } from './artists.repository.js';
 import { ArtistsService } from './artists.service.js';
 
@@ -26,6 +27,7 @@ describe('ArtistsService', () => {
       providers: [
         ArtistsService,
         { provide: ArtistsRepository, useValue: repository },
+        { provide: TracksService, useValue: {} },
       ],
     }).compile();
     service = moduleRef.get(ArtistsService);

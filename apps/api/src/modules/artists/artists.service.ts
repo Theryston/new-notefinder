@@ -5,6 +5,7 @@ import type {
   CursorPaginationQuery,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { TracksService } from '../tracks/tracks.service.js';
 import { ArtistsRepository } from './artists.repository.js';
 
 const decodeTrackCursor = (cursor: string): string => {
@@ -28,7 +29,10 @@ const decodeTrackCursor = (cursor: string): string => {
 
 @Injectable()
 export class ArtistsService {
-  constructor(private readonly artistsRepository: ArtistsRepository) {}
+  constructor(
+    private readonly artistsRepository: ArtistsRepository,
+    private readonly tracksService: TracksService,
+  ) {}
 
   /**
    * The Artist, or the redirect/404 its ID calls for. Unknown IDs fall
@@ -68,9 +72,13 @@ export class ArtistsService {
     query: CursorPaginationQuery,
   ): Promise<CatalogTracksPage> {
     await this.resolveArtistOrThrow(id);
-    return this.artistsRepository.findTracksByArtistId(id, {
+    const page = await this.artistsRepository.findTracksByArtistId(id, {
       cursorTrackId: query.cursor ? decodeTrackCursor(query.cursor) : undefined,
       limit: query.limit,
     });
+    return {
+      items: await this.tracksService.getCatalogTracks(page.trackIds),
+      nextCursor: page.nextCursor,
+    };
   }
 }

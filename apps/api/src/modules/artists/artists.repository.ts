@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { Artist, CatalogTrack } from '@notefinder/contracts';
+import type { Artist } from '@notefinder/contracts';
 import { and, asc, count, eq, gt } from 'drizzle-orm';
-import { attachCatalogTrackDetails } from '../../database/catalog-track-details.repository.js';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   artists,
@@ -56,31 +55,22 @@ export class ArtistsRepository {
   }
 
   /**
-   * One page of the Artist's processed Tracks in stable `id` order, one
-   * entry per Recording with its deeper MusicBrainz sections (releases,
-   * works, tags, links) for the Track page. Keyset over the link table:
-   * the cursor is a Track ID the service already decoded, `limit + 1`
+   * One page of the Artist's processed Track IDs in stable `id` order. The
+   * service loads the catalog details of those Tracks. Keyset over the link
+   * table: the cursor is a Track ID the service already decoded, `limit + 1`
    * rows decide the next cursor.
    */
   async findTracksByArtistId(
     artistId: string,
     options: { cursorTrackId?: string; limit: number },
-  ): Promise<{ items: CatalogTrack[]; nextCursor: string | null }> {
+  ): Promise<{ trackIds: string[]; nextCursor: string | null }> {
     const { cursorTrackId, limit } = options;
     const conditions = cursorTrackId
       ? and(eq(trackArtists.artistId, artistId), gt(tracks.id, cursorTrackId))
       : eq(trackArtists.artistId, artistId);
 
     const rows = await this.txHost.tx
-      .select({
-        id: tracks.id,
-        title: tracks.title,
-        lengthMs: tracks.lengthMs,
-        disambiguation: tracks.disambiguation,
-        video: tracks.video,
-        isrcs: tracks.isrcs,
-        genres: tracks.genres,
-      })
+      .select({ id: tracks.id })
       .from(trackArtists)
       .innerJoin(tracks, eq(trackArtists.trackId, tracks.id))
       .where(conditions)
@@ -89,22 +79,13 @@ export class ArtistsRepository {
 
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
-    if (page.length === 0) {
-      return { items: [], nextCursor: null };
-    }
-    const items = await attachCatalogTrackDetails(
-      this.txHost.tx,
-      page,
-      (track) => track,
-    );
-
-    const last = page[page.length - 1];
-    if (!last || !hasMore) {
-      return { items, nextCursor: null };
-    }
+    const last = page.at(-1);
     return {
-      items,
-      nextCursor: Buffer.from(last.id, 'utf8').toString('base64url'),
+      trackIds: page.map((row) => row.id),
+      nextCursor:
+        hasMore && last
+          ? Buffer.from(last.id, 'utf8').toString('base64url')
+          : null,
     };
   }
 }

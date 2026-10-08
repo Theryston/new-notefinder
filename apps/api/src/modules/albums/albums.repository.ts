@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { Album, AlbumArtist, AlbumTrack } from '@notefinder/contracts';
+import type { Album, AlbumArtist } from '@notefinder/contracts';
 import { and, asc, count, eq, gt, or, type SQL } from 'drizzle-orm';
-import { attachCatalogTrackDetails } from '../../database/catalog-track-details.repository.js';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   albumArtists,
@@ -12,8 +11,10 @@ import {
   legacyAlbumIds,
 } from '../../database/schema/albums.js';
 import { artists } from '../../database/schema/artists.js';
-import { tracks } from '../../database/schema/tracks.js';
 import type { AlbumTrackCursor } from './album-track-cursor.js';
+
+/** Where one Track sits on an Album: its ID, its position and its disc's name. */
+export type AlbumPlacement = AlbumTrackCursor & { discTitle: string | null };
 
 /** Rows strictly after the cursor's entry, in (disc, track, track ID) order. */
 const afterCursor = ({
@@ -34,15 +35,15 @@ const afterCursor = ({
     ),
   );
 
-/** The cursor that resumes right after a placement row of a page. */
-const placementCursor = (row: {
-  id: string;
-  discPosition: number;
-  trackPosition: number;
-}): AlbumTrackCursor => ({
-  discPosition: row.discPosition,
-  trackPosition: row.trackPosition,
-  trackId: row.id,
+/** The cursor that resumes right after a placement of a page. */
+const placementCursor = ({
+  discPosition,
+  trackPosition,
+  trackId,
+}: AlbumPlacement): AlbumTrackCursor => ({
+  discPosition,
+  trackPosition,
+  trackId,
 });
 
 @Injectable()
@@ -79,6 +80,16 @@ export class AlbumsRepository {
     };
   }
 
+  /** Whether an Album with this ID exists, without loading its header. */
+  async findAlbumExists(id: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .select({ id: albums.id })
+      .from(albums)
+      .where(eq(albums.id, id))
+      .limit(1);
+    return rows.length > 0;
+  }
+
   /** The new ID a legacy album ID points to, if it was reprocessed. */
   async findAlbumIdByLegacyId(legacyId: string): Promise<string | undefined> {
     const [row] = await this.txHost.tx
@@ -90,30 +101,25 @@ export class AlbumsRepository {
   }
 
   /**
-   * One page of the Album's processed Tracks in album order, each with the
-   * disc it sits on. `limit + 1` rows decide whether a next page exists; the
-   * cursor it returns is the entry that ends this page.
+   * One page of the Album's placements in album order: the Track IDs with the
+   * disc and track position each sits at. The service loads the catalog
+   * details of those Tracks. `limit + 1` rows decide whether a next page
+   * exists; the cursor returned is the placement that ends this page.
    */
   async findTracksByAlbumId(
     albumId: string,
     options: { cursor?: AlbumTrackCursor; limit: number },
-  ): Promise<{ items: AlbumTrack[]; nextCursor: AlbumTrackCursor | null }> {
+  ): Promise<{
+    placements: AlbumPlacement[];
+    nextCursor: AlbumTrackCursor | null;
+  }> {
     const { cursor, limit } = options;
     const rows = await this.selectPlacements(albumId, limit + 1, cursor);
     const hasMore = rows.length > limit;
-    const page = hasMore ? rows.slice(0, limit) : rows;
-    const items = await attachCatalogTrackDetails(
-      this.txHost.tx,
-      page,
-      (track, row) => ({
-        ...track,
-        disc: { position: row.discPosition, title: row.discTitle },
-      }),
-    );
-
-    const last = page.at(-1);
+    const placements = hasMore ? rows.slice(0, limit) : rows;
+    const last = placements.at(-1);
     return {
-      items,
+      placements,
       nextCursor: hasMore && last ? placementCursor(last) : null,
     };
   }
@@ -123,22 +129,15 @@ export class AlbumsRepository {
     albumId: string,
     take: number,
     cursor: AlbumTrackCursor | undefined,
-  ) {
+  ): Promise<AlbumPlacement[]> {
     return this.txHost.tx
       .select({
-        id: tracks.id,
-        title: tracks.title,
-        lengthMs: tracks.lengthMs,
-        disambiguation: tracks.disambiguation,
-        video: tracks.video,
-        isrcs: tracks.isrcs,
-        genres: tracks.genres,
+        trackId: albumTracks.trackId,
         discPosition: albumTracks.discPosition,
         trackPosition: albumTracks.trackPosition,
         discTitle: albumDiscs.title,
       })
       .from(albumTracks)
-      .innerJoin(tracks, eq(albumTracks.trackId, tracks.id))
       .innerJoin(
         albumDiscs,
         and(
