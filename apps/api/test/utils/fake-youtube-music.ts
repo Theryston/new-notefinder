@@ -28,6 +28,15 @@ export class FakeYouTubeMusic {
   readonly searches: string[] = [];
   readonly lookups: string[] = [];
 
+  /** Back to the answers of a fresh fake, with no calls recorded. */
+  reset(): void {
+    this.results = [youtubeVideo()];
+    this.videos = new Map();
+    this.searchFailure = undefined;
+    this.searches.length = 0;
+    this.lookups.length = 0;
+  }
+
   async searchSongs(query: string): Promise<YouTubeVideo[]> {
     this.searches.push(query);
     if (this.searchFailure !== undefined) {

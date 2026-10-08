@@ -72,13 +72,43 @@ describe('TrackVideoService', () => {
       youtube.getVideo.mockResolvedValue(video({ videoId: LINK_ID }));
     });
 
-    it('chooses the linked video without searching', async () => {
-      const chosen = await service.findVideo(
+    it('chooses the linked video over the search result', async () => {
+      youtube.searchSongs.mockResolvedValue([video({ videoId: SEARCH_ID })]);
+
+      const finding = await service.findVideo(
         track({ externalUrls: ['https://example.com/x', linkOf(LINK_ID)] }),
       );
 
-      expect(chosen).toEqual({ videoId: LINK_ID, source: 'musicbrainz' });
-      expect(youtube.searchSongs).not.toHaveBeenCalled();
+      expect(finding.video).toEqual({
+        videoId: LINK_ID,
+        source: 'musicbrainz',
+      });
+    });
+
+    it('searches too, for the artwork of the cover', async () => {
+      youtube.searchSongs.mockResolvedValue([
+        video({ videoId: SEARCH_ID, artworkUrl: 'https://img.test/a.jpg' }),
+      ]);
+
+      const finding = await service.findVideo(
+        track({ externalUrls: [linkOf(LINK_ID)] }),
+      );
+
+      expect(youtube.searchSongs).toHaveBeenCalledTimes(1);
+      expect(finding.artworkUrl).toBe('https://img.test/a.jpg');
+    });
+
+    it('keeps the link when the search fails', async () => {
+      youtube.searchSongs.mockRejectedValue(new Error('YouTube is down'));
+
+      const finding = await service.findVideo(
+        track({ externalUrls: [linkOf(LINK_ID)] }),
+      );
+
+      expect(finding).toEqual({
+        video: { videoId: LINK_ID, source: 'musicbrainz' },
+        artworkUrl: null,
+      });
     });
   });
 
@@ -89,11 +119,14 @@ describe('TrackVideoService', () => {
       );
       youtube.searchSongs.mockResolvedValue([video({ videoId: SEARCH_ID })]);
 
-      const chosen = await service.findVideo(
+      const finding = await service.findVideo(
         track({ externalUrls: [linkOf(LINK_ID)] }),
       );
 
-      expect(chosen).toEqual({ videoId: SEARCH_ID, source: 'youtube_music' });
+      expect(finding.video).toEqual({
+        videoId: SEARCH_ID,
+        source: 'youtube_music',
+      });
       expect(youtube.searchSongs).toHaveBeenCalledWith(
         'Queen Bohemian Rhapsody',
       );
@@ -103,11 +136,11 @@ describe('TrackVideoService', () => {
       youtube.getVideo.mockRejectedValue(new Error('video unavailable'));
       youtube.searchSongs.mockResolvedValue([video({ videoId: SEARCH_ID })]);
 
-      const chosen = await service.findVideo(
+      const finding = await service.findVideo(
         track({ externalUrls: [linkOf(LINK_ID)] }),
       );
 
-      expect(chosen.source).toBe('youtube_music');
+      expect(finding.video.source).toBe('youtube_music');
     });
 
     it('reads each linked video once even when several links name it', async () => {
@@ -121,6 +154,14 @@ describe('TrackVideoService', () => {
       );
 
       expect(youtube.getVideo).toHaveBeenCalledTimes(1);
+    });
+
+    it('fails with the search error when no link matches either', async () => {
+      youtube.searchSongs.mockRejectedValue(new Error('YouTube is down'));
+
+      await expect(service.findVideo(track())).rejects.toThrow(
+        'YouTube is down',
+      );
     });
   });
 
@@ -154,7 +195,7 @@ describe('TrackVideoService', () => {
 
       await expect(
         service.findVideo(track({ lengthMs: 900_000 })),
-      ).resolves.toMatchObject({ source: 'youtube_music' });
+      ).resolves.toMatchObject({ video: { source: 'youtube_music' } });
     });
 
     it('refuses a chosen video over the limit when the Recording has no length', async () => {
@@ -170,7 +211,7 @@ describe('TrackVideoService', () => {
 
       await expect(
         service.findVideo(track({ lengthMs: null })),
-      ).resolves.toMatchObject({ source: 'youtube_music' });
+      ).resolves.toMatchObject({ video: { source: 'youtube_music' } });
     });
 
     it('honours PROCESSING_MAX_DURATION_SECONDS from the environment', async () => {

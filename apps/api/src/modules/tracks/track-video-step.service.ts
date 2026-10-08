@@ -13,17 +13,23 @@ import { TracksRepository } from './tracks.repository.js';
  * already chosen (a retry, or a job replayed after its save) keeps that video.
  */
 @Injectable()
-export class TrackVideoStep {
+export class TrackVideoStepService {
   constructor(
     private readonly tracks: TracksRepository,
     private readonly processings: TrackProcessingRepository,
     private readonly videos: TrackVideoService,
   ) {}
 
-  /** @throws {TrackProcessingFailure} when no video can be chosen. */
-  async run(processing: ProcessingForStep): Promise<void> {
+  /**
+   * Answers the artwork of the best search match, for the cover job: `null`
+   * when the search had none, `undefined` when this run did not search (the
+   * video was chosen earlier, so the cover job searches for itself).
+   *
+   * @throws {TrackProcessingFailure} when no video can be chosen.
+   */
+  async run(processing: ProcessingForStep): Promise<string | null | undefined> {
     if (processing.videoId !== null && processing.videoSource !== null) {
-      return;
+      return undefined;
     }
     const track = await this.tracks.findPipelineTrack(processing.trackId);
     if (track === undefined) {
@@ -31,17 +37,27 @@ export class TrackVideoStep {
         `Track ${processing.trackId} disappeared during its Processing`,
       );
     }
-    const chosen = await this.videos.findVideo(track);
-    await this.save(processing.id, track.id, chosen);
+    const finding = await this.videos.findVideo(track);
+    await this.save(processing, finding.video);
+    return finding.artworkUrl;
   }
 
+  /**
+   * The video goes on the Processing only while its find-video step is still
+   * running, and on the Track only then too: a job that ran late writes nothing.
+   */
   @Transactional()
   private async save(
-    processingId: string,
-    trackId: string,
+    processing: ProcessingForStep,
     chosen: ChosenVideo,
   ): Promise<void> {
-    await this.processings.saveVideo(processingId, chosen);
-    await this.tracks.setYoutubeVideoId(trackId, chosen.videoId);
+    const saved = await this.processings.saveVideo(
+      processing.id,
+      'FINDING_VIDEO',
+      chosen,
+    );
+    if (saved) {
+      await this.tracks.setYoutubeVideoId(processing.trackId, chosen.videoId);
+    }
   }
 }

@@ -15,6 +15,15 @@ export class FakeCoverArt {
   readonly releaseRequests: string[] = [];
   readonly imageRequests: string[] = [];
 
+  /** Back to a fresh fake: no covers, no failure, no calls recorded. */
+  reset(): void {
+    this.releaseCovers = new Map();
+    this.images = new Map();
+    this.releaseFailure = undefined;
+    this.releaseRequests.length = 0;
+    this.imageRequests.length = 0;
+  }
+
   async fetchReleaseFrontCover(
     releaseMbid: string,
   ): Promise<DownloadedImage | undefined> {

@@ -7,17 +7,16 @@ import { WebRevalidationModule } from '../../integrations/web-revalidation/web-r
 import { YouTubeMusicModule } from '../../integrations/youtube-music/youtube-music.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { TrackCoverService } from './track-cover.service.js';
-import { TrackCoverJob } from './track-cover-job.service.js';
-import { TrackJobRunner } from './track-job-runner.service.js';
-import { TrackPipeline } from './track-pipeline.service.js';
+import { TrackJobRunnerService } from './track-job-runner.service.js';
+import { TrackPipelineService } from './track-pipeline.service.js';
 import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingProcessor } from './track-processing.processor.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
-import { TrackRequestLauncher } from './track-request-launcher.service.js';
+import { TrackRequestLauncherService } from './track-request-launcher.service.js';
 import { TrackVideoService } from './track-video.service.js';
-import { TrackVideoStep } from './track-video-step.service.js';
+import { TrackVideoStepService } from './track-video-step.service.js';
 import { TracksController } from './tracks.controller.js';
 import { TracksRepository } from './tracks.repository.js';
 import { TracksService } from './tracks.service.js';
@@ -38,14 +37,13 @@ import { TracksService } from './tracks.service.js';
     TracksRepository,
     TrackProcessingRepository,
     TrackRequestService,
-    TrackRequestLauncher,
+    TrackRequestLauncherService,
     TrackProcessingService,
     TrackVideoService,
-    TrackVideoStep,
+    TrackVideoStepService,
     TrackCoverService,
-    TrackCoverJob,
-    TrackPipeline,
-    TrackJobRunner,
+    TrackPipelineService,
+    TrackJobRunnerService,
     TrackProcessingProcessor,
   ],
   exports: [TracksService],

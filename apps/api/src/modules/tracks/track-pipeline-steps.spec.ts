@@ -1,5 +1,7 @@
 import {
+  dueStatusesOf,
   firstPipelineStep,
+  isPipelineStep,
   isStepDue,
   nextPipelineStep,
 } from './track-pipeline-steps.js';
@@ -13,8 +15,13 @@ describe('track pipeline steps', () => {
     expect(nextPipelineStep('FINDING_VIDEO')).toBeUndefined();
   });
 
-  it('has no step after a step that is not in this build', () => {
-    expect(nextPipelineStep('DOWNLOADING_AUDIO')).toBeUndefined();
+  it('runs only the steps of this build', () => {
+    expect(isPipelineStep('FINDING_VIDEO')).toBe(true);
+    expect(isPipelineStep('DOWNLOADING_AUDIO')).toBe(false);
+  });
+
+  it('may run a step from queued or from the step itself', () => {
+    expect(dueStatusesOf('FINDING_VIDEO')).toEqual(['QUEUED', 'FINDING_VIDEO']);
   });
 
   it('runs a queued Processing and a replayed job of the step it is in', () => {

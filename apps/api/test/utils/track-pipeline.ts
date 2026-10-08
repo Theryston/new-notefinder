@@ -1,4 +1,4 @@
-import { TrackJobRunner } from '../../src/modules/tracks/track-job-runner.service.js';
+import { TrackJobRunnerService } from '../../src/modules/tracks/track-job-runner.service.js';
 import { TRACK_PROCESSING_QUEUE } from '../../src/modules/tracks/track-processing.job.js';
 import type { TestApp } from './create-test-app.js';
 
@@ -21,7 +21,7 @@ export async function runNextTrackJob(
   if (job === undefined) {
     return undefined;
   }
-  await testApp.app.get(TrackJobRunner).run(job.name, job.data, true);
+  await testApp.app.get(TrackJobRunnerService).run(job.name, job.data, true);
   return job.name;
 }
 
@@ -32,7 +32,7 @@ export async function runNextTrackJob(
  */
 export async function runTrackJobs(testApp: TestApp): Promise<void> {
   const queue = testApp.queues[TRACK_PROCESSING_QUEUE];
-  const runner = testApp.app.get(TrackJobRunner);
+  const runner = testApp.app.get(TrackJobRunnerService);
   for (
     let job = queue?.added.shift();
     job !== undefined;

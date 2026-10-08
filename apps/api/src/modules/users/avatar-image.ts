@@ -1,18 +1,13 @@
 import { AVATAR_MIME_TYPES, type AvatarMimeType } from '@notefinder/contracts';
-import sharp from 'sharp';
 import { z } from 'zod';
 import { ZodValidationException } from '../../common/zod/zod-validation.pipe.js';
+import { encodeWebp } from '../../integrations/image/image-encoder.js';
 
 /** Side, in pixels, of the square every stored Avatar is cropped to. */
 const AVATAR_SIZE = 512;
 
 /** What `processAvatarImage` produces, and so the stored object's type. */
 export const AVATAR_CONTENT_TYPE = 'image/webp';
-
-// A small PNG can declare an enormous canvas, and decoding it takes memory
-// proportional to the pixels, not to the file size. Far above any camera
-// photo a 5 MB file can hold.
-const MAX_INPUT_PIXELS = 50_000_000;
 
 type Signature = readonly { offset: number; bytes: readonly number[] }[];
 
@@ -68,11 +63,12 @@ export const processAvatarImage = async (data: Uint8Array): Promise<Buffer> => {
     throw invalidAvatar('Avatar must be a PNG, JPEG or WEBP image');
   }
   try {
-    return await sharp(data, { limitInputPixels: MAX_INPUT_PIXELS })
-      .rotate()
-      .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', position: 'centre' })
-      .webp()
-      .toBuffer();
+    return await encodeWebp(data, {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      fit: 'cover',
+      position: 'centre',
+    });
   } catch {
     // libvips reports a damaged or oversized image as a plain Error.
     throw invalidAvatar('Avatar could not be read as an image');

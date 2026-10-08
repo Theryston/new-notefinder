@@ -4,14 +4,13 @@
 // so the same rule runs on years: within one year the choice can differ from
 // the catalog's, which only affects which edition's front cover is used.
 
+import { compareText } from './track-text.js';
+
 export type ReleaseOfTrack = {
   mbid: string;
   title: string;
   year: number | null;
 };
-
-const compareText = (a: string, b: string): number =>
-  a < b ? -1 : a > b ? 1 : 0;
 
 const compareYears = (a: number | null, b: number | null): number => {
   if (a === null || b === null) {

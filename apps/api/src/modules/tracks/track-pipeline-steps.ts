@@ -5,30 +5,50 @@ import {
 } from '@notefinder/contracts';
 
 // The order of a Processing's steps as this build runs them (pure). A later
-// ticket appends its step to PIPELINE_STEPS, and the runner ends the
-// Processing after the last step that exists.
+// ticket appends its step here and adds its handler to TrackPipelineService;
+// the handler map is typed on this list, so a step without one does not
+// compile.
 
-/** The steps this build runs, in order. */
-const PIPELINE_STEPS: readonly TrackProcessingStep[] = ['FINDING_VIDEO'];
+const PIPELINE_STEPS = [
+  'FINDING_VIDEO',
+] as const satisfies readonly TrackProcessingStep[];
+
+/** A step this build runs. */
+export type PipelineStepName = (typeof PIPELINE_STEPS)[number];
 
 /** A queued Processing is before every step. */
-const STATUS_ORDER: readonly string[] = ['QUEUED', ...TRACK_PROCESSING_STEPS];
+const STATUS_ORDER: readonly TrackProcessingStatus[] = [
+  'QUEUED',
+  ...TRACK_PROCESSING_STEPS,
+];
+
+/** Whether a step job is one this build runs (a later ticket's step is not). */
+export const isPipelineStep = (
+  step: TrackProcessingStep,
+): step is PipelineStepName =>
+  (PIPELINE_STEPS as readonly TrackProcessingStep[]).includes(step);
 
 /** The first step a Processing runs. */
-export function firstPipelineStep(): TrackProcessingStep {
-  const [first] = PIPELINE_STEPS;
-  if (first === undefined) {
-    throw new Error('The Processing pipeline has no steps');
-  }
-  return first;
-}
+export const firstPipelineStep = (): PipelineStepName => PIPELINE_STEPS[0];
 
 /** The step after this one, or undefined when it is the last. */
 export function nextPipelineStep(
-  step: TrackProcessingStep,
-): TrackProcessingStep | undefined {
+  step: PipelineStepName,
+): PipelineStepName | undefined {
   const index = PIPELINE_STEPS.indexOf(step);
   return index === -1 ? undefined : PIPELINE_STEPS[index + 1];
+}
+
+/**
+ * The statuses a step's job may run in: queued, the step itself, or a step
+ * before it. A Processing in any other status is past the step (or ended), so
+ * the job must leave it alone.
+ */
+export function dueStatusesOf(
+  step: TrackProcessingStep,
+): TrackProcessingStatus[] {
+  const index = STATUS_ORDER.indexOf(step);
+  return STATUS_ORDER.slice(0, index + 1);
 }
 
 /**
@@ -36,10 +56,7 @@ export function nextPipelineStep(
  * this step (a job that ran before a crash runs it again), not past it. A
  * terminal Processing has nothing due, so a replayed job is a no-op.
  */
-export function isStepDue(
+export const isStepDue = (
   status: TrackProcessingStatus,
   step: TrackProcessingStep,
-): boolean {
-  const statusIndex = STATUS_ORDER.indexOf(status);
-  return statusIndex !== -1 && statusIndex <= STATUS_ORDER.indexOf(step);
-}
+): boolean => dueStatusesOf(step).includes(status);

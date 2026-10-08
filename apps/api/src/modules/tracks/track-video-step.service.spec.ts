@@ -4,7 +4,7 @@ import { DatabaseModule } from '../../database/database.module.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingFailure } from './track-processing-failure.js';
 import { TrackVideoService } from './track-video.service.js';
-import { TrackVideoStep } from './track-video-step.service.js';
+import { TrackVideoStepService } from './track-video-step.service.js';
 import { TracksRepository } from './tracks.repository.js';
 
 // `save` is `@Transactional()`: the database module runs it on a stand-in
@@ -41,9 +41,13 @@ const queued = {
   videoId: null,
   videoSource: null,
 };
+const finding = {
+  video: { videoId: 'aaaaaaaaaaa', source: 'musicbrainz' as const },
+  artworkUrl: 'https://img.test/a.jpg',
+};
 
-describe('TrackVideoStep', () => {
-  let step: TrackVideoStep;
+describe('TrackVideoStepService', () => {
+  let step: TrackVideoStepService;
   let moduleRef: TestingModule;
 
   beforeEach(async () => {
@@ -51,7 +55,7 @@ describe('TrackVideoStep', () => {
     moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule],
       providers: [
-        TrackVideoStep,
+        TrackVideoStepService,
         { provide: TracksRepository, useValue: tracks },
         { provide: TrackProcessingRepository, useValue: processings },
         { provide: TrackVideoService, useValue: videos },
@@ -62,39 +66,49 @@ describe('TrackVideoStep', () => {
       .overrideProvider(DATABASE)
       .useValue(db)
       .compile();
-    step = moduleRef.get(TrackVideoStep);
+    step = moduleRef.get(TrackVideoStepService);
     tracks.findPipelineTrack.mockResolvedValue(TRACK);
+    processings.saveVideo.mockResolvedValue(true);
   });
 
   afterEach(async () => {
     await moduleRef.close();
   });
 
-  it('saves the chosen video on the Processing and on its Track', async () => {
-    videos.findVideo.mockResolvedValue({
-      videoId: 'aaaaaaaaaaa',
-      source: 'musicbrainz',
-    });
+  it('saves the chosen video on the Processing and on its Track, and answers its artwork', async () => {
+    videos.findVideo.mockResolvedValue(finding);
 
-    await step.run(queued);
+    await expect(step.run(queued)).resolves.toBe('https://img.test/a.jpg');
 
     expect(videos.findVideo).toHaveBeenCalledWith(TRACK);
-    expect(processings.saveVideo).toHaveBeenCalledWith('processing-1', {
-      videoId: 'aaaaaaaaaaa',
-      source: 'musicbrainz',
-    });
+    expect(processings.saveVideo).toHaveBeenCalledWith(
+      'processing-1',
+      'FINDING_VIDEO',
+      { videoId: 'aaaaaaaaaaa', source: 'musicbrainz' },
+    );
     expect(tracks.setYoutubeVideoId).toHaveBeenCalledWith(
       'track-1',
       'aaaaaaaaaaa',
     );
   });
 
+  it('leaves the Track alone when the Processing moved on before the save', async () => {
+    videos.findVideo.mockResolvedValue(finding);
+    processings.saveVideo.mockResolvedValue(false);
+
+    await step.run(queued);
+
+    expect(tracks.setYoutubeVideoId).not.toHaveBeenCalled();
+  });
+
   it('keeps a video an earlier run already chose, without searching again', async () => {
-    await step.run({
-      ...queued,
-      videoId: 'aaaaaaaaaaa',
-      videoSource: 'youtube_music',
-    });
+    await expect(
+      step.run({
+        ...queued,
+        videoId: 'aaaaaaaaaaa',
+        videoSource: 'youtube_music',
+      }),
+    ).resolves.toBeUndefined();
 
     expect(tracks.findPipelineTrack).not.toHaveBeenCalled();
     expect(videos.findVideo).not.toHaveBeenCalled();

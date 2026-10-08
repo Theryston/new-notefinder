@@ -7,8 +7,11 @@ import { StorageService } from '../../integrations/storage/storage.service.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import { COVER_CONTENT_TYPE, toStoredCover } from './track-cover-image.js';
 import { primaryReleaseOf } from './track-primary-release.js';
-import { recordingTargetOf } from './track-video.service.js';
-import { chooseSearchMatch, searchQueryOf } from './track-video-matching.js';
+import {
+  chooseSearchMatch,
+  recordingTargetOf,
+  searchQueryOf,
+} from './track-video-matching.js';
 import { type PipelineTrack, TracksRepository } from './tracks.repository.js';
 
 /** The key a Track's cover is stored under; one per Track. */
@@ -16,8 +19,8 @@ const coverKey = (trackId: string): string => `track-covers/${trackId}.webp`;
 
 /**
  * Stores a Track's cover (ADR 0004): the front cover of its primary release
- * from the Cover Art Archive, else the YouTube Music artwork of the best
- * search match, else no cover (the page keeps its placeholder).
+ * from the Cover Art Archive, else the artwork of the best search match, else
+ * no cover (the page keeps its placeholder).
  */
 @Injectable()
 export class TrackCoverService {
@@ -34,13 +37,20 @@ export class TrackCoverService {
    * Stores the cover of a Track that has none yet; answers whether one was
    * stored now. A replayed job, or a Track that already has a cover, changes
    * nothing.
+   *
+   * @param artworkUrl the artwork of the best search match, as the video step
+   * found it; `undefined` when that step did not search, and the search runs
+   * here.
    */
-  async storeCover(trackId: string): Promise<boolean> {
+  async storeCover(
+    trackId: string,
+    artworkUrl: string | null | undefined,
+  ): Promise<boolean> {
     const track = await this.tracks.findPipelineTrack(trackId);
     if (track === undefined || track.coverUrl !== null) {
       return false;
     }
-    const image = await this.findCoverImage(track);
+    const image = await this.findCoverImage(track, artworkUrl);
     if (image === undefined) {
       return false;
     }
@@ -61,6 +71,7 @@ export class TrackCoverService {
 
   private async findCoverImage(
     track: PipelineTrack,
+    artworkUrl: string | null | undefined,
   ): Promise<DownloadedImage | undefined> {
     const primary = primaryReleaseOf(track.releases);
     if (primary !== undefined) {
@@ -71,19 +82,17 @@ export class TrackCoverService {
         return releaseCover;
       }
     }
-    return this.searchArtwork(track);
+    const url =
+      artworkUrl === undefined
+        ? await this.searchArtworkUrl(track)
+        : artworkUrl;
+    return url === null ? undefined : this.coverArt.fetchImage(url);
   }
 
   /** The artwork of the best search match, when it has one. */
-  private async searchArtwork(
-    track: PipelineTrack,
-  ): Promise<DownloadedImage | undefined> {
+  private async searchArtworkUrl(track: PipelineTrack): Promise<string | null> {
     const target = recordingTargetOf(track);
     const results = await this.youtube.searchSongs(searchQueryOf(target));
-    const best = chooseSearchMatch(target, results);
-    if (best === undefined || best.artworkUrl === null) {
-      return undefined;
-    }
-    return this.coverArt.fetchImage(best.artworkUrl);
+    return chooseSearchMatch(target, results)?.artworkUrl ?? null;
   }
 }

@@ -3,6 +3,7 @@
 // Recording, and the best valid search result wins. Pure, so the scoring and
 // the selection are tested without the YouTube client.
 
+import { compareText, foldAccents } from './track-text.js';
 import { titleSimilarity } from './track-title-similarity.js';
 
 /** What a YouTube result is: a song (the artist's "Topic" audio), or a video. */
@@ -32,6 +33,17 @@ const MIN_TITLE_SIMILARITY = 0.8;
 /** The duration tolerance is the larger of these two, around the length. */
 const MIN_DURATION_TOLERANCE_SECONDS = 3;
 const DURATION_TOLERANCE_RATIO = 0.03;
+
+/** The target a Track's Recording is matched against. */
+export const recordingTargetOf = (track: {
+  title: string;
+  lengthMs: number | null;
+  artistNames: readonly string[];
+}): RecordingTarget => ({
+  title: track.title,
+  lengthMs: track.lengthMs,
+  artistNames: track.artistNames,
+});
 
 /** How far a video's length may be from the Recording's, in seconds. */
 export const durationToleranceSeconds = (lengthMs: number): number =>
@@ -63,9 +75,7 @@ export function isDurationMatch(
 
 /** A name with its accents, case and punctuation gone, for comparing names. */
 const compact = (name: string): string =>
-  name
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
+  foldAccents(name)
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]/gu, '');
 
@@ -150,13 +160,10 @@ export function chooseSearchMatch<T extends VideoCandidate>(
       a.kind - b.kind ||
       b.similarity - a.similarity ||
       a.distance - b.distance ||
-      compareIds(a.candidate.videoId, b.candidate.videoId),
+      compareText(a.candidate.videoId, b.candidate.videoId),
   );
   return ranked[0]?.candidate;
 }
-
-const compareIds = (a: string, b: string): number =>
-  a < b ? -1 : a > b ? 1 : 0;
 
 /** The words a search for the Recording is made of: artists, then title. */
 export const searchQueryOf = (target: RecordingTarget): string =>

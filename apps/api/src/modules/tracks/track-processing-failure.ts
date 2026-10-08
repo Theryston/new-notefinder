@@ -12,3 +12,8 @@ export class TrackProcessingFailure extends Error {
     super(`Processing failed: ${code}`);
   }
 }
+
+/** The message of any thrown value, for the logs of the tracks module. */
+export function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

@@ -1,12 +1,15 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { cacheTags, type TrackProcessingStep } from '@notefinder/contracts';
-import type { Queue } from 'bullmq';
+import { type Queue, UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import {
+  dueStatusesOf,
   firstPipelineStep,
+  isPipelineStep,
   isStepDue,
   nextPipelineStep,
+  type PipelineStepName,
 } from './track-pipeline-steps.js';
 import {
   coverJobId,
@@ -21,9 +24,15 @@ import {
   type ProcessingForStep,
   TrackProcessingRepository,
 } from './track-processing.repository.js';
-import { TrackProcessingFailure } from './track-processing-failure.js';
+import {
+  messageOf,
+  TrackProcessingFailure,
+} from './track-processing-failure.js';
 import { isRetryableFailureCode } from './track-processing-view.js';
-import { TrackVideoStep } from './track-video-step.service.js';
+import { TrackVideoStepService } from './track-video-step.service.js';
+
+/** What one step does with its Processing. */
+type StepHandler = (processing: ProcessingForStep) => Promise<void>;
 
 /**
  * Runs a Track's Processing (ADR 0004). Each step job loads its Processing,
@@ -33,38 +42,64 @@ import { TrackVideoStep } from './track-video-step.service.js';
  * last attempt of a step that keeps failing.
  */
 @Injectable()
-export class TrackPipeline {
-  private readonly logger = new Logger(TrackPipeline.name);
+export class TrackPipelineService {
+  private readonly logger = new Logger(TrackPipelineService.name);
+
+  /**
+   * What each step of the pipeline does. Typed on the step list, so a step
+   * added there without its handler here does not compile.
+   */
+  private readonly handlers: Record<PipelineStepName, StepHandler> = {
+    FINDING_VIDEO: (processing) => this.findVideo(processing),
+  };
 
   constructor(
     @InjectQueue(TRACK_PROCESSING_QUEUE)
     private readonly queue: Queue<RunStepJob | StoreCoverJob>,
     private readonly processings: TrackProcessingRepository,
-    private readonly videoStep: TrackVideoStep,
+    private readonly videoStep: TrackVideoStepService,
     private readonly revalidation: WebRevalidationService,
   ) {}
 
-  /** Queues the first step of a Track's latest Processing (its request). */
-  async start(trackId: string): Promise<void> {
+  /**
+   * Queues the first step of a Track's latest Processing when that Processing
+   * has not started: the request of a new Track, or a later request for a
+   * Track whose first start failed. Job IDs are keyed by the Processing, so
+   * queuing it again while the first job is kept does nothing.
+   */
+  async startIfQueued(trackId: string): Promise<void> {
     const latest = await this.processings.findLatestProcessing(trackId);
-    if (latest === undefined) {
-      throw new Error(`Track ${trackId} has no Processing to start`);
+    if (latest?.status !== 'QUEUED') {
+      return;
     }
     await this.enqueueStep(latest.id, firstPipelineStep());
   }
 
   /**
    * A step job. A Processing that is terminal, or already past this step, has
-   * nothing due, so a replayed job changes nothing.
+   * nothing due, so a replayed job changes nothing. A job that runs late is
+   * stopped by the guarded write that starts the step.
    */
   async runStep(job: RunStepJob, finalAttempt: boolean): Promise<void> {
+    if (!isPipelineStep(job.step)) {
+      throw new UnrecoverableError(
+        `The ${job.step} step is not part of this build`,
+      );
+    }
     const processing = await this.processings.findProcessing(job.processingId);
     if (processing === undefined || !isStepDue(processing.status, job.step)) {
       return;
     }
-    await this.processings.markStepStarted(processing.id, job.step);
+    const started = await this.processings.markStepStarted(
+      processing.id,
+      job.step,
+      dueStatusesOf(job.step),
+    );
+    if (!started) {
+      return;
+    }
     try {
-      await this.performStep(job.step, processing);
+      await this.handlers[job.step](processing);
       await this.advance(processing, job.step);
     } catch (error) {
       return this.failStep(processing, job.step, error, finalAttempt);
@@ -72,36 +107,29 @@ export class TrackPipeline {
   }
 
   /**
+   * Chooses the video, then queues the cover with the artwork the search
+   * found, so the cover job does not search again. The cover job does not hold
+   * the next step back.
+   */
+  private async findVideo(processing: ProcessingForStep): Promise<void> {
+    const artworkUrl = await this.videoStep.run(processing);
+    await this.enqueueCover({
+      trackId: processing.trackId,
+      processingId: processing.id,
+      artworkUrl,
+    });
+  }
+
+  /**
    * Queues the step after this one, or completes the Processing when this was
    * the last. Inside the step's try block, so a failure here is retried (and
    * replays the step, which is idempotent) rather than left half-done.
    */
-  private advance(processing: ProcessingForStep, step: TrackProcessingStep) {
+  private advance(processing: ProcessingForStep, step: PipelineStepName) {
     const next = nextPipelineStep(step);
     return next === undefined
-      ? this.complete(processing)
+      ? this.complete(processing, step)
       : this.enqueueStep(processing.id, next);
-  }
-
-  private performStep(
-    step: TrackProcessingStep,
-    processing: ProcessingForStep,
-  ): Promise<void> {
-    switch (step) {
-      case 'FINDING_VIDEO':
-        return this.findVideo(processing);
-      default:
-        throw new Error(`The ${step} step has no handler yet`);
-    }
-  }
-
-  /**
-   * Chooses the video, then queues the cover: the cover job does not hold the
-   * next step back.
-   */
-  private async findVideo(processing: ProcessingForStep): Promise<void> {
-    await this.videoStep.run(processing);
-    await this.enqueueCover(processing.trackId);
   }
 
   /**
@@ -125,7 +153,7 @@ export class TrackPipeline {
     this.logger.warn(
       `Processing ${processing.id} failed at ${step} with ${failureCode}: ${messageOf(error)}`,
     );
-    await this.processings.markFailed(processing.id, {
+    await this.processings.markFailed(processing.id, dueStatusesOf(step), {
       code: failureCode,
       resumeFrom: step,
     });
@@ -136,12 +164,15 @@ export class TrackPipeline {
    * completes. The refresh comes first, so if it fails the replayed job still
    * finds the Processing unfinished and refreshes again.
    */
-  private async complete(processing: ProcessingForStep): Promise<void> {
+  private async complete(
+    processing: ProcessingForStep,
+    lastStep: PipelineStepName,
+  ): Promise<void> {
     await this.revalidation.revalidate([
       cacheTags.track(processing.trackId),
       cacheTags.tracks,
     ]);
-    await this.processings.markCompleted(processing.id);
+    await this.processings.markCompleted(processing.id, lastStep);
   }
 
   private async enqueueStep(
@@ -155,15 +186,9 @@ export class TrackPipeline {
     );
   }
 
-  private async enqueueCover(trackId: string): Promise<void> {
-    await this.queue.add(
-      STORE_COVER_JOB,
-      { trackId },
-      { jobId: coverJobId(trackId) },
-    );
+  private async enqueueCover(job: StoreCoverJob): Promise<void> {
+    await this.queue.add(STORE_COVER_JOB, job, {
+      jobId: coverJobId(job.processingId),
+    });
   }
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

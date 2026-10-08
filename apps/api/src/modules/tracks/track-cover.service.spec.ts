@@ -9,7 +9,8 @@ import type { PipelineTrack } from './tracks.repository.js';
 import { TracksRepository } from './tracks.repository.js';
 
 // The cover choice and what is stored: the Cover Art Archive first, then the
-// artwork of the best search match, and a webp that fits in 500 px.
+// artwork the video step found (or the search, when it did not), and a webp
+// that fits in 500 px.
 
 const png = (width: number, height: number) =>
   sharp({
@@ -95,12 +96,12 @@ describe('TrackCoverService', () => {
 
   it('stores nothing for a Track that is unknown or has a cover already', async () => {
     tracks.findPipelineTrack.mockResolvedValueOnce(undefined);
-    await expect(service.storeCover('track-1')).resolves.toBe(false);
+    await expect(service.storeCover('track-1', undefined)).resolves.toBe(false);
 
     tracks.findPipelineTrack.mockResolvedValueOnce(
       track({ coverUrl: 'https://files.test/old.webp' }),
     );
-    await expect(service.storeCover('track-1')).resolves.toBe(false);
+    await expect(service.storeCover('track-1', undefined)).resolves.toBe(false);
 
     expect(coverArt.fetchReleaseFrontCover).not.toHaveBeenCalled();
     expect(storage.putPublicObject).not.toHaveBeenCalled();
@@ -109,7 +110,7 @@ describe('TrackCoverService', () => {
   it('stores the front cover of the primary release as a webp', async () => {
     coverArt.fetchReleaseFrontCover.mockResolvedValue(await releaseImage());
 
-    await expect(service.storeCover('track-1')).resolves.toBe(true);
+    await expect(service.storeCover('track-1', null)).resolves.toBe(true);
 
     expect(coverArt.fetchReleaseFrontCover).toHaveBeenCalledWith(
       'release-early',
@@ -130,17 +131,30 @@ describe('TrackCoverService', () => {
     );
   });
 
-  it('falls back to the artwork of the best search match', async () => {
+  it('falls back to the artwork the video step found, without searching again', async () => {
+    coverArt.fetchImage.mockResolvedValue(await releaseImage());
+
+    await expect(
+      service.storeCover('track-1', 'https://img.test/found.jpg'),
+    ).resolves.toBe(true);
+
+    expect(youtube.searchSongs).not.toHaveBeenCalled();
+    expect(coverArt.fetchImage).toHaveBeenCalledWith(
+      'https://img.test/found.jpg',
+    );
+    expect(tracks.setCoverUrl).toHaveBeenCalled();
+  });
+
+  it('searches for the artwork itself when the video step did not search', async () => {
     coverArt.fetchImage.mockResolvedValue(await releaseImage());
     youtube.searchSongs.mockResolvedValue([searchHit()]);
 
-    await expect(service.storeCover('track-1')).resolves.toBe(true);
+    await expect(service.storeCover('track-1', undefined)).resolves.toBe(true);
 
     expect(youtube.searchSongs).toHaveBeenCalledWith('Queen Bohemian Rhapsody');
     expect(coverArt.fetchImage).toHaveBeenCalledWith(
       'https://img.test/hit.jpg',
     );
-    expect(tracks.setCoverUrl).toHaveBeenCalled();
   });
 
   it('searches for the artwork when the Track has no release', async () => {
@@ -148,16 +162,15 @@ describe('TrackCoverService', () => {
     coverArt.fetchImage.mockResolvedValue(await releaseImage());
     youtube.searchSongs.mockResolvedValue([searchHit()]);
 
-    await expect(service.storeCover('track-1')).resolves.toBe(true);
+    await expect(service.storeCover('track-1', undefined)).resolves.toBe(true);
 
     expect(coverArt.fetchReleaseFrontCover).not.toHaveBeenCalled();
   });
 
-  it('stores nothing when neither source has an image', async () => {
-    youtube.searchSongs.mockResolvedValue([searchHit({ artworkUrl: null })]);
+  it('stores nothing when the archive and the search have no image', async () => {
+    await expect(service.storeCover('track-1', null)).resolves.toBe(false);
 
-    await expect(service.storeCover('track-1')).resolves.toBe(false);
-
+    expect(coverArt.fetchImage).not.toHaveBeenCalled();
     expect(storage.putPublicObject).not.toHaveBeenCalled();
     expect(tracks.setCoverUrl).not.toHaveBeenCalled();
   });
@@ -167,7 +180,7 @@ describe('TrackCoverService', () => {
       searchHit({ artists: ['Adele'], title: 'Hello' }),
     ]);
 
-    await expect(service.storeCover('track-1')).resolves.toBe(false);
+    await expect(service.storeCover('track-1', undefined)).resolves.toBe(false);
 
     expect(coverArt.fetchImage).not.toHaveBeenCalled();
   });
@@ -178,7 +191,7 @@ describe('TrackCoverService', () => {
       contentType: 'image/png',
     });
 
-    await expect(service.storeCover('track-1')).resolves.toBe(false);
+    await expect(service.storeCover('track-1', null)).resolves.toBe(false);
 
     expect(storage.putPublicObject).not.toHaveBeenCalled();
   });

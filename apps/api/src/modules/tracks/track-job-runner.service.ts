@@ -1,25 +1,32 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { cacheTags } from '@notefinder/contracts';
 import { UnrecoverableError } from 'bullmq';
 import type { z } from 'zod';
-import { TrackCoverJob } from './track-cover-job.service.js';
-import { TrackPipeline } from './track-pipeline.service.js';
+import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { TrackCoverService } from './track-cover.service.js';
+import { TrackPipelineService } from './track-pipeline.service.js';
 import {
   RUN_STEP_JOB,
   runStepJobSchema,
   STORE_COVER_JOB,
+  type StoreCoverJob,
   storeCoverJobSchema,
 } from './track-processing.job.js';
+import { messageOf } from './track-processing-failure.js';
 
 /**
- * Routes one job of the Processing queue to its handler: a step to the
- * pipeline, a cover to the cover job. The BullMQ processor and the e2e specs
- * both go through here, so a job runs the same way in both.
+ * Routes one job of the Processing queue to what runs it: a step to the
+ * pipeline, a cover to the cover service. The BullMQ processor and the e2e
+ * specs both go through here, so a job runs the same way in both.
  */
 @Injectable()
-export class TrackJobRunner {
+export class TrackJobRunnerService {
+  private readonly logger = new Logger(TrackJobRunnerService.name);
+
   constructor(
-    private readonly pipeline: TrackPipeline,
-    private readonly coverJob: TrackCoverJob,
+    private readonly pipeline: TrackPipelineService,
+    private readonly covers: TrackCoverService,
+    private readonly revalidation: WebRevalidationService,
   ) {}
 
   /**
@@ -34,10 +41,35 @@ export class TrackJobRunner {
       );
     }
     if (name === STORE_COVER_JOB) {
-      const { trackId } = parseJob(storeCoverJobSchema, data);
-      return this.coverJob.run(trackId, finalAttempt);
+      return this.storeCover(parseJob(storeCoverJobSchema, data), finalAttempt);
     }
     throw new UnrecoverableError(`Unknown job "${name}"`);
+  }
+
+  /**
+   * Stores the cover, then refreshes the Track's pages. The refresh runs after
+   * every successful pass, not only after a store, so a replay whose refresh
+   * failed still refreshes. A failure is retried; on the last attempt the Track
+   * keeps its placeholder, which only a log line records.
+   */
+  private async storeCover(
+    job: StoreCoverJob,
+    finalAttempt: boolean,
+  ): Promise<void> {
+    try {
+      await this.covers.storeCover(job.trackId, job.artworkUrl);
+      await this.revalidation.revalidate([
+        cacheTags.track(job.trackId),
+        cacheTags.tracks,
+      ]);
+    } catch (error) {
+      if (!finalAttempt) {
+        throw error;
+      }
+      this.logger.warn(
+        `No cover for Track ${job.trackId}: ${messageOf(error)}`,
+      );
+    }
   }
 }
 

@@ -5,6 +5,7 @@ import {
   isDurationMatch,
   isValidCandidate,
   type RecordingTarget,
+  recordingTargetOf,
   searchQueryOf,
   type VideoCandidate,
 } from './track-video-matching.js';
@@ -189,6 +190,18 @@ describe('chooseSearchMatch', () => {
     const withArtwork = { ...candidate(), artworkUrl: 'https://img.test/a' };
 
     expect(chooseSearchMatch(target, [withArtwork])).toBe(withArtwork);
+  });
+});
+
+describe('recordingTargetOf', () => {
+  it('keeps the title, length and credited artists of the Track', () => {
+    expect(
+      recordingTargetOf({
+        title: 'Bohemian Rhapsody',
+        lengthMs: 354_000,
+        artistNames: ['Queen'],
+      }),
+    ).toEqual(target);
   });
 });
 

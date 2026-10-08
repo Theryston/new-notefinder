@@ -1,29 +1,30 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { CreateTrackBody } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
-import { TrackPipeline } from './track-pipeline.service.js';
+import { TrackPipelineService } from './track-pipeline.service.js';
 import { TrackRequestService } from './track-request.service.js';
-import { TrackRequestLauncher } from './track-request-launcher.service.js';
+import { TrackRequestLauncherService } from './track-request-launcher.service.js';
 
 const requests = { requestTrack: vi.fn() };
-const pipeline = { start: vi.fn() };
+const pipeline = { startIfQueued: vi.fn() };
 
 const body: CreateTrackBody = { recordingMbid: testMbid(1), locale: 'en' };
 
-describe('TrackRequestLauncher', () => {
-  let launcher: TrackRequestLauncher;
+describe('TrackRequestLauncherService', () => {
+  let launcher: TrackRequestLauncherService;
   let moduleRef: TestingModule;
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    pipeline.startIfQueued.mockResolvedValue(undefined);
     moduleRef = await Test.createTestingModule({
       providers: [
-        TrackRequestLauncher,
+        TrackRequestLauncherService,
         { provide: TrackRequestService, useValue: requests },
-        { provide: TrackPipeline, useValue: pipeline },
+        { provide: TrackPipelineService, useValue: pipeline },
       ],
     }).compile();
-    launcher = moduleRef.get(TrackRequestLauncher);
+    launcher = moduleRef.get(TrackRequestLauncherService);
   });
 
   afterEach(async () => {
@@ -42,10 +43,10 @@ describe('TrackRequestLauncher', () => {
     });
 
     expect(requests.requestTrack).toHaveBeenCalledWith('user-1', body);
-    expect(pipeline.start).toHaveBeenCalledWith('track-1');
+    expect(pipeline.startIfQueued).toHaveBeenCalledWith('track-1');
   });
 
-  it('starts nothing for a Recording that already has a Track', async () => {
+  it('answers an existing Track as it is, and asks the pipeline to start it only if still queued', async () => {
     requests.requestTrack.mockResolvedValue({
       trackId: 'track-1',
       created: false,
@@ -56,6 +57,18 @@ describe('TrackRequestLauncher', () => {
       created: false,
     });
 
-    expect(pipeline.start).not.toHaveBeenCalled();
+    expect(pipeline.startIfQueued).toHaveBeenCalledWith('track-1');
+  });
+
+  it('fails the request when the pipeline cannot be started, so the next request retries it', async () => {
+    requests.requestTrack.mockResolvedValue({
+      trackId: 'track-1',
+      created: true,
+    });
+    pipeline.startIfQueued.mockRejectedValue(new Error('redis is down'));
+
+    await expect(launcher.requestTrack('user-1', body)).rejects.toThrow(
+      'redis is down',
+    );
   });
 });

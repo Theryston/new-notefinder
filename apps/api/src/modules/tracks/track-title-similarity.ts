@@ -1,6 +1,8 @@
 // How alike a video's title is to a Recording's title, for matching a YouTube
 // video to a Recording. Pure, so the rules are tested without any I/O.
 
+import { foldAccents } from './track-text.js';
+
 /**
  * Words that describe the upload, not the song: "Queen - Under Pressure
  * (Official Video)" is the same take as "Under Pressure". Version words
@@ -37,9 +39,7 @@ const YEAR = /^(?:19|20)\d{2}$/;
 
 /** Lowercase, accents and punctuation gone: the words that remain, in order. */
 const wordsOf = (text: string): string[] =>
-  text
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
+  foldAccents(text)
     .replace(FEATURING, ' ')
     .toLowerCase()
     .split(/[^\p{L}\p{N}]+/u)
