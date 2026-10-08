@@ -414,5 +414,45 @@
       "title": "Artista não encontrado",
       "description": "Não encontramos este artista. Ele pode ter sido removido ou o link está errado."
     }
+  },
+  "albums": {
+    "metaTitle": "{title}",
+    "metaDescription": "As músicas de {title} com as suas notas vocais no NoteFinder.",
+    "header": {
+      "loading": "Carregando álbum…",
+      "artistsLabel": "Artistas",
+      "genresLabel": "Gêneros",
+      "artists": {
+        "more": "e mais {count}",
+        "less": "Mostrar menos artistas"
+      }
+    },
+    "types": {
+      "primary": {
+        "album": "Álbum",
+        "single": "Single",
+        "ep": "EP",
+        "broadcast": "Transmissão",
+        "other": "Outro"
+      },
+      "secondary": {
+        "compilation": "Coletânea",
+        "soundtrack": "Trilha sonora",
+        "spokenword": "Fala",
+        "interview": "Entrevista",
+        "audiobook": "Audiolivro",
+        "audioDrama": "Radioteatro",
+        "live": "Ao vivo",
+        "remix": "Remix",
+        "djMix": "Mix de DJ",
+        "mixtapeStreet": "Mixtape/Street",
+        "demo": "Demo",
+        "fieldRecording": "Gravação de campo"
+      }
+    },
+    "notFound": {
+      "title": "Álbum não encontrado",
+      "description": "Não encontramos este álbum. Ele pode ter sido removido ou o link está errado."
+    }
   }
 }

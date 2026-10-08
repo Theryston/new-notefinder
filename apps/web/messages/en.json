@@ -414,5 +414,45 @@
       "title": "Artist not found",
       "description": "We couldn't find this artist. It may have been removed or the link is wrong."
     }
+  },
+  "albums": {
+    "metaTitle": "{title}",
+    "metaDescription": "The songs on {title} with their vocal notes on NoteFinder.",
+    "header": {
+      "loading": "Loading album…",
+      "artistsLabel": "Artists",
+      "genresLabel": "Genres",
+      "artists": {
+        "more": "and {count} more",
+        "less": "Show fewer artists"
+      }
+    },
+    "types": {
+      "primary": {
+        "album": "Album",
+        "single": "Single",
+        "ep": "EP",
+        "broadcast": "Broadcast",
+        "other": "Other"
+      },
+      "secondary": {
+        "compilation": "Compilation",
+        "soundtrack": "Soundtrack",
+        "spokenword": "Spoken word",
+        "interview": "Interview",
+        "audiobook": "Audiobook",
+        "audioDrama": "Audio drama",
+        "live": "Live",
+        "remix": "Remix",
+        "djMix": "DJ mix",
+        "mixtapeStreet": "Mixtape/Street",
+        "demo": "Demo",
+        "fieldRecording": "Field recording"
+      }
+    },
+    "notFound": {
+      "title": "Album not found",
+      "description": "We couldn't find this album. It may have been removed or the link is wrong."
+    }
   }
 }
