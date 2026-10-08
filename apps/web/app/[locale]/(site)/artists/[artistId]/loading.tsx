@@ -1,23 +1,19 @@
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 
 import { ArtistHeaderSkeleton } from '@/features/artists/components/artist-header-skeleton';
-import { ArtistTracksGridSkeleton } from '@/features/artists/components/artist-tracks-grid';
+import { TrackGridSkeleton } from '@/features/tracks/components/track-grid-feedback';
 
 /**
- * Same-dimension header plus track-grid skeletons while loading. Scopes
- * the `artists` messages to the client skeleton (the `(site)` layout only
- * provides `errors` and `header`), like the tracks section does.
+ * Same-dimension header plus track-grid skeletons while loading. The grid
+ * skeleton takes its one announced label from the artist's tracks block.
  */
 export default async function ArtistLoading() {
-  const { errors, artists } = await getMessages();
+  const t = await getTranslations('artists.tracks');
 
   return (
     <div className="flex flex-col gap-8">
       <ArtistHeaderSkeleton />
-      <NextIntlClientProvider messages={{ errors, artists }}>
-        <ArtistTracksGridSkeleton />
-      </NextIntlClientProvider>
+      <TrackGridSkeleton label={t('loading')} />
     </div>
   );
 }
