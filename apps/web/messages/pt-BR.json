@@ -428,7 +428,7 @@
       },
       "separator": " · ",
       "artistSeparator": ", ",
-      "trackCount": "{count, plural, one {# faixa} other {# faixas}}"
+      "trackCount": "{count, plural, =0 {# faixas} one {# faixa} other {# faixas}}"
     },
     "types": {
       "primary": {
