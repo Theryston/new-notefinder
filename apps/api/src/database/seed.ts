@@ -5,6 +5,7 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import { loadEnv } from '../config/env.js';
 import { hashPassword } from '../modules/auth/password.js';
 import { createDatabase, createPool, type Database } from './database.js';
+import { albumArtists, albums, legacyAlbumIds } from './schema/albums.js';
 import { artists, trackArtists } from './schema/artists.js';
 import { accounts } from './schema/auth.js';
 import {
@@ -15,6 +16,11 @@ import {
   trackWorks,
 } from './schema/tracks.js';
 import { users } from './schema/users.js';
+import {
+  SEED_ALBUM_ARTISTS,
+  SEED_ALBUMS,
+  SEED_LEGACY_ALBUM_IDS,
+} from './seed-albums.js';
 import {
   assertSeedAllowed,
   SEED_ARTISTS,
@@ -104,6 +110,27 @@ const seedArtistsAndTracks = async (tx: SeedTx): Promise<void> => {
     .onConflictDoNothing();
 };
 
+/** Albums need their artists in place first (the credits reference them). */
+const seedAlbums = async (tx: SeedTx): Promise<void> => {
+  for (const album of SEED_ALBUMS) {
+    await tx
+      .insert(albums)
+      .values(album)
+      .onConflictDoUpdate({
+        target: albums.id,
+        set: overwriteOnConflict(albums),
+      });
+  }
+  await tx
+    .insert(albumArtists)
+    .values(SEED_ALBUM_ARTISTS)
+    .onConflictDoNothing();
+  await tx
+    .insert(legacyAlbumIds)
+    .values(SEED_LEGACY_ALBUM_IDS)
+    .onConflictDoNothing();
+};
+
 const seedTrackDetails = async (tx: SeedTx): Promise<void> => {
   for (const release of SEED_TRACK_RELEASES) {
     await tx
@@ -149,6 +176,7 @@ const seed = async (db: Database): Promise<void> => {
   await db.transaction(async (tx) => {
     await seedUser(tx, credential);
     await seedArtistsAndTracks(tx);
+    await seedAlbums(tx);
     await seedTrackDetails(tx);
   });
 
@@ -159,6 +187,7 @@ const seed = async (db: Database): Promise<void> => {
   new Logger('Seed').log(
     `Seeded ${SEED_ARTISTS.length} artists and ${SEED_TRACKS.length} tracks.`,
   );
+  new Logger('Seed').log(`Seeded ${SEED_ALBUMS.length} albums.`);
 };
 
 const env = loadEnv();

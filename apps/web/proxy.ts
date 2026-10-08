@@ -1,27 +1,31 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { fetchArtistRouteVerdict, parseArtistRoute } from '@/lib/artist-route';
+import {
+  entityRedirectUrl,
+  fetchEntityRouteVerdict,
+  parseEntityRoute,
+} from '@/lib/entity-route';
 import { getServerEnv } from '@/lib/env/server';
 import { detectLocale } from '@/lib/i18n/detect-locale';
 import { isLocale, localeCookieName } from '@/lib/i18n/routing';
 
 /**
- * Guards `/<locale>/artists/<id>`: a legacy ID permanently redirects (308)
- * to the new ID with the query kept, an unknown ID is a real 404. The check
- * has to run here, before anything streams: with Cache Components every
- * dynamic route streams a static shell first, so a redirect/`notFound`
- * issued from the page degrades to a 200 (meta refresh / in-place UI) and
- * crawlers and legacy bookmarks never see the real status.
+ * Guards `/<locale>/artists/<id>` and `/<locale>/albums/<id>`: a legacy ID
+ * permanently redirects (308) to the new ID with the query kept, an unknown
+ * ID is a real 404. The check has to run here, before anything streams: with
+ * Cache Components every dynamic route streams a static shell first, so a
+ * redirect/`notFound` issued from the page degrades to a 200 (meta refresh /
+ * in-place UI) and crawlers and legacy bookmarks never see the real status.
  *
  * Fail-open on purpose: anything unexpected (no API configured, timeout, a
  * 500, an unparsable body) lets the request through, and the page renders
  * its own outcome (header, translated missing UI, error UI) instead of a
  * wrong redirect or 404.
  */
-async function checkArtistRoute(
+async function checkEntityRoute(
   request: NextRequest,
 ): Promise<NextResponse | undefined> {
-  const route = parseArtistRoute(request.nextUrl.pathname);
+  const route = parseEntityRoute(request.nextUrl.pathname);
   if (!route) return undefined;
   let apiUrl: string;
   try {
@@ -29,11 +33,16 @@ async function checkArtistRoute(
   } catch {
     return undefined;
   }
-  const verdict = await fetchArtistRouteVerdict(apiUrl, route.artistId);
+  const verdict = await fetchEntityRouteVerdict(
+    apiUrl,
+    route.collection,
+    route.id,
+  );
   if (verdict.kind === 'moved') {
-    const url = request.nextUrl.clone();
-    url.pathname = `/${route.locale}/artists/${verdict.newId}`;
-    return NextResponse.redirect(url, 308);
+    return NextResponse.redirect(
+      entityRedirectUrl(request.nextUrl.href, route, verdict.newId),
+      308,
+    );
   }
   if (verdict.kind === 'missing') {
     return NextResponse.rewrite(new URL('/_not-found', request.url));
@@ -56,8 +65,8 @@ export async function proxy(request: NextRequest) {
 
   // A URL that already has a locale is always respected.
   if (isLocale(firstSegment)) {
-    // Artist IDs need a verdict before anything streams (see above).
-    return (await checkArtistRoute(request)) ?? NextResponse.next();
+    // Catalog IDs need a verdict before anything streams (see above).
+    return (await checkEntityRoute(request)) ?? NextResponse.next();
   }
 
   const locale = detectLocale({

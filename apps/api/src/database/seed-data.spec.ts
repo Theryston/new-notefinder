@@ -4,6 +4,11 @@ import {
   signUpBodySchema,
 } from '@notefinder/contracts';
 import {
+  SEED_ALBUM_ARTISTS,
+  SEED_ALBUMS,
+  SEED_LEGACY_ALBUM_IDS,
+} from './seed-albums.js';
+import {
   assertSeedAllowed,
   SEED_ARTISTS,
   SEED_TRACK_ARTISTS,
@@ -103,5 +108,60 @@ describe('seed catalog', () => {
     for (const track of SEED_TRACKS) {
       expect(linkedTracks.has(track.id)).toBe(true);
     }
+  });
+});
+
+describe('seed albums', () => {
+  it('uses unique album ids and release group MBIDs', () => {
+    const ids = SEED_ALBUMS.map((album) => album.id);
+    const mbids = SEED_ALBUMS.map((album) => album.mbid);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(mbids).size).toBe(mbids.length);
+    for (const album of SEED_ALBUMS) {
+      expect(() => mbidSchema.parse(album.mbid)).not.toThrow();
+      expect(album.title.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('credits every album to seeded artists in contiguous credit order', () => {
+    const artistIds = new Set(SEED_ARTISTS.map((artist) => artist.id));
+    const albumIds = new Set(SEED_ALBUMS.map((album) => album.id));
+
+    for (const album of SEED_ALBUMS) {
+      const credits = SEED_ALBUM_ARTISTS.filter(
+        (credit) => credit.albumId === album.id,
+      );
+      expect(credits.length).toBeGreaterThan(0);
+      const positions = credits
+        .map((credit) => credit.position)
+        .sort((a, b) => a - b);
+      expect(positions).toEqual(credits.map((_, index) => index));
+    }
+    for (const credit of SEED_ALBUM_ARTISTS) {
+      expect(albumIds.has(credit.albumId)).toBe(true);
+      expect(artistIds.has(credit.artistId)).toBe(true);
+    }
+  });
+
+  it('points every legacy album id at a seeded album', () => {
+    const albumIds = new Set(SEED_ALBUMS.map((album) => album.id));
+    expect(SEED_LEGACY_ALBUM_IDS.length).toBeGreaterThan(0);
+    for (const legacy of SEED_LEGACY_ALBUM_IDS) {
+      expect(albumIds.has(legacy.albumId)).toBe(true);
+    }
+  });
+
+  it('covers a multi-artist album and an album with no genres and no type', () => {
+    const creditCount = (albumId: string) =>
+      SEED_ALBUM_ARTISTS.filter((credit) => credit.albumId === albumId).length;
+    expect(SEED_ALBUMS.some((album) => creditCount(album.id) > 1)).toBe(true);
+    expect(
+      SEED_ALBUMS.some(
+        (album) =>
+          album.genres.length === 0 &&
+          album.primaryType === null &&
+          album.year === null,
+      ),
+    ).toBe(true);
   });
 });
