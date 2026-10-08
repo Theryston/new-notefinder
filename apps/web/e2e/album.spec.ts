@@ -8,9 +8,20 @@ import {
 } from './fake-album-api-server';
 import { messages as catalogs } from './messages';
 
+// The fixtures mock no tracks, so the info line always ends with "0 tracks".
 const cases = [
-  { locale: 'en', messages: catalogs.en, moreName: 'and 2 more' },
-  { locale: 'pt-BR', messages: catalogs['pt-BR'], moreName: 'e mais 2' },
+  {
+    locale: 'en',
+    messages: catalogs.en,
+    moreName: 'and 2 more',
+    zeroTracks: '0 tracks',
+  },
+  {
+    locale: 'pt-BR',
+    messages: catalogs['pt-BR'],
+    moreName: 'e mais 2',
+    zeroTracks: '0 faixas',
+  },
 ] as const;
 
 const mbidOf = (n: number): string =>
@@ -46,7 +57,7 @@ const fiveArtists = [
   { id: 'album-a5', name: 'Roger Taylor' },
 ];
 
-for (const { locale, messages, moreName } of cases) {
+for (const { locale, messages, moreName, zeroTracks } of cases) {
   const header = (page: import('@playwright/test').Page) =>
     page.locator('section[aria-labelledby="album-title"]');
 
@@ -71,9 +82,11 @@ for (const { locale, messages, moreName } of cases) {
         'href',
         `/${locale}/artists/clx456def`,
       );
-      const info = [messages.albums.types.primary.album, '1975'].join(
-        messages.albums.header.separator,
-      );
+      const info = [
+        messages.albums.types.primary.album,
+        '1975',
+        zeroTracks,
+      ].join(messages.albums.header.separator);
       await expect(header(page).getByText(info, { exact: true })).toBeVisible();
     });
 
@@ -199,12 +212,17 @@ for (const { locale, messages, moreName } of cases) {
 
       await page.goto(`/${locale}/albums/${id}`);
 
+      // With no primary type the year leads the line, and the track count
+      // still follows it: the one separator left sits between those two.
       await expect(
-        header(page).getByText('1980', { exact: true }),
+        header(page).getByText(
+          ['1980', zeroTracks].join(messages.albums.header.separator),
+          { exact: true },
+        ),
       ).toBeVisible();
       await expect(
         header(page).getByText(messages.albums.header.separator),
-      ).toHaveCount(0);
+      ).toHaveCount(1);
     });
 
     test('shows the secondary types next to the primary type', async ({
@@ -222,6 +240,7 @@ for (const { locale, messages, moreName } of cases) {
         messages.albums.types.primary.album,
         messages.albums.types.secondary.live,
         '1975',
+        zeroTracks,
       ].join(messages.albums.header.separator);
       await expect(header(page).getByText(info, { exact: true })).toBeVisible();
     });
