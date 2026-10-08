@@ -2,6 +2,9 @@ import numpy as np
 import pytest
 
 from nfp_audio.notes import (
+    CONFIDENCE_THRESHOLD,
+    MERGE_MAX_GAP,
+    MIN_NOTE_DURATION,
     Note,
     filter_short_notes,
     freq_to_note,
@@ -9,6 +12,14 @@ from nfp_audio.notes import (
     merge_close_notes,
     notes_from_frames,
 )
+
+
+def test_the_detection_thresholds_are_the_legacy_ones():
+    # Changing any of these changes the notes of every Track, so a change
+    # must be deliberate and checked against the legacy output.
+    assert CONFIDENCE_THRESHOLD == 0.85
+    assert MIN_NOTE_DURATION == 0.05
+    assert MERGE_MAX_GAP == 0.2
 
 
 def segment(start: float, count: int, frequency: float, confidence=0.95):
