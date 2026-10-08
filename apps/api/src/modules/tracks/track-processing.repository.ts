@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import type {
+  TrackProcessingFailureCode,
+  TrackProcessingStatus,
+  TrackProcessingStep,
+  TrackProcessingVideoSource,
+} from '@notefinder/contracts';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   trackContributionKind,
@@ -13,6 +19,16 @@ import type { TrackProcessingRow } from './track-processing-view.js';
 /** A Contribution's kind, as the schema stores it. */
 export type TrackContributionKind =
   (typeof trackContributionKind.enumValues)[number];
+
+/** A Processing as one of its step jobs reads it. */
+export type ProcessingForStep = {
+  id: string;
+  trackId: string;
+  status: TrackProcessingStatus;
+  /** The video a run already chose; a retry keeps it. */
+  videoId: string | null;
+  videoSource: TrackProcessingVideoSource | null;
+};
 
 /**
  * Processings, Contributors and Contributions of Tracks. The Track itself is
@@ -108,5 +124,80 @@ export class TrackProcessingRepository {
       .from(trackContributors)
       .where(eq(trackContributors.trackId, trackId))
       .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
+  }
+
+  /** A Processing as its step job reads it; undefined for an unknown ID. */
+  async findProcessing(
+    processingId: string,
+  ): Promise<ProcessingForStep | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        id: trackProcessings.id,
+        trackId: trackProcessings.trackId,
+        status: trackProcessings.status,
+        videoId: trackProcessings.videoId,
+        videoSource: trackProcessings.videoSource,
+      })
+      .from(trackProcessings)
+      .where(eq(trackProcessings.id, processingId))
+      .limit(1);
+    return row;
+  }
+
+  /** A step started: the status moves to it, the first start is kept. */
+  async markStepStarted(
+    processingId: string,
+    step: TrackProcessingStep,
+  ): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: step,
+        startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
+      })
+      .where(eq(trackProcessings.id, processingId));
+  }
+
+  /** The video a Processing chose, and where it was found. */
+  async saveVideo(
+    processingId: string,
+    video: { videoId: string; source: TrackProcessingVideoSource },
+  ): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({ videoId: video.videoId, videoSource: video.source })
+      .where(eq(trackProcessings.id, processingId));
+  }
+
+  /** The Processing completed; nothing of it is left to run. */
+  async markCompleted(processingId: string): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: 'COMPLETED',
+        failureCode: null,
+        resumeFrom: null,
+        finishedAt: new Date(),
+      })
+      .where(eq(trackProcessings.id, processingId));
+  }
+
+  /** The Processing failed at a step; a retry will resume at that step. */
+  async markFailed(
+    processingId: string,
+    failure: {
+      code: TrackProcessingFailureCode;
+      resumeFrom: TrackProcessingStep;
+    },
+  ): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: 'FAILED',
+        failureCode: failure.code,
+        resumeFrom: failure.resumeFrom,
+        finishedAt: new Date(),
+      })
+      .where(eq(trackProcessings.id, processingId));
   }
 }
