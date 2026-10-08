@@ -30,6 +30,14 @@ const albumFixture = (id: string, overrides: Partial<FakeAlbum> = {}) => ({
   ...overrides,
 });
 
+/** The Cover Art Archive front of a release group, as the importer writes it. */
+const coverOf = (n: number): string =>
+  `https://coverartarchive.org/release-group/${mbidOf(n)}/front-500`;
+
+/** The fake Cover Art Archive answers 404 for release groups ending in `dead`. */
+const BROKEN_COVER =
+  'https://coverartarchive.org/release-group/00000000-0000-4000-8000-00000000dead/front-500';
+
 const fiveArtists = [
   { id: 'album-a1', name: 'Queen' },
   { id: 'album-a2', name: 'David Bowie' },
@@ -63,7 +71,9 @@ for (const { locale, messages, moreName } of cases) {
         'href',
         `/${locale}/artists/clx456def`,
       );
-      const info = [messages.albums.types.primary.album, '1975'].join(' · ');
+      const info = [messages.albums.types.primary.album, '1975'].join(
+        messages.albums.header.separator,
+      );
       await expect(header(page).getByText(info, { exact: true })).toBeVisible();
     });
 
@@ -101,6 +111,48 @@ for (const { locale, messages, moreName } of cases) {
         page.getByRole('heading', { level: 1, name: 'A Night at the Opera' }),
       ).toBeVisible();
       await expect(header(page).locator('img')).toHaveCount(0);
+    });
+
+    test('renders the cover art when the album has one', async ({ page }) => {
+      await mockAuthApi(page);
+      const id = `album-art-${locale}`;
+      await setAlbumMock({
+        albums: [albumFixture(id, { coverArtUrl: coverOf(3001) })],
+      });
+      // Through the real image optimizer: its allowlist (next.config.ts) and
+      // its upstream lookup, answered by the fake Cover Art Archive.
+      const optimized = page.waitForResponse('**/_next/image**');
+      await page.goto(`/${locale}/albums/${id}`);
+      expect((await optimized).status()).toBe(200);
+
+      // An image that fails to load is removed by the fallback, so the
+      // element staying in place with `complete` set means it loaded.
+      const cover = header(page).locator('img');
+      await expect(cover).toHaveCount(1);
+      await expect
+        .poll(() => cover.evaluate((img: HTMLImageElement) => img.complete))
+        .toBe(true);
+    });
+
+    test('falls back to the placeholder when the cover fails to load', async ({
+      page,
+    }) => {
+      await mockAuthApi(page);
+      const id = `album-art-broken-${locale}`;
+      await setAlbumMock({
+        albums: [albumFixture(id, { coverArtUrl: BROKEN_COVER })],
+      });
+      const optimized = page.waitForResponse('**/_next/image**');
+
+      await page.goto(`/${locale}/albums/${id}`);
+      expect((await optimized).status()).not.toBe(200);
+
+      await expect(header(page).locator('img')).toHaveCount(0);
+      await expect(
+        header(page)
+          .locator('[aria-hidden="true"][style*="background-color"]')
+          .first(),
+      ).toBeAttached();
     });
 
     test('lists the first three artists and expands the rest from one button', async ({
@@ -150,7 +202,9 @@ for (const { locale, messages, moreName } of cases) {
       await expect(
         header(page).getByText('1980', { exact: true }),
       ).toBeVisible();
-      await expect(header(page).getByText(' · ')).toHaveCount(0);
+      await expect(
+        header(page).getByText(messages.albums.header.separator),
+      ).toHaveCount(0);
     });
 
     test('shows the secondary types next to the primary type', async ({
@@ -168,7 +222,7 @@ for (const { locale, messages, moreName } of cases) {
         messages.albums.types.primary.album,
         messages.albums.types.secondary.live,
         '1975',
-      ].join(' · ');
+      ].join(messages.albums.header.separator);
       await expect(header(page).getByText(info, { exact: true })).toBeVisible();
     });
 

@@ -115,6 +115,25 @@ export const setAlbumMock = async (
   }
 };
 
+/** A valid 1x1 PNG: a cover the optimizer can decode, with no network. */
+const PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'base64',
+);
+
+/**
+ * The Cover Art Archive stand-in that `cover-upstream.mjs` sends the image
+ * optimizer to: a PNG, or a 404 for a release group whose MBID ends in `dead`
+ * (a cover that fails to load).
+ */
+const serveCover = (mbid: string, response: ServerResponse): void => {
+  if (mbid.endsWith('dead')) {
+    response.writeHead(404).end();
+    return;
+  }
+  response.writeHead(200, { 'content-type': 'image/png' }).end(PIXEL_PNG);
+};
+
 /**
  * Answers the album routes. Resolves `false` for any other request, which
  * the artist fake then answers (or 404s).
@@ -131,6 +150,11 @@ export const serveAlbumRequest = async (
   const match = /^\/v1\/albums\/([^/]+)$/.exec(pathname);
   if (match?.[1] && request.method === 'GET') {
     await serveAlbum(decodeURIComponent(match[1]), request, response);
+    return true;
+  }
+  const cover = /^\/__cover\/release-group\/([^/]+)\/front-500$/.exec(pathname);
+  if (cover?.[1] && request.method === 'GET') {
+    serveCover(cover[1], response);
     return true;
   }
   return false;
