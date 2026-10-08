@@ -48,7 +48,7 @@ nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | nfp-audio | @notefinder/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for

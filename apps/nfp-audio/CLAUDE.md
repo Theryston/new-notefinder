@@ -76,7 +76,7 @@ not change them without re-checking Tracks against the legacy output.
   GitHub's 100 MB hard limit). This is a maintainer decision: the weights are
   not in Git LFS.
 
-## Commands (from `apps/nfp-audio`, or `nub run <task> --filter=@notefinder/nfp-audio`)
+## Commands (from `apps/nfp-audio`, or `nub run <task> --filter=nfp-audio`)
 
 ```sh
 uv sync                      # dependencies of the dev group (tests and lint)
