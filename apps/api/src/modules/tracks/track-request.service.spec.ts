@@ -8,6 +8,7 @@ import { MusicCatalogClient } from '../../integrations/music-catalog/music-catal
 import { UsersService } from '../users/users.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackRequestService } from './track-request.service.js';
+import { TrackRequesterService } from './track-requester.service.js';
 import { TracksRepository } from './tracks.repository.js';
 
 // `createTrack` is `@Transactional()`: the database module runs it on a
@@ -36,6 +37,14 @@ const catalog = { getRecording: vi.fn() };
 const users = { setLocale: vi.fn() };
 
 const USER_ID = 'user-1';
+const REQUESTER = { id: USER_ID, role: 'USER' };
+// The requester's limits pass; the locale write lands on the users mock above.
+const requesters = {
+  assertCanRequestTrack: vi.fn(() => Promise.resolve()),
+  recordLocale: vi.fn((userId: string, locale: string) =>
+    users.setLocale(userId, locale),
+  ),
+};
 const requestOf = (mbid: string = testMbid(1)): CreateTrackBody => ({
   recordingMbid: mbid,
   locale: 'pt-BR',
@@ -70,6 +79,7 @@ describe('TrackRequestService', () => {
         { provide: TrackProcessingRepository, useValue: processings },
         { provide: MusicCatalogClient, useValue: catalog },
         { provide: UsersService, useValue: users },
+        { provide: TrackRequesterService, useValue: requesters },
       ],
     })
       .overrideProvider(DATABASE_POOL)
@@ -87,10 +97,12 @@ describe('TrackRequestService', () => {
   it('answers with the existing Track and asks the catalog nothing', async () => {
     knownTracks({ [testMbid(1)]: 'track-existing' });
 
-    await expect(service.requestTrack(USER_ID, requestOf())).resolves.toEqual({
-      trackId: 'track-existing',
-      created: false,
-    });
+    await expect(service.requestTrack(REQUESTER, requestOf())).resolves.toEqual(
+      {
+        trackId: 'track-existing',
+        created: false,
+      },
+    );
     expect(catalog.getRecording).not.toHaveBeenCalled();
     expect(tracks.insertTrack).not.toHaveBeenCalled();
   });
@@ -101,10 +113,12 @@ describe('TrackRequestService', () => {
       recording: recordingFixture(),
     });
 
-    await expect(service.requestTrack(USER_ID, requestOf())).resolves.toEqual({
-      trackId: 'track-new',
-      created: true,
-    });
+    await expect(service.requestTrack(REQUESTER, requestOf())).resolves.toEqual(
+      {
+        trackId: 'track-new',
+        created: true,
+      },
+    );
     expect(tracks.insertTrack).toHaveBeenCalledWith(
       expect.objectContaining({
         recordingMbid: testMbid(1),
@@ -144,10 +158,12 @@ describe('TrackRequestService', () => {
           },
     );
 
-    await expect(service.requestTrack(USER_ID, requestOf())).resolves.toEqual({
-      trackId: 'track-new',
-      created: true,
-    });
+    await expect(service.requestTrack(REQUESTER, requestOf())).resolves.toEqual(
+      {
+        trackId: 'track-new',
+        created: true,
+      },
+    );
     expect(tracks.insertTrack).toHaveBeenCalledWith(
       expect.objectContaining({ recordingMbid: merged }),
     );
@@ -164,10 +180,12 @@ describe('TrackRequestService', () => {
           },
     );
 
-    await expect(service.requestTrack(USER_ID, requestOf())).resolves.toEqual({
-      trackId: 'track-merged',
-      created: false,
-    });
+    await expect(service.requestTrack(REQUESTER, requestOf())).resolves.toEqual(
+      {
+        trackId: 'track-merged',
+        created: false,
+      },
+    );
     expect(tracks.insertTrack).not.toHaveBeenCalled();
     expect(users.setLocale).not.toHaveBeenCalled();
   });
@@ -176,7 +194,7 @@ describe('TrackRequestService', () => {
     catalog.getRecording.mockResolvedValue({ status: 'not-found' });
 
     await expect(
-      service.requestTrack(USER_ID, requestOf()),
+      service.requestTrack(REQUESTER, requestOf()),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(tracks.insertTrack).not.toHaveBeenCalled();
   });
@@ -188,7 +206,7 @@ describe('TrackRequestService', () => {
     }));
 
     await expect(
-      service.requestTrack(USER_ID, requestOf()),
+      service.requestTrack(REQUESTER, requestOf()),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(tracks.insertTrack).not.toHaveBeenCalled();
   });
@@ -206,10 +224,12 @@ describe('TrackRequestService', () => {
       .mockResolvedValueOnce(new Map())
       .mockResolvedValueOnce(new Map([[testMbid(1), 'track-winner']]));
 
-    await expect(service.requestTrack(USER_ID, requestOf())).resolves.toEqual({
-      trackId: 'track-winner',
-      created: false,
-    });
+    await expect(service.requestTrack(REQUESTER, requestOf())).resolves.toEqual(
+      {
+        trackId: 'track-winner',
+        created: false,
+      },
+    );
     expect(tracks.insertTrackDetails).not.toHaveBeenCalled();
     expect(processings.insertQueuedProcessing).not.toHaveBeenCalled();
     expect(processings.insertContribution).not.toHaveBeenCalled();
@@ -224,7 +244,7 @@ describe('TrackRequestService', () => {
     tracks.insertTrack.mockResolvedValue(undefined);
 
     await expect(
-      service.requestTrack(USER_ID, requestOf()),
+      service.requestTrack(REQUESTER, requestOf()),
     ).rejects.toMatchObject({ code: 'INTERNAL_ERROR' });
   });
 });
