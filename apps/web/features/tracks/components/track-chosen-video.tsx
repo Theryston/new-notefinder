@@ -1,4 +1,4 @@
-import type { TrackProcessingVideo as ChosenVideo } from '@notefinder/contracts';
+import type { TrackProcessingVideo } from '@notefinder/contracts';
 import { ExternalLinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -10,7 +10,7 @@ import { youtubeThumbnailUrl, youtubeWatchUrl } from '../youtube-links';
  * thumbnail, where it came from, and a link to watch it on YouTube. The player
  * itself is not loaded here.
  */
-export function TrackProcessingVideo({ video }: { video: ChosenVideo }) {
+export function TrackChosenVideo({ video }: { video: TrackProcessingVideo }) {
   const t = useTranslations('tracks.processing.video');
   return (
     <section

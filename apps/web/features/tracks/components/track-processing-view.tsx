@@ -4,10 +4,10 @@ import type { TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
 import { useTrackProcessing } from '../hooks/use-track-processing';
+import { TrackChosenVideo } from './track-chosen-video';
 import { TrackContributors } from './track-contributors';
 import { TrackProcessingHeader } from './track-processing-header';
 import { TrackProcessingProgress } from './track-processing-progress';
-import { TrackProcessingVideo } from './track-processing-video';
 
 /**
  * The Processing page: the Track header, the live progress of its Processing,
@@ -34,7 +34,7 @@ export function TrackProcessingView({
         <>
           <TrackProcessingProgress processing={state.processing} />
           {state.processing.video === null ? null : (
-            <TrackProcessingVideo video={state.processing.video} />
+            <TrackChosenVideo video={state.processing.video} />
           )}
         </>
       )}
