@@ -1,11 +1,14 @@
 # The RunPod serverless image. Built from this directory as the context (see
 # .dockerignore), published to GHCR by .github/workflows/nfp-audio-image.yml.
 #
-# CUDA 12.6 is the runtime the legacy worker was built on: the torch and
-# TensorFlow CUDA libraries come from the PyPI wheels pinned in pyproject.toml,
-# so the base only supplies the NVIDIA driver interface and the system
-# libraries. Python 3.12 is installed by uv from .python-version.
-FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04
+# CUDA 12.6, the version the legacy worker was built on. The torch and
+# TensorFlow CUDA libraries (cuBLAS, cuDNN, NCCL, ...) come bundled in the PyPI
+# wheels pinned in pyproject.toml, so the `base` flavor is enough: it supplies
+# the NVIDIA driver interface and the minimal system libraries. The `runtime`
+# flavor adds CUDA libraries that the wheels already carry, and it is bigger
+# on disk, which the image build can't spare on a hosted runner. Python 3.12 is
+# installed by uv from .python-version.
+FROM nvidia/cuda:12.6.0-base-ubuntu22.04
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /usr/local/bin/uv
 
