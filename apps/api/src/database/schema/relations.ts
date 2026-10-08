@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm';
+import { albumArtists, albums, legacyAlbumIds } from './albums.js';
 import { artists, legacyArtistIds, trackArtists } from './artists.js';
 import { accounts, sessions } from './auth.js';
 import {
@@ -99,3 +100,26 @@ export const trackExternalLinksRelations = relations(
     }),
   }),
 );
+
+export const albumsRelations = relations(albums, ({ many }) => ({
+  legacyIds: many(legacyAlbumIds),
+  albumArtists: many(albumArtists),
+}));
+
+export const legacyAlbumIdsRelations = relations(legacyAlbumIds, ({ one }) => ({
+  album: one(albums, {
+    fields: [legacyAlbumIds.albumId],
+    references: [albums.id],
+  }),
+}));
+
+export const albumArtistsRelations = relations(albumArtists, ({ one }) => ({
+  album: one(albums, {
+    fields: [albumArtists.albumId],
+    references: [albums.id],
+  }),
+  artist: one(artists, {
+    fields: [albumArtists.artistId],
+    references: [artists.id],
+  }),
+}));

@@ -1,6 +1,11 @@
 import bcrypt from 'bcryptjs';
 import type { Database } from '../../src/database/database.js';
 import {
+  albumArtists,
+  albums,
+  legacyAlbumIds,
+} from '../../src/database/schema/albums.js';
+import {
   artists,
   legacyArtistIds,
   trackArtists,
@@ -20,6 +25,7 @@ export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type Artist = typeof artists.$inferSelect;
+export type Album = typeof albums.$inferSelect;
 export type TrackRelease = typeof trackReleases.$inferSelect;
 export type TrackWork = typeof trackWorks.$inferSelect;
 export type TrackTag = typeof trackTags.$inferSelect;
@@ -28,6 +34,7 @@ export type TrackExternalLink = typeof trackExternalLinks.$inferSelect;
 type NewUser = typeof users.$inferInsert;
 type NewTrack = typeof tracks.$inferInsert;
 type NewArtist = typeof artists.$inferInsert;
+type NewAlbum = typeof albums.$inferInsert;
 type NewTrackRelease = typeof trackReleases.$inferInsert;
 type NewTrackWork = typeof trackWorks.$inferInsert;
 type NewTrackTag = typeof trackTags.$inferInsert;
@@ -190,6 +197,52 @@ export const linkTrackArtist = (
 ): Promise<void> => {
   return insertOne(
     db.insert(trackArtists).values({ trackId, artistId }).returning(),
+  ).then(() => undefined);
+};
+
+/** A catalog Album (a release group) with the header fields it shows. */
+export const createAlbum = (
+  db: Database,
+  overrides: Partial<NewAlbum> = {},
+): Promise<Album> => {
+  const n = next('album');
+  return insertOne(
+    db
+      .insert(albums)
+      .values({
+        mbid: testMbid(2000 + n),
+        title: `Album ${n}`,
+        primaryType: 'Album',
+        secondaryTypes: [],
+        year: 1975,
+        genres: ['rock'],
+        coverArtUrl: null,
+        ...overrides,
+      })
+      .returning(),
+  );
+};
+
+/** Credits an Artist on an Album, at its position in MusicBrainz credit order. */
+export const creditAlbumArtist = (
+  db: Database,
+  albumId: string,
+  artistId: string,
+  position: number,
+): Promise<void> => {
+  return insertOne(
+    db.insert(albumArtists).values({ albumId, artistId, position }).returning(),
+  ).then(() => undefined);
+};
+
+/** A legacy ID pointing at an Album, for the redirect path. */
+export const createLegacyAlbumId = (
+  db: Database,
+  albumId: string,
+  legacyId: string,
+): Promise<void> => {
+  return insertOne(
+    db.insert(legacyAlbumIds).values({ legacyId, albumId }).returning(),
   ).then(() => undefined);
 };
 
