@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import type {
   Artist,
-  ArtistTrack,
-  ArtistTrackExternalLink,
-  ArtistTrackRelease,
-  ArtistTrackTag,
-  ArtistTrackWork,
+  CatalogTrack,
+  CatalogTrackExternalLink,
+  CatalogTrackRelease,
+  CatalogTrackTag,
+  CatalogTrackWork,
 } from '@notefinder/contracts';
 import { and, asc, count, desc, eq, gt, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
@@ -77,7 +77,7 @@ export class ArtistsRepository {
   async findTracksByArtistId(
     artistId: string,
     options: { cursorTrackId?: string; limit: number },
-  ): Promise<{ items: ArtistTrack[]; nextCursor: string | null }> {
+  ): Promise<{ items: CatalogTrack[]; nextCursor: string | null }> {
     const { cursorTrackId, limit } = options;
     const conditions = cursorTrackId
       ? and(eq(trackArtists.artistId, artistId), gt(tracks.id, cursorTrackId))
@@ -128,7 +128,7 @@ export class ArtistsRepository {
       genres: string[];
     }[],
     trackIds: string[],
-  ): Promise<ArtistTrack[]> {
+  ): Promise<CatalogTrack[]> {
     const [credits, releases, works, tags, links] = await Promise.all([
       this.fetchCredits(trackIds),
       this.fetchReleases(trackIds),
@@ -164,7 +164,7 @@ export class ArtistsRepository {
 
   private async fetchReleases(
     trackIds: string[],
-  ): Promise<Map<string, ArtistTrackRelease[]>> {
+  ): Promise<Map<string, CatalogTrackRelease[]>> {
     const rows = await this.txHost.tx
       .select({
         trackId: trackReleases.trackId,
@@ -181,7 +181,7 @@ export class ArtistsRepository {
 
   private async fetchWorks(
     trackIds: string[],
-  ): Promise<Map<string, ArtistTrackWork[]>> {
+  ): Promise<Map<string, CatalogTrackWork[]>> {
     const rows = await this.txHost.tx
       .select({
         trackId: trackWorks.trackId,
@@ -196,7 +196,7 @@ export class ArtistsRepository {
 
   private async fetchTags(
     trackIds: string[],
-  ): Promise<Map<string, ArtistTrackTag[]>> {
+  ): Promise<Map<string, CatalogTrackTag[]>> {
     const rows = await this.txHost.tx
       .select({
         trackId: trackTags.trackId,
@@ -211,7 +211,7 @@ export class ArtistsRepository {
 
   private async fetchExternalLinks(
     trackIds: string[],
-  ): Promise<Map<string, ArtistTrackExternalLink[]>> {
+  ): Promise<Map<string, CatalogTrackExternalLink[]>> {
     const rows = await this.txHost.tx
       .select({
         trackId: trackExternalLinks.trackId,

@@ -40,23 +40,14 @@ export const resourceMovedDetailsSchema = z.object({
 export type ResourceMovedDetails = z.infer<typeof resourceMovedDetailsSchema>;
 
 /** One Artist credited on a Track, in display order. */
-export const artistTrackArtistSchema = z.object({
+export const catalogTrackArtistSchema = z.object({
   id: z.string().min(1).max(128),
   name: z.string().min(1).max(200),
 });
 
-export type ArtistTrackArtist = z.infer<typeof artistTrackArtistSchema>;
+export type CatalogTrackArtist = z.infer<typeof catalogTrackArtistSchema>;
 
-/**
- * One processed Track listed on the artist page grid: the card shows the
- * title, the performer names and the first-release cover, while the full
- * shape also carries the catalog details the Track page shows (duration,
- * ISRCs, genres, releases, works, tags, links). Stored in the API database
- * when a Recording is reprocessed, so reads never touch the Music catalog.
- * One entry per Recording. The deeper sections are optional for backward
- * compatibility and empty when the catalog has none.
- */
-export const artistTrackReleaseSchema = z.object({
+export const catalogTrackReleaseSchema = z.object({
   mbid: mbidSchema,
   title: z.string().min(1).max(500),
   /** Release year derived from the earliest release event; null when unknown. */
@@ -65,33 +56,43 @@ export const artistTrackReleaseSchema = z.object({
   coverArtUrl: z.string().min(1).max(2000).nullable(),
 });
 
-export type ArtistTrackRelease = z.infer<typeof artistTrackReleaseSchema>;
+export type CatalogTrackRelease = z.infer<typeof catalogTrackReleaseSchema>;
 
-export const artistTrackWorkSchema = z.object({
+export const catalogTrackWorkSchema = z.object({
   mbid: mbidSchema,
   title: z.string().min(1).max(500),
 });
 
-export type ArtistTrackWork = z.infer<typeof artistTrackWorkSchema>;
+export type CatalogTrackWork = z.infer<typeof catalogTrackWorkSchema>;
 
-export const artistTrackTagSchema = z.object({
+export const catalogTrackTagSchema = z.object({
   name: z.string().min(1).max(100),
   count: z.number().int().nonnegative(),
 });
 
-export type ArtistTrackTag = z.infer<typeof artistTrackTagSchema>;
+export type CatalogTrackTag = z.infer<typeof catalogTrackTagSchema>;
 
-export const artistTrackExternalLinkSchema = z.object({
+export const catalogTrackExternalLinkSchema = z.object({
   url: z.string().min(1).max(2000),
   /** MusicBrainz's name for the relationship, e.g. "streaming music". */
   linkType: z.string().min(1).max(100),
 });
 
-export type ArtistTrackExternalLink = z.infer<
-  typeof artistTrackExternalLinkSchema
+export type CatalogTrackExternalLink = z.infer<
+  typeof catalogTrackExternalLinkSchema
 >;
 
-export const artistTrackSchema = z.object({
+/**
+ * One processed Track in a catalog listing (the artist page now, the album
+ * page later): the card shows the title, the performer names and the
+ * first-release cover, while the full shape also carries the catalog details
+ * the Track page shows (duration, ISRCs, genres, releases, works, tags,
+ * links). Stored in the API database when a Recording is reprocessed, so
+ * reads never touch the Music catalog. One entry per Recording. The deeper
+ * sections are optional for backward compatibility and empty when the
+ * catalog has none.
+ */
+export const catalogTrackSchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().min(1).max(500),
   /** In milliseconds; null when MusicBrainz has none. */
@@ -102,26 +103,26 @@ export const artistTrackSchema = z.object({
   video: z.boolean(),
   isrcs: z.array(z.string().min(1).max(32)).max(30),
   /** Every linked Artist, in alphabetical order; never empty. */
-  artists: z.array(artistTrackArtistSchema).min(1).max(30),
+  artists: z.array(catalogTrackArtistSchema).min(1).max(30),
   /** Display genres, most relevant first; empty when unknown. */
   genres: z.array(z.string().min(1).max(100)).max(30),
   /** Every release the Recording appears on, in title order; empty when none. */
-  releases: z.array(artistTrackReleaseSchema).max(30).optional(),
+  releases: z.array(catalogTrackReleaseSchema).max(30).optional(),
   /** Every linked work, in title order; empty when none. */
-  works: z.array(artistTrackWorkSchema).max(30).optional(),
+  works: z.array(catalogTrackWorkSchema).max(30).optional(),
   /** Every tag, most voted first; empty when none. */
-  tags: z.array(artistTrackTagSchema).max(30).optional(),
+  tags: z.array(catalogTrackTagSchema).max(30).optional(),
   /** Every external URL, in link-type order; empty when none. */
-  externalLinks: z.array(artistTrackExternalLinkSchema).max(30).optional(),
+  externalLinks: z.array(catalogTrackExternalLinkSchema).max(30).optional(),
 });
 
-export type ArtistTrack = z.infer<typeof artistTrackSchema>;
+export type CatalogTrack = z.infer<typeof catalogTrackSchema>;
 
 /**
  * One page of `GET /v1/artists/:id/tracks`: cursor-paginated with one
  * entry per processed Recording, in stable `id` order. Cursors are opaque
  * base64url strings, never raw offsets.
  */
-export const artistTracksPageSchema = cursorPageSchema(artistTrackSchema);
+export const catalogTracksPageSchema = cursorPageSchema(catalogTrackSchema);
 
-export type ArtistTracksPage = z.infer<typeof artistTracksPageSchema>;
+export type CatalogTracksPage = z.infer<typeof catalogTracksPageSchema>;

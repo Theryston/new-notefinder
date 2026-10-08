@@ -1,4 +1,4 @@
-import type { ArtistTracksPage } from '@notefinder/contracts';
+import type { CatalogTracksPage } from '@notefinder/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -15,7 +15,7 @@ export async function ArtistTracksSection({
   initialPage,
 }: {
   artistId: string;
-  initialPage?: ArtistTracksPage;
+  initialPage?: CatalogTracksPage;
 }) {
   const { errors, artists } = await getMessages();
 

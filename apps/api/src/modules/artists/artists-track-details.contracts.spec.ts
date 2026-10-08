@@ -1,9 +1,9 @@
 import {
-  artistTrackExternalLinkSchema,
-  artistTrackReleaseSchema,
-  artistTrackSchema,
-  artistTrackTagSchema,
-  artistTrackWorkSchema,
+  catalogTrackExternalLinkSchema,
+  catalogTrackReleaseSchema,
+  catalogTrackSchema,
+  catalogTrackTagSchema,
+  catalogTrackWorkSchema,
 } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
@@ -40,11 +40,11 @@ describe('artist track details contracts', () => {
       ],
     };
 
-    expect(artistTrackSchema.parse(track)).toEqual(track);
+    expect(catalogTrackSchema.parse(track)).toEqual(track);
   });
 
   it('parses an entry without the deeper sections', () => {
-    expect(artistTrackSchema.parse(base)).toEqual(base);
+    expect(catalogTrackSchema.parse(base)).toEqual(base);
   });
 
   it('parses an entry with empty sections', () => {
@@ -56,12 +56,12 @@ describe('artist track details contracts', () => {
       externalLinks: [],
     };
 
-    expect(artistTrackSchema.parse(track)).toEqual(track);
+    expect(catalogTrackSchema.parse(track)).toEqual(track);
   });
 
   it('parses a release without year or cover art', () => {
     expect(
-      artistTrackReleaseSchema.parse({
+      catalogTrackReleaseSchema.parse({
         mbid: testMbid(2102),
         title: 'Greatest Hits',
         year: null,
@@ -77,16 +77,16 @@ describe('artist track details contracts', () => {
 
   it('parses a work, a tag and a link', () => {
     expect(
-      artistTrackWorkSchema.parse({
+      catalogTrackWorkSchema.parse({
         mbid: testMbid(3101),
         title: 'Work',
       }),
     ).toBeDefined();
     expect(
-      artistTrackTagSchema.parse({ name: 'rock', count: 3 }),
+      catalogTrackTagSchema.parse({ name: 'rock', count: 3 }),
     ).toBeDefined();
     expect(
-      artistTrackExternalLinkSchema.parse({
+      catalogTrackExternalLinkSchema.parse({
         url: 'https://musicbrainz.org/recording/1',
         linkType: 'musicbrainz',
       }),
@@ -103,6 +103,6 @@ describe('artist track details contracts', () => {
     { tags: [{ name: '', count: 1 }] },
     { externalLinks: [{ url: '', linkType: 'streaming' }] },
   ])('rejects the invalid details %j', (overrides) => {
-    expect(() => artistTrackSchema.parse({ ...base, ...overrides })).toThrow();
+    expect(() => catalogTrackSchema.parse({ ...base, ...overrides })).toThrow();
   });
 });

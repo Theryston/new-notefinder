@@ -1,7 +1,7 @@
 import {
-  artistTrackSchema,
-  artistTracksPageSchema,
   cacheTags,
+  catalogTrackSchema,
+  catalogTracksPageSchema,
 } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
@@ -21,7 +21,7 @@ describe('artist tracks contracts', () => {
   };
 
   it('parses a core track entry', () => {
-    expect(artistTrackSchema.parse(track)).toEqual(track);
+    expect(catalogTrackSchema.parse(track)).toEqual(track);
   });
 
   it('parses an entry without optional display data', () => {
@@ -36,7 +36,7 @@ describe('artist tracks contracts', () => {
       genres: [],
     };
 
-    expect(artistTrackSchema.parse(minimal)).toEqual(minimal);
+    expect(catalogTrackSchema.parse(minimal)).toEqual(minimal);
   });
 
   it.each([
@@ -47,7 +47,7 @@ describe('artist tracks contracts', () => {
     { genres: [''] },
   ])('rejects the invalid track %j', (overrides) => {
     expect(() =>
-      artistTrackSchema.parse({
+      catalogTrackSchema.parse({
         id: 'track-1',
         title: 'Bohemian Rhapsody',
         lengthMs: null,
@@ -73,12 +73,12 @@ describe('artist tracks contracts', () => {
       nextCursor: Buffer.from('track-1', 'utf8').toString('base64url'),
     };
 
-    expect(artistTracksPageSchema.parse(page)).toEqual(page);
+    expect(catalogTracksPageSchema.parse(page)).toEqual(page);
   });
 
   it('parses the end of the listing', () => {
     expect(
-      artistTracksPageSchema.parse({ items: [], nextCursor: null }),
+      catalogTracksPageSchema.parse({ items: [], nextCursor: null }),
     ).toEqual({ items: [], nextCursor: null });
   });
 

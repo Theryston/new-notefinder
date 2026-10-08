@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { artistTracksPageSchema } from '@notefinder/contracts';
+import { catalogTracksPageSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ArtistsRepository } from './artists.repository.js';
 import { ArtistsService } from './artists.service.js';
@@ -58,7 +58,7 @@ describe('ArtistsService tracks', () => {
       limit: 20,
     });
     expect(result).toEqual({ items: [track], nextCursor: null });
-    expect(artistTracksPageSchema.parse(result)).toEqual(result);
+    expect(catalogTracksPageSchema.parse(result)).toEqual(result);
   });
 
   it('decodes an opaque cursor before listing', async () => {

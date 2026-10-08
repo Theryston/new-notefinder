@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type {
   Artist,
-  ArtistTracksPage,
+  CatalogTracksPage,
   CursorPaginationQuery,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
@@ -66,7 +66,7 @@ export class ArtistsService {
   async getArtistTracks(
     id: string,
     query: CursorPaginationQuery,
-  ): Promise<ArtistTracksPage> {
+  ): Promise<CatalogTracksPage> {
     await this.resolveArtistOrThrow(id);
     return this.artistsRepository.findTracksByArtistId(id, {
       cursorTrackId: query.cursor ? decodeTrackCursor(query.cursor) : undefined,
