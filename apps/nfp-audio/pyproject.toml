@@ -1,0 +1,101 @@
+[project]
+name = "nfp-audio"
+version = "0.1.0"
+description = "RunPod serverless worker: vocal separation and vocal note detection for notefinder Processings"
+requires-python = ">=3.12,<3.13"
+# The API reaches the worker only through RunPod: nothing imports this
+# package, so it is an application, not a library, and is never installed.
+dependencies = [
+  "numpy>=1.26",
+  "requests>=2.32",
+  "runpod>=1.12",
+]
+
+[dependency-groups]
+# The model stack, installed in the GPU image and on Linux machines that run
+# the worker for real. Not needed by the tests or the linter.
+model = [
+  "crepe==0.0.16",
+  "librosa>=0.11,<1",
+  "resampy>=0.4.3",
+  "soundfile>=0.13",
+  # Pinned to the PyPI build that bundles CUDA 12.6, the runtime the legacy
+  # image was built on. Newer PyPI builds bundle CUDA 13 and need a newer
+  # driver than RunPod hosts may have.
+  "torch>=2.7,<2.8",
+  "tensorflow[and-cuda]>=2.20,<2.21",
+]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.extra-build-dependencies]
+# crepe's setup.py imports pkg_resources, which setuptools 81 dropped.
+crepe = ["setuptools>=77,<81"]
+
+# crepe 0.0.16 is only published as an sdist, and building it downloads its
+# model weights from github.com. Resolving the lock uses these static
+# requirements (copied from crepe's requirements.txt) instead of building it.
+# Installing still builds the sdist, where github.com is reachable.
+[[tool.uv.dependency-metadata]]
+name = "crepe"
+version = "0.0.16"
+requires-dist = [
+  "numpy>=1.14.0",
+  "scipy>=1.0.0",
+  "matplotlib>=2.1.0",
+  "resampy>=0.2.0",
+  "h5py",
+  "hmmlearn>=0.3.0",
+  "imageio>=2.3.0",
+  "scikit-learn>=0.16",
+]
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+
+[tool.ruff.lint]
+# The repo's limits, as Ruff enforces them: cyclomatic complexity 15, 4
+# arguments and 50 statements per function, and pep8 naming. Ruff has no
+# lines-per-function rule, so statements is the closest limit it can check.
+select = ["E", "F", "I", "B", "UP", "C90", "N", "PLR0913", "PLR0915"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+# The network is ported from the legacy worker, and its constructors take the
+# architecture's sizes positionally (nout, nin_lstm, dilations, ...). The
+# signatures stay as they are so the model, and the state dict its weights
+# load into, does not change; the rest of the app follows the limit.
+"nfp_audio/vocals_model/**" = ["PLR0913"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.coverage.report]
+# The measured modules are at 100% today; this is the ratchet, so any new
+# uncovered line in them fails the run.
+fail_under = 100
+
+[tool.coverage.run]
+source = ["nfp_audio"]
+# The glue around the model stack (torch, CREPE, RunPod) only runs on the GPU
+# image; the tests cover the pure logic and the contract around it.
+omit = [
+  "nfp_audio/__main__.py",
+  "nfp_audio/pitch.py",
+  "nfp_audio/separation.py",
+  "nfp_audio/vocals_model/*",
+]

@@ -13,6 +13,12 @@ const config: KnipConfig = {
       drizzle: false,
       entry: ['src/main.ts', 'drizzle.config.ts'],
     },
+    'apps/nfp-audio': {
+      // uv is the Python package manager of apps/nfp-audio (a Python tool,
+      // not an npm dependency), so it is a binary this package calls without
+      // listing it in package.json.
+      ignoreBinaries: ['uv'],
+    },
     'apps/web': {
       entry: [
         // Loaded by the framework, not imported: next-intl's type

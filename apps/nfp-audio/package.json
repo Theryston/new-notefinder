@@ -1,0 +1,12 @@
+{
+  "name": "nfp-audio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RunPod serverless worker: vocal separation and vocal note detection (Python, uv)",
+  "scripts": {
+    "lint": "uv run --locked ruff check . && uv run --locked ruff format --check .",
+    "format": "uv run --locked ruff check --fix . && uv run --locked ruff format .",
+    "test": "uv run --locked pytest",
+    "test:cov": "uv run --locked pytest --cov --cov-report=term"
+  }
+}

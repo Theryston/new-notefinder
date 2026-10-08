@@ -20,6 +20,8 @@ apps/
   api/          NestJS 12 REST API (Drizzle, Better Auth, BullMQ). Port 3333.
   music-catalog/  Private Music catalog service: Node + ws WebSocket server and worker,
                   no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
+  nfp-audio/    Python RunPod serverless worker (uv, not Node): vocal separation and
+                  note detection for a Processing. No port. See apps/nfp-audio/CLAUDE.md.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
 ```
@@ -46,7 +48,7 @@ nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | nfp-audio | @notefinder/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for

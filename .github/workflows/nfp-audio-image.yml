@@ -1,0 +1,87 @@
+name: nfp-audio image
+
+# The RunPod worker is one CUDA image on GHCR, built from apps/nfp-audio and
+# pulled by a RunPod serverless endpoint. Pull requests build it (nothing is
+# pushed, so a broken Dockerfile is caught before merge); a push to main
+# publishes it. See apps/nfp-audio/CLAUDE.md, "Publishing".
+on:
+  pull_request:
+    paths:
+      - apps/nfp-audio/**
+      - .github/workflows/nfp-audio-image.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/nfp-audio/**
+      - .github/workflows/nfp-audio-image.yml
+
+concurrency:
+  group: nfp-audio-image-${{ github.ref }}
+  # A newer push to main must not cancel the publish of an older one: the
+  # `sha-` tags are what a RunPod endpoint can pin.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The hosted runner has roughly 14 GB free, and the CUDA wheels plus the
+      # build cache need more. Remove the preinstalled toolchains this job never
+      # uses. `df` prints what is left, so a failure can be read against it.
+      - name: Free disk space on the runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo docker image prune --all --force
+          df -h /
+
+      # GHCR names are lowercase; the repository's owner and name are not.
+      - name: Name the image
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/nfp-audio" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      # The workflow's own token, scoped by `packages: write` above: no secret
+      # to create or rotate. Only a push to main ever publishes.
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # `sha-<short commit>` is the immutable tag; `latest` moves with main.
+      - name: Tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # linux/amd64 only: RunPod's GPU workers are x86-64, and the CUDA wheels
+      # have no arm64 build worth emulating for.
+      - name: Build and publish
+        uses: docker/build-push-action@v7
+        with:
+          context: apps/nfp-audio
+          file: apps/nfp-audio/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # One manifest per tag: provenance attestations would add untagged
+          # entries next to each image on GHCR.
+          provenance: false
+          cache-from: type=gha,scope=nfp-audio
+          cache-to: type=gha,scope=nfp-audio,mode=max
