@@ -1,7 +1,7 @@
 ---
 name: ticket-implementer
 description: Implements one ready-for-agent GitHub issue end to end in its own worktree (code, tests, quality gates) and opens a PR. Give it the issue number plus anything specific (sibling tickets running in parallel, authorized test changes).
-model: sonnet
+model: haiku
 effort: xhigh
 ---
 
