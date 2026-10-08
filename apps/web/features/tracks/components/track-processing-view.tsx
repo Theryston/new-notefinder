@@ -7,11 +7,12 @@ import { useTrackProcessing } from '../hooks/use-track-processing';
 import { TrackContributors } from './track-contributors';
 import { TrackProcessingHeader } from './track-processing-header';
 import { TrackProcessingProgress } from './track-processing-progress';
+import { TrackProcessingVideo } from './track-processing-video';
 
 /**
- * The Processing page: the Track header, the live progress of its Processing
- * and its Contributors. The state comes from the server and is polled while
- * the Processing runs, so the page follows it without a reload.
+ * The Processing page: the Track header, the live progress of its Processing,
+ * the video it chose and its Contributors. The state comes from the server and
+ * is polled while the Processing runs, so the page follows it without a reload.
  */
 export function TrackProcessingView({
   initialState,
@@ -30,7 +31,12 @@ export function TrackProcessingView({
       {state.processing === null ? (
         <p className="text-muted-foreground text-sm">{t('none')}</p>
       ) : (
-        <TrackProcessingProgress processing={state.processing} />
+        <>
+          <TrackProcessingProgress processing={state.processing} />
+          {state.processing.video === null ? null : (
+            <TrackProcessingVideo video={state.processing.video} />
+          )}
+        </>
       )}
       {state.contributors.length > 0 ? (
         <TrackContributors contributors={state.contributors} />
