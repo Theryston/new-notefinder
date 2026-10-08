@@ -162,8 +162,6 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   and CI runs `oasdiff breaking` against the base branch's copy, so removing
   a route or a field, or making a param required, fails the PR. Breaking
   changes go to a new version (`/v2`) instead.
-- Internal endpoints called by the external note-detection worker live under
-  `/v1/internal/*` and are protected by an API-key guard, not user auth.
 
 ## Database (Drizzle + Postgres)
 
@@ -298,9 +296,10 @@ isn't obvious), so the import script can be written from those notes.
   `test/redis-test-overrides.ts`, so e2e tests keep running without Redis.
 - Scheduled work (track score recalculation, daily practice reminders) uses
   BullMQ repeatable jobs, not in-process timers.
-- The track import pipeline keeps its current contract: the API enqueues on
-  **SQS** for the external note-detection worker, which reports back through
-  `/v1/internal/*`.
+- A Track's Processing is a BullMQ job in this process: it downloads the
+  audio through the RapidAPI service, then starts `apps/nfp-audio` on RunPod
+  and polls its status with delayed jobs (no inbound callback). See
+  `docs/adr/0004-processing-pipeline.md`.
 - Redis also backs response caching of expensive reads (`CacheService`, keys
   built with `redisKey(feature, …)`) and rate limiting (`@nestjs/throttler`
   with the in-house `RedisThrottlerStorage`; `@nest-lab/throttler-storage-redis`
@@ -354,7 +353,7 @@ isn't obvious), so the import script can be written from those notes.
     (`fileParallelism: false`); tests must not depend on order.
   - Test-only controllers live in separate non-spec files under `test/` and
     need `@Public()` unless they test auth.
-- External services (SQS, YT Music, email) are always mocked at the
+- External services (RapidAPI, RunPod, OpenAI, YT Music, email) are always mocked at the
   integration-module boundary. File storage is the exception: e2e runs
   against a real S3-compatible server (MinIO), started once per run next to
   Postgres by `test/setup/global-setup.ts` (Testcontainers, or

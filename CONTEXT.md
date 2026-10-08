@@ -37,8 +37,33 @@ _Avoid_: Account page, user page
 Every Recording in the world with its artists, releases, genres and Lyrics,
 kept in sync with MusicBrainz. It is where notefinder's own catalog (the
 Tracks, Artists and Albums that have notes and public URLs) finds songs; a
-Recording is not a Track until notefinder processes it.
+Recording is not a Track until a User asks notefinder to process it.
 _Avoid_: Catalog (alone, which means notefinder's own catalog)
+
+**Track**:
+A Recording taken into notefinder's own catalog, with its own public URL.
+It exists from the moment a User asks for it to be processed, and has
+vocal notes only once its Processing completes. One Track per Recording.
+_Avoid_: Song, music
+
+**Processing**:
+One run of the pipeline that turns a Track's Recording into vocal notes and
+Lyrics timed to the audio: it finds the Recording's video, gets its audio,
+separates the vocals, detects the notes and transcribes the words. It ends
+completed or failed; a failed Processing can be retried, which starts a new
+Processing that picks up where the failed one stopped.
+_Avoid_: Import (used for the legacy and MusicBrainz imports), job
+
+**Contributor**:
+A User who has done at least one Contribution to a Track. A User is a
+Contributor of a Track once, however many Contributions they make to it.
+_Avoid_: Author, owner, creator (for the person)
+
+**Contribution**:
+One action a Contributor did on a Track, of a given kind (the first kind is
+asking for the Track to be created). Every new action is a new
+Contribution, so a Track keeps the history of who did what and when.
+_Avoid_: Edit (for the general concept), credit
 
 **Recording**:
 One specific audio take of a piece of music, as MusicBrainz defines it (a
@@ -52,6 +77,13 @@ _Avoid_: Song, track (for this concept)
 The words sung in a Recording, plain or synced to time, matched to the
 Recording from an open lyrics source.
 _Avoid_: Letra, text
+
+**Timed lyrics**:
+The words of a Track, each timed to the audio the Track plays, grouped in
+lines. Transcribed from the Track's vocals during Processing (the Lyrics, when
+the Recording has them, only guide the transcription) and editable by
+Contributors afterwards. Users see both as "lyrics".
+_Avoid_: Lyrics (for this concept), transcript, subtitles
 
 **Album**:
 A notefinder catalog entity with its own public URL, backed by one MusicBrainz
