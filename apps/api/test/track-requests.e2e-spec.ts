@@ -420,6 +420,9 @@ describe('POST /v1/tracks (e2e)', () => {
           newMbid: testMbid(2),
         },
       });
+      // The catalog knows the merge target: the request reads it before it
+      // looks for a Track under the MBID it moved to.
+      recordings.set(testMbid(2), recordingFixture({ mbid: testMbid(2) }));
       const user = await createPasswordUser(testApp.db);
       const client = await signedInClient(user);
 
