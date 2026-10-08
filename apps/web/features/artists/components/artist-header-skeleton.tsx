@@ -1,14 +1,16 @@
+import { cn } from 'cn';
 import { getTranslations } from 'next-intl/server';
 
 import {
   entityBannerClass,
   entityBannerRowClass,
+  entitySkeletonClass,
 } from '@/components/entity-header';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Same-dimension stand-in for the artist banner, so loading never moves
- * the layout: gradient surface, circle visual, oversized title, count and
+ * the layout: orange surface, circle visual, oversized title, count and
  * genre chips.
  */
 export async function ArtistHeaderSkeleton() {
@@ -21,13 +23,29 @@ export async function ArtistHeaderSkeleton() {
       className={entityBannerClass}
     >
       <div className={entityBannerRowClass}>
-        <Skeleton className="size-24 shrink-0 rounded-full sm:size-32 md:size-40" />
-        <div className="flex min-w-0 flex-col gap-2">
-          <Skeleton className="h-12 w-48 rounded-md md:h-16 md:w-64" />
-          <Skeleton className="h-5 w-24 rounded-md" />
+        <Skeleton
+          className={cn(
+            'size-24 shrink-0 rounded-full sm:size-32 md:size-40',
+            entitySkeletonClass,
+          )}
+        />
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-1">
+          <Skeleton
+            className={cn(
+              'h-12 w-48 rounded-md md:h-16 md:w-64',
+              entitySkeletonClass,
+            )}
+          />
+          <Skeleton
+            className={cn('h-5 w-24 rounded-md', entitySkeletonClass)}
+          />
           <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-6 w-16 rounded-full" />
-            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton
+              className={cn('h-6 w-16 rounded-full', entitySkeletonClass)}
+            />
+            <Skeleton
+              className={cn('h-6 w-20 rounded-full', entitySkeletonClass)}
+            />
           </div>
         </div>
       </div>

@@ -20,10 +20,10 @@ export type AlbumArtistLinksProps = {
 };
 
 const ARTIST_LINK_CLASS =
-  'rounded-sm font-semibold text-foreground outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50';
+  'rounded-sm font-semibold outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-foreground/60';
 
 const MORE_BUTTON_CLASS =
-  'rounded-sm font-semibold text-muted-foreground text-sm outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50';
+  'rounded-sm font-semibold text-primary-foreground/80 text-sm outline-none transition-colors hover:text-primary-foreground focus-visible:ring-3 focus-visible:ring-primary-foreground/60';
 
 /** One credited artist as a link to its page, after a separator from the one before. */
 function ArtistItem({
@@ -36,7 +36,7 @@ function ArtistItem({
   return (
     <li className="text-sm">
       {separator === null ? null : (
-        <span aria-hidden="true" className="text-muted-foreground">
+        <span aria-hidden="true" className="text-primary-foreground/80">
           {separator}
         </span>
       )}
