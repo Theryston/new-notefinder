@@ -10,3 +10,10 @@ const COVER_ART_ARCHIVE = 'https://coverartarchive.org';
  */
 export const coverArtUrl = (releaseMbid: string): string =>
   `${COVER_ART_ARCHIVE}/release/${releaseMbid}/front-500`;
+
+/**
+ * The same front cover, 500 px, for a release group (an album across its
+ * editions). Like {@link coverArtUrl}, built from the MBID alone.
+ */
+export const releaseGroupCoverArtUrl = (releaseGroupMbid: string): string =>
+  `${COVER_ART_ARCHIVE}/release-group/${releaseGroupMbid}/front-500`;

@@ -17,6 +17,9 @@ import {
   type RecordingDocument,
 } from './lib/recordings-index.js';
 import type { Logger } from './logger.js';
+import { createGetArtistHandler } from './modules/artist/artist.handler.js';
+import { ArtistRepository } from './modules/artist/artist.repository.js';
+import { ArtistService } from './modules/artist/artist.service.js';
 import { createStatusHandler } from './modules/bootstrap/bootstrap.handler.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
 import type { ReplicationStatusSource } from './modules/bootstrap/bootstrap.service.js';
@@ -34,6 +37,9 @@ import { RecordingSummaryRepository } from './modules/recording/recording-summar
 import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
 import { readReimportStatus } from './modules/reimport/reimport.service.js';
 import { ReimportStateRepository } from './modules/reimport/reimport-state.repository.js';
+import { createGetReleaseGroupHandler } from './modules/release-group/release-group.handler.js';
+import { ReleaseGroupRepository } from './modules/release-group/release-group.repository.js';
+import { ReleaseGroupService } from './modules/release-group/release-group.service.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { ReplicationService } from './modules/replication/replication.service.js';
 import { createSearchHandler } from './modules/search/search.handler.js';
@@ -43,6 +49,7 @@ import type { SyncService } from './modules/sync/sync.service.js';
 import { assembleWorkerReimport } from './reimport-wiring.js';
 import { buildServingIndexing } from './worker/indexing-stack.js';
 import { createWorkerTick } from './worker/worker-tick.js';
+import type { Handler } from './ws/handler.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 export type CreateServerOptions = {
@@ -100,6 +107,20 @@ const createServingBootstrap = (
   );
   return { bootstrap, reimportState };
 };
+
+// The reads that answer one entity by MBID (a release group, an artist),
+// wired the same way as the Recording's.
+const createEntityHandlers = (
+  dbSource: () => Database,
+  bootstrap: BootstrapService,
+): Handler[] => [
+  createGetReleaseGroupHandler(
+    new ReleaseGroupService(new ReleaseGroupRepository(dbSource), bootstrap),
+  ),
+  createGetArtistHandler(
+    new ArtistService(new ArtistRepository(dbSource), bootstrap),
+  ),
+];
 
 /**
  * The composition root of the server process: builds each module's
@@ -168,6 +189,7 @@ export const createMusicCatalogServer = (
       createStatusHandler(bootstrap),
       createGetRecordingHandler(recording),
       createSearchHandler(search),
+      ...createEntityHandlers(dbSource, bootstrap),
     ],
     heartbeatIntervalMs: env.HEARTBEAT_INTERVAL_MS,
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,

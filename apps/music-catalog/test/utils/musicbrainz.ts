@@ -23,6 +23,7 @@ const FIXTURE_TABLES = [
   'artist_alias',
   'artist_credit',
   'artist_credit_name',
+  'artist_gid_redirect',
   'artist_tag',
   'country_area',
   'genre',
@@ -39,7 +40,10 @@ const FIXTURE_TABLES = [
   'release',
   'release_country',
   'release_group',
+  'release_group_gid_redirect',
   'release_group_primary_type',
+  'release_group_secondary_type',
+  'release_group_secondary_type_join',
   'release_group_tag',
   'release_status',
   'release_unknown_country',
@@ -203,6 +207,18 @@ export const addRecordingRedirect = async (
   into: FixtureRecording,
 ): Promise<void> => {
   await insertRow(db, 'recording_gid_redirect', {
+    gid: oldMbid,
+    new_id: into.id,
+  });
+};
+
+/** Makes `oldMbid` an MBID MusicBrainz merged into the given artist. */
+export const addArtistRedirect = async (
+  db: Database,
+  oldMbid: string,
+  into: FixtureArtist,
+): Promise<void> => {
+  await insertRow(db, 'artist_gid_redirect', {
     gid: oldMbid,
     new_id: into.id,
   });

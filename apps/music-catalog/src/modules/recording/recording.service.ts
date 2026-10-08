@@ -1,10 +1,16 @@
 import type { Recording } from '@notefinder/contracts';
-import { CatalogError } from '../../errors/catalog-error.js';
+import { missingEntityError } from '../../errors/missing-entity-error.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { LyricsService } from '../lyrics/lyrics.service.js';
 import { assembleRecording } from './assemble-recording.js';
 import type { RecordingRepository } from './recording.repository.js';
 import type { RecordingDetails, RecordingRow } from './recording-data.js';
+
+const RECORDING_CODES = {
+  label: 'Recording',
+  notFound: 'RECORDING_NOT_FOUND',
+  moved: 'RECORDING_MOVED',
+} as const;
 
 export class RecordingService {
   constructor(
@@ -28,7 +34,11 @@ export class RecordingService {
     await this.bootstrap.assertReady();
     const row = await this.repository.findByMbid(mbid);
     if (row === undefined) {
-      throw await this.whyMissing(mbid);
+      throw missingEntityError(
+        RECORDING_CODES,
+        mbid,
+        await this.repository.findMergedInto(mbid),
+      );
     }
     const [details, lyrics] = await Promise.all([
       this.loadDetails(row),
@@ -38,21 +48,6 @@ export class RecordingService {
       },
     ]);
     return { ...assembleRecording(row, details), lyrics };
-  }
-
-  private async whyMissing(mbid: string): Promise<CatalogError> {
-    const newMbid = await this.repository.findMergedInto(mbid);
-    if (newMbid === undefined) {
-      return new CatalogError(
-        'RECORDING_NOT_FOUND',
-        `No Recording has the MBID ${mbid}`,
-      );
-    }
-    return new CatalogError(
-      'RECORDING_MOVED',
-      `The Recording ${mbid} was merged into ${newMbid}`,
-      { newMbid },
-    );
   }
 
   // Releases come first because their events depend on them; the rest is

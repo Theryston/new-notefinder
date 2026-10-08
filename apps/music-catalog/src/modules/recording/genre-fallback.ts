@@ -3,7 +3,7 @@ import type {
   RecordingTag,
   RecordingTagsSource,
 } from '@notefinder/contracts';
-import { compareText } from '../../lib/compare.js';
+import { votedTags } from '../../lib/tag-votes.js';
 import type { TagLevels, TagVotesRow } from './recording-data.js';
 
 export type ChosenTags = {
@@ -11,15 +11,6 @@ export type ChosenTags = {
   genres: RecordingGenre[];
   tags: RecordingTag[];
 };
-
-// Most voted first; equal votes by name, so the order is always the same.
-const byVotesThenName = (a: TagVotesRow, b: TagVotesRow): number =>
-  b.count - a.count || compareText(a.name, b.name);
-
-// A Recording has a tag at a level only with at least one positive vote: a
-// tag whose votes cancelled out is not shown by MusicBrainz either.
-const votedTags = (rows: readonly TagVotesRow[]): TagVotesRow[] =>
-  rows.filter((row) => row.count > 0).sort(byVotesThenName);
 
 const LEVELS_IN_ORDER: readonly RecordingTagsSource[] = [
   'recording',

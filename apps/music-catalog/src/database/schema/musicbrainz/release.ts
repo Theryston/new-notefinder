@@ -12,8 +12,20 @@ export const release = musicbrainz.table('release', {
 export const releaseGroup = musicbrainz.table('release_group', {
   id: integer().notNull(),
   gid: uuid().notNull(),
+  name: varchar().notNull(),
+  // The printed credit of the album, as its artists are credited on it.
+  artistCredit: integer().notNull(),
   type: integer(),
 });
+
+/** An MBID that MusicBrainz merged away: `gid` now resolves to `newId`. */
+export const releaseGroupGidRedirect = musicbrainz.table(
+  'release_group_gid_redirect',
+  {
+    gid: uuid().notNull(),
+    newId: integer().notNull(),
+  },
+);
 
 /** Album, Single, EP, ... */
 export const releaseGroupPrimaryType = musicbrainz.table(
@@ -21,6 +33,24 @@ export const releaseGroupPrimaryType = musicbrainz.table(
   {
     id: integer().notNull(),
     name: varchar({ length: 255 }).notNull(),
+  },
+);
+
+/** Compilation, Live, Remix, ... (a release group can have several). */
+export const releaseGroupSecondaryType = musicbrainz.table(
+  'release_group_secondary_type',
+  {
+    id: integer().notNull(),
+    name: varchar({ length: 255 }).notNull(),
+  },
+);
+
+/** The secondary types of one release group. */
+export const releaseGroupSecondaryTypeJoin = musicbrainz.table(
+  'release_group_secondary_type_join',
+  {
+    releaseGroup: integer().notNull(),
+    secondaryType: integer().notNull(),
   },
 );
 
@@ -34,6 +64,8 @@ export const medium = musicbrainz.table('medium', {
   id: integer().notNull(),
   release: integer().notNull(),
   position: integer().notNull(),
+  // The medium's own title; '' when it has none.
+  name: varchar().notNull(),
 });
 
 /** One occurrence of a Recording on a medium of a release. */

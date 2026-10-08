@@ -17,6 +17,10 @@ export const musicCatalogErrorCodeSchema = z.enum([
   'CATALOG_NOT_READY',
   'RECORDING_NOT_FOUND',
   'RECORDING_MOVED',
+  'RELEASE_GROUP_NOT_FOUND',
+  'RELEASE_GROUP_MOVED',
+  'ARTIST_NOT_FOUND',
+  'ARTIST_MOVED',
   'INTERNAL',
 ]);
 
@@ -34,8 +38,8 @@ export type Mbid = z.infer<typeof mbidSchema>;
 
 /**
  * `message` is an English developer message, never shown as-is to users.
- * `newMbid` is only present on `RECORDING_MOVED`: the MBID the requested
- * Recording was merged into, so the client can update what it stored.
+ * `newMbid` is only present on the `*_MOVED` codes: the MBID the requested
+ * entity was merged into, so the client can update what it stored.
  */
 export const musicCatalogErrorSchema = z.object({
   code: musicCatalogErrorCodeSchema,
@@ -58,6 +62,8 @@ export const musicCatalogRequestTypeSchema = z.enum([
   'status',
   'getRecording',
   'search',
+  'getReleaseGroup',
+  'getArtist',
 ]);
 
 export type MusicCatalogRequestType = z.infer<
