@@ -4,10 +4,12 @@ import type { TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
 import { useTrackProcessing } from '../hooks/use-track-processing';
+import { isRetryOffered } from '../retry-offer';
 import { TrackChosenVideo } from './track-chosen-video';
 import { TrackContributors } from './track-contributors';
 import { TrackProcessingHeader } from './track-processing-header';
 import { TrackProcessingProgress } from './track-processing-progress';
+import { TrackRetry } from './track-retry';
 
 /**
  * The Processing page: the Track header, the live progress of its Processing,
@@ -33,6 +35,9 @@ export function TrackProcessingView({
       ) : (
         <>
           <TrackProcessingProgress processing={state.processing} />
+          {isRetryOffered(state.processing) ? (
+            <TrackRetry trackId={state.track.id} />
+          ) : null}
           {state.processing.video === null ? null : (
             <TrackChosenVideo video={state.processing.video} />
           )}

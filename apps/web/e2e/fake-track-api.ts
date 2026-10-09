@@ -34,6 +34,42 @@ export type FakeTrack = {
   }[];
 };
 
+/**
+ * The cookie that signs a request in on the server side. A page's session is
+ * read by the Next server from the API, with the browser's cookies, so specs
+ * that need a signed-in page set this cookie as well as mocking the browser.
+ */
+export const SIGNED_IN_COOKIE = {
+  name: 'notefinder-e2e-session',
+  value: 'signed-in',
+} as const;
+
+const SIGNED_IN_SESSION = {
+  session: { id: 'ses_1' },
+  user: {
+    id: 'user-ada',
+    name: 'Ada Lovelace',
+    email: 'ada@notefinder.test',
+    emailVerified: true,
+    username: 'ada_singer',
+    image: null,
+    role: 'USER',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+};
+
+/** `GET /v1/auth/get-session`: the signed-in session with the cookie, else `null`. */
+export function serveSession(
+  request: IncomingMessage,
+  response: ServerResponse,
+): void {
+  const cookie = request.headers.cookie ?? '';
+  const signedIn = cookie.includes(
+    `${SIGNED_IN_COOKIE.name}=${SIGNED_IN_COOKIE.value}`,
+  );
+  json(response, 200, signedIn ? SIGNED_IN_SESSION : null, request);
+}
+
 /** What `POST /v1/tracks` answers for one Recording MBID. */
 type FakeTrackRequestAnswer =
   | { trackId: string; created: boolean }
@@ -159,6 +195,40 @@ async function serveCreate(
   );
 }
 
+/**
+ * A retry of a failed Processing the API would retry: the Track goes back to a
+ * queued Processing that resumes at the step that failed. Anything else is the
+ * API's `CONFLICT`, as the real endpoint answers.
+ */
+async function serveRetry(
+  trackId: string,
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  await readBody(request);
+  const track = tracks.get(trackId);
+  if (track === undefined) {
+    json(response, 404, notFoundBody('NOT_FOUND'), request);
+    return;
+  }
+  const failed = track.processing;
+  if (failed?.status !== 'FAILED' || failed.retryable !== true) {
+    json(
+      response,
+      409,
+      { statusCode: 409, code: 'CONFLICT', message: 'Fake conflict' },
+      request,
+    );
+    return;
+  }
+  track.processing = {
+    status: 'QUEUED',
+    resumeFrom: failed.resumeFrom ?? null,
+    video: failed.video ?? null,
+  };
+  json(response, 202, stateOf(track), request);
+}
+
 async function serveMockSet(
   request: IncomingMessage,
   response: ServerResponse,
@@ -189,6 +259,11 @@ export async function serveTrackRequest(
   }
   if (request.method === 'POST' && pathname === '/v1/tracks') {
     await serveCreate(request, response);
+    return true;
+  }
+  const retry = /^\/v1\/tracks\/([^/]+)\/processing\/retry$/.exec(pathname);
+  if (retry?.[1] && request.method === 'POST') {
+    await serveRetry(decodeURIComponent(retry[1]), request, response);
     return true;
   }
   const processing = /^\/v1\/tracks\/([^/]+)\/processing$/.exec(pathname);

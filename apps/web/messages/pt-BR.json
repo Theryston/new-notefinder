@@ -102,6 +102,10 @@
       "notFound": {
         "title": "Faixa não encontrada",
         "description": "Não encontramos esta faixa."
+      },
+      "retry": {
+        "action": "Tentar de novo",
+        "signIn": "Entre para tentar de novo"
       }
     }
   },
