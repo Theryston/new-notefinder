@@ -61,7 +61,25 @@
           "current": "In progress",
           "pending": "Waiting",
           "failed": "Failed"
+        },
+        "short": {
+          "FINDING_VIDEO": "Video",
+          "DOWNLOADING_AUDIO": "Audio",
+          "EXTRACTING_VOCALS": "Vocals",
+          "DETECTING_NOTES": "Notes",
+          "EXTRACTING_LYRICS": "Lyrics"
+        },
+        "description": {
+          "FINDING_VIDEO": "Looking for the video that matches this recording.",
+          "DOWNLOADING_AUDIO": "Getting the song's audio from the chosen video.",
+          "EXTRACTING_VOCALS": "Pulling the voice away from the rest of the band.",
+          "DETECTING_NOTES": "Finding every note the voice sings, with its pitch and timing.",
+          "EXTRACTING_LYRICS": "Writing down the lyrics, word by word, in time with the notes."
         }
+      },
+      "stage": {
+        "running": "Processing · step {current} of {total}",
+        "stopped": "Stopped at step {current} of {total}"
       },
       "progress": {
         "label": "Processing progress",
@@ -69,9 +87,12 @@
       },
       "status": {
         "QUEUED": "Queued",
-        "COMPLETED": "Notes are ready",
-        "FAILED": "Processing failed"
+        "FAILED": "Failed"
       },
+      "queued": {
+        "title": "Starting soon"
+      },
+      "remaining": "{minutes, plural, =0 {Less than a minute left} one {About # minute left} other {About # minutes left}}",
       "video": {
         "title": "Chosen video",
         "watch": "Watch on YouTube",
@@ -82,8 +103,7 @@
       },
       "closeNote": "You can close this page. Contributors get an email when the notes are ready.",
       "completed": {
-        "title": "Notes are ready",
-        "description": "The timeline that shows them arrives in a later update."
+        "title": "This track has been processed."
       },
       "failed": {
         "title": "This processing failed",

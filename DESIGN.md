@@ -316,6 +316,16 @@ page's one block): the visual (initials circle or cover, lifted with
 display type and the info lines (`font-semibold`, white) on the left, genre
 chips as outlined white pills, and one `black/15` ring behind the visual.
 
+The Processing page header is the same block, with the ring doing work: the
+decorative ring becomes a **progress ring** around the cover (a `black/15`
+track and a white arc, no decoration ring on top), with the percentage in a
+`bg-background` pill badge (Geist Mono, `tabular-nums`) on its corner. Above
+the title, an overline names the step (`Processing · step 3 of 5`); below the
+credit, the steps are `h-8` pills (`text-sm font-semibold`): done
+`black/15` with a check, current solid white with orange text and a spinner,
+failed `black/40` with an ×, pending outlined white. Pills show a short name
+and carry the full one for screen readers.
+
 ### Menus, popovers, toasts
 
 `glass`, `rounded-xl`, 4px padding, items `rounded-lg` `px-3 py-2` with an

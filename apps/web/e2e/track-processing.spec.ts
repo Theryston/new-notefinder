@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { createTranslator } from 'next-intl';
 
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
@@ -49,6 +50,13 @@ for (const { locale, messages } of cases) {
     UNLINKED_TITLE,
   );
   const progress = (page: Page) => page.getByRole('progressbar');
+  const processing = messages.tracks.processing;
+  // Formats the messages with placeholders and plurals as the page does.
+  const t = createTranslator({
+    locale,
+    messages,
+    namespace: 'tracks.processing',
+  });
 
   test.describe(`track processing (${locale})`, () => {
     test.describe.configure({ mode: 'serial' });
@@ -132,14 +140,115 @@ for (const { locale, messages } of cases) {
         ],
       });
 
-      await expect(progress(page)).toHaveAttribute('aria-valuenow', '100');
       await expect(
         page.getByRole('heading', {
           name: messages.tracks.processing.completed.title,
         }),
       ).toBeVisible();
+      await expect(progress(page)).toHaveCount(0);
       await expect(
         page.getByText(messages.tracks.processing.closeNote),
+      ).toHaveCount(0);
+    });
+
+    test('names the running step out of all of them, with what it does and about how long is left', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-stage-${locale}`;
+      await setTrackMock({
+        tracks: [
+          trackFixture(trackId, {
+            processing: { status: 'EXTRACTING_VOCALS' },
+          }),
+        ],
+      });
+
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      await expect(
+        page.getByText(t('stage.running', { current: 3, total: 5 })),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('heading', {
+          level: 2,
+          name: processing.steps.EXTRACTING_VOCALS,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(processing.steps.description.EXTRACTING_VOCALS),
+      ).toBeVisible();
+      // 50 s of vocals plus 39 s of notes and 36 s of lyrics: about 2 minutes.
+      await expect(
+        page.getByText(t('remaining', { minutes: 2 })),
+      ).toBeVisible();
+    });
+
+    test('names the step a failed Processing stopped at, with one failure heading', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-stopped-${locale}`;
+      await setTrackMock({
+        tracks: [
+          trackFixture(trackId, {
+            processing: {
+              status: 'FAILED',
+              failureCode: 'NOTE_DETECTION_FAILED',
+              resumeFrom: 'DETECTING_NOTES',
+              retryable: true,
+            },
+          }),
+        ],
+      });
+
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      await expect(
+        page.getByText(t('stage.stopped', { current: 4, total: 5 })),
+      ).toBeVisible();
+      await expect(page.locator('li[data-state="failed"]')).toContainText(
+        processing.steps.DETECTING_NOTES,
+      );
+      await expect(
+        page.getByRole('heading', { name: processing.failed.title }),
+      ).toHaveCount(1);
+      await expect(page.getByText(processing.status.FAILED)).toHaveCount(0);
+    });
+
+    test('shows only a line once the Processing has completed', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-completed-${locale}`;
+      await setTrackMock({
+        tracks: [
+          trackFixture(trackId, {
+            processing: {
+              status: 'COMPLETED',
+              video: { id: 'dQw4w9WgXcQ', source: 'youtube_music' },
+            },
+          }),
+        ],
+      });
+
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      await expect(
+        page.getByRole('heading', {
+          level: 1,
+          name: processing.completed.title,
+        }),
+      ).toBeVisible();
+      await expect(progress(page)).toHaveCount(0);
+      await expect(
+        page.getByRole('list', { name: processing.steps.label }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole('heading', { name: processing.video.title }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole('link', { name: 'Ada Lovelace' }),
       ).toHaveCount(0);
     });
 
