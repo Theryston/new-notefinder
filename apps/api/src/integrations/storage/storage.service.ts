@@ -5,6 +5,13 @@ export type PublicObject = {
   contentType: string;
 };
 
+/** The upload a presigned URL allows: one object, at one key, for a limited time. */
+export type PresignedPut = {
+  key: string;
+  contentType: string;
+  expiresInSeconds: number;
+};
+
 /**
  * A storage backend failed. The SDK's own error is the `cause`, so callers
  * can log it without depending on the SDK.
@@ -34,4 +41,13 @@ export abstract class StorageService {
 
   /** URL the object with this key is served from once stored. */
   abstract publicUrl(key: string): string;
+
+  /**
+   * A URL that stores one object at the key with a single PUT, valid for
+   * `expiresInSeconds`. A client that uploads through it needs no storage
+   * credentials; the object is then served from `publicUrl(key)`.
+   *
+   * @throws {StorageError} when the URL could not be signed.
+   */
+  abstract presignPublicPut(put: PresignedPut): Promise<string>;
 }

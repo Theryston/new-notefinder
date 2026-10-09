@@ -12,10 +12,20 @@ import {
 const PIPELINE_STEPS = [
   'FINDING_VIDEO',
   'DOWNLOADING_AUDIO',
+  'EXTRACTING_VOCALS',
+  'DETECTING_NOTES',
 ] as const satisfies readonly TrackProcessingStep[];
 
 /** A step this build runs. */
 export type PipelineStepName = (typeof PIPELINE_STEPS)[number];
+
+/**
+ * The step a retry resumes at after a failure in `step`. The note detection is
+ * one RunPod job, and a retry does not carry a failed job over, so a failure in
+ * either of its stages starts it again from the vocals stage.
+ */
+export const resumeStepOf = (step: TrackProcessingStep): TrackProcessingStep =>
+  step === 'DETECTING_NOTES' ? 'EXTRACTING_VOCALS' : step;
 
 /** A queued Processing is before every step. */
 const STATUS_ORDER: readonly TrackProcessingStatus[] = [

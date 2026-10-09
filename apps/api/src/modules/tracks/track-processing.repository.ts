@@ -212,6 +212,43 @@ export class TrackProcessingRepository {
     return rows.length > 0;
   }
 
+  /** The RunPod job of the note detection, once a run has started it; null before. */
+  async findRunpodJobId(processingId: string): Promise<string | null> {
+    const [row] = await this.txHost.tx
+      .select({ runpodJobId: trackProcessings.runpodJobId })
+      .from(trackProcessings)
+      .where(eq(trackProcessings.id, processingId))
+      .limit(1);
+    return row?.runpodJobId ?? null;
+  }
+
+  /**
+   * The RunPod job the vocals stage started, saved as soon as it exists, so a
+   * replayed run polls it instead of starting another. False when the
+   * Processing is no longer in the vocals stage.
+   */
+  async saveRunpodJobId(processingId: string, jobId: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ runpodJobId: jobId })
+      .where(processingInStatus(processingId, ['EXTRACTING_VOCALS']))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
+  /**
+   * The vocals WAV the notes stage read from the job's output. False when the
+   * Processing is no longer in the notes stage.
+   */
+  async saveVocalsWavUrl(processingId: string, url: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ vocalsWavUrl: url })
+      .where(processingInStatus(processingId, ['DETECTING_NOTES']))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
   /** The last step is done: the Processing completes. False if it moved on. */
   async markCompleted(
     processingId: string,

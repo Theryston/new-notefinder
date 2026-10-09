@@ -163,6 +163,12 @@ const envSchema = z
     // The ffmpeg binary that converts the downloaded MP3 to WAV. Unset, the
     // client runs `ffmpeg` from the PATH (FfmpegClient).
     FFMPEG_PATH: optional(z.string().min(1)),
+    // RunPod endpoint that separates the vocals and detects the notes of a
+    // Processing (ADR 0004). Required in production, where the API refuses to
+    // boot without them (see resolveNoteDetectionConfig); elsewhere a
+    // Processing without them fails its note detection.
+    RUNPOD_API_KEY: optional(z.string().min(1)),
+    RUNPOD_ENDPOINT_ID: optional(z.string().min(1)),
   })
   .check((ctx) => {
     const env = ctx.value;

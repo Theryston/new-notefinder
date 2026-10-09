@@ -15,6 +15,7 @@ import {
   isStepDue,
   nextPipelineStep,
   type PipelineStepName,
+  resumeStepOf,
 } from './track-pipeline-steps.js';
 import {
   coverJobId,
@@ -68,6 +69,10 @@ export class TrackPipelineService {
     FINDING_VIDEO: (processing) => this.findVideo(processing),
     DOWNLOADING_AUDIO: (processing, wait) =>
       this.downloadAudio(processing, wait),
+    EXTRACTING_VOCALS: (processing, wait) =>
+      this.steps.extractVocals(processing, wait),
+    DETECTING_NOTES: (processing, wait) =>
+      this.steps.detectNotes(processing, wait),
   };
 
   constructor(
@@ -235,7 +240,7 @@ export class TrackPipelineService {
 
   /**
    * Ends the Processing as FAILED at this step with its code. A retry resumes
-   * at the step.
+   * at the step the failure belongs to (see `resumeStepOf`).
    */
   private markStepFailed(
     processing: ProcessingForStep,
@@ -244,7 +249,7 @@ export class TrackPipelineService {
   ): Promise<boolean> {
     return this.processings.markFailed(processing.id, dueStatusesOf(step), {
       code,
-      resumeFrom: step,
+      resumeFrom: resumeStepOf(step),
     });
   }
 
