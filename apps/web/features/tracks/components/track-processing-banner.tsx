@@ -5,13 +5,19 @@ import {
   entityBannerRowClass,
   entityBannerSurfaceClass,
   entityInfoClass,
-  entityTitleClass,
 } from '@/components/entity-header';
 
 import { stepPosition } from '../processing-steps';
 import { creditText } from '../track-credit';
 import { TrackProcessingRing } from './track-processing-ring';
 import { TrackProcessingSteps } from './track-processing-steps';
+
+/**
+ * A step down from the artist and album display titles: the ring and the
+ * step pills share the block, so the title gives them room.
+ */
+const TITLE_CLASS =
+  'min-w-0 break-words font-extrabold text-4xl leading-none tracking-tighter md:text-5xl';
 
 /**
  * The line above the title: the step it is on (or stopped at) out of all of
@@ -58,7 +64,7 @@ export function TrackProcessingBanner({
         <TrackProcessingRing track={track} percent={percent} />
         <div className="flex min-w-0 flex-col gap-3 sm:flex-1">
           {processing === null ? null : <StageLine processing={processing} />}
-          <h1 id="track-title" className={entityTitleClass}>
+          <h1 id="track-title" className={TITLE_CLASS}>
             {track.title}
           </h1>
           {track.artistCredit.length > 0 ? (

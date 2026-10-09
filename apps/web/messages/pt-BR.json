@@ -52,7 +52,7 @@
       "steps": {
         "label": "Etapas do processamento",
         "FINDING_VIDEO": "Buscando o vídeo",
-        "DOWNLOADING_AUDIO": "Baixando o áudio",
+        "DOWNLOADING_AUDIO": "Buscando metadados",
         "EXTRACTING_VOCALS": "Separando os vocais",
         "DETECTING_NOTES": "Detectando as notas",
         "EXTRACTING_LYRICS": "Transcrevendo a letra",
@@ -64,14 +64,14 @@
         },
         "short": {
           "FINDING_VIDEO": "Vídeo",
-          "DOWNLOADING_AUDIO": "Áudio",
+          "DOWNLOADING_AUDIO": "Metadados",
           "EXTRACTING_VOCALS": "Vocais",
           "DETECTING_NOTES": "Notas",
           "EXTRACTING_LYRICS": "Letra"
         },
         "description": {
           "FINDING_VIDEO": "Procurando o vídeo que corresponde a esta gravação.",
-          "DOWNLOADING_AUDIO": "Pegando o áudio da música no vídeo escolhido.",
+          "DOWNLOADING_AUDIO": "Reunindo o que as próximas etapas precisam saber da faixa.",
           "EXTRACTING_VOCALS": "Separando a voz do resto da banda.",
           "DETECTING_NOTES": "Encontrando cada nota que a voz canta, com altura e tempo.",
           "EXTRACTING_LYRICS": "Escrevendo a letra, palavra por palavra, no tempo das notas."
@@ -110,7 +110,7 @@
         "reason": {
           "VIDEO_NOT_FOUND": "Não encontramos um vídeo que corresponda a esta gravação.",
           "TOO_LONG": "Esta gravação é longa demais para processar.",
-          "DOWNLOAD_FAILED": "Não conseguimos baixar o áudio.",
+          "DOWNLOAD_FAILED": "Não conseguimos buscar os metadados desta faixa.",
           "NOTE_DETECTION_FAILED": "Não conseguimos detectar as notas.",
           "INTERNAL": "Algo deu errado ao processar esta faixa."
         }

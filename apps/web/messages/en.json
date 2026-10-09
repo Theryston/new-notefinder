@@ -52,7 +52,7 @@
       "steps": {
         "label": "Processing steps",
         "FINDING_VIDEO": "Finding the video",
-        "DOWNLOADING_AUDIO": "Downloading the audio",
+        "DOWNLOADING_AUDIO": "Fetching metadata",
         "EXTRACTING_VOCALS": "Separating the vocals",
         "DETECTING_NOTES": "Detecting the notes",
         "EXTRACTING_LYRICS": "Transcribing the lyrics",
@@ -64,14 +64,14 @@
         },
         "short": {
           "FINDING_VIDEO": "Video",
-          "DOWNLOADING_AUDIO": "Audio",
+          "DOWNLOADING_AUDIO": "Metadata",
           "EXTRACTING_VOCALS": "Vocals",
           "DETECTING_NOTES": "Notes",
           "EXTRACTING_LYRICS": "Lyrics"
         },
         "description": {
           "FINDING_VIDEO": "Looking for the video that matches this recording.",
-          "DOWNLOADING_AUDIO": "Getting the song's audio from the chosen video.",
+          "DOWNLOADING_AUDIO": "Gathering what the next steps need about this track.",
           "EXTRACTING_VOCALS": "Pulling the voice away from the rest of the band.",
           "DETECTING_NOTES": "Finding every note the voice sings, with its pitch and timing.",
           "EXTRACTING_LYRICS": "Writing down the lyrics, word by word, in time with the notes."
@@ -110,7 +110,7 @@
         "reason": {
           "VIDEO_NOT_FOUND": "We couldn't find a video that matches this recording.",
           "TOO_LONG": "This recording is too long to process.",
-          "DOWNLOAD_FAILED": "We couldn't download the audio.",
+          "DOWNLOAD_FAILED": "We couldn't fetch this track's metadata.",
           "NOTE_DETECTION_FAILED": "We couldn't detect the notes.",
           "INTERNAL": "Something went wrong while processing this track."
         }

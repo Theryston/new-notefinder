@@ -320,8 +320,10 @@ The Processing page header is the same block, with the ring doing work: the
 decorative ring becomes a **progress ring** around the cover (a `black/15`
 track and a white arc, no decoration ring on top), the cover inside lifted
 only with `shadow-md` (the ring already frames it), and the percentage in a
-`bg-background` pill badge (Geist Mono, `tabular-nums`) on its corner. Above
-the title, an overline names the step (`Processing · step 3 of 5`); below the
+`bg-background` pill badge (Geist Mono, `tabular-nums`) on its corner. Its
+title is a step smaller than the other headers' (`text-4xl md:text-5xl`,
+still `font-extrabold tracking-tighter`) to leave room for the ring and
+pills. Above the title, an overline names the step (`Processing · step 3 of 5`); below the
 credit, the steps are `h-8` pills (`text-sm font-semibold`): done
 `black/15` with a check, current solid white with orange text and a spinner,
 failed `black/40` with an ×, pending outlined white. Pills show a short name

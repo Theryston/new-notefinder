@@ -37,7 +37,7 @@ export async function TrackProcessingSkeleton() {
             />
             <Skeleton
               className={cn(
-                'h-12 w-48 rounded-md md:h-16 md:w-64',
+                'h-9 w-48 rounded-md md:h-12 md:w-64',
                 entitySkeletonClass,
               )}
             />
