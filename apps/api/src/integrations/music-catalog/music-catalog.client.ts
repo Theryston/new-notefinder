@@ -7,11 +7,16 @@ import {
 } from '@nestjs/common';
 import {
   type Mbid,
+  type MusicCatalogArtist,
   type MusicCatalogError,
-  type MusicCatalogGetRecordingPayload,
+  type MusicCatalogErrorCode,
+  type MusicCatalogReleaseGroup,
+  type MusicCatalogResponse,
   type MusicCatalogSearchParams,
   type MusicCatalogSearchResult,
+  musicCatalogGetArtistResponseSchema,
   musicCatalogGetRecordingResponseSchema,
+  musicCatalogGetReleaseGroupResponseSchema,
   musicCatalogSearchResponseSchema,
   type Recording,
 } from '@notefinder/contracts';
@@ -28,6 +33,43 @@ export type CatalogRecordingLookup =
   | { status: 'found'; recording: Recording }
   | { status: 'not-found' }
   | { status: 'moved'; newMbid: Mbid };
+
+/** What the catalog answers for one release group (an Album). */
+export type CatalogReleaseGroupLookup =
+  | { status: 'found'; releaseGroup: MusicCatalogReleaseGroup }
+  | { status: 'not-found' }
+  | { status: 'moved'; newMbid: Mbid };
+
+/** What the catalog answers for one artist. */
+export type CatalogArtistLookup =
+  | { status: 'found'; artist: MusicCatalogArtist }
+  | { status: 'not-found' }
+  | { status: 'moved'; newMbid: Mbid };
+
+/** The answer to a lookup by MBID, whatever the entity is. */
+type LookupAnswer<TEntity> =
+  | { status: 'found'; entity: TEntity }
+  | { status: 'not-found' }
+  | { status: 'moved'; newMbid: Mbid };
+
+/** The error codes that mean "not known" and "merged" for one entity type. */
+type LookupCodes = {
+  notFound: MusicCatalogErrorCode;
+  moved: MusicCatalogErrorCode;
+};
+
+const RECORDING_CODES: LookupCodes = {
+  notFound: 'RECORDING_NOT_FOUND',
+  moved: 'RECORDING_MOVED',
+};
+const RELEASE_GROUP_CODES: LookupCodes = {
+  notFound: 'RELEASE_GROUP_NOT_FOUND',
+  moved: 'RELEASE_GROUP_MOVED',
+};
+const ARTIST_CODES: LookupCodes = {
+  notFound: 'ARTIST_NOT_FOUND',
+  moved: 'ARTIST_MOVED',
+};
 
 /**
  * The typed operations of the Music catalog, over one persistent connection
@@ -86,20 +128,66 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
    * answers, not failures, so the caller decides what they mean.
    */
   async getRecording(mbid: Mbid): Promise<CatalogRecordingLookup> {
-    const payload: MusicCatalogGetRecordingPayload = { mbid };
-    const response = await this.requestOrFail(
+    const answer = await this.lookup(
       'getRecording',
-      payload,
+      mbid,
       musicCatalogGetRecordingResponseSchema,
+      RECORDING_CODES,
     );
+    return answer.status === 'found'
+      ? { status: 'found', recording: answer.entity }
+      : answer;
+  }
+
+  /**
+   * Looks one release group (an Album, ADR 0003) up by its MBID. Its representative
+   * release and its tracks come with it; `not-found` and `moved` are answers, as
+   * for a Recording.
+   */
+  async getReleaseGroup(mbid: Mbid): Promise<CatalogReleaseGroupLookup> {
+    const answer = await this.lookup(
+      'getReleaseGroup',
+      mbid,
+      musicCatalogGetReleaseGroupResponseSchema,
+      RELEASE_GROUP_CODES,
+    );
+    return answer.status === 'found'
+      ? { status: 'found', releaseGroup: answer.entity }
+      : answer;
+  }
+
+  /** Looks one artist up by its MBID: its name and genres. */
+  async getArtist(mbid: Mbid): Promise<CatalogArtistLookup> {
+    const answer = await this.lookup(
+      'getArtist',
+      mbid,
+      musicCatalogGetArtistResponseSchema,
+      ARTIST_CODES,
+    );
+    return answer.status === 'found'
+      ? { status: 'found', artist: answer.entity }
+      : answer;
+  }
+
+  /**
+   * One lookup by MBID: a result is `found`; the entity-specific codes are
+   * `not-found` and `moved`; every other failure is thrown.
+   */
+  private async lookup<TEntity>(
+    type: string,
+    mbid: Mbid,
+    responseSchema: z.ZodType<MusicCatalogResponse<TEntity>>,
+    codes: LookupCodes,
+  ): Promise<LookupAnswer<TEntity>> {
+    const response = await this.requestOrFail(type, { mbid }, responseSchema);
     if (response.ok) {
-      return { status: 'found', recording: response.result };
+      return { status: 'found', entity: response.result };
     }
-    if (response.error.code === 'RECORDING_NOT_FOUND') {
+    if (response.error.code === codes.notFound) {
       return { status: 'not-found' };
     }
     if (
-      response.error.code === 'RECORDING_MOVED' &&
+      response.error.code === codes.moved &&
       response.error.newMbid !== undefined
     ) {
       return { status: 'moved', newMbid: response.error.newMbid };

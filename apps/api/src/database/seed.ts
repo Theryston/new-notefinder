@@ -14,6 +14,7 @@ import {
 } from './schema/albums.js';
 import { artists, trackArtists } from './schema/artists.js';
 import { accounts } from './schema/auth.js';
+import { trackProcessings } from './schema/track-processings.js';
 import {
   trackExternalLinks,
   trackReleases,
@@ -33,6 +34,7 @@ import {
   assertSeedAllowed,
   SEED_ARTISTS,
   SEED_TRACK_ARTISTS,
+  SEED_TRACK_PROCESSINGS,
   SEED_TRACKS,
   SEED_USER,
   SEED_USER_PASSWORD,
@@ -118,6 +120,15 @@ const seedArtistsAndTracks = async (tx: SeedTx): Promise<void> => {
     .insert(trackArtists)
     .values(SEED_TRACK_ARTISTS)
     .onConflictDoNothing();
+  for (const processing of SEED_TRACK_PROCESSINGS) {
+    await tx
+      .insert(trackProcessings)
+      .values(processing)
+      .onConflictDoUpdate({
+        target: trackProcessings.id,
+        set: overwriteOnConflict(trackProcessings),
+      });
+  }
 };
 
 /** Albums need their artists in place first (the credits reference them). */

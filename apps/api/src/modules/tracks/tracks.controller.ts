@@ -33,13 +33,13 @@ import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
 import { TrackProcessingService } from './track-processing.service.js';
-import { TrackRequestLauncherService } from './track-request-launcher.service.js';
+import { TrackRequestFlowService } from './track-request-flow.service.js';
 
 @ApiTags('tracks')
 @Controller('tracks')
 export class TracksController {
   constructor(
-    private readonly trackRequests: TrackRequestLauncherService,
+    private readonly trackRequests: TrackRequestFlowService,
     private readonly trackProcessing: TrackProcessingService,
   ) {}
 

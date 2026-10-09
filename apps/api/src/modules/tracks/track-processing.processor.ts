@@ -16,5 +16,5 @@ export class TrackProcessingProcessor extends WorkerHost {
 }
 
 /** Whether BullMQ stops retrying this job when the current attempt throws. */
-const isFinalAttempt = (job: Job<unknown>): boolean =>
+export const isFinalAttempt = (job: Job<unknown>): boolean =>
   job.attemptsMade + 1 >= (job.opts.attempts ?? 1);

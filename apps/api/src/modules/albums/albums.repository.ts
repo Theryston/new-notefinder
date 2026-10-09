@@ -11,6 +11,7 @@ import {
   legacyAlbumIds,
 } from '../../database/schema/albums.js';
 import { artists } from '../../database/schema/artists.js';
+import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import type { AlbumTrackCursor } from './album-track-cursor.js';
 
 /** Where one Track sits on an Album: its ID, its position and its disc's name. */
@@ -51,9 +52,10 @@ export class AlbumsRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
   /**
-   * The Album with its processed-track count and its credited Artists in
-   * credit order, or nothing when no Album has this ID. The count comes from
-   * the album-track links, so it is zero for an Album with no tracks yet.
+   * The Album with its completed-track count and its credited Artists in
+   * credit order, or nothing when no Album has this ID or none of its Tracks
+   * has a completed Processing (an Album is shown only once a Track of it is
+   * complete). The count comes from the album-track links.
    */
   async findAlbumById(id: string): Promise<Album | undefined> {
     const [row] = await this.txHost.tx
@@ -73,21 +75,23 @@ export class AlbumsRepository {
     if (!row) {
       return undefined;
     }
+    const trackCount = await this.countTracks(id);
+    if (trackCount === 0) {
+      return undefined;
+    }
     return {
       ...row,
-      trackCount: await this.countTracks(id),
+      trackCount,
       artists: await this.findArtistCredits(id),
     };
   }
 
-  /** Whether an Album with this ID exists, without loading its header. */
+  /**
+   * Whether an Album is shown: it exists and one of its Tracks has a completed
+   * Processing. Answers without loading its header.
+   */
   async findAlbumExists(id: string): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .select({ id: albums.id })
-      .from(albums)
-      .where(eq(albums.id, id))
-      .limit(1);
-    return rows.length > 0;
+    return (await this.countTracks(id)) > 0;
   }
 
   /** The new ID a legacy album ID points to, if it was reprocessed. */
@@ -124,7 +128,10 @@ export class AlbumsRepository {
     };
   }
 
-  /** The album's placements after the cursor, in album order, at most `take`. */
+  /**
+   * The album's placements of completed Tracks after the cursor, in album
+   * order, at most `take`.
+   */
   private async selectPlacements(
     albumId: string,
     take: number,
@@ -148,6 +155,7 @@ export class AlbumsRepository {
       .where(
         and(
           eq(albumTracks.albumId, albumId),
+          hasCompletedProcessing(albumTracks.trackId),
           cursor ? afterCursor(cursor) : undefined,
         ),
       )
@@ -159,11 +167,17 @@ export class AlbumsRepository {
       .limit(take);
   }
 
+  /** The album's Tracks that have a completed Processing. */
   private async countTracks(albumId: string): Promise<number> {
     const [row] = await this.txHost.tx
       .select({ value: count() })
       .from(albumTracks)
-      .where(eq(albumTracks.albumId, albumId));
+      .where(
+        and(
+          eq(albumTracks.albumId, albumId),
+          hasCompletedProcessing(albumTracks.trackId),
+        ),
+      );
     return row?.value ?? 0;
   }
 
