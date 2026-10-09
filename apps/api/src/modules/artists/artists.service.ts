@@ -6,7 +6,7 @@ import type {
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
-import { ArtistsRepository } from './artists.repository.js';
+import { type ArtistRecord, ArtistsRepository } from './artists.repository.js';
 
 const decodeTrackCursor = (cursor: string): string => {
   try {
@@ -80,5 +80,19 @@ export class ArtistsService {
       items: await this.tracksService.getCatalogTracks(page.trackIds),
       nextCursor: page.nextCursor,
     };
+  }
+
+  /**
+   * Writes an Artist of the Music catalog, by its MBID, with its genres; answers
+   * its ID. The metadata import writes Artists through here, so an Artist is
+   * stored the same way however it arrives.
+   */
+  upsertArtist(artist: ArtistRecord): Promise<string> {
+    return this.artistsRepository.upsertArtist(artist);
+  }
+
+  /** Credits a Track to its Artists. A link that exists stays as it is. */
+  linkTrackArtists(trackId: string, artistIds: string[]): Promise<void> {
+    return this.artistsRepository.linkTrackArtists(trackId, artistIds);
   }
 }

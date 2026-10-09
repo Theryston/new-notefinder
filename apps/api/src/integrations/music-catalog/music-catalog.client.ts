@@ -11,6 +11,7 @@ import {
   type MusicCatalogError,
   type MusicCatalogErrorCode,
   type MusicCatalogReleaseGroup,
+  type MusicCatalogRequestType,
   type MusicCatalogResponse,
   type MusicCatalogSearchParams,
   type MusicCatalogSearchResult,
@@ -46,11 +47,36 @@ export type CatalogArtistLookup =
   | { status: 'not-found' }
   | { status: 'moved'; newMbid: Mbid };
 
+/** The entity each lookup by MBID answers with, by the request that asks for it. */
+type CatalogEntities = {
+  getRecording: Recording;
+  getReleaseGroup: MusicCatalogReleaseGroup;
+  getArtist: MusicCatalogArtist;
+};
+
+/** The lookups by MBID, named by the protocol's request types. */
+export type CatalogLookupType = Extract<
+  MusicCatalogRequestType,
+  keyof CatalogEntities
+>;
+
 /** The answer to a lookup by MBID, whatever the entity is. */
 type LookupAnswer<TEntity> =
   | { status: 'found'; entity: TEntity }
   | { status: 'not-found' }
   | { status: 'moved'; newMbid: Mbid };
+
+/**
+ * The answer to a lookup of one type: its entity, that the catalog does not know
+ * it, or that it was merged into `newMbid`, which the caller follows.
+ */
+export type CatalogAnswer<TType extends CatalogLookupType> = LookupAnswer<
+  CatalogEntities[TType]
+>;
+
+/** The entity a lookup of one type finds. */
+export type CatalogEntity<TType extends CatalogLookupType> =
+  CatalogEntities[TType];
 
 /** The error codes that mean "not known" and "merged" for one entity type. */
 type LookupCodes = {
@@ -58,17 +84,30 @@ type LookupCodes = {
   moved: MusicCatalogErrorCode;
 };
 
-const RECORDING_CODES: LookupCodes = {
-  notFound: 'RECORDING_NOT_FOUND',
-  moved: 'RECORDING_MOVED',
+/** How one lookup type is answered: its response schema and its error codes. */
+type LookupSpec<TEntity> = {
+  schema: z.ZodType<MusicCatalogResponse<TEntity>>;
+  codes: LookupCodes;
 };
-const RELEASE_GROUP_CODES: LookupCodes = {
-  notFound: 'RELEASE_GROUP_NOT_FOUND',
-  moved: 'RELEASE_GROUP_MOVED',
-};
-const ARTIST_CODES: LookupCodes = {
-  notFound: 'ARTIST_NOT_FOUND',
-  moved: 'ARTIST_MOVED',
+
+const LOOKUPS: {
+  [TType in CatalogLookupType]: LookupSpec<CatalogEntities[TType]>;
+} = {
+  getRecording: {
+    schema: musicCatalogGetRecordingResponseSchema,
+    codes: { notFound: 'RECORDING_NOT_FOUND', moved: 'RECORDING_MOVED' },
+  },
+  getReleaseGroup: {
+    schema: musicCatalogGetReleaseGroupResponseSchema,
+    codes: {
+      notFound: 'RELEASE_GROUP_NOT_FOUND',
+      moved: 'RELEASE_GROUP_MOVED',
+    },
+  },
+  getArtist: {
+    schema: musicCatalogGetArtistResponseSchema,
+    codes: { notFound: 'ARTIST_NOT_FOUND', moved: 'ARTIST_MOVED' },
+  },
 };
 
 /**
@@ -128,12 +167,7 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
    * answers, not failures, so the caller decides what they mean.
    */
   async getRecording(mbid: Mbid): Promise<CatalogRecordingLookup> {
-    const answer = await this.lookup(
-      'getRecording',
-      mbid,
-      musicCatalogGetRecordingResponseSchema,
-      RECORDING_CODES,
-    );
+    const answer = await this.lookup('getRecording', mbid);
     return answer.status === 'found'
       ? { status: 'found', recording: answer.entity }
       : answer;
@@ -145,12 +179,7 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
    * for a Recording.
    */
   async getReleaseGroup(mbid: Mbid): Promise<CatalogReleaseGroupLookup> {
-    const answer = await this.lookup(
-      'getReleaseGroup',
-      mbid,
-      musicCatalogGetReleaseGroupResponseSchema,
-      RELEASE_GROUP_CODES,
-    );
+    const answer = await this.lookup('getReleaseGroup', mbid);
     return answer.status === 'found'
       ? { status: 'found', releaseGroup: answer.entity }
       : answer;
@@ -158,28 +187,22 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
 
   /** Looks one artist up by its MBID: its name and genres. */
   async getArtist(mbid: Mbid): Promise<CatalogArtistLookup> {
-    const answer = await this.lookup(
-      'getArtist',
-      mbid,
-      musicCatalogGetArtistResponseSchema,
-      ARTIST_CODES,
-    );
+    const answer = await this.lookup('getArtist', mbid);
     return answer.status === 'found'
       ? { status: 'found', artist: answer.entity }
       : answer;
   }
 
   /**
-   * One lookup by MBID: a result is `found`; the entity-specific codes are
-   * `not-found` and `moved`; every other failure is thrown.
+   * One lookup by MBID of the given type: a result is `found`; the type's own
+   * codes are `not-found` and `moved`; every other failure is thrown.
    */
-  private async lookup<TEntity>(
-    type: string,
+  async lookup<TType extends CatalogLookupType>(
+    type: TType,
     mbid: Mbid,
-    responseSchema: z.ZodType<MusicCatalogResponse<TEntity>>,
-    codes: LookupCodes,
-  ): Promise<LookupAnswer<TEntity>> {
-    const response = await this.requestOrFail(type, { mbid }, responseSchema);
+  ): Promise<CatalogAnswer<TType>> {
+    const { schema, codes } = LOOKUPS[type];
+    const response = await this.requestOrFail(type, { mbid }, schema);
     if (response.ok) {
       return { status: 'found', entity: response.result };
     }

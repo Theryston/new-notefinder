@@ -183,7 +183,7 @@ describe('Album tracks (e2e)', () => {
     });
   });
 
-  it('answers an empty page for an album with no tracks', async () => {
+  it('answers NOT_FOUND for the tracks of an album with no completed Track', async () => {
     const album = await createAlbum(testApp.db);
 
     const response = await testApp.http
@@ -263,7 +263,7 @@ describe('Album tracks (e2e)', () => {
     expect(response.body).toMatchObject({ trackCount: 2 });
   });
 
-  it('counts zero tracks for an album with none yet', async () => {
+  it('answers NOT_FOUND for the header of an album with no completed Track', async () => {
     const album = await createAlbum(testApp.db);
 
     const response = await testApp.http

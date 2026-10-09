@@ -27,7 +27,7 @@ describe('Albums detail (e2e)', () => {
     await resetDatabase(testApp.db);
   });
 
-  it('returns the album header detail, validated against the contract', async () => {
+  it('answers NOT_FOUND for the header of an album with no completed Track', async () => {
     const album = await createAlbum(testApp.db, {
       title: 'A Night at the Opera',
       primaryType: 'Album',
@@ -46,7 +46,7 @@ describe('Albums detail (e2e)', () => {
     expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
-  it('lists the credited artists in credit order, not alphabetically', async () => {
+  it('answers NOT_FOUND for the header of an album credited to artists, with no completed Track', async () => {
     const album = await createAlbum(testApp.db);
     const queen = await createArtist(testApp.db, { name: 'Queen' });
     const adele = await createArtist(testApp.db, { name: 'Adele' });
@@ -61,7 +61,7 @@ describe('Albums detail (e2e)', () => {
     expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
-  it('returns null header fields and no credits when MusicBrainz has none', async () => {
+  it('answers NOT_FOUND for the header of an album with null fields, with no completed Track', async () => {
     const album = await createAlbum(testApp.db, {
       primaryType: null,
       year: null,

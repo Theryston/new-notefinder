@@ -2,14 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type {
   Mbid,
-  MusicCatalogArtist,
   MusicCatalogReleaseGroup,
   Recording,
 } from '@notefinder/contracts';
-import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';
-import { TrackAlbumCoverService } from './track-album-cover.service.js';
-import { TrackMetadataRepository } from './track-metadata.repository.js';
-import { mapWithConcurrency } from './track-metadata-concurrency.js';
+import {
+  type CatalogEntity,
+  type CatalogLookupType,
+  MusicCatalogClient,
+} from '../../integrations/music-catalog/music-catalog.client.js';
+import { AlbumsService } from '../albums/albums.service.js';
+import { ArtistsService } from '../artists/artists.service.js';
+import { TrackAlbumCoverService } from '../tracks/track-album-cover.service.js';
+import { createLimiter, type Limiter } from './track-metadata-limiter.js';
 import {
   type AlbumPlacement,
   albumLayoutOf,
@@ -20,13 +24,26 @@ export type ImportedLinks = { artistIds: string[]; albumIds: string[] };
 
 const NOTHING_LINKED: ImportedLinks = { artistIds: [], albumIds: [] };
 
-/** How many catalog lookups (and cover downloads) one step runs at once. */
+/**
+ * How many catalog lookups, and how many cover downloads, one import runs at
+ * once. Each import has its own limiters, so this bounds one job.
+ */
 const CONCURRENCY = 4;
 
 /** The Artist IDs of one import run, by MBID, so each Artist is fetched once. */
 type ArtistMemo = Map<string, Promise<string | undefined>>;
 
-/** What the Album writes of one Track need, in one object (too many for positional params). */
+/** What one import run shares between its steps. */
+type ImportRun = {
+  trackId: string;
+  artists: ArtistMemo;
+  /** Runs one catalog lookup at a time within the bound. */
+  catalog: Limiter;
+  /** Runs one cover download at a time within the bound. */
+  covers: Limiter;
+};
+
+/** What one Album's writes need, in one object (too many for positional params). */
 type AlbumLink = {
   albumId: string;
   trackId: string;
@@ -57,87 +74,106 @@ const ownPlacementsIn = (
       trackPosition: release.trackPosition,
     }));
 
+/** A failure as text, for a log line. */
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 /**
  * Imports the Artists and Albums of a Track's Recording from the Music catalog
- * (ADR 0003 and ADR 0005). Idempotent: every write upserts or replaces its own
- * rows, so a repeated run lands on the same rows. A catalog answer that is
- * neither a result nor a merge is skipped with a log line; a failed call
- * throws, and the job retries it.
+ * (ADR 0003 and ADR 0005). The rows are written through the Artists and Albums
+ * services, so each module keeps its own tables. Idempotent: every write
+ * upserts or replaces, so a repeated run lands on the same rows. A catalog
+ * answer that is neither a result nor a merge is skipped with a log line; a
+ * failed catalog call throws, and the job retries it.
  */
 @Injectable()
 export class TrackMetadataImportService {
   private readonly logger = new Logger(TrackMetadataImportService.name);
 
   constructor(
-    private readonly repository: TrackMetadataRepository,
     private readonly catalog: MusicCatalogClient,
+    private readonly artists: ArtistsService,
+    private readonly albums: AlbumsService,
     private readonly covers: TrackAlbumCoverService,
   ) {}
 
   /**
    * Imports the Recording's Artists, linked to the Track, then every Album the
-   * Recording is on. The Albums run with bounded concurrency; each Album's
-   * writes are one unit of their own.
+   * Recording is on. Each Album's writes are one unit of their own.
    */
-  async importMetadata(trackId: string): Promise<ImportedLinks> {
-    const recording = await this.findTrackRecording(trackId);
+  async importMetadata(
+    trackId: string,
+    recordingMbid: string,
+  ): Promise<ImportedLinks> {
+    const run: ImportRun = {
+      trackId,
+      artists: new Map(),
+      catalog: createLimiter(CONCURRENCY),
+      covers: createLimiter(CONCURRENCY),
+    };
+    const recording = await this.findEntity(run, 'getRecording', recordingMbid);
     if (recording === undefined) {
       return NOTHING_LINKED;
     }
-    const memo: ArtistMemo = new Map();
-    const artistIds = await this.linkTrackArtists(trackId, recording, memo);
-    const albumIds = await mapWithConcurrency(
-      releaseGroupsOf(recording),
-      CONCURRENCY,
-      (groupMbid) => this.importAlbum(trackId, recording, groupMbid, memo),
+    const artistIds = await this.linkTrackArtists(run, recording);
+    const albumIds = await Promise.all(
+      releaseGroupsOf(recording).map((groupMbid) =>
+        this.importAlbum(run, recording, groupMbid),
+      ),
     );
     return { artistIds, albumIds: albumIds.filter(isDefined) };
   }
 
-  private async findTrackRecording(
-    trackId: string,
-  ): Promise<Recording | undefined> {
-    const mbid = await this.repository.findRecordingMbid(trackId);
-    if (mbid === undefined) {
-      this.logger.warn(`Track ${trackId} is gone: nothing to import`);
+  /**
+   * The entity the catalog knows under `mbid`, following one merge. Undefined
+   * when the catalog does not know it; the caller skips it.
+   */
+  private async findEntity<TType extends CatalogLookupType>(
+    run: ImportRun,
+    type: TType,
+    mbid: Mbid,
+  ): Promise<CatalogEntity<TType> | undefined> {
+    const answer = await run.catalog(() => this.catalog.lookup(type, mbid));
+    if (answer.status === 'found') {
+      return answer.entity;
+    }
+    if (answer.status === 'not-found') {
+      this.logger.warn(`The Music catalog has no ${type} for ${mbid}`);
       return undefined;
     }
-    const recording = await this.findRecording(mbid);
-    if (recording === undefined) {
-      this.logger.warn(`The Music catalog has no Recording for ${trackId}`);
-    }
-    return recording;
+    const moved = await run.catalog(() =>
+      this.catalog.lookup(type, answer.newMbid),
+    );
+    return moved.status === 'found' ? moved.entity : undefined;
   }
 
   private async linkTrackArtists(
-    trackId: string,
+    run: ImportRun,
     recording: Recording,
-    memo: ArtistMemo,
   ): Promise<string[]> {
     const artistIds = await this.resolveArtists(
+      run,
       recording.artistCredit.artists.map((artist) => artist.mbid),
-      memo,
     );
-    await this.repository.linkTrackArtists(trackId, artistIds);
+    await this.artists.linkTrackArtists(run.trackId, artistIds);
     return artistIds;
   }
 
   /** Imports one Album of the Recording; answers its ID, or nothing when the catalog does not know it. */
   private async importAlbum(
-    trackId: string,
+    run: ImportRun,
     recording: Recording,
     groupMbid: string,
-    memo: ArtistMemo,
   ): Promise<string | undefined> {
-    const group = await this.findReleaseGroup(groupMbid);
+    const group = await this.findEntity(run, 'getReleaseGroup', groupMbid);
     if (group === undefined) {
       return undefined;
     }
     const artistIds = await this.resolveArtists(
+      run,
       group.artistCredit.artists.map((artist) => artist.mbid),
-      memo,
     );
-    const album = await this.repository.upsertAlbum({
+    const album = await this.albums.upsertAlbum({
       mbid: group.mbid,
       title: group.title,
       primaryType: group.primaryType,
@@ -147,11 +183,11 @@ export class TrackMetadataImportService {
     });
     // Outside the Album's transaction: a cover download is slow and may fail.
     if (!album.hasCover) {
-      await this.storeAlbumCover(album.id, group.coverArtUrl);
+      await this.storeAlbumCover(run, album.id, group.coverArtUrl);
     }
     await this.linkAlbum({
       albumId: album.id,
-      trackId,
+      trackId: run.trackId,
       recordingMbid: recording.mbid,
       ownPlacements: ownPlacementsIn(recording, groupMbid),
       group,
@@ -160,23 +196,37 @@ export class TrackMetadataImportService {
     return album.id;
   }
 
+  /**
+   * Stores an Album's cover and records its URL. A cover that cannot be stored
+   * (the archive is down, or the image is bad) leaves the Album without one, and
+   * the Album is still linked: a cover never costs the Track its Album.
+   */
   private async storeAlbumCover(
+    run: ImportRun,
     albumId: string,
     coverArtUrl: string,
   ): Promise<void> {
-    const url = await this.covers.storeCover(albumId, coverArtUrl);
-    if (url !== undefined) {
-      await this.repository.setAlbumCoverUrl(albumId, url);
+    try {
+      const url = await run.covers(() =>
+        this.covers.storeCover(albumId, coverArtUrl),
+      );
+      if (url !== undefined) {
+        await this.albums.setAlbumCoverUrl(albumId, url);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `The cover of Album ${albumId} was not stored: ${messageOf(error)}`,
+      );
     }
   }
 
   /**
-   * The Album's credit, discs and the Track's place on it, as one unit: a
-   * Track is never listed on an Album whose discs are missing.
+   * The Album's credit, discs and the Track's place on it, as one unit: a Track
+   * is never listed on an Album whose discs are missing.
    */
   @Transactional()
   private async linkAlbum(link: AlbumLink): Promise<void> {
-    await this.repository.replaceAlbumArtists(link.albumId, link.artistIds);
+    await this.albums.replaceAlbumArtists(link.albumId, link.artistIds);
     const layout = albumLayoutOf({
       recordingMbid: link.recordingMbid,
       media: link.group.representativeRelease?.media ?? [],
@@ -188,8 +238,8 @@ export class TrackMetadataImportService {
       );
       return;
     }
-    await this.repository.upsertAlbumDiscs(link.albumId, layout.discs);
-    await this.repository.upsertAlbumTrack(
+    await this.albums.upsertAlbumDiscs(link.albumId, layout.discs);
+    await this.albums.placeTrackOnAlbum(
       link.albumId,
       link.trackId,
       layout.placement,
@@ -198,80 +248,41 @@ export class TrackMetadataImportService {
 
   /** The Artists of a credit, each once, in credit order; the ones the catalog does not know are left out. */
   private async resolveArtists(
+    run: ImportRun,
     mbids: readonly string[],
-    memo: ArtistMemo,
   ): Promise<string[]> {
-    const ids = await mapWithConcurrency(distinct(mbids), CONCURRENCY, (mbid) =>
-      this.resolveArtist(mbid, memo),
+    const ids = await Promise.all(
+      distinct(mbids).map((mbid) => this.resolveArtist(run, mbid)),
     );
     return ids.filter(isDefined);
   }
 
   /** One Artist's ID, fetched and written once per import run, however many credits name it. */
   private resolveArtist(
+    run: ImportRun,
     mbid: string,
-    memo: ArtistMemo,
   ): Promise<string | undefined> {
-    const known = memo.get(mbid);
+    const known = run.artists.get(mbid);
     if (known !== undefined) {
       return known;
     }
-    const resolved = this.importArtist(mbid);
-    memo.set(mbid, resolved);
+    const resolved = this.importArtist(run, mbid);
+    run.artists.set(mbid, resolved);
     return resolved;
   }
 
-  private async importArtist(mbid: string): Promise<string | undefined> {
-    const artist = await this.findArtist(mbid);
+  private async importArtist(
+    run: ImportRun,
+    mbid: string,
+  ): Promise<string | undefined> {
+    const artist = await this.findEntity(run, 'getArtist', mbid);
     if (artist === undefined) {
       return undefined;
     }
-    return this.repository.upsertArtist({
+    return this.artists.upsertArtist({
       mbid: artist.mbid,
       name: artist.name,
       genres: artist.genres.map((genre) => genre.name),
     });
-  }
-
-  private async findRecording(mbid: Mbid): Promise<Recording | undefined> {
-    const lookup = await this.catalog.getRecording(mbid);
-    if (lookup.status === 'found') {
-      return lookup.recording;
-    }
-    if (lookup.status === 'not-found') {
-      return undefined;
-    }
-    const moved = await this.catalog.getRecording(lookup.newMbid);
-    return moved.status === 'found' ? moved.recording : undefined;
-  }
-
-  private async findReleaseGroup(
-    mbid: Mbid,
-  ): Promise<MusicCatalogReleaseGroup | undefined> {
-    const lookup = await this.catalog.getReleaseGroup(mbid);
-    if (lookup.status === 'found') {
-      return lookup.releaseGroup;
-    }
-    if (lookup.status === 'not-found') {
-      this.logger.warn(`The Music catalog has no release group ${mbid}`);
-      return undefined;
-    }
-    const moved = await this.catalog.getReleaseGroup(lookup.newMbid);
-    return moved.status === 'found' ? moved.releaseGroup : undefined;
-  }
-
-  private async findArtist(
-    mbid: Mbid,
-  ): Promise<MusicCatalogArtist | undefined> {
-    const lookup = await this.catalog.getArtist(mbid);
-    if (lookup.status === 'found') {
-      return lookup.artist;
-    }
-    if (lookup.status === 'not-found') {
-      this.logger.warn(`The Music catalog has no artist ${mbid}`);
-      return undefined;
-    }
-    const moved = await this.catalog.getArtist(lookup.newMbid);
-    return moved.status === 'found' ? moved.artist : undefined;
   }
 }

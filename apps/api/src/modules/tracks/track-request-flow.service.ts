@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { CreateTrackBody } from '@notefinder/contracts';
-import { TrackMetadataService } from './track-metadata.service.js';
-import { type RequestedTrack } from './track-request.service.js';
+import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
+import type { RequestedTrack } from './track-request.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
 import type { TrackRequester } from './track-requester.service.js';
 
@@ -14,7 +14,7 @@ import type { TrackRequester } from './track-requester.service.js';
 export class TrackRequestFlowService {
   constructor(
     private readonly launcher: TrackRequestLauncherService,
-    private readonly metadata: TrackMetadataService,
+    private readonly metadata: TrackMetadataQueueService,
   ) {}
 
   async requestTrack(

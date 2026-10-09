@@ -1,12 +1,12 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
+import { isFinalAttempt } from '../../queue/job-attempts.js';
 import {
   importMetadataJobSchema,
   TRACK_METADATA_QUEUE,
-} from './track-metadata.job.js';
+} from '../../queue/track-metadata.job.js';
 import { TrackMetadataService } from './track-metadata.service.js';
-import { isFinalAttempt } from './track-processing.processor.js';
 
 /** Consumes the metadata queue: each job is one import attempt, run by the service. */
 @Processor(TRACK_METADATA_QUEUE, { concurrency: 2 })

@@ -114,7 +114,7 @@ describe('Artist tracks (e2e)', () => {
     expect(new Set(seen).size).toBe(3);
   });
 
-  it('answers an empty page for an artist with no tracks', async () => {
+  it('answers NOT_FOUND for the tracks of an artist with no completed Track', async () => {
     const artist = await createArtist(testApp.db);
 
     const response = await testApp.http

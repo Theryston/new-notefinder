@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { CreateTrackBody } from '@notefinder/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
-import { TrackMetadataService } from './track-metadata.service.js';
+import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
 import type { TrackRequester } from './track-requester.service.js';
@@ -26,7 +26,7 @@ describe('TrackRequestFlowService', () => {
       providers: [
         TrackRequestFlowService,
         { provide: TrackRequestLauncherService, useValue: launcher },
-        { provide: TrackMetadataService, useValue: metadata },
+        { provide: TrackMetadataQueueService, useValue: metadata },
       ],
     }).compile();
     flow = moduleRef.get(TrackRequestFlowService);

@@ -2,6 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { cacheTags, type TrackProcessingStep } from '@notefinder/contracts';
 import { type Queue, UnrecoverableError } from 'bullmq';
+import { catalogPageTags } from '../../integrations/web-revalidation/catalog-page-tags.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import {
   dueStatusesOf,
@@ -168,9 +169,12 @@ export class TrackPipelineService {
     processing: ProcessingForStep,
     lastStep: PipelineStepName,
   ): Promise<void> {
+    // The Artist and Album pages list the Track now that it is complete.
+    const catalog = await this.processings.findCatalogIds(processing.trackId);
     await this.revalidation.revalidate([
       cacheTags.track(processing.trackId),
       cacheTags.tracks,
+      ...catalogPageTags(catalog),
     ]);
     await this.processings.markCompleted(processing.id, lastStep);
   }

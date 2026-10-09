@@ -52,7 +52,7 @@ describe('Artists detail (e2e)', () => {
     });
   });
 
-  it('counts zero tracks for an artist with no links', async () => {
+  it('answers NOT_FOUND for an artist with no completed Track', async () => {
     const artist = await createArtist(testApp.db, { genres: [] });
 
     const response = await testApp.http
@@ -64,8 +64,10 @@ describe('Artists detail (e2e)', () => {
 
   it('needs no authentication', async () => {
     const artist = await createArtist(testApp.db);
+    const track = await createCompletedTrack(testApp.db);
+    await linkTrackArtist(testApp.db, track.id, artist.id);
 
-    await testApp.http.get(`/v1/artists/${artist.id}`).expect(404);
+    await testApp.http.get(`/v1/artists/${artist.id}`).expect(200);
   });
 
   it('answers RESOURCE_MOVED with the new ID for a legacy ID', async () => {

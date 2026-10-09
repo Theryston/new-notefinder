@@ -9,12 +9,12 @@ import {
 import { artists, trackArtists } from '../src/database/schema/artists.js';
 import { CoverArtClient } from '../src/integrations/cover-art/cover-art.client.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
+import { TrackMetadataService } from '../src/modules/track-metadata/track-metadata.service.js';
+import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
 import {
   importMetadataJobSchema,
   TRACK_METADATA_QUEUE,
-} from '../src/modules/tracks/track-metadata.job.js';
-import { TrackMetadataService } from '../src/modules/tracks/track-metadata.service.js';
-import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
+} from '../src/queue/track-metadata.job.js';
 import {
   artistFixture,
   queenAndBowieCredit,
@@ -407,6 +407,23 @@ describe('Track metadata import (e2e)', () => {
     expect(stored.status).toBe(200);
     expect(stored.headers.get('content-type')).toBe('image/webp');
     expect((await albumByMbid(HITS))?.coverArtUrl).toBeNull();
+  });
+
+  it('links the Album without a cover when its cover download fails, so the Track still shows on it', async () => {
+    coverArt.imageFailure = new Error('Image download failed with HTTP 503');
+    const trackId = await requestNewTrack();
+
+    await runQueuedImports();
+
+    const opera = await albumByMbid(OPERA);
+    expect(opera?.coverArtUrl).toBeNull();
+    const placements = await testApp.db
+      .select()
+      .from(albumTracks)
+      .where(eq(albumTracks.trackId, trackId));
+    expect(placements.map((placement) => placement.albumId)).toContain(
+      opera?.id,
+    );
   });
 
   it('keeps every row unchanged when the import runs again', async () => {

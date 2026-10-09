@@ -1,5 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
+import { isFinalAttempt } from '../../queue/job-attempts.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 
@@ -14,7 +15,3 @@ export class TrackProcessingProcessor extends WorkerHost {
     return this.runner.run(job.name, job.data, isFinalAttempt(job));
   }
 }
-
-/** Whether BullMQ stops retrying this job when the current attempt throws. */
-export const isFinalAttempt = (job: Job<unknown>): boolean =>
-  job.attemptsMade + 1 >= (job.opts.attempts ?? 1);

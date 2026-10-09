@@ -6,7 +6,7 @@
 // does not have it. MusicBrainz numbers discs and tracks from 1.
 
 /** A disc of an Album: its position and its own name, null when it has none. */
-export type AlbumDisc = { position: number; title: string | null };
+type AlbumDisc = { position: number; title: string | null };
 
 /** The disc and the track position a Track takes on an Album. */
 export type AlbumPlacement = { discPosition: number; trackPosition: number };

@@ -14,6 +14,28 @@ import { artists } from '../../database/schema/artists.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import type { AlbumTrackCursor } from './album-track-cursor.js';
 
+/** An Album header as the metadata import writes it: the release group's fields. */
+export type AlbumRecord = {
+  mbid: string;
+  title: string;
+  primaryType: string | null;
+  secondaryTypes: string[];
+  year: number | null;
+  genres: string[];
+};
+
+/** The Album's ID, and whether its cover is already stored. */
+export type AlbumHeader = { id: string; hasCover: boolean };
+
+/** One disc of an Album as the metadata import writes it; `title` null when unnamed. */
+export type AlbumDiscRecord = { position: number; title: string | null };
+
+/** The disc and track position a Track takes on an Album. */
+export type AlbumPlacementRecord = {
+  discPosition: number;
+  trackPosition: number;
+};
+
 /** Where one Track sits on an Album: its ID, its position and its disc's name. */
 export type AlbumPlacement = AlbumTrackCursor & { discTitle: string | null };
 
@@ -179,6 +201,101 @@ export class AlbumsRepository {
         ),
       );
     return row?.value ?? 0;
+  }
+
+  /**
+   * Upserts an Album header by its release group MBID. The cover is not part of
+   * the header write, so a stored cover survives a re-run.
+   */
+  async upsertAlbum(album: AlbumRecord): Promise<AlbumHeader> {
+    const rows = await this.txHost.tx
+      .insert(albums)
+      .values({ ...album, coverArtUrl: null })
+      .onConflictDoUpdate({
+        target: albums.mbid,
+        set: {
+          title: album.title,
+          primaryType: album.primaryType,
+          secondaryTypes: album.secondaryTypes,
+          year: album.year,
+          genres: album.genres,
+        },
+      })
+      .returning({ id: albums.id, coverArtUrl: albums.coverArtUrl });
+    const [row] = rows;
+    if (row === undefined) {
+      throw new Error('Insert returned no row');
+    }
+    return { id: row.id, hasCover: row.coverArtUrl !== null };
+  }
+
+  /** Records the public URL of an Album's cover, once it is stored. */
+  async setAlbumCoverUrl(albumId: string, coverArtUrl: string): Promise<void> {
+    await this.txHost.tx
+      .update(albums)
+      .set({ coverArtUrl })
+      .where(eq(albums.id, albumId));
+  }
+
+  /** Replaces an Album's credit with these Artists, in credit order. */
+  async replaceAlbumArtists(
+    albumId: string,
+    artistIds: string[],
+  ): Promise<void> {
+    await this.txHost.tx
+      .delete(albumArtists)
+      .where(eq(albumArtists.albumId, albumId));
+    if (artistIds.length === 0) {
+      return;
+    }
+    await this.txHost.tx.insert(albumArtists).values(
+      artistIds.map((artistId, position) => ({
+        albumId,
+        artistId,
+        position,
+      })),
+    );
+  }
+
+  /**
+   * Upserts an Album's discs by position. A disc's name follows the latest
+   * answer; discs no import names are left alone, because other Tracks sit on
+   * them.
+   */
+  async upsertAlbumDiscs(
+    albumId: string,
+    discs: AlbumDiscRecord[],
+  ): Promise<void> {
+    for (const disc of discs) {
+      await this.txHost.tx
+        .insert(albumDiscs)
+        .values({ albumId, position: disc.position, title: disc.title })
+        .onConflictDoUpdate({
+          target: [albumDiscs.albumId, albumDiscs.position],
+          set: { title: disc.title },
+        });
+    }
+  }
+
+  /**
+   * Places a Track on an Album: one link per (Album, Track), updated in place
+   * when its placement changed.
+   */
+  async placeTrackOnAlbum(
+    albumId: string,
+    trackId: string,
+    placement: AlbumPlacementRecord,
+  ): Promise<void> {
+    await this.txHost.tx
+      .insert(albumTracks)
+      .values({ albumId, trackId, ...placement })
+      .onConflictDoUpdate({
+        target: [albumTracks.albumId, albumTracks.trackId],
+        set: {
+          discPosition: placement.discPosition,
+          trackPosition: placement.trackPosition,
+        },
+      });
   }
 
   private findArtistCredits(albumId: string): Promise<AlbumArtist[]> {

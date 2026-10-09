@@ -11,6 +11,9 @@ import {
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import { tracks } from '../../database/schema/tracks.js';
 
+/** An Artist as the metadata import writes it: its MBID, name and genres. */
+export type ArtistRecord = { mbid: string; name: string; genres: string[] };
+
 @Injectable()
 export class ArtistsRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
@@ -46,6 +49,37 @@ export class ArtistsRepository {
       .where(eq(legacyArtistIds.legacyId, legacyId))
       .limit(1);
     return row?.artistId;
+  }
+
+  /**
+   * Upserts an Artist of the Music catalog by its MBID, with its genres; answers
+   * its ID. Written by the metadata import, which may repeat it.
+   */
+  async upsertArtist(artist: ArtistRecord): Promise<string> {
+    const rows = await this.txHost.tx
+      .insert(artists)
+      .values(artist)
+      .onConflictDoUpdate({
+        target: artists.mbid,
+        set: { name: artist.name, genres: artist.genres },
+      })
+      .returning({ id: artists.id });
+    const [row] = rows;
+    if (row === undefined) {
+      throw new Error('Insert returned no row');
+    }
+    return row.id;
+  }
+
+  /** Links a Track to its credited Artists; a link that exists stays as it is. */
+  async linkTrackArtists(trackId: string, artistIds: string[]): Promise<void> {
+    if (artistIds.length === 0) {
+      return;
+    }
+    await this.txHost.tx
+      .insert(trackArtists)
+      .values(artistIds.map((artistId) => ({ trackId, artistId })))
+      .onConflictDoNothing();
   }
 
   /** The Artist's Tracks that have a completed Processing. */

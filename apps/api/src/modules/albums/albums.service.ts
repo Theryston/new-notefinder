@@ -10,7 +10,13 @@ import {
   decodeAlbumTrackCursor,
   encodeAlbumTrackCursor,
 } from './album-track-cursor.js';
-import { AlbumsRepository } from './albums.repository.js';
+import {
+  type AlbumDiscRecord,
+  type AlbumHeader,
+  type AlbumPlacementRecord,
+  type AlbumRecord,
+  AlbumsRepository,
+} from './albums.repository.js';
 
 @Injectable()
 export class AlbumsService {
@@ -78,6 +84,39 @@ export class AlbumsService {
         ? encodeAlbumTrackCursor(page.nextCursor)
         : null,
     };
+  }
+
+  /**
+   * Writes an Album of the Music catalog's release group: its header, under its
+   * MBID. The metadata import writes Albums through here, and answers the
+   * Album's ID and whether its cover is already stored.
+   */
+  upsertAlbum(album: AlbumRecord): Promise<AlbumHeader> {
+    return this.albumsRepository.upsertAlbum(album);
+  }
+
+  /** Records the public URL of an Album's cover, once it is stored. */
+  setAlbumCoverUrl(albumId: string, coverArtUrl: string): Promise<void> {
+    return this.albumsRepository.setAlbumCoverUrl(albumId, coverArtUrl);
+  }
+
+  /** Replaces an Album's credit with these Artists, in credit order. */
+  replaceAlbumArtists(albumId: string, artistIds: string[]): Promise<void> {
+    return this.albumsRepository.replaceAlbumArtists(albumId, artistIds);
+  }
+
+  /** Upserts an Album's discs by position; discs no import names stay as they are. */
+  upsertAlbumDiscs(albumId: string, discs: AlbumDiscRecord[]): Promise<void> {
+    return this.albumsRepository.upsertAlbumDiscs(albumId, discs);
+  }
+
+  /** Places a Track on an Album, at a disc and track position. */
+  placeTrackOnAlbum(
+    albumId: string,
+    trackId: string,
+    placement: AlbumPlacementRecord,
+  ): Promise<void> {
+    return this.albumsRepository.placeTrackOnAlbum(albumId, trackId, placement);
   }
 
   /**

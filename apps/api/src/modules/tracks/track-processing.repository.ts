@@ -21,6 +21,8 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
+import { albumTracks } from '../../database/schema/albums.js';
+import { trackArtists } from '../../database/schema/artists.js';
 import {
   trackContributionKind,
   trackContributions,
@@ -141,6 +143,27 @@ export class TrackProcessingRepository {
     processingId: string;
   }): Promise<void> {
     await this.txHost.tx.insert(trackContributions).values(row);
+  }
+
+  /**
+   * The Artists and Albums a Track is listed on. Completion refreshes their
+   * pages (ADR 0005), so it reads them as they are when the Processing ends.
+   */
+  async findCatalogIds(
+    trackId: string,
+  ): Promise<{ artistIds: string[]; albumIds: string[] }> {
+    const artistRows = await this.txHost.tx
+      .select({ id: trackArtists.artistId })
+      .from(trackArtists)
+      .where(eq(trackArtists.trackId, trackId));
+    const albumRows = await this.txHost.tx
+      .select({ id: albumTracks.albumId })
+      .from(albumTracks)
+      .where(eq(albumTracks.trackId, trackId));
+    return {
+      artistIds: artistRows.map((row) => row.id),
+      albumIds: albumRows.map((row) => row.id),
+    };
   }
 
   /** The Contributors of a Track, in the order they first contributed. */
