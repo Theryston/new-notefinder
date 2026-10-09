@@ -124,6 +124,11 @@ jobs:
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
+      # The API converts the downloaded audio with ffmpeg (FFMPEG_PATH, default
+      # `ffmpeg`), and its e2e suite runs that conversion for real.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       # The Music catalog e2e suite creates the MusicBrainz schema with
       # mbslave's SQL scripts, downloaded from GitHub at the pinned tag and
       # kept in node_modules/.cache (apps/music-catalog/test/setup/
