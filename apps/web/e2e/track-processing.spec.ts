@@ -213,7 +213,11 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('heading', { name: processing.failed.title }),
       ).toHaveCount(1);
-      await expect(page.getByText(processing.status.FAILED)).toHaveCount(0);
+      // The stage line names the step, not a bare "Failed" that would repeat
+      // the failure heading.
+      await expect(page.locator('p[aria-live="polite"]')).toHaveText(
+        t('stage.stopped', { current: 4, total: 5 }),
+      );
     });
 
     test('shows only a line once the Processing has completed', async ({
