@@ -60,6 +60,8 @@ export const trackProcessings = pgTable(
     runpodJobId: text(),
     startedAt: timestamp({ withTimezone: true }),
     finishedAt: timestamp({ withTimezone: true }),
+    // Set once the Contributors were emailed about the end, so they are emailed once.
+    contributorsNotifiedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (table) => [

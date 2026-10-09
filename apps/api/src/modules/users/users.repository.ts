@@ -11,6 +11,13 @@ export type CurrentUserRow = Omit<CurrentUser, 'createdAt'> & {
 };
 
 /** The fields other Users see of an account: no email, no role. */
+/** The fields a notification email needs about a User. */
+export type EmailRecipientRow = {
+  id: string;
+  email: string;
+  locale: Locale;
+};
+
 export type PublicUserRow = {
   id: string;
   username: string | null;
@@ -84,6 +91,21 @@ export class UsersRepository {
   /** Sets the language the User's emails follow. */
   async setLocale(id: string, locale: Locale): Promise<void> {
     await this.txHost.tx.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
+  /** The email and language of the Users given, for the ones that exist. */
+  async findEmailRecipients(ids: string[]): Promise<EmailRecipientRow[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.txHost.tx
+      .select({
+        id: users.id,
+        email: users.email,
+        locale: users.locale,
+      })
+      .from(users)
+      .where(inArray(users.id, ids));
   }
 
   /** The public fields of the Users given, for the ones that exist. */

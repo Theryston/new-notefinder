@@ -72,7 +72,8 @@ export class TrackPipelineService {
     if (latest?.status !== 'QUEUED') {
       return;
     }
-    await this.enqueueStep(latest.id, firstPipelineStep());
+    // A retry's row names the step it starts at; a first run starts at the first step.
+    await this.enqueueStep(latest.id, latest.resumeFrom ?? firstPipelineStep());
   }
 
   /**

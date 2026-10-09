@@ -16,6 +16,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   notInArray,
   sql,
@@ -266,6 +267,34 @@ export class TrackProcessingRepository {
     await this.txHost.tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${TRACK_REQUEST_LOCK_SCOPE}), hashtext(${userId}))`,
     );
+  }
+
+  /**
+   * Claims the emails of a Processing that ended: the one call that finds it
+   * ended and unclaimed returns its Track and how it ended, so the Contributors
+   * are emailed once however many jobs run after the end. Undefined while the
+   * Processing runs, or when its emails were claimed already.
+   */
+  async claimContributorEmails(
+    processingId: string,
+  ): Promise<{ trackId: string; status: TrackProcessingStatus } | undefined> {
+    const [row] = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ contributorsNotifiedAt: new Date() })
+      .where(
+        and(
+          eq(trackProcessings.id, processingId),
+          inArray(trackProcessings.status, [
+            ...TRACK_PROCESSING_TERMINAL_STATUSES,
+          ]),
+          isNull(trackProcessings.contributorsNotifiedAt),
+        ),
+      )
+      .returning({
+        trackId: trackProcessings.trackId,
+        status: trackProcessings.status,
+      });
+    return row;
   }
 
   /** The non-terminal Processings that the User's Contributions started. */

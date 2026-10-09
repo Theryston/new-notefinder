@@ -51,6 +51,17 @@ export class TrackProcessingService {
     };
   }
 
+  /**
+   * Answers the same `RESOURCE_MOVED` or `NOT_FOUND` as the read, for a write
+   * that needs the Track to exist (a retry).
+   */
+  async assertTrackExists(trackId: string): Promise<void> {
+    const header = await this.tracks.findTrackHeader(trackId);
+    if (header === undefined) {
+      await this.throwMovedOrMissing(trackId);
+    }
+  }
+
   private async throwMovedOrMissing(trackId: string): Promise<never> {
     const newId = await this.tracks.findTrackIdByLegacyId(trackId);
     if (newId !== undefined) {

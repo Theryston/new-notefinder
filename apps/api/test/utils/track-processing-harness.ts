@@ -1,11 +1,12 @@
 import {
   createTrackResultSchema,
+  type Locale,
   type Recording,
   trackProcessingStateSchema,
 } from '@notefinder/contracts';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
-import request from 'supertest';
+import request, { type Response } from 'supertest';
 import { trackProcessings } from '../../src/database/schema/track-processings.js';
 import { tracks } from '../../src/database/schema/tracks.js';
 import { CoverArtClient } from '../../src/integrations/cover-art/cover-art.client.js';
@@ -223,4 +224,30 @@ export const trackRowOf = async (testApp: TestApp, trackId: string) => {
     throw new Error(`Track ${trackId} is gone`);
   }
   return row;
+};
+
+/** A signed-in User asks for a Recording's Track in a locale; answers its ID (202). */
+export const requestTrackAs = async (
+  app: TrackProcessingApp,
+  user: User,
+  locale: Locale,
+  mbid = testMbid(1),
+): Promise<string> => {
+  const client = await signedInClient(app.testApp, user);
+  const response = await client
+    .post('/v1/tracks')
+    .send({ recordingMbid: mbid, locale })
+    .expect(202);
+  return createTrackResultSchema.parse(response.body).trackId;
+};
+
+/** A signed-in User asks to retry the Track's latest Processing, from `locale`. */
+export const retryTrackAs = async (
+  testApp: TestApp,
+  user: User,
+  trackId: string,
+  locale: string,
+): Promise<Response> => {
+  const client = await signedInClient(testApp, user);
+  return client.post(`/v1/tracks/${trackId}/processing/retry`).send({ locale });
 };

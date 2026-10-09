@@ -12,6 +12,11 @@ import {
   emailMessageSchema,
 } from './email.job.js';
 import { type OtpEmailInput, renderOtpEmail } from './otp-email.js';
+import {
+  renderTrackCompletedEmail,
+  renderTrackFailedEmail,
+  type TrackEmailInput,
+} from './track-processing-email.js';
 
 const DAY_SECONDS = 24 * 60 * 60;
 
@@ -43,5 +48,15 @@ export class EmailService {
   /** Tells the owner of an email that someone tried to sign up with it. */
   async sendAccountExists(input: AccountExistsEmailInput): Promise<void> {
     await this.send(renderAccountExistsEmail(input));
+  }
+
+  /** Tells a Contributor that their Track's notes are ready. */
+  async sendTrackCompleted(input: TrackEmailInput): Promise<void> {
+    await this.send(renderTrackCompletedEmail(input));
+  }
+
+  /** Tells a Contributor that their Track's Processing failed. */
+  async sendTrackFailed(input: TrackEmailInput): Promise<void> {
+    await this.send(renderTrackFailedEmail(input));
   }
 }

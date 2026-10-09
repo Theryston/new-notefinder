@@ -15,6 +15,13 @@ import { type CurrentUserRow, UsersRepository } from './users.repository.js';
  * The public fields of a User that other features may show (a Track's
  * Contributors). No email and no role: those never leave the users module.
  */
+/** The fields a notification email needs about a User. */
+export type EmailRecipient = {
+  id: string;
+  email: string;
+  locale: Locale;
+};
+
 export type PublicUser = {
   id: string;
   username: string | null;
@@ -90,6 +97,17 @@ export class UsersService {
    */
   setLocale(userId: string, locale: Locale): Promise<void> {
     return this.usersRepository.setLocale(userId, locale);
+  }
+
+  /**
+   * The email and language of the Users given, keyed by ID: what their
+   * notification emails need. A User that no longer exists is missing.
+   */
+  async findEmailRecipients(
+    userIds: readonly string[],
+  ): Promise<Map<string, EmailRecipient>> {
+    const rows = await this.usersRepository.findEmailRecipients([...userIds]);
+    return new Map(rows.map((row) => [row.id, row]));
   }
 
   /**

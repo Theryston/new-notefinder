@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
@@ -28,6 +29,10 @@ describe('TrackJobRunnerService', () => {
         TrackJobRunnerService,
         { provide: TrackPipelineService, useValue: pipeline },
         { provide: TrackCoverService, useValue: covers },
+        {
+          provide: TrackContributorEmailsService,
+          useValue: { notifyIfEnded: vi.fn() },
+        },
         { provide: WebRevalidationService, useValue: revalidation },
       ],
     }).compile();

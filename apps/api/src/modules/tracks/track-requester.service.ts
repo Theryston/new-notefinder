@@ -71,6 +71,28 @@ export class TrackRequesterService {
     }
   }
 
+  /**
+   * Throws `PROCESSING_LIMIT_REACHED` when the User already has as many active
+   * Processings as the limit allows. A retry starts a Processing but not a new
+   * Track, so only the active limit applies. Must run in a transaction.
+   */
+  async assertCanRetry(requester: TrackRequester): Promise<void> {
+    if (requester.role === 'ADMIN') {
+      return;
+    }
+    await this.processings.lockRequester(requester.id);
+    const activeProcessings = await this.processings.countActiveProcessings(
+      requester.id,
+    );
+    if (activeProcessings >= this.limits.activeProcessings) {
+      throw new AppException(
+        'PROCESSING_LIMIT_REACHED',
+        'Track request limit reached',
+        { limit: 'ACTIVE_PROCESSINGS', max: this.limits.activeProcessings },
+      );
+    }
+  }
+
   /** Records the language the User browses in on their account. */
   recordLocale(userId: string, locale: Locale): Promise<void> {
     return this.users.setLocale(userId, locale);
