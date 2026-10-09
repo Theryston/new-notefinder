@@ -27,6 +27,20 @@ type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
 /** The companion rows of a new Track (everything but the core row). */
 type NewTrackDetails = Omit<NewTrackRows, 'track'>;
 
+/** A Track as its Processing reads it (see `findPipelineTrack`). */
+export type PipelineTrack = {
+  id: string;
+  title: string;
+  /** In milliseconds; null when MusicBrainz has none. */
+  lengthMs: number | null;
+  coverUrl: string | null;
+  /** The artists as the credit prints them, in credit order. */
+  artistNames: string[];
+  /** Every URL the Recording links to. */
+  externalUrls: string[];
+  releases: { mbid: string; title: string; year: number | null }[];
+};
+
 /** The Track fields the Processing page's header shows. */
 export type TrackHeaderRow = {
   id: string;
@@ -121,6 +135,59 @@ export class TracksRepository {
       .where(eq(tracks.id, trackId))
       .limit(1);
     return row;
+  }
+
+  /**
+   * What a Processing of the Track works from: the title and length it matches
+   * videos against, the artists its search is made of, the links and releases
+   * the video and the cover come from. Undefined for an unknown Track.
+   */
+  async findPipelineTrack(trackId: string): Promise<PipelineTrack | undefined> {
+    const row = await this.txHost.tx.query.tracks.findFirst({
+      where: eq(tracks.id, trackId),
+      columns: {
+        id: true,
+        title: true,
+        lengthMs: true,
+        coverUrl: true,
+        artistCredit: true,
+      },
+      with: {
+        releases: { columns: { mbid: true, title: true, year: true } },
+        externalLinks: { columns: { url: true } },
+      },
+    });
+    if (row === undefined) {
+      return undefined;
+    }
+    return {
+      id: row.id,
+      title: row.title,
+      lengthMs: row.lengthMs,
+      coverUrl: row.coverUrl,
+      artistNames: row.artistCredit.map((entry) => entry.name),
+      externalUrls: row.externalLinks.map((link) => link.url),
+      releases: row.releases,
+    };
+  }
+
+  /** Stores the Track's cover, in our storage, once a Processing has found one. */
+  async setCoverUrl(trackId: string, coverUrl: string): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set({ coverUrl })
+      .where(eq(tracks.id, trackId));
+  }
+
+  /** The YouTube video the timeline plays, once a Processing has chosen it. */
+  async setYoutubeVideoId(
+    trackId: string,
+    youtubeVideoId: string,
+  ): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set({ youtubeVideoId })
+      .where(eq(tracks.id, trackId));
   }
 
   /** The Track a legacy Track ID was reprocessed into, if it was. */

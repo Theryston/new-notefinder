@@ -36,6 +36,13 @@ const S3_MANDATORY = [
 ] as const;
 const S3_OPTIONAL = ['S3_ENDPOINT', 'S3_FORCE_PATH_STYLE'] as const;
 
+const BRIGHT_DATA_KEYS = [
+  'BRIGHT_DATA_PROXY_HOST',
+  'BRIGHT_DATA_PROXY_PORT',
+  'BRIGHT_DATA_PROXY_USERNAME',
+  'BRIGHT_DATA_PROXY_PASSWORD',
+] as const;
+
 // https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
 const S3_BUCKET_NAME = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
 
@@ -142,6 +149,14 @@ const envSchema = z
     PROCESSING_MAX_DURATION_SECONDS: optional(
       z.coerce.number().int().positive(),
     ),
+    // Bright Data proxy for YouTube Music requests, used only when set. All
+    // four are needed together, see the check below.
+    BRIGHT_DATA_PROXY_HOST: optional(z.string().min(1)),
+    BRIGHT_DATA_PROXY_PORT: optional(
+      z.coerce.number().int().min(1).max(65_535),
+    ),
+    BRIGHT_DATA_PROXY_USERNAME: optional(z.string().min(1)),
+    BRIGHT_DATA_PROXY_PASSWORD: optional(z.string().min(1)),
   })
   .check((ctx) => {
     const env = ctx.value;
@@ -155,6 +170,19 @@ const envSchema = z
           input: env,
           path: [key],
           message: 'Required when any S3_ variable is set',
+        });
+      }
+    }
+    const brightDataAnySet = BRIGHT_DATA_KEYS.some(
+      (key) => env[key] !== undefined,
+    );
+    for (const key of BRIGHT_DATA_KEYS) {
+      if (brightDataAnySet && env[key] === undefined) {
+        ctx.issues.push({
+          code: 'custom',
+          input: env,
+          path: [key],
+          message: 'Required when any BRIGHT_DATA_PROXY_ variable is set',
         });
       }
     }

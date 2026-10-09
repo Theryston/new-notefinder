@@ -1,0 +1,318 @@
+import { getQueueToken } from '@nestjs/bullmq';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { UnrecoverableError } from 'bullmq';
+import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { TrackPipelineService } from './track-pipeline.service.js';
+import { coverJobId, TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
+import { TrackProcessingRepository } from './track-processing.repository.js';
+import { TrackProcessingFailure } from './track-processing-failure.js';
+import { TrackVideoStepService } from './track-video-step.service.js';
+
+// The pipeline's decisions: what a step job does with its outcome. The rows
+// and the queue are fakes; the database-facing guards are covered by e2e.
+
+const queue = { add: vi.fn() };
+const processings = {
+  findLatestProcessing: vi.fn(),
+  findProcessing: vi.fn(),
+  markStepStarted: vi.fn(),
+  markFailed: vi.fn(),
+  markCompleted: vi.fn(),
+};
+const videoStep = { run: vi.fn() };
+const revalidation = { revalidate: vi.fn() };
+
+const processing = (overrides: Record<string, unknown> = {}) => ({
+  id: 'processing-1',
+  trackId: 'track-1',
+  status: 'QUEUED',
+  videoId: null,
+  videoSource: null,
+  ...overrides,
+});
+
+const findingVideoJob = {
+  processingId: 'processing-1',
+  step: 'FINDING_VIDEO',
+} as const;
+
+describe('TrackPipelineService', () => {
+  let pipeline: TrackPipelineService;
+  let moduleRef: TestingModule;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    // `clearAllMocks` keeps implementations: each case starts from success.
+    videoStep.run.mockResolvedValue('https://img.test/artwork.jpg');
+    processings.markStepStarted.mockResolvedValue(true);
+    processings.markFailed.mockResolvedValue(true);
+    processings.markCompleted.mockResolvedValue(true);
+    queue.add.mockResolvedValue(undefined);
+    moduleRef = await Test.createTestingModule({
+      providers: [
+        TrackPipelineService,
+        { provide: getQueueToken(TRACK_PROCESSING_QUEUE), useValue: queue },
+        { provide: TrackProcessingRepository, useValue: processings },
+        { provide: TrackVideoStepService, useValue: videoStep },
+        { provide: WebRevalidationService, useValue: revalidation },
+      ],
+    }).compile();
+    pipeline = moduleRef.get(TrackPipelineService);
+  });
+
+  afterEach(async () => {
+    await moduleRef.close();
+  });
+
+  describe('startIfQueued', () => {
+    it('queues the first step of a Processing that has not started', async () => {
+      processings.findLatestProcessing.mockResolvedValue({
+        id: 'processing-1',
+        status: 'QUEUED',
+      });
+
+      await pipeline.startIfQueued('track-1');
+
+      expect(processings.findLatestProcessing).toHaveBeenCalledWith('track-1');
+      expect(queue.add).toHaveBeenCalledWith('run-step', findingVideoJob, {
+        jobId: 'step-processing-1-FINDING_VIDEO',
+      });
+    });
+
+    it('queues nothing for a Processing that already started or ended', async () => {
+      for (const status of ['FINDING_VIDEO', 'COMPLETED', 'FAILED']) {
+        processings.findLatestProcessing.mockResolvedValueOnce({
+          id: 'processing-1',
+          status,
+        });
+        await pipeline.startIfQueued('track-1');
+      }
+
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+
+    it('queues nothing for a Track with no Processing', async () => {
+      processings.findLatestProcessing.mockResolvedValue(undefined);
+
+      await pipeline.startIfQueued('track-1');
+
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('runStep', () => {
+    it('refuses a step this build does not run, without retrying it', async () => {
+      await expect(
+        pipeline.runStep(
+          { processingId: 'processing-1', step: 'DOWNLOADING_AUDIO' },
+          true,
+        ),
+      ).rejects.toBeInstanceOf(UnrecoverableError);
+
+      expect(processings.findProcessing).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for a Processing that is gone', async () => {
+      processings.findProcessing.mockResolvedValue(undefined);
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(processings.markStepStarted).not.toHaveBeenCalled();
+      expect(videoStep.run).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for a Processing that is past the step', async () => {
+      processings.findProcessing.mockResolvedValue(
+        processing({ status: 'COMPLETED' }),
+      );
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(processings.markStepStarted).not.toHaveBeenCalled();
+      expect(videoStep.run).not.toHaveBeenCalled();
+    });
+
+    it('stops at once when the guarded start finds the Processing moved on', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      processings.markStepStarted.mockResolvedValue(false);
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(videoStep.run).not.toHaveBeenCalled();
+      expect(queue.add).not.toHaveBeenCalled();
+      expect(processings.markCompleted).not.toHaveBeenCalled();
+      expect(processings.markFailed).not.toHaveBeenCalled();
+    });
+
+    it('starts the step only from the statuses it may run in', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(processings.markStepStarted).toHaveBeenCalledWith(
+        'processing-1',
+        'FINDING_VIDEO',
+        ['QUEUED', 'FINDING_VIDEO'],
+      );
+    });
+
+    it('completes the Processing after the last step, revalidating the Track first', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(videoStep.run).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'processing-1', trackId: 'track-1' }),
+      );
+      expect(revalidation.revalidate).toHaveBeenCalledWith([
+        'track:track-1',
+        'tracks',
+      ]);
+      expect(processings.markCompleted).toHaveBeenCalledWith(
+        'processing-1',
+        'FINDING_VIDEO',
+      );
+      expect(revalidation.revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+        processings.markCompleted.mock.invocationCallOrder[0] ?? 0,
+      );
+    });
+
+    it('queues the cover keyed by its Processing, with the artwork the video step found', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(queue.add).toHaveBeenCalledWith(
+        'store-cover',
+        {
+          trackId: 'track-1',
+          processingId: 'processing-1',
+          artworkUrl: 'https://img.test/artwork.jpg',
+        },
+        { jobId: coverJobId('processing-1') },
+      );
+    });
+
+    it('keeps the cover job without artwork when the video step did not search', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      videoStep.run.mockResolvedValue(undefined);
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(queue.add).toHaveBeenCalledWith(
+        'store-cover',
+        expect.not.objectContaining({ artworkUrl: expect.anything() }),
+        { jobId: coverJobId('processing-1') },
+      );
+    });
+
+    it('ends the Processing at once on a failure that repeating cannot fix', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      videoStep.run.mockRejectedValue(
+        new TrackProcessingFailure('VIDEO_NOT_FOUND'),
+      );
+
+      await expect(pipeline.runStep(findingVideoJob, false)).resolves.toBe(
+        undefined,
+      );
+
+      expect(processings.markFailed).toHaveBeenCalledWith(
+        'processing-1',
+        ['QUEUED', 'FINDING_VIDEO'],
+        { code: 'VIDEO_NOT_FOUND', resumeFrom: 'FINDING_VIDEO' },
+      );
+      expect(processings.markCompleted).not.toHaveBeenCalled();
+      expect(queue.add).not.toHaveBeenCalled();
+    });
+
+    it('lets BullMQ retry a retryable failure before its last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      const failure = new TrackProcessingFailure('DOWNLOAD_FAILED');
+      videoStep.run.mockRejectedValue(failure);
+
+      await expect(pipeline.runStep(findingVideoJob, false)).rejects.toBe(
+        failure,
+      );
+
+      expect(processings.markFailed).not.toHaveBeenCalled();
+    });
+
+    it('marks a retryable failure FAILED with its code on the last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      videoStep.run.mockRejectedValue(
+        new TrackProcessingFailure('DOWNLOAD_FAILED'),
+      );
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(processings.markFailed).toHaveBeenCalledWith(
+        'processing-1',
+        ['QUEUED', 'FINDING_VIDEO'],
+        { code: 'DOWNLOAD_FAILED', resumeFrom: 'FINDING_VIDEO' },
+      );
+    });
+
+    it('lets BullMQ retry an unexpected error before its last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      const error = new Error('YouTube is down');
+      videoStep.run.mockRejectedValue(error);
+
+      await expect(pipeline.runStep(findingVideoJob, false)).rejects.toBe(
+        error,
+      );
+
+      expect(processings.markFailed).not.toHaveBeenCalled();
+    });
+
+    it('marks a failure after the video is saved INTERNAL on the last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      queue.add.mockRejectedValueOnce(new Error('redis is down'));
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(videoStep.run).toHaveBeenCalled();
+      expect(processings.markFailed).toHaveBeenCalledWith(
+        'processing-1',
+        ['QUEUED', 'FINDING_VIDEO'],
+        { code: 'INTERNAL', resumeFrom: 'FINDING_VIDEO' },
+      );
+      expect(processings.markCompleted).not.toHaveBeenCalled();
+    });
+
+    it('lets BullMQ retry a failure after the video is saved before its last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      queue.add.mockRejectedValueOnce(new Error('redis is down'));
+
+      await expect(pipeline.runStep(findingVideoJob, false)).rejects.toThrow(
+        'redis is down',
+      );
+      expect(processings.markFailed).not.toHaveBeenCalled();
+    });
+
+    it('lets a late failure leave a Processing that already completed as it is', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      videoStep.run.mockRejectedValue(new Error('YouTube is down'));
+      processings.markFailed.mockResolvedValue(false);
+
+      await expect(pipeline.runStep(findingVideoJob, true)).resolves.toBe(
+        undefined,
+      );
+
+      expect(processings.markFailed).toHaveBeenCalledTimes(1);
+    });
+
+    it('marks an unexpected error INTERNAL on the last attempt', async () => {
+      processings.findProcessing.mockResolvedValue(processing());
+      videoStep.run.mockRejectedValue(new Error('YouTube is down'));
+
+      await pipeline.runStep(findingVideoJob, true);
+
+      expect(processings.markFailed).toHaveBeenCalledWith(
+        'processing-1',
+        ['QUEUED', 'FINDING_VIDEO'],
+        { code: 'INTERNAL', resumeFrom: 'FINDING_VIDEO' },
+      );
+      expect(revalidation.revalidate).not.toHaveBeenCalled();
+    });
+  });
+});

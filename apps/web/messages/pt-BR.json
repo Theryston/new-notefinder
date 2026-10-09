@@ -72,6 +72,14 @@
         "COMPLETED": "As notas estão prontas",
         "FAILED": "O processamento falhou"
       },
+      "video": {
+        "title": "Vídeo escolhido",
+        "watch": "Assistir no YouTube",
+        "source": {
+          "musicbrainz": "Link do MusicBrainz",
+          "youtube_music": "Melhor resultado do YouTube Music"
+        }
+      },
       "closeNote": "Você pode fechar esta página. Os colaboradores recebem um e-mail quando as notas estiverem prontas.",
       "completed": {
         "title": "As notas estão prontas",

@@ -72,6 +72,14 @@
         "COMPLETED": "Notes are ready",
         "FAILED": "Processing failed"
       },
+      "video": {
+        "title": "Chosen video",
+        "watch": "Watch on YouTube",
+        "source": {
+          "musicbrainz": "Linked from MusicBrainz",
+          "youtube_music": "Best YouTube Music match"
+        }
+      },
       "closeNote": "You can close this page. Contributors get an email when the notes are ready.",
       "completed": {
         "title": "Notes are ready",

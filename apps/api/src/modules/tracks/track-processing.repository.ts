@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { TRACK_PROCESSING_TERMINAL_STATUSES } from '@notefinder/contracts';
+import {
+  TRACK_PROCESSING_TERMINAL_STATUSES,
+  type TrackProcessingFailureCode,
+  type TrackProcessingStatus,
+  type TrackProcessingStep,
+  type TrackProcessingVideoSource,
+} from '@notefinder/contracts';
 import {
   and,
   asc,
@@ -9,6 +15,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   lt,
   notInArray,
   sql,
@@ -28,6 +35,26 @@ const TRACK_REQUEST_LOCK_SCOPE = 'tracks.requests';
 /** A Contribution's kind, as the schema stores it. */
 export type TrackContributionKind =
   (typeof trackContributionKind.enumValues)[number];
+
+/** A Processing as one of its step jobs reads it. */
+export type ProcessingForStep = {
+  id: string;
+  trackId: string;
+  status: TrackProcessingStatus;
+  /** The video a run already chose; a retry keeps it. */
+  videoId: string | null;
+  videoSource: TrackProcessingVideoSource | null;
+};
+
+/** The Processing with this ID, while its status is one of `statuses`. */
+const processingInStatus = (
+  processingId: string,
+  statuses: readonly TrackProcessingStatus[],
+) =>
+  and(
+    eq(trackProcessings.id, processingId),
+    inArray(trackProcessings.status, [...statuses]),
+  );
 
 /**
  * Processings, Contributors and Contributions of Tracks. The Track itself is
@@ -123,6 +150,109 @@ export class TrackProcessingRepository {
       .from(trackContributors)
       .where(eq(trackContributors.trackId, trackId))
       .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
+  }
+
+  /** A Processing as its step job reads it; undefined for an unknown ID. */
+  async findProcessing(
+    processingId: string,
+  ): Promise<ProcessingForStep | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        id: trackProcessings.id,
+        trackId: trackProcessings.trackId,
+        status: trackProcessings.status,
+        videoId: trackProcessings.videoId,
+        videoSource: trackProcessings.videoSource,
+      })
+      .from(trackProcessings)
+      .where(eq(trackProcessings.id, processingId))
+      .limit(1);
+    return row;
+  }
+
+  // The writes below are guarded by the status the job expects. A job that
+  // runs late (redelivered, or stalled past its lock) finds the Processing
+  // moved on, and its write matches no row: the answer is false, and nothing
+  // changes. The guards are the database's answer to a race; the reads a job
+  // does first only save work.
+
+  /**
+   * A step started: the status moves to it, the first start is kept. False
+   * when the Processing is no longer in one of the `dueStatuses` (it moved on
+   * or ended meanwhile).
+   */
+  async markStepStarted(
+    processingId: string,
+    step: TrackProcessingStep,
+    dueStatuses: readonly TrackProcessingStatus[],
+  ): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: step,
+        startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
+      })
+      .where(processingInStatus(processingId, dueStatuses))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
+  /** The video a step chose, and where it was found, while the step runs. */
+  async saveVideo(
+    processingId: string,
+    step: TrackProcessingStep,
+    video: { videoId: string; source: TrackProcessingVideoSource },
+  ): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ videoId: video.videoId, videoSource: video.source })
+      .where(processingInStatus(processingId, [step]))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
+  /** The last step is done: the Processing completes. False if it moved on. */
+  async markCompleted(
+    processingId: string,
+    lastStep: TrackProcessingStep,
+  ): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: 'COMPLETED',
+        failureCode: null,
+        resumeFrom: null,
+        finishedAt: new Date(),
+      })
+      .where(processingInStatus(processingId, [lastStep]))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
+  /**
+   * The Processing failed at a step; a retry will resume at that step. False
+   * when it is no longer in one of the `dueStatuses`: a Processing that
+   * already completed or failed keeps its outcome.
+   */
+  async markFailed(
+    processingId: string,
+    dueStatuses: readonly TrackProcessingStatus[],
+    failure: {
+      code: TrackProcessingFailureCode;
+      resumeFrom: TrackProcessingStep;
+    },
+  ): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({
+        status: 'FAILED',
+        failureCode: failure.code,
+        resumeFrom: failure.resumeFrom,
+        finishedAt: new Date(),
+      })
+      .where(processingInStatus(processingId, dueStatuses))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
   }
 
   /**
