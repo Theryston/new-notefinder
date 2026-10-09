@@ -52,8 +52,8 @@ describe('YouTubeMusicClient', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
-  it('searches the songs first, then the videos, mapped to plain videos', async () => {
-    const songs = {
+  it('searches the songs, mapped to plain videos', async () => {
+    music.search.mockResolvedValue({
       songs: {
         contents: [
           {
@@ -66,23 +66,7 @@ describe('YouTubeMusicClient', () => {
           },
         ],
       },
-    };
-    const videos = {
-      videos: {
-        contents: [
-          {
-            id: 'bbbbbbbbbbb',
-            title: 'Bohemian Rhapsody (Official Video)',
-            item_type: 'video',
-            thumbnails: [],
-          },
-        ],
-      },
-    };
-    music.search.mockImplementation(
-      async (_query: string, filter?: { type: string }) =>
-        filter?.type === 'song' ? songs : videos,
-    );
+    });
 
     await expect(
       client.searchSongs('Queen Bohemian Rhapsody'),
@@ -95,30 +79,19 @@ describe('YouTubeMusicClient', () => {
         kind: 'song',
         artworkUrl: 'https://img.test/a.jpg',
       },
-      {
-        videoId: 'bbbbbbbbbbb',
-        title: 'Bohemian Rhapsody (Official Video)',
-        artists: [],
-        durationSeconds: null,
-        kind: 'video',
-        artworkUrl: null,
-      },
     ]);
   });
 
-  // The untyped search answers a mixed list of sections with no "songs" and
-  // "videos" shelves and no length on songs, so every search was empty.
-  it('asks for a typed search of each kind, never the mixed one', async () => {
+  // The untyped search answers a mixed list of sections with no "songs"
+  // shelf and no length on songs, so every search was empty.
+  it('asks for a songs-only search, never the mixed one or the videos', async () => {
     music.search.mockResolvedValue({});
 
     await client.searchSongs('Queen Bohemian Rhapsody');
 
-    expect(music.search).toHaveBeenCalledTimes(2);
+    expect(music.search).toHaveBeenCalledTimes(1);
     expect(music.search).toHaveBeenCalledWith('Queen Bohemian Rhapsody', {
       type: 'song',
-    });
-    expect(music.search).toHaveBeenCalledWith('Queen Bohemian Rhapsody', {
-      type: 'video',
     });
   });
 
