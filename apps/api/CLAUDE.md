@@ -311,6 +311,13 @@ isn't obvious), so the import script can be written from those notes.
   `track-audio-polling.ts`. `RAPIDAPI_API_KEY`, `RUNPOD_API_KEY` and
   `RUNPOD_ENDPOINT_ID` are required in production. See
   `docs/adr/0004-processing-pipeline.md`.
+- The last step, the lyrics, stores the vocals as MP3 and transcribes them
+  with OpenAI `whisper-1` (`OPENAI_API_KEY`, required in production: the
+  transcription factory refuses to boot without it). Its failures are retried;
+  on its last attempt the Processing completes without Timed lyrics
+  (`OPTIONAL_STEPS` in `track-pipeline-steps.ts`). The music MP3 is a job of
+  its own on the `track-mp3` queue, so a failure there never holds the lyrics
+  back.
 - Redis also backs response caching of expensive reads (`CacheService`, keys
   built with `redisKey(feature, …)`) and rate limiting (`@nestjs/throttler`
   with the in-house `RedisThrottlerStorage`; `@nest-lab/throttler-storage-redis`

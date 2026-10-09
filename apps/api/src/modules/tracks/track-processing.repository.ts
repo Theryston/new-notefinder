@@ -16,6 +16,7 @@ import {
   type TrackContributionKind,
   TrackContributorRepository,
 } from './track-contributor.repository.js';
+import type { Mp3Kind, StoredAudioUrls } from './track-processing-outputs.js';
 import type { TrackProcessingRow } from './track-processing-view.js';
 import { TrackRequestLimitRepository } from './track-request-limit.repository.js';
 
@@ -290,6 +291,47 @@ export class TrackProcessingRepository {
       })
       .where(processingInStatus(processingId, dueStatuses))
       .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
+  /** The audio URLs of a Processing; the Processing must exist. */
+  async findAudioUrls(processingId: string): Promise<StoredAudioUrls> {
+    const row = await this.txHost.tx.query.trackProcessings.findFirst({
+      where: eq(trackProcessings.id, processingId),
+      columns: {
+        musicWavUrl: true,
+        musicMp3Url: true,
+        vocalsWavUrl: true,
+        vocalsMp3Url: true,
+      },
+    });
+    if (row === undefined) throw new Error(`No Processing ${processingId}`);
+    return row;
+  }
+
+  /** Saves the URL of an MP3 a step stored, whatever the row's state. */
+  async saveMp3Url(
+    processingId: string,
+    kind: Mp3Kind,
+    url: string,
+  ): Promise<void> {
+    const values = {
+      music: { musicMp3Url: url },
+      vocals: { vocalsMp3Url: url },
+    } satisfies Record<Mp3Kind, Partial<typeof trackProcessings.$inferInsert>>;
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set(values[kind])
+      .where(eq(trackProcessings.id, processingId));
+  }
+
+  /** Locks the row while it is in the lyrics stage: false when it moved on. */
+  async lockLyricsStage(processingId: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .select({ id: trackProcessings.id })
+      .from(trackProcessings)
+      .where(processingInStatus(processingId, ['EXTRACTING_LYRICS']))
+      .for('update');
     return rows.length > 0;
   }
 

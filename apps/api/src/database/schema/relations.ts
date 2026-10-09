@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { albumArtists, albums, legacyAlbumIds } from './albums.js';
 import { artists, legacyArtistIds, trackArtists } from './artists.js';
 import { accounts, sessions } from './auth.js';
+import { trackLyricLines, trackLyricWords } from './track-lyrics.js';
 import {
   legacyTrackIds,
   trackExternalLinks,
@@ -36,6 +37,23 @@ export const tracksRelations = relations(tracks, ({ many }) => ({
   tags: many(trackTags),
   externalLinks: many(trackExternalLinks),
 }));
+
+export const trackLyricLinesRelations = relations(
+  trackLyricLines,
+  ({ many }) => ({
+    words: many(trackLyricWords),
+  }),
+);
+
+export const trackLyricWordsRelations = relations(
+  trackLyricWords,
+  ({ one }) => ({
+    line: one(trackLyricLines, {
+      fields: [trackLyricWords.lineId],
+      references: [trackLyricLines.id],
+    }),
+  }),
+);
 
 export const legacyTrackIdsRelations = relations(legacyTrackIds, ({ one }) => ({
   track: one(tracks, {

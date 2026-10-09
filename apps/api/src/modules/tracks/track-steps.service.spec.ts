@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import type { ProcessingForStep } from './track-processing.repository.js';
 import { TrackStepsService } from './track-steps.service.js';
@@ -10,6 +11,7 @@ import { TrackVideoStepService } from './track-video-step.service.js';
 const video = { run: vi.fn() };
 const audio = { run: vi.fn() };
 const noteDetection = { extractVocals: vi.fn(), detectNotes: vi.fn() };
+const lyrics = { run: vi.fn() };
 
 const processing: ProcessingForStep = {
   id: 'processing-1',
@@ -31,6 +33,7 @@ describe('TrackStepsService', () => {
         { provide: TrackVideoStepService, useValue: video },
         { provide: TrackAudioService, useValue: audio },
         { provide: TrackNoteDetectionService, useValue: noteDetection },
+        { provide: TrackLyricsStepService, useValue: lyrics },
       ],
     }).compile();
     steps = moduleRef.get(TrackStepsService);
