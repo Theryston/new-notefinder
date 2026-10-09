@@ -214,6 +214,29 @@ export class TrackProcessingRepository {
     return rows.length > 0;
   }
 
+  /** The URL of the music WAV the download stored; null while it has none. */
+  async findMusicWavUrl(processingId: string): Promise<string | null> {
+    const [row] = await this.txHost.tx
+      .select({ musicWavUrl: trackProcessings.musicWavUrl })
+      .from(trackProcessings)
+      .where(eq(trackProcessings.id, processingId))
+      .limit(1);
+    return row?.musicWavUrl ?? null;
+  }
+
+  /**
+   * The music WAV the download stored, while the download step runs. False when
+   * the Processing is no longer in that step, which keeps its row as it is.
+   */
+  async saveMusicWavUrl(processingId: string, url: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ musicWavUrl: url })
+      .where(processingInStatus(processingId, ['DOWNLOADING_AUDIO']))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
   /** The last step is done: the Processing completes. False if it moved on. */
   async markCompleted(
     processingId: string,
@@ -271,11 +294,7 @@ export class TrackProcessingRepository {
     );
   }
 
-  /**
-   * The Track and how a Processing ended, while its Contributors are still to
-   * be emailed: the Processing is terminal and no email round finished for it.
-   * Undefined otherwise.
-   */
+  /** The Track and end of a terminal Processing whose Contributors are not emailed yet. */
   async findEndedWithoutEmails(
     processingId: string,
   ): Promise<{ trackId: string; status: TrackProcessingStatus } | undefined> {
@@ -287,21 +306,14 @@ export class TrackProcessingRepository {
       .from(trackProcessings)
       .where(
         and(
-          eq(trackProcessings.id, processingId),
-          inArray(trackProcessings.status, [
-            ...TRACK_PROCESSING_TERMINAL_STATUSES,
-          ]),
+          processingInStatus(processingId, TRACK_PROCESSING_TERMINAL_STATUSES),
           isNull(trackProcessings.contributorsNotifiedAt),
         ),
-      )
-      .limit(1);
+      );
     return row;
   }
 
-  /**
-   * Records that every Contributor email of a Processing was queued. Called only
-   * after the enqueues succeeded, so a failed round is replayed, never skipped.
-   */
+  /** Records that a Processing's Contributor emails were all queued (see the notifier). */
   async markContributorsEmailed(processingId: string): Promise<void> {
     await this.txHost.tx
       .update(trackProcessings)

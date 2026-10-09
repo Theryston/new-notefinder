@@ -16,6 +16,12 @@ cp apps/api/.env.example apps/api/.env
 nub run dev --filter=api     # http://localhost:3333
 ```
 
+The API needs `ffmpeg` installed: a Processing converts the audio it downloads
+with it (install it with your package manager, e.g. `apt install ffmpeg` or
+`brew install ffmpeg`, or point `FFMPEG_PATH` at the binary). The download
+itself goes through RapidAPI and needs `RAPIDAPI_API_KEY`, required in
+production (the API refuses to boot without it there).
+
 ## Database
 
 Drizzle ORM on Postgres. Run these from `apps/api`:

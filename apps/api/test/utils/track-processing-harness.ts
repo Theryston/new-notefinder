@@ -9,6 +9,7 @@ import sharp from 'sharp';
 import request, { type Response } from 'supertest';
 import { trackProcessings } from '../../src/database/schema/track-processings.js';
 import { tracks } from '../../src/database/schema/tracks.js';
+import { AudioDownloadClient } from '../../src/integrations/audio-download/audio-download.client.js';
 import { CoverArtClient } from '../../src/integrations/cover-art/cover-art.client.js';
 import { WEB_REVALIDATION_QUEUE } from '../../src/integrations/web-revalidation/web-revalidation.job.js';
 import { YouTubeMusicClient } from '../../src/integrations/youtube-music/youtube-music.client.js';
@@ -26,6 +27,7 @@ import {
   testMbid,
   type User,
 } from './factories.js';
+import { FakeAudioDownload } from './fake-audio-download.js';
 import { FakeCoverArt } from './fake-cover-art.js';
 import {
   FAKE_CATALOG_API_KEY,
@@ -109,6 +111,8 @@ export type TrackProcessingApp = {
   recordings: Map<string, Recording>;
   youtube: FakeYouTubeMusic;
   coverArt: FakeCoverArt;
+  /** RapidAPI's audio download; the conversion and ffmpeg run for real. */
+  audio: FakeAudioDownload;
   close: () => Promise<void>;
 };
 
@@ -118,6 +122,7 @@ export const startTrackProcessingApp =
     const recordings = new Map<string, Recording>();
     const youtube = new FakeYouTubeMusic();
     const coverArt = new FakeCoverArt();
+    const audio = new FakeAudioDownload();
     const catalog = await startFakeMusicCatalog((payload) => {
       const recording = recordings.get(String(payload.mbid));
       if (recording === undefined) {
@@ -138,7 +143,9 @@ export const startTrackProcessingApp =
           .overrideProvider(YouTubeMusicClient)
           .useValue(youtube)
           .overrideProvider(CoverArtClient)
-          .useValue(coverArt),
+          .useValue(coverArt)
+          .overrideProvider(AudioDownloadClient)
+          .useValue(audio),
     };
     const testApp = await createTestApp(options);
     return {
@@ -147,6 +154,7 @@ export const startTrackProcessingApp =
       recordings,
       youtube,
       coverArt,
+      audio,
       close: async () => {
         await testApp.close();
         await catalog.close();
@@ -163,6 +171,7 @@ export const resetTrackProcessingApp = async (
   app.recordings.set(testMbid(1), bohemian());
   app.youtube.reset();
   app.coverArt.reset();
+  app.audio.reset();
   app.testApp.queues[TRACK_PROCESSING_QUEUE]?.added.splice(0);
   app.testApp.queues[WEB_REVALIDATION_QUEUE]?.added.splice(0);
 };

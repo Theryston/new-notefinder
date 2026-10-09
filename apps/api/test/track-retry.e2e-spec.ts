@@ -7,6 +7,7 @@ import {
 } from '../src/database/schema/track-contributors.js';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
 import { users } from '../src/database/schema/users.js';
+import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
 import { createAuthClient } from './utils/auth.js';
 import type { TestApp } from './utils/create-test-app.js';
@@ -328,5 +329,43 @@ describe('Track retry (e2e)', () => {
     const response = await retryAs(admin, trackId, 'en');
 
     expect(response.status).toBe(202);
+  });
+
+  it('keeps the WAV a failed run stored, so the retry downloads nothing again', async () => {
+    const creator = await createPasswordUser(testApp.db);
+    const revalidations = testApp.queues[WEB_REVALIDATION_QUEUE];
+    if (revalidations === undefined) {
+      throw new Error('The revalidation queue is not faked');
+    }
+    // The download step stores the WAV, then the last step's refresh fails:
+    // the Processing ends FAILED at DOWNLOADING_AUDIO with the WAV's URL saved.
+    const add = revalidations.add;
+    revalidations.add = () => Promise.reject(new Error('Redis is down'));
+    const trackId = await requestAs(creator, 'en');
+    try {
+      await runTrackJobs(testApp);
+    } finally {
+      revalidations.add = add;
+    }
+    const failed = await processingRowOf(testApp, trackId);
+    expect(failed).toMatchObject({
+      status: 'FAILED',
+      resumeFrom: 'DOWNLOADING_AUDIO',
+    });
+    expect(failed.musicWavUrl).not.toBeNull();
+    expect(app.audio.downloads).toHaveLength(1);
+
+    await retryAs(await createPasswordUser(testApp.db), trackId, 'en');
+    await runTrackJobs(testApp);
+
+    expect(app.audio.requests).toHaveLength(1);
+    expect(app.audio.downloads).toHaveLength(1);
+    const retry = (await processingsOf(trackId)).find(
+      (row) => row.id !== failed.id,
+    );
+    expect(retry).toMatchObject({
+      status: 'COMPLETED',
+      musicWavUrl: failed.musicWavUrl,
+    });
   });
 });

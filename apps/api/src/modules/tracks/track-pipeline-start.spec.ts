@@ -4,7 +4,7 @@ import { WebRevalidationService } from '../../integrations/web-revalidation/web-
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
-import { TrackVideoStepService } from './track-video-step.service.js';
+import { TrackStepsService } from './track-steps.service.js';
 
 // Where a queued Processing's first step job starts: the first step of a first
 // run, and the step a retry resumes at (the row keeps it while it is queued).
@@ -24,7 +24,7 @@ describe('TrackPipelineService.startIfQueued', () => {
         TrackPipelineService,
         { provide: getQueueToken(TRACK_PROCESSING_QUEUE), useValue: queue },
         { provide: TrackProcessingRepository, useValue: processings },
-        { provide: TrackVideoStepService, useValue: {} },
+        { provide: TrackStepsService, useValue: {} },
         { provide: WebRevalidationService, useValue: {} },
       ],
     }).compile();
