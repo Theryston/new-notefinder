@@ -28,6 +28,22 @@ describe('parseEnv download settings', () => {
     });
   });
 
+  it('requires the RapidAPI key in production', () => {
+    const production = {
+      ...required,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+      REVALIDATE_SECRET: 'x'.repeat(32),
+      RESEND_API_KEY: 're_123',
+    };
+
+    expect(() => parseEnv(production)).toThrow('RAPIDAPI_API_KEY');
+    expect(
+      parseEnv({ ...production, RAPIDAPI_API_KEY: 'rapid-key' })
+        .RAPIDAPI_API_KEY,
+    ).toBe('rapid-key');
+  });
+
   it('counts blank values as unset', () => {
     const env = parseEnv({
       ...required,

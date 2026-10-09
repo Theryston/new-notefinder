@@ -80,12 +80,12 @@ describe('Track Processing download (e2e)', () => {
       failureCode: null,
     });
 
+    // One object per Processing, so a later Processing never overwrites it.
+    const processing = await processingRowOf(testApp, trackId);
     const storedUrl = testApp.app
       .get(StorageService)
-      .publicUrl(`track-audio/${trackId}.wav`);
-    expect((await processingRowOf(testApp, trackId)).musicWavUrl).toBe(
-      storedUrl,
-    );
+      .publicUrl(`track-audio/${trackId}/${processing.id}.wav`);
+    expect(processing.musicWavUrl).toBe(storedUrl);
     const stored = await fetch(storedUrl);
     expect(stored.status).toBe(200);
     expect(stored.headers.get('content-type')).toBe('audio/wav');
@@ -169,6 +169,45 @@ describe('Track Processing download (e2e)', () => {
       resumeFrom: 'DOWNLOADING_AUDIO',
     });
     expect((await processingRowOf(testApp, trackId)).musicWavUrl).toBeNull();
+  });
+
+  it('saves the URL of a WAV an earlier run stored, without a download', async () => {
+    linkedRecording();
+    const trackId = await requestTrack(app);
+    const processing = await processingRowOf(testApp, trackId);
+    // What a crash after the WAV was uploaded, but before its URL was saved,
+    // leaves behind: the step is running, the video is chosen, the object exists.
+    await testApp.db
+      .update(trackProcessings)
+      .set({
+        status: 'DOWNLOADING_AUDIO',
+        videoId: LINKED_VIDEO,
+        videoSource: 'musicbrainz',
+      })
+      .where(eq(trackProcessings.id, processing.id));
+    const key = `track-audio/${trackId}/${processing.id}.wav`;
+    const storage = testApp.app.get(StorageService);
+    await storage.putPublicObject({
+      key,
+      body: new Uint8Array([82, 73, 70, 70]),
+      contentType: 'audio/wav',
+    });
+
+    await testApp.app
+      .get(TrackJobRunnerService)
+      .run(
+        'run-step',
+        { processingId: processing.id, step: 'DOWNLOADING_AUDIO' },
+        true,
+      );
+
+    expect(app.audio.requests).toEqual([]);
+    expect(app.audio.checks).toEqual([]);
+    expect(app.audio.downloads).toEqual([]);
+    expect(await processingRowOf(testApp, trackId)).toMatchObject({
+      status: 'COMPLETED',
+      musicWavUrl: storage.publicUrl(key),
+    });
   });
 
   it('downloads nothing again once its WAV is stored, when the step runs again', async () => {

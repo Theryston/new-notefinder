@@ -1,4 +1,8 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import type { OnModuleDestroy } from '@nestjs/common';
 import {
   type PublicObject,
@@ -7,12 +11,16 @@ import {
 } from './storage.service.js';
 import type { StorageConfig } from './storage-config.js';
 
-// Without a deadline, a storage server that stops answering would hold the
-// request that triggered the upload open indefinitely.
-const PUT_TIMEOUT_MS = 15_000;
+// Without a deadline, a storage server that stops answering would hold a
+// request open indefinitely.
+const REQUEST_TIMEOUT_MS = 15_000;
 
 /** The part of the SDK client used here, so tests can pass a fake. */
 type S3Sender = Pick<S3Client, 'send' | 'destroy'>;
+
+/** A HEAD of a missing key fails with the SDK's `NotFound`. */
+const isNotFound = (error: unknown): boolean =>
+  error instanceof Error && error.name === 'NotFound';
 
 export const createS3Client = (config: StorageConfig): S3Client =>
   new S3Client({
@@ -54,10 +62,25 @@ export class S3StorageService
           ContentType: contentType,
           ACL: 'public-read',
         }),
-        { abortSignal: AbortSignal.timeout(PUT_TIMEOUT_MS) },
+        { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
       );
     } catch (error) {
       throw new StorageError(`Could not store "${key}"`, { cause: error });
+    }
+  }
+
+  async objectExists(key: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new HeadObjectCommand({ Bucket: this.config.bucket, Key: key }),
+        { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+      );
+      return true;
+    } catch (error) {
+      if (isNotFound(error)) {
+        return false;
+      }
+      throw new StorageError(`Could not check "${key}"`, { cause: error });
     }
   }
 

@@ -26,6 +26,12 @@ export abstract class StorageService {
   /** @throws {StorageError} when the object could not be stored. */
   abstract putPublicObject(object: PublicObject): Promise<void>;
 
+  /**
+   * Whether an object is stored under this key. A key that is not there is
+   * `false`; any other failure to find out is a `StorageError`.
+   */
+  abstract objectExists(key: string): Promise<boolean>;
+
   /** URL the object with this key is served from once stored. */
   abstract publicUrl(key: string): string;
 }

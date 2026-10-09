@@ -9,8 +9,9 @@ import {
 } from './track-processing.repository.js';
 import { TrackProcessingFailure } from './track-processing-failure.js';
 
-// The download step's decisions: when to ask, check again, give up or store.
-// The services it calls are fakes; the rows and the object store are e2e's.
+// The download step's decisions: when to ask, check again, give up, store, or
+// stop because the row moved on. The services it calls are fakes; the rows and
+// the object store are the e2e spec's.
 
 const downloads = {
   requestConversion: vi.fn(),
@@ -18,14 +19,19 @@ const downloads = {
   downloadMp3: vi.fn(),
 };
 const ffmpeg = { convertMp3ToWav: vi.fn() };
-const storage = { putPublicObject: vi.fn(), publicUrl: vi.fn() };
+const storage = {
+  putPublicObject: vi.fn(),
+  publicUrl: vi.fn(),
+  objectExists: vi.fn(),
+};
 const processings = { findMusicWavUrl: vi.fn(), saveMusicWavUrl: vi.fn() };
 
 const PROGRESS_URL = 'https://rapidapi.test/progress/aaaaaaaaaaa';
 const DOWNLOAD_URL = 'https://files.test/aaaaaaaaaaa.mp3';
 const MP3 = new Uint8Array([1, 2, 3]);
 const WAV = new Uint8Array([82, 73, 70, 70]);
-const STORED_URL = 'https://files.test/track-audio/track-1.wav';
+const KEY = 'track-audio/track-1/processing-1.wav';
+const STORED_URL = `https://files.test/${KEY}`;
 
 const processing = (
   overrides: Partial<ProcessingForStep> = {},
@@ -44,11 +50,8 @@ const waitingAt = (round: number) => ({
   state: { progressUrl: PROGRESS_URL },
 });
 
-const expectFailure = (code: string) =>
-  expect.objectContaining({
-    code,
-    message: `Processing failed: ${code}`,
-  });
+const failureWith = (code: string) =>
+  expect.objectContaining({ code, message: `Processing failed: ${code}` });
 
 describe('TrackAudioService', () => {
   let service: TrackAudioService;
@@ -58,6 +61,7 @@ describe('TrackAudioService', () => {
     vi.clearAllMocks();
     processings.findMusicWavUrl.mockResolvedValue(null);
     processings.saveMusicWavUrl.mockResolvedValue(true);
+    storage.objectExists.mockResolvedValue(false);
     downloads.requestConversion.mockResolvedValue(PROGRESS_URL);
     downloads.checkConversion.mockResolvedValue({ ready: false });
     downloads.downloadMp3.mockResolvedValue(MP3);
@@ -107,7 +111,7 @@ describe('TrackAudioService', () => {
       );
 
       await expect(service.run(processing(), undefined)).rejects.toMatchObject(
-        expectFailure('DOWNLOAD_FAILED'),
+        failureWith('DOWNLOAD_FAILED'),
       );
     });
   });
@@ -130,13 +134,12 @@ describe('TrackAudioService', () => {
       ).resolves.toMatchObject({ kind: 'wait' });
     });
 
-    it('fails with DOWNLOAD_FAILED when the last check of the budget still finds it running', async () => {
-      const failure = service.run(processing(), waitingAt(180));
+    it('ends the Processing as DOWNLOAD_FAILED at the last check of the budget, without a retry to run', async () => {
+      await expect(service.run(processing(), waitingAt(180))).resolves.toEqual({
+        kind: 'failed',
+        code: 'DOWNLOAD_FAILED',
+      });
 
-      await expect(failure).rejects.toMatchObject(
-        expectFailure('DOWNLOAD_FAILED'),
-      );
-      await expect(failure).rejects.toBeInstanceOf(TrackProcessingFailure);
       expect(downloads.downloadMp3).not.toHaveBeenCalled();
       expect(storage.putPublicObject).not.toHaveBeenCalled();
     });
@@ -157,7 +160,7 @@ describe('TrackAudioService', () => {
 
       await expect(
         service.run(processing(), waitingAt(3)),
-      ).rejects.toMatchObject(expectFailure('DOWNLOAD_FAILED'));
+      ).rejects.toMatchObject(failureWith('DOWNLOAD_FAILED'));
     });
 
     it('refuses a re-check whose state is not a progress URL', async () => {
@@ -176,7 +179,7 @@ describe('TrackAudioService', () => {
       });
     });
 
-    it('downloads the MP3, converts it, stores the WAV publicly and saves its URL', async () => {
+    it('downloads the MP3, converts it, stores the WAV under the Processing key and saves its URL', async () => {
       await expect(service.run(processing(), waitingAt(2))).resolves.toEqual({
         kind: 'done',
       });
@@ -184,7 +187,7 @@ describe('TrackAudioService', () => {
       expect(downloads.downloadMp3).toHaveBeenCalledWith(DOWNLOAD_URL);
       expect(ffmpeg.convertMp3ToWav).toHaveBeenCalledWith(MP3);
       expect(storage.putPublicObject).toHaveBeenCalledWith({
-        key: 'track-audio/track-1.wav',
+        key: KEY,
         body: WAV,
         contentType: 'audio/wav',
       });
@@ -203,7 +206,7 @@ describe('TrackAudioService', () => {
 
       await expect(
         service.run(processing(), waitingAt(2)),
-      ).rejects.toMatchObject(expectFailure('DOWNLOAD_FAILED'));
+      ).rejects.toMatchObject(failureWith('DOWNLOAD_FAILED'));
       expect(storage.putPublicObject).not.toHaveBeenCalled();
     });
 
@@ -214,7 +217,7 @@ describe('TrackAudioService', () => {
 
       await expect(
         service.run(processing(), waitingAt(2)),
-      ).rejects.toMatchObject(expectFailure('DOWNLOAD_FAILED'));
+      ).rejects.toMatchObject(failureWith('DOWNLOAD_FAILED'));
       expect(storage.putPublicObject).not.toHaveBeenCalled();
     });
 
@@ -227,10 +230,18 @@ describe('TrackAudioService', () => {
       await expect(failure).rejects.not.toBeInstanceOf(TrackProcessingFailure);
       expect(processings.saveMusicWavUrl).not.toHaveBeenCalled();
     });
+
+    it('stops without advancing when the Processing moved on before its URL was saved', async () => {
+      processings.saveMusicWavUrl.mockResolvedValue(false);
+
+      await expect(service.run(processing(), waitingAt(2))).resolves.toEqual({
+        kind: 'stopped',
+      });
+    });
   });
 
-  describe('a stored audio', () => {
-    it('downloads nothing when the Processing already has its WAV, so a replayed step does not download again', async () => {
+  describe('a WAV already stored', () => {
+    it('downloads nothing when the Processing already has its WAV URL', async () => {
       processings.findMusicWavUrl.mockResolvedValue(STORED_URL);
 
       await expect(service.run(processing(), undefined)).resolves.toEqual({
@@ -243,6 +254,33 @@ describe('TrackAudioService', () => {
       expect(downloads.requestConversion).not.toHaveBeenCalled();
       expect(downloads.checkConversion).not.toHaveBeenCalled();
       expect(downloads.downloadMp3).not.toHaveBeenCalled();
+      expect(storage.objectExists).not.toHaveBeenCalled();
+    });
+
+    it('saves the URL of a WAV an earlier run stored, without polling or downloading again', async () => {
+      storage.objectExists.mockResolvedValue(true);
+
+      await expect(service.run(processing(), waitingAt(7))).resolves.toEqual({
+        kind: 'done',
+      });
+
+      expect(storage.objectExists).toHaveBeenCalledWith(KEY);
+      expect(processings.saveMusicWavUrl).toHaveBeenCalledWith(
+        'processing-1',
+        STORED_URL,
+      );
+      expect(downloads.checkConversion).not.toHaveBeenCalled();
+      expect(downloads.downloadMp3).not.toHaveBeenCalled();
+      expect(downloads.requestConversion).not.toHaveBeenCalled();
+    });
+
+    it('fails with INTERNAL, not DOWNLOAD_FAILED, when the storage cannot say whether the WAV exists', async () => {
+      storage.objectExists.mockRejectedValue(new Error('S3 is down'));
+
+      const failure = service.run(processing(), undefined);
+
+      await expect(failure).rejects.toThrow('S3 is down');
+      await expect(failure).rejects.not.toBeInstanceOf(TrackProcessingFailure);
     });
   });
 });

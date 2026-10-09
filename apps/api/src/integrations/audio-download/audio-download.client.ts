@@ -28,17 +28,11 @@ const FILE_TIMEOUT_MS = 2 * 60_000;
 // A 15-minute MP3 at 128 kbps is about 15 MB; the cap is far above any video
 // the Processing accepts, and stops a runaway answer from filling the memory.
 const MAX_FILE_BYTES = 64 * 1024 * 1024;
+const FILE_TOO_LARGE = 'The MP3 is larger than the accepted size';
 
 @Injectable()
 export class AudioDownloadClient {
-  constructor(@Inject(ENV) private readonly env: Env) {
-    // Checked when the client is built, so a production deploy without the key
-    // never starts. The env schema keeps the key optional for the other
-    // configurations (see env.ts).
-    if (env.NODE_ENV === 'production' && env.RAPIDAPI_API_KEY === undefined) {
-      throw new Error('RAPIDAPI_API_KEY is required in production');
-    }
-  }
+  constructor(@Inject(ENV) private readonly env: Env) {}
 
   /** Asks the service to convert the video's audio; answers the progress URL to poll. */
   async requestConversion(videoId: string): Promise<string> {
@@ -66,16 +60,17 @@ export class AudioDownloadClient {
       signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
     });
     if (!response.ok) {
-      await response.body?.cancel();
-      throw new Error(`The MP3 download answered HTTP ${response.status}`);
+      return rejectAnswer(
+        response,
+        `The MP3 download answered HTTP ${response.status}`,
+      );
     }
     if (Number(response.headers.get('content-length')) > MAX_FILE_BYTES) {
-      await response.body?.cancel();
-      throw new Error('The MP3 is larger than the accepted size');
+      return rejectAnswer(response, FILE_TOO_LARGE);
     }
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (bytes.byteLength > MAX_FILE_BYTES) {
-      throw new Error('The MP3 is larger than the accepted size');
+      throw new Error(FILE_TOO_LARGE);
     }
     return bytes;
   }
@@ -99,8 +94,16 @@ const conversionUrl = (videoId: string): string => {
 /** The JSON body of a successful answer; any other status is an error. */
 const readJson = async (response: Response): Promise<unknown> => {
   if (!response.ok) {
-    await response.body?.cancel();
-    throw new Error(`RapidAPI answered HTTP ${response.status}`);
+    return rejectAnswer(response, `RapidAPI answered HTTP ${response.status}`);
   }
   return response.json();
+};
+
+/** Drops the body of an answer that is not usable, and fails with `message`. */
+const rejectAnswer = async (
+  response: Response,
+  message: string,
+): Promise<never> => {
+  await response.body?.cancel();
+  throw new Error(message);
 };

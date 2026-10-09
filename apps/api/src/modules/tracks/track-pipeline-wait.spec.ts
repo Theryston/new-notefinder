@@ -186,6 +186,48 @@ describe('TrackPipelineService waits', () => {
     expect(processings.markFailed).not.toHaveBeenCalled();
   });
 
+  it('ends the Processing as the step failed it, on any attempt, without a BullMQ retry', async () => {
+    processings.findProcessing.mockResolvedValue(
+      processing('DOWNLOADING_AUDIO'),
+    );
+    steps.downloadAudio.mockResolvedValue({
+      kind: 'failed',
+      code: 'DOWNLOAD_FAILED',
+    });
+
+    await expect(
+      pipeline.runStep(
+        { processingId: 'processing-1', step: 'DOWNLOADING_AUDIO' },
+        false,
+      ),
+    ).resolves.toBe(undefined);
+
+    expect(processings.markFailed).toHaveBeenCalledWith(
+      'processing-1',
+      ['QUEUED', 'FINDING_VIDEO', 'DOWNLOADING_AUDIO'],
+      { code: 'DOWNLOAD_FAILED', resumeFrom: 'DOWNLOADING_AUDIO' },
+    );
+    expect(queue.add).not.toHaveBeenCalled();
+    expect(processings.markCompleted).not.toHaveBeenCalled();
+  });
+
+  it('stops without advancing a Processing that moved on while the download ran', async () => {
+    processings.findProcessing.mockResolvedValue(
+      processing('DOWNLOADING_AUDIO'),
+    );
+    steps.downloadAudio.mockResolvedValue({ kind: 'stopped' });
+
+    await pipeline.runStep(
+      { processingId: 'processing-1', step: 'DOWNLOADING_AUDIO' },
+      true,
+    );
+
+    expect(processings.markCompleted).not.toHaveBeenCalled();
+    expect(processings.markFailed).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
+    expect(revalidation.revalidate).not.toHaveBeenCalled();
+  });
+
   it('does nothing for a re-check of a Processing that has moved past the download', async () => {
     processings.findProcessing.mockResolvedValue(processing('COMPLETED'));
 

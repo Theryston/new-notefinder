@@ -16,14 +16,27 @@ import {
   messageOf,
   TrackProcessingFailure,
 } from './track-processing-failure.js';
-import { DONE, type StepOutcome, waitFor } from './track-step-outcome.js';
+import {
+  DONE,
+  failedWith,
+  STOPPED,
+  type StepOutcome,
+  waitFor,
+} from './track-step-outcome.js';
+
+/**
+ * The WAV a Processing stores. One key per Processing: a later Processing never
+ * overwrites the object behind a URL that is already public.
+ */
+const wavKeyOf = (processing: ProcessingForStep): string =>
+  `track-audio/${processing.trackId}/${processing.id}.wav`;
 
 /**
  * The download step (ADR 0004). The RapidAPI service converts the chosen
  * video to MP3, ffmpeg turns it into WAV, and the WAV is stored publicly so
  * note detection can read it. The first run asks for the conversion and waits;
  * each re-check asks for its progress again. A Processing whose WAV is already
- * stored downloads nothing.
+ * stored, in its row or in storage, downloads nothing.
  */
 @Injectable()
 export class TrackAudioService {
@@ -36,13 +49,20 @@ export class TrackAudioService {
     private readonly processings: TrackProcessingRepository,
   ) {}
 
-  /** One run of the step: a request, a re-check or, once stored, nothing. */
+  /**
+   * One run of the step. The WAV is looked for before any call to RapidAPI: a
+   * WAV stored by an earlier run (whose URL was not saved yet) is saved, not
+   * downloaded again.
+   */
   async run(
     processing: ProcessingForStep,
     wait: StepWait | undefined,
   ): Promise<StepOutcome> {
     if ((await this.processings.findMusicWavUrl(processing.id)) !== null) {
       return DONE;
+    }
+    if (await this.storage.objectExists(wavKeyOf(processing))) {
+      return this.saveWavUrl(processing);
     }
     return wait === undefined
       ? this.requestConversion(processing)
@@ -74,18 +94,20 @@ export class TrackAudioService {
       return this.store(processing, progress.downloadUrl);
     }
     if (isPollBudgetSpent(wait.round)) {
+      // The last check of the budget: the Processing ends now, so BullMQ does
+      // not retry round 180 and check the same conversion again.
       this.logger.warn(
         `The conversion of Processing ${processing.id} did not finish in ${wait.round} checks`,
       );
-      throw new TrackProcessingFailure('DOWNLOAD_FAILED');
+      return failedWith('DOWNLOAD_FAILED');
     }
     return waitFor(AUDIO_POLL_INTERVAL_MS, { progressUrl });
   }
 
   /**
-   * Downloads the MP3, converts it and stores the WAV under the Track's key,
-   * then saves its URL on the Processing. A storage failure is not a download
-   * failure, so it is not reported as one.
+   * Downloads the MP3, converts it and stores the WAV under the Processing's
+   * key, then saves its URL. A storage failure is not a download failure, so it
+   * is not reported as one.
    */
   private async store(
     processing: ProcessingForStep,
@@ -97,17 +119,26 @@ export class TrackAudioService {
     const wav = await this.attempt('convert the MP3 to WAV', () =>
       this.ffmpeg.convertMp3ToWav(mp3),
     );
-    const key = `track-audio/${processing.trackId}.wav`;
     await this.storage.putPublicObject({
-      key,
+      key: wavKeyOf(processing),
       body: wav,
       contentType: 'audio/wav',
     });
-    await this.processings.saveMusicWavUrl(
+    return this.saveWavUrl(processing);
+  }
+
+  /**
+   * Saves the URL of the stored WAV on the Processing. A row that moved on
+   * keeps its state, and the step stops without advancing it.
+   */
+  private async saveWavUrl(
+    processing: ProcessingForStep,
+  ): Promise<StepOutcome> {
+    const saved = await this.processings.saveMusicWavUrl(
       processing.id,
-      this.storage.publicUrl(key),
+      this.storage.publicUrl(wavKeyOf(processing)),
     );
-    return DONE;
+    return saved ? DONE : STOPPED;
   }
 
   /**

@@ -155,18 +155,4 @@ describe('AudioDownloadClient', () => {
       ).rejects.toThrow('larger than the accepted size');
     });
   });
-
-  describe('production', () => {
-    it('refuses to start without the RapidAPI key', async () => {
-      await expect(configure({ NODE_ENV: 'production' })).rejects.toThrow(
-        'RAPIDAPI_API_KEY is required in production',
-      );
-    });
-
-    it('starts with the key set', async () => {
-      await expect(
-        configure({ NODE_ENV: 'production', RAPIDAPI_API_KEY: 'rapid-key' }),
-      ).resolves.toBeUndefined();
-    });
-  });
 });

@@ -1,6 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import { cacheTags, type TrackProcessingStep } from '@notefinder/contracts';
+import {
+  cacheTags,
+  type TrackProcessingFailureCode,
+  type TrackProcessingStep,
+} from '@notefinder/contracts';
 import { type Queue, UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import {
@@ -62,7 +66,7 @@ export class TrackPipelineService {
   private readonly handlers: Record<PipelineStepName, StepHandler> = {
     FINDING_VIDEO: (processing) => this.findVideo(processing),
     DOWNLOADING_AUDIO: (processing, wait) =>
-      this.steps.downloadAudio(processing, wait),
+      this.downloadAudio(processing, wait),
   };
 
   constructor(
@@ -112,11 +116,7 @@ export class TrackPipelineService {
     }
     try {
       const outcome = await this.handlers[job.step](processing, job.wait);
-      if (outcome.kind === 'wait') {
-        await this.enqueueWait(processing.id, job, outcome);
-        return;
-      }
-      await this.advance(processing, job.step);
+      await this.conclude(processing, job.step, job.wait?.round ?? 0, outcome);
     } catch (error) {
       return this.failStep(processing, job.step, error, finalAttempt);
     }
@@ -137,25 +137,58 @@ export class TrackPipelineService {
     return DONE;
   }
 
+  /** The download step, which the dispatcher runs (see TrackStepsService). */
+  private downloadAudio(
+    processing: ProcessingForStep,
+    wait: StepWait | undefined,
+  ): Promise<StepOutcome> {
+    return this.steps.downloadAudio(processing, wait);
+  }
+
+  /**
+   * Acts on what a step left: the next step, a re-check, a final failure, or
+   * nothing when the Processing moved on (the step does not advance it).
+   */
+  private async conclude(
+    processing: ProcessingForStep,
+    step: PipelineStepName,
+    round: number,
+    outcome: StepOutcome,
+  ): Promise<void> {
+    if (outcome.kind === 'wait') {
+      await this.enqueueWait(processing.id, step, round, outcome);
+      return;
+    }
+    if (outcome.kind === 'failed') {
+      await this.markStepFailed(processing, step, outcome.code);
+      return;
+    }
+    if (outcome.kind === 'done') {
+      await this.advance(processing, step);
+    }
+  }
+
   /**
    * Queues the next check of a waiting step after its delay. The check's round
-   * follows the one that queued it, and its job ID is keyed by the round.
+   * follows the round that queued it (0 for the step's first run), and its job
+   * ID is keyed by that round.
    */
   private async enqueueWait(
     processingId: string,
-    job: RunStepJob,
+    step: PipelineStepName,
+    round: number,
     wait: WaitOutcome,
   ): Promise<void> {
-    const round = (job.wait?.round ?? 0) + 1;
+    const nextRound = round + 1;
     await this.queue.add(
       RUN_STEP_JOB,
       {
         processingId,
-        step: job.step,
-        wait: { round, state: wait.state },
+        step,
+        wait: { round: nextRound, state: wait.state },
       },
       {
-        jobId: waitJobId(processingId, job.step, round),
+        jobId: waitJobId(processingId, step, nextRound),
         delay: wait.delayMs,
       },
     );
@@ -194,8 +227,20 @@ export class TrackPipelineService {
     this.logger.warn(
       `Processing ${processing.id} failed at ${step} with ${failureCode}: ${messageOf(error)}`,
     );
-    await this.processings.markFailed(processing.id, dueStatusesOf(step), {
-      code: failureCode,
+    await this.markStepFailed(processing, step, failureCode);
+  }
+
+  /**
+   * Ends the Processing as FAILED at this step with its code. A retry resumes
+   * at the step.
+   */
+  private markStepFailed(
+    processing: ProcessingForStep,
+    step: TrackProcessingStep,
+    code: TrackProcessingFailureCode,
+  ): Promise<boolean> {
+    return this.processings.markFailed(processing.id, dueStatusesOf(step), {
+      code,
       resumeFrom: step,
     });
   }
