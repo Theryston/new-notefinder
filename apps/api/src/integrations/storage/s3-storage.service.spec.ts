@@ -1,4 +1,4 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createS3Client, S3StorageService } from './s3-storage.service.js';
 import { StorageError, StorageService } from './storage.service.js';
 
@@ -99,6 +99,42 @@ describe('S3StorageService', () => {
     it('encodes each segment so the URL addresses the same object', () => {
       expect(service.publicUrl('avatars/a b#c?d%e/ção.webp')).toBe(
         'https://files.example.com/avatars/a%20b%23c%3Fd%25e/%C3%A7%C3%A3o.webp',
+      );
+    });
+  });
+
+  describe('objectExists', () => {
+    it('is true for a key that is stored, found by a HEAD of its bucket and key', async () => {
+      await expect(service.objectExists('track-audio/a.wav')).resolves.toBe(
+        true,
+      );
+
+      const command = send.mock.calls[0]?.[0];
+      expect(command).toBeInstanceOf(HeadObjectCommand);
+      expect(command.input).toEqual({
+        Bucket: 'notefinder',
+        Key: 'track-audio/a.wav',
+      });
+    });
+
+    it('is false for a key that is not stored', async () => {
+      const notFound = new Error('NotFound');
+      notFound.name = 'NotFound';
+      send.mockRejectedValue(notFound);
+
+      await expect(service.objectExists('track-audio/a.wav')).resolves.toBe(
+        false,
+      );
+    });
+
+    it('fails with a StorageError when the server cannot answer', async () => {
+      send.mockRejectedValue(new Error('connection reset'));
+
+      const failure = service.objectExists('track-audio/a.wav');
+
+      await expect(failure).rejects.toBeInstanceOf(StorageError);
+      await expect(failure).rejects.toThrow(
+        'Could not check "track-audio/a.wav"',
       );
     });
   });

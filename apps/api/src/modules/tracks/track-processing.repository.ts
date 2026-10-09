@@ -211,6 +211,29 @@ export class TrackProcessingRepository {
     return rows.length > 0;
   }
 
+  /** The URL of the music WAV the download stored; null while it has none. */
+  async findMusicWavUrl(processingId: string): Promise<string | null> {
+    const [row] = await this.txHost.tx
+      .select({ musicWavUrl: trackProcessings.musicWavUrl })
+      .from(trackProcessings)
+      .where(eq(trackProcessings.id, processingId))
+      .limit(1);
+    return row?.musicWavUrl ?? null;
+  }
+
+  /**
+   * The music WAV the download stored, while the download step runs. False when
+   * the Processing is no longer in that step, which keeps its row as it is.
+   */
+  async saveMusicWavUrl(processingId: string, url: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .update(trackProcessings)
+      .set({ musicWavUrl: url })
+      .where(processingInStatus(processingId, ['DOWNLOADING_AUDIO']))
+      .returning({ id: trackProcessings.id });
+    return rows.length > 0;
+  }
+
   /** The last step is done: the Processing completes. False if it moved on. */
   async markCompleted(
     processingId: string,

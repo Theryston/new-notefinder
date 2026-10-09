@@ -17,6 +17,7 @@ const productionEnv = {
   BETTER_AUTH_SECRET: 'a'.repeat(32),
   REVALIDATE_SECRET: 'b'.repeat(32),
   RESEND_API_KEY: 're_123',
+  RAPIDAPI_API_KEY: 'rapid-key',
 };
 
 const setup = (env: Env = parseEnv(baseEnv)) => {
