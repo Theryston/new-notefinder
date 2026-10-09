@@ -12,6 +12,8 @@ export class FakeCoverArt {
   images = new Map<string, DownloadedImage>();
   /** When set, every release cover request fails with it: the archive is down. */
   releaseFailure: Error | undefined;
+  /** When set, every image download fails with it: a 5xx or a timeout from the archive. */
+  imageFailure: Error | undefined;
   readonly releaseRequests: string[] = [];
   readonly imageRequests: string[] = [];
 
@@ -20,6 +22,7 @@ export class FakeCoverArt {
     this.releaseCovers = new Map();
     this.images = new Map();
     this.releaseFailure = undefined;
+    this.imageFailure = undefined;
     this.releaseRequests.length = 0;
     this.imageRequests.length = 0;
   }
@@ -36,6 +39,9 @@ export class FakeCoverArt {
 
   async fetchImage(url: string): Promise<DownloadedImage | undefined> {
     this.imageRequests.push(url);
+    if (this.imageFailure !== undefined) {
+      throw this.imageFailure;
+    }
     return this.images.get(url);
   }
 }

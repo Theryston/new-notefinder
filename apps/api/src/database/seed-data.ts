@@ -1,4 +1,5 @@
 import type { artists, trackArtists } from './schema/artists.js';
+import type { trackProcessings } from './schema/track-processings.js';
 import type { tracks } from './schema/tracks.js';
 import type { users } from './schema/users.js';
 
@@ -197,3 +198,17 @@ export const SEED_TRACK_ARTISTS = [
   { trackId: 'seedtrack08', artistId: 'seedartist06' },
   { trackId: 'seedtrack09', artistId: 'seedartist02' },
 ] satisfies TrackArtistRow[];
+
+type TrackProcessingRow = typeof trackProcessings.$inferInsert & { id: string };
+
+/**
+ * Every seeded Track has a completed Processing: Artist and Album pages list
+ * only completed Tracks (ADR 0005), so without these they would show nothing.
+ */
+export const SEED_TRACK_PROCESSINGS: TrackProcessingRow[] = SEED_TRACKS.map(
+  (track, index) => ({
+    id: `seedprocessing${String(index + 1).padStart(2, '0')}`,
+    trackId: track.id,
+    status: 'COMPLETED',
+  }),
+);

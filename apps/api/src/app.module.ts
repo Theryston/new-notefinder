@@ -10,6 +10,7 @@ import { ArtistsModule } from './modules/artists/artists.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SearchModule } from './modules/search/search.module.js';
+import { TrackMetadataModule } from './modules/track-metadata/track-metadata.module.js';
 import { TracksModule } from './modules/tracks/tracks.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { QueueModule } from './queue/queue.module.js';
@@ -33,6 +34,7 @@ import { RedisModule } from './redis/redis.module.js';
     ArtistsModule,
     SearchModule,
     TracksModule,
+    TrackMetadataModule,
     UsersModule,
   ],
 })

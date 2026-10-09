@@ -6,9 +6,9 @@ import { resetDatabase } from './utils/database.js';
 import {
   createArtist,
   createLegacyArtistId,
-  createTrack,
   linkTrackArtist,
 } from './utils/factories.js';
+import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 // Public artist header detail over a real Postgres: the contracted shape
 // with its track count, the legacy-ID fallback (`RESOURCE_MOVED` with the
@@ -33,8 +33,8 @@ describe('Artists detail (e2e)', () => {
       name: 'Queen',
       genres: ['rock', 'pop'],
     });
-    const first = await createTrack(testApp.db);
-    const second = await createTrack(testApp.db);
+    const first = await createCompletedTrack(testApp.db);
+    const second = await createCompletedTrack(testApp.db);
     await linkTrackArtist(testApp.db, first.id, artist.id);
     await linkTrackArtist(testApp.db, second.id, artist.id);
 
@@ -52,18 +52,20 @@ describe('Artists detail (e2e)', () => {
     });
   });
 
-  it('counts zero tracks for an artist with no links', async () => {
+  it('answers NOT_FOUND for an artist with no completed Track', async () => {
     const artist = await createArtist(testApp.db, { genres: [] });
 
     const response = await testApp.http
       .get(`/v1/artists/${artist.id}`)
-      .expect(200);
+      .expect(404);
 
-    expect(response.body).toMatchObject({ id: artist.id, trackCount: 0 });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
   it('needs no authentication', async () => {
     const artist = await createArtist(testApp.db);
+    const track = await createCompletedTrack(testApp.db);
+    await linkTrackArtist(testApp.db, track.id, artist.id);
 
     await testApp.http.get(`/v1/artists/${artist.id}`).expect(200);
   });

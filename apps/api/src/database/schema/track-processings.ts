@@ -4,8 +4,15 @@ import {
   TRACK_PROCESSING_STEPS,
   TRACK_PROCESSING_VIDEO_SOURCES,
 } from '@notefinder/contracts';
-import { sql } from 'drizzle-orm';
-import { index, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { and, eq, type SQL, sql } from 'drizzle-orm';
+import {
+  type AnyPgColumn,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
 
@@ -76,3 +83,15 @@ export const trackProcessings = pgTable(
       .where(sql`${table.status} not in ('COMPLETED', 'FAILED')`),
   ],
 );
+
+/**
+ * Whether the Track in `trackId` has a completed Processing. The Artist and
+ * Album reads list only such Tracks (CONTEXT.md "Processing", ADR 0005), so
+ * every one of them filters with this predicate. It correlates on the Track
+ * column the caller passes, so it works in a `where` of any query.
+ */
+export const hasCompletedProcessing = (trackId: AnyPgColumn): SQL =>
+  sql`exists (select 1 from ${trackProcessings} where ${and(
+    eq(trackProcessings.trackId, trackId),
+    eq(trackProcessings.status, 'COMPLETED'),
+  )})`;

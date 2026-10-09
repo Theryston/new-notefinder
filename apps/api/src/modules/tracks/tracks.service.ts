@@ -26,6 +26,16 @@ export class TracksService {
     });
   }
 
+  /** The MBID of the Recording a Track was created from; undefined for an unknown Track. */
+  findRecordingMbid(trackId: string): Promise<string | undefined> {
+    return this.tracksRepository.findRecordingMbid(trackId);
+  }
+
+  /** Whether the Track has a completed Processing, the state its Artist and Album pages list it in. */
+  isTrackCompleted(trackId: string): Promise<boolean> {
+    return this.tracksRepository.isTrackCompleted(trackId);
+  }
+
   /**
    * Track ids keyed by recording MBID, for the MBIDs given. Only processed
    * Recordings are present; the caller maps a miss to null (static card).

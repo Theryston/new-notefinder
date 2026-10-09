@@ -17,6 +17,7 @@ const processings = {
   markStepStarted: vi.fn(),
   markFailed: vi.fn(),
   markCompleted: vi.fn(),
+  findCatalogIds: vi.fn(),
 };
 const steps = { findVideo: vi.fn(), downloadAudio: vi.fn() };
 const revalidation = { revalidate: vi.fn() };
@@ -40,6 +41,10 @@ describe('TrackPipelineService waits', () => {
     processings.markStepStarted.mockResolvedValue(true);
     processings.markFailed.mockResolvedValue(true);
     processings.markCompleted.mockResolvedValue(true);
+    processings.findCatalogIds.mockResolvedValue({
+      artistIds: [],
+      albumIds: [],
+    });
     queue.add.mockResolvedValue(undefined);
     steps.findVideo.mockResolvedValue('https://img.test/artwork.jpg');
     moduleRef = await Test.createTestingModule({

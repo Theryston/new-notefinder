@@ -6,7 +6,6 @@ import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {
   createArtist,
-  createTrack,
   createTrackExternalLink,
   createTrackRelease,
   createTrackTag,
@@ -14,6 +13,7 @@ import {
   linkTrackArtist,
   testMbid,
 } from './utils/factories.js';
+import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 // Nested MusicBrainz sections of the artist track list over a real
 // Postgres: every entry carries its releases, works, tags and external
@@ -35,7 +35,7 @@ describe('Artist track details (e2e)', () => {
 
   it('carries releases, works, tags and links per recording', async () => {
     const artist = await createArtist(testApp.db, { name: 'Queen' });
-    const track = await createTrack(testApp.db, {
+    const track = await createCompletedTrack(testApp.db, {
       title: 'Bohemian Rhapsody',
     });
     await linkTrackArtist(testApp.db, track.id, artist.id);
@@ -123,7 +123,7 @@ describe('Artist track details (e2e)', () => {
 
   it('answers empty sections when the catalog has none', async () => {
     const artist = await createArtist(testApp.db);
-    const track = await createTrack(testApp.db);
+    const track = await createCompletedTrack(testApp.db);
     await linkTrackArtist(testApp.db, track.id, artist.id);
 
     const response = await testApp.http
@@ -140,8 +140,8 @@ describe('Artist track details (e2e)', () => {
 
   it('keeps details isolated per track across pages', async () => {
     const artist = await createArtist(testApp.db);
-    const first = await createTrack(testApp.db, { title: 'First' });
-    const second = await createTrack(testApp.db, { title: 'Second' });
+    const first = await createCompletedTrack(testApp.db, { title: 'First' });
+    const second = await createCompletedTrack(testApp.db, { title: 'Second' });
     await linkTrackArtist(testApp.db, first.id, artist.id);
     await linkTrackArtist(testApp.db, second.id, artist.id);
     await createTrackRelease(testApp.db, first.id, {

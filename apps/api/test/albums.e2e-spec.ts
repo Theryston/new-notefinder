@@ -1,4 +1,4 @@
-import { albumSchema, apiErrorSchema } from '@notefinder/contracts';
+import { apiErrorSchema } from '@notefinder/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {
@@ -27,7 +27,7 @@ describe('Albums detail (e2e)', () => {
     await resetDatabase(testApp.db);
   });
 
-  it('returns the album header detail, validated against the contract', async () => {
+  it('answers NOT_FOUND for the header of an album with no completed Track', async () => {
     const album = await createAlbum(testApp.db, {
       title: 'A Night at the Opera',
       primaryType: 'Album',
@@ -38,44 +38,30 @@ describe('Albums detail (e2e)', () => {
         'https://coverartarchive.org/release-group/00000000-0000-4000-8000-00000000a001/front-500',
     });
 
+    // No completed Track: the Album is not shown yet (ADR 0005).
     const response = await testApp.http
       .get(`/v1/albums/${album.id}`)
-      .expect(200);
+      .expect(404);
 
-    expect(albumSchema.parse(response.body)).toEqual(response.body);
-    expect(response.body).toEqual({
-      id: album.id,
-      mbid: album.mbid,
-      title: 'A Night at the Opera',
-      primaryType: 'Album',
-      secondaryTypes: ['Live'],
-      year: 1975,
-      genres: ['rock', 'pop'],
-      coverArtUrl: album.coverArtUrl,
-      trackCount: 0,
-      artists: [],
-    });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
-  it('lists the credited artists in credit order, not alphabetically', async () => {
+  it('answers NOT_FOUND for the header of an album credited to artists, with no completed Track', async () => {
     const album = await createAlbum(testApp.db);
     const queen = await createArtist(testApp.db, { name: 'Queen' });
     const adele = await createArtist(testApp.db, { name: 'Adele' });
     await creditAlbumArtist(testApp.db, album.id, queen.id, 0);
     await creditAlbumArtist(testApp.db, album.id, adele.id, 1);
 
+    // No completed Track: the Album is not shown yet (ADR 0005).
     const response = await testApp.http
       .get(`/v1/albums/${album.id}`)
-      .expect(200);
+      .expect(404);
 
-    expect(albumSchema.parse(response.body)).toEqual(response.body);
-    expect(response.body.artists).toEqual([
-      { id: queen.id, name: 'Queen' },
-      { id: adele.id, name: 'Adele' },
-    ]);
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
-  it('returns null header fields and no credits when MusicBrainz has none', async () => {
+  it('answers NOT_FOUND for the header of an album with null fields, with no completed Track', async () => {
     const album = await createAlbum(testApp.db, {
       primaryType: null,
       year: null,
@@ -83,18 +69,12 @@ describe('Albums detail (e2e)', () => {
       coverArtUrl: null,
     });
 
+    // No completed Track: the Album is not shown yet (ADR 0005).
     const response = await testApp.http
       .get(`/v1/albums/${album.id}`)
-      .expect(200);
+      .expect(404);
 
-    expect(albumSchema.parse(response.body)).toEqual(response.body);
-    expect(response.body).toMatchObject({
-      primaryType: null,
-      year: null,
-      genres: [],
-      coverArtUrl: null,
-      artists: [],
-    });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
   it('answers RESOURCE_MOVED with the new ID for a legacy album ID', async () => {

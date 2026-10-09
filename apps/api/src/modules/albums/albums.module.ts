@@ -8,5 +8,6 @@ import { AlbumsService } from './albums.service.js';
   imports: [TracksModule],
   controllers: [AlbumsController],
   providers: [AlbumsService, AlbumsRepository],
+  exports: [AlbumsService],
 })
 export class AlbumsModule {}

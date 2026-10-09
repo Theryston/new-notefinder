@@ -7,35 +7,17 @@ import {
   type TrackProcessingStep,
   type TrackProcessingVideoSource,
 } from '@notefinder/contracts';
-import {
-  and,
-  asc,
-  count,
-  countDistinct,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  lt,
-  notInArray,
-  sql,
-} from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
-import {
-  trackContributionKind,
-  trackContributions,
-  trackContributors,
-} from '../../database/schema/track-contributors.js';
+import { albumTracks } from '../../database/schema/albums.js';
+import { trackArtists } from '../../database/schema/artists.js';
 import { trackProcessings } from '../../database/schema/track-processings.js';
+import {
+  type TrackContributionKind,
+  TrackContributorRepository,
+} from './track-contributor.repository.js';
 import type { TrackProcessingRow } from './track-processing-view.js';
-
-/** The namespace of the Track request locks, so they don't collide with other advisory locks. */
-const TRACK_REQUEST_LOCK_SCOPE = 'tracks.requests';
-
-/** A Contribution's kind, as the schema stores it. */
-export type TrackContributionKind =
-  (typeof trackContributionKind.enumValues)[number];
+import { TrackRequestLimitRepository } from './track-request-limit.repository.js';
 
 /** A Processing as one of its step jobs reads it. */
 export type ProcessingForStep = {
@@ -58,13 +40,18 @@ const processingInStatus = (
   );
 
 /**
- * Processings, Contributors and Contributions of Tracks. The Track itself is
- * in `TracksRepository`; this one owns what the Processing page and the
- * requests write.
+ * Processings of Tracks, and what the Processing page and the requests read
+ * and write. The Contributors and the request limits have their own
+ * repositories; the methods here that serve them delegate, so their callers
+ * keep one injection.
  */
 @Injectable()
 export class TrackProcessingRepository {
-  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<DatabaseAdapter>,
+    private readonly contributors: TrackContributorRepository,
+    private readonly requestLimits: TrackRequestLimitRepository,
+  ) {}
 
   /** A new Processing of a Track, queued; returns its ID. */
   async insertQueuedProcessing(trackId: string): Promise<string> {
@@ -101,56 +88,44 @@ export class TrackProcessingRepository {
     return row;
   }
 
-  /**
-   * The Contributor of a User on a Track, created by their first Contribution
-   * to it; returns its ID. Concurrent first Contributions end in one row.
-   */
-  async findOrInsertContributor(
-    trackId: string,
-    userId: string,
-  ): Promise<string> {
-    const [inserted] = await this.txHost.tx
-      .insert(trackContributors)
-      .values({ trackId, userId })
-      .onConflictDoNothing({
-        target: [trackContributors.trackId, trackContributors.userId],
-      })
-      .returning({ id: trackContributors.id });
-    if (inserted !== undefined) {
-      return inserted.id;
-    }
-    const [existing] = await this.txHost.tx
-      .select({ id: trackContributors.id })
-      .from(trackContributors)
-      .where(
-        and(
-          eq(trackContributors.trackId, trackId),
-          eq(trackContributors.userId, userId),
-        ),
-      )
-      .limit(1);
-    if (existing === undefined) {
-      throw new Error('Contributor vanished after its insert conflicted');
-    }
-    return existing.id;
+  /** The Contributor of a User on a Track (see `TrackContributorRepository`). */
+  findOrInsertContributor(trackId: string, userId: string): Promise<string> {
+    return this.contributors.findOrInsertContributor(trackId, userId);
   }
 
   /** Records one Contribution: an action of a Contributor that started a Processing. */
-  async insertContribution(row: {
+  insertContribution(row: {
     contributorId: string;
     kind: TrackContributionKind;
     processingId: string;
   }): Promise<void> {
-    await this.txHost.tx.insert(trackContributions).values(row);
+    return this.contributors.insertContribution(row);
+  }
+
+  /**
+   * The Artists and Albums a Track is listed on. Completion refreshes their
+   * pages (ADR 0005), so it reads them as they are when the Processing ends.
+   */
+  async findCatalogIds(
+    trackId: string,
+  ): Promise<{ artistIds: string[]; albumIds: string[] }> {
+    const artistRows = await this.txHost.tx
+      .select({ id: trackArtists.artistId })
+      .from(trackArtists)
+      .where(eq(trackArtists.trackId, trackId));
+    const albumRows = await this.txHost.tx
+      .select({ id: albumTracks.albumId })
+      .from(albumTracks)
+      .where(eq(albumTracks.trackId, trackId));
+    return {
+      artistIds: artistRows.map((row) => row.id),
+      albumIds: albumRows.map((row) => row.id),
+    };
   }
 
   /** The Contributors of a Track, in the order they first contributed. */
   findContributors(trackId: string): Promise<{ id: string; userId: string }[]> {
-    return this.txHost.tx
-      .select({ id: trackContributors.id, userId: trackContributors.userId })
-      .from(trackContributors)
-      .where(eq(trackContributors.trackId, trackId))
-      .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
+    return this.contributors.findContributors(trackId);
   }
 
   /** A Processing as its step job reads it; undefined for an unknown ID. */
@@ -281,17 +256,9 @@ export class TrackProcessingRepository {
     return rows.length > 0;
   }
 
-  /**
-   * Serializes the User's Track requests until the transaction ends, so their
-   * limits are checked one request at a time (see `TrackRequesterService`). A
-   * transaction-scoped advisory lock keyed by the User's ID: it never touches
-   * `users`, which Better Auth owns. Two Users with colliding hashes share a
-   * lock for a moment, which only serializes them, never breaks a limit.
-   */
-  async lockRequester(userId: string): Promise<void> {
-    await this.txHost.tx.execute(
-      sql`select pg_advisory_xact_lock(hashtext(${TRACK_REQUEST_LOCK_SCOPE}), hashtext(${userId}))`,
-    );
+  /** Serializes the User's Track requests (see `TrackRequestLimitRepository`). */
+  lockRequester(userId: string): Promise<void> {
+    return this.requestLimits.lockRequester(userId);
   }
 
   /** The Track and end of a terminal Processing whose Contributors are not emailed yet. */
@@ -327,50 +294,16 @@ export class TrackProcessingRepository {
   }
 
   /** The non-terminal Processings that the User's Contributions started. */
-  async countActiveProcessings(userId: string): Promise<number> {
-    const [row] = await this.txHost.tx
-      .select({ value: countDistinct(trackProcessings.id) })
-      .from(trackProcessings)
-      .innerJoin(
-        trackContributions,
-        eq(trackContributions.processingId, trackProcessings.id),
-      )
-      .innerJoin(
-        trackContributors,
-        eq(trackContributors.id, trackContributions.contributorId),
-      )
-      .where(
-        and(
-          eq(trackContributors.userId, userId),
-          notInArray(trackProcessings.status, [
-            ...TRACK_PROCESSING_TERMINAL_STATUSES,
-          ]),
-        ),
-      );
-    return row?.value ?? 0;
+  countActiveProcessings(userId: string): Promise<number> {
+    return this.requestLimits.countActiveProcessings(userId);
   }
 
   /** The User's CREATE Contributions made in `[start, end)`: Tracks they asked for. */
-  async countNewTracksBetween(
+  countNewTracksBetween(
     userId: string,
     start: Date,
     end: Date,
   ): Promise<number> {
-    const [row] = await this.txHost.tx
-      .select({ value: count() })
-      .from(trackContributions)
-      .innerJoin(
-        trackContributors,
-        eq(trackContributors.id, trackContributions.contributorId),
-      )
-      .where(
-        and(
-          eq(trackContributors.userId, userId),
-          eq(trackContributions.kind, 'CREATE'),
-          gte(trackContributions.createdAt, start),
-          lt(trackContributions.createdAt, end),
-        ),
-      );
-    return row?.value ?? 0;
+    return this.requestLimits.countNewTracksBetween(userId, start, end);
   }
 }

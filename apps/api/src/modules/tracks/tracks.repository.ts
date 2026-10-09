@@ -9,9 +9,10 @@ import type {
   Mbid,
   TrackArtistCreditEntry,
 } from '@notefinder/contracts';
-import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
+import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import {
   legacyTrackIds,
   trackExternalLinks,
@@ -169,6 +170,29 @@ export class TracksRepository {
       externalUrls: row.externalLinks.map((link) => link.url),
       releases: row.releases,
     };
+  }
+
+  /** The MBID of the Recording a Track was created from; undefined for an unknown Track. */
+  async findRecordingMbid(trackId: string): Promise<string | undefined> {
+    const [row] = await this.txHost.tx
+      .select({ recordingMbid: tracks.recordingMbid })
+      .from(tracks)
+      .where(eq(tracks.id, trackId))
+      .limit(1);
+    return row?.recordingMbid;
+  }
+
+  /**
+   * Whether the Track has a completed Processing: the state its Artist and Album
+   * pages list it in (ADR 0005).
+   */
+  async isTrackCompleted(trackId: string): Promise<boolean> {
+    const rows = await this.txHost.tx
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(and(eq(tracks.id, trackId), hasCompletedProcessing(tracks.id)))
+      .limit(1);
+    return rows.length > 0;
   }
 
   /** Stores the Track's cover, in our storage, once a Processing has found one. */

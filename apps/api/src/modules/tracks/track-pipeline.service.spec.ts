@@ -20,6 +20,7 @@ const processings = {
   markStepStarted: vi.fn(),
   markFailed: vi.fn(),
   markCompleted: vi.fn(),
+  findCatalogIds: vi.fn(),
 };
 const videoStep = { run: vi.fn() };
 const audio = { run: vi.fn() };
@@ -56,6 +57,10 @@ describe('TrackPipelineService', () => {
     processings.markStepStarted.mockResolvedValue(true);
     processings.markFailed.mockResolvedValue(true);
     processings.markCompleted.mockResolvedValue(true);
+    processings.findCatalogIds.mockResolvedValue({
+      artistIds: [],
+      albumIds: [],
+    });
     queue.add.mockResolvedValue(undefined);
     moduleRef = await Test.createTestingModule({
       providers: [
@@ -175,6 +180,10 @@ describe('TrackPipelineService', () => {
           videoSource: 'youtube_music',
         }),
       );
+      processings.findCatalogIds.mockResolvedValue({
+        artistIds: ['artist-1'],
+        albumIds: ['album-1'],
+      });
 
       await pipeline.runStep(downloadingAudioJob, true);
 
@@ -185,6 +194,10 @@ describe('TrackPipelineService', () => {
       expect(revalidation.revalidate).toHaveBeenCalledWith([
         'track:track-1',
         'tracks',
+        'artist:artist-1',
+        'artist:artist-1:tracks',
+        'album:album-1',
+        'album:album-1:tracks',
       ]);
       expect(processings.markCompleted).toHaveBeenCalledWith(
         'processing-1',
