@@ -13,7 +13,7 @@ import { TrackCoverPlaceholder } from './track-cover-placeholder';
  */
 function TrackRingCover({ track }: { track: TrackHeader }) {
   return (
-    <span className="relative block size-24 rotate-3 overflow-hidden rounded-xl shadow-xl md:size-44">
+    <span className="relative block size-24 rotate-3 overflow-hidden rounded-xl shadow-md md:size-44">
       {track.coverUrl ? (
         <Image
           src={track.coverUrl}

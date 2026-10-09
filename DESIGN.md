@@ -318,7 +318,8 @@ chips as outlined white pills, and one `black/15` ring behind the visual.
 
 The Processing page header is the same block, with the ring doing work: the
 decorative ring becomes a **progress ring** around the cover (a `black/15`
-track and a white arc, no decoration ring on top), with the percentage in a
+track and a white arc, no decoration ring on top), the cover inside lifted
+only with `shadow-md` (the ring already frames it), and the percentage in a
 `bg-background` pill badge (Geist Mono, `tabular-nums`) on its corner. Above
 the title, an overline names the step (`Processing · step 3 of 5`); below the
 credit, the steps are `h-8` pills (`text-sm font-semibold`): done
