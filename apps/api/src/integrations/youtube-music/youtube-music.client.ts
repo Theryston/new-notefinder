@@ -26,11 +26,16 @@ export class YouTubeMusicClient {
       proxy === undefined ? fetch : createProxiedFetch(proxy);
   }
 
-  /** The songs and videos a search for the text finds, most relevant first. */
+  /**
+   * The songs a search for the text finds, most relevant first. It is a typed
+   * search: the untyped one answers a mixed list with no "songs" shelf and no
+   * length on songs, which a match by duration cannot use. Only songs are
+   * searched, the artist's own audio, never the videos around it.
+   */
   async searchSongs(query: string): Promise<YouTubeVideo[]> {
     const yt = await this.innertube();
-    const results = await yt.music.search(query);
-    return [...itemsOf(results.songs), ...itemsOf(results.videos)].flatMap(
+    const results = await yt.music.search(query, { type: 'song' });
+    return itemsOf(results.songs).flatMap(
       (item) => youtubeVideoOfSearchItem(item) ?? [],
     );
   }
