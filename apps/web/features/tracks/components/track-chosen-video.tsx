@@ -15,15 +15,15 @@ export function TrackChosenVideo({ video }: { video: TrackProcessingVideo }) {
   return (
     <section
       aria-labelledby="processing-video-title"
-      className="flex flex-col gap-4 sm:flex-row sm:items-center"
+      className="flex items-center gap-4"
     >
-      <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:w-56">
+      <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-muted">
         <Image
           src={youtubeThumbnailUrl(video.id)}
           alt=""
           fill
           unoptimized
-          sizes="(max-width: 640px) 100vw, 224px"
+          sizes="128px"
           className="object-cover"
         />
       </div>

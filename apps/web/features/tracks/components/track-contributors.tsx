@@ -17,7 +17,7 @@ function ContributorLabel({ contributor }: { contributor: TrackContributor }) {
           // The session type leaves a missing photo out rather than null.
           image: contributor.image ?? undefined,
         }}
-        className="size-10"
+        className="size-8"
       />
       <span className="font-medium text-sm">{contributor.name}</span>
     </>
@@ -41,10 +41,10 @@ export function TrackContributors({
       aria-labelledby="track-contributors"
       className="flex flex-col gap-3"
     >
-      <h2 id="track-contributors" className="font-bold text-lg tracking-tight">
+      <h2 id="track-contributors" className="font-semibold text-sm">
         {t('contributors.heading')}
       </h2>
-      <ul className="flex flex-wrap gap-4">
+      <ul className="flex flex-wrap gap-3">
         {contributors.map((contributor) => (
           <li key={contributor.id}>
             {contributor.username === null ? (

@@ -52,7 +52,7 @@
       "steps": {
         "label": "Processing steps",
         "FINDING_VIDEO": "Finding the video",
-        "DOWNLOADING_AUDIO": "Downloading the audio",
+        "DOWNLOADING_AUDIO": "Fetching metadata",
         "EXTRACTING_VOCALS": "Separating the vocals",
         "DETECTING_NOTES": "Detecting the notes",
         "EXTRACTING_LYRICS": "Transcribing the lyrics",
@@ -61,7 +61,25 @@
           "current": "In progress",
           "pending": "Waiting",
           "failed": "Failed"
+        },
+        "short": {
+          "FINDING_VIDEO": "Video",
+          "DOWNLOADING_AUDIO": "Metadata",
+          "EXTRACTING_VOCALS": "Vocals",
+          "DETECTING_NOTES": "Notes",
+          "EXTRACTING_LYRICS": "Lyrics"
+        },
+        "description": {
+          "FINDING_VIDEO": "Looking for the video that matches this recording.",
+          "DOWNLOADING_AUDIO": "Gathering what the next steps need about this track.",
+          "EXTRACTING_VOCALS": "Pulling the voice away from the rest of the band.",
+          "DETECTING_NOTES": "Finding every note the voice sings, with its pitch and timing.",
+          "EXTRACTING_LYRICS": "Writing down the lyrics, word by word, in time with the notes."
         }
+      },
+      "stage": {
+        "running": "Processing · step {current} of {total}",
+        "stopped": "Stopped at step {current} of {total}"
       },
       "progress": {
         "label": "Processing progress",
@@ -69,9 +87,12 @@
       },
       "status": {
         "QUEUED": "Queued",
-        "COMPLETED": "Notes are ready",
-        "FAILED": "Processing failed"
+        "FAILED": "Failed"
       },
+      "queued": {
+        "title": "Starting soon"
+      },
+      "remaining": "{minutes, plural, =0 {Less than a minute left} one {About # minute left} other {About # minutes left}}",
       "video": {
         "title": "Chosen video",
         "watch": "Watch on YouTube",
@@ -82,15 +103,14 @@
       },
       "closeNote": "You can close this page. Contributors get an email when the notes are ready.",
       "completed": {
-        "title": "Notes are ready",
-        "description": "The timeline that shows them arrives in a later update."
+        "title": "This track has been processed."
       },
       "failed": {
         "title": "This processing failed",
         "reason": {
           "VIDEO_NOT_FOUND": "We couldn't find a video that matches this recording.",
           "TOO_LONG": "This recording is too long to process.",
-          "DOWNLOAD_FAILED": "We couldn't download the audio.",
+          "DOWNLOAD_FAILED": "We couldn't fetch this track's metadata.",
           "NOTE_DETECTION_FAILED": "We couldn't detect the notes.",
           "INTERNAL": "Something went wrong while processing this track."
         }

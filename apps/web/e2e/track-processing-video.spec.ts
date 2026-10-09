@@ -33,7 +33,7 @@ for (const { locale, messages } of cases) {
       await setTrackMock({
         tracks: [
           trackWith(trackId, {
-            status: 'COMPLETED',
+            status: 'DETECTING_NOTES',
             video: { id: CHOSEN_VIDEO, source: 'musicbrainz' },
           }),
         ],

@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   displayedPercent,
   progressPercent,
+  remainingMinutes,
   type StepState,
+  stepPosition,
   stepStates,
 } from './processing-steps';
 
@@ -173,5 +175,74 @@ describe('displayedPercent', () => {
     expect(displayedPercent('COMPLETED', null, DAY_MS)).toBe(100);
     expect(displayedPercent('FAILED', 'DOWNLOADING_AUDIO', DAY_MS)).toBe(30);
     expect(displayedPercent('FAILED', null, DAY_MS)).toBe(0);
+  });
+});
+
+describe('stepPosition', () => {
+  it('counts the running step from 1, out of every step', () => {
+    expect(stepPosition('FINDING_VIDEO', null)).toEqual({
+      number: 1,
+      total: 5,
+    });
+    expect(stepPosition('EXTRACTING_VOCALS', null)).toEqual({
+      number: 3,
+      total: 5,
+    });
+    expect(stepPosition('EXTRACTING_LYRICS', null)).toEqual({
+      number: 5,
+      total: 5,
+    });
+  });
+
+  it('names the step a failed Processing stopped at', () => {
+    expect(stepPosition('FAILED', 'DETECTING_NOTES')).toEqual({
+      number: 4,
+      total: 5,
+    });
+  });
+
+  it('has no step while queued, once completed, or for a failure at an unknown step', () => {
+    expect(stepPosition('QUEUED', null)).toBeNull();
+    expect(stepPosition('QUEUED', 'DOWNLOADING_AUDIO')).toBeNull();
+    expect(stepPosition('COMPLETED', null)).toBeNull();
+    expect(stepPosition('FAILED', null)).toBeNull();
+  });
+});
+
+describe('remainingMinutes', () => {
+  it('adds the usual time of the running step and of every later one', () => {
+    // 5 + 25 + 50 + 39 + 36 s, then fewer steps left each time.
+    expect(remainingMinutes('FINDING_VIDEO', 0)).toBe(3);
+    expect(remainingMinutes('DOWNLOADING_AUDIO', 0)).toBe(3);
+    expect(remainingMinutes('EXTRACTING_VOCALS', 0)).toBe(2);
+    expect(remainingMinutes('DETECTING_NOTES', 0)).toBe(1);
+    expect(remainingMinutes('EXTRACTING_LYRICS', 0)).toBe(1);
+  });
+
+  it('takes the time already spent off the running step', () => {
+    // 30 s left of the vocals plus 75 s of the later steps.
+    expect(remainingMinutes('EXTRACTING_VOCALS', 20_000)).toBe(2);
+    // 10 s left of the vocals plus 75 s.
+    expect(remainingMinutes('EXTRACTING_VOCALS', 40_000)).toBe(1);
+  });
+
+  it('rounds to the nearest whole minute', () => {
+    expect(remainingMinutes('EXTRACTING_LYRICS', 6_000)).toBe(1);
+    expect(remainingMinutes('EXTRACTING_LYRICS', 7_000)).toBe(0);
+  });
+
+  it('counts an overrunning step as done, keeping the later steps', () => {
+    expect(remainingMinutes('EXTRACTING_LYRICS', DAY_MS)).toBe(0);
+    expect(remainingMinutes('DETECTING_NOTES', DAY_MS)).toBe(1);
+  });
+
+  it('treats a negative elapsed time as none', () => {
+    expect(remainingMinutes('EXTRACTING_LYRICS', -60_000)).toBe(1);
+  });
+
+  it('has no estimate when nothing runs', () => {
+    expect(remainingMinutes('QUEUED', 0)).toBeNull();
+    expect(remainingMinutes('COMPLETED', 0)).toBeNull();
+    expect(remainingMinutes('FAILED', 0)).toBeNull();
   });
 });

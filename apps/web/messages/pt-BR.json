@@ -52,7 +52,7 @@
       "steps": {
         "label": "Etapas do processamento",
         "FINDING_VIDEO": "Buscando o vídeo",
-        "DOWNLOADING_AUDIO": "Baixando o áudio",
+        "DOWNLOADING_AUDIO": "Buscando metadados",
         "EXTRACTING_VOCALS": "Separando os vocais",
         "DETECTING_NOTES": "Detectando as notas",
         "EXTRACTING_LYRICS": "Transcrevendo a letra",
@@ -61,7 +61,25 @@
           "current": "Em andamento",
           "pending": "Aguardando",
           "failed": "Falhou"
+        },
+        "short": {
+          "FINDING_VIDEO": "Vídeo",
+          "DOWNLOADING_AUDIO": "Metadados",
+          "EXTRACTING_VOCALS": "Vocais",
+          "DETECTING_NOTES": "Notas",
+          "EXTRACTING_LYRICS": "Letra"
+        },
+        "description": {
+          "FINDING_VIDEO": "Procurando o vídeo que corresponde a esta gravação.",
+          "DOWNLOADING_AUDIO": "Reunindo o que as próximas etapas precisam saber da faixa.",
+          "EXTRACTING_VOCALS": "Separando a voz do resto da banda.",
+          "DETECTING_NOTES": "Encontrando cada nota que a voz canta, com altura e tempo.",
+          "EXTRACTING_LYRICS": "Escrevendo a letra, palavra por palavra, no tempo das notas."
         }
+      },
+      "stage": {
+        "running": "Processando · etapa {current} de {total}",
+        "stopped": "Parou na etapa {current} de {total}"
       },
       "progress": {
         "label": "Progresso do processamento",
@@ -69,9 +87,12 @@
       },
       "status": {
         "QUEUED": "Na fila",
-        "COMPLETED": "As notas estão prontas",
-        "FAILED": "O processamento falhou"
+        "FAILED": "Falhou"
       },
+      "queued": {
+        "title": "Começa em instantes"
+      },
+      "remaining": "{minutes, plural, =0 {Menos de um minuto restante} one {Cerca de # minuto restante} other {Cerca de # minutos restantes}}",
       "video": {
         "title": "Vídeo escolhido",
         "watch": "Assistir no YouTube",
@@ -82,15 +103,14 @@
       },
       "closeNote": "Você pode fechar esta página. Os colaboradores recebem um e-mail quando as notas estiverem prontas.",
       "completed": {
-        "title": "As notas estão prontas",
-        "description": "A linha do tempo que as mostra chega em uma atualização futura."
+        "title": "Esta faixa já foi processada."
       },
       "failed": {
         "title": "Este processamento falhou",
         "reason": {
           "VIDEO_NOT_FOUND": "Não encontramos um vídeo que corresponda a esta gravação.",
           "TOO_LONG": "Esta gravação é longa demais para processar.",
-          "DOWNLOAD_FAILED": "Não conseguimos baixar o áudio.",
+          "DOWNLOAD_FAILED": "Não conseguimos buscar os metadados desta faixa.",
           "NOTE_DETECTION_FAILED": "Não conseguimos detectar as notas.",
           "INTERNAL": "Algo deu errado ao processar esta faixa."
         }

@@ -124,3 +124,62 @@ export function stepStates(
     state: stateOf(index, position),
   }));
 }
+
+/** The step a Processing is on, counted from 1, out of every step. */
+export type StepPosition = { number: number; total: number };
+
+/**
+ * The step a running Processing is on, or the one a failed Processing stopped
+ * at, counted from 1. Null while queued, once completed, and for a failure
+ * whose step is unknown: there is no step to name then.
+ */
+export function stepPosition(
+  status: TrackProcessingStatus,
+  resumeFrom: TrackProcessingStep | null,
+): StepPosition | null {
+  const { active } = positionOf(status, resumeFrom);
+  if (active === undefined) return null;
+  return { number: active.index + 1, total: TRACK_PROCESSING_STEPS.length };
+}
+
+/**
+ * How long each step usually takes, in milliseconds: the durations the legacy
+ * steps took (see `CREEP_TIME_CONSTANT_MS`). Finding the video was not timed
+ * there; it is one search, so a few seconds is assumed.
+ */
+const EXPECTED_STEP_MS: Record<TrackProcessingStep, number> = {
+  FINDING_VIDEO: 5_000,
+  DOWNLOADING_AUDIO: 25_000,
+  EXTRACTING_VOCALS: 50_000,
+  DETECTING_NOTES: 39_000,
+  EXTRACTING_LYRICS: 36_000,
+};
+
+const MINUTE_MS = 60_000;
+
+function isStep(status: TrackProcessingStatus): status is TrackProcessingStep {
+  return (TRACK_PROCESSING_STEPS as readonly string[]).includes(status);
+}
+
+/**
+ * About how many whole minutes a running Processing has left, `elapsedMs`
+ * after it reached its step: what the step usually has left (never below
+ * zero once it overruns) plus the usual time of every later step. Null when
+ * nothing runs (queued, completed or failed), since a queue wait is unknown.
+ */
+export function remainingMinutes(
+  status: TrackProcessingStatus,
+  elapsedMs: number,
+): number | null {
+  if (!isStep(status)) return null;
+  const index = TRACK_PROCESSING_STEPS.indexOf(status);
+  const later = TRACK_PROCESSING_STEPS.slice(index + 1).reduce(
+    (sum, step) => sum + EXPECTED_STEP_MS[step],
+    0,
+  );
+  const current = Math.max(
+    0,
+    EXPECTED_STEP_MS[status] - Math.max(0, elapsedMs),
+  );
+  return Math.round((current + later) / MINUTE_MS);
+}
