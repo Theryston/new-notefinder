@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { browserApi } from '@/lib/api/browser';
 import { trackKeys } from '../query-keys';
 import { requestErrorMessage } from '../request-error';
+import { isRetryConflict } from '../retry-offer';
 
 /** Starts a new Processing of a failed Track (`POST .../processing/retry`). */
 function retryTrack(trackId: string, locale: string) {
@@ -32,7 +33,15 @@ export function useRetryTrack(trackId: string) {
     onSuccess: (state) => {
       queryClient.setQueryData(trackKeys.processing(trackId), state);
     },
-    onError: (error: unknown) => {
+    onError: async (error: unknown) => {
+      if (isRetryConflict(error)) {
+        // Someone else retried first: read the Track again to show their Processing.
+        toast.error(t('tracks.processing.retry.conflict'));
+        await queryClient.invalidateQueries({
+          queryKey: trackKeys.processing(trackId),
+        });
+        return;
+      }
       const message = requestErrorMessage(error);
       toast.error(t(message.key, message.values));
     },

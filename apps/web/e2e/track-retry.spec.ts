@@ -39,6 +39,8 @@ for (const { locale, messages } of cases) {
   const tryAgain = messages.tracks.processing.retry.action;
   const signIn = messages.tracks.processing.retry.signIn;
   const completedTitle = messages.tracks.processing.completed.title;
+  const conflictMessage = messages.tracks.processing.retry.conflict;
+  const queuedLabel = messages.tracks.processing.status.QUEUED;
 
   test.describe(`track retry (${locale})`, () => {
     test('a signed-in visitor tries again and the page follows the new Processing to completion', async ({
@@ -57,6 +59,58 @@ for (const { locale, messages } of cases) {
       await expect(page.getByRole('progressbar')).toBeVisible();
 
       // The Processing completes on the server; the polling picks it up.
+      await setTrackMock({
+        tracks: [
+          {
+            ...failedTrack(trackId),
+            processing: {
+              status: 'COMPLETED',
+              failureCode: null,
+              retryable: false,
+              resumeFrom: null,
+              video: null,
+            },
+          },
+        ],
+      });
+      await expect(
+        page.getByRole('heading', { name: completedTitle }),
+      ).toBeVisible({ timeout: 10_000 });
+    });
+
+    test('a retry refused because someone retried first shows their Processing, and the page follows it', async ({
+      page,
+    }) => {
+      await page
+        .context()
+        .addCookies([{ ...SIGNED_IN_COOKIE, domain: 'localhost', path: '/' }]);
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-retry-race-${locale}`;
+      await setTrackMock({ tracks: [failedTrack(trackId)] });
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      // Another User retried first: the server moved on, the page is still stale.
+      await setTrackMock({
+        tracks: [
+          {
+            ...failedTrack(trackId),
+            processing: {
+              status: 'QUEUED',
+              failureCode: null,
+              retryable: false,
+              resumeFrom: 'FINDING_VIDEO',
+              video: null,
+            },
+          },
+        ],
+      });
+      await page.getByRole('button', { name: tryAgain }).click();
+
+      await expect(page.getByText(conflictMessage)).toBeVisible();
+      await expect(page.getByRole('button', { name: tryAgain })).toHaveCount(0);
+      await expect(page.getByText(queuedLabel)).toBeVisible();
+
+      // The page read the Track again, so its polling runs once more.
       await setTrackMock({
         tracks: [
           {

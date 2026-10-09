@@ -105,7 +105,8 @@
       },
       "retry": {
         "action": "Tentar de novo",
-        "signIn": "Entre para tentar de novo"
+        "signIn": "Entre para tentar de novo",
+        "conflict": "Alguém já tentou de novo. A página mostra o novo processamento."
       }
     }
   },

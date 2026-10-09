@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { ADA } from './auth-api-mock.ts';
 import { json, readBody } from './fake-api-http.ts';
 
 /**
@@ -44,18 +45,10 @@ export const SIGNED_IN_COOKIE = {
   value: 'signed-in',
 } as const;
 
+/** The session of the signed-in User: the auth mock's Ada, with a username. */
 const SIGNED_IN_SESSION = {
   session: { id: 'ses_1' },
-  user: {
-    id: 'user-ada',
-    name: 'Ada Lovelace',
-    email: 'ada@notefinder.test',
-    emailVerified: true,
-    username: 'ada_singer',
-    image: null,
-    role: 'USER',
-    createdAt: '2026-01-01T00:00:00.000Z',
-  },
+  user: { ...ADA, username: 'ada_singer', role: 'USER' },
 };
 
 /** `GET /v1/auth/get-session`: the signed-in session with the cookie, else `null`. */

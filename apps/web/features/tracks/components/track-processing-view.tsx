@@ -3,6 +3,8 @@
 import type { TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
+import { Toaster } from '@/components/ui/sonner';
+
 import { useTrackProcessing } from '../hooks/use-track-processing';
 import { isRetryOffered } from '../retry-offer';
 import { TrackChosenVideo } from './track-chosen-video';
@@ -29,6 +31,8 @@ export function TrackProcessingView({
 
   return (
     <div className="flex flex-col gap-8 pb-6 md:pb-8">
+      {/* Outlives the retry button, which leaves the page once the retry starts. */}
+      <Toaster />
       <TrackProcessingHeader track={state.track} />
       {state.processing === null ? (
         <p className="text-muted-foreground text-sm">{t('none')}</p>

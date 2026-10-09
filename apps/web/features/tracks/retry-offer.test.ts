@@ -1,7 +1,13 @@
 import type { TrackProcessing } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { isRetryOffered, retrySignInPath } from './retry-offer';
+import { ApiError } from '@/lib/api/api-error';
+
+import {
+  isRetryConflict,
+  isRetryOffered,
+  retrySignInPath,
+} from './retry-offer';
 
 const processing = (overrides: Partial<TrackProcessing>): TrackProcessing => ({
   id: 'processing-1',
@@ -48,5 +54,22 @@ describe('retrySignInPath', () => {
 
   it('encodes the Track ID in the path', () => {
     expect(retrySignInPath('a/b')).toBe('/tracks/a%2Fb');
+  });
+});
+
+describe('isRetryConflict', () => {
+  const refused = (code: 'CONFLICT' | 'PROCESSING_LIMIT_REACHED') =>
+    new ApiError({ statusCode: 409, code, message: 'refused' });
+
+  it('recognizes a retry refused because the Processing already moved on', () => {
+    expect(isRetryConflict(refused('CONFLICT'))).toBe(true);
+  });
+
+  it.each([
+    ['another refusal', refused('PROCESSING_LIMIT_REACHED')],
+    ['a plain error', new Error('network down')],
+    ['nothing', null],
+  ])('does not treat %s as a conflict', (_, error) => {
+    expect(isRetryConflict(error)).toBe(false);
   });
 });

@@ -1,11 +1,21 @@
 import type { TrackProcessing } from '@notefinder/contracts';
 
+import { isApiError } from '@/lib/api/api-error';
+
 /**
  * Whether the Processing page offers "Try again": the Processing failed with a
  * reason a retry can pick up (the API says so in `retryable`).
  */
 export function isRetryOffered(processing: TrackProcessing | null): boolean {
   return processing?.status === 'FAILED' && processing.retryable;
+}
+
+/**
+ * Whether a refused retry means the Processing moved on: another retry got
+ * there first, so the page is stale and must read the Track again.
+ */
+export function isRetryConflict(error: unknown): boolean {
+  return isApiError(error) && error.code === 'CONFLICT';
 }
 
 /**
