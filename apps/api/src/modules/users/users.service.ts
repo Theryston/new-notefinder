@@ -9,7 +9,11 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
-import { type CurrentUserRow, UsersRepository } from './users.repository.js';
+import {
+  type CurrentUserRow,
+  type EmailRecipientRow,
+  UsersRepository,
+} from './users.repository.js';
 
 /**
  * The public fields of a User that other features may show (a Track's
@@ -21,6 +25,9 @@ export type PublicUser = {
   name: string;
   image: string | null;
 };
+
+/** What a notification email needs about a User (see `findEmailRecipients`). */
+export type EmailRecipient = EmailRecipientRow;
 
 const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
   ...user,
@@ -90,6 +97,17 @@ export class UsersService {
    */
   setLocale(userId: string, locale: Locale): Promise<void> {
     return this.usersRepository.setLocale(userId, locale);
+  }
+
+  /**
+   * The email and language of the Users given, keyed by ID: what their
+   * notification emails need. A User that no longer exists is missing.
+   */
+  async findEmailRecipients(
+    userIds: readonly string[],
+  ): Promise<Map<string, EmailRecipient>> {
+    const rows = await this.usersRepository.findEmailRecipients([...userIds]);
+    return new Map(rows.map((row) => [row.id, row]));
   }
 
   /**

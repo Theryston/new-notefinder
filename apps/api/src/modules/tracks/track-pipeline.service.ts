@@ -80,15 +80,17 @@ export class TrackPipelineService {
   /**
    * Queues the first step of a Track's latest Processing when that Processing
    * has not started: the request of a new Track, or a later request for a
-   * Track whose first start failed. Job IDs are keyed by the Processing, so
-   * queuing it again while the first job is kept does nothing.
+   * Track whose first start failed. A queued retry starts at the step its row
+   * names (`resumeFrom`). Job IDs are keyed by the Processing, so queuing it
+   * again while the first job is kept does nothing.
    */
   async startIfQueued(trackId: string): Promise<void> {
     const latest = await this.processings.findLatestProcessing(trackId);
     if (latest?.status !== 'QUEUED') {
       return;
     }
-    await this.enqueueStep(latest.id, firstPipelineStep());
+    // A retry's row names the step it starts at; a first run starts at the first step.
+    await this.enqueueStep(latest.id, latest.resumeFrom ?? firstPipelineStep());
   }
 
   /**

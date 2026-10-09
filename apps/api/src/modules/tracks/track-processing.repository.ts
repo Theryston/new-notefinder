@@ -16,6 +16,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   notInArray,
   sql,
@@ -191,6 +192,8 @@ export class TrackProcessingRepository {
       .set({
         status: step,
         startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
+        // A running step resumes nothing: a retry's start step is spent.
+        resumeFrom: null,
       })
       .where(processingInStatus(processingId, dueStatuses))
       .returning({ id: trackProcessings.id });
@@ -289,6 +292,38 @@ export class TrackProcessingRepository {
     await this.txHost.tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${TRACK_REQUEST_LOCK_SCOPE}), hashtext(${userId}))`,
     );
+  }
+
+  /** The Track and end of a terminal Processing whose Contributors are not emailed yet. */
+  async findEndedWithoutEmails(
+    processingId: string,
+  ): Promise<{ trackId: string; status: TrackProcessingStatus } | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        trackId: trackProcessings.trackId,
+        status: trackProcessings.status,
+      })
+      .from(trackProcessings)
+      .where(
+        and(
+          processingInStatus(processingId, TRACK_PROCESSING_TERMINAL_STATUSES),
+          isNull(trackProcessings.contributorsNotifiedAt),
+        ),
+      );
+    return row;
+  }
+
+  /** Records that a Processing's Contributor emails were all queued (see the notifier). */
+  async markContributorsEmailed(processingId: string): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({ contributorsNotifiedAt: new Date() })
+      .where(
+        and(
+          eq(trackProcessings.id, processingId),
+          isNull(trackProcessings.contributorsNotifiedAt),
+        ),
+      );
   }
 
   /** The non-terminal Processings that the User's Contributions started. */

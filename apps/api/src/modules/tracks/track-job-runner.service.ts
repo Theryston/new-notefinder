@@ -3,6 +3,7 @@ import { cacheTags } from '@notefinder/contracts';
 import { UnrecoverableError } from 'bullmq';
 import type { z } from 'zod';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import {
@@ -27,6 +28,7 @@ export class TrackJobRunnerService {
     private readonly pipeline: TrackPipelineService,
     private readonly covers: TrackCoverService,
     private readonly revalidation: WebRevalidationService,
+    private readonly contributorEmails: TrackContributorEmailsService,
   ) {}
 
   /**
@@ -35,10 +37,12 @@ export class TrackJobRunnerService {
    */
   async run(name: string, data: unknown, finalAttempt: boolean): Promise<void> {
     if (name === RUN_STEP_JOB) {
-      return this.pipeline.runStep(
-        parseJob(runStepJobSchema, data),
-        finalAttempt,
-      );
+      const step = parseJob(runStepJobSchema, data);
+      await this.pipeline.runStep(step, finalAttempt);
+      // The step may have ended its Processing: its Contributors are emailed
+      // once the status is written, and a failed round fails this job so BullMQ
+      // replays it (see TrackContributorEmailsService).
+      return this.contributorEmails.notifyIfEnded(step.processingId);
     }
     if (name === STORE_COVER_JOB) {
       return this.storeCover(parseJob(storeCoverJobSchema, data), finalAttempt);

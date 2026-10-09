@@ -102,6 +102,11 @@
       "notFound": {
         "title": "Track not found",
         "description": "We couldn't find this track."
+      },
+      "retry": {
+        "action": "Try again",
+        "signIn": "Sign in to try again",
+        "conflict": "Someone already tried again. The page shows the new processing."
       }
     }
   },

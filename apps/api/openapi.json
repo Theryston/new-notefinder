@@ -187,6 +187,59 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/processing/retry": {
+      "post": {
+        "operationId": "TracksController_retryProcessing_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryTrackBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The retry started; its Processing is queued."
+          },
+          "400": {
+            "description": "The locale or the ID is bad."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The user has no username yet."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          },
+          "409": {
+            "description": "The latest Processing is not a retryable failure (`CONFLICT`)."
+          },
+          "429": {
+            "description": "The User reached the limit of active Processings (`PROCESSING_LIMIT_REACHED`). Admins are exempt."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "UsersController_getMe_v1",
@@ -448,6 +501,21 @@
         },
         "required": [
           "recordingMbid",
+          "locale"
+        ]
+      },
+      "RetryTrackBodyDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          }
+        },
+        "required": [
           "locale"
         ]
       },
