@@ -4,10 +4,12 @@ import { testMbid } from '../../../test/utils/factories.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TrackRequestService } from './track-request.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
+import type { TrackRequester } from './track-requester.service.js';
 
 const requests = { requestTrack: vi.fn() };
 const pipeline = { startIfQueued: vi.fn() };
 
+const requester: TrackRequester = { id: 'user-1', role: 'USER' };
 const body: CreateTrackBody = { recordingMbid: testMbid(1), locale: 'en' };
 
 describe('TrackRequestLauncherService', () => {
@@ -37,12 +39,12 @@ describe('TrackRequestLauncherService', () => {
       created: true,
     });
 
-    await expect(launcher.requestTrack('user-1', body)).resolves.toEqual({
+    await expect(launcher.requestTrack(requester, body)).resolves.toEqual({
       trackId: 'track-1',
       created: true,
     });
 
-    expect(requests.requestTrack).toHaveBeenCalledWith('user-1', body);
+    expect(requests.requestTrack).toHaveBeenCalledWith(requester, body);
     expect(pipeline.startIfQueued).toHaveBeenCalledWith('track-1');
   });
 
@@ -52,7 +54,7 @@ describe('TrackRequestLauncherService', () => {
       created: false,
     });
 
-    await expect(launcher.requestTrack('user-1', body)).resolves.toEqual({
+    await expect(launcher.requestTrack(requester, body)).resolves.toEqual({
       trackId: 'track-1',
       created: false,
     });
@@ -67,7 +69,7 @@ describe('TrackRequestLauncherService', () => {
     });
     pipeline.startIfQueued.mockRejectedValue(new Error('redis is down'));
 
-    await expect(launcher.requestTrack('user-1', body)).rejects.toThrow(
+    await expect(launcher.requestTrack(requester, body)).rejects.toThrow(
       'redis is down',
     );
   });

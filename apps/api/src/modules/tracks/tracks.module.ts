@@ -15,6 +15,7 @@ import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
+import { TrackRequesterService } from './track-requester.service.js';
 import { TrackVideoService } from './track-video.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
 import { TracksController } from './tracks.controller.js';
@@ -39,6 +40,7 @@ import { TracksService } from './tracks.service.js';
     TrackRequestService,
     TrackRequestLauncherService,
     TrackProcessingService,
+    TrackRequesterService,
     TrackVideoService,
     TrackVideoStepService,
     TrackCoverService,

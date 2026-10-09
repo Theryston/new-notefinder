@@ -3,6 +3,7 @@ import type { TrackProcessingVideoSource } from '@notefinder/contracts';
 import { ENV, type Env } from '../../config/env.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import type { YouTubeVideo } from '../../integrations/youtube-music/youtube-video.js';
+import { trackLimitsFrom } from './track-limits.js';
 import {
   messageOf,
   TrackProcessingFailure,
@@ -16,9 +17,6 @@ import {
 } from './track-video-matching.js';
 import type { PipelineTrack } from './tracks.repository.js';
 import { youtubeVideoIdOf } from './youtube-video-id.js';
-
-/** The longest a Recording may be when PROCESSING_MAX_DURATION_SECONDS is unset. */
-const PROCESSING_MAX_DURATION_DEFAULT_SECONDS = 900;
 
 /** The video a Processing chose, and where it was found. */
 export type ChosenVideo = {
@@ -132,11 +130,9 @@ export class TrackVideoService {
     }
   }
 
+  /** The limit the env sets, or the default of `track-limits.ts` when unset. */
   private maxDurationSeconds(): number {
-    return (
-      this.env.PROCESSING_MAX_DURATION_SECONDS ??
-      PROCESSING_MAX_DURATION_DEFAULT_SECONDS
-    );
+    return trackLimitsFrom(this.env).maxDurationSeconds;
   }
 }
 

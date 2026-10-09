@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
@@ -58,6 +59,11 @@ export class TracksController {
   @ApiNotFoundResponse({
     description: 'The Music catalog does not know the Recording.',
   })
+  @ApiTooManyRequestsResponse({
+    description:
+      'The User reached a limit on Track requests (`PROCESSING_LIMIT_REACHED`, ' +
+      'with the limit in `details`). Admins are exempt.',
+  })
   @ApiServiceUnavailableResponse({ description: 'The Music catalog is down.' })
   @ApiGatewayTimeoutResponse({
     description: 'The Music catalog took too long.',
@@ -67,7 +73,7 @@ export class TracksController {
     @Body() body: CreateTrackBodyDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CreateTrackResult> {
-    const requested = await this.trackRequests.requestTrack(user.id, body);
+    const requested = await this.trackRequests.requestTrack(user, body);
     response.status(requested.created ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return { trackId: requested.trackId };
   }

@@ -5,6 +5,7 @@ import {
   type RequestedTrack,
   TrackRequestService,
 } from './track-request.service.js';
+import type { TrackRequester } from './track-requester.service.js';
 
 /**
  * A Track request that also starts the Track's Processing while it is still
@@ -22,10 +23,10 @@ export class TrackRequestLauncherService {
   ) {}
 
   async requestTrack(
-    userId: string,
+    requester: TrackRequester,
     body: CreateTrackBody,
   ): Promise<RequestedTrack> {
-    const requested = await this.requests.requestTrack(userId, body);
+    const requested = await this.requests.requestTrack(requester, body);
     await this.pipeline.startIfQueued(requested.trackId);
     return requested;
   }

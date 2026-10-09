@@ -138,9 +138,14 @@ const envSchema = z
     MUSIC_CATALOG_REQUEST_TIMEOUT_MS: optional(
       z.coerce.number().int().positive(),
     ),
-    // Longest Recording (or chosen video, when the Recording has no length)
-    // a Processing takes on, in seconds. No default in the schema, so existing
-    // env snapshots keep passing; the pipeline falls back to 900 seconds.
+    // Limits on a User's Track requests (admins are exempt) and the longest
+    // Recording or video a Processing accepts. Unset, the defaults of
+    // `modules/tracks/track-limits.ts` apply: kept out of the schema so the
+    // parsed env stays what it was before these existed.
+    PROCESSING_ACTIVE_LIMIT: optional(z.coerce.number().int().positive()),
+    PROCESSING_NEW_TRACKS_DAILY_LIMIT: optional(
+      z.coerce.number().int().positive(),
+    ),
     PROCESSING_MAX_DURATION_SECONDS: optional(
       z.coerce.number().int().positive(),
     ),
