@@ -2,10 +2,12 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { TrackAudioService } from './track-audio.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { coverJobId, TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingFailure } from './track-processing-failure.js';
+import { TrackStepsService } from './track-steps.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
 
 // The pipeline's decisions: what a step job does with its outcome. The rows
@@ -21,6 +23,7 @@ const processings = {
   findCatalogIds: vi.fn(),
 };
 const videoStep = { run: vi.fn() };
+const audio = { run: vi.fn() };
 const revalidation = { revalidate: vi.fn() };
 
 const processing = (overrides: Record<string, unknown> = {}) => ({
@@ -37,6 +40,11 @@ const findingVideoJob = {
   step: 'FINDING_VIDEO',
 } as const;
 
+const downloadingAudioJob = {
+  processingId: 'processing-1',
+  step: 'DOWNLOADING_AUDIO',
+} as const;
+
 describe('TrackPipelineService', () => {
   let pipeline: TrackPipelineService;
   let moduleRef: TestingModule;
@@ -45,6 +53,7 @@ describe('TrackPipelineService', () => {
     vi.clearAllMocks();
     // `clearAllMocks` keeps implementations: each case starts from success.
     videoStep.run.mockResolvedValue('https://img.test/artwork.jpg');
+    audio.run.mockResolvedValue({ kind: 'done' });
     processings.markStepStarted.mockResolvedValue(true);
     processings.markFailed.mockResolvedValue(true);
     processings.markCompleted.mockResolvedValue(true);
@@ -56,9 +65,11 @@ describe('TrackPipelineService', () => {
     moduleRef = await Test.createTestingModule({
       providers: [
         TrackPipelineService,
+        TrackStepsService,
         { provide: getQueueToken(TRACK_PROCESSING_QUEUE), useValue: queue },
         { provide: TrackProcessingRepository, useValue: processings },
         { provide: TrackVideoStepService, useValue: videoStep },
+        { provide: TrackAudioService, useValue: audio },
         { provide: WebRevalidationService, useValue: revalidation },
       ],
     }).compile();
@@ -109,7 +120,7 @@ describe('TrackPipelineService', () => {
     it('refuses a step this build does not run, without retrying it', async () => {
       await expect(
         pipeline.runStep(
-          { processingId: 'processing-1', step: 'DOWNLOADING_AUDIO' },
+          { processingId: 'processing-1', step: 'EXTRACTING_VOCALS' },
           true,
         ),
       ).rejects.toBeInstanceOf(UnrecoverableError);
@@ -162,16 +173,23 @@ describe('TrackPipelineService', () => {
     });
 
     it('completes the Processing after the last step, revalidating the Track first', async () => {
-      processings.findProcessing.mockResolvedValue(processing());
+      processings.findProcessing.mockResolvedValue(
+        processing({
+          status: 'DOWNLOADING_AUDIO',
+          videoId: 'video-1',
+          videoSource: 'youtube_music',
+        }),
+      );
       processings.findCatalogIds.mockResolvedValue({
         artistIds: ['artist-1'],
         albumIds: ['album-1'],
       });
 
-      await pipeline.runStep(findingVideoJob, true);
+      await pipeline.runStep(downloadingAudioJob, true);
 
-      expect(videoStep.run).toHaveBeenCalledWith(
+      expect(audio.run).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'processing-1', trackId: 'track-1' }),
+        undefined,
       );
       expect(revalidation.revalidate).toHaveBeenCalledWith([
         'track:track-1',
@@ -183,7 +201,7 @@ describe('TrackPipelineService', () => {
       ]);
       expect(processings.markCompleted).toHaveBeenCalledWith(
         'processing-1',
-        'FINDING_VIDEO',
+        'DOWNLOADING_AUDIO',
       );
       expect(revalidation.revalidate.mock.invocationCallOrder[0]).toBeLessThan(
         processings.markCompleted.mock.invocationCallOrder[0] ?? 0,

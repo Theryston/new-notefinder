@@ -12,9 +12,21 @@ export const TRACK_PROCESSING_QUEUE = 'track-processing';
 export const RUN_STEP_JOB = 'run-step';
 export const STORE_COVER_JOB = 'store-cover';
 
+// A step that waits (a RapidAPI conversion) is checked again by a delayed run
+// of the same step. `round` numbers the checks, from 1, and `state` is what the
+// step needs to check again (its own schema parses it).
+const stepWaitSchema = z.object({
+  round: z.number().int().min(1),
+  state: z.unknown(),
+});
+
+export type StepWait = z.infer<typeof stepWaitSchema>;
+
 export const runStepJobSchema = z.object({
   processingId: z.string().min(1).max(128),
   step: trackProcessingStepSchema,
+  /** Set on a re-check of a waiting step; absent on the step's first run. */
+  wait: stepWaitSchema.optional(),
 });
 
 export type RunStepJob = z.infer<typeof runStepJobSchema>;
@@ -42,3 +54,10 @@ export const stepJobId = (processingId: string, step: TrackProcessingStep) =>
   `step-${processingId}-${step}`;
 
 export const coverJobId = (processingId: string) => `cover-${processingId}`;
+
+/** The job of one re-check of a waiting step; keyed by its round, so each check is queued once. */
+export const waitJobId = (
+  processingId: string,
+  step: TrackProcessingStep,
+  round: number,
+) => `wait-${processingId}-${step}-${round}`;

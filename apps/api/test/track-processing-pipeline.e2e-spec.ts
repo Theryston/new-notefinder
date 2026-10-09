@@ -66,8 +66,10 @@ describe('Track Processing pipeline (e2e)', () => {
       youtube.videos.set(LINKED_VIDEO, youtubeVideo({ videoId: LINKED_VIDEO }));
       const trackId = await requestTrack(app);
 
-      // Only the video step: the cover job runs after it, from its own entry.
+      // The video step first, then the rest (the cover and the download), from
+      // their own entries.
       await runNextTrackJob(testApp);
+      await runTrackJobs(testApp);
 
       const state = await processingOf(testApp, trackId);
       expect(state.processing).toMatchObject({
@@ -310,6 +312,8 @@ describe('Track Processing pipeline (e2e)', () => {
         );
 
       expect(youtube.searches).toEqual([]);
+      // The steps after the video run from the queue; the video is still kept.
+      await runTrackJobs(testApp);
       expect(await processingRowOf(testApp, trackId)).toMatchObject({
         status: 'COMPLETED',
         videoId: LINKED_VIDEO,

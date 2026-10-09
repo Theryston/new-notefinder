@@ -11,6 +11,7 @@ import {
 
 const PIPELINE_STEPS = [
   'FINDING_VIDEO',
+  'DOWNLOADING_AUDIO',
 ] as const satisfies readonly TrackProcessingStep[];
 
 /** A step this build runs. */
