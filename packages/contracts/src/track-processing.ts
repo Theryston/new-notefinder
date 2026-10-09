@@ -100,7 +100,10 @@ export const trackProcessingSchema = z.object({
   failureCode: trackProcessingFailureCodeSchema.nullable(),
   /** Whether a retry can pick the Processing up (a failure that is not final). */
   retryable: z.boolean(),
-  /** The step a retry starts at, once the Processing failed in one. */
+  /**
+   * The step the Processing resumes from: the one it failed at, or, while a
+   * retry is queued, the one that retry starts at. Null otherwise.
+   */
   resumeFrom: trackProcessingStepSchema.nullable(),
   /** The video the Processing chose, once it has found one. */
   video: trackProcessingVideoSchema.nullable(),

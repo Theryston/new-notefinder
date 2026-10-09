@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { AudioDownloadModule } from '../../integrations/audio-download/audio-download.module.js';
 import { CoverArtModule } from '../../integrations/cover-art/cover-art.module.js';
+import { EmailModule } from '../../integrations/email/email.module.js';
 import { FfmpegModule } from '../../integrations/ffmpeg/ffmpeg.module.js';
 import { MusicCatalogModule } from '../../integrations/music-catalog/music-catalog.module.js';
 import { StorageModule } from '../../integrations/storage/storage.module.js';
@@ -11,6 +12,8 @@ import { TRACK_METADATA_QUEUE } from '../../queue/track-metadata.job.js';
 import { UsersModule } from '../users/users.module.js';
 import { TrackAlbumCoverService } from './track-album-cover.service.js';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackContributorRepository } from './track-contributor.repository.js';
+import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
@@ -22,7 +25,11 @@ import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestService } from './track-request.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
+import { TrackRequestLimitRepository } from './track-request-limit.repository.js';
 import { TrackRequesterService } from './track-requester.service.js';
+import { TrackRetryRepository } from './track-retry.repository.js';
+import { TrackRetryService } from './track-retry.service.js';
+import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
 import { TrackStepsService } from './track-steps.service.js';
 import { TrackVideoService } from './track-video.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
@@ -41,6 +48,7 @@ import { TracksService } from './tracks.service.js';
     BullModule.registerQueue({ name: TRACK_PROCESSING_QUEUE }),
     BullModule.registerQueue({ name: TRACK_METADATA_QUEUE }),
     CoverArtModule,
+    EmailModule,
     FfmpegModule,
     MusicCatalogModule,
     StorageModule,
@@ -53,10 +61,16 @@ import { TracksService } from './tracks.service.js';
     TracksService,
     TracksRepository,
     TrackProcessingRepository,
+    TrackContributorRepository,
+    TrackRequestLimitRepository,
     TrackRequestService,
     TrackRequestLauncherService,
     TrackRequestFlowService,
     TrackMetadataQueueService,
+    TrackRetryRepository,
+    TrackRetryService,
+    TrackRetryLauncherService,
+    TrackContributorEmailsService,
     TrackProcessingService,
     TrackRequesterService,
     TrackVideoService,

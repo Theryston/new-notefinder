@@ -1,0 +1,1 @@
+ALTER TABLE "track_processings" ADD COLUMN "contributors_notified_at" timestamp with time zone;

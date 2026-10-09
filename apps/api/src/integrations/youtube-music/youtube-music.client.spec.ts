@@ -52,7 +52,7 @@ describe('YouTubeMusicClient', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
-  it('searches the songs first, then the videos, mapped to plain videos', async () => {
+  it('searches the songs, mapped to plain videos', async () => {
     music.search.mockResolvedValue({
       songs: {
         contents: [
@@ -63,16 +63,6 @@ describe('YouTubeMusicClient', () => {
             artists: [{ name: 'Queen' }],
             duration: { seconds: 354 },
             thumbnails: [{ url: 'https://img.test/a.jpg', width: 226 }],
-          },
-        ],
-      },
-      videos: {
-        contents: [
-          {
-            id: 'bbbbbbbbbbb',
-            title: 'Bohemian Rhapsody (Official Video)',
-            item_type: 'video',
-            thumbnails: [],
           },
         ],
       },
@@ -89,16 +79,20 @@ describe('YouTubeMusicClient', () => {
         kind: 'song',
         artworkUrl: 'https://img.test/a.jpg',
       },
-      {
-        videoId: 'bbbbbbbbbbb',
-        title: 'Bohemian Rhapsody (Official Video)',
-        artists: [],
-        durationSeconds: null,
-        kind: 'video',
-        artworkUrl: null,
-      },
     ]);
-    expect(music.search).toHaveBeenCalledWith('Queen Bohemian Rhapsody');
+  });
+
+  // The untyped search answers a mixed list of sections with no "songs"
+  // shelf and no length on songs, so every search was empty.
+  it('asks for a songs-only search, never the mixed one or the videos', async () => {
+    music.search.mockResolvedValue({});
+
+    await client.searchSongs('Queen Bohemian Rhapsody');
+
+    expect(music.search).toHaveBeenCalledTimes(1);
+    expect(music.search).toHaveBeenCalledWith('Queen Bohemian Rhapsody', {
+      type: 'song',
+    });
   });
 
   it('answers no results when the search has no shelves', async () => {

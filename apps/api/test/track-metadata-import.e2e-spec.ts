@@ -23,7 +23,12 @@ import {
 } from './utils/catalog-fixtures.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
-import { createPasswordUser, testMbid, type User } from './utils/factories.js';
+import {
+  createPasswordUser,
+  createTrack,
+  testMbid,
+  type User,
+} from './utils/factories.js';
 import { FakeCoverArt } from './utils/fake-cover-art.js';
 import {
   FAKE_CATALOG_API_KEY,
@@ -31,9 +36,11 @@ import {
   startFakeMusicCatalog,
 } from './utils/fake-music-catalog.js';
 import { recordingFixture } from './utils/recording-fixtures.js';
+import { createTrackProcessing } from './utils/track-processing-factories.js';
 import {
   coverImage,
   processingRowOf,
+  retryTrackAs,
   signedInClient,
 } from './utils/track-processing-harness.js';
 
@@ -276,6 +283,27 @@ describe('Track metadata import (e2e)', () => {
 
     expect(testApp.queues[TRACK_METADATA_QUEUE]?.added).toEqual([
       { name: 'import-metadata', data: { trackId } },
+    ]);
+  });
+
+  it('queues the import again when a retry starts its Processing, for the failed Track', async () => {
+    const track = await createTrack(testApp.db);
+    await createTrackProcessing(testApp.db, track.id, {
+      status: 'FAILED',
+      failureCode: 'INTERNAL',
+      resumeFrom: 'FINDING_VIDEO',
+    });
+
+    const response = await retryTrackAs(
+      testApp,
+      await createPasswordUser(testApp.db),
+      track.id,
+      'en',
+    );
+
+    expect(response.status).toBe(202);
+    expect(testApp.queues[TRACK_METADATA_QUEUE]?.added).toEqual([
+      { name: 'import-metadata', data: { trackId: track.id } },
     ]);
   });
 

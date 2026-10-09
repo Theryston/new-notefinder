@@ -18,6 +18,13 @@ export type PublicUserRow = {
   image: string | null;
 };
 
+/** The fields a notification email needs about a User: where it goes and in what language. */
+export type EmailRecipientRow = {
+  id: string;
+  email: string;
+  locale: Locale;
+};
+
 // Named in migration 0000_init.
 const USERNAME_UNIQUE_CONSTRAINT = 'users_username_unique';
 
@@ -84,6 +91,21 @@ export class UsersRepository {
   /** Sets the language the User's emails follow. */
   async setLocale(id: string, locale: Locale): Promise<void> {
     await this.txHost.tx.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
+  /** The email and language of the Users given, for the ones that exist. */
+  async findEmailRecipients(ids: string[]): Promise<EmailRecipientRow[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.txHost.tx
+      .select({
+        id: users.id,
+        email: users.email,
+        locale: users.locale,
+      })
+      .from(users)
+      .where(inArray(users.id, ids));
   }
 
   /** The public fields of the Users given, for the ones that exist. */

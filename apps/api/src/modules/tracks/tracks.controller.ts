@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   Post,
@@ -10,6 +11,7 @@ import {
 import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiForbiddenResponse,
   ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
@@ -31,9 +33,11 @@ import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
+import { RetryTrackBodyDto } from './retry-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
+import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
 
 @ApiTags('tracks')
 @Controller('tracks')
@@ -41,6 +45,7 @@ export class TracksController {
   constructor(
     private readonly trackRequests: TrackRequestFlowService,
     private readonly trackProcessing: TrackProcessingService,
+    private readonly trackRetries: TrackRetryLauncherService,
   ) {}
 
   // A Recording becomes a Track on the first request (202, its Processing is
@@ -95,5 +100,39 @@ export class TracksController {
     @Param() params: TrackIdParamDto,
   ): Promise<TrackProcessingState> {
     return this.trackProcessing.getProcessingState(params.trackId);
+  }
+
+  // Starts a new Processing of a failed Track from the step that failed (202).
+  // Only a retryable failure qualifies (`CONFLICT` otherwise), and the User
+  // becomes a Contributor of the Track.
+  @Post(':trackId/processing/retry')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ZodSerializerDto(trackProcessingStateSchema)
+  @ApiAcceptedResponse({
+    description: 'The retry started; its Processing is queued.',
+  })
+  @ApiBadRequestResponse({ description: 'The locale or the ID is bad.' })
+  @ApiUnauthorizedResponse({ description: 'No valid session.' })
+  @ApiForbiddenResponse({ description: 'The user has no username yet.' })
+  @ApiNotFoundResponse({
+    description:
+      'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
+      '(`RESOURCE_MOVED`).',
+  })
+  @ApiConflictResponse({
+    description:
+      'The latest Processing is not a retryable failure (`CONFLICT`).',
+  })
+  @ApiTooManyRequestsResponse({
+    description:
+      'The User reached the limit of active Processings ' +
+      '(`PROCESSING_LIMIT_REACHED`). Admins are exempt.',
+  })
+  retryProcessing(
+    @CurrentUser() user: AuthUser,
+    @Param() params: TrackIdParamDto,
+    @Body() body: RetryTrackBodyDto,
+  ): Promise<TrackProcessingState> {
+    return this.trackRetries.retry(user, params.trackId, body);
   }
 }

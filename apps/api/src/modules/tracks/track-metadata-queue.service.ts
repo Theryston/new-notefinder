@@ -23,11 +23,10 @@ export class TrackMetadataQueueService {
   ) {}
 
   /**
-   * Queues the import for the Track's newest Processing. Only the request that
-   * creates a Track calls it today: no retry path enqueues yet, and the retry
-   * endpoint (#142) wires that in once it has created the retry's Processing.
-   * Keyed by Processing, so a repeated enqueue of one Processing changes nothing,
-   * and each Processing gets an import of its own.
+   * Queues the import for the Track's newest Processing. The request that creates
+   * a Track calls it, and so does each retry once the retry's Processing exists
+   * (ADR 0005). Keyed by Processing, so a repeated enqueue of one Processing
+   * changes nothing, and each Processing gets an import of its own.
    */
   async enqueueImport(trackId: string): Promise<void> {
     const latest = await this.processings.findLatestProcessing(trackId);
