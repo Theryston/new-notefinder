@@ -14,6 +14,7 @@ import {
   createAlbum,
   createArtist,
   createTrack,
+  creditAlbumArtist,
   linkTrackArtist,
 } from './utils/factories.js';
 import { createTrackProcessing } from './utils/track-processing-factories.js';
@@ -167,6 +168,68 @@ describe('Artist and Album reads list only completed Tracks (e2e)', () => {
       const album = await createAlbum(testApp.db);
 
       await testApp.http.get(`/v1/albums/${album.id}`).expect(404);
+    });
+
+    it('shows the header of an Album with its credit in order once one of its Tracks completes', async () => {
+      const album = await createAlbum(testApp.db, {
+        title: 'A Night at the Opera',
+        primaryType: 'Album',
+        secondaryTypes: ['Live'],
+        year: 1975,
+        genres: ['rock', 'pop'],
+      });
+      const queen = await createArtist(testApp.db, { name: 'Queen' });
+      const adele = await createArtist(testApp.db, { name: 'Adele' });
+      await creditAlbumArtist(testApp.db, album.id, queen.id, 0);
+      await creditAlbumArtist(testApp.db, album.id, adele.id, 1);
+      await createAlbumDisc(testApp.db, album.id, 1, null);
+      await albumTrack(album.id, 'COMPLETED', 1);
+
+      const response = await testApp.http
+        .get(`/v1/albums/${album.id}`)
+        .expect(200);
+
+      expect(albumSchema.parse(response.body)).toEqual(response.body);
+      expect(response.body).toEqual({
+        id: album.id,
+        mbid: album.mbid,
+        title: 'A Night at the Opera',
+        primaryType: 'Album',
+        secondaryTypes: ['Live'],
+        year: 1975,
+        genres: ['rock', 'pop'],
+        coverArtUrl: album.coverArtUrl,
+        trackCount: 1,
+        artists: [
+          { id: queen.id, name: 'Queen' },
+          { id: adele.id, name: 'Adele' },
+        ],
+      });
+    });
+
+    it('shows an Album with null header fields and no credits once one of its Tracks completes', async () => {
+      const album = await createAlbum(testApp.db, {
+        primaryType: null,
+        year: null,
+        genres: [],
+        coverArtUrl: null,
+      });
+      await createAlbumDisc(testApp.db, album.id, 1, null);
+      await albumTrack(album.id, 'COMPLETED', 1);
+
+      const response = await testApp.http
+        .get(`/v1/albums/${album.id}`)
+        .expect(200);
+
+      expect(albumSchema.parse(response.body)).toEqual(response.body);
+      expect(response.body).toMatchObject({
+        primaryType: null,
+        year: null,
+        genres: [],
+        coverArtUrl: null,
+        artists: [],
+        trackCount: 1,
+      });
     });
   });
 });

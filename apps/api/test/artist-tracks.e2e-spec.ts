@@ -7,9 +7,9 @@ import { resetDatabase } from './utils/database.js';
 import {
   createArtist,
   createLegacyArtistId,
-  createTrack,
   linkTrackArtist,
 } from './utils/factories.js';
+import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 const encodeCursor = (id: string): string =>
   Buffer.from(id, 'utf8').toString('base64url');
@@ -35,7 +35,7 @@ describe('Artist tracks (e2e)', () => {
   it('lists the core fields with one entry per track', async () => {
     const artist = await createArtist(testApp.db, { name: 'Queen' });
     const other = await createArtist(testApp.db, { name: 'Other' });
-    const first = await createTrack(testApp.db, {
+    const first = await createCompletedTrack(testApp.db, {
       title: 'Bohemian Rhapsody',
       lengthMs: 354_000,
       disambiguation: '',
@@ -43,7 +43,7 @@ describe('Artist tracks (e2e)', () => {
       isrcs: ['GBUM71029604'],
       genres: ['rock'],
     });
-    const second = await createTrack(testApp.db, {
+    const second = await createCompletedTrack(testApp.db, {
       title: 'Another One',
       lengthMs: 210_000,
       disambiguation: 'live',
@@ -51,7 +51,9 @@ describe('Artist tracks (e2e)', () => {
       isrcs: [],
       genres: [],
     });
-    const outsider = await createTrack(testApp.db, { title: 'Outsider' });
+    const outsider = await createCompletedTrack(testApp.db, {
+      title: 'Outsider',
+    });
     await linkTrackArtist(testApp.db, first.id, artist.id);
     await linkTrackArtist(testApp.db, second.id, artist.id);
     await linkTrackArtist(testApp.db, outsider.id, other.id);
@@ -85,7 +87,7 @@ describe('Artist tracks (e2e)', () => {
     const artist = await createArtist(testApp.db);
     const made = [];
     for (let index = 0; index < 3; index += 1) {
-      const track = await createTrack(testApp.db, {
+      const track = await createCompletedTrack(testApp.db, {
         title: `Track ${index}`,
       });
       await linkTrackArtist(testApp.db, track.id, artist.id);
@@ -117,12 +119,9 @@ describe('Artist tracks (e2e)', () => {
 
     const response = await testApp.http
       .get(`/v1/artists/${artist.id}/tracks`)
-      .expect(200);
+      .expect(404);
 
-    expect(catalogTracksPageSchema.parse(response.body)).toEqual({
-      items: [],
-      nextCursor: null,
-    });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
   it('answers RESOURCE_MOVED with the new ID for a legacy ID', async () => {
@@ -153,6 +152,8 @@ describe('Artist tracks (e2e)', () => {
 
   it('rejects an invalid cursor with a validation error', async () => {
     const artist = await createArtist(testApp.db);
+    const track = await createCompletedTrack(testApp.db);
+    await linkTrackArtist(testApp.db, track.id, artist.id);
 
     const response = await testApp.http
       .get(`/v1/artists/${artist.id}/tracks?cursor=!!!`)
@@ -166,7 +167,7 @@ describe('Artist tracks (e2e)', () => {
 
   it('rejects a raw track ID as a cursor with a validation error', async () => {
     const artist = await createArtist(testApp.db);
-    const track = await createTrack(testApp.db, { title: 'Raw' });
+    const track = await createCompletedTrack(testApp.db, { title: 'Raw' });
     await linkTrackArtist(testApp.db, track.id, artist.id);
 
     const response = await testApp.http
@@ -181,7 +182,7 @@ describe('Artist tracks (e2e)', () => {
 
   it('needs no authentication', async () => {
     const artist = await createArtist(testApp.db);
-    const track = await createTrack(testApp.db);
+    const track = await createCompletedTrack(testApp.db);
     await linkTrackArtist(testApp.db, track.id, artist.id);
 
     await testApp.http.get(`/v1/artists/${artist.id}/tracks`).expect(200);
@@ -190,7 +191,7 @@ describe('Artist tracks (e2e)', () => {
   it('lists every credited artist of a track', async () => {
     const queen = await createArtist(testApp.db, { name: 'Queen' });
     const bowie = await createArtist(testApp.db, { name: 'David Bowie' });
-    const track = await createTrack(testApp.db, {
+    const track = await createCompletedTrack(testApp.db, {
       title: 'Under Pressure',
     });
     await linkTrackArtist(testApp.db, track.id, queen.id);
@@ -210,8 +211,8 @@ describe('Artist tracks (e2e)', () => {
 
   it('encodes cursors as opaque track IDs', async () => {
     const artist = await createArtist(testApp.db);
-    const first = await createTrack(testApp.db, { title: 'First' });
-    const second = await createTrack(testApp.db, { title: 'Second' });
+    const first = await createCompletedTrack(testApp.db, { title: 'First' });
+    const second = await createCompletedTrack(testApp.db, { title: 'Second' });
     await linkTrackArtist(testApp.db, first.id, artist.id);
     await linkTrackArtist(testApp.db, second.id, artist.id);
 

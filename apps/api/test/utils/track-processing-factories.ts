@@ -5,12 +5,14 @@ import {
 } from '../../src/database/schema/track-contributors.js';
 import { trackProcessings } from '../../src/database/schema/track-processings.js';
 import { legacyTrackIds } from '../../src/database/schema/tracks.js';
+import { createTrack, type Track } from './factories.js';
 
 export type TrackProcessingRow = typeof trackProcessings.$inferSelect;
 export type TrackContributorRow = typeof trackContributors.$inferSelect;
 
 type NewProcessing = typeof trackProcessings.$inferInsert;
 type NewContribution = typeof trackContributions.$inferInsert;
+type TrackOverrides = Parameters<typeof createTrack>[1];
 
 const insertOne = async <T>(rows: Promise<T[]>): Promise<T> => {
   const [row] = await rows;
@@ -32,6 +34,19 @@ export const createTrackProcessing = (
       .values({ trackId, ...overrides })
       .returning(),
   );
+
+/**
+ * A Track whose Processing has completed, so the Artist and Album reads list
+ * it (ADR 0005). The Track is the same as `createTrack` makes.
+ */
+export const createCompletedTrack = async (
+  db: Database,
+  overrides: TrackOverrides = {},
+): Promise<Track> => {
+  const track = await createTrack(db, overrides);
+  await createTrackProcessing(db, track.id, { status: 'COMPLETED' });
+  return track;
+};
 
 /** A User as a Contributor of a Track. */
 export const createTrackContributor = (

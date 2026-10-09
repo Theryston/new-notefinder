@@ -14,9 +14,9 @@ import {
   createAlbum,
   createArtist,
   createLegacyAlbumId,
-  createTrack,
   linkTrackArtist,
 } from './utils/factories.js';
+import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 // Album tracks over a real Postgres: the contracted cursor page in album
 // order (disc, then track position), each entry with its disc, the same track
@@ -40,7 +40,7 @@ describe('Album tracks (e2e)', () => {
   /** A processed Track by a fresh Artist, so it passes the catalog contract. */
   const makeTrack = async (title: string) => {
     const artist = await createArtist(testApp.db);
-    const track = await createTrack(testApp.db, { title });
+    const track = await createCompletedTrack(testApp.db, { title });
     await linkTrackArtist(testApp.db, track.id, artist.id);
     return track;
   };
@@ -186,9 +186,11 @@ describe('Album tracks (e2e)', () => {
   it('answers an empty page for an album with no tracks', async () => {
     const album = await createAlbum(testApp.db);
 
-    const page = await getPage(album.id);
+    const response = await testApp.http
+      .get(`/v1/albums/${album.id}/tracks`)
+      .expect(404);
 
-    expect(page).toEqual({ items: [], nextCursor: null });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 
   it('answers RESOURCE_MOVED with the new ID for a legacy album ID', async () => {
@@ -218,6 +220,14 @@ describe('Album tracks (e2e)', () => {
 
   it('rejects a cursor this API did not issue', async () => {
     const album = await createAlbum(testApp.db);
+    await createAlbumDisc(testApp.db, album.id, 1);
+    const track = await makeTrack('Placed');
+    await placeAlbumTrack(testApp.db, {
+      albumId: album.id,
+      trackId: track.id,
+      discPosition: 1,
+      trackPosition: 1,
+    });
 
     const response = await testApp.http
       .get(`/v1/albums/${album.id}/tracks?cursor=raw-track-id`)
@@ -258,8 +268,8 @@ describe('Album tracks (e2e)', () => {
 
     const response = await testApp.http
       .get(`/v1/albums/${album.id}`)
-      .expect(200);
+      .expect(404);
 
-    expect(response.body).toMatchObject({ trackCount: 0 });
+    expect(response.body).toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
   });
 });
