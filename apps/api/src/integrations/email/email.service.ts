@@ -20,10 +20,6 @@ import {
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-/**
- * Sends transactional email in the background (with retries), so a slow or
- * briefly unavailable provider never delays the request that triggered it.
- */
 /** Options of one enqueue. */
 export type EmailSendOptions = {
   /**
@@ -33,6 +29,10 @@ export type EmailSendOptions = {
   jobId?: string;
 };
 
+/**
+ * Sends transactional email in the background (with retries), so a slow or
+ * briefly unavailable provider never delays the request that triggered it.
+ */
 @Injectable()
 export class EmailService {
   constructor(

@@ -46,7 +46,8 @@ export const trackProcessings = pgTable(
     status: trackProcessingStatus().notNull().default('QUEUED'),
     // Set on a `FAILED` row only.
     failureCode: trackProcessingFailureCode(),
-    // The step a retry starts at: the one that failed.
+    // The step the run resumes from: the one it failed at, or the one a queued
+    // retry starts at. Cleared when that step starts.
     resumeFrom: trackProcessingStep(),
     // The chosen YouTube video and where it was found.
     videoId: text(),
