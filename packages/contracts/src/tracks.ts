@@ -33,6 +33,17 @@ export const createTrackResultSchema = z.object({
 export type CreateTrackResult = z.infer<typeof createTrackResultSchema>;
 
 /**
+ * `POST /v1/tracks/:trackId/processing/retry`: starts a new Processing of a
+ * failed Track from the step that failed. `locale` is the language the User is
+ * browsing in, which the User keeps for their emails.
+ */
+export const retryTrackBodySchema = z.object({
+  locale: localeSchema,
+});
+
+export type RetryTrackBody = z.infer<typeof retryTrackBodySchema>;
+
+/**
  * One credited artist of a Track, in credit order: the name as the credit
  * prints it and the text that joins it to the next one ("feat. ", " & ", or '').
  * The whole credit is what the header shows, from the moment the Track exists.
