@@ -200,6 +200,9 @@ describe('Track Processing download (e2e)', () => {
         { processingId: processing.id, step: 'DOWNLOADING_AUDIO' },
         true,
       );
+    // The download is the step before the note detection: the rest of the
+    // Processing runs the RunPod job the fake answers as done.
+    await runTrackJobs(testApp);
 
     expect(app.audio.requests).toEqual([]);
     expect(app.audio.checks).toEqual([]);
@@ -232,6 +235,9 @@ describe('Track Processing download (e2e)', () => {
         { processingId: processing.id, step: 'DOWNLOADING_AUDIO' },
         true,
       );
+    // The note detection runs after the download; its RunPod job is already
+    // saved, so the vocals stage polls it instead of starting another.
+    await runTrackJobs(testApp);
 
     expect(app.audio.requests).toHaveLength(requests);
     expect(app.audio.downloads).toHaveLength(downloads);

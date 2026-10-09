@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { coverJobId, TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
@@ -24,6 +25,7 @@ const processings = {
 };
 const videoStep = { run: vi.fn() };
 const audio = { run: vi.fn() };
+const noteDetection = { extractVocals: vi.fn(), detectNotes: vi.fn() };
 const revalidation = { revalidate: vi.fn() };
 
 const processing = (overrides: Record<string, unknown> = {}) => ({
@@ -40,9 +42,9 @@ const findingVideoJob = {
   step: 'FINDING_VIDEO',
 } as const;
 
-const downloadingAudioJob = {
+const detectingNotesJob = {
   processingId: 'processing-1',
-  step: 'DOWNLOADING_AUDIO',
+  step: 'DETECTING_NOTES',
 } as const;
 
 describe('TrackPipelineService', () => {
@@ -54,6 +56,8 @@ describe('TrackPipelineService', () => {
     // `clearAllMocks` keeps implementations: each case starts from success.
     videoStep.run.mockResolvedValue('https://img.test/artwork.jpg');
     audio.run.mockResolvedValue({ kind: 'done' });
+    noteDetection.extractVocals.mockResolvedValue({ kind: 'done' });
+    noteDetection.detectNotes.mockResolvedValue({ kind: 'done' });
     processings.markStepStarted.mockResolvedValue(true);
     processings.markFailed.mockResolvedValue(true);
     processings.markCompleted.mockResolvedValue(true);
@@ -70,6 +74,7 @@ describe('TrackPipelineService', () => {
         { provide: TrackProcessingRepository, useValue: processings },
         { provide: TrackVideoStepService, useValue: videoStep },
         { provide: TrackAudioService, useValue: audio },
+        { provide: TrackNoteDetectionService, useValue: noteDetection },
         { provide: WebRevalidationService, useValue: revalidation },
       ],
     }).compile();
@@ -120,7 +125,7 @@ describe('TrackPipelineService', () => {
     it('refuses a step this build does not run, without retrying it', async () => {
       await expect(
         pipeline.runStep(
-          { processingId: 'processing-1', step: 'EXTRACTING_VOCALS' },
+          { processingId: 'processing-1', step: 'EXTRACTING_LYRICS' },
           true,
         ),
       ).rejects.toBeInstanceOf(UnrecoverableError);
@@ -175,7 +180,7 @@ describe('TrackPipelineService', () => {
     it('completes the Processing after the last step, revalidating the Track first', async () => {
       processings.findProcessing.mockResolvedValue(
         processing({
-          status: 'DOWNLOADING_AUDIO',
+          status: 'DETECTING_NOTES',
           videoId: 'video-1',
           videoSource: 'youtube_music',
         }),
@@ -185,9 +190,9 @@ describe('TrackPipelineService', () => {
         albumIds: ['album-1'],
       });
 
-      await pipeline.runStep(downloadingAudioJob, true);
+      await pipeline.runStep(detectingNotesJob, true);
 
-      expect(audio.run).toHaveBeenCalledWith(
+      expect(noteDetection.detectNotes).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'processing-1', trackId: 'track-1' }),
         undefined,
       );
@@ -201,7 +206,7 @@ describe('TrackPipelineService', () => {
       ]);
       expect(processings.markCompleted).toHaveBeenCalledWith(
         'processing-1',
-        'DOWNLOADING_AUDIO',
+        'DETECTING_NOTES',
       );
       expect(revalidation.revalidate.mock.invocationCallOrder[0]).toBeLessThan(
         processings.markCompleted.mock.invocationCallOrder[0] ?? 0,

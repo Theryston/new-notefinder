@@ -3,8 +3,10 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { OnModuleDestroy } from '@nestjs/common';
 import {
+  type PresignedPut,
   type PublicObject,
   StorageError,
   StorageService,
@@ -17,6 +19,21 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 /** The part of the SDK client used here, so tests can pass a fake. */
 type S3Sender = Pick<S3Client, 'send' | 'destroy'>;
+
+/** Signs a PUT of the command into a URL valid for `expiresIn` seconds. */
+export type UrlPresigner = (
+  command: PutObjectCommand,
+  expiresIn: number,
+) => Promise<string>;
+
+/**
+ * The SDK's presigner over a client's credentials. It sends no request: the
+ * URL is signed locally, so it only needs the client's configuration.
+ */
+export const createUrlPresigner =
+  (client: S3Client): UrlPresigner =>
+  (command, expiresIn) =>
+    getSignedUrl(client, command, { expiresIn });
 
 /** A HEAD of a missing key fails with the SDK's `NotFound`. */
 const isNotFound = (error: unknown): boolean =>
@@ -44,8 +61,32 @@ export class S3StorageService
   constructor(
     private readonly client: S3Sender,
     private readonly config: Pick<StorageConfig, 'bucket' | 'publicUrl'>,
+    // Without it, presigning fails (see `createUrlPresigner`).
+    private readonly presigner?: UrlPresigner,
   ) {
     super();
+  }
+
+  async presignPublicPut({
+    key,
+    contentType,
+    expiresInSeconds,
+  }: PresignedPut): Promise<string> {
+    if (this.presigner === undefined) {
+      throw new StorageError(`Cannot presign "${key}": no presigner is set`);
+    }
+    try {
+      return await this.presigner(
+        new PutObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key,
+          ContentType: contentType,
+        }),
+        expiresInSeconds,
+      );
+    } catch (error) {
+      throw new StorageError(`Could not presign "${key}"`, { cause: error });
+    }
   }
 
   async putPublicObject({

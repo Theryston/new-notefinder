@@ -5,6 +5,7 @@ import { CoverArtModule } from '../../integrations/cover-art/cover-art.module.js
 import { EmailModule } from '../../integrations/email/email.module.js';
 import { FfmpegModule } from '../../integrations/ffmpeg/ffmpeg.module.js';
 import { MusicCatalogModule } from '../../integrations/music-catalog/music-catalog.module.js';
+import { NoteDetectionModule } from '../../integrations/note-detection/note-detection.module.js';
 import { StorageModule } from '../../integrations/storage/storage.module.js';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
 import { YouTubeMusicModule } from '../../integrations/youtube-music/youtube-music.module.js';
@@ -17,6 +18,8 @@ import { TrackContributorEmailsService } from './track-contributor-emails.servic
 import { TrackCoverService } from './track-cover.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
+import { TrackNoteDetectionService } from './track-note-detection.service.js';
+import { TrackNotesRepository } from './track-notes.repository.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingProcessor } from './track-processing.processor.js';
@@ -51,6 +54,7 @@ import { TracksService } from './tracks.service.js';
     EmailModule,
     FfmpegModule,
     MusicCatalogModule,
+    NoteDetectionModule,
     StorageModule,
     UsersModule,
     WebRevalidationModule,
@@ -76,6 +80,8 @@ import { TracksService } from './tracks.service.js';
     TrackVideoService,
     TrackVideoStepService,
     TrackAudioService,
+    TrackNoteDetectionService,
+    TrackNotesRepository,
     TrackCoverService,
     TrackAlbumCoverService,
     TrackStepsService,

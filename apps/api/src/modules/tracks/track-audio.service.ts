@@ -12,10 +12,7 @@ import {
   type ProcessingForStep,
   TrackProcessingRepository,
 } from './track-processing.repository.js';
-import {
-  messageOf,
-  TrackProcessingFailure,
-} from './track-processing-failure.js';
+import { attemptStepCall } from './track-processing-failure.js';
 import {
   DONE,
   failedWith,
@@ -141,16 +138,8 @@ export class TrackAudioService {
     return saved ? DONE : STOPPED;
   }
 
-  /**
-   * Runs one call to the download services. Any failure of it is a
-   * `DOWNLOAD_FAILED` (retryable); the cause goes to the log.
-   */
-  private async attempt<T>(action: string, work: () => Promise<T>): Promise<T> {
-    try {
-      return await work();
-    } catch (error) {
-      this.logger.warn(`Could not ${action}: ${messageOf(error)}`);
-      throw new TrackProcessingFailure('DOWNLOAD_FAILED');
-    }
+  /** One call to the download services; a failure of it is a `DOWNLOAD_FAILED`. */
+  private attempt<T>(action: string, work: () => Promise<T>): Promise<T> {
+    return attemptStepCall(this.logger, 'DOWNLOAD_FAILED', action, work);
   }
 }

@@ -11,6 +11,7 @@ import { trackProcessings } from '../../src/database/schema/track-processings.js
 import { tracks } from '../../src/database/schema/tracks.js';
 import { AudioDownloadClient } from '../../src/integrations/audio-download/audio-download.client.js';
 import { CoverArtClient } from '../../src/integrations/cover-art/cover-art.client.js';
+import { NoteDetectionClient } from '../../src/integrations/note-detection/note-detection.client.js';
 import { WEB_REVALIDATION_QUEUE } from '../../src/integrations/web-revalidation/web-revalidation.job.js';
 import { YouTubeMusicClient } from '../../src/integrations/youtube-music/youtube-music.client.js';
 import { TRACK_PROCESSING_QUEUE } from '../../src/modules/tracks/track-processing.job.js';
@@ -34,6 +35,7 @@ import {
   type FakeMusicCatalog,
   startFakeMusicCatalog,
 } from './fake-music-catalog.js';
+import { FakeNoteDetection } from './fake-note-detection.js';
 import { FakeYouTubeMusic } from './fake-youtube-music.js';
 import { recordingFixture } from './recording-fixtures.js';
 
@@ -113,6 +115,8 @@ export type TrackProcessingApp = {
   coverArt: FakeCoverArt;
   /** RapidAPI's audio download; the conversion and ffmpeg run for real. */
   audio: FakeAudioDownload;
+  /** RunPod's note detection; each spec sets the answers of its job. */
+  noteDetection: FakeNoteDetection;
   close: () => Promise<void>;
 };
 
@@ -123,6 +127,7 @@ export const startTrackProcessingApp =
     const youtube = new FakeYouTubeMusic();
     const coverArt = new FakeCoverArt();
     const audio = new FakeAudioDownload();
+    const noteDetection = new FakeNoteDetection();
     const catalog = await startFakeMusicCatalog((payload) => {
       const recording = recordings.get(String(payload.mbid));
       if (recording === undefined) {
@@ -145,7 +150,9 @@ export const startTrackProcessingApp =
           .overrideProvider(CoverArtClient)
           .useValue(coverArt)
           .overrideProvider(AudioDownloadClient)
-          .useValue(audio),
+          .useValue(audio)
+          .overrideProvider(NoteDetectionClient)
+          .useValue(noteDetection),
     };
     const testApp = await createTestApp(options);
     return {
@@ -155,6 +162,7 @@ export const startTrackProcessingApp =
       youtube,
       coverArt,
       audio,
+      noteDetection,
       close: async () => {
         await testApp.close();
         await catalog.close();
@@ -172,6 +180,7 @@ export const resetTrackProcessingApp = async (
   app.youtube.reset();
   app.coverArt.reset();
   app.audio.reset();
+  app.noteDetection.reset();
   app.testApp.queues[TRACK_PROCESSING_QUEUE]?.added.splice(0);
   app.testApp.queues[WEB_REVALIDATION_QUEUE]?.added.splice(0);
 };

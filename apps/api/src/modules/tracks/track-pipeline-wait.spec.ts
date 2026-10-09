@@ -137,7 +137,7 @@ describe('TrackPipelineService waits', () => {
     );
   });
 
-  it('completes the Processing when the download is done', async () => {
+  it('queues the vocals stage when the download is done, without completing the Processing', async () => {
     processings.findProcessing.mockResolvedValue(
       processing('DOWNLOADING_AUDIO'),
     );
@@ -148,11 +148,12 @@ describe('TrackPipelineService waits', () => {
       true,
     );
 
-    expect(processings.markCompleted).toHaveBeenCalledWith(
-      'processing-1',
-      'DOWNLOADING_AUDIO',
+    expect(queue.add).toHaveBeenCalledWith(
+      'run-step',
+      { processingId: 'processing-1', step: 'EXTRACTING_VOCALS' },
+      { jobId: 'step-processing-1-EXTRACTING_VOCALS' },
     );
-    expect(queue.add).not.toHaveBeenCalled();
+    expect(processings.markCompleted).not.toHaveBeenCalled();
   });
 
   it('ends the Processing FAILED with DOWNLOAD_FAILED on the last attempt, resuming at the download', async () => {

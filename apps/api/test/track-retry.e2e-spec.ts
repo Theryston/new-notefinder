@@ -337,8 +337,10 @@ describe('Track retry (e2e)', () => {
     if (revalidations === undefined) {
       throw new Error('The revalidation queue is not faked');
     }
-    // The download step stores the WAV, then the last step's refresh fails:
-    // the Processing ends FAILED at DOWNLOADING_AUDIO with the WAV's URL saved.
+    // The download step stores the WAV, then the note detection runs; the
+    // refresh that completes the Processing fails after the notes stage: the
+    // Processing ends FAILED there, resuming at the vocals stage, with the WAV's
+    // URL saved.
     const add = revalidations.add;
     revalidations.add = () => Promise.reject(new Error('Redis is down'));
     const trackId = await requestAs(creator, 'en');
@@ -350,7 +352,7 @@ describe('Track retry (e2e)', () => {
     const failed = await processingRowOf(testApp, trackId);
     expect(failed).toMatchObject({
       status: 'FAILED',
-      resumeFrom: 'DOWNLOADING_AUDIO',
+      resumeFrom: 'EXTRACTING_VOCALS',
     });
     expect(failed.musicWavUrl).not.toBeNull();
     expect(app.audio.downloads).toHaveLength(1);
