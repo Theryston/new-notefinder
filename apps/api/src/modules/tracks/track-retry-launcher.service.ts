@@ -29,7 +29,8 @@ export class TrackRetryLauncherService {
   ): Promise<TrackProcessingState> {
     await this.processingState.assertTrackExists(trackId);
     await this.retries.retry(requester, trackId, body.locale);
-    // Hook for #143: the metadata import is enqueued on every retry, here.
+    // Hook for #143: the metadata import must run again on every retry (ADR 0005),
+    // so it is enqueued here too.
     await this.pipeline.startIfQueued(trackId);
     return this.processingState.getProcessingState(trackId);
   }

@@ -9,25 +9,25 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
-import { type CurrentUserRow, UsersRepository } from './users.repository.js';
+import {
+  type CurrentUserRow,
+  type EmailRecipientRow,
+  UsersRepository,
+} from './users.repository.js';
 
 /**
  * The public fields of a User that other features may show (a Track's
  * Contributors). No email and no role: those never leave the users module.
  */
-/** The fields a notification email needs about a User. */
-export type EmailRecipient = {
-  id: string;
-  email: string;
-  locale: Locale;
-};
-
 export type PublicUser = {
   id: string;
   username: string | null;
   name: string;
   image: string | null;
 };
+
+/** What a notification email needs about a User (see `findEmailRecipients`). */
+export type EmailRecipient = EmailRecipientRow;
 
 const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
   ...user,

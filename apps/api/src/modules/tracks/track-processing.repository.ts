@@ -192,6 +192,8 @@ export class TrackProcessingRepository {
       .set({
         status: step,
         startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
+        // A running step resumes nothing: a retry's start step is spent.
+        resumeFrom: null,
       })
       .where(processingInStatus(processingId, dueStatuses))
       .returning({ id: trackProcessings.id });
@@ -270,17 +272,19 @@ export class TrackProcessingRepository {
   }
 
   /**
-   * Claims the emails of a Processing that ended: the one call that finds it
-   * ended and unclaimed returns its Track and how it ended, so the Contributors
-   * are emailed once however many jobs run after the end. Undefined while the
-   * Processing runs, or when its emails were claimed already.
+   * The Track and how a Processing ended, while its Contributors are still to
+   * be emailed: the Processing is terminal and no email round finished for it.
+   * Undefined otherwise.
    */
-  async claimContributorEmails(
+  async findEndedWithoutEmails(
     processingId: string,
   ): Promise<{ trackId: string; status: TrackProcessingStatus } | undefined> {
     const [row] = await this.txHost.tx
-      .update(trackProcessings)
-      .set({ contributorsNotifiedAt: new Date() })
+      .select({
+        trackId: trackProcessings.trackId,
+        status: trackProcessings.status,
+      })
+      .from(trackProcessings)
       .where(
         and(
           eq(trackProcessings.id, processingId),
@@ -290,11 +294,24 @@ export class TrackProcessingRepository {
           isNull(trackProcessings.contributorsNotifiedAt),
         ),
       )
-      .returning({
-        trackId: trackProcessings.trackId,
-        status: trackProcessings.status,
-      });
+      .limit(1);
     return row;
+  }
+
+  /**
+   * Records that every Contributor email of a Processing was queued. Called only
+   * after the enqueues succeeded, so a failed round is replayed, never skipped.
+   */
+  async markContributorsEmailed(processingId: string): Promise<void> {
+    await this.txHost.tx
+      .update(trackProcessings)
+      .set({ contributorsNotifiedAt: new Date() })
+      .where(
+        and(
+          eq(trackProcessings.id, processingId),
+          isNull(trackProcessings.contributorsNotifiedAt),
+        ),
+      );
   }
 
   /** The non-terminal Processings that the User's Contributions started. */

@@ -11,18 +11,18 @@ export type CurrentUserRow = Omit<CurrentUser, 'createdAt'> & {
 };
 
 /** The fields other Users see of an account: no email, no role. */
-/** The fields a notification email needs about a User. */
-export type EmailRecipientRow = {
-  id: string;
-  email: string;
-  locale: Locale;
-};
-
 export type PublicUserRow = {
   id: string;
   username: string | null;
   name: string;
   image: string | null;
+};
+
+/** The fields a notification email needs about a User: where it goes and in what language. */
+export type EmailRecipientRow = {
+  id: string;
+  email: string;
+  locale: Locale;
 };
 
 // Named in migration 0000_init.

@@ -1,6 +1,4 @@
 import type { Locale } from '@notefinder/contracts';
-import { eq } from 'drizzle-orm';
-import { trackProcessings } from '../src/database/schema/track-processings.js';
 import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
 import { TrackJobRunnerService } from '../src/modules/tracks/track-job-runner.service.js';
 import type { TestApp } from './utils/create-test-app.js';
@@ -112,30 +110,43 @@ describe('Track Processing emails (e2e)', () => {
     ]);
   });
 
-  it('never fails the Processing because an email could not be queued', async () => {
+  it('keeps the Processing completed when its emails are refused, and emails once on the replay', async () => {
     const queue = testApp.queues[EMAIL_QUEUE];
     if (queue === undefined) {
       throw new Error('The email queue is not faked');
     }
     const add = queue.add;
     queue.add = () => Promise.reject(new Error('Redis is down'));
+    const creator = await createPasswordUser(testApp.db);
+    const trackId = await requestAs(creator, 'en');
     try {
-      const creator = await createPasswordUser(testApp.db);
-      const trackId = await requestAs(creator, 'en');
-
-      await runTrackJobs(testApp);
-
-      expect((await processingOf(testApp, trackId)).processing).toMatchObject({
-        status: 'COMPLETED',
-      });
-      const [row] = await testApp.db
-        .select({ notified: trackProcessings.contributorsNotifiedAt })
-        .from(trackProcessings)
-        .where(eq(trackProcessings.trackId, trackId));
-      expect(row?.notified).not.toBeNull();
+      await expect(runTrackJobs(testApp)).rejects.toThrow('Redis is down');
     } finally {
       queue.add = add;
     }
+
+    expect((await processingOf(testApp, trackId)).processing).toMatchObject({
+      status: 'COMPLETED',
+    });
+    expect(sentEmails()).toEqual([]);
+    const processing = await processingRowOf(testApp, trackId);
+    expect(processing.contributorsNotifiedAt).toBeNull();
+
+    // BullMQ replays the failed step job once the queue answers again.
+    await testApp.app
+      .get(TrackJobRunnerService)
+      .run(
+        'run-step',
+        { processingId: processing.id, step: 'FINDING_VIDEO' },
+        true,
+      );
+
+    expect(sentEmails()).toEqual([
+      expect.objectContaining({ to: creator.email }),
+    ]);
+    expect(
+      (await processingRowOf(testApp, trackId)).contributorsNotifiedAt,
+    ).not.toBeNull();
   });
 
   it('does not email again on a replayed step job of a finished Processing', async () => {

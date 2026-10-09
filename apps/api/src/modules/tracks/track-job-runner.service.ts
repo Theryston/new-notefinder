@@ -40,7 +40,8 @@ export class TrackJobRunnerService {
       const step = parseJob(runStepJobSchema, data);
       await this.pipeline.runStep(step, finalAttempt);
       // The step may have ended its Processing: its Contributors are emailed
-      // after the status write, once (see TrackContributorEmailsService).
+      // once the status is written, and a failed round fails this job so BullMQ
+      // replays it (see TrackContributorEmailsService).
       return this.contributorEmails.notifyIfEnded(step.processingId);
     }
     if (name === STORE_COVER_JOB) {

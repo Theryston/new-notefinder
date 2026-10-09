@@ -5,12 +5,13 @@ import { UsersService } from '../users/users.service.js';
 import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 
-// The emails of a Processing that ended: who is emailed, in which language, and
-// that a failing email never fails the Processing (nothing is thrown).
+// Who is emailed when a Processing ends, in which language, under which job ID,
+// and what a failure leaves behind: the round is replayed, never skipped.
 
 const processings = {
-  claimContributorEmails: vi.fn(),
+  findEndedWithoutEmails: vi.fn(),
   findContributors: vi.fn(),
+  markContributorsEmailed: vi.fn(),
 };
 const users = { findEmailRecipients: vi.fn() };
 const emails = {
@@ -18,11 +19,6 @@ const emails = {
   sendTrackFailed: vi.fn(),
 };
 const env = { WEB_URL: 'https://notefinder.test' };
-
-const ended = (status: 'COMPLETED' | 'FAILED' = 'COMPLETED') => ({
-  trackId: 'track-1',
-  status,
-});
 
 const recipients = new Map([
   ['ana', { id: 'ana', email: 'ana@example.com', locale: 'pt-BR' }],
@@ -34,11 +30,15 @@ describe('TrackContributorEmailsService', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    processings.claimContributorEmails.mockResolvedValue(ended());
+    processings.findEndedWithoutEmails.mockResolvedValue({
+      trackId: 'track-1',
+      status: 'COMPLETED',
+    });
     processings.findContributors.mockResolvedValue([
       { id: 'c1', userId: 'ana' },
       { id: 'c2', userId: 'bob' },
     ]);
+    processings.markContributorsEmailed.mockResolvedValue(undefined);
     users.findEmailRecipients.mockResolvedValue(recipients);
     emails.sendTrackCompleted.mockResolvedValue(undefined);
     emails.sendTrackFailed.mockResolvedValue(undefined);
@@ -54,28 +54,42 @@ describe('TrackContributorEmailsService', () => {
     service = moduleRef.get(TrackContributorEmailsService);
   });
 
-  it('emails every Contributor of a completed Processing in their own language, with the Track link', async () => {
+  it('queues each Contributor email in their own language, under a job ID per Processing and User', async () => {
     await service.notifyIfEnded('processing-1');
 
-    expect(processings.claimContributorEmails).toHaveBeenCalledWith(
-      'processing-1',
-    );
     expect(users.findEmailRecipients).toHaveBeenCalledWith(['ana', 'bob']);
-    expect(emails.sendTrackCompleted).toHaveBeenCalledWith({
-      to: 'ana@example.com',
-      locale: 'pt-BR',
-      trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1',
-    });
-    expect(emails.sendTrackCompleted).toHaveBeenCalledWith({
-      to: 'bob@example.com',
-      locale: 'en',
-      trackUrl: 'https://notefinder.test/en/tracks/track-1',
-    });
+    expect(emails.sendTrackCompleted).toHaveBeenCalledWith(
+      {
+        to: 'ana@example.com',
+        locale: 'pt-BR',
+        trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1',
+      },
+      { jobId: 'track-email-processing-1-ana' },
+    );
+    expect(emails.sendTrackCompleted).toHaveBeenCalledWith(
+      {
+        to: 'bob@example.com',
+        locale: 'en',
+        trackUrl: 'https://notefinder.test/en/tracks/track-1',
+      },
+      { jobId: 'track-email-processing-1-bob' },
+    );
     expect(emails.sendTrackFailed).not.toHaveBeenCalled();
   });
 
+  it('marks the Processing emailed only after every email was queued', async () => {
+    await service.notifyIfEnded('processing-1');
+
+    expect(processings.markContributorsEmailed).toHaveBeenCalledWith(
+      'processing-1',
+    );
+  });
+
   it('sends the failed email when the Processing failed', async () => {
-    processings.claimContributorEmails.mockResolvedValue(ended('FAILED'));
+    processings.findEndedWithoutEmails.mockResolvedValue({
+      trackId: 'track-1',
+      status: 'FAILED',
+    });
 
     await service.notifyIfEnded('processing-1');
 
@@ -83,36 +97,37 @@ describe('TrackContributorEmailsService', () => {
     expect(emails.sendTrackCompleted).not.toHaveBeenCalled();
   });
 
-  it('sends nothing while the Processing is still running, or its emails were claimed', async () => {
-    processings.claimContributorEmails.mockResolvedValue(undefined);
+  it('does nothing while the Processing runs, or once its emails were queued', async () => {
+    processings.findEndedWithoutEmails.mockResolvedValue(undefined);
 
     await service.notifyIfEnded('processing-1');
 
     expect(processings.findContributors).not.toHaveBeenCalled();
     expect(emails.sendTrackCompleted).not.toHaveBeenCalled();
-    expect(emails.sendTrackFailed).not.toHaveBeenCalled();
+    expect(processings.markContributorsEmailed).not.toHaveBeenCalled();
   });
 
-  it('keeps emailing the other Contributors when one email is refused', async () => {
-    emails.sendTrackCompleted
-      .mockRejectedValueOnce(new Error('bad address'))
-      .mockResolvedValueOnce(undefined);
+  it('fails, and does not mark the Processing, when the recipients cannot be read', async () => {
+    users.findEmailRecipients.mockRejectedValue(new Error('database is down'));
 
-    await expect(
-      service.notifyIfEnded('processing-1'),
-    ).resolves.toBeUndefined();
-
-    expect(emails.sendTrackCompleted).toHaveBeenCalledTimes(2);
-  });
-
-  it('never throws, even when the claim itself fails', async () => {
-    processings.claimContributorEmails.mockRejectedValue(
-      new Error('database is down'),
+    await expect(service.notifyIfEnded('processing-1')).rejects.toThrow(
+      'database is down',
     );
 
-    await expect(
-      service.notifyIfEnded('processing-1'),
-    ).resolves.toBeUndefined();
     expect(emails.sendTrackCompleted).not.toHaveBeenCalled();
+    expect(processings.markContributorsEmailed).not.toHaveBeenCalled();
+  });
+
+  it('still queues the other emails when one is refused, then fails without marking', async () => {
+    emails.sendTrackCompleted
+      .mockRejectedValueOnce(new Error('Redis is down'))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(service.notifyIfEnded('processing-1')).rejects.toThrow(
+      '1 of 2 Contributor emails were not queued: Redis is down',
+    );
+
+    expect(emails.sendTrackCompleted).toHaveBeenCalledTimes(2);
+    expect(processings.markContributorsEmailed).not.toHaveBeenCalled();
   });
 });

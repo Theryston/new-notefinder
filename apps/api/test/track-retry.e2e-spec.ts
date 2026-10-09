@@ -11,6 +11,7 @@ import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.j
 import { createAuthClient } from './utils/auth.js';
 import type { TestApp } from './utils/create-test-app.js';
 import { createPasswordUser, testMbid, type User } from './utils/factories.js';
+import { youtubeVideo } from './utils/fake-youtube-music.js';
 import { queuedTrackJobs, runTrackJobs } from './utils/track-pipeline.js';
 import { createLegacyTrackId } from './utils/track-processing-factories.js';
 import {
@@ -268,5 +269,64 @@ describe('Track retry (e2e)', () => {
     );
 
     expectRefusal(invalid, 400, 'VALIDATION_FAILED');
+  });
+
+  it('refuses a retry after TOO_LONG, which repeating cannot fix', async () => {
+    app.recordings.set(testMbid(1), bohemian({ lengthMs: null }));
+    app.youtube.results = [youtubeVideo({ durationSeconds: 1_200 })];
+    const trackId = await requestAs(await createPasswordUser(testApp.db), 'en');
+    await runTrackJobs(testApp);
+    expect((await processingOf(testApp, trackId)).processing).toMatchObject({
+      failureCode: 'TOO_LONG',
+    });
+
+    const response = await retryAs(
+      await createPasswordUser(testApp.db),
+      trackId,
+      'en',
+    );
+
+    expectRefusal(response, 409, 'CONFLICT');
+  });
+
+  it('refuses a retry while the latest Processing is running a step', async () => {
+    const trackId = await requestAs(await createPasswordUser(testApp.db), 'en');
+    await testApp.db
+      .update(trackProcessings)
+      .set({ status: 'EXTRACTING_VOCALS' })
+      .where(eq(trackProcessings.trackId, trackId));
+
+    const response = await retryAs(
+      await createPasswordUser(testApp.db),
+      trackId,
+      'en',
+    );
+
+    expectRefusal(response, 409, 'CONFLICT');
+  });
+
+  it('lets exactly one of two parallel retries start a Processing', async () => {
+    const trackId = await failedTrackOf(await createPasswordUser(testApp.db));
+
+    const [first, second] = await Promise.all([
+      retryAs(await createPasswordUser(testApp.db), trackId, 'en'),
+      retryAs(await createPasswordUser(testApp.db), trackId, 'pt-BR'),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual([202, 409]);
+    expect(await processingsOf(trackId)).toHaveLength(2);
+  });
+
+  it('lets an ADMIN retry past the active limit of the Users', async () => {
+    const trackId = await failedTrackOf(await createPasswordUser(testApp.db));
+    const admin = await createPasswordUser(testApp.db, { role: 'ADMIN' });
+    for (const n of [2, 3, 4]) {
+      app.recordings.set(testMbid(n), bohemian({ mbid: testMbid(n) }));
+      await requestAs(admin, 'en', testMbid(n));
+    }
+
+    const response = await retryAs(admin, trackId, 'en');
+
+    expect(response.status).toBe(202);
   });
 });
