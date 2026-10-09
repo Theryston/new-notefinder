@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import type { StepWait } from './track-processing.job.js';
 import type { ProcessingForStep } from './track-processing.repository.js';
@@ -17,6 +18,7 @@ export class TrackStepsService {
     private readonly video: TrackVideoStepService,
     private readonly audio: TrackAudioService,
     private readonly noteDetection: TrackNoteDetectionService,
+    private readonly lyrics: TrackLyricsStepService,
   ) {}
 
   /** The find-video step; answers the artwork of the best search match (see TrackVideoStepService). */
@@ -46,5 +48,10 @@ export class TrackStepsService {
     wait: StepWait | undefined,
   ): Promise<StepOutcome> {
     return this.noteDetection.detectNotes(processing, wait);
+  }
+
+  /** The lyrics step: MP3s, then the Timed lyrics (see TrackLyricsStepService). */
+  extractLyrics(processing: ProcessingForStep): Promise<StepOutcome> {
+    return this.lyrics.run(processing);
   }
 }

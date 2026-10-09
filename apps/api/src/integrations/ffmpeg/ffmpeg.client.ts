@@ -24,21 +24,41 @@ export class FfmpegClient {
    * removed whatever the outcome.
    */
   async convertMp3ToWav(mp3: Uint8Array): Promise<Uint8Array> {
+    return this.convert(mp3, 'music.mp3', 'music.wav', [
+      '-vn',
+      '-acodec',
+      'pcm_s16le',
+    ]);
+  }
+
+  /**
+   * Converts a WAV to MP3 with the parameters of the legacy service: the audio
+   * only, as LAME's MP3 at VBR quality 2 (`-q:a 2`).
+   */
+  async convertWavToMp3(wav: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+    return this.convert(wav, 'audio.wav', 'audio.mp3', [
+      '-vn',
+      '-codec:a',
+      'libmp3lame',
+      '-q:a',
+      '2',
+    ]);
+  }
+
+  /** Runs one conversion in a temporary directory, removed whatever the outcome. */
+  private async convert(
+    input: Uint8Array,
+    inputName: string,
+    outputName: string,
+    options: string[],
+  ): Promise<Uint8Array<ArrayBuffer>> {
     const dir = await mkdtemp(join(tmpdir(), 'notefinder-audio-'));
     try {
-      const input = join(dir, 'music.mp3');
-      const output = join(dir, 'music.wav');
-      await writeFile(input, mp3);
-      await this.run([
-        '-y',
-        '-i',
-        input,
-        '-vn',
-        '-acodec',
-        'pcm_s16le',
-        output,
-      ]);
-      return new Uint8Array(await readFile(output));
+      const inputPath = join(dir, inputName);
+      const outputPath = join(dir, outputName);
+      await writeFile(inputPath, input);
+      await this.run(['-y', '-i', inputPath, ...options, outputPath]);
+      return new Uint8Array(await readFile(outputPath));
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

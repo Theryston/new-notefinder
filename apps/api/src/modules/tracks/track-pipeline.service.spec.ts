@@ -1,8 +1,10 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test, type TestingModule } from '@nestjs/testing';
+import type { TrackProcessingStep } from '@notefinder/contracts';
 import { UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { coverJobId, TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
@@ -26,6 +28,7 @@ const processings = {
 const videoStep = { run: vi.fn() };
 const audio = { run: vi.fn() };
 const noteDetection = { extractVocals: vi.fn(), detectNotes: vi.fn() };
+const lyrics = { run: vi.fn() };
 const revalidation = { revalidate: vi.fn() };
 
 const processing = (overrides: Record<string, unknown> = {}) => ({
@@ -40,6 +43,11 @@ const processing = (overrides: Record<string, unknown> = {}) => ({
 const findingVideoJob = {
   processingId: 'processing-1',
   step: 'FINDING_VIDEO',
+} as const;
+
+const lyricsJob = {
+  processingId: 'processing-1',
+  step: 'EXTRACTING_LYRICS',
 } as const;
 
 const detectingNotesJob = {
@@ -75,6 +83,7 @@ describe('TrackPipelineService', () => {
         { provide: TrackVideoStepService, useValue: videoStep },
         { provide: TrackAudioService, useValue: audio },
         { provide: TrackNoteDetectionService, useValue: noteDetection },
+        { provide: TrackLyricsStepService, useValue: lyrics },
         { provide: WebRevalidationService, useValue: revalidation },
       ],
     }).compile();
@@ -122,10 +131,15 @@ describe('TrackPipelineService', () => {
   });
 
   describe('runStep', () => {
-    it('refuses a step this build does not run, without retrying it', async () => {
+    it('refuses a step this build does not know, without retrying it', async () => {
+      // A job queued by another build may name a step this one lacks.
+      const unknownStep: string = 'EXTRACTING_SOMETHING_NEW';
       await expect(
         pipeline.runStep(
-          { processingId: 'processing-1', step: 'EXTRACTING_LYRICS' },
+          {
+            processingId: 'processing-1',
+            step: unknownStep as TrackProcessingStep,
+          },
           true,
         ),
       ).rejects.toBeInstanceOf(UnrecoverableError);
@@ -177,7 +191,7 @@ describe('TrackPipelineService', () => {
       );
     });
 
-    it('completes the Processing after the last step, revalidating the Track first', async () => {
+    it('queues the lyrics step once the notes are detected, without completing the Processing', async () => {
       processings.findProcessing.mockResolvedValue(
         processing({
           status: 'DETECTING_NOTES',
@@ -185,16 +199,38 @@ describe('TrackPipelineService', () => {
           videoSource: 'youtube_music',
         }),
       );
-      processings.findCatalogIds.mockResolvedValue({
-        artistIds: ['artist-1'],
-        albumIds: ['album-1'],
-      });
 
       await pipeline.runStep(detectingNotesJob, true);
 
       expect(noteDetection.detectNotes).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'processing-1', trackId: 'track-1' }),
         undefined,
+      );
+      expect(queue.add).toHaveBeenCalledWith('run-step', lyricsJob, {
+        jobId: 'step-processing-1-EXTRACTING_LYRICS',
+      });
+      expect(revalidation.revalidate).not.toHaveBeenCalled();
+      expect(processings.markCompleted).not.toHaveBeenCalled();
+    });
+
+    it('completes the Processing after the lyrics step, revalidating the Track first', async () => {
+      processings.findProcessing.mockResolvedValue(
+        processing({
+          status: 'EXTRACTING_LYRICS',
+          videoId: 'video-1',
+          videoSource: 'youtube_music',
+        }),
+      );
+      lyrics.run.mockResolvedValue({ kind: 'done' });
+      processings.findCatalogIds.mockResolvedValue({
+        artistIds: ['artist-1'],
+        albumIds: ['album-1'],
+      });
+
+      await pipeline.runStep(lyricsJob, true);
+
+      expect(lyrics.run).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'processing-1', trackId: 'track-1' }),
       );
       expect(revalidation.revalidate).toHaveBeenCalledWith([
         'track:track-1',
@@ -206,7 +242,7 @@ describe('TrackPipelineService', () => {
       ]);
       expect(processings.markCompleted).toHaveBeenCalledWith(
         'processing-1',
-        'DETECTING_NOTES',
+        'EXTRACTING_LYRICS',
       );
       expect(revalidation.revalidate.mock.invocationCallOrder[0]).toBeLessThan(
         processings.markCompleted.mock.invocationCallOrder[0] ?? 0,

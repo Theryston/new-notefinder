@@ -11,6 +11,7 @@ import { WebRevalidationService } from '../../integrations/web-revalidation/web-
 import {
   dueStatusesOf,
   firstPipelineStep,
+  isOptionalStep,
   isPipelineStep,
   isStepDue,
   nextPipelineStep,
@@ -68,11 +69,12 @@ export class TrackPipelineService {
   private readonly handlers: Record<PipelineStepName, StepHandler> = {
     FINDING_VIDEO: (processing) => this.findVideo(processing),
     DOWNLOADING_AUDIO: (processing, wait) =>
-      this.downloadAudio(processing, wait),
+      this.steps.downloadAudio(processing, wait),
     EXTRACTING_VOCALS: (processing, wait) =>
       this.steps.extractVocals(processing, wait),
     DETECTING_NOTES: (processing, wait) =>
       this.steps.detectNotes(processing, wait),
+    EXTRACTING_LYRICS: (processing) => this.steps.extractLyrics(processing),
   };
 
   constructor(
@@ -123,7 +125,12 @@ export class TrackPipelineService {
       return;
     }
     try {
-      const outcome = await this.handlers[job.step](processing, job.wait);
+      const outcome = await this.runHandler(
+        processing,
+        job.step,
+        job.wait,
+        finalAttempt,
+      );
       await this.conclude(processing, job.step, job.wait?.round ?? 0, outcome);
     } catch (error) {
       return this.failStep(processing, job.step, error, finalAttempt);
@@ -143,14 +150,6 @@ export class TrackPipelineService {
       artworkUrl,
     });
     return DONE;
-  }
-
-  /** The download step, which the dispatcher runs (see TrackStepsService). */
-  private downloadAudio(
-    processing: ProcessingForStep,
-    wait: StepWait | undefined,
-  ): Promise<StepOutcome> {
-    return this.steps.downloadAudio(processing, wait);
   }
 
   /**
@@ -212,6 +211,32 @@ export class TrackPipelineService {
     return next === undefined
       ? this.complete(processing, step)
       : this.enqueueStep(processing.id, next);
+  }
+
+  /**
+   * Runs the step's handler. An optional step (see `isOptionalStep`) that fails
+   * on its last attempt does not hold the Processing back: the failure is
+   * logged, and the step counts as done without its output. Its earlier attempts
+   * throw, so BullMQ retries them. Only the handler is covered: what follows the
+   * step (the completion) fails the Processing like any other step's.
+   */
+  private async runHandler(
+    processing: ProcessingForStep,
+    step: PipelineStepName,
+    wait: StepWait | undefined,
+    finalAttempt: boolean,
+  ): Promise<StepOutcome> {
+    try {
+      return await this.handlers[step](processing, wait);
+    } catch (error) {
+      if (!finalAttempt || !isOptionalStep(step)) {
+        throw error;
+      }
+      this.logger.warn(
+        `Processing ${processing.id} completes without its ${step} output: ${messageOf(error)}`,
+      );
+      return DONE;
+    }
   }
 
   /**

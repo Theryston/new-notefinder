@@ -352,7 +352,7 @@ describe('Track retry (e2e)', () => {
     const failed = await processingRowOf(testApp, trackId);
     expect(failed).toMatchObject({
       status: 'FAILED',
-      resumeFrom: 'EXTRACTING_VOCALS',
+      resumeFrom: 'EXTRACTING_LYRICS',
     });
     expect(failed.musicWavUrl).not.toBeNull();
     expect(app.audio.downloads).toHaveLength(1);

@@ -14,7 +14,19 @@ const PIPELINE_STEPS = [
   'DOWNLOADING_AUDIO',
   'EXTRACTING_VOCALS',
   'DETECTING_NOTES',
+  'EXTRACTING_LYRICS',
 ] as const satisfies readonly TrackProcessingStep[];
+
+/**
+ * The steps whose failure does not hold the Processing back: once their last
+ * attempt fails, the Processing completes without their output (the Timed
+ * lyrics, ADR 0004). Every other step ends the Processing with its failure.
+ */
+const OPTIONAL_STEPS: readonly TrackProcessingStep[] = ['EXTRACTING_LYRICS'];
+
+/** Whether a step may fail without failing its Processing (see OPTIONAL_STEPS). */
+export const isOptionalStep = (step: TrackProcessingStep): boolean =>
+  OPTIONAL_STEPS.includes(step);
 
 /** A step this build runs. */
 export type PipelineStepName = (typeof PIPELINE_STEPS)[number];

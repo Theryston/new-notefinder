@@ -130,6 +130,22 @@ export class S3StorageService
     return `${this.config.publicUrl}/${path}`;
   }
 
+  /** Read over HTTP from the public URL, which needs no credentials. */
+  async downloadPublicObject(url: string): Promise<Uint8Array<ArrayBuffer>> {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return new Uint8Array(await response.arrayBuffer());
+    } catch (error) {
+      throw new StorageError(`Could not download ${url}`, { cause: error });
+    }
+  }
+
   onModuleDestroy(): void {
     this.client.destroy();
   }

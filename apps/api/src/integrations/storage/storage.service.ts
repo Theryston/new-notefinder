@@ -50,4 +50,12 @@ export abstract class StorageService {
    * @throws {StorageError} when the URL could not be signed.
    */
   abstract presignPublicPut(put: PresignedPut): Promise<string>;
+
+  /**
+   * The bytes of an object stored with `putPublicObject`, read back from its
+   * public URL: what a step needs when an earlier step stored its input.
+   *
+   * @throws {StorageError} when the object could not be read.
+   */
+  abstract downloadPublicObject(url: string): Promise<Uint8Array<ArrayBuffer>>;
 }
