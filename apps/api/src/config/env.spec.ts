@@ -50,6 +50,8 @@ describe('parseEnv', () => {
         GOOGLE_CLIENT_SECRET: 'google-secret',
         RESEND_API_KEY: 're_123',
         RAPIDAPI_API_KEY: 'rapid-key',
+        RUNPOD_API_KEY: 'runpod-key',
+        RUNPOD_ENDPOINT_ID: 'endpoint-1',
         EMAIL_FROM: 'notefinder <hi@notefinder.com.br>',
       }),
     ).toEqual({
@@ -74,6 +76,8 @@ describe('parseEnv', () => {
       GOOGLE_CLIENT_SECRET: 'google-secret',
       RESEND_API_KEY: 're_123',
       RAPIDAPI_API_KEY: 'rapid-key',
+      RUNPOD_API_KEY: 'runpod-key',
+      RUNPOD_ENDPOINT_ID: 'endpoint-1',
       EMAIL_FROM: 'notefinder <hi@notefinder.com.br>',
     });
   });
@@ -87,6 +91,8 @@ describe('parseEnv', () => {
         REVALIDATE_SECRET: SECRET,
         RESEND_API_KEY: 're_123',
         RAPIDAPI_API_KEY: 'rapid-key',
+        RUNPOD_API_KEY: 'runpod-key',
+        RUNPOD_ENDPOINT_ID: 'endpoint-1',
       }).SWAGGER_ENABLED,
     ).toBe(true);
     expect(

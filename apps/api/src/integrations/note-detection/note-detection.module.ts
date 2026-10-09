@@ -3,10 +3,7 @@ import { ENV, type Env } from '../../config/env.js';
 import { NoteDetectionClient } from './note-detection.client.js';
 import { resolveNoteDetectionConfig } from './note-detection-config.js';
 
-/**
- * The RunPod client of the note detection. It throws while the app boots when
- * production has no RunPod configuration.
- */
+/** The RunPod client of the note detection, configured from the env. */
 @Module({
   providers: [
     {

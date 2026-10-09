@@ -164,9 +164,8 @@ const envSchema = z
     // client runs `ffmpeg` from the PATH (FfmpegClient).
     FFMPEG_PATH: optional(z.string().min(1)),
     // RunPod endpoint that separates the vocals and detects the notes of a
-    // Processing (ADR 0004). Required in production, where the API refuses to
-    // boot without them (see resolveNoteDetectionConfig); elsewhere a
-    // Processing without them fails its note detection.
+    // Processing (ADR 0004). Required in production (see the refinements
+    // below); elsewhere a Processing without them fails its note detection.
     RUNPOD_API_KEY: optional(z.string().min(1)),
     RUNPOD_ENDPOINT_ID: optional(z.string().min(1)),
   })
@@ -219,6 +218,15 @@ const envSchema = z
     (env) =>
       env.NODE_ENV !== 'production' || env.RAPIDAPI_API_KEY !== undefined,
     { path: ['RAPIDAPI_API_KEY'], message: 'Required in production' },
+  )
+  .refine(
+    (env) => env.NODE_ENV !== 'production' || env.RUNPOD_API_KEY !== undefined,
+    { path: ['RUNPOD_API_KEY'], message: 'Required in production' },
+  )
+  .refine(
+    (env) =>
+      env.NODE_ENV !== 'production' || env.RUNPOD_ENDPOINT_ID !== undefined,
+    { path: ['RUNPOD_ENDPOINT_ID'], message: 'Required in production' },
   )
   .refine(
     (env) =>

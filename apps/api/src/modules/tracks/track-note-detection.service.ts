@@ -22,10 +22,7 @@ import {
   type ProcessingForStep,
   TrackProcessingRepository,
 } from './track-processing.repository.js';
-import {
-  messageOf,
-  TrackProcessingFailure,
-} from './track-processing-failure.js';
+import { attemptStepCall } from './track-processing-failure.js';
 import {
   DONE,
   STOPPED,
@@ -196,16 +193,8 @@ export class TrackNoteDetectionService {
     return outcome;
   }
 
-  /**
-   * One call to RunPod. Any failure of it is a `NOTE_DETECTION_FAILED`, which
-   * BullMQ retries; the cause goes to the log.
-   */
-  private async attempt<T>(action: string, work: () => Promise<T>): Promise<T> {
-    try {
-      return await work();
-    } catch (error) {
-      this.logger.warn(`Could not ${action}: ${messageOf(error)}`);
-      throw new TrackProcessingFailure('NOTE_DETECTION_FAILED');
-    }
+  /** One call to RunPod; a failure of it is a `NOTE_DETECTION_FAILED`. */
+  private attempt<T>(action: string, work: () => Promise<T>): Promise<T> {
+    return attemptStepCall(this.logger, 'NOTE_DETECTION_FAILED', action, work);
   }
 }

@@ -80,6 +80,11 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   stay inside their module.
 - `integrations/` wrap third-party SDKs behind a small typed service, so
   features never import an SDK directly (and tests can mock one provider).
+- `integrations/storage/` in production: the bucket's `track-vocals/` prefix
+  must be publicly readable by bucket policy. The note detection's worker
+  uploads the vocals through a presigned PUT with no ACL (its contract sends
+  only `Content-Type`), so public reads depend on that policy, as they do on
+  MinIO (`mc anonymous set download`).
 
 ## Layers (controller → service → repository)
 
@@ -303,7 +308,8 @@ isn't obvious), so the import script can be written from those notes.
   jobs (no inbound callback). A step that waits (a RapidAPI conversion) answers
   a wait outcome and is checked again by a delayed run of the same step, with a
   round number in its job payload; the budget of checks is in
-  `track-audio-polling.ts`. `RAPIDAPI_API_KEY` is required in production. See
+  `track-audio-polling.ts`. `RAPIDAPI_API_KEY`, `RUNPOD_API_KEY` and
+  `RUNPOD_ENDPOINT_ID` are required in production. See
   `docs/adr/0004-processing-pipeline.md`.
 - Redis also backs response caching of expensive reads (`CacheService`, keys
   built with `redisKey(feature, …)`) and rate limiting (`@nestjs/throttler`

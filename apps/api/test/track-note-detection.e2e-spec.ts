@@ -24,10 +24,11 @@ import {
 
 // The note detection of a Processing, end to end. RunPod is faked at its
 // integration boundary: a job is started with the input the API sends, and
-// each check answers what the spec scripts. The vocals go through the real
-// storage: the worker's upload uses the presigned URL, and the public URL
-// serves the file. The stages are driven by the same delayed jobs as in
-// production, and the Processing endpoint shows what a viewer sees.
+// each check answers what the spec scripts, as RunPod's `/status` would. The
+// vocals go through the real storage: the worker's upload uses the presigned
+// URL, and the public URL serves the file. The stages are driven by the same
+// delayed jobs as in production, and the Processing endpoint shows what a
+// viewer sees.
 
 type QueuedJob = { name: string; data: unknown };
 
@@ -64,6 +65,10 @@ const storedNotesOf = (testApp: TestApp, trackId: string) =>
     .from(trackNotes)
     .where(eq(trackNotes.trackId, trackId))
     .orderBy(asc(trackNotes.start));
+
+/** The notes a Track should hold once its Processing completes with FAKE_NOTES. */
+const expectedNotes = (notes: readonly FakeNote[]): FakeNote[] =>
+  [...notes].sort((a, b) => a.start - b.start);
 
 describe('Track Processing note detection (e2e)', () => {
   let app: TrackProcessingApp;
@@ -108,7 +113,7 @@ describe('Track Processing note detection (e2e)', () => {
       vocalsWavUrl: publicUrl,
     });
     expect(await storedNotesOf(testApp, trackId)).toEqual(
-      [...FAKE_NOTES].sort((a, b) => a.start - b.start),
+      expectedNotes(FAKE_NOTES),
     );
   });
 
@@ -129,24 +134,28 @@ describe('Track Processing note detection (e2e)', () => {
 
   it('shows the stages the worker reports on the Processing, as the job reaches them', async () => {
     app.noteDetection.answers = [
-      { kind: 'running', stage: 'EXTRACTING_VOCALS' },
-      { kind: 'running', stage: 'DETECTING_NOTES' },
-      { kind: 'running', stage: 'DETECTING_NOTES' },
-      { kind: 'completed' },
+      { status: 'IN_PROGRESS', output: 'EXTRACTING_VOCALS' },
+      { status: 'IN_PROGRESS', output: 'DETECTING_NOTES' },
+      { status: 'IN_PROGRESS', output: 'DETECTING_NOTES' },
+      { status: 'COMPLETED' },
     ];
     const trackId = await requestTrack(app);
 
-    // The vocals stage hands over once the worker reports its notes stage;
-    // the notes stage is queued and has not checked the job yet.
-    await runJobsUntil(
-      testApp,
-      (job) => stepOf(job)?.step === 'DETECTING_NOTES',
+    // The vocals stage has checked the job once and found it extracting: the
+    // Processing shows that before the worker reports its notes stage.
+    await runJobsUntil(testApp, (job) => stepOf(job)?.wait?.round === 2);
+    expect((await processingOf(testApp, trackId)).processing?.status).toBe(
+      'EXTRACTING_VOCALS',
     );
-    await runNextTrackJob(testApp);
 
+    // The worker reports DETECTING_NOTES: the vocals stage hands over, and
+    // the notes stage checks the job once it starts.
+    await runNextTrackJob(testApp);
+    await runNextTrackJob(testApp);
     expect((await processingOf(testApp, trackId)).processing?.status).toBe(
       'DETECTING_NOTES',
     );
+
     await runTrackJobs(testApp);
     expect((await processingOf(testApp, trackId)).processing).toMatchObject({
       status: 'COMPLETED',
@@ -173,25 +182,41 @@ describe('Track Processing note detection (e2e)', () => {
     expect(app.noteDetection.checks).toEqual(['runpod-job-1']);
   });
 
-  it('fails with NOTE_DETECTION_FAILED, retryable, when RunPod ends the job in its vocals stage', async () => {
-    app.noteDetection.answers = [{ kind: 'failed' }];
-    const trackId = await requestTrack(app);
+  // RunPod ends a job as FAILED, CANCELLED or TIMED_OUT; each one ends the
+  // Processing at the check that finds it, with no re-check of the dead job.
+  it.each([
+    { status: 'FAILED', stage: 'vocals', checks: 1 },
+    { status: 'CANCELLED', stage: 'vocals', checks: 1 },
+    { status: 'TIMED_OUT', stage: 'vocals', checks: 1 },
+    { status: 'FAILED', stage: 'notes', checks: 2 },
+    { status: 'CANCELLED', stage: 'notes', checks: 2 },
+    { status: 'TIMED_OUT', stage: 'notes', checks: 2 },
+  ])(
+    'ends the Processing with NOTE_DETECTION_FAILED when RunPod answers $status in its $stage stage',
+    async ({ status, stage, checks }) => {
+      app.noteDetection.answers =
+        stage === 'vocals'
+          ? [{ status }]
+          : [{ status: 'IN_PROGRESS', output: 'DETECTING_NOTES' }, { status }];
+      const trackId = await requestTrack(app);
 
-    await runTrackJobs(testApp);
+      await runTrackJobs(testApp);
 
-    expect((await processingOf(testApp, trackId)).processing).toMatchObject({
-      status: 'FAILED',
-      failureCode: 'NOTE_DETECTION_FAILED',
-      retryable: true,
-      resumeFrom: 'EXTRACTING_VOCALS',
-    });
-    expect(await storedNotesOf(testApp, trackId)).toEqual([]);
-  });
+      expect(app.noteDetection.checks).toHaveLength(checks);
+      expect((await processingOf(testApp, trackId)).processing).toMatchObject({
+        status: 'FAILED',
+        failureCode: 'NOTE_DETECTION_FAILED',
+        retryable: true,
+        resumeFrom: 'EXTRACTING_VOCALS',
+      });
+      expect(await storedNotesOf(testApp, trackId)).toEqual([]);
+    },
+  );
 
   it('resumes a failure of the notes stage at the vocals stage, where a retry starts the job again', async () => {
     app.noteDetection.answers = [
-      { kind: 'running', stage: 'DETECTING_NOTES' },
-      { kind: 'failed' },
+      { status: 'IN_PROGRESS', output: 'DETECTING_NOTES' },
+      { status: 'FAILED' },
     ];
     const trackId = await requestTrack(app);
 
@@ -210,9 +235,9 @@ describe('Track Processing note detection (e2e)', () => {
 
   it('starts a new RunPod job when a failed Processing is retried, and completes it', async () => {
     app.noteDetection.answers = [
-      { kind: 'running', stage: 'DETECTING_NOTES' },
-      { kind: 'failed' },
-      { kind: 'completed' },
+      { status: 'IN_PROGRESS', output: 'DETECTING_NOTES' },
+      { status: 'FAILED' },
+      { status: 'COMPLETED' },
     ];
     const user = await createPasswordUser(testApp.db);
     const trackId = await requestTrackAs(app, user, 'en');
@@ -233,7 +258,7 @@ describe('Track Processing note detection (e2e)', () => {
 
   it('ends a job still running at the last check of its budget with NOTE_DETECTION_FAILED', async () => {
     app.noteDetection.answers = [
-      { kind: 'running', stage: 'EXTRACTING_VOCALS' },
+      { status: 'IN_PROGRESS', output: 'EXTRACTING_VOCALS' },
     ];
     const trackId = await requestTrack(app);
 
@@ -298,7 +323,7 @@ describe('Track Processing note detection (e2e)', () => {
     await runTrackJobs(testApp);
 
     expect(await storedNotesOf(testApp, trackId)).toEqual(
-      [...FAKE_NOTES].sort((a, b) => a.start - b.start),
+      expectedNotes(FAKE_NOTES),
     );
   });
 

@@ -13,13 +13,16 @@ describe('track pipeline steps', () => {
 
   it('has no step after the last one that exists', () => {
     expect(nextPipelineStep('FINDING_VIDEO')).toBe('DOWNLOADING_AUDIO');
-    expect(nextPipelineStep('DOWNLOADING_AUDIO')).toBeUndefined();
+    expect(nextPipelineStep('DOWNLOADING_AUDIO')).toBe('EXTRACTING_VOCALS');
+    expect(nextPipelineStep('DETECTING_NOTES')).toBeUndefined();
   });
 
   it('runs only the steps of this build', () => {
     expect(isPipelineStep('FINDING_VIDEO')).toBe(true);
     expect(isPipelineStep('DOWNLOADING_AUDIO')).toBe(true);
-    expect(isPipelineStep('EXTRACTING_VOCALS')).toBe(false);
+    expect(isPipelineStep('EXTRACTING_VOCALS')).toBe(true);
+    expect(isPipelineStep('DETECTING_NOTES')).toBe(true);
+    expect(isPipelineStep('EXTRACTING_LYRICS')).toBe(false);
   });
 
   it('may run a step from queued or from the step itself', () => {

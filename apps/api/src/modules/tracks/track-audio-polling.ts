@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isPollBudgetSpentAt } from './track-poll-budget.js';
 
 // The re-checks of a RapidAPI conversion (ADR 0004). A conversion is polled
 // once every 10 seconds, at most 180 times: the legacy service's budget, about
@@ -17,4 +18,4 @@ export const audioWaitStateSchema = z.object({
  * budget. `round` counts the checks, from 1.
  */
 export const isPollBudgetSpent = (round: number): boolean =>
-  round >= AUDIO_MAX_POLLS;
+  isPollBudgetSpentAt(round, AUDIO_MAX_POLLS);

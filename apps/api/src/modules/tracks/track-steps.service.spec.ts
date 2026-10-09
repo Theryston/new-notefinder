@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import type { ProcessingForStep } from './track-processing.repository.js';
 import { TrackStepsService } from './track-steps.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
@@ -8,6 +9,7 @@ import { TrackVideoStepService } from './track-video-step.service.js';
 
 const video = { run: vi.fn() };
 const audio = { run: vi.fn() };
+const noteDetection = { extractVocals: vi.fn(), detectNotes: vi.fn() };
 
 const processing: ProcessingForStep = {
   id: 'processing-1',
@@ -28,6 +30,7 @@ describe('TrackStepsService', () => {
         TrackStepsService,
         { provide: TrackVideoStepService, useValue: video },
         { provide: TrackAudioService, useValue: audio },
+        { provide: TrackNoteDetectionService, useValue: noteDetection },
       ],
     }).compile();
     steps = moduleRef.get(TrackStepsService);
@@ -57,5 +60,27 @@ describe('TrackStepsService', () => {
       kind: 'done',
     });
     expect(audio.run).toHaveBeenCalledWith(processing, wait);
+  });
+
+  it('runs the vocals stage with the re-check it was given', async () => {
+    const wait = { round: 2, state: null };
+    noteDetection.extractVocals.mockResolvedValue({ kind: 'done' });
+
+    await expect(steps.extractVocals(processing, wait)).resolves.toEqual({
+      kind: 'done',
+    });
+    expect(noteDetection.extractVocals).toHaveBeenCalledWith(processing, wait);
+  });
+
+  it('runs the notes stage, which has no re-check on its first run', async () => {
+    noteDetection.detectNotes.mockResolvedValue({ kind: 'done' });
+
+    await expect(steps.detectNotes(processing, undefined)).resolves.toEqual({
+      kind: 'done',
+    });
+    expect(noteDetection.detectNotes).toHaveBeenCalledWith(
+      processing,
+      undefined,
+    );
   });
 });

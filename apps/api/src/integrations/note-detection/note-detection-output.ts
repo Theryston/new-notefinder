@@ -37,6 +37,9 @@ const noteDetectionOutputSchema = z.object({
 
 export type NoteDetectionOutput = z.infer<typeof noteDetectionOutputSchema>;
 
+/** One note the worker detected. */
+export type DetectedNote = NoteDetectionOutput['notes'][number];
+
 /** A completed job's output, parsed. Anything else is a broken worker. */
 export const noteDetectionOutputOf = (body: unknown): NoteDetectionOutput =>
   noteDetectionOutputSchema.parse(body);

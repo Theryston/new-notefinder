@@ -1,4 +1,5 @@
 import type { RunpodJobState } from '../../integrations/note-detection/runpod-job.js';
+import { isPollBudgetSpentAt } from './track-poll-budget.js';
 import { failedWith, type StepOutcome, waitFor } from './track-step-outcome.js';
 
 // The re-checks of a note detection job (ADR 0004). The job is polled every 5
@@ -17,7 +18,7 @@ export type UnfinishedJobState = Exclude<RunpodJobState, { kind: 'completed' }>;
  * `round` counts the checks, from 1.
  */
 export const isNotePollBudgetSpent = (round: number): boolean =>
-  round >= NOTE_MAX_POLLS;
+  isPollBudgetSpentAt(round, NOTE_MAX_POLLS);
 
 /** Whether the job is in its notes stage, which the vocals stage hands over to. */
 export const isNotesStage = (state: RunpodJobState): boolean =>

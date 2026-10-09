@@ -1,5 +1,8 @@
 import type { NoteDetectionInput } from '../../src/integrations/note-detection/note-detection.client.js';
-import type { RunpodJobState } from '../../src/integrations/note-detection/runpod-job.js';
+import {
+  type RunpodJobState,
+  runpodJobStateOf,
+} from '../../src/integrations/note-detection/runpod-job.js';
 
 /** One note of the fake worker's output. */
 export type FakeNote = {
@@ -11,14 +14,14 @@ export type FakeNote = {
 };
 
 /**
- * What the fake RunPod answers a check with. A completed job answers the output
- * the worker would give for it: the vocals URL it was asked to upload to, and
- * the notes the spec sets.
+ * What a check of the fake RunPod answers, as RunPod's `/status` sends it: the
+ * job's status, and the worker's progress update (its stage) while it runs. A
+ * `COMPLETED` answer carries the output the worker would give for the job: the
+ * vocals URL it was asked to upload to, and the notes the spec sets. The fake
+ * hands these bodies to the real state mapping, so each status is read the way
+ * the client reads it.
  */
-export type FakeRunpodAnswer =
-  | { kind: 'running'; stage?: 'EXTRACTING_VOCALS' | 'DETECTING_NOTES' }
-  | { kind: 'completed' }
-  | { kind: 'failed' };
+export type FakeRunpodAnswer = { status: string; output?: string };
 
 /** Two notes a completed job detects by default. */
 export const FAKE_NOTES: FakeNote[] = [
@@ -38,7 +41,7 @@ export class FakeNoteDetection {
   /** The job IDs checked, in order. */
   readonly checks: string[] = [];
   /** What the checks answer, in order; the last answer repeats. */
-  answers: FakeRunpodAnswer[] = [{ kind: 'completed' }];
+  answers: FakeRunpodAnswer[] = [{ status: 'COMPLETED' }];
   /** The notes a completed job detects. */
   notes: FakeNote[] = FAKE_NOTES;
   /** When set, RunPod refuses every call: it is down. */
@@ -50,7 +53,7 @@ export class FakeNoteDetection {
     this.starts.length = 0;
     this.checks.length = 0;
     this.inputs.clear();
-    this.answers = [{ kind: 'completed' }];
+    this.answers = [{ status: 'COMPLETED' }];
     this.notes = FAKE_NOTES;
     this.requestFailure = undefined;
   }
@@ -72,8 +75,8 @@ export class FakeNoteDetection {
     this.checks.push(jobId);
     const answer = this.answers[
       Math.min(this.checks.length - 1, this.answers.length - 1)
-    ] ?? { kind: 'completed' };
-    return this.stateOf(answer, this.inputs.get(jobId));
+    ] ?? { status: 'COMPLETED' };
+    return runpodJobStateOf(this.bodyOf(jobId, answer));
   }
 
   /**
@@ -95,20 +98,16 @@ export class FakeNoteDetection {
     });
   }
 
-  private stateOf(
-    answer: FakeRunpodAnswer,
-    input: NoteDetectionInput | undefined,
-  ): RunpodJobState {
-    if (answer.kind === 'failed') {
-      return { kind: 'failed' };
-    }
-    if (answer.kind === 'running') {
-      return { kind: 'running', stage: answer.stage };
+  /** The `/status` body RunPod would answer with for this answer. */
+  private bodyOf(jobId: string, answer: FakeRunpodAnswer) {
+    if (answer.status !== 'COMPLETED') {
+      return { id: jobId, status: answer.status, output: answer.output };
     }
     return {
-      kind: 'completed',
+      id: jobId,
+      status: 'COMPLETED',
       output: {
-        vocalsUrl: input?.vocalsUpload.publicUrl,
+        vocalsUrl: this.inputs.get(jobId)?.vocalsUpload.publicUrl,
         notes: this.notes,
       },
     };
