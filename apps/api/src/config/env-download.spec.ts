@@ -39,8 +39,12 @@ describe('parseEnv download settings', () => {
 
     expect(() => parseEnv(production)).toThrow('RAPIDAPI_API_KEY');
     expect(
-      parseEnv({ ...production, RAPIDAPI_API_KEY: 'rapid-key' })
-        .RAPIDAPI_API_KEY,
+      parseEnv({
+        ...production,
+        RAPIDAPI_API_KEY: 'rapid-key',
+        RUNPOD_API_KEY: 'runpod-key',
+        RUNPOD_ENDPOINT_ID: 'endpoint-1',
+      }).RAPIDAPI_API_KEY,
     ).toBe('rapid-key');
   });
 
