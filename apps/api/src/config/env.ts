@@ -157,6 +157,12 @@ const envSchema = z
     ),
     BRIGHT_DATA_PROXY_USERNAME: optional(z.string().min(1)),
     BRIGHT_DATA_PROXY_PASSWORD: optional(z.string().min(1)),
+    // RapidAPI key of the audio download a Processing starts with (ADR 0004).
+    // Required in production: AudioDownloadClient refuses to boot without it.
+    RAPIDAPI_API_KEY: optional(z.string().min(1)),
+    // The ffmpeg binary that converts the downloaded MP3 to WAV. Unset, the
+    // client runs `ffmpeg` from the PATH (FfmpegClient).
+    FFMPEG_PATH: optional(z.string().min(1)),
   })
   .check((ctx) => {
     const env = ctx.value;

@@ -16,9 +16,11 @@ import {
   RUN_STEP_JOB,
   type RunStepJob,
   STORE_COVER_JOB,
+  type StepWait,
   type StoreCoverJob,
   stepJobId,
   TRACK_PROCESSING_QUEUE,
+  waitJobId,
 } from './track-processing.job.js';
 import {
   type ProcessingForStep,
@@ -29,10 +31,18 @@ import {
   TrackProcessingFailure,
 } from './track-processing-failure.js';
 import { isRetryableFailureCode } from './track-processing-view.js';
-import { TrackVideoStepService } from './track-video-step.service.js';
+import {
+  DONE,
+  type StepOutcome,
+  type WaitOutcome,
+} from './track-step-outcome.js';
+import { TrackStepsService } from './track-steps.service.js';
 
-/** What one step does with its Processing. */
-type StepHandler = (processing: ProcessingForStep) => Promise<void>;
+/** What one step does with its Processing; `wait` is set on a re-check. */
+type StepHandler = (
+  processing: ProcessingForStep,
+  wait: StepWait | undefined,
+) => Promise<StepOutcome>;
 
 /**
  * Runs a Track's Processing (ADR 0004). Each step job loads its Processing,
@@ -51,13 +61,15 @@ export class TrackPipelineService {
    */
   private readonly handlers: Record<PipelineStepName, StepHandler> = {
     FINDING_VIDEO: (processing) => this.findVideo(processing),
+    DOWNLOADING_AUDIO: (processing, wait) =>
+      this.steps.downloadAudio(processing, wait),
   };
 
   constructor(
     @InjectQueue(TRACK_PROCESSING_QUEUE)
     private readonly queue: Queue<RunStepJob | StoreCoverJob>,
     private readonly processings: TrackProcessingRepository,
-    private readonly videoStep: TrackVideoStepService,
+    private readonly steps: TrackStepsService,
     private readonly revalidation: WebRevalidationService,
   ) {}
 
@@ -99,7 +111,11 @@ export class TrackPipelineService {
       return;
     }
     try {
-      await this.handlers[job.step](processing);
+      const outcome = await this.handlers[job.step](processing, job.wait);
+      if (outcome.kind === 'wait') {
+        await this.enqueueWait(processing.id, job, outcome);
+        return;
+      }
       await this.advance(processing, job.step);
     } catch (error) {
       return this.failStep(processing, job.step, error, finalAttempt);
@@ -111,13 +127,38 @@ export class TrackPipelineService {
    * found, so the cover job does not search again. The cover job does not hold
    * the next step back.
    */
-  private async findVideo(processing: ProcessingForStep): Promise<void> {
-    const artworkUrl = await this.videoStep.run(processing);
+  private async findVideo(processing: ProcessingForStep): Promise<StepOutcome> {
+    const artworkUrl = await this.steps.findVideo(processing);
     await this.enqueueCover({
       trackId: processing.trackId,
       processingId: processing.id,
       artworkUrl,
     });
+    return DONE;
+  }
+
+  /**
+   * Queues the next check of a waiting step after its delay. The check's round
+   * follows the one that queued it, and its job ID is keyed by the round.
+   */
+  private async enqueueWait(
+    processingId: string,
+    job: RunStepJob,
+    wait: WaitOutcome,
+  ): Promise<void> {
+    const round = (job.wait?.round ?? 0) + 1;
+    await this.queue.add(
+      RUN_STEP_JOB,
+      {
+        processingId,
+        step: job.step,
+        wait: { round, state: wait.state },
+      },
+      {
+        jobId: waitJobId(processingId, job.step, round),
+        delay: wait.delayMs,
+      },
+    );
   }
 
   /**

@@ -297,8 +297,13 @@ isn't obvious), so the import script can be written from those notes.
 - Scheduled work (track score recalculation, daily practice reminders) uses
   BullMQ repeatable jobs, not in-process timers.
 - A Track's Processing is a BullMQ job in this process: it downloads the
-  audio through the RapidAPI service, then starts `apps/nfp-audio` on RunPod
-  and polls its status with delayed jobs (no inbound callback). See
+  audio through the RapidAPI service, converts it to WAV with `ffmpeg` (the
+  API needs `ffmpeg` installed; `FFMPEG_PATH` names the binary) and stores it,
+  then starts `apps/nfp-audio` on RunPod and polls its status with delayed
+  jobs (no inbound callback). A step that waits (a RapidAPI conversion) answers
+  a wait outcome and is checked again by a delayed run of the same step, with a
+  round number in its job payload; the budget of checks is in
+  `track-audio-polling.ts`. `RAPIDAPI_API_KEY` is required in production. See
   `docs/adr/0004-processing-pipeline.md`.
 - Redis also backs response caching of expensive reads (`CacheService`, keys
   built with `redisKey(feature, …)`) and rate limiting (`@nestjs/throttler`
@@ -354,7 +359,9 @@ isn't obvious), so the import script can be written from those notes.
   - Test-only controllers live in separate non-spec files under `test/` and
     need `@Public()` unless they test auth.
 - External services (RapidAPI, RunPod, OpenAI, YT Music, email) are always mocked at the
-  integration-module boundary. File storage is the exception: e2e runs
+  integration-module boundary. `ffmpeg` is a local binary, not a service: e2e
+  runs it for real (CI installs it), on the MP3 fixture in `test/fixtures/`.
+  File storage is the exception: e2e runs
   against a real S3-compatible server (MinIO), started once per run next to
   Postgres by `test/setup/global-setup.ts` (Testcontainers, or
   `E2E_S3_ENDPOINT` + `E2E_S3_ACCESS_KEY_ID` + `E2E_S3_SECRET_ACCESS_KEY`
