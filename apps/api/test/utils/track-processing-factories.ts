@@ -1,5 +1,8 @@
 import type { Database } from '../../src/database/database.js';
-import { trackContributors } from '../../src/database/schema/track-contributors.js';
+import {
+  trackContributions,
+  trackContributors,
+} from '../../src/database/schema/track-contributors.js';
 import { trackProcessings } from '../../src/database/schema/track-processings.js';
 import { legacyTrackIds } from '../../src/database/schema/tracks.js';
 
@@ -7,6 +10,7 @@ export type TrackProcessingRow = typeof trackProcessings.$inferSelect;
 export type TrackContributorRow = typeof trackContributors.$inferSelect;
 
 type NewProcessing = typeof trackProcessings.$inferInsert;
+type NewContribution = typeof trackContributions.$inferInsert;
 
 const insertOne = async <T>(rows: Promise<T[]>): Promise<T> => {
   const [row] = await rows;
@@ -47,4 +51,17 @@ export const createLegacyTrackId = (
 ): Promise<void> =>
   insertOne(
     db.insert(legacyTrackIds).values({ legacyId, trackId }).returning(),
+  ).then(() => undefined);
+
+/** One Contribution of a Contributor, which started a Processing (a CREATE by default). */
+export const createTrackContribution = (
+  db: Database,
+  overrides: Pick<NewContribution, 'contributorId' | 'processingId'> &
+    Partial<NewContribution>,
+): Promise<void> =>
+  insertOne(
+    db
+      .insert(trackContributions)
+      .values({ kind: 'CREATE', ...overrides })
+      .returning(),
   ).then(() => undefined);

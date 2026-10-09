@@ -43,7 +43,8 @@
       "play": "Play {title}",
       "generate": "Generate notes",
       "generateLabel": "Generate notes for {title}",
-      "generating": "Generating…"
+      "generating": "Generating…",
+      "signInLabel": "Sign in to generate notes for {title}"
     },
     "processing": {
       "metaTitle": "{title}",
@@ -435,6 +436,11 @@
     "NOT_FOUND": "We couldn't find what you're looking for.",
     "CONFLICT": "This conflicts with something that already exists.",
     "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "PROCESSING_LIMIT_REACHED": "You've reached your limit of Track requests for now. Try again later.",
+    "processingLimit": {
+      "ACTIVE_PROCESSINGS": "You already have {max} Tracks being processed. Wait for one to finish before you ask for another.",
+      "NEW_TRACKS_PER_DAY": "You can ask for {max} new Tracks a day. Try again after midnight UTC."
+    },
     "SERVICE_UNAVAILABLE": "The service is temporarily unavailable. Try again in a moment.",
     "GATEWAY_TIMEOUT": "The service took too long to answer. Try again.",
     "INTERNAL_ERROR": "Something went wrong. Please try again.",

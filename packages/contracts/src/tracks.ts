@@ -87,3 +87,27 @@ export const trackProcessingStateSchema = z.object({
 });
 
 export type TrackProcessingState = z.infer<typeof trackProcessingStateSchema>;
+
+/**
+ * The limits on a User's Track requests (admins are exempt): how many
+ * non-terminal Processings they may have started, and how many new Tracks they
+ * may request per UTC day. Never rename one: the web translates them.
+ */
+export const TRACK_REQUEST_LIMITS = [
+  'ACTIVE_PROCESSINGS',
+  'NEW_TRACKS_PER_DAY',
+] as const;
+
+export const trackRequestLimitSchema = z.enum(TRACK_REQUEST_LIMITS);
+
+export type TrackRequestLimit = z.infer<typeof trackRequestLimitSchema>;
+
+/** `details` of a `PROCESSING_LIMIT_REACHED` answer: the limit hit and its maximum. */
+export const processingLimitDetailsSchema = z.object({
+  limit: trackRequestLimitSchema,
+  max: z.number().int().positive(),
+});
+
+export type ProcessingLimitDetails = z.infer<
+  typeof processingLimitDetailsSchema
+>;

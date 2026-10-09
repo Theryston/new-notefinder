@@ -43,7 +43,8 @@
       "play": "Tocar {title}",
       "generate": "Gerar notas",
       "generateLabel": "Gerar notas de {title}",
-      "generating": "Gerando…"
+      "generating": "Gerando…",
+      "signInLabel": "Entre para gerar notas de {title}"
     },
     "processing": {
       "metaTitle": "{title}",
@@ -435,6 +436,11 @@
     "NOT_FOUND": "Não encontramos o que você está procurando.",
     "CONFLICT": "Isso entra em conflito com algo que já existe.",
     "RATE_LIMITED": "Muitas requisições. Aguarde um momento e tente novamente.",
+    "PROCESSING_LIMIT_REACHED": "Você atingiu o limite de pedidos de faixas por enquanto. Tente de novo mais tarde.",
+    "processingLimit": {
+      "ACTIVE_PROCESSINGS": "Você já tem {max} faixas sendo processadas. Espere uma terminar para pedir outra.",
+      "NEW_TRACKS_PER_DAY": "Você pode pedir {max} faixas novas por dia. Tente de novo depois da meia-noite (UTC)."
+    },
     "SERVICE_UNAVAILABLE": "O serviço está temporariamente indisponível. Tente novamente em instantes.",
     "GATEWAY_TIMEOUT": "O serviço demorou demais para responder. Tente novamente.",
     "INTERNAL_ERROR": "Algo deu errado. Tente novamente.",

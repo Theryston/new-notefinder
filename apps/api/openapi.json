@@ -144,6 +144,9 @@
           "404": {
             "description": "The Music catalog does not know the Recording."
           },
+          "429": {
+            "description": "The User reached a limit on Track requests (`PROCESSING_LIMIT_REACHED`, with the limit in `details`). Admins are exempt."
+          },
           "503": {
             "description": "The Music catalog is down."
           },

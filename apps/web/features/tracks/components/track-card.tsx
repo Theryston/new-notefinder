@@ -78,6 +78,15 @@ type TrackCardRequest = {
   onRequest: () => void;
 };
 
+/** The sign-in page, with `redirectTo` back to the search and its request marker. */
+export type SignInHref = {
+  pathname: '/sign-in';
+  query: Record<string, string>;
+};
+
+/** Sends a signed-out visitor who clicks a card without a Track to sign in. */
+type TrackCardSignIn = { href: SignInHref };
+
 export type TrackCardProps = {
   trackId: string | null;
   title: string;
@@ -86,6 +95,8 @@ export type TrackCardProps = {
   placeholderSeed: string;
   /** Makes a card without a Track an action; without it the card stays static. */
   request?: TrackCardRequest;
+  /** Makes a card without a Track a link to sign in first. */
+  signIn?: TrackCardSignIn;
 };
 
 /**
@@ -146,11 +157,12 @@ function TrackCardText({
  * the subtitle, and a hover-only play affordance. The hover and the play
  * badge exist whether or not the card already has a `trackId`: with one
  * the whole card links to the Track page. Without one, a card with a
- * `request` is a button that asks for the Track ("generate notes"), and a
- * card without it is static and only the play button focuses.
+ * `request` is a button that asks for the Track ("generate notes"), a card
+ * with `signIn` is a link to sign in first, and a card with neither is static
+ * and only the play button focuses.
  */
 export function TrackCard(props: TrackCardProps) {
-  const { trackId, title, subtitle, request } = props;
+  const { trackId, title, subtitle, request, signIn } = props;
   const t = useTranslations('tracks');
   const cover = (badge: ReactNode) => (
     <TrackCardCover
@@ -169,6 +181,19 @@ export function TrackCard(props: TrackCardProps) {
             <PlayIcon className="size-4 fill-current" />
           </span>,
         )}
+        {text}
+      </Link>
+    );
+  }
+
+  if (signIn) {
+    return (
+      <Link
+        href={signIn.href}
+        aria-label={t('card.signInLabel', { title })}
+        className={REQUEST_CARD_CLASS}
+      >
+        {cover(<RequestBadge pending={false} hint={t('card.generate')} />)}
         {text}
       </Link>
     );

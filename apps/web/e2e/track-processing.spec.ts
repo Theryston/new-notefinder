@@ -44,6 +44,10 @@ for (const { locale, messages } of cases) {
     '{title}',
     UNLINKED_TITLE,
   );
+  const signInName = messages.tracks.card.signInLabel.replace(
+    '{title}',
+    UNLINKED_TITLE,
+  );
   const progress = (page: Page) => page.getByRole('progressbar');
 
   test.describe(`track processing (${locale})`, () => {
@@ -210,16 +214,23 @@ for (const { locale, messages } of cases) {
       ).toHaveAttribute('href', `/${locale}/users/ada_singer`);
     });
 
-    test('shows a visitor who is signed out the search result as a static card', async ({
+    test('sends a visitor who is signed out from a result without a Track to sign in, back to the search with its request', async ({
       page,
     }) => {
       await mockAuthApi(page);
       await mockSearchApi(page);
       await page.goto(`/${locale}/search?q=queen`);
 
+      // A sign-in link (not a request button) named after its result. The
+      // sign-in page returns to this search with the request marker.
       await expect(
-        page.getByRole('main').getByText(UNLINKED_TITLE),
-      ).toBeVisible();
+        page.getByRole('link', { name: signInName }),
+      ).toHaveAttribute(
+        'href',
+        `/${locale}/sign-in?redirectTo=${encodeURIComponent(
+          `/search?q=queen&process=${UNLINKED_MBID}`,
+        )}`,
+      );
       await expect(
         page.getByRole('button', { name: generateName }),
       ).toHaveCount(0);

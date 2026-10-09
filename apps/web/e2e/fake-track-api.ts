@@ -37,7 +37,7 @@ export type FakeTrack = {
 /** What `POST /v1/tracks` answers for one Recording MBID. */
 type FakeTrackRequestAnswer =
   | { trackId: string; created: boolean }
-  | { status: number; code: string };
+  | { status: number; code: string; details?: unknown };
 
 export type TrackMockState = {
   tracks?: FakeTrack[];
@@ -141,7 +141,12 @@ async function serveCreate(
     json(
       response,
       answer.status,
-      { statusCode: answer.status, code: answer.code, message: 'Fake failure' },
+      {
+        statusCode: answer.status,
+        code: answer.code,
+        message: 'Fake failure',
+        details: answer.details,
+      },
       request,
     );
     return;

@@ -18,6 +18,9 @@ export const apiErrorCodeSchema = z.enum([
   'RESOURCE_MOVED',
   'CONFLICT',
   'RATE_LIMITED',
+  // A User asked for more Track Processings than their limits allow (429). The
+  // `details` say which limit (`ACTIVE_PROCESSINGS` or `NEW_TRACKS_PER_DAY`).
+  'PROCESSING_LIMIT_REACHED',
   // Retryable downstream outages (the Music catalog for search): the client
   // retries with backoff instead of showing a dead end.
   'SERVICE_UNAVAILABLE',
