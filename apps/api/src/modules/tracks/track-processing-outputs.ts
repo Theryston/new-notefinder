@@ -39,3 +39,15 @@ export function carriedOutputsOf(outputs: ProcessingOutputs): CarriedOutputs {
     vocalsMp3Url: outputs.vocalsMp3Url,
   } satisfies CarriedOutputs;
 }
+
+/** Which MP3 of a Processing: the music's or the vocals'. */
+export type Mp3Kind = 'music' | 'vocals';
+
+/** The audio URLs of a Processing: each is null until a step stores it. */
+export type StoredAudioUrls = Pick<
+  ProcessingOutputs,
+  'musicWavUrl' | 'musicMp3Url' | 'vocalsWavUrl' | 'vocalsMp3Url'
+>;
+
+/** The Processing an MP3 or lyrics write belongs to: only its ID and its Track. */
+export type ProcessingRef = { id: string; trackId: string };

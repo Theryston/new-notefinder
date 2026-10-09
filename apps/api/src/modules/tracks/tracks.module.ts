@@ -22,6 +22,8 @@ import { TrackLyricsRepository } from './track-lyrics.repository.js';
 import { TrackLyricsPromptService } from './track-lyrics-prompt.service.js';
 import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
+import { TRACK_MP3_QUEUE } from './track-mp3.job.js';
+import { TrackMp3Processor } from './track-mp3.processor.js';
 import { TrackMp3Service } from './track-mp3.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import { TrackNotesRepository } from './track-notes.repository.js';
@@ -39,6 +41,7 @@ import { TrackRetryRepository } from './track-retry.repository.js';
 import { TrackRetryService } from './track-retry.service.js';
 import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
 import { TrackStepsService } from './track-steps.service.js';
+import { TrackTimedLyricsService } from './track-timed-lyrics.service.js';
 import { TrackVideoService } from './track-video.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
 import { TracksController } from './tracks.controller.js';
@@ -55,6 +58,7 @@ import { TracksService } from './tracks.service.js';
     AudioDownloadModule,
     BullModule.registerQueue({ name: TRACK_PROCESSING_QUEUE }),
     BullModule.registerQueue({ name: TRACK_METADATA_QUEUE }),
+    BullModule.registerQueue({ name: TRACK_MP3_QUEUE }),
     CoverArtModule,
     EmailModule,
     FfmpegModule,
@@ -92,6 +96,8 @@ import { TracksService } from './tracks.service.js';
     TrackMp3Service,
     TrackLyricsPromptService,
     TrackLyricsStepService,
+    TrackTimedLyricsService,
+    TrackMp3Processor,
     TrackCoverService,
     TrackAlbumCoverService,
     TrackStepsService,

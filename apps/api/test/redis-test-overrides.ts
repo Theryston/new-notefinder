@@ -6,6 +6,8 @@ import { EmailProcessor } from '../src/integrations/email/email.processor.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
+import { TRACK_MP3_QUEUE } from '../src/modules/tracks/track-mp3.job.js';
+import { TrackMp3Processor } from '../src/modules/tracks/track-mp3.processor.js';
 import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
 import { TrackProcessingProcessor } from '../src/modules/tracks/track-processing.processor.js';
 import { TRACK_METADATA_QUEUE } from '../src/queue/track-metadata.job.js';
@@ -17,6 +19,7 @@ const QUEUES = [
   EMAIL_QUEUE,
   TRACK_PROCESSING_QUEUE,
   TRACK_METADATA_QUEUE,
+  TRACK_MP3_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -24,6 +27,7 @@ const PROCESSORS = [
   EmailProcessor,
   TrackProcessingProcessor,
   TrackMetadataProcessor,
+  TrackMp3Processor,
 ] as const;
 
 export type FakeQueue = {
