@@ -23,8 +23,16 @@ export type FakeTrack = {
   id: string;
   title: string;
   coverUrl?: string | null;
-  /** The artist credit as the Recording printed it, stored at creation. */
-  artistCredit?: { name: string; joinPhrase: string }[];
+  /**
+   * The artist credit as the Recording printed it, stored at creation;
+   * `artistId` is the Artist page a name links to.
+   */
+  artistCredit?: { name: string; joinPhrase: string; artistId?: string }[];
+  /** The length in milliseconds the practice header shows; null by default. */
+  durationMs?: number | null;
+  youtubeVideoId?: string | null;
+  /** The vocal notes in sung order; a Track without any is an instrumental. */
+  notes?: { note: string; octave: number; start: number; end: number }[];
   /** `null` for a Track that never had a Processing. */
   processing: FakeTrackProcessing | null;
   contributors?: {
@@ -115,6 +123,23 @@ function stateOf(track: FakeTrack) {
   };
 }
 
+/** `GET /v1/tracks/:trackId`: the practice header. */
+function practiceHeaderOf(track: FakeTrack) {
+  return {
+    id: track.id,
+    title: track.title,
+    coverUrl: track.coverUrl ?? null,
+    artistCredit: (track.artistCredit ?? []).map((entry) => ({
+      ...entry,
+      artistId: entry.artistId ?? null,
+    })),
+    durationMs: track.durationMs ?? null,
+    youtubeVideoId: track.youtubeVideoId ?? null,
+    contributors: track.contributors ?? [],
+    hasNotes: (track.notes ?? []).length > 0,
+  };
+}
+
 const notFoundBody = (
   code: 'NOT_FOUND' | 'RESOURCE_MOVED',
   details?: object,
@@ -123,14 +148,16 @@ const notFoundBody = (
     ? { statusCode: 404, code, message: 'Track not found' }
     : { statusCode: 404, code, message: 'Track moved', details };
 
-function serveProcessing(
+/** Answers a read of a Track with `body`, or the 404s of an unknown or legacy ID. */
+function serveTrackRead(
   id: string,
   request: IncomingMessage,
   response: ServerResponse,
+  body: (track: FakeTrack) => unknown,
 ): void {
   const track = tracks.get(id);
   if (track) {
-    json(response, 200, stateOf(track), request);
+    json(response, 200, body(track), request);
     return;
   }
   const newId = legacyMap.get(id);
@@ -261,7 +288,34 @@ export async function serveTrackRequest(
   }
   const processing = /^\/v1\/tracks\/([^/]+)\/processing$/.exec(pathname);
   if (processing?.[1] && request.method === 'GET') {
-    serveProcessing(decodeURIComponent(processing[1]), request, response);
+    serveTrackRead(
+      decodeURIComponent(processing[1]),
+      request,
+      response,
+      stateOf,
+    );
+    return true;
+  }
+  const notes = /^\/v1\/tracks\/([^/]+)\/notes$/.exec(pathname);
+  if (notes?.[1] && request.method === 'GET') {
+    serveTrackRead(
+      decodeURIComponent(notes[1]),
+      request,
+      response,
+      (track) => ({
+        notes: track.notes ?? [],
+      }),
+    );
+    return true;
+  }
+  const header = /^\/v1\/tracks\/([^/]+)$/.exec(pathname);
+  if (header?.[1] && request.method === 'GET') {
+    serveTrackRead(
+      decodeURIComponent(header[1]),
+      request,
+      response,
+      practiceHeaderOf,
+    );
     return true;
   }
   return false;

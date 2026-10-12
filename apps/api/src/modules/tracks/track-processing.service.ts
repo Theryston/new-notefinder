@@ -34,21 +34,30 @@ export class TrackProcessingService {
     }
     const [latest, contributors] = await Promise.all([
       this.processings.findLatestProcessing(trackId),
-      this.processings.findContributors(trackId),
+      this.contributorsOf(trackId),
     ]);
-    const profiles = await this.users.findPublicUsers(
-      contributors.map((contributor) => contributor.userId),
-    );
     return {
       track: header,
       processing: latest === undefined ? null : toTrackProcessing(latest),
-      contributors: contributors.flatMap((contributor) => {
-        const profile = profiles.get(contributor.userId);
-        return profile === undefined
-          ? []
-          : [toContributor(contributor.id, profile)];
-      }),
+      contributors,
     };
+  }
+
+  /**
+   * The Track's Contributors in the order they first contributed. One whose
+   * User has no public profile is left out.
+   */
+  async contributorsOf(trackId: string): Promise<TrackContributor[]> {
+    const contributors = await this.processings.findContributors(trackId);
+    const profiles = await this.users.findPublicUsers(
+      contributors.map((contributor) => contributor.userId),
+    );
+    return contributors.flatMap((contributor) => {
+      const profile = profiles.get(contributor.userId);
+      return profile === undefined
+        ? []
+        : [toContributor(contributor.id, profile)];
+    });
   }
 
   /**
@@ -62,7 +71,7 @@ export class TrackProcessingService {
     }
   }
 
-  private async throwMovedOrMissing(trackId: string): Promise<never> {
+  async throwMovedOrMissing(trackId: string): Promise<never> {
     const newId = await this.tracks.findTrackIdByLegacyId(trackId);
     if (newId !== undefined) {
       throw new AppException('RESOURCE_MOVED', 'Track moved', { id: newId });

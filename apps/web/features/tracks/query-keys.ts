@@ -1,9 +1,13 @@
 /**
  * TanStack Query keys of the Track features: one key per Track's Processing
- * state, which the Processing page polls under that key.
+ * state (which the Processing page polls) and one each for the practice
+ * header and the notes (which it reads once the Processing has completed).
  */
 export const trackKeys = {
   all: ['tracks'] as const,
   processing: (trackId: string) =>
     [...trackKeys.all, trackId, 'processing'] as const,
+  practice: (trackId: string) =>
+    [...trackKeys.all, trackId, 'practice'] as const,
+  notes: (trackId: string) => [...trackKeys.all, trackId, 'notes'] as const,
 };

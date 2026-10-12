@@ -3,6 +3,8 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { TrackProcessingSection } from '@/features/tracks/components/track-processing-section';
+import { practiceMetadata } from '@/features/tracks/practice-metadata';
+import { getInitialPractice } from '@/features/tracks/practice-queries';
 import { getTrackProcessingResult } from '@/features/tracks/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
@@ -31,6 +33,10 @@ export async function generateMetadata({
   if (result.status === 'missing') {
     notFound();
   }
+  if (result.state.processing?.status === 'COMPLETED') {
+    const practice = await getInitialPractice(trackId);
+    if (practice) return practiceMetadata(locale, practice);
+  }
   const { title } = result.state.track;
   const t = await getTranslations('tracks.processing');
   return {
@@ -41,8 +47,8 @@ export async function generateMetadata({
 }
 
 /**
- * Thin Processing route: reads the ID, fetches the Track's state and renders
- * it. A legacy ID permanently redirects (308) to the new ID with the query
+ * Thin Track route: reads the ID, fetches the Track's state and renders it
+ * (the Processing view, or the practice view once the Processing completed). A legacy ID permanently redirects (308) to the new ID with the query
  * kept; an unknown ID is a real 404. Both are normally decided by the proxy
  * before this renders; the checks below are its fallback.
  */
@@ -64,5 +70,14 @@ export default async function TrackRoutePage({
   if (result.status === 'missing') {
     notFound();
   }
-  return <TrackProcessingSection initialState={result.state} />;
+  const initialPractice =
+    result.state.processing?.status === 'COMPLETED'
+      ? await getInitialPractice(result.state.track.id)
+      : undefined;
+  return (
+    <TrackProcessingSection
+      initialState={result.state}
+      initialPractice={initialPractice}
+    />
+  );
 }

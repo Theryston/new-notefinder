@@ -128,6 +128,26 @@
         "signIn": "Entre para tentar de novo",
         "conflict": "Alguém já tentou de novo. A página mostra o novo processamento."
       }
+    },
+    "practice": {
+      "metaTitle": "Notas vocais de {title} por {artists}",
+      "metaTitleNoArtists": "Notas vocais de {title}",
+      "metaDescription": "Todas as notas vocais de {title} por {artists}, em uma linha do tempo para cantar junto. Notas desta música: {notes}.",
+      "metaDescriptionNoNotes": "As notas vocais de {title} por {artists}, em uma linha do tempo para cantar junto.",
+      "metaDescriptionNoArtists": "Todas as notas vocais de {title}, em uma linha do tempo para cantar junto. Notas desta música: {notes}.",
+      "metaDescriptionNoArtistsNoNotes": "As notas vocais de {title}, em uma linha do tempo para cantar junto.",
+      "contributors": "Colaboradores",
+      "contributorLink": "Perfil de {name}",
+      "duration": "Duração",
+      "timeline": {
+        "label": "Linha do tempo das notas de {title}",
+        "summary": "{count, plural, one {# nota} other {# notas}}, de {low} a {high}"
+      },
+      "noVoice": {
+        "title": "Não encontramos voz nesta gravação",
+        "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
+      },
+      "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes."
     }
   },
   "header": {

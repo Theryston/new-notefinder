@@ -24,7 +24,11 @@ import {
 import {
   type CreateTrackResult,
   createTrackResultSchema,
+  type TrackNotes,
+  type TrackPracticeHeader,
   type TrackProcessingState,
+  trackNotesSchema,
+  trackPracticeHeaderSchema,
   trackProcessingStateSchema,
 } from '@notefinder/contracts';
 import type { Response } from 'express';
@@ -35,6 +39,7 @@ import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { RetryTrackBodyDto } from './retry-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
+import { TrackPracticeService } from './track-practice.service.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
@@ -45,6 +50,7 @@ export class TracksController {
   constructor(
     private readonly trackRequests: TrackRequestFlowService,
     private readonly trackProcessing: TrackProcessingService,
+    private readonly trackPractice: TrackPracticeService,
     private readonly trackRetries: TrackRetryLauncherService,
   ) {}
 
@@ -81,6 +87,40 @@ export class TracksController {
     const requested = await this.trackRequests.requestTrack(user, body);
     response.status(requested.created ? HttpStatus.ACCEPTED : HttpStatus.OK);
     return { trackId: requested.trackId };
+  }
+
+  // Public: the practice page of a Track. A legacy ID answers 404
+  // `RESOURCE_MOVED` with the new ID, an unknown one 404 `NOT_FOUND`.
+  @Public()
+  @Get(':trackId')
+  @ZodSerializerDto(trackPracticeHeaderSchema)
+  @ApiOkResponse({
+    description:
+      'The practice header: title, artist credit, cover, duration, YouTube ' +
+      'video, Contributors and whether the Track has vocal notes.',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
+      '(`RESOURCE_MOVED`).',
+  })
+  getTrack(@Param() params: TrackIdParamDto): Promise<TrackPracticeHeader> {
+    return this.trackPractice.getHeader(params.trackId);
+  }
+
+  // Public: the vocal notes in the order they are sung; empty for a Track
+  // without any. Same 404s as the header.
+  @Public()
+  @Get(':trackId/notes')
+  @ZodSerializerDto(trackNotesSchema)
+  @ApiOkResponse({ description: 'The Track vocal notes in sung order.' })
+  @ApiNotFoundResponse({
+    description:
+      'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
+      '(`RESOURCE_MOVED`).',
+  })
+  getNotes(@Param() params: TrackIdParamDto): Promise<TrackNotes> {
+    return this.trackPractice.getNotes(params.trackId);
   }
 
   // Public: the page is shared while the Track processes. A legacy ID answers

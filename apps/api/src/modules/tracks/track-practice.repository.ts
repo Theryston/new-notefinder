@@ -1,0 +1,83 @@
+import { Injectable } from '@nestjs/common';
+import { TransactionHost } from '@nestjs-cls/transactional';
+import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import { eq } from 'drizzle-orm';
+import type { DatabaseAdapter } from '../../database/database.js';
+import { artists, trackArtists } from '../../database/schema/artists.js';
+import { trackNotes } from '../../database/schema/track-notes.js';
+import { tracks } from '../../database/schema/tracks.js';
+
+/** The Track fields the practice header shows, besides its Contributors. */
+export type TrackPracticeRow = {
+  id: string;
+  title: string;
+  coverUrl: string | null;
+  artistCredit: TrackArtistCreditEntry[];
+  lengthMs: number | null;
+  youtubeVideoId: string | null;
+  /** The Artists the Track is linked to, which the credit names link to. */
+  artists: { id: string; name: string }[];
+  hasNotes: boolean;
+};
+
+/** A stored note, before the contract narrows its pitch class name. */
+export type StoredNote = {
+  note: string;
+  octave: number;
+  start: number;
+  end: number;
+};
+
+/** What the practice page reads of a Track. */
+@Injectable()
+export class TrackPracticeRepository {
+  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+
+  /** The practice header of a Track, or undefined for an unknown ID. */
+  async findPracticeRow(
+    trackId: string,
+  ): Promise<TrackPracticeRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        id: tracks.id,
+        title: tracks.title,
+        coverUrl: tracks.coverUrl,
+        artistCredit: tracks.artistCredit,
+        lengthMs: tracks.lengthMs,
+        youtubeVideoId: tracks.youtubeVideoId,
+      })
+      .from(tracks)
+      .where(eq(tracks.id, trackId))
+      .limit(1);
+    if (row === undefined) {
+      return undefined;
+    }
+    const [linked, firstNote] = await Promise.all([
+      this.txHost.tx
+        .select({ id: artists.id, name: artists.name })
+        .from(trackArtists)
+        .innerJoin(artists, eq(trackArtists.artistId, artists.id))
+        .where(eq(trackArtists.trackId, trackId)),
+      this.txHost.tx
+        .select({ id: trackNotes.id })
+        .from(trackNotes)
+        .where(eq(trackNotes.trackId, trackId))
+        .limit(1),
+    ]);
+    return { ...row, artists: linked, hasNotes: firstNote.length > 0 };
+  }
+
+  /** The Track's vocal notes in the order they are sung. */
+  findNotes(trackId: string): Promise<StoredNote[]> {
+    return this.txHost.tx
+      .select({
+        note: trackNotes.note,
+        octave: trackNotes.octave,
+        start: trackNotes.start,
+        end: trackNotes.end,
+      })
+      .from(trackNotes)
+      .where(eq(trackNotes.trackId, trackId))
+      .orderBy(trackNotes.start, trackNotes.end);
+  }
+}

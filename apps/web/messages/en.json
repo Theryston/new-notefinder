@@ -128,6 +128,26 @@
         "signIn": "Sign in to try again",
         "conflict": "Someone already tried again. The page shows the new processing."
       }
+    },
+    "practice": {
+      "metaTitle": "Vocal notes of {title} by {artists}",
+      "metaTitleNoArtists": "Vocal notes of {title}",
+      "metaDescription": "Every vocal note of {title} by {artists}, on a timeline you can sing along to. Notes in this song: {notes}.",
+      "metaDescriptionNoNotes": "The vocal notes of {title} by {artists}, on a timeline you can sing along to.",
+      "metaDescriptionNoArtists": "Every vocal note of {title}, on a timeline you can sing along to. Notes in this song: {notes}.",
+      "metaDescriptionNoArtistsNoNotes": "The vocal notes of {title}, on a timeline you can sing along to.",
+      "contributors": "Contributors",
+      "contributorLink": "{name}'s profile",
+      "duration": "Duration",
+      "timeline": {
+        "label": "Note timeline of {title}",
+        "summary": "{count, plural, one {# note} other {# notes}}, from {low} to {high}"
+      },
+      "noVoice": {
+        "title": "We found no voice in this recording",
+        "description": "This looks like an instrumental, so there are no vocal notes to show."
+      },
+      "loadError": "We couldn't load this track. Try again in a moment."
     }
   },
   "header": {
