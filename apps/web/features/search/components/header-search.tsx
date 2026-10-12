@@ -84,27 +84,52 @@ function useLiveSearchNavigation({
 
 type FallbackInput = {
   inputValue: string;
+  pathname: string;
   isSearchPage: boolean;
+  setExpanded: (expanded: boolean) => void;
 };
+
+/** idle: no fall; falling: pushed through the header; abandoned: cancelled before it landed. */
+type FallState = 'idle' | 'falling' | 'abandoned';
 
 /**
  * Focus outside the search page falls into it at once (keeping what was
- * typed, if anything); blurring an empty field then goes back to the page
- * the fall came from. Pushes through the header arm the way back.
+ * typed, if anything); blurring or cancelling an empty field then goes back
+ * to the page the fall came from, even when the cancel comes before the fall
+ * lands (the page is left again as soon as it does). Pushes through the
+ * header arm the way back.
  */
-function useFocusFallAndEmptyBack({ inputValue, isSearchPage }: FallbackInput) {
+function useFocusFallAndEmptyBack({
+  inputValue,
+  pathname,
+  isSearchPage,
+  setExpanded,
+}: FallbackInput) {
   const router = useRouter();
-  const returnToRef = useRef(false);
+  const fallRef = useRef<FallState>('idle');
 
+  // Any page but the search page drops a stale (superseded) fall.
   useEffect(() => {
-    if (!isSearchPage) returnToRef.current = false;
-  }, [isSearchPage]);
+    if (pathname !== '/search') fallRef.current = 'idle';
+  }, [pathname]);
+
+  // Landing on the search page: an abandoned fall is left again, anything
+  // else expands the field.
+  useEffect(() => {
+    if (!isSearchPage) return;
+    if (fallRef.current === 'abandoned') {
+      fallRef.current = 'idle';
+      router.back();
+      return;
+    }
+    setExpanded(true);
+  }, [isSearchPage, router, setExpanded]);
 
   const pushSearch = useCallback(
     (query: string) => {
       const href = searchHref(query);
       if (!href) return;
-      returnToRef.current = true;
+      fallRef.current = 'falling';
       router.push(href);
     },
     [router],
@@ -112,21 +137,35 @@ function useFocusFallAndEmptyBack({ inputValue, isSearchPage }: FallbackInput) {
 
   const onFieldFocus = useCallback(() => {
     if (isSearchPage) return;
-    returnToRef.current = true;
+    fallRef.current = 'falling';
     router.push(searchHref(inputValue) ?? '/search');
   }, [inputValue, isSearchPage, router]);
 
   const onFieldBlur = useCallback(
     (event: FocusEvent<HTMLInputElement>) => {
-      if (!isSearchPage || !returnToRef.current) return;
+      if (!isSearchPage || fallRef.current !== 'falling') return;
       if (normalizeSearchQuery(event.currentTarget.value)) return;
-      returnToRef.current = false;
+      fallRef.current = 'idle';
       router.back();
     },
     [isSearchPage, router],
   );
 
-  return { pushSearch, onFieldFocus, onFieldBlur };
+  // Blur alone can't undo a fall that had not landed yet (or landed between
+  // the button's pointerdown and click), so the cancel does it too.
+  const cancel = useCallback(() => {
+    if (fallRef.current !== 'falling' || normalizeSearchQuery(inputValue)) {
+      return;
+    }
+    if (isSearchPage) {
+      fallRef.current = 'idle';
+      router.back();
+    } else {
+      fallRef.current = 'abandoned';
+    }
+  }, [inputValue, isSearchPage, router]);
+
+  return { pushSearch, onFieldFocus, onFieldBlur, cancel };
 }
 
 type SubmitSearchInput = {
@@ -188,7 +227,8 @@ function useHeaderLoading(inputValue: string, urlQuery: string | null) {
  * Focusing the field outside the search page falls into it at once (keeping
  * what was typed, if anything); once there the URL (and the fetch) follows
  * typing in place, debounced. Blurring an empty field goes back to the page
- * the fall came from. On the search page the field starts expanded on small
+ * the fall came from, and so does cancelling it (even before the fall has
+ * landed). On the search page the field starts expanded on small
  * screens, since it is the only field left.
  */
 export function HeaderSearch() {
@@ -209,14 +249,13 @@ export function HeaderSearch() {
 
   useSearchHotkey(expandAndFocus);
 
-  useEffect(() => {
-    if (isSearchPage) setExpanded(true);
-  }, [isSearchPage]);
-
-  const { pushSearch, onFieldFocus, onFieldBlur } = useFocusFallAndEmptyBack({
-    inputValue,
-    isSearchPage,
-  });
+  const { pushSearch, onFieldFocus, onFieldBlur, cancel } =
+    useFocusFallAndEmptyBack({
+      inputValue,
+      pathname,
+      isSearchPage,
+      setExpanded,
+    });
 
   useLiveSearchNavigation({
     inputValue,
@@ -226,7 +265,10 @@ export function HeaderSearch() {
     pushSearch,
   });
 
-  const collapse = useCallback(() => setExpanded(false), []);
+  const collapse = useCallback(() => {
+    cancel();
+    setExpanded(false);
+  }, [cancel]);
   const loading = useHeaderLoading(inputValue, urlQuery);
   const onSubmit = useSubmitSearch({
     inputValue,

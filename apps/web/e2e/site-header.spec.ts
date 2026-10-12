@@ -196,6 +196,37 @@ test.describe('site header (mobile)', () => {
     await expect(page).toHaveURL(/\/en\/search\?q=queen$/);
   });
 
+  test('cancelling before the fall into search lands leaves it again', async ({
+    page,
+  }) => {
+    await mockAuthApi(page);
+    await page.goto('/en');
+
+    // Holds the navigation to /search so Cancel is tapped before it commits.
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/en/search**', async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    const field = page.getByRole('searchbox', { name: header.search.label });
+    await page.getByRole('button', { name: header.search.open }).click();
+    await expect(field).toBeFocused();
+    await page.getByRole('button', { name: header.search.cancel }).click();
+    await expect(field).toBeHidden();
+
+    // The fall lands (and is left again) only after this point.
+    const landed = page.waitForURL(/\/en\/search$/);
+    release();
+    await landed;
+
+    await expect(page).toHaveURL(/\/en$/);
+    await expect(field).toBeHidden();
+  });
+
   test('signed out: search and sign in only, the theme is in the footer', async ({
     page,
   }) => {
