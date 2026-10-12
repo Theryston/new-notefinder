@@ -207,14 +207,9 @@ test.describe('site header (mobile)', () => {
     const held = new Promise<void>((resolve) => {
       release = resolve;
     });
-    let served = () => {};
-    const servedSearch = new Promise<void>((resolve) => {
-      served = resolve;
-    });
     await page.route('**/en/search**', async (route) => {
       await held;
       await route.continue();
-      served();
     });
 
     const field = page.getByRole('searchbox', { name: header.search.label });
@@ -223,9 +218,10 @@ test.describe('site header (mobile)', () => {
     await page.getByRole('button', { name: header.search.cancel }).click();
     await expect(field).toBeHidden();
 
+    // The fall lands (and is left again) only after this point.
+    const landed = page.waitForURL(/\/en\/search$/);
     release();
-    await servedSearch;
-    await page.waitForLoadState('networkidle');
+    await landed;
 
     await expect(page).toHaveURL(/\/en$/);
     await expect(field).toBeHidden();
