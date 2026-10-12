@@ -305,8 +305,8 @@ describe('POST /v1/tracks (e2e)', () => {
 
       const [track] = await trackRowsOf(testMbid(1));
       expect(track?.artistCredit).toEqual([
-        { name: 'Queen', joinPhrase: ' feat. ' },
-        { name: 'David Bowie', joinPhrase: '' },
+        { name: 'Queen', joinPhrase: ' feat. ', mbid: testMbid(70) },
+        { name: 'David Bowie', joinPhrase: '', mbid: testMbid(71) },
       ]);
     });
 
