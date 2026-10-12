@@ -234,6 +234,8 @@ describe('TrackPipelineService', () => {
       );
       expect(revalidation.revalidate).toHaveBeenCalledWith([
         'track:track-1',
+        'track:track-1:notes',
+        'track:track-1:lyrics',
         'tracks',
         'artist:artist-1',
         'artist:artist-1:tracks',

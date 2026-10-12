@@ -1,28 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import type { PITCH_CLASS_NAMES } from '@notefinder/contracts';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
-import { tracks } from '../../database/schema/tracks.js';
+import {
+  type StoredArtistCreditEntry,
+  tracks,
+} from '../../database/schema/tracks.js';
 
 /** The Track fields the practice header shows, besides its Contributors. */
 export type TrackPracticeRow = {
   id: string;
   title: string;
   coverUrl: string | null;
-  artistCredit: TrackArtistCreditEntry[];
+  artistCredit: StoredArtistCreditEntry[];
   lengthMs: number | null;
   youtubeVideoId: string | null;
   /** The Artists the Track is linked to, which the credit names link to. */
-  artists: { id: string; name: string }[];
+  artists: { id: string; mbid: string }[];
   hasNotes: boolean;
 };
 
-/** A stored note, before the contract narrows its pitch class name. */
+/** A stored note. */
 export type StoredNote = {
-  note: string;
+  note: (typeof PITCH_CLASS_NAMES)[number];
   octave: number;
   start: number;
   end: number;
@@ -54,7 +57,7 @@ export class TrackPracticeRepository {
     }
     const [linked, firstNote] = await Promise.all([
       this.txHost.tx
-        .select({ id: artists.id, name: artists.name })
+        .select({ id: artists.id, mbid: artists.mbid })
         .from(trackArtists)
         .innerJoin(artists, eq(trackArtists.artistId, artists.id))
         .where(eq(trackArtists.trackId, trackId)),

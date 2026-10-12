@@ -1,7 +1,4 @@
-import {
-  trackNotesSchema,
-  trackPracticeHeaderSchema,
-} from '@notefinder/contracts';
+import { trackDetailSchema, trackNotesSchema } from '@notefinder/contracts';
 import request from 'supertest';
 import { trackNotes } from '../src/database/schema/track-notes.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
@@ -11,6 +8,7 @@ import {
   createPasswordUser,
   createTrack,
   linkTrackArtist,
+  testMbid,
 } from './utils/factories.js';
 import {
   createLegacyTrackId,
@@ -40,15 +38,18 @@ describe('Track practice reads (e2e)', () => {
 
   describe('GET /v1/tracks/:trackId', () => {
     it('shows the header to anyone, without a session', async () => {
-      const queen = await createArtist(testApp.db, { name: 'Queen' });
+      // The credit prints "Queen" for an Artist named otherwise, so only the
+      // MBID can link them.
+      const queen = await createArtist(testApp.db, { name: 'Queen (band)' });
       const track = await createTrack(testApp.db, {
         title: 'Under Pressure',
         lengthMs: 248_000,
         coverUrl: 'https://images.example.com/cover.webp',
         youtubeVideoId: 'a01QQZyl-_I',
         artistCredit: [
-          { name: 'Queen', joinPhrase: ' & ' },
-          { name: 'David Bowie', joinPhrase: '' },
+          { name: 'Queen', joinPhrase: ' & ', mbid: queen.mbid },
+          // Not linked to the Track: no Artist page.
+          { name: 'David Bowie', joinPhrase: '', mbid: testMbid(999) },
         ],
       });
       await linkTrackArtist(testApp.db, track.id, queen.id);
@@ -72,7 +73,9 @@ describe('Track practice reads (e2e)', () => {
 
       const response = await get(track.id).expect(200);
 
-      expect(trackPracticeHeaderSchema.parse(response.body)).toEqual({
+      // The MBID that links a name to its Artist is internal.
+      expect(JSON.stringify(response.body)).not.toContain('mbid');
+      expect(trackDetailSchema.parse(response.body)).toEqual({
         id: track.id,
         title: 'Under Pressure',
         coverUrl: 'https://images.example.com/cover.webp',

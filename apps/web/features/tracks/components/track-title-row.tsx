@@ -1,30 +1,27 @@
-import type {
-  TrackContributor,
-  TrackPracticeHeader,
-} from '@notefinder/contracts';
+import type { TrackContributor, TrackDetail } from '@notefinder/contracts';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 
-import { UserAvatar } from '@/features/auth/components/user-avatar';
 import { Link } from '@/lib/i18n/navigation';
 
-import { formatDuration } from '../format-duration';
+import { durationParts } from '../duration-parts';
+import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
 
+const AVATAR_CLASS = 'size-8 ring-2 ring-background';
+
 /** The credit, each name linked to its Artist page when it has one. */
-function ArtistCredit({
-  credit,
-}: {
-  credit: TrackPracticeHeader['artistCredit'];
-}) {
+function ArtistCredit({ credit }: { credit: TrackDetail['artistCredit'] }) {
   return (
     <>
-      {credit.map((entry) => (
-        <Fragment key={entry.name}>
+      {credit.map((entry, index) => (
+        // A credit is a fixed ordered list, and one name can appear twice.
+        // biome-ignore lint/suspicious/noArrayIndexKey: position is the identity.
+        <Fragment key={index}>
           {entry.artistId === null ? (
             entry.name
           ) : (
@@ -56,7 +53,10 @@ function Contributors({
               role="img"
               aria-label={contributor.name}
             >
-              <ContributorAvatar contributor={contributor} />
+              <ContributorAvatar
+                contributor={contributor}
+                className={AVATAR_CLASS}
+              />
             </span>
           ) : (
             <Link
@@ -65,7 +65,10 @@ function Contributors({
               title={contributor.name}
               className="block rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <ContributorAvatar contributor={contributor} />
+              <ContributorAvatar
+                contributor={contributor}
+                className={AVATAR_CLASS}
+              />
             </Link>
           )}
         </li>
@@ -74,17 +77,24 @@ function Contributors({
   );
 }
 
-function ContributorAvatar({ contributor }: { contributor: TrackContributor }) {
+/** The length as a clock (`3:08`), with hours past an hour. */
+function Duration({ ms }: { ms: number }) {
+  const t = useTranslations('tracks.practice');
+  const parts = durationParts(ms);
+  const text =
+    parts.hours > 0 ? t('durationLong', parts) : t('durationShort', parts);
+
   return (
-    <UserAvatar
-      user={{
-        name: contributor.name,
-        username: contributor.username,
-        // The session type leaves a missing photo out rather than null.
-        image: contributor.image ?? undefined,
-      }}
-      className="size-8 ring-2 ring-background"
-    />
+    <>
+      <span className="sr-only">{t('durationLabel', { duration: text })}</span>
+      <time
+        aria-hidden="true"
+        className="shrink-0 font-mono tabular-nums"
+        dateTime={`PT${parts.hours}H${parts.minutes}M${parts.seconds}S`}
+      >
+        {text}
+      </time>
+    </>
   );
 }
 
@@ -94,9 +104,7 @@ function ContributorAvatar({ contributor }: { contributor: TrackContributor }) {
  * on a phone, the avatars dropping under the title, and stays a single row
  * from `sm`.
  */
-export function TrackTitleRow({ header }: { header: TrackPracticeHeader }) {
-  const t = useTranslations('tracks.practice');
-
+export function TrackTitleRow({ header }: { header: TrackDetail }) {
   return (
     <section
       aria-labelledby="track-title"
@@ -130,15 +138,7 @@ export function TrackTitleRow({ header }: { header: TrackPracticeHeader }) {
           {header.durationMs === null ? null : (
             <>
               <span aria-hidden="true">·</span>
-              <span className="shrink-0">
-                <span className="sr-only">{t('duration')}: </span>
-                <time
-                  className="font-mono tabular-nums"
-                  dateTime={`PT${Math.round(header.durationMs / 1000)}S`}
-                >
-                  {formatDuration(header.durationMs)}
-                </time>
-              </span>
+              <Duration ms={header.durationMs} />
             </>
           )}
         </p>

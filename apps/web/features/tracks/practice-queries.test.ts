@@ -51,15 +51,34 @@ describe('getInitialPractice', () => {
     ]);
   });
 
-  it('does not ask for the notes of a Track that has none', async () => {
-    mockServerApi.mockResolvedValueOnce({ ...header, hasNotes: false });
+  it('reads the header and the notes at once, not one after the other', async () => {
+    let resolveHeader: (value: typeof header) => void = () => undefined;
+    mockServerApi
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveHeader = resolve as typeof resolveHeader;
+        }),
+      )
+      .mockResolvedValueOnce(notes);
+
+    const pending = getInitialPractice('track-1');
+    await Promise.resolve();
+
+    // The notes were asked for while the header was still pending.
+    expect(mockServerApi).toHaveBeenCalledTimes(2);
+    resolveHeader(header);
+    await pending;
+  });
+
+  it('leaves out the notes of a Track the header says has none', async () => {
+    mockServerApi
+      .mockResolvedValueOnce({ ...header, hasNotes: false })
+      .mockResolvedValueOnce({ notes: [] });
 
     await expect(getInitialPractice('track-1')).resolves.toEqual({
       header: { ...header, hasNotes: false },
       notes: undefined,
     });
-
-    expect(mockServerApi).toHaveBeenCalledTimes(1);
   });
 
   it('encodes the ID in the request paths', async () => {

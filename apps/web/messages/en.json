@@ -102,9 +102,6 @@
         }
       },
       "closeNote": "You can close this page. Contributors get an email when the notes are ready.",
-      "completed": {
-        "title": "This track has been processed."
-      },
       "failed": {
         "title": "This processing failed",
         "reason": {
@@ -138,16 +135,18 @@
       "metaDescriptionNoArtistsNoNotes": "The vocal notes of {title}, on a timeline you can sing along to.",
       "contributors": "Contributors",
       "contributorLink": "{name}'s profile",
-      "duration": "Duration",
       "timeline": {
-        "label": "Note timeline of {title}",
-        "summary": "{count, plural, one {# note} other {# notes}}, from {low} to {high}"
+        "label": "Note timeline of {title}. {count, plural, one {# note} other {# notes}}, from {low} to {high}",
+        "labelEmpty": "Note timeline of {title}"
       },
       "noVoice": {
         "title": "We found no voice in this recording",
         "description": "This looks like an instrumental, so there are no vocal notes to show."
       },
-      "loadError": "We couldn't load this track. Try again in a moment."
+      "loadError": "We couldn't load this track. Try again in a moment.",
+      "durationLabel": "Duration: {duration}",
+      "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
+      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
     }
   },
   "header": {

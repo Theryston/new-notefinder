@@ -2,7 +2,11 @@ import { expect, type Page, test } from '@playwright/test';
 import { createTranslator } from 'next-intl';
 
 import { ADA, mockAuthApi } from './auth-api-mock';
-import { type FakeTrack, setTrackMock } from './fake-track-api';
+import {
+  type FakeTrack,
+  SIGNED_IN_COOKIE,
+  setTrackMock,
+} from './fake-track-api';
 import { messages as catalogs } from './messages';
 
 const cases = [
@@ -12,6 +16,13 @@ const cases = [
 
 const escapeRegExp = (text: string) =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const LABEL_VALUES = {
+  title: 'Under Pressure',
+  count: 3,
+  low: 'C#3',
+  high: 'G4',
+} as const;
 
 const VIEWPORTS = [
   { name: 'desktop', size: { width: 1280, height: 800 } },
@@ -82,41 +93,6 @@ for (const { locale, messages } of cases) {
   });
 
   test.describe(`track practice page (${locale})`, () => {
-    test('switches from the Processing view to the practice view without a reload', async ({
-      page,
-    }) => {
-      await mockAuthApi(page, { user: { ...ADA, username: 'ada_singer' } });
-      const trackId = `clx-practice-switch-${locale}`;
-      await setTrackMock({
-        tracks: [
-          completedTrack(trackId, {
-            processing: { status: 'DETECTING_NOTES' },
-          }),
-        ],
-      });
-      await page.goto(`/${locale}/tracks/${trackId}`);
-      await expect(
-        page.getByText(messages.tracks.processing.closeNote),
-      ).toBeVisible();
-      await page.evaluate(() => {
-        (window as unknown as { stillHere: boolean }).stillHere = true;
-      });
-
-      await setTrackMock({ tracks: [completedTrack(trackId)] });
-
-      await expect(
-        page.getByRole('img', {
-          name: new RegExp(t('timeline.label', { title: 'Under Pressure' })),
-        }),
-      ).toBeVisible({ timeout: 15_000 });
-      await expect(page.getByRole('progressbar')).toHaveCount(0);
-      expect(
-        await page.evaluate(
-          () => (window as unknown as { stillHere?: boolean }).stillHere,
-        ),
-      ).toBe(true);
-    });
-
     test('keeps showing the Processing view while the latest Processing is not completed', async ({
       page,
     }) => {
@@ -133,24 +109,6 @@ for (const { locale, messages } of cases) {
 
       await expect(page.getByRole('progressbar')).toBeVisible();
       await expect(page.locator('canvas')).toHaveCount(0);
-    });
-
-    test('shows the no-voice message instead of the timeline for a Track without notes', async ({
-      page,
-    }) => {
-      const trackId = `clx-practice-instrumental-${locale}`;
-      await setTrackMock({ tracks: [completedTrack(trackId, { notes: [] })] });
-
-      await page.goto(`/${locale}/tracks/${trackId}`);
-
-      await expect(
-        page.getByRole('heading', { name: practice.noVoice.title }),
-      ).toBeVisible();
-      await expect(page.getByText(practice.noVoice.description)).toBeVisible();
-      await expect(page.locator('canvas')).toHaveCount(0);
-      await expect(
-        page.getByRole('heading', { level: 1, name: 'Under Pressure' }),
-      ).toBeVisible();
     });
 
     test('has localized metadata: title, notes in the description, Open Graph music.song and the canonical URL', async ({
@@ -203,9 +161,106 @@ for (const { locale, messages } of cases) {
       );
     });
 
+    test('keeps a toast showing when the page switches to the practice view', async ({
+      page,
+    }) => {
+      await page
+        .context()
+        .addCookies([{ ...SIGNED_IN_COOKIE, domain: 'localhost', path: '/' }]);
+      await mockAuthApi(page, { user: { ...ADA, username: 'ada_singer' } });
+      const trackId = `clx-practice-toast-${locale}`;
+      await setTrackMock({
+        tracks: [
+          completedTrack(trackId, {
+            processing: {
+              status: 'FAILED',
+              failureCode: 'INTERNAL',
+              retryable: true,
+              resumeFrom: 'FINDING_VIDEO',
+            },
+          }),
+        ],
+      });
+      await page.goto(`/${locale}/tracks/${trackId}`);
+      // Someone else's retry completed the Processing: the retry is refused, and
+      // the page moves on to the practice view while the toast is still up.
+      await setTrackMock({ tracks: [completedTrack(trackId)] });
+
+      await page
+        .getByRole('button', { name: messages.tracks.processing.retry.action })
+        .click();
+
+      await expect(
+        page.getByText(messages.tracks.processing.retry.conflict),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('img', { name: t('timeline.label', LABEL_VALUES) }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(messages.tracks.processing.retry.conflict),
+      ).toBeVisible();
+    });
+
     for (const { name, size } of VIEWPORTS) {
       test.describe(`on ${name}`, () => {
         test.use({ viewport: size });
+
+        test('switches from the Processing view to the practice view without a reload', async ({
+          page,
+        }) => {
+          await mockAuthApi(page, { user: { ...ADA, username: 'ada_singer' } });
+          const trackId = `clx-practice-switch-${name}-${locale}`;
+          await setTrackMock({
+            tracks: [
+              completedTrack(trackId, {
+                processing: { status: 'DETECTING_NOTES' },
+              }),
+            ],
+          });
+          await page.goto(`/${locale}/tracks/${trackId}`);
+          await expect(
+            page.getByText(messages.tracks.processing.closeNote),
+          ).toBeVisible();
+          await page.evaluate(() => {
+            (window as unknown as { stillHere: boolean }).stillHere = true;
+          });
+
+          await setTrackMock({ tracks: [completedTrack(trackId)] });
+
+          await expect(
+            page.getByRole('img', {
+              name: t('timeline.label', LABEL_VALUES),
+            }),
+          ).toBeVisible({ timeout: 15_000 });
+          await expect(page.getByRole('progressbar')).toHaveCount(0);
+          expect(
+            await page.evaluate(
+              () => (window as unknown as { stillHere?: boolean }).stillHere,
+            ),
+          ).toBe(true);
+        });
+
+        test('shows the no-voice message instead of the timeline for a Track without notes', async ({
+          page,
+        }) => {
+          const trackId = `clx-practice-instrumental-${name}-${locale}`;
+          await setTrackMock({
+            tracks: [completedTrack(trackId, { notes: [] })],
+          });
+
+          await page.goto(`/${locale}/tracks/${trackId}`);
+
+          await expect(
+            page.getByRole('heading', { name: practice.noVoice.title }),
+          ).toBeVisible();
+          await expect(
+            page.getByText(practice.noVoice.description),
+          ).toBeVisible();
+          await expect(page.locator('canvas')).toHaveCount(0);
+          await expect(
+            page.getByRole('heading', { level: 1, name: 'Under Pressure' }),
+          ).toBeVisible();
+        });
 
         test('lays out the title row: cover, title, linked artists, duration and Contributors', async ({
           page,
@@ -250,7 +305,7 @@ for (const { locale, messages } of cases) {
           await page.emulateMedia({ colorScheme: 'light' });
           await page.goto(`/${locale}/tracks/${trackId}`);
           const timeline = page.getByRole('img', {
-            name: new RegExp(t('timeline.label', { title: 'Under Pressure' })),
+            name: t('timeline.label', LABEL_VALUES),
           });
           await expect(timeline).toBeVisible();
 
@@ -261,24 +316,6 @@ for (const { locale, messages } of cases) {
 
           await expect.poll(() => findPixel(page, 'corner')).not.toEqual(light);
           await expect.poll(() => findPixel(page, 'orange')).not.toBeNull();
-        });
-
-        test('names the timeline with the Track range for assistive tech', async ({
-          page,
-        }) => {
-          const trackId = `clx-practice-label-${name}-${locale}`;
-          await setTrackMock({ tracks: [completedTrack(trackId)] });
-
-          await page.goto(`/${locale}/tracks/${trackId}`);
-
-          await expect(
-            page.getByRole('img', {
-              name: `${t('timeline.label', { title: 'Under Pressure' })}. ${t(
-                'timeline.summary',
-                { count: 3, low: 'C#3', high: 'G4' },
-              )}`,
-            }),
-          ).toBeVisible();
         });
       });
     }

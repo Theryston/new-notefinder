@@ -23,6 +23,7 @@ import { AllowMissingUsername } from '../../common/decorators/allow-missing-user
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
+import { TrackContributorPagesService } from '../track-contributor-pages/track-contributor-pages.service.js';
 import { AvatarUploadInterceptor } from './avatar-upload.interceptor.js';
 import { SetUsernameBodyDto } from './set-username.dto.js';
 import { UpdateMeBodyDto } from './update-me.dto.js';
@@ -31,7 +32,10 @@ import { UsersService } from './users.service.js';
 @ApiTags('users')
 @Controller('me')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly trackPages: TrackContributorPagesService,
+  ) {}
 
   // The client reads `username: null` here to send the user to pick one.
   @AllowMissingUsername()
@@ -56,11 +60,14 @@ export class UsersController {
   })
   @ApiUnauthorizedResponse({ description: 'No valid session.' })
   @ApiForbiddenResponse({ description: 'The user has no username yet.' })
-  updateMe(
+  async updateMe(
     @CurrentUser() user: AuthUser,
     @Body() body: UpdateMeBodyDto,
   ): Promise<CurrentUserBody> {
-    return this.usersService.updateProfile(user.id, body);
+    const updated = await this.usersService.updateProfile(user.id, body);
+    // Track pages show their Contributors' Name and Avatar.
+    await this.trackPages.revalidateTracksOf(user.id);
+    return updated;
   }
 
   // For users who have no username yet; it is the setup step the client

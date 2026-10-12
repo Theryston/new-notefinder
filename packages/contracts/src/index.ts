@@ -14,7 +14,6 @@ export * from './music-catalog-search.js';
 export * from './pagination.js';
 export * from './revalidation.js';
 export * from './search.js';
-export * from './track-practice.js';
 export * from './track-processing.js';
 export * from './tracks.js';
 export * from './users.js';

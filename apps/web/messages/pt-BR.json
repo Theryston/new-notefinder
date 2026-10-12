@@ -102,9 +102,6 @@
         }
       },
       "closeNote": "Você pode fechar esta página. Os colaboradores recebem um e-mail quando as notas estiverem prontas.",
-      "completed": {
-        "title": "Esta faixa já foi processada."
-      },
       "failed": {
         "title": "Este processamento falhou",
         "reason": {
@@ -138,16 +135,18 @@
       "metaDescriptionNoArtistsNoNotes": "As notas vocais de {title}, em uma linha do tempo para cantar junto.",
       "contributors": "Colaboradores",
       "contributorLink": "Perfil de {name}",
-      "duration": "Duração",
       "timeline": {
-        "label": "Linha do tempo das notas de {title}",
-        "summary": "{count, plural, one {# nota} other {# notas}}, de {low} a {high}"
+        "label": "Linha do tempo das notas de {title}. {count, plural, one {# nota} other {# notas}}, de {low} a {high}",
+        "labelEmpty": "Linha do tempo das notas de {title}"
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
       },
-      "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes."
+      "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes.",
+      "durationLabel": "Duração: {duration}",
+      "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
+      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
     }
   },
   "header": {

@@ -2,10 +2,10 @@ import 'server-only';
 
 import {
   cacheTags,
+  type TrackDetail,
   type TrackNotes,
-  type TrackPracticeHeader,
+  trackDetailSchema,
   trackNotesSchema,
-  trackPracticeHeaderSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
@@ -16,15 +16,13 @@ import { serverApi } from '@/lib/api/server';
  * completed, and the API revalidates the Track's tag at that moment, so the
  * longest life is correct: freshness comes from invalidation, not expiry.
  */
-async function getTrackPracticeHeader(
-  trackId: string,
-): Promise<TrackPracticeHeader> {
+async function getTrackDetail(trackId: string): Promise<TrackDetail> {
   'use cache';
   cacheTag(cacheTags.track(trackId));
   cacheLife('max');
 
   return serverApi(`/tracks/${encodeURIComponent(trackId)}`, {
-    schema: trackPracticeHeaderSchema,
+    schema: trackDetailSchema,
   });
 }
 
@@ -41,7 +39,7 @@ async function getTrackNotes(trackId: string): Promise<TrackNotes> {
 
 /** What the server renders the practice view from. */
 export type InitialPractice = {
-  header: TrackPracticeHeader;
+  header: TrackDetail;
   notes: TrackNotes | undefined;
 };
 
@@ -54,9 +52,13 @@ export async function getInitialPractice(
   trackId: string,
 ): Promise<InitialPractice | undefined> {
   try {
-    const header = await getTrackPracticeHeader(trackId);
-    const notes = header.hasNotes ? await getTrackNotes(trackId) : undefined;
-    return { header, notes };
+    // `/notes` answers an empty list for an instrumental Track, so both are
+    // read at once instead of the notes waiting for the header.
+    const [header, notes] = await Promise.all([
+      getTrackDetail(trackId),
+      getTrackNotes(trackId),
+    ]);
+    return { header, notes: header.hasNotes ? notes : undefined };
   } catch {
     return undefined;
   }

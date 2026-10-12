@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackNotes, TrackPracticeHeader } from '@notefinder/contracts';
+import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { NoteTimeline } from '@/features/timeline/components/note-timeline';
 
 import { noteRangeOf } from '../note-summary';
+import type { InitialPractice } from '../practice-queries';
 import {
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
@@ -53,7 +54,7 @@ function TrackTimeline({
   notes,
   failed,
 }: {
-  header: TrackPracticeHeader;
+  header: TrackDetail;
   notes: TrackNotes | undefined;
   failed: boolean;
 }) {
@@ -68,17 +69,14 @@ function TrackTimeline({
     );
   }
   const range = noteRangeOf(notes.notes);
-  const label = [
-    t('timeline.label', { title: header.title }),
-    range &&
-      t('timeline.summary', {
+  const label = range
+    ? t('timeline.label', {
+        title: header.title,
         count: notes.notes.length,
         low: range.low,
         high: range.high,
-      }),
-  ]
-    .filter(Boolean)
-    .join('. ');
+      })
+    : t('timeline.labelEmpty', { title: header.title });
 
   return <NoteTimeline notes={notes.notes} label={label} />;
 }
@@ -95,9 +93,7 @@ export function TrackPracticeView({
   initial,
 }: {
   trackId: string;
-  initial:
-    | { header: TrackPracticeHeader; notes: TrackNotes | undefined }
-    | undefined;
+  initial: InitialPractice | undefined;
 }) {
   const t = useTranslations('tracks.practice');
   const header = useQuery(trackPracticeQueryOptions(trackId, initial?.header));

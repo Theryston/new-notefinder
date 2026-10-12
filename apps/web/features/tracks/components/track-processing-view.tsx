@@ -44,7 +44,11 @@ export function TrackProcessingView({
 
   if (processing?.status === 'COMPLETED') {
     return (
-      <TrackPracticeView trackId={state.track.id} initial={initialPractice} />
+      <>
+        {/* A toast still showing when the view switches (a retry refused) stays. */}
+        <Toaster />
+        <TrackPracticeView trackId={state.track.id} initial={initialPractice} />
+      </>
     );
   }
 

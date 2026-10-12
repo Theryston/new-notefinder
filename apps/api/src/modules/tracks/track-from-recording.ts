@@ -13,7 +13,8 @@ export type NewTrackCoreRow = {
   video: boolean;
   isrcs: string[];
   genres: string[];
-  artistCredit: TrackArtistCreditEntry[];
+  /** Each entry also keeps the MBID of the artist it names, which links it to an Artist. */
+  artistCredit: (TrackArtistCreditEntry & { mbid: string })[];
 };
 
 type NewTrackRelease = {
@@ -76,6 +77,7 @@ export function trackRowsFromRecording(recording: Recording): NewTrackRows {
       artistCredit: recording.artistCredit.artists.map((artist) => ({
         name: artist.creditedName,
         joinPhrase: artist.joinPhrase,
+        mbid: artist.mbid,
       })),
     },
     releases: uniqueBy(recording.releases, (release) => release.mbid).map(

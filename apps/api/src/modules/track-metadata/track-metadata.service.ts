@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { cacheTags } from '@notefinder/contracts';
 import { catalogPageTags } from '../../integrations/web-revalidation/catalog-page-tags.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import type { ImportMetadataJob } from '../../queue/track-metadata.job.js';
@@ -54,7 +55,8 @@ export class TrackMetadataService {
 
   /**
    * Artist and Album pages list a Track only once it is completed, so a
-   * completed Track's pages are refreshed here. A Track still processing has
+   * completed Track's pages are refreshed here, and so is the Track's own
+   * header, which links its credited names to those Artists. A Track still processing has
    * nothing to show on them yet.
    */
   private async refreshPagesIfCompleted(
@@ -68,5 +70,7 @@ export class TrackMetadataService {
       return;
     }
     await this.revalidation.revalidate(catalogPageTags(links));
+    // The Track page links its credited names to the Artists just linked.
+    await this.revalidation.revalidate([cacheTags.track(trackId)]);
   }
 }

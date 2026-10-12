@@ -16,12 +16,13 @@ const row = {
   title: 'Under Pressure',
   coverUrl: null,
   artistCredit: [
-    { name: 'Queen', joinPhrase: ' & ' },
-    { name: 'David Bowie', joinPhrase: '' },
+    { name: 'Beyonce', joinPhrase: ' & ', mbid: 'mbid-queen' },
+    { name: 'David Bowie', joinPhrase: '', mbid: 'mbid-unlinked' },
+    { name: 'Old Credit', joinPhrase: '' },
   ],
   lengthMs: 248_000,
   youtubeVideoId: 'a01QQZyl-_I',
-  artists: [{ id: 'artist-1', name: 'queen ' }],
+  artists: [{ id: 'artist-1', mbid: 'mbid-queen' }],
   hasNotes: true,
 };
 
@@ -41,14 +42,15 @@ describe('TrackPracticeService', () => {
     service = moduleRef.get(TrackPracticeService);
   });
 
-  it('links each credited name to its Artist, ignoring case and spacing', async () => {
+  it('links each credited name to its Artist by MBID, whatever the name prints', async () => {
     practice.findPracticeRow.mockResolvedValue(row);
 
     const header = await service.getHeader('track-1');
 
     expect(header.artistCredit).toEqual([
-      { name: 'Queen', joinPhrase: ' & ', artistId: 'artist-1' },
+      { name: 'Beyonce', joinPhrase: ' & ', artistId: 'artist-1' },
       { name: 'David Bowie', joinPhrase: '', artistId: null },
+      { name: 'Old Credit', joinPhrase: '', artistId: null },
     ]);
     expect(header).toMatchObject({
       durationMs: 248_000,

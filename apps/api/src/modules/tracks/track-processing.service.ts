@@ -10,9 +10,10 @@ import { toTrackProcessing } from './track-processing-view.js';
 import { TracksRepository } from './tracks.repository.js';
 
 /**
- * The state the Processing page shows: the Track header, its latest Processing
- * and its Contributors. Any Track has it, whatever its Processing, so the page
- * works from the moment a Track is requested.
+ * Reads of a Track that its pages share: the state the Processing page shows
+ * (the Track header, its latest Processing and its Contributors, which any
+ * Track has from the moment it is requested), the Contributors, and the
+ * `RESOURCE_MOVED` / `NOT_FOUND` answers for an ID that finds no Track.
  */
 @Injectable()
 export class TrackProcessingService {
@@ -71,6 +72,11 @@ export class TrackProcessingService {
     }
   }
 
+  /**
+   * The answer for an ID that found no Track: `RESOURCE_MOVED` with the new ID
+   * for a legacy ID, else `NOT_FOUND`. The caller must have proved the Track is
+   * missing.
+   */
   async throwMovedOrMissing(trackId: string): Promise<never> {
     const newId = await this.tracks.findTrackIdByLegacyId(trackId);
     if (newId !== undefined) {

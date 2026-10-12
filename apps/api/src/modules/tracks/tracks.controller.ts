@@ -24,11 +24,11 @@ import {
 import {
   type CreateTrackResult,
   createTrackResultSchema,
+  type TrackDetail,
   type TrackNotes,
-  type TrackPracticeHeader,
   type TrackProcessingState,
+  trackDetailSchema,
   trackNotesSchema,
-  trackPracticeHeaderSchema,
   trackProcessingStateSchema,
 } from '@notefinder/contracts';
 import type { Response } from 'express';
@@ -93,7 +93,7 @@ export class TracksController {
   // `RESOURCE_MOVED` with the new ID, an unknown one 404 `NOT_FOUND`.
   @Public()
   @Get(':trackId')
-  @ZodSerializerDto(trackPracticeHeaderSchema)
+  @ZodSerializerDto(trackDetailSchema)
   @ApiOkResponse({
     description:
       'The practice header: title, artist credit, cover, duration, YouTube ' +
@@ -104,7 +104,7 @@ export class TracksController {
       'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
       '(`RESOURCE_MOVED`).',
   })
-  getTrack(@Param() params: TrackIdParamDto): Promise<TrackPracticeHeader> {
+  getTrack(@Param() params: TrackIdParamDto): Promise<TrackDetail> {
     return this.trackPractice.getHeader(params.trackId);
   }
 

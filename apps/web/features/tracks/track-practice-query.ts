@@ -1,8 +1,8 @@
 import {
+  type TrackDetail,
   type TrackNotes,
-  type TrackPracticeHeader,
+  trackDetailSchema,
   trackNotesSchema,
-  trackPracticeHeaderSchema,
 } from '@notefinder/contracts';
 import { queryOptions } from '@tanstack/react-query';
 
@@ -17,13 +17,13 @@ import { trackKeys } from './query-keys';
  */
 export function trackPracticeQueryOptions(
   trackId: string,
-  initial: TrackPracticeHeader | undefined,
+  initial: TrackDetail | undefined,
 ) {
   return queryOptions({
     queryKey: trackKeys.practice(trackId),
     queryFn: ({ signal }) =>
       browserApi(`/tracks/${encodeURIComponent(trackId)}`, {
-        schema: trackPracticeHeaderSchema,
+        schema: trackDetailSchema,
         signal,
       }),
     initialData: initial,
