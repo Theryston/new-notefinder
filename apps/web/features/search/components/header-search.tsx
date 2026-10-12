@@ -95,10 +95,28 @@ type FallbackInput = {
 function useFocusFallAndEmptyBack({ inputValue, isSearchPage }: FallbackInput) {
   const router = useRouter();
   const returnToRef = useRef(false);
+  // Set when the user cancels while the fall into the search page is still
+  // in flight: the page lands later and must be left again, not adopted.
+  const abandonedRef = useRef(false);
 
   useEffect(() => {
     if (!isSearchPage) returnToRef.current = false;
   }, [isSearchPage]);
+
+  const abandonPendingFall = useCallback(() => {
+    if (isSearchPage || !returnToRef.current) return;
+    if (normalizeSearchQuery(inputValue)) return;
+    abandonedRef.current = true;
+  }, [inputValue, isSearchPage]);
+
+  /** True when the page just landed was abandoned; goes back out of it. */
+  const leaveAbandonedFall = useCallback(() => {
+    if (!abandonedRef.current) return false;
+    abandonedRef.current = false;
+    returnToRef.current = false;
+    router.back();
+    return true;
+  }, [router]);
 
   const pushSearch = useCallback(
     (query: string) => {
@@ -112,6 +130,7 @@ function useFocusFallAndEmptyBack({ inputValue, isSearchPage }: FallbackInput) {
 
   const onFieldFocus = useCallback(() => {
     if (isSearchPage) return;
+    abandonedRef.current = false;
     returnToRef.current = true;
     router.push(searchHref(inputValue) ?? '/search');
   }, [inputValue, isSearchPage, router]);
@@ -126,7 +145,13 @@ function useFocusFallAndEmptyBack({ inputValue, isSearchPage }: FallbackInput) {
     [isSearchPage, router],
   );
 
-  return { pushSearch, onFieldFocus, onFieldBlur };
+  return {
+    pushSearch,
+    onFieldFocus,
+    onFieldBlur,
+    abandonPendingFall,
+    leaveAbandonedFall,
+  };
 }
 
 type SubmitSearchInput = {
@@ -209,14 +234,19 @@ export function HeaderSearch() {
 
   useSearchHotkey(expandAndFocus);
 
-  useEffect(() => {
-    if (isSearchPage) setExpanded(true);
-  }, [isSearchPage]);
+  const {
+    pushSearch,
+    onFieldFocus,
+    onFieldBlur,
+    abandonPendingFall,
+    leaveAbandonedFall,
+  } = useFocusFallAndEmptyBack({ inputValue, isSearchPage });
 
-  const { pushSearch, onFieldFocus, onFieldBlur } = useFocusFallAndEmptyBack({
-    inputValue,
-    isSearchPage,
-  });
+  // A cancel made before the fall landed wins over "starts expanded".
+  useEffect(() => {
+    if (!isSearchPage || leaveAbandonedFall()) return;
+    setExpanded(true);
+  }, [isSearchPage, leaveAbandonedFall]);
 
   useLiveSearchNavigation({
     inputValue,
@@ -226,7 +256,10 @@ export function HeaderSearch() {
     pushSearch,
   });
 
-  const collapse = useCallback(() => setExpanded(false), []);
+  const collapse = useCallback(() => {
+    abandonPendingFall();
+    setExpanded(false);
+  }, [abandonPendingFall]);
   const loading = useHeaderLoading(inputValue, urlQuery);
   const onSubmit = useSubmitSearch({
     inputValue,
