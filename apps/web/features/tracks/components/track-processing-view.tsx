@@ -7,23 +7,27 @@ import { Toaster } from '@/components/ui/sonner';
 
 import { useElapsedSince } from '../hooks/use-step-elapsed';
 import { useTrackProcessing } from '../hooks/use-track-processing';
+import type { InitialPractice } from '../practice-queries';
 import { displayedPercent } from '../processing-steps';
 import { TrackChosenVideo } from './track-chosen-video';
 import { TrackContributors } from './track-contributors';
+import { TrackPracticeView } from './track-practice-view';
 import { TrackProcessingBanner } from './track-processing-banner';
 import { TrackProcessingStatus } from './track-processing-status';
 
 /**
- * The Processing page: the banner with the progress ring, then what happens
- * now, the video it chose and its Contributors. The state comes from the
- * server and is polled while the Processing runs, so the page follows it
- * without a reload. Once completed it is only a line, until the Track page
- * that shows the notes exists.
+ * The Track page: while the Processing runs, the banner with the progress
+ * ring, then what happens now, the video it chose and its Contributors; once
+ * it completes, the practice view. The state comes from the server and is
+ * polled while the Processing runs, so the page follows it, and switches to
+ * the practice view, without a reload.
  */
 export function TrackProcessingView({
   initialState,
+  initialPractice,
 }: {
   initialState: TrackProcessingState;
+  initialPractice: InitialPractice | undefined;
 }) {
   const t = useTranslations('tracks.processing');
   const { data: state } = useTrackProcessing(
@@ -40,12 +44,11 @@ export function TrackProcessingView({
 
   if (processing?.status === 'COMPLETED') {
     return (
-      <div className="pb-6 md:pb-8">
+      <>
+        {/* A toast still showing when the view switches (a retry refused) stays. */}
         <Toaster />
-        <h1 className="font-medium text-muted-foreground text-sm">
-          {t('completed.title')}
-        </h1>
-      </div>
+        <TrackPracticeView trackId={state.track.id} initial={initialPractice} />
+      </>
     );
   }
 

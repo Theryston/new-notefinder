@@ -38,7 +38,8 @@ const failedTrack = (
 for (const { locale, messages } of cases) {
   const tryAgain = messages.tracks.processing.retry.action;
   const signIn = messages.tracks.processing.retry.signIn;
-  const completedTitle = messages.tracks.processing.completed.title;
+  // The fixtures have no notes, so the practice view shows its no-voice message.
+  const completedTitle = messages.tracks.practice.noVoice.title;
   const conflictMessage = messages.tracks.processing.retry.conflict;
   const queuedLabel = messages.tracks.processing.status.QUEUED;
 

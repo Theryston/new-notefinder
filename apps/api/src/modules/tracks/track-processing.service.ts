@@ -10,9 +10,10 @@ import { toTrackProcessing } from './track-processing-view.js';
 import { TracksRepository } from './tracks.repository.js';
 
 /**
- * The state the Processing page shows: the Track header, its latest Processing
- * and its Contributors. Any Track has it, whatever its Processing, so the page
- * works from the moment a Track is requested.
+ * Reads of a Track that its pages share: the state the Processing page shows
+ * (the Track header, its latest Processing and its Contributors, which any
+ * Track has from the moment it is requested), the Contributors, and the
+ * `RESOURCE_MOVED` / `NOT_FOUND` answers for an ID that finds no Track.
  */
 @Injectable()
 export class TrackProcessingService {
@@ -34,21 +35,30 @@ export class TrackProcessingService {
     }
     const [latest, contributors] = await Promise.all([
       this.processings.findLatestProcessing(trackId),
-      this.processings.findContributors(trackId),
+      this.contributorsOf(trackId),
     ]);
-    const profiles = await this.users.findPublicUsers(
-      contributors.map((contributor) => contributor.userId),
-    );
     return {
       track: header,
       processing: latest === undefined ? null : toTrackProcessing(latest),
-      contributors: contributors.flatMap((contributor) => {
-        const profile = profiles.get(contributor.userId);
-        return profile === undefined
-          ? []
-          : [toContributor(contributor.id, profile)];
-      }),
+      contributors,
     };
+  }
+
+  /**
+   * The Track's Contributors in the order they first contributed. One whose
+   * User has no public profile is left out.
+   */
+  async contributorsOf(trackId: string): Promise<TrackContributor[]> {
+    const contributors = await this.processings.findContributors(trackId);
+    const profiles = await this.users.findPublicUsers(
+      contributors.map((contributor) => contributor.userId),
+    );
+    return contributors.flatMap((contributor) => {
+      const profile = profiles.get(contributor.userId);
+      return profile === undefined
+        ? []
+        : [toContributor(contributor.id, profile)];
+    });
   }
 
   /**
@@ -62,7 +72,12 @@ export class TrackProcessingService {
     }
   }
 
-  private async throwMovedOrMissing(trackId: string): Promise<never> {
+  /**
+   * The answer for an ID that found no Track: `RESOURCE_MOVED` with the new ID
+   * for a legacy ID, else `NOT_FOUND`. The caller must have proved the Track is
+   * missing.
+   */
+  async throwMovedOrMissing(trackId: string): Promise<never> {
     const newId = await this.tracks.findTrackIdByLegacyId(trackId);
     if (newId !== undefined) {
       throw new AppException('RESOURCE_MOVED', 'Track moved', { id: newId });

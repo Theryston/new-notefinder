@@ -291,6 +291,8 @@ export class TrackPipelineService {
     const catalog = await this.processings.findCatalogIds(processing.trackId);
     await this.revalidation.revalidate([
       cacheTags.track(processing.trackId),
+      cacheTags.trackNotes(processing.trackId),
+      cacheTags.trackLyrics(processing.trackId),
       cacheTags.tracks,
       ...catalogPageTags(catalog),
     ]);

@@ -12,6 +12,16 @@ import {
 import { id, timestamps } from '../columns.js';
 
 /**
+ * A credit entry as stored: the public entry plus the MBID of the artist it
+ * names, which links the credit to an Artist page. Rows stored before the MBID
+ * was kept have none, so their names are not linked. The MBID is never sent
+ * to clients.
+ */
+export type StoredArtistCreditEntry = TrackArtistCreditEntry & {
+  mbid?: string;
+};
+
+/**
  * Track catalog row with its core fields: what the artist page grid lists
  * (title, duration, ISRCs, genres) plus the disambiguation and video flag
  * that tell takes apart. The deeper MusicBrainz sections (releases, works,
@@ -42,7 +52,7 @@ export const tracks = pgTable(
     // The Recording's artist credit in credit order, written when the Track is
     // created so the header shows its artists before any metadata import.
     artistCredit: jsonb()
-      .$type<TrackArtistCreditEntry[]>()
+      .$type<StoredArtistCreditEntry[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
     // The cover in our own storage, set when a Processing finds one; null

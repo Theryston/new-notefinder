@@ -122,3 +122,70 @@ export const processingLimitDetailsSchema = z.object({
 export type ProcessingLimitDetails = z.infer<
   typeof processingLimitDetailsSchema
 >;
+
+/**
+ * One credited artist of a Track as the Track page shows it: the credit entry,
+ * plus `artistId`, the Artist page the name links to (null while the credit has
+ * no Artist in our catalog).
+ */
+export const linkedArtistCreditEntrySchema =
+  trackArtistCreditEntrySchema.extend({
+    artistId: z.string().min(1).max(128).nullable(),
+  });
+
+export type LinkedArtistCreditEntry = z.infer<
+  typeof linkedArtistCreditEntrySchema
+>;
+
+/**
+ * `GET /v1/tracks/:trackId`: the Track page's header. `durationMs` is null when
+ * MusicBrainz has no length; `youtubeVideoId` is null until a Processing
+ * chooses a video; `hasNotes` tells a Track with vocal notes from an
+ * instrumental one.
+ */
+export const trackDetailSchema = trackHeaderSchema.extend({
+  artistCredit: z.array(linkedArtistCreditEntrySchema).max(30),
+  durationMs: z.number().int().nonnegative().nullable(),
+  youtubeVideoId: z.string().min(1).max(32).nullable(),
+  contributors: z.array(trackContributorSchema).max(100),
+  hasNotes: z.boolean(),
+});
+
+export type TrackDetail = z.infer<typeof trackDetailSchema>;
+
+/** The twelve pitch class names, sharps as `#`. */
+export const PITCH_CLASS_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+] as const;
+
+/**
+ * One vocal note: its pitch class, its octave in MIDI numbering (`A4` is 4) and
+ * when it is sung, in seconds from the start of the Track. The octave is a bare
+ * integer, as the note detection reports it, so a stored note never fails a read.
+ */
+export const trackNoteSchema = z.object({
+  note: z.enum(PITCH_CLASS_NAMES),
+  octave: z.number().int(),
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+});
+
+export type TrackNote = z.infer<typeof trackNoteSchema>;
+
+/** `GET /v1/tracks/:trackId/notes`: the notes in the order they are sung. */
+export const trackNotesSchema = z.object({
+  notes: z.array(trackNoteSchema).max(20000),
+});
+
+export type TrackNotes = z.infer<typeof trackNotesSchema>;

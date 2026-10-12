@@ -1,8 +1,9 @@
 import type { TrackContributor } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
-import { UserAvatar } from '@/features/auth/components/user-avatar';
 import { Link } from '@/lib/i18n/navigation';
+
+import { ContributorAvatar } from './contributor-avatar';
 
 const CONTRIBUTOR_CLASS =
   'flex items-center gap-2 rounded-full pr-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:text-primary';
@@ -10,15 +11,7 @@ const CONTRIBUTOR_CLASS =
 function ContributorLabel({ contributor }: { contributor: TrackContributor }) {
   return (
     <>
-      <UserAvatar
-        user={{
-          name: contributor.name,
-          username: contributor.username,
-          // The session type leaves a missing photo out rather than null.
-          image: contributor.image ?? undefined,
-        }}
-        className="size-8"
-      />
+      <ContributorAvatar contributor={contributor} className="size-8" />
       <span className="font-medium text-sm">{contributor.name}</span>
     </>
   );

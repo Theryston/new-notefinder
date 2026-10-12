@@ -51,6 +51,7 @@ for (const { locale, messages } of cases) {
   );
   const progress = (page: Page) => page.getByRole('progressbar');
   const processing = messages.tracks.processing;
+  const practice = messages.tracks.practice;
   // Formats the messages with placeholders and plurals as the page does.
   const t = createTranslator({
     locale,
@@ -140,9 +141,10 @@ for (const { locale, messages } of cases) {
         ],
       });
 
+      // The fixture has no notes, so the practice view shows its no-voice message.
       await expect(
         page.getByRole('heading', {
-          name: messages.tracks.processing.completed.title,
+          name: messages.tracks.practice.noVoice.title,
         }),
       ).toBeVisible();
       await expect(progress(page)).toHaveCount(0);
@@ -220,7 +222,7 @@ for (const { locale, messages } of cases) {
       );
     });
 
-    test('shows only a line once the Processing has completed', async ({
+    test('shows the practice view once the Processing has completed', async ({
       page,
     }) => {
       await mockAuthApi(page, { user: SINGER });
@@ -238,11 +240,9 @@ for (const { locale, messages } of cases) {
 
       await page.goto(`/${locale}/tracks/${trackId}`);
 
+      // The fixture has no notes, so the practice view shows its no-voice message.
       await expect(
-        page.getByRole('heading', {
-          level: 1,
-          name: processing.completed.title,
-        }),
+        page.getByRole('heading', { name: practice.noVoice.title }),
       ).toBeVisible();
       await expect(progress(page)).toHaveCount(0);
       await expect(
@@ -251,9 +251,12 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('heading', { name: processing.video.title }),
       ).toHaveCount(0);
+      // The Contributors are the avatars of the title row, linked to their Profiles.
       await expect(
-        page.getByRole('link', { name: 'Ada Lovelace' }),
-      ).toHaveCount(0);
+        page.getByRole('link', {
+          name: practice.contributorLink.replace('{name}', 'Ada Lovelace'),
+        }),
+      ).toHaveAttribute('href', `/${locale}/users/ada_singer`);
     });
 
     test('shows the artist credit in the header while the Processing has not started', async ({

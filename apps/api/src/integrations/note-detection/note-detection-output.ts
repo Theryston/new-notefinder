@@ -1,26 +1,12 @@
+import { PITCH_CLASS_NAMES } from '@notefinder/contracts';
 import { z } from 'zod';
 
 // What the worker returns when its job completes (apps/nfp-audio, its
 // handler.py): the public URL of the vocals it uploaded and the notes it
 // detected, in time order. The fields are camelCase on the wire.
 
-const NOTE_NAMES = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-] as const;
-
 const detectedNoteSchema = z.object({
-  note: z.enum(NOTE_NAMES),
+  note: z.enum(PITCH_CLASS_NAMES),
   /** The octave in MIDI numbering (`A4` is 4). */
   octave: z.int(),
   /** Seconds from the start of the vocals. */

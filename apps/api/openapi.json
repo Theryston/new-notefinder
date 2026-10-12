@@ -159,6 +159,62 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}": {
+      "get": {
+        "operationId": "TracksController_getTrack_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The practice header: title, artist credit, cover, duration, YouTube video, Contributors and whether the Track has vocal notes."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/v1/tracks/{trackId}/notes": {
+      "get": {
+        "operationId": "TracksController_getNotes_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Track vocal notes in sung order."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/processing": {
       "get": {
         "operationId": "TracksController_getProcessing_v1",

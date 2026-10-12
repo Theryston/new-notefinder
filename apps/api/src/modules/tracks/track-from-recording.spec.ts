@@ -58,8 +58,8 @@ describe('trackRowsFromRecording', () => {
     );
 
     expect(rows.track.artistCredit).toEqual([
-      { name: 'Queen', joinPhrase: ' feat. ' },
-      { name: 'D. Bowie', joinPhrase: '' },
+      { name: 'Queen', joinPhrase: ' feat. ', mbid: testMbid(70) },
+      { name: 'D. Bowie', joinPhrase: '', mbid: testMbid(71) },
     ]);
   });
 

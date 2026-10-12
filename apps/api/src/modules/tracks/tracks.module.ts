@@ -28,6 +28,8 @@ import { TrackMp3Service } from './track-mp3.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import { TrackNotesRepository } from './track-notes.repository.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
+import { TrackPracticeRepository } from './track-practice.repository.js';
+import { TrackPracticeService } from './track-practice.service.js';
 import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingProcessor } from './track-processing.processor.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
@@ -86,6 +88,8 @@ import { TracksService } from './tracks.service.js';
     TrackRetryLauncherService,
     TrackContributorEmailsService,
     TrackProcessingService,
+    TrackPracticeRepository,
+    TrackPracticeService,
     TrackRequesterService,
     TrackVideoService,
     TrackVideoStepService,

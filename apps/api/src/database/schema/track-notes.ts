@@ -1,3 +1,4 @@
+import type { PITCH_CLASS_NAMES } from '@notefinder/contracts';
 import {
   doublePrecision,
   index,
@@ -21,7 +22,7 @@ export const trackNotes = pgTable(
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
     /** The pitch class name, `C` to `B`, sharps as `#` (`A#`). */
-    note: text().notNull(),
+    note: text().$type<(typeof PITCH_CLASS_NAMES)[number]>().notNull(),
     /** The octave of the note in MIDI numbering (`A4` is 4). */
     octave: integer().notNull(),
     /** Seconds from the start of the Track. */
