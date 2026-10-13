@@ -8,6 +8,7 @@ import { WebRevalidationModule } from './integrations/web-revalidation/web-reval
 import { AlbumsModule } from './modules/albums/albums.module.js';
 import { ArtistsModule } from './modules/artists/artists.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { TrackMetadataModule } from './modules/track-metadata/track-metadata.module.js';
@@ -35,6 +36,7 @@ import { RedisModule } from './redis/redis.module.js';
     SearchModule,
     TracksModule,
     TrackMetadataModule,
+    FavoritesModule,
     UsersModule,
   ],
 })

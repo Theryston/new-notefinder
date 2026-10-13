@@ -8,6 +8,7 @@ import { Link } from '@/lib/i18n/navigation';
 import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
+import { TrackFavoriteButton } from './track-favorite-button';
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
@@ -145,6 +146,7 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />
       ) : null}
+      <TrackFavoriteButton trackId={header.id} />
     </section>
   );
 }

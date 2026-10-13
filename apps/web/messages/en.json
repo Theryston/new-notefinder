@@ -158,6 +158,11 @@
         "title": "We found no voice in this recording",
         "description": "This looks like an instrumental, so there are no vocal notes to show."
       },
+      "favorite": {
+        "add": "Add to favorites",
+        "remove": "Remove from favorites",
+        "signIn": "Sign in to add to favorites"
+      },
       "loadError": "We couldn't load this track. Try again in a moment.",
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",

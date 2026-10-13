@@ -10,4 +10,7 @@ export const trackKeys = {
   practice: (trackId: string) =>
     [...trackKeys.all, trackId, 'practice'] as const,
   notes: (trackId: string) => [...trackKeys.all, trackId, 'notes'] as const,
+  /** What the signed-in User has with the Track (the favorite). */
+  userState: (trackId: string) =>
+    [...trackKeys.all, trackId, 'user-state'] as const,
 };
