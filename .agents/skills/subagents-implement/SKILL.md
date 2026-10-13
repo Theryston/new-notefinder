@@ -1,13 +1,13 @@
 ---
 name: subagents-implement
-description: "Implement several issues in parallel, one ticket-implementer subagent per issue, each in its own worktree and PR, then review each PR and drive its CI to green."
+description: "Implement several issues in parallel, one ticket-implementer subagent per issue, each in its own worktree and PR, then review each PR, test it in a real browser and drive its CI to green."
 disable-model-invocation: true
 ---
 
 `/implement`, fanned out: the user passes issue numbers, and every issue is
 built by its own **implementer** (the `ticket-implementer` subagent) in its
 own worktree, ending in its own PR. You are the **parent**: you dispatch,
-review, send fixes back, and report. You never edit an implementer's branch
+review, test each PR in a real browser, send fixes back, and report. You never edit an implementer's branch
 yourself; every change goes back through the implementer that owns the PR.
 
 Everything in `.agents/skills/implement/SKILL.md` still applies, per
@@ -65,7 +65,32 @@ paths, commit SHAs) rather than pasting content the implementer can read.
    maintainer's decision goes to the user, not to the implementer.
    Done when a review of the latest head has no blocking finding.
 
-5. **Have the implementer drive CI to green.** Message it to watch CI on
+5. **Test it in a real browser yourself.** Reading the diff and trusting
+   the tests is not enough: tests run against fakes and stubs (the e2e
+   fake player, mocked APIs) and only fail on what they assert, so a bug
+   in the real integration or an error in the console gets through. If
+   you have a browser available (a Playwright/Chromium install, a browser
+   tool), run each PR's latest head and use the feature by hand. Skip this
+   step only when no browser is available, and say so in the report.
+   - Check out the head in a worktree of your own (`git worktree add
+     <dir> origin/<branch>`); never edit or push to it. Start what it
+     needs (`nub run infra:up`, `nub run dev`, or a production build)
+     with the **real** integrations: no e2e flags such as the fake player.
+   - Walk every acceptance criterion of the issue as a user would: as a
+     visitor and signed in, on desktop and phone viewports, light and
+     dark, including the error and empty states the issue names.
+   - Watch the browser console and the server log the whole time. Any
+     uncaught error, hydration mismatch or React warning is a blocking
+     finding, even when the feature looks fine.
+   - Send what fails back through step 4, with the steps to reproduce and
+     the console output. The implementer adds a test that reproduces it
+     before fixing it. Test the new head in the browser again.
+
+   Done when every acceptance criterion works in the browser on the
+   PR's latest head with a clean console, or you reported that no
+   browser was available.
+
+6. **Have the implementer drive CI to green.** Message it to watch CI on
    its PR in a loop until every check is green:
    - wait for the run on the current head: `gh pr checks <n> --watch`;
    - on a red check, read the failure (`gh run view <run-id> --log-failed`),
@@ -78,11 +103,12 @@ paths, commit SHAs) rather than pasting content the implementer can read.
    - report the PR URL and "all checks green on <sha>" when done.
 
    If a CI fix changed more than a few lines, review that diff as in
-   step 3 before accepting it. Done when the implementer reports every
-   check green on the PR's latest head, or a blocker it can't fix from
-   its PR.
+   step 3 and test it in the browser as in step 5 before accepting it.
+   Done when the implementer reports every check green on the PR's
+   latest head, or a blocker it can't fix from its PR.
 
-6. **Report.** Once every PR is done, give the user one list: per issue,
-   the PR URL, its state (green and reviewed, or the blocker and what it
-   needs), and anything held back in step 1. Every PR in the list has
-   had a clean review and green CI, or says exactly why not.
+7. **Report.** Once every PR is done, give the user one list: per issue,
+   the PR URL, its state (green, reviewed and tested in the browser, or
+   the blocker and what it needs), and anything held back in step 1.
+   Every PR in the list has had a clean review, a clean browser test and
+   green CI, or says exactly why not.
