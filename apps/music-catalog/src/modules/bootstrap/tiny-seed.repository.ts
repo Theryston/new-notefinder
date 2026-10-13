@@ -1,3 +1,5 @@
+import { sql } from 'drizzle-orm';
+import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import {
   type Ids,
@@ -24,13 +26,24 @@ type ReleaseRefs = { areas: Ids; credits: Ids; groups: Ids; recordings: Ids };
  */
 export class TinySeedRepository {
   private readonly rows: MusicBrainzRowWriter;
+  private readonly getDb: () => Database;
 
   constructor(db: DatabaseSource) {
+    this.getDb = typeof db === 'function' ? db : () => db;
     this.rows = new MusicBrainzRowWriter(db);
   }
 
   /** Seeds the catalog and returns how many Recordings were written. */
   async seed(seed: TinySeed = tinySeed): Promise<number> {
+    return this.getDb().transaction(async (tx) => {
+      // Mirror triggers resolve their tables through mbslave's search path.
+      // LOCAL keeps it on this connection and restores it when the seed ends.
+      await tx.execute(sql`set local search_path = musicbrainz, public`);
+      return new TinySeedRepository(tx).seedRows(seed);
+    });
+  }
+
+  private async seedRows(seed: TinySeed): Promise<number> {
     const areas = await this.insertAreas(seed);
     const artists = await this.insertArtists(seed);
     const credits = await this.insertCredits(seed, artists);
