@@ -2,9 +2,13 @@
 
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
-import { PlaybackController } from '../playback/playback-controller';
+import type { PlaybackController } from '../playback/playback-controller';
+import {
+  type PlaybackSession,
+  startPlayback,
+} from '../playback/start-playback';
 import { createPlayer } from '../player/create-player';
-import { initialPlaybackState, playbackStore } from '../stores/playback-store';
+import { playbackStore } from '../stores/playback-store';
 
 type UsePlaybackOptions = {
   /** The element the video mounts into; set while the dock is on screen. */
@@ -24,16 +28,10 @@ const animationFrames = {
   cancel: (handle: number) => cancelAnimationFrame(handle),
 };
 
-/** The dock shows its error when the player could not even be created. */
-function failPlayback() {
-  playbackStore.setState({ status: 'error' });
-}
-
 /**
- * Creates the player for a video and the controller that drives it, and tears
- * both down when the video changes or the page leaves. Returns null until the
- * controller exists; the playback store says when the player is ready, or
- * that it failed.
+ * Wires `startPlayback` to the page: the session starts when the video's host
+ * is on screen and stops when the video changes or the page leaves. Returns
+ * null until the controller exists.
  */
 export function usePlayback({
   hostRef,
@@ -42,46 +40,32 @@ export function usePlayback({
   fake,
 }: UsePlaybackOptions): PlaybackController | null {
   const [controller, setController] = useState<PlaybackController | null>(null);
+  const session = useRef<PlaybackSession | null>(null);
   const durationRef = useRef(durationSeconds);
   durationRef.current = durationSeconds;
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || videoId === null) return;
-    let cancelled = false;
-    let created: PlaybackController | null = null;
-    playbackStore.setState(initialPlaybackState);
-
-    createPlayer({ host, durationSeconds: durationRef.current, fake })
-      .then((player) => {
-        if (cancelled) {
-          player.destroy();
-          return;
-        }
-        created = new PlaybackController({
-          port: player,
-          store: playbackStore,
-          frames: animationFrames,
-          durationHint: durationRef.current,
-        });
-        setController(created);
-        return player.load(videoId);
-      })
-      .catch(() => {
-        // The IFrame API never loaded (blocked, offline): say so, don't wait.
-        if (!cancelled) failPlayback();
-      });
-
+    session.current = startPlayback({
+      host,
+      videoId,
+      fake,
+      durationHint: durationRef.current,
+      store: playbackStore,
+      frames: animationFrames,
+      makePlayer: createPlayer,
+      onController: setController,
+    });
     return () => {
-      cancelled = true;
-      created?.dispose();
-      setController(null);
+      session.current?.dispose();
+      session.current = null;
     };
   }, [hostRef, videoId, fake]);
 
   useEffect(() => {
-    controller?.setDurationHint(durationSeconds);
-  }, [controller, durationSeconds]);
+    session.current?.setDurationHint(durationSeconds);
+  }, [durationSeconds]);
 
   return controller;
 }
