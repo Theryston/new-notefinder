@@ -139,6 +139,21 @@
         "label": "Note timeline of {title}. {count, plural, one {# note} other {# notes}}, from {low} to {high}",
         "labelEmpty": "Note timeline of {title}"
       },
+      "dock": {
+        "label": "Playback controls",
+        "play": "Play",
+        "pause": "Pause",
+        "loading": "Loading the player",
+        "progress": "Playback position",
+        "progressValue": "{current} of {total}",
+        "settings": "Settings",
+        "speed": "Speed",
+        "speedOption": "{rate, number}×",
+        "mute": "Mute",
+        "openOnYouTube": "Open on YouTube",
+        "error": "The video couldn't be played. You can still open it on YouTube from Settings.",
+        "hideVideo": "Hide video"
+      },
       "noVoice": {
         "title": "We found no voice in this recording",
         "description": "This looks like an instrumental, so there are no vocal notes to show."

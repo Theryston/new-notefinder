@@ -43,6 +43,8 @@ export const webServerEnv = {
   API_URL,
   NEXT_PUBLIC_API_URL: API_URL,
   REVALIDATE_SECRET: 'e2e-revalidate-secret-not-used-anywhere-else',
+  // The practice page plays through a fake clock: YouTube cannot load here.
+  E2E_FAKE_PLAYER: 'true',
   // A data URL keeps the preload in this file: NODE_OPTIONS is split on
   // spaces, which `encodeURIComponent` removes from the code.
   NODE_OPTIONS: `--import data:text/javascript,${encodeURIComponent(coverUpstreamPreload)}`,

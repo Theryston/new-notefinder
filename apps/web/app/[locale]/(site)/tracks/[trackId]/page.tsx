@@ -6,6 +6,7 @@ import { TrackProcessingSection } from '@/features/tracks/components/track-proce
 import { practiceMetadata } from '@/features/tracks/practice-metadata';
 import { getInitialPractice } from '@/features/tracks/practice-queries';
 import { getTrackProcessingResult } from '@/features/tracks/queries';
+import { getServerEnv } from '@/lib/env/server';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
 import { queryStringOf } from '@/lib/query-string';
@@ -78,6 +79,7 @@ export default async function TrackRoutePage({
     <TrackProcessingSection
       initialState={result.state}
       initialPractice={initialPractice}
+      fakePlayer={getServerEnv().E2E_FAKE_PLAYER}
     />
   );
 }

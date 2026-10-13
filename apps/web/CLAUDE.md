@@ -362,6 +362,9 @@ leaf possible and pass server-fetched data down as props.
   `lib/env/server.ts`. Production: set it on **every** web instance, use a
   Redis with `maxmemory-policy volatile-lru` (so tag keys are never evicted)
   and persistence, and ship `cache-handlers/` next to `.next/` in the image.
+- `E2E_FAKE_PLAYER` (`true` | `false`, server-only, default `false`) makes the
+  practice page play through a fake clock instead of YouTube (the player
+  port's fake implementation). Only `e2e/web-server-env.ts` sets it.
 - `NEXT_PUBLIC_*` values are inlined at build time: the Docker build must
   receive them as build args. That includes `NEXT_PUBLIC_SITE_URL`
   (`getSiteUrl()`, default `http://localhost:3000`), which static pages bake
