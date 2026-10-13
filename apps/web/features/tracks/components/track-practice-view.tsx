@@ -1,22 +1,18 @@
 'use client';
 
-import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { NoteTimeline } from '@/features/timeline/components/note-timeline';
 
-import { noteRangeOf } from '../note-summary';
 import type { InitialPractice } from '../practice-queries';
 import {
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
 } from '../track-practice-query';
+import { PracticeBody } from './practice-body';
+import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 import { TrackTitleRow } from './track-title-row';
-
-const TIMELINE_BOX_CLASS = 'h-56 w-full rounded-2xl md:h-72';
 
 /** Same-dimension stand-in for the practice view while it loads. */
 function TrackPracticeSkeleton() {
@@ -34,53 +30,6 @@ function TrackPracticeSkeleton() {
   );
 }
 
-/** What a Track with no vocal notes shows in place of the timeline. */
-function NoVoice() {
-  const t = useTranslations('tracks.practice.noVoice');
-
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-6 py-12 text-center">
-      <MicOffIcon aria-hidden="true" className="size-6 text-muted-foreground" />
-      <h2 className="font-semibold">{t('title')}</h2>
-      <p className="max-w-md text-muted-foreground text-sm">
-        {t('description')}
-      </p>
-    </div>
-  );
-}
-
-function TrackTimeline({
-  header,
-  notes,
-  failed,
-}: {
-  header: TrackDetail;
-  notes: TrackNotes | undefined;
-  failed: boolean;
-}) {
-  const t = useTranslations('tracks.practice');
-  if (notes === undefined) {
-    return failed ? (
-      <p role="alert" className="text-muted-foreground text-sm">
-        {t('loadError')}
-      </p>
-    ) : (
-      <Skeleton className={TIMELINE_BOX_CLASS} />
-    );
-  }
-  const range = noteRangeOf(notes.notes);
-  const label = range
-    ? t('timeline.label', {
-        title: header.title,
-        count: notes.notes.length,
-        low: range.low,
-        high: range.high,
-      })
-    : t('timeline.labelEmpty', { title: header.title });
-
-  return <NoteTimeline notes={notes.notes} label={label} />;
-}
-
 /**
  * The practice view of a completed Track: the title row, then the note
  * timeline (or the "no voice" message for a Track without notes). The server
@@ -91,9 +40,12 @@ function TrackTimeline({
 export function TrackPracticeView({
   trackId,
   initial,
+  fakePlayer,
 }: {
   trackId: string;
   initial: InitialPractice | undefined;
+  /** The e2e build's flag: play with a clock instead of YouTube. */
+  fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.practice');
   const header = useQuery(trackPracticeQueryOptions(trackId, initial?.header));
@@ -118,15 +70,12 @@ export function TrackPracticeView({
   return (
     <div className="flex flex-col gap-6 pb-6 md:pb-8">
       <TrackTitleRow header={header.data} />
-      {header.data.hasNotes ? (
-        <TrackTimeline
-          header={header.data}
-          notes={notes.data}
-          failed={notes.isError}
-        />
-      ) : (
-        <NoVoice />
-      )}
+      <PracticeBody
+        header={header.data}
+        notes={notes.data}
+        failed={notes.isError}
+        fakePlayer={fakePlayer}
+      />
     </div>
   );
 }

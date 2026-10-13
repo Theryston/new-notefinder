@@ -139,6 +139,20 @@
         "label": "Linha do tempo das notas de {title}. {count, plural, one {# nota} other {# notas}}, de {low} a {high}",
         "labelEmpty": "Linha do tempo das notas de {title}"
       },
+      "dock": {
+        "label": "Controles de reprodução",
+        "play": "Tocar",
+        "pause": "Pausar",
+        "loading": "Carregando o player",
+        "progress": "Posição da reprodução",
+        "progressValue": "{current} de {total}",
+        "settings": "Configurações",
+        "speed": "Velocidade",
+        "speedOption": "{rate, number}×",
+        "mute": "Silenciar",
+        "openOnYouTube": "Abrir no YouTube",
+        "hideVideo": "Ocultar vídeo"
+      },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."

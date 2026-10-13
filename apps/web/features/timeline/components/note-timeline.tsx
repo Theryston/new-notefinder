@@ -1,7 +1,7 @@
 'use client';
 
 import type { TrackNote } from '@notefinder/contracts';
-import { useEffect, useMemo, useRef } from 'react';
+import { type PointerEvent, useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -9,10 +9,17 @@ import {
   drawListenTimeline,
   type TimelineColors,
 } from '../draw-listen-timeline';
-import { laneRangeOf } from '../timeline-geometry';
+import { type LaneRange, laneRangeOf, scrubTime } from '../timeline-geometry';
 
-/** The Track rests at its start until playback exists. */
-const RESTING_TIME = 0;
+/**
+ * Where the roll gets the moment of the Track to draw, and when it changes.
+ * It is read and subscribed to outside React, so a moving playhead never
+ * re-renders anything. Without one the Track rests at its start.
+ */
+export type TimelineClock = {
+  now(): number;
+  subscribe(listener: () => void): () => void;
+};
 
 /** Reads the design tokens the roll draws with from the element's theme. */
 function readColors(element: HTMLElement): TimelineColors {
@@ -33,68 +40,133 @@ function readColors(element: HTMLElement): TimelineColors {
   };
 }
 
-/**
- * The note timeline in listen mode (DESIGN.md "Note timeline"), drawn on a
- * canvas that fills its box: a piano roll fitted to the Track's range with the
- * Track resting at its start. It redraws when the box resizes and when the
- * theme changes, with the colors read again from the tokens. `label` names the
- * canvas for assistive tech, since its content is not text.
- */
-export function NoteTimeline({
-  notes,
-  label,
-  className,
-}: {
-  notes: readonly TrackNote[];
-  label: string;
-  className?: string;
-}) {
-  const boxRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const range = useMemo(() => laneRangeOf(notes), [notes]);
+type Measured = { width: number; height: number; colors: TimelineColors };
 
+/** Sizes the canvas to its box (at device pixels) and reads the colors. */
+function measure(box: HTMLElement, canvas: HTMLCanvasElement): Measured {
+  const { width, height } = box.getBoundingClientRect();
+  const scale = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  canvas.getContext('2d')?.setTransform(scale, 0, 0, scale, 0, 0);
+  return { width, height, colors: readColors(box) };
+}
+
+type Painting = {
+  notes: readonly TrackNote[];
+  range: LaneRange;
+  clock: TimelineClock | undefined;
+};
+
+/**
+ * Keeps the canvas drawn: the size and colors are measured again when the box
+ * resizes or the theme changes, and a frame is drawn whenever the clock moves.
+ */
+function useTimelinePainting(
+  boxRef: React.RefObject<HTMLDivElement | null>,
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  { notes, range, clock }: Painting,
+) {
   useEffect(() => {
     const box = boxRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!box || !canvas || !ctx) return;
 
-    const draw = () => {
-      const { width, height } = box.getBoundingClientRect();
-      const scale = window.devicePixelRatio || 1;
-      canvas.width = Math.round(width * scale);
-      canvas.height = Math.round(height * scale);
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      drawListenTimeline(ctx, {
-        width,
-        height,
-        notes,
-        range,
-        now: RESTING_TIME,
-        colors: readColors(box),
-      });
+    let measured = measure(box, canvas);
+    let drawnAt = Number.NaN;
+    const paint = () => {
+      drawnAt = clock?.now() ?? 0;
+      drawListenTimeline(ctx, { ...measured, notes, range, now: drawnAt });
+    };
+    const remeasure = () => {
+      measured = measure(box, canvas);
+      paint();
     };
 
-    draw();
-    const resize = new ResizeObserver(draw);
+    paint();
+    const resize = new ResizeObserver(remeasure);
     resize.observe(box);
     // next-themes switches the theme with a class on <html>.
-    const theme = new MutationObserver(draw);
+    const theme = new MutationObserver(remeasure);
     theme.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
     });
+    const unsubscribe = clock?.subscribe(() => {
+      if (clock.now() !== drawnAt) paint();
+    });
     return () => {
       resize.disconnect();
       theme.disconnect();
+      unsubscribe?.();
     };
-  }, [notes, range]);
+  }, [boxRef, canvasRef, notes, range, clock]);
+}
+
+type Drag = { startX: number; startTime: number };
+
+/** Dragging the roll sideways seeks: it follows the pointer like a record. */
+function useScrub(
+  clock: TimelineClock | undefined,
+  onScrub: ((seconds: number) => void) | undefined,
+) {
+  const drag = useRef<Drag | null>(null);
+  if (!clock || !onScrub) return {};
+  return {
+    onPointerDown: (event: PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      drag.current = { startX: event.clientX, startTime: clock.now() };
+    },
+    onPointerMove: (event: PointerEvent<HTMLElement>) => {
+      if (!drag.current) return;
+      const dx = event.clientX - drag.current.startX;
+      onScrub(scrubTime(drag.current.startTime, dx));
+    },
+    onPointerUp: () => {
+      drag.current = null;
+    },
+    onPointerCancel: () => {
+      drag.current = null;
+    },
+  };
+}
+
+/**
+ * The note timeline in listen mode (DESIGN.md "Note timeline"), drawn on a
+ * canvas that fills its box: a piano roll fitted to the Track's range. With a
+ * `clock` it follows playback and can be dragged to seek (`onScrub`); without
+ * one the Track rests at its start. `label` names the canvas for assistive
+ * tech, since its content is not text.
+ */
+export function NoteTimeline({
+  notes,
+  label,
+  clock,
+  onScrub,
+  className,
+}: {
+  notes: readonly TrackNote[];
+  label: string;
+  clock?: TimelineClock;
+  onScrub?: (seconds: number) => void;
+  className?: string;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const range = useMemo(() => laneRangeOf(notes), [notes]);
+  useTimelinePainting(boxRef, canvasRef, { notes, range, clock });
+  const scrub = useScrub(clock, onScrub);
 
   return (
     <div
       ref={boxRef}
+      {...scrub}
       className={cn(
         'h-56 w-full overflow-hidden rounded-2xl border bg-card md:h-72',
+        // Sideways drags seek; vertical ones still scroll the page on a phone.
+        onScrub && 'cursor-grab touch-pan-y select-none active:cursor-grabbing',
         className,
       )}
     >

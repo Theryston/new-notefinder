@@ -100,3 +100,12 @@ export function noteStateAt(
 export function fitsLabel(barWidth: number, lane: number): boolean {
   return barWidth >= LABEL_MIN_BAR_WIDTH && lane >= LABEL_MIN_LANE_HEIGHT;
 }
+
+/**
+ * The moment of the Track after dragging the roll `dx` pixels from where the
+ * drag started at `startTime`: the roll follows the pointer, so dragging left
+ * moves forward in time. The caller keeps the result inside the Track.
+ */
+export function scrubTime(startTime: number, dx: number): number {
+  return startTime - dx / PIXELS_PER_SECOND;
+}

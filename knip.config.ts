@@ -33,9 +33,6 @@ const config: KnipConfig = {
         // navigation helpers, not all of them used yet.
         'lib/i18n/navigation.ts',
       ],
-      // Part of the documented stack (apps/web/CLAUDE.md) but not imported
-      // yet. Remove each one from this list when it is first used.
-      ignoreDependencies: ['zustand'],
     },
   },
 };

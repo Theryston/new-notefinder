@@ -12,6 +12,13 @@ const serverEnvSchema = z.object({
     .url({ protocol: /^rediss?$/ })
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // e2e builds only: the practice page plays with a fake clock instead of
+  // YouTube. Anything but `true` or `false` fails at start, so a typo cannot
+  // quietly leave it on.
+  E2E_FAKE_PLAYER: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type ServerEnv = z.output<typeof serverEnvSchema>;
@@ -27,6 +34,7 @@ export function getServerEnv(): ServerEnv {
     API_URL: process.env.API_URL,
     REVALIDATE_SECRET: process.env.REVALIDATE_SECRET,
     CACHE_REDIS_URL: process.env.CACHE_REDIS_URL,
+    E2E_FAKE_PLAYER: process.env.E2E_FAKE_PLAYER,
   });
   return cached;
 }

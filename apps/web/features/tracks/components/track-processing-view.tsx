@@ -25,9 +25,11 @@ import { TrackProcessingStatus } from './track-processing-status';
 export function TrackProcessingView({
   initialState,
   initialPractice,
+  fakePlayer,
 }: {
   initialState: TrackProcessingState;
   initialPractice: InitialPractice | undefined;
+  fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.processing');
   const { data: state } = useTrackProcessing(
@@ -47,7 +49,11 @@ export function TrackProcessingView({
       <>
         {/* A toast still showing when the view switches (a retry refused) stays. */}
         <Toaster />
-        <TrackPracticeView trackId={state.track.id} initial={initialPractice} />
+        <TrackPracticeView
+          trackId={state.track.id}
+          initial={initialPractice}
+          fakePlayer={fakePlayer}
+        />
       </>
     );
   }
