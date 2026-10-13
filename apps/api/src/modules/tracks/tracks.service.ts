@@ -5,6 +5,7 @@ import type {
   RecordingSummary,
   SearchResultItem,
 } from '@notefinder/contracts';
+import { AppException } from '../../common/errors/app-exception.js';
 import { TracksRepository } from './tracks.repository.js';
 
 @Injectable()
@@ -24,6 +25,21 @@ export class TracksService {
       const track = byId.get(trackId);
       return track ? [track] : [];
     });
+  }
+
+  /**
+   * Resolves when the Track exists. A legacy Track ID answers `RESOURCE_MOVED`
+   * with the new ID and an unknown one `NOT_FOUND`, as every Track read does.
+   */
+  async assertTrackExists(trackId: string): Promise<void> {
+    if ((await this.tracksRepository.findTrackHeader(trackId)) !== undefined) {
+      return;
+    }
+    const newId = await this.tracksRepository.findTrackIdByLegacyId(trackId);
+    if (newId !== undefined) {
+      throw new AppException('RESOURCE_MOVED', 'Track moved', { id: newId });
+    }
+    throw new AppException('NOT_FOUND', 'Track not found');
   }
 
   /** The MBID of the Recording a Track was created from; undefined for an unknown Track. */

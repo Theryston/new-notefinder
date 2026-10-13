@@ -6,6 +6,7 @@ export * from './avatar-rules.js';
 export * from './cache-tags.js';
 export * from './errors.js';
 export * from './locales.js';
+export * from './me-tracks.js';
 export * from './music-catalog.js';
 export * from './music-catalog-artist.js';
 export * from './music-catalog-recording.js';

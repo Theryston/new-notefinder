@@ -143,6 +143,11 @@
         "title": "Não encontramos voz nesta gravação",
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
       },
+      "favorite": {
+        "add": "Adicionar aos favoritos",
+        "remove": "Remover dos favoritos",
+        "signIn": "Entre para adicionar aos favoritos"
+      },
       "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes.",
       "durationLabel": "Duração: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",

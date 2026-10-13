@@ -527,6 +527,97 @@
           "search"
         ]
       }
+    },
+    "/v1/me/favorites/{trackId}": {
+      "put": {
+        "operationId": "FavoritesController_addFavorite_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The Track is a favorite."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "favorites"
+        ]
+      },
+      "delete": {
+        "operationId": "FavoritesController_removeFavorite_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The Track is not a favorite."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "favorites"
+        ]
+      }
+    },
+    "/v1/me/tracks/{trackId}": {
+      "get": {
+        "operationId": "FavoritesController_getTrackState_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the User has with the Track."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "favorites"
+        ]
+      }
     }
   },
   "info": {
