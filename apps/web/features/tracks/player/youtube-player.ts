@@ -23,7 +23,11 @@ export class YouTubePlayer extends BasePlayer implements PlayerPort {
   private handle: YouTubePlayerHandle | null = null;
   private mount: HTMLElement | null = null;
   private playing = false;
+  private destroyed = false;
   private rate = 1;
+  private muted = false;
+  /** A seek asked for before the player was ready, applied once it is. */
+  private pendingSeek: number | null = null;
   private readonly clock = new TimeInterpolator();
 
   constructor(
@@ -55,8 +59,7 @@ export class YouTubePlayer extends BasePlayer implements PlayerPort {
         },
         events: {
           onReady: () => {
-            this.ready = true;
-            this.emit('ready');
+            this.onYouTubeReady();
             resolve();
           },
           onStateChange: ({ data }) => this.onYouTubeState(data),
@@ -67,22 +70,25 @@ export class YouTubePlayer extends BasePlayer implements PlayerPort {
   }
 
   play(): void {
-    this.handle?.playVideo();
+    this.live()?.playVideo();
   }
 
   pause(): void {
-    this.handle?.pauseVideo();
+    this.live()?.pauseVideo();
   }
 
   seek(seconds: number): void {
-    this.handle?.seekTo(seconds, true);
     this.clock.reset(seconds, this.now());
+    const live = this.live();
+    if (live) live.seekTo(seconds, true);
+    else this.pendingSeek = seconds;
   }
 
   currentTime(): number {
-    if (!this.handle) return 0;
+    const live = this.live();
+    if (!live) return this.pendingSeek ?? 0;
     return this.clock.read({
-      reported: this.handle.getCurrentTime(),
+      reported: live.getCurrentTime(),
       now: this.now(),
       playing: this.playing,
       rate: this.rate,
@@ -90,29 +96,59 @@ export class YouTubePlayer extends BasePlayer implements PlayerPort {
   }
 
   duration(): number {
-    return this.handle?.getDuration() ?? 0;
+    return this.live()?.getDuration() ?? 0;
   }
 
   setRate(rate: number): void {
     this.rate = rate;
-    this.handle?.setPlaybackRate(rate);
+    this.live()?.setPlaybackRate(rate);
   }
 
   setMuted(muted: boolean): void {
-    if (muted) this.handle?.mute();
-    else this.handle?.unMute();
+    this.muted = muted;
+    this.applyMuted(this.live());
   }
 
   destroy(): void {
-    this.handle?.destroy();
+    this.destroyed = true;
+    // Before ready the handle has no methods, not even destroy: the iframe
+    // the API swapped in for the mount is removed through the host.
+    if (this.ready) this.handle?.destroy();
+    else this.host.replaceChildren();
     this.handle = null;
     this.mount?.remove();
     this.clearListeners();
   }
 
+  /**
+   * The handle, only once YouTube has said it is ready: `new YT.Player()`
+   * returns an object that gets its methods (getDuration, playVideo,
+   * seekTo...) just before `onReady`, and calling one earlier throws.
+   */
+  private live(): YouTubePlayerHandle | null {
+    return this.ready ? this.handle : null;
+  }
+
+  private onYouTubeReady(): void {
+    if (this.destroyed) return;
+    this.ready = true;
+    // What was asked for while the player was loading.
+    const live = this.live();
+    if (live && this.rate !== 1) live.setPlaybackRate(this.rate);
+    if (this.muted) this.applyMuted(live);
+    if (live && this.pendingSeek !== null) live.seekTo(this.pendingSeek, true);
+    this.pendingSeek = null;
+    this.emit('ready');
+  }
+
+  private applyMuted(live: YouTubePlayerHandle | null): void {
+    if (this.muted) live?.mute();
+    else live?.unMute();
+  }
+
   private onYouTubeState(data: number): void {
     const state = STATE_OF[data];
-    if (!state) return;
+    if (!state || !this.ready) return;
     this.playing = state === 'playing';
     this.emit(state);
   }

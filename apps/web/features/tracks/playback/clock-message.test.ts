@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { clockMessage } from './clock-message';
+import { clockMessage, formatClock } from './clock-message';
 
 describe('clockMessage', () => {
   it('writes a short moment as minutes and seconds', () => {
@@ -15,6 +15,15 @@ describe('clockMessage', () => {
       key: 'durationLong',
       values: { hours: 1, minutes: 2, seconds: 5 },
     });
+  });
+
+  it('formats a clock through the translator it is given', () => {
+    const translate = vi.fn(
+      (key: string, values: { minutes: number }) => `${key}:${values.minutes}`,
+    );
+
+    expect(formatClock(188, translate)).toBe('durationShort:3');
+    expect(formatClock(3725, translate)).toBe('durationLong:2');
   });
 
   it('rounds to the nearest second', () => {

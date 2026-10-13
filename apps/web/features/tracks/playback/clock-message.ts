@@ -11,3 +11,15 @@ export function clockMessage(seconds: number): {
   const values = durationParts(seconds * 1000);
   return { key: values.hours > 0 ? 'durationLong' : 'durationShort', values };
 }
+
+/** Writes a moment of the Track as a clock with the page's translator. */
+export function formatClock(
+  seconds: number,
+  translate: (
+    key: 'durationShort' | 'durationLong',
+    values: DurationParts,
+  ) => string,
+): string {
+  const { key, values } = clockMessage(seconds);
+  return translate(key, values);
+}
