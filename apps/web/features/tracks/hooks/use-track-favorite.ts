@@ -1,17 +1,21 @@
 'use client';
 
-import type { UserTrackState } from '@notefinder/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import {
+  applyFavorite,
+  rollbackFavorite,
+  settleFavorite,
+} from '../favorite-optimistic';
 import { trackKeys } from '../query-keys';
-import { requestErrorMessage } from '../request-error';
 import { setTrackFavorite } from '../track-user-state-query';
 
 /**
  * Favorites or unfavorites a Track. The heart flips at once (the cached
  * state is written before the request) and flips back when the request fails,
- * with a toast translated from the API's error code.
+ * with a toast translated from the API's error code. The cache logic is in
+ * `favorite-optimistic.ts`; this is the wiring.
  */
 export function useTrackFavorite(trackId: string) {
   const queryClient = useQueryClient();
@@ -20,18 +24,11 @@ export function useTrackFavorite(trackId: string) {
 
   return useMutation({
     mutationFn: (favorite: boolean) => setTrackFavorite(trackId, favorite),
-    onMutate: async (favorite) => {
-      // A read in flight would land after the write and undo it.
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<UserTrackState>(key);
-      queryClient.setQueryData<UserTrackState>(key, { isFavorite: favorite });
-      return { previous };
-    },
-    onError: (error, _favorite, context) => {
-      queryClient.setQueryData<UserTrackState>(key, context?.previous);
-      const message = requestErrorMessage(error);
+    onMutate: (favorite) => applyFavorite(queryClient, key, favorite),
+    onError: (error, _favorite, snapshot) => {
+      const message = rollbackFavorite(queryClient, key, snapshot, error);
       toast.error(t(message.key, message.values));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    onSettled: () => settleFavorite(queryClient, key),
   });
 }
