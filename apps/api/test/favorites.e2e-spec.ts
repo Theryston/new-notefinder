@@ -7,6 +7,7 @@ import { useAuthSpec } from './utils/auth-spec.js';
 import {
   createCredentialAccount,
   createTrack,
+  createTrackFavorite,
   createUser,
   DEFAULT_PASSWORD,
   type User,
@@ -56,6 +57,17 @@ describe('Favorites (e2e)', () => {
         .expect(401);
 
       expect(response.body).toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('answers 400 VALIDATION_FAILED for a Track ID that is too long', async () => {
+      const response = await spec.client[method](path('x'.repeat(129))).expect(
+        400,
+      );
+
+      expect(response.body).toMatchObject({
+        code: 'VALIDATION_FAILED',
+        details: { location: 'param' },
+      });
     });
 
     it('answers 404 NOT_FOUND for an unknown Track', async () => {
@@ -111,10 +123,8 @@ describe('Favorites (e2e)', () => {
     it('removes the Track from the favorites, only for this User', async () => {
       const track = await createTrack(spec.testApp.db);
       const other = await createUser(spec.testApp.db, { username: 'ada' });
-      await spec.testApp.db.insert(trackFavorites).values([
-        { userId: user.id, trackId: track.id },
-        { userId: other.id, trackId: track.id },
-      ]);
+      await createTrackFavorite(spec.testApp.db, user.id, track.id);
+      await createTrackFavorite(spec.testApp.db, other.id, track.id);
 
       await spec.client.delete(`/v1/me/favorites/${track.id}`).expect(204);
 

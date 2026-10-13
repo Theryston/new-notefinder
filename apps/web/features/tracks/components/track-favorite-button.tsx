@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -32,7 +33,7 @@ function SignInHeart({ trackId }: { trackId: string }) {
         BUTTON_CLASS,
       )}
     >
-      <HeartIcon aria-hidden="true" strokeWidth={1.75} />
+      <HeartIcon aria-hidden="true" />
     </Link>
   );
 }
@@ -55,8 +56,12 @@ function FavoriteHeart({ trackId }: { trackId: string }) {
       aria-label={label}
       aria-pressed={isFavorite}
       title={label}
-      // Until the state is known the heart cannot say what a tap would do.
-      disabled={state.data === undefined || favorite.isPending}
+      // Until the state is known the heart cannot say what a tap would do. If
+      // the read failed it stays usable as "not a favorite": both writes are
+      // idempotent, so a wrong guess costs nothing.
+      disabled={
+        (state.data === undefined && !state.isError) || favorite.isPending
+      }
       className={BUTTON_CLASS}
       onClick={() => {
         setPopped(true);
@@ -65,7 +70,6 @@ function FavoriteHeart({ trackId }: { trackId: string }) {
     >
       <HeartIcon
         aria-hidden="true"
-        strokeWidth={1.75}
         className={cn(
           isFavorite && 'fill-primary text-primary',
           isFavorite && popped && 'animate-pop',
@@ -86,7 +90,8 @@ export function TrackFavoriteButton({ trackId }: { trackId: string }) {
     <SessionUserBoundary
       render={(user, loading) => {
         if (user) return <FavoriteHeart trackId={trackId} />;
-        if (loading) return <span aria-hidden="true" className="size-10" />;
+        if (loading)
+          return <Skeleton className="size-10 shrink-0 rounded-full" />;
         return <SignInHeart trackId={trackId} />;
       }}
     />

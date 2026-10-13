@@ -11,6 +11,7 @@ import {
   trackArtists,
 } from '../../src/database/schema/artists.js';
 import { accounts } from '../../src/database/schema/auth.js';
+import { trackFavorites } from '../../src/database/schema/track-favorites.js';
 import {
   trackExternalLinks,
   trackReleases,
@@ -325,5 +326,16 @@ export const createTrackExternalLink = (
         ...overrides,
       })
       .returning(),
+  );
+};
+
+/** A Track a User marked as a favorite. */
+export const createTrackFavorite = async (
+  db: Database,
+  userId: string,
+  trackId: string,
+): Promise<void> => {
+  await insertOne(
+    db.insert(trackFavorites).values({ userId, trackId }).returning(),
   );
 };

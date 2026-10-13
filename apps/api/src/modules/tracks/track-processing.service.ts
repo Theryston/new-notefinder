@@ -3,8 +3,8 @@ import type {
   TrackContributor,
   TrackProcessingState,
 } from '@notefinder/contracts';
-import { AppException } from '../../common/errors/app-exception.js';
 import { type PublicUser, UsersService } from '../users/users.service.js';
+import { throwMovedOrMissing } from './track-not-found.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { toTrackProcessing } from './track-processing-view.js';
 import { TracksRepository } from './tracks.repository.js';
@@ -72,17 +72,9 @@ export class TrackProcessingService {
     }
   }
 
-  /**
-   * The answer for an ID that found no Track: `RESOURCE_MOVED` with the new ID
-   * for a legacy ID, else `NOT_FOUND`. The caller must have proved the Track is
-   * missing.
-   */
-  async throwMovedOrMissing(trackId: string): Promise<never> {
-    const newId = await this.tracks.findTrackIdByLegacyId(trackId);
-    if (newId !== undefined) {
-      throw new AppException('RESOURCE_MOVED', 'Track moved', { id: newId });
-    }
-    throw new AppException('NOT_FOUND', 'Track not found');
+  /** See {@link throwMovedOrMissing}. */
+  throwMovedOrMissing(trackId: string): Promise<never> {
+    return throwMovedOrMissing(this.tracks, trackId);
   }
 }
 

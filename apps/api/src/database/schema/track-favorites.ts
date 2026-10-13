@@ -27,7 +27,8 @@ export const trackFavorites = pgTable(
   },
   (table) => [
     unique('track_favorites_user_track_unique').on(table.userId, table.trackId),
-    // The favorites of a Track (counts, cleanup) are a lookup of their own.
+    // Deleting a Track cascades here by Track, and the unique pair above only
+    // serves lookups that start with the User.
     index().on(table.trackId),
   ],
 );

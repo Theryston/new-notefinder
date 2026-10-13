@@ -5,7 +5,7 @@ import type {
   RecordingSummary,
   SearchResultItem,
 } from '@notefinder/contracts';
-import { AppException } from '../../common/errors/app-exception.js';
+import { throwMovedOrMissing } from './track-not-found.js';
 import { TracksRepository } from './tracks.repository.js';
 
 @Injectable()
@@ -35,11 +35,7 @@ export class TracksService {
     if ((await this.tracksRepository.findTrackHeader(trackId)) !== undefined) {
       return;
     }
-    const newId = await this.tracksRepository.findTrackIdByLegacyId(trackId);
-    if (newId !== undefined) {
-      throw new AppException('RESOURCE_MOVED', 'Track moved', { id: newId });
-    }
-    throw new AppException('NOT_FOUND', 'Track not found');
+    await throwMovedOrMissing(this.tracksRepository, trackId);
   }
 
   /** The MBID of the Recording a Track was created from; undefined for an unknown Track. */
