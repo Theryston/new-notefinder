@@ -1,5 +1,8 @@
-/** What a player reports about itself; buffering is not one of them. */
-export type PlayerState = 'ready' | 'playing' | 'paused' | 'ended';
+/**
+ * What a player reports about itself; buffering is not one of them. `error`
+ * means the video cannot be played (removed, not embeddable, API blocked).
+ */
+export type PlayerState = 'ready' | 'playing' | 'paused' | 'ended' | 'error';
 
 /**
  * The one interface the practice page plays through. YouTube is the
@@ -33,6 +36,6 @@ export const DEFAULT_RATE = 1;
 /**
  * Side of the YouTube player, in CSS pixels, defined once. It is below
  * YouTube's 200x200 minimum, an accepted risk recorded in #160; raising it
- * to 200 is a change of this number.
+ * to 200 is a change of this number. See docs/adr/0006-youtube-player-size.md.
  */
 export const YOUTUBE_SQUARE_PX = 100;

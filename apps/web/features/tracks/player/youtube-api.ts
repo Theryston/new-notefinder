@@ -32,6 +32,8 @@ export type YouTubePlayerOptions = {
   events: {
     onReady: () => void;
     onStateChange: (event: { data: number }) => void;
+    /** Fired when the video cannot be played; `data` is YouTube's error code. */
+    onError: (event: { data: number }) => void;
   };
 };
 

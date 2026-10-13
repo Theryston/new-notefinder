@@ -5,7 +5,7 @@ import { Fragment } from 'react';
 
 import { Link } from '@/lib/i18n/navigation';
 
-import { durationParts } from '../duration-parts';
+import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 
@@ -80,9 +80,8 @@ function Contributors({
 /** The length as a clock (`3:08`), with hours past an hour. */
 function Duration({ ms }: { ms: number }) {
   const t = useTranslations('tracks.practice');
-  const parts = durationParts(ms);
-  const text =
-    parts.hours > 0 ? t('durationLong', parts) : t('durationShort', parts);
+  const { key, values: parts } = clockMessage(ms / 1000);
+  const text = t(key, parts);
 
   return (
     <>

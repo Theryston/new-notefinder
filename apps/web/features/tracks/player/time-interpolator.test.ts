@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MAX_EXTRAPOLATION_SECONDS,
+  SEEK_SETTLE_MS,
   TimeInterpolator,
 } from './time-interpolator';
 
@@ -82,6 +83,50 @@ describe('TimeInterpolator', () => {
     clock.reset(40, 2000);
 
     expect(clock.read(playing(40, 2100))).toBeCloseTo(40.1, 5);
+  });
+
+  it('does not snap back to the time before a seek while the player catches up', () => {
+    const clock = new TimeInterpolator();
+    clock.read(playing(30, 1000));
+    clock.reset(90, 1100);
+
+    // YouTube keeps reporting 30 for a few reads after seekTo(90).
+    const reads = [1150, 1250, 1400, 1500].map((now) =>
+      clock.read(playing(30, now)),
+    );
+
+    for (const read of reads) expect(read).toBeGreaterThanOrEqual(90);
+    expect(reads.at(-1)).toBeLessThan(91);
+    // Once the player reaches the target, its reports are followed again.
+    expect(clock.read(playing(90.4, 1600))).toBeCloseTo(90.4, 5);
+    expect(clock.read(playing(90.4, 1700))).toBeCloseTo(90.5, 5);
+  });
+
+  it('holds the target while paused and the player still reports the old time', () => {
+    const clock = new TimeInterpolator();
+    clock.read({ reported: 30, now: 0, playing: false, rate: 1 });
+    clock.reset(90, 100);
+
+    expect(
+      clock.read({ reported: 30, now: 400, playing: false, rate: 1 }),
+    ).toBe(90);
+  });
+
+  it('believes the player again if a seek never lands', () => {
+    const clock = new TimeInterpolator();
+    clock.reset(90, 0);
+
+    expect(clock.read(playing(30, 500))).toBeGreaterThanOrEqual(90);
+    expect(clock.read(playing(30, SEEK_SETTLE_MS + 100))).toBeCloseTo(30, 5);
+  });
+
+  it('carries on from the clock when playback starts during a seek', () => {
+    const clock = new TimeInterpolator();
+    clock.read({ reported: 30, now: 0, playing: false, rate: 1 });
+    clock.reset(90, 100);
+
+    expect(clock.read(playing(30, 300))).toBeCloseTo(90, 5);
+    expect(clock.read(playing(30, 500))).toBeCloseTo(90.2, 5);
   });
 
   it('re-anchors when playback resumes', () => {

@@ -30,8 +30,8 @@ import { youtubeWatchUrl } from '../youtube-links';
 
 /**
  * The dock's Settings menu: speed, mute, "Open on YouTube" and "Hide video".
- * It is a dynamic import of the dock (Base UI's menu is heavy), so listening
- * costs it nothing until the first paint after the page.
+ * The dock loads it with a client-only dynamic import, so Base UI's menu stays
+ * out of the page's first-load JS.
  */
 export function DockSettings({
   controller,

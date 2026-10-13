@@ -40,7 +40,7 @@ async function setUp(durationSeconds = 100) {
     durationHint: durationSeconds,
   });
   await player.load();
-  return { controller, store };
+  return { controller, store, player };
 }
 
 afterEach(() => {
@@ -168,7 +168,7 @@ describe('PlaybackController', () => {
     expect(store.getState().muted).toBe(false);
   });
 
-  it('pauses when the video is hidden, and brings it back on play', async () => {
+  it('pauses when the video is hidden', async () => {
     const { controller, store } = await setUp();
     controller.play();
 
@@ -179,11 +179,74 @@ describe('PlaybackController', () => {
       status: 'paused',
     });
     expect(pending.size).toBe(0);
+  });
+
+  it('shows the video before it plays when play is pressed while hidden', async () => {
+    const { controller, store, player } = await setUp();
+    controller.hideVideo();
+    const play = vi.spyOn(player, 'play');
+
     controller.play();
-    expect(store.getState()).toMatchObject({
-      videoHidden: false,
-      status: 'playing',
+
+    // YouTube may not play a hidden iframe: nothing plays until the reveal
+    // has been drawn, one frame later.
+    expect(store.getState().videoHidden).toBe(false);
+    expect(play).not.toHaveBeenCalled();
+    runFrame();
+    expect(play).toHaveBeenCalledOnce();
+    expect(store.getState().status).toBe('playing');
+  });
+
+  it('does not play after a late hide cancels the pending play', async () => {
+    const { controller, player } = await setUp();
+    controller.hideVideo();
+    const play = vi.spyOn(player, 'play');
+    controller.play();
+
+    controller.hideVideo();
+    runFrame();
+
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('plays at once when the video is already showing', async () => {
+    const { controller, player } = await setUp();
+    const play = vi.spyOn(player, 'play');
+
+    controller.play();
+
+    expect(play).toHaveBeenCalledOnce();
+  });
+
+  it('shows an error when the player cannot play the video, and ignores play', async () => {
+    const { controller, store, player } = await setUp();
+    controller.play();
+    const play = vi.spyOn(player, 'play');
+
+    player.fail();
+    controller.play();
+
+    expect(store.getState().status).toBe('error');
+    expect(pending.size).toBe(0);
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('takes the length from the header later when the player does not know it', async () => {
+    const player = new FakePlayer({ durationSeconds: 100, now: () => clock });
+    const store = createStore<PlaybackState>(() => initialPlaybackState);
+    const controller = new PlaybackController({
+      port: player,
+      store,
+      frames,
+      durationHint: 0,
     });
+
+    controller.setDurationHint(215);
+
+    expect(store.getState().duration).toBe(215);
+    await player.load();
+    controller.setDurationHint(300);
+    expect(store.getState().duration).toBe(100);
   });
 
   it('hides the video of a paused player without playing it', async () => {

@@ -83,6 +83,11 @@ export class FakePlayer extends BasePlayer implements PlayerPort {
     this.clearListeners();
   }
 
+  /** Makes the pretend video fail, as an unplayable YouTube one would. */
+  fail(): void {
+    this.emit('error');
+  }
+
   setMuted(): void {
     // Nothing to silence.
   }

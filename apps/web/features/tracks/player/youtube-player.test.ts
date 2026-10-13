@@ -167,6 +167,31 @@ describe('YouTubePlayer', () => {
     expect(player.currentTime()).toBeCloseTo(90.1, 5);
   });
 
+  it('does not jump back while YouTube still reports the time before a seek', () => {
+    const { player, handle, events, advance } = setUp();
+    handle.getCurrentTime.mockReturnValue(30);
+    events().onStateChange({ data: YT_STATE.playing });
+    player.currentTime();
+
+    player.seek(90);
+    const reads: number[] = [];
+    for (let step = 0; step < 4; step += 1) {
+      advance(100);
+      // getCurrentTime() still answers 30 right after seekTo(90).
+      reads.push(player.currentTime());
+    }
+
+    for (const read of reads) expect(read).toBeGreaterThanOrEqual(90);
+  });
+
+  it('reports an error when YouTube cannot play the video', () => {
+    const { events, states } = setUp();
+
+    events().onError({ data: 150 });
+
+    expect(states).toEqual(['error']);
+  });
+
   it('is at the start, and silent, before it loads', () => {
     const player = new YouTubePlayer(
       {} as unknown as HTMLElement,

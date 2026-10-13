@@ -108,7 +108,7 @@ export function PracticeBody({
   usePlaybackShortcuts(controller);
 
   return (
-    <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+1.5rem)]">
+    <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
       {header.hasNotes ? (
         <TrackTimeline
           header={header}

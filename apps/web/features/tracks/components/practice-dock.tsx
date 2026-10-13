@@ -16,7 +16,8 @@ import { DockProgressTrack } from './dock-progress-track';
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
 
-// Base UI's menu is heavy and only needed once someone opens it.
+// Loaded after the page, on the client only: Base UI's menu is heavy, and
+// keeping it out of the first-load JS is what the placeholder below stands in for.
 const DockSettings = dynamic(
   () => import('./dock-settings').then((module) => module.DockSettings),
   { ssr: false, loading: SettingsPlaceholder },
@@ -72,6 +73,7 @@ export function PracticeDock({
 }) {
   const t = useTranslations('tracks.practice.dock');
   const hidden = usePlaybackState((state) => state.videoHidden);
+  const status = usePlaybackState((state) => state.status);
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
 
@@ -86,14 +88,20 @@ export function PracticeDock({
         ref={hostRef}
         data-testid="dock-video"
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
-        className="overflow-hidden rounded-xl bg-muted [grid-area:video] data-[hidden=true]:hidden"
+        className="overflow-hidden rounded-lg bg-muted [grid-area:video] data-[hidden=true]:hidden"
         data-hidden={hidden}
       />
       <div className="flex justify-center [grid-area:play]">
         <DockPlayButton controller={controller} />
       </div>
       <div className="flex min-w-0 [grid-area:progress]">
-        <DockProgressTrack controller={controller} />
+        {status === 'error' ? (
+          <p role="alert" className="self-center text-muted-foreground text-sm">
+            {t('error')}
+          </p>
+        ) : (
+          <DockProgressTrack controller={controller} />
+        )}
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
         <DockSettings controller={controller} videoId={videoId} />

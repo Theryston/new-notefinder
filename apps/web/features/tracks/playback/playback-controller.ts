@@ -20,13 +20,6 @@ export type PlaybackControllerOptions = {
   durationHint: number;
 };
 
-const STATUS_OF: Record<PlayerState, PlaybackState['status']> = {
-  ready: 'ready',
-  playing: 'playing',
-  paused: 'paused',
-  ended: 'ended',
-};
-
 /**
  * Drives a player and mirrors it into the playback store. While the music
  * plays it reads the player's time once per frame into the store, where the
@@ -39,6 +32,7 @@ export class PlaybackController {
   private readonly store: StoreApi<PlaybackState>;
   private readonly frames: FrameScheduler;
   private frame: number | null = null;
+  private playFrame: number | null = null;
   private readonly stopListening: () => void;
 
   constructor({
@@ -56,10 +50,20 @@ export class PlaybackController {
 
   play = (): void => {
     const { status, videoHidden } = this.store.getState();
-    if (status === 'loading') return;
-    if (videoHidden) this.store.setState({ videoHidden: false });
+    if (status === 'loading' || status === 'error') return;
     if (status === 'ended') this.seek(0);
-    this.port.play();
+    if (!videoHidden) {
+      this.port.play();
+      return;
+    }
+    // YouTube may not play while its iframe is hidden, so the video is shown
+    // first and played once the screen has drawn it (the next frame).
+    this.store.setState({ videoHidden: false });
+    this.cancelPendingPlay();
+    this.playFrame = this.frames.request(() => {
+      this.playFrame = null;
+      this.port.play();
+    });
   };
 
   pause = (): void => this.port.pause();
@@ -95,6 +99,7 @@ export class PlaybackController {
 
   /** Collapses the dock to a line; YouTube may not play hidden, so it pauses. */
   hideVideo = (): void => {
+    this.cancelPendingPlay();
     this.port.pause();
     this.stopLoop();
     this.store.setState({ videoHidden: true });
@@ -103,7 +108,19 @@ export class PlaybackController {
     }
   };
 
+  /**
+   * The Track's length from its header can arrive after the player exists
+   * (it falls back to the notes); the player's own length wins once known.
+   */
+  setDurationHint = (seconds: number): void => {
+    if (this.port.duration() > 0) return;
+    if (this.store.getState().duration !== seconds) {
+      this.store.setState({ duration: seconds });
+    }
+  };
+
   dispose = (): void => {
+    this.cancelPendingPlay();
     this.stopLoop();
     this.stopListening();
     this.port.destroy();
@@ -116,9 +133,13 @@ export class PlaybackController {
   private readonly onPlayerState = (state: PlayerState): void => {
     if (state === 'playing') this.startLoop();
     else this.stopLoop();
+    if (state === 'error') {
+      this.store.setState({ status: 'error' });
+      return;
+    }
     const duration = this.duration();
     this.store.setState({
-      status: STATUS_OF[state],
+      status: state,
       duration,
       time: state === 'ended' ? duration : this.port.currentTime(),
     });
@@ -133,6 +154,11 @@ export class PlaybackController {
     }
     this.frame = this.frames.request(this.tick);
   };
+
+  private cancelPendingPlay(): void {
+    if (this.playFrame !== null) this.frames.cancel(this.playFrame);
+    this.playFrame = null;
+  }
 
   private startLoop(): void {
     if (this.frame === null) this.frame = this.frames.request(this.tick);

@@ -1,16 +1,20 @@
 'use client';
 
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { PlaybackController } from '../playback/playback-controller';
 import { createPlayer } from '../player/create-player';
-import { playbackStore } from '../stores/playback-store';
+import { initialPlaybackState, playbackStore } from '../stores/playback-store';
 
 type UsePlaybackOptions = {
   /** The element the video mounts into; set while the dock is on screen. */
   hostRef: RefObject<HTMLElement | null>;
   /** Null for a Track whose Processing chose no video: nothing plays. */
   videoId: string | null;
+  /**
+   * The Track's length until the player knows it. It may change while the page
+   * is open (the notes arrive later), and that never rebuilds the player.
+   */
   durationSeconds: number;
   fake: boolean;
 };
@@ -20,10 +24,16 @@ const animationFrames = {
   cancel: (handle: number) => cancelAnimationFrame(handle),
 };
 
+/** The dock shows its error when the player could not even be created. */
+function failPlayback() {
+  playbackStore.setState({ status: 'error' });
+}
+
 /**
  * Creates the player for a video and the controller that drives it, and tears
  * both down when the video changes or the page leaves. Returns null until the
- * controller exists; the playback store says when the player is ready.
+ * controller exists; the playback store says when the player is ready, or
+ * that it failed.
  */
 export function usePlayback({
   hostRef,
@@ -32,14 +42,17 @@ export function usePlayback({
   fake,
 }: UsePlaybackOptions): PlaybackController | null {
   const [controller, setController] = useState<PlaybackController | null>(null);
+  const durationRef = useRef(durationSeconds);
+  durationRef.current = durationSeconds;
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || videoId === null) return;
     let cancelled = false;
     let created: PlaybackController | null = null;
+    playbackStore.setState(initialPlaybackState);
 
-    createPlayer({ host, durationSeconds, fake })
+    createPlayer({ host, durationSeconds: durationRef.current, fake })
       .then((player) => {
         if (cancelled) {
           player.destroy();
@@ -49,13 +62,14 @@ export function usePlayback({
           port: player,
           store: playbackStore,
           frames: animationFrames,
-          durationHint: durationSeconds,
+          durationHint: durationRef.current,
         });
         setController(created);
         return player.load(videoId);
       })
       .catch(() => {
-        // The player never became ready: the dock keeps its loading state.
+        // The IFrame API never loaded (blocked, offline): say so, don't wait.
+        if (!cancelled) failPlayback();
       });
 
     return () => {
@@ -63,7 +77,11 @@ export function usePlayback({
       created?.dispose();
       setController(null);
     };
-  }, [hostRef, videoId, durationSeconds, fake]);
+  }, [hostRef, videoId, fake]);
+
+  useEffect(() => {
+    controller?.setDurationHint(durationSeconds);
+  }, [controller, durationSeconds]);
 
   return controller;
 }

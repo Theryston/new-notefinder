@@ -20,7 +20,8 @@ export function DockPlayButton({
 }) {
   const t = useTranslations('tracks.practice.dock');
   const status = usePlaybackState((state) => state.status);
-  const loading = controller === null || status === 'loading';
+  const failed = status === 'error';
+  const loading = !failed && (controller === null || status === 'loading');
   const playing = status === 'playing';
 
   return (
@@ -28,7 +29,7 @@ export function DockPlayButton({
       size="icon-lg"
       aria-label={loading ? t('loading') : playing ? t('pause') : t('play')}
       aria-busy={loading}
-      disabled={loading}
+      disabled={loading || failed}
       onClick={() => controller?.toggle()}
       className="shrink-0"
     >

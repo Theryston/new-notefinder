@@ -130,6 +130,19 @@ test.describe('track playback dock', () => {
     await expect.poll(() => playedSeconds(page)).toBe(8);
   });
 
+  test('plays and pauses with space while the progress track is focused', async ({
+    page,
+  }) => {
+    await openTrack(page, 'clx-playback-slider-space');
+    await readyToPlay(page);
+    await progress(page).focus();
+
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('button', { name: dock.pause })).toBeVisible();
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('button', { name: dock.play })).toBeVisible();
+  });
+
   test('draws the timeline where the music is', async ({ page }) => {
     await openTrack(page, 'clx-playback-follow');
     await readyToPlay(page);

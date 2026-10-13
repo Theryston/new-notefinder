@@ -60,6 +60,7 @@ export class YouTubePlayer extends BasePlayer implements PlayerPort {
             resolve();
           },
           onStateChange: ({ data }) => this.onYouTubeState(data),
+          onError: () => this.emit('error'),
         },
       });
     });

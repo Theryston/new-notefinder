@@ -6,6 +6,7 @@ import {
   type PointerEvent,
   type RefObject,
   useEffect,
+  useMemo,
   useRef,
 } from 'react';
 
@@ -88,6 +89,7 @@ function useSeekHandlers(
       const keys: Record<string, () => void> = {
         ArrowRight: () => controller?.skip(SKIP_SECONDS),
         ArrowLeft: () => controller?.skip(-SKIP_SECONDS),
+        ' ': () => controller?.toggle(),
         Home: () => controller?.seek(0),
         End: () => controller?.seek(duration),
       };
@@ -114,12 +116,15 @@ export function DockProgressTrack({
   const t = useTranslations('tracks.practice.dock');
   const format = useClockFormat();
   const duration = usePlaybackState((state) => state.duration);
-  const elements: TrackElements = {
-    fill: useRef(null),
-    thumb: useRef(null),
-    current: useRef(null),
-    slider: useRef(null),
-  };
+  const fill = useRef<HTMLDivElement>(null);
+  const thumb = useRef<HTMLDivElement>(null);
+  const current = useRef<HTMLSpanElement>(null);
+  const slider = useRef<HTMLDivElement>(null);
+  // Refs never change, so neither does this: the subscription is kept.
+  const elements = useMemo<TrackElements>(
+    () => ({ fill, thumb, current, slider }),
+    [],
+  );
   const seek = useSeekHandlers(controller, duration);
   const total = format(duration);
   useProgressPainting(elements, total);
@@ -156,7 +161,7 @@ export function DockProgressTrack({
           />
           <div
             ref={elements.thumb}
-            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-sm transition-transform group-hover:scale-125 group-aria-disabled:hidden"
+            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-sm transition-transform duration-200 ease-spring group-hover:scale-125 group-aria-disabled:hidden"
             style={{ left: '0%' }}
           />
         </div>
