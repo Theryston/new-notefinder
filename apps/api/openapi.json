@@ -618,6 +618,67 @@
           "favorites"
         ]
       }
+    },
+    "/v1/me/streak": {
+      "get": {
+        "operationId": "StreaksController_getStatus_v1",
+        "parameters": [
+          {
+            "name": "timeZone",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 64,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Today's practice against the daily target."
+          },
+          "400": {
+            "description": "The time zone is not an IANA zone."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "streaks"
+        ]
+      }
+    },
+    "/v1/me/streak/heartbeat": {
+      "post": {
+        "operationId": "StreaksController_heartbeat_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreakHeartbeatBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The status after crediting the heartbeat."
+          },
+          "400": {
+            "description": "The elapsed seconds are negative or the zone is unknown."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "streaks"
+        ]
+      }
     }
   },
   "info": {
@@ -697,6 +758,24 @@
         },
         "required": [
           "username"
+        ]
+      },
+      "StreakHeartbeatBodyDto": {
+        "type": "object",
+        "properties": {
+          "elapsedSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "elapsedSeconds",
+          "timeZone"
         ]
       }
     }

@@ -37,5 +37,9 @@ export const users = pgTable('users', {
   // legacy app was written in.
   locale: userLocale().notNull().default('pt-BR'),
   dailyPracticeTargetSeconds: integer(),
+  // The IANA zone of the last practice heartbeat: the User's practice day
+  // rolls over at midnight there. Null until they practice; the legacy had no
+  // zone, so imported users start null and read as UTC.
+  timeZone: text(),
   ...timestamps,
 });

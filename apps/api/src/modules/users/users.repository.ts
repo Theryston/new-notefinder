@@ -39,6 +39,12 @@ const currentUserColumns = {
   createdAt: users.createdAt,
 };
 
+/** What the daily practice streak reads about a User. */
+export type PracticeSettingsRow = {
+  dailyPracticeTargetSeconds: number | null;
+  timeZone: string | null;
+};
+
 type SetUsernameResult =
   | { status: 'set'; user: CurrentUserRow }
   // Another user has it.
@@ -91,6 +97,29 @@ export class UsersRepository {
   /** Sets the language the User's emails follow. */
   async setLocale(id: string, locale: Locale): Promise<void> {
     await this.txHost.tx.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
+  /** The daily target and time zone of a User, or nothing when gone. */
+  async findPracticeSettings(
+    id: string,
+  ): Promise<PracticeSettingsRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
+        timeZone: users.timeZone,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return row;
+  }
+
+  /** Keeps the time zone the User's practice day follows. */
+  async setTimeZone(id: string, timeZone: string): Promise<void> {
+    await this.txHost.tx
+      .update(users)
+      .set({ timeZone })
+      .where(eq(users.id, id));
   }
 
   /** The email and language of the Users given, for the ones that exist. */

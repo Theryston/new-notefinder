@@ -12,6 +12,7 @@ import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
 import {
   type CurrentUserRow,
   type EmailRecipientRow,
+  type PracticeSettingsRow,
   UsersRepository,
 } from './users.repository.js';
 
@@ -25,6 +26,9 @@ export type PublicUser = {
   name: string;
   image: string | null;
 };
+
+/** What the daily practice streak reads about a User. */
+export type PracticeSettings = PracticeSettingsRow;
 
 /** What a notification email needs about a User (see `findEmailRecipients`). */
 export type EmailRecipient = EmailRecipientRow;
@@ -97,6 +101,20 @@ export class UsersService {
    */
   setLocale(userId: string, locale: Locale): Promise<void> {
     return this.usersRepository.setLocale(userId, locale);
+  }
+
+  /** The daily target and time zone of a User; `UNAUTHORIZED` when gone. */
+  async getPracticeSettings(userId: string): Promise<PracticeSettings> {
+    const settings = await this.usersRepository.findPracticeSettings(userId);
+    if (!settings) {
+      throw new AppException('UNAUTHORIZED', 'User no longer exists');
+    }
+    return settings;
+  }
+
+  /** Keeps the time zone the User's practice day follows. */
+  setTimeZone(userId: string, timeZone: string): Promise<void> {
+    return this.usersRepository.setTimeZone(userId, timeZone);
   }
 
   /**
