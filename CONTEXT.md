@@ -54,6 +54,24 @@ completed or failed; a failed Processing can be retried, which starts a new
 Processing that picks up where the failed one stopped.
 _Avoid_: Import (used for the legacy and MusicBrainz imports), job
 
+**Vocal note**:
+One note the singer of a Track hits: a single pitch held from a start to an
+end time. The pitch is continuous (it may sit between two keys); the note's
+name, like C#4, is the nearest key to it. Found by the Note detection of a
+Processing.
+_Avoid_: MIDI note, frame
+
+**Pitch curve**:
+The singer's pitch over the whole Track, moment by moment, including the
+slides and vibrato between and within Vocal notes. Found by the Note detection
+alongside the Vocal notes.
+_Avoid_: Melody, f0, contour
+
+**Note detection**:
+The part of a Processing that separates a Track's vocals from its music and
+finds the Vocal notes in them.
+_Avoid_: Transcription (which makes the Timed lyrics), pitch tracking
+
 **Contributor**:
 A User who has done at least one Contribution to a Track. A User is a
 Contributor of a Track once, however many Contributions they make to it.
