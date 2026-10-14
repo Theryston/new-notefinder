@@ -88,6 +88,9 @@ the sha identifies code and models.
   `version.py`: pure logic, no models. The handler takes its steps as injected
   callables, so the contract is tested with fakes.
 - `note_detector/transfer.py`: the music download and the presigned uploads.
+- `note_detector/smoke_validation.py`: pure checks of the smoke job output,
+  uploaded WAV and Uint16 Pitch curve, covered at 100% like the other pure
+  modules.
 - `note_detector/__main__.py`: the RunPod entrypoint, which wires the real
   steps and loads one instance of each model before starting RunPod. It fails
   before model loading when CUDA is unavailable. `smoke_test.py`

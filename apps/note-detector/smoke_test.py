@@ -1,48 +1,71 @@
-"""Runs one short job through the image's real models and transfer helpers."""
+"""Runs one short vocal job through the built image's real worker steps."""
 
 import io
 import json
 import logging
-import math
 import os
-import struct
 import threading
-import wave
+from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import torch
-
-from note_detector.__main__ import separator, steps_for_job
-from note_detector.game import GameOnnx
-from note_detector.game_io import game_directory
+from note_detector.__main__ import (
+    _production_adapters,
+    load_worker_models,
+    steps_for_job,
+)
 from note_detector.handler import process
-from note_detector.rmvpe import load_rmvpe, pitch_curve_with_model
-from note_detector.startup import require_gpu, reuse_model
+from note_detector.smoke_validation import (
+    SOURCE_SAMPLE_RATE,
+    SmokeJobEvidence,
+    validate_smoke_result,
+)
 from note_detector.version import detector_version
 
-SAMPLE_RATE = 44_100
-DURATION_SECONDS = 2
+# Held notes, a one-second silence, vibrato and harmonics, matching the
+# synthesized singing fixture used by the GAME parity test.
+MELODY: list[tuple[int | None, float]] = [
+    (57, 0.7),
+    (60, 0.7),
+    (64, 0.9),
+    (62, 0.6),
+    (None, 1.0),
+    (60, 0.8),
+    (65, 0.7),
+    (64, 1.0),
+]
 
 
-def _sample_wav() -> bytes:
-    samples = io.BytesIO()
-    with wave.open(samples, "wb") as audio:
-        audio.setnchannels(2)
-        audio.setsampwidth(2)
-        audio.setframerate(SAMPLE_RATE)
-        frames = bytearray()
-        for index in range(SAMPLE_RATE * DURATION_SECONDS):
-            time = index / SAMPLE_RATE
-            fundamental = 220 + 4 * math.sin(2 * math.pi * 5 * time)
-            value = sum(
-                math.sin(2 * math.pi * fundamental * harmonic * time) / harmonic
-                for harmonic in range(1, 7)
-            )
-            sample = max(-1.0, min(1.0, value * 0.45))
-            encoded = struct.pack("<h", round(sample * 32767))
-            frames.extend(encoded * 2)
-        audio.writeframes(frames)
-    return samples.getvalue()
+def _voice(midi: int, seconds: float):
+    import numpy as np
+
+    time = np.arange(round(seconds * SOURCE_SAMPLE_RATE)) / SOURCE_SAMPLE_RATE
+    semitones = midi + 0.3 * np.sin(2 * np.pi * 5.5 * time)
+    frequency = 440.0 * 2 ** ((semitones - 69) / 12)
+    phase = 2 * np.pi * np.cumsum(frequency) / SOURCE_SAMPLE_RATE
+    waveform = sum(
+        np.sin(harmonic * phase) / harmonic for harmonic in range(1, 7)
+    )
+    envelope = np.minimum(1.0, np.minimum(time, seconds - time) / 0.05)
+    return (0.3 * waveform * envelope).astype(np.float32)
+
+
+def _sample_wav() -> tuple[bytes, int]:
+    import numpy as np
+    import soundfile
+
+    parts = [
+        np.zeros(round(seconds * SOURCE_SAMPLE_RATE), dtype=np.float32)
+        if midi is None
+        else _voice(midi, seconds)
+        for midi, seconds in MELODY
+    ]
+    mono = np.concatenate(parts)
+    stereo = np.repeat(mono[:, None], 2, axis=1)
+    output = io.BytesIO()
+    soundfile.write(
+        output, stereo, SOURCE_SAMPLE_RATE, format="WAV", subtype="PCM_16"
+    )
+    return output.getvalue(), len(mono)
 
 
 def _server(
@@ -76,91 +99,60 @@ def _server(
     return server, uploads, content_types
 
 
+def _job(base_url: str) -> dict[str, object]:
+    return {
+        "input": {
+            "processingId": "image-smoke",
+            "musicUrl": f"{base_url}/music.wav",
+            "vocalsUpload": {
+                "presignedPutUrl": f"{base_url}/vocals",
+                "contentType": "audio/wav",
+                "publicUrl": f"{base_url}/public/vocals.wav",
+            },
+            "pitchCurveUpload": {
+                "presignedPutUrl": f"{base_url}/pitch-curve",
+                "contentType": "application/octet-stream",
+                "publicUrl": f"{base_url}/public/pitch-curve.bin",
+            },
+        }
+    }
+
+
 def run() -> dict[str, object]:
-    try:
-        require_gpu(torch.cuda.is_available())
-    except RuntimeError as error:
-        raise SystemExit(str(error)) from None
     logging.basicConfig(level=logging.INFO)
-    sample = _sample_wav()
+    adapters = _production_adapters()
+    models = load_worker_models(adapters)
+    sample, audio_frames = _sample_wav()
     server, uploads, content_types = _server(sample)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     host, port = server.server_address
     base_url = f"http://{host}:{port}"
-    vocals_url = f"{base_url}/public/vocals.wav"
-    pitch_curve_url = f"{base_url}/public/pitch-curve.bin"
     progress: list[str] = []
+    smoke_adapters = replace(
+        adapters, progress_update=lambda _job, stage: progress.append(stage)
+    )
+    job = _job(base_url)
 
     try:
-        game = GameOnnx(game_directory(os.environ))
-        separator()
-        pitch_curve_step = reuse_model(load_rmvpe(), pitch_curve_with_model)
-        steps = steps_for_job(
-            game,
-            pitch_curve_step,
-            progress.append,
-        )
-        result = process(
-            {
-                "processingId": "image-smoke",
-                "musicUrl": f"{base_url}/music.wav",
-                "vocalsUpload": {
-                    "presignedPutUrl": f"{base_url}/vocals",
-                    "contentType": "audio/wav",
-                    "publicUrl": vocals_url,
-                },
-                "pitchCurveUpload": {
-                    "presignedPutUrl": f"{base_url}/pitch-curve",
-                    "contentType": "application/octet-stream",
-                    "publicUrl": pitch_curve_url,
-                },
-            },
-            steps,
-        )
+        steps = steps_for_job(smoke_adapters, models, job)
+        result = process(job["input"], steps)
     finally:
         server.shutdown()
         server.server_close()
         thread.join()
 
-    if set(uploads) != {"/vocals", "/pitch-curve"}:
-        raise RuntimeError("smoke job did not upload both required files")
-    if not uploads["/vocals"] or not uploads["/pitch-curve"]:
-        raise RuntimeError("smoke job uploaded an empty file")
-    if content_types != {
-        "/vocals": "audio/wav",
-        "/pitch-curve": "application/octet-stream",
-    }:
-        raise RuntimeError("smoke job uploaded the wrong content types")
-    notes = result.get("notes")
-    if not isinstance(notes, list) or any(
-        not isinstance(note, dict)
-        or not {"pitch", "start", "end"}.issubset(note)
-        for note in notes
-    ):
-        raise RuntimeError("smoke job did not return a notes list")
-    expected_version = detector_version(os.environ)
-    if (
-        result.get("detectorVersion") != expected_version
-        or expected_version == "note-detector@unknown"
-    ):
-        raise RuntimeError("smoke job returned the wrong detector version")
-    if (
-        result.get("vocalsUrl") != vocals_url
-        or result.get("pitchCurveUrl") != pitch_curve_url
-    ):
-        raise RuntimeError("smoke job returned the wrong public URLs")
-    if progress != ["EXTRACTING_VOCALS", "DETECTING_NOTES"]:
-        raise RuntimeError(f"unexpected progress stages: {progress}")
-
-    summary: dict[str, object] = {
-        "detectorVersion": result["detectorVersion"],
-        "notes": len(notes),
-        "vocalsUploadBytes": len(uploads["/vocals"]),
-        "pitchCurveUploadBytes": len(uploads["/pitch-curve"]),
-        "progress": progress,
-    }
-    return summary
+    evidence = SmokeJobEvidence(
+        result=result,
+        uploads=uploads,
+        content_types=content_types,
+        progress=progress,
+        vocals_url=f"{base_url}/public/vocals.wav",
+        pitch_curve_url=f"{base_url}/public/pitch-curve.bin",
+        expected_detector_version=detector_version(os.environ),
+        expected_audio_frames=audio_frames,
+    )
+    return validate_smoke_result(evidence)
 
 
 def main() -> None:
