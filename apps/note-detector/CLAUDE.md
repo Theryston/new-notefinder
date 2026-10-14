@@ -2,7 +2,7 @@
 
 Read the root `CLAUDE.md` first; this file only adds this app's rules.
 
-A **RunPod serverless** worker that replaces `apps/nfp-audio` (ADR 0007). Given
+A **RunPod serverless** worker that replaces the legacy worker (ADR 0007). Given
 a Track's music WAV it separates the vocals, uploads them, finds the Vocal
 notes and computes the Pitch curve. The decision and the benchmark behind the
 models are in `docs/adr/0007-note-detector-replaces-nfp-audio.md`.

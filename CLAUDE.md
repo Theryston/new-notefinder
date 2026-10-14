@@ -20,10 +20,9 @@ apps/
   api/          NestJS 12 REST API (Drizzle, Better Auth, BullMQ). Port 3333.
   music-catalog/  Private Music catalog service: Node + ws WebSocket server and worker,
                   no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
-  nfp-audio/    Python RunPod serverless worker (uv, not Node): vocal separation and
-                  note detection for a Processing. No port. See apps/nfp-audio/CLAUDE.md.
-  note-detector/  Python RunPod serverless worker (uv, not Node): replaces nfp-audio
-                  (Mel-RoFormer + GAME + Pitch curve). No port. See
+  note-detector/  Python RunPod serverless worker (uv, not Node): replaces the
+                  legacy worker with Mel-RoFormer, GAME Vocal notes and a Pitch
+                  curve. No port. See
                   apps/note-detector/CLAUDE.md and docs/adr/0007.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
@@ -51,7 +50,7 @@ nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | nfp-audio | note-detector | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | note-detector | @notefinder/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
@@ -311,7 +310,7 @@ the maintainer changes these files.
 - **Conventional Commits**, scoped by package:
   `<type>(<scope>): <subject>` with types `feat fix refactor perf test docs
   build ci chore style revert` and scopes `web api music-catalog contracts
-  repo nfp-audio note-detector` (e.g. `feat(api): add track search
+  repo note-detector` (e.g. `feat(api): add track search
   endpoint`). Enforced by lefthook on commits and by CI on the PR title (it
   becomes the squash commit).
 - lefthook `pre-commit` runs Biome on staged files and re-stages the fixes.
