@@ -15,7 +15,9 @@ concurrency:
 jobs:
   mutation:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # A cold API run tests over 4,000 mutants, including expensive static
+    # mutants, and can exceed 30 minutes before saving its incremental cache.
+    timeout-minutes: ${{ matrix.app == 'api' && 60 || 30 }}
     strategy:
       fail-fast: false
       matrix:
