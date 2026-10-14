@@ -62,6 +62,7 @@ RUN python /tmp/rmvpe/weights.py /tmp/rmvpe/rmvpe-weights.json /app/weights \
     && rm -rf /tmp/rmvpe
 
 COPY note_detector ./note_detector
+COPY smoke_test.py ./smoke_test.py
 
 # The git sha of the build, reported as `note-detector@<sha>` in every job
 # output. Declared after the dependency layer so a new commit does not

@@ -68,6 +68,7 @@ jobs:
           tags: |
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=ci,enable=${{ github.event_name == 'pull_request' }}
 
       # linux/amd64 only: RunPod's GPU workers are x86-64, and the CUDA wheels
       # have no arm64 build worth emulating for.
@@ -78,6 +79,7 @@ jobs:
           file: apps/note-detector/Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # The worker reports it as its detector version.
@@ -87,3 +89,22 @@ jobs:
           provenance: false
           cache-from: type=gha,scope=note-detector
           cache-to: type=gha,scope=note-detector,mode=max
+
+      - name: Check the image fails cleanly without a GPU
+        if: github.event_name == 'pull_request'
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}:ci
+        run: |
+          set +e
+          timeout 90s docker run --rm --entrypoint python "$IMAGE" \
+            smoke_test.py > /tmp/note-detector-smoke.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/note-detector-smoke.log
+          if [ "$status" -ne 1 ]; then
+            echo "expected the no-GPU smoke to exit 1, got $status"
+            exit 1
+          fi
+          grep -Fxq \
+            'note-detector requires a CUDA GPU; use a RunPod A40 or RTX A6000' \
+            /tmp/note-detector-smoke.log
