@@ -39,6 +39,24 @@ export class TrackPracticeService {
       youtubeVideoId: row.youtubeVideoId,
       contributors: await this.processing.contributorsOf(trackId),
       hasNotes: row.hasNotes,
+      ...(typeof row.vocalRangeLowMidi !== 'number' ||
+      typeof row.vocalRangeHighMidi !== 'number'
+        ? {}
+        : {
+            vocalRange: {
+              lowMidi: row.vocalRangeLowMidi,
+              highMidi: row.vocalRangeHighMidi,
+            },
+          }),
+      ...(typeof row.estimatedKeyTonic !== 'number' ||
+      (row.estimatedKeyMode !== 'MAJOR' && row.estimatedKeyMode !== 'MINOR')
+        ? {}
+        : {
+            estimatedKey: {
+              tonic: row.estimatedKeyTonic,
+              mode: row.estimatedKeyMode,
+            },
+          }),
     };
   }
 

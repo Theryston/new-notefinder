@@ -12,6 +12,7 @@ import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
+import { DockTransposeControls } from './dock-transpose-controls';
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -66,10 +67,12 @@ export function PracticeDock({
   controller,
   hostRef,
   videoId,
+  trackId,
 }: {
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
+  trackId: string;
 }) {
   const t = useTranslations('tracks.practice.dock');
   const hidden = usePlaybackState((state) => state.videoHidden);
@@ -103,7 +106,8 @@ export function PracticeDock({
           <DockProgressTrack controller={controller} />
         )}
       </div>
-      <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
+      <div className="flex items-center gap-1 self-start [grid-area:controls] md:self-center">
+        <DockTransposeControls trackId={trackId} />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
     </section>

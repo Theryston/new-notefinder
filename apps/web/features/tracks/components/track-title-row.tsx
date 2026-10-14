@@ -1,4 +1,5 @@
 import type { TrackContributor, TrackDetail } from '@notefinder/contracts';
+import { PITCH_CLASS_NAMES } from '@notefinder/contracts';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Fragment } from 'react';
@@ -6,6 +7,7 @@ import { Fragment } from 'react';
 import { Link } from '@/lib/i18n/navigation';
 
 import { clockMessage } from '../playback/clock-message';
+import { transposePitchClass } from '../transpose';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
@@ -104,7 +106,18 @@ function Duration({ ms }: { ms: number }) {
  * on a phone, the avatars dropping under the title, and stays a single row
  * from `sm`.
  */
-export function TrackTitleRow({ header }: { header: TrackDetail }) {
+export function TrackTitleRow({
+  header,
+  transpose,
+}: {
+  header: TrackDetail;
+  transpose: number;
+}) {
+  const t = useTranslations('tracks.practice');
+  const key = header.estimatedKey;
+  const keyName = key
+    ? `${PITCH_CLASS_NAMES[transposePitchClass(key.tonic, transpose)]} ${t(`keyModes.${key.mode}`)}`
+    : null;
   return (
     <section
       aria-labelledby="track-title"
@@ -142,6 +155,11 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
             </>
           )}
         </p>
+        {keyName ? (
+          <p className="text-muted-foreground text-xs">
+            {t('keyLabel', { key: keyName })}
+          </p>
+        ) : null}
       </div>
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />

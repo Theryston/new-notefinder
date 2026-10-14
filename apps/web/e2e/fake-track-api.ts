@@ -31,6 +31,8 @@ export type FakeTrack = {
   /** The length in milliseconds the practice header shows; null by default. */
   durationMs?: number | null;
   youtubeVideoId?: string | null;
+  vocalRange?: { lowMidi: number; highMidi: number } | null;
+  estimatedKey?: { tonic: number; mode: 'MAJOR' | 'MINOR' } | null;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
   /** `null` for a Track that never had a Processing. */
@@ -137,6 +139,10 @@ function practiceHeaderOf(track: FakeTrack) {
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
+    ...(track.vocalRange === undefined ? {} : { vocalRange: track.vocalRange }),
+    ...(track.estimatedKey === undefined
+      ? {}
+      : { estimatedKey: track.estimatedKey }),
   };
 }
 

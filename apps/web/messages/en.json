@@ -135,6 +135,12 @@
       "metaDescriptionNoArtistsNoNotes": "The vocal notes of {title}, on a timeline you can sing along to.",
       "contributors": "Contributors",
       "contributorLink": "{name}'s profile",
+      "keyLabel": "Estimated key: {key}",
+      "keyModes": { "MAJOR": "major", "MINOR": "minor" },
+      "range": {
+        "label": "Vocal range from {low} to {high}",
+        "octaves": "{count, plural, one {# octave} other {# octaves}}"
+      },
       "timeline": {
         "label": "Note timeline of {title}. {count, plural, one {# note} other {# notes}}, from {low} to {high}",
         "labelEmpty": "Note timeline of {title}"
@@ -152,7 +158,13 @@
         "mute": "Mute",
         "openOnYouTube": "Open on YouTube",
         "error": "The video couldn't be played. You can still open it on YouTube from Settings.",
-        "hideVideo": "Hide video"
+        "hideVideo": "Hide video",
+        "transpose": {
+          "label": "Transpose notes",
+          "up": "Transpose up one semitone",
+          "down": "Transpose down one semitone",
+          "videoUnchanged": "The notes changed key. The YouTube video keeps its original key."
+        }
       },
       "noVoice": {
         "title": "We found no voice in this recording",

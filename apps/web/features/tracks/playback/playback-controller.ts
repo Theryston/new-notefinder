@@ -44,7 +44,11 @@ export class PlaybackController {
     this.port = port;
     this.store = store;
     this.frames = frames;
-    store.setState({ ...initialPlaybackState, duration: durationHint });
+    store.setState({
+      ...initialPlaybackState,
+      duration: durationHint,
+      transpose: store.getState().transpose,
+    });
     this.stopListening = port.onState(this.onPlayerState);
   }
 

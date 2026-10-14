@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import type { InitialPractice } from '../practice-queries';
+import { usePlaybackState } from '../stores/playback-store';
 import {
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
@@ -48,6 +49,7 @@ export function TrackPracticeView({
   fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.practice');
+  const transpose = usePlaybackState((state) => state.transpose);
   const header = useQuery(trackPracticeQueryOptions(trackId, initial?.header));
   const notes = useQuery(
     trackNotesQueryOptions(
@@ -69,7 +71,7 @@ export function TrackPracticeView({
 
   return (
     <div className="flex flex-col gap-6 pb-6 md:pb-8">
-      <TrackTitleRow header={header.data} />
+      <TrackTitleRow header={header.data} transpose={transpose} />
       <PracticeBody
         header={header.data}
         notes={notes.data}

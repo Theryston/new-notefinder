@@ -3,6 +3,8 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
+import { tracks } from '../../database/schema/tracks.js';
+import { analyzeTrackNotes } from './track-key-analysis.js';
 
 /** A Vocal note to store: a MIDI pitch held from `start` to `end` (seconds). */
 export type NoteToStore = { pitch: number; start: number; end: number };
@@ -20,9 +22,19 @@ export class TrackNotesRepository {
     trackId: string,
     notes: readonly NoteToStore[],
   ): Promise<void> {
+    const analysis = analyzeTrackNotes(notes);
     await this.txHost.tx
       .delete(trackNotes)
       .where(eq(trackNotes.trackId, trackId));
+    await this.txHost.tx
+      .update(tracks)
+      .set({
+        vocalRangeLowMidi: analysis.vocalRange?.lowMidi ?? null,
+        vocalRangeHighMidi: analysis.vocalRange?.highMidi ?? null,
+        estimatedKeyTonic: analysis.estimatedKey?.tonic ?? null,
+        estimatedKeyMode: analysis.estimatedKey?.mode ?? null,
+      })
+      .where(eq(tracks.id, trackId));
     if (notes.length === 0) {
       return;
     }

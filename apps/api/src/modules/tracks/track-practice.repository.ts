@@ -17,6 +17,10 @@ export type TrackPracticeRow = {
   artistCredit: StoredArtistCreditEntry[];
   lengthMs: number | null;
   youtubeVideoId: string | null;
+  vocalRangeLowMidi: number | null;
+  vocalRangeHighMidi: number | null;
+  estimatedKeyTonic: number | null;
+  estimatedKeyMode: 'MAJOR' | 'MINOR' | null;
   /** The Artists the Track is linked to, which the credit names link to. */
   artists: { id: string; mbid: string }[];
   hasNotes: boolean;
@@ -46,6 +50,10 @@ export class TrackPracticeRepository {
         artistCredit: tracks.artistCredit,
         lengthMs: tracks.lengthMs,
         youtubeVideoId: tracks.youtubeVideoId,
+        vocalRangeLowMidi: tracks.vocalRangeLowMidi,
+        vocalRangeHighMidi: tracks.vocalRangeHighMidi,
+        estimatedKeyTonic: tracks.estimatedKeyTonic,
+        estimatedKeyMode: tracks.estimatedKeyMode,
       })
       .from(tracks)
       .where(eq(tracks.id, trackId))

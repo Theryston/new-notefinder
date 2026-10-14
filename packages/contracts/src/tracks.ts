@@ -149,6 +149,18 @@ export const trackDetailSchema = trackHeaderSchema.extend({
   youtubeVideoId: z.string().min(1).max(32).nullable(),
   contributors: z.array(trackContributorSchema).max(100),
   hasNotes: z.boolean(),
+  /** Absent only for Tracks whose notes predate the metadata migration. */
+  vocalRange: z
+    .object({ lowMidi: z.number(), highMidi: z.number() })
+    .nullable()
+    .optional(),
+  estimatedKey: z
+    .object({
+      tonic: z.number().int().min(0).max(11),
+      mode: z.enum(['MAJOR', 'MINOR']),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type TrackDetail = z.infer<typeof trackDetailSchema>;

@@ -106,6 +106,13 @@
       "when": 1791973817393,
       "tag": "0014_track-processing-pitch-curve",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791998800930,
+      "tag": "0015_track-key-range",
+      "breakpoints": true
     }
   ]
 }

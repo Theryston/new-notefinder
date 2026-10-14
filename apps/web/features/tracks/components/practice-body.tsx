@@ -3,7 +3,7 @@
 import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { NoteTimeline } from '@/features/timeline/components/note-timeline';
@@ -13,8 +13,12 @@ import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { playbackStore, usePlaybackState } from '../stores/playback-store';
+import { transposeNotes } from '../transpose';
+import { loadTrackTranspose } from '../transpose-storage';
 import { PracticeDock } from './practice-dock';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
+import { VocalRangeStrip } from './vocal-range-strip';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -105,17 +109,31 @@ export function PracticeBody({
     durationSeconds: durationSecondsOf(header, notes),
     fake: fakePlayer,
   });
+  const transpose = usePlaybackState((state) => state.transpose);
+  useEffect(() => {
+    const value = loadTrackTranspose(header.id);
+    playbackStore.setState({ transpose: value });
+  }, [header.id]);
   usePlaybackShortcuts(controller);
 
   return (
     <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
       {header.hasNotes ? (
-        <TrackTimeline
-          header={header}
-          notes={notes}
-          failed={failed}
-          controller={controller}
-        />
+        <>
+          <TrackTimeline
+            header={header}
+            notes={
+              notes
+                ? { notes: transposeNotes(notes.notes, transpose) }
+                : undefined
+            }
+            failed={failed}
+            controller={controller}
+          />
+          {header.vocalRange ? (
+            <VocalRangeStrip range={header.vocalRange} transpose={transpose} />
+          ) : null}
+        </>
       ) : (
         <NoVoice />
       )}
@@ -124,6 +142,7 @@ export function PracticeBody({
           controller={controller}
           hostRef={hostRef}
           videoId={header.youtubeVideoId}
+          trackId={header.id}
         />
       )}
     </div>

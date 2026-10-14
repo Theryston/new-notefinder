@@ -46,7 +46,10 @@ export function startPlayback(options: StartPlaybackOptions): PlaybackSession {
   let hint = options.durationHint;
   let controller: PlaybackController | null = null;
   let cancelled = false;
-  store.setState(initialPlaybackState);
+  store.setState({
+    ...initialPlaybackState,
+    transpose: store.getState().transpose,
+  });
 
   makePlayer({ host, durationSeconds: hint, fake })
     .then((player) => {

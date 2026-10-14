@@ -135,6 +135,12 @@
       "metaDescriptionNoArtistsNoNotes": "As notas vocais de {title}, em uma linha do tempo para cantar junto.",
       "contributors": "Colaboradores",
       "contributorLink": "Perfil de {name}",
+      "keyLabel": "Tonalidade estimada: {key}",
+      "keyModes": { "MAJOR": "maior", "MINOR": "menor" },
+      "range": {
+        "label": "Extensão vocal de {low} a {high}",
+        "octaves": "{count, plural, one {# oitava} other {# oitavas}}"
+      },
       "timeline": {
         "label": "Linha do tempo das notas de {title}. {count, plural, one {# nota} other {# notas}}, de {low} a {high}",
         "labelEmpty": "Linha do tempo das notas de {title}"
@@ -152,7 +158,13 @@
         "mute": "Silenciar",
         "openOnYouTube": "Abrir no YouTube",
         "error": "Não foi possível tocar o vídeo. Você ainda pode abri-lo no YouTube pelas configurações.",
-        "hideVideo": "Ocultar vídeo"
+        "hideVideo": "Ocultar vídeo",
+        "transpose": {
+          "label": "Transpor notas",
+          "up": "Subir um semitom",
+          "down": "Descer um semitom",
+          "videoUnchanged": "As notas mudaram de tonalidade. O vídeo do YouTube mantém a tonalidade original."
+        }
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",

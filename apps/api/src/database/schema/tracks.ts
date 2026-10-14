@@ -2,6 +2,7 @@ import type { TrackArtistCreditEntry } from '@notefinder/contracts';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -60,6 +61,11 @@ export const tracks = pgTable(
     coverUrl: text(),
     // The YouTube video the timeline plays, set when a Processing chooses it.
     youtubeVideoId: text(),
+    // Derived from the notes whenever a Processing replaces them.
+    vocalRangeLowMidi: doublePrecision(),
+    vocalRangeHighMidi: doublePrecision(),
+    estimatedKeyTonic: integer(),
+    estimatedKeyMode: text({ enum: ['MAJOR', 'MINOR'] }),
     ...timestamps,
   },
   (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],
