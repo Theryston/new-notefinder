@@ -166,7 +166,30 @@
       "loadError": "We couldn't load this track. Try again in a moment.",
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
-      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
+      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
+      "views": "{count, plural, one {# view} other {# views}}",
+      "share": {
+        "open": "Share",
+        "close": "Close",
+        "title": "Share this track",
+        "description": "Send {title} to someone who can sing it.",
+        "link": "Link to share",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "copyFailed": "We couldn't copy the link. Select it and copy it by hand.",
+        "includeMoment": "Include current moment ({time})",
+        "networks": "Share on",
+        "text": "Sing {title} by {artists} with NoteFinder",
+        "textNoArtists": "Sing {title} with NoteFinder",
+        "subject": "{title} on NoteFinder",
+        "network": {
+          "whatsapp": "WhatsApp",
+          "telegram": "Telegram",
+          "x": "X",
+          "facebook": "Facebook",
+          "email": "Email"
+        }
+      }
     }
   },
   "header": {

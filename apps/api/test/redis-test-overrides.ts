@@ -10,6 +10,8 @@ import { TRACK_MP3_QUEUE } from '../src/modules/tracks/track-mp3.job.js';
 import { TrackMp3Processor } from '../src/modules/tracks/track-mp3.processor.js';
 import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
 import { TrackProcessingProcessor } from '../src/modules/tracks/track-processing.processor.js';
+import { TRACK_TRENDING_QUEUE } from '../src/modules/tracks/track-trending.job.js';
+import { TrackTrendingProcessor } from '../src/modules/tracks/track-trending.processor.js';
 import { TRACK_METADATA_QUEUE } from '../src/queue/track-metadata.job.js';
 import { REDIS_CLIENT } from '../src/redis/redis.constants.js';
 
@@ -20,6 +22,7 @@ const QUEUES = [
   TRACK_PROCESSING_QUEUE,
   TRACK_METADATA_QUEUE,
   TRACK_MP3_QUEUE,
+  TRACK_TRENDING_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -28,6 +31,7 @@ const PROCESSORS = [
   TrackProcessingProcessor,
   TrackMetadataProcessor,
   TrackMp3Processor,
+  TrackTrendingProcessor,
 ] as const;
 
 export type FakeQueue = {

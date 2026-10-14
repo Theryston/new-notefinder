@@ -9,6 +9,7 @@ import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
+import { TrackShareButton } from './track-share-button';
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
@@ -98,6 +99,13 @@ function Duration({ ms }: { ms: number }) {
   );
 }
 
+/** How many times the Track was viewed, with the locale's number format. */
+function ViewCount({ count }: { count: number }) {
+  const t = useTranslations('tracks.practice');
+
+  return <span className="shrink-0 tabular-nums">{t('views', { count })}</span>;
+}
+
 /**
  * The practice page's one-line title row: cover, title, artists (linked),
  * duration and the Contributors' avatars (linked to their Profiles). It wraps
@@ -141,12 +149,15 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
               <Duration ms={header.durationMs} />
             </>
           )}
+          <span aria-hidden="true">·</span>
+          <ViewCount count={header.viewCount ?? 0} />
         </p>
       </div>
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />
       ) : null}
       <TrackFavoriteButton trackId={header.id} />
+      <TrackShareButton header={header} />
     </section>
   );
 }

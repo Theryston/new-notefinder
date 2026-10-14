@@ -1,0 +1,37 @@
+import { index, pgTable, text } from 'drizzle-orm/pg-core';
+import { id, timestamps } from '../columns.js';
+import { tracks } from './tracks.js';
+import { users } from './users.js';
+
+/**
+ * One visit to a Track page, counted once per browser session. The row's ID is
+ * what the browser keeps to attach the User if they sign in later in that
+ * session. `userId` is null for a visit by someone not signed in, and also
+ * after the User is deleted.
+ *
+ * Legacy mapping: a legacy `TrackView` is (id, trackId, userId?, createdAt)
+ * with the legacy Track ID. The import keeps the view ID and `createdAt`,
+ * keeps `userId` as is (users keep their IDs), and translates `trackId`
+ * through `legacy_track_ids`. A view whose Track has no new equivalent is
+ * dropped and listed in the import report. The trending score is not
+ * imported: it is derived from these rows, so the import ends by running the
+ * score refresh once per Track that has views.
+ */
+export const trackViews = pgTable(
+  'track_views',
+  {
+    id: id(),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    userId: text().references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (table) => [
+    // The trending windows count one Track's views by time; the platform
+    // averages scan by time alone.
+    index().on(table.trackId, table.createdAt),
+    index().on(table.createdAt),
+    index().on(table.userId),
+  ],
+);

@@ -296,6 +296,88 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/views": {
+      "post": {
+        "operationId": "TrackViewsController_recordView_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordTrackViewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The view ID names a view of the Track: the signed-in User, if any, was attached to it and nothing new was recorded."
+          },
+          "201": {
+            "description": "The view was recorded."
+          },
+          "400": {
+            "description": "The ID or the body is bad."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
+    "/v1/sitemaps/tracks": {
+      "get": {
+        "operationId": "TrackSitemapController_listTracks_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of completed Tracks, the highest trending score first."
+          },
+          "400": {
+            "description": "The query or the cursor is bad."
+          }
+        },
+        "tags": [
+          "sitemaps"
+        ]
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "UsersController_getMe_v1",
@@ -665,6 +747,16 @@
         "required": [
           "locale"
         ]
+      },
+      "RecordTrackViewBodyDto": {
+        "type": "object",
+        "properties": {
+          "viewId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
       },
       "UpdateMeBodyDto": {
         "type": "object",

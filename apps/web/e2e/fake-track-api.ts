@@ -31,6 +31,8 @@ export type FakeTrack = {
   /** The length in milliseconds the practice header shows; null by default. */
   durationMs?: number | null;
   youtubeVideoId?: string | null;
+  /** How many times the Track was viewed; 0 by default. */
+  viewCount?: number;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
   /** `null` for a Track that never had a Processing. */
@@ -137,6 +139,7 @@ function practiceHeaderOf(track: FakeTrack) {
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
+    viewCount: track.viewCount ?? 0,
   };
 }
 
@@ -249,6 +252,21 @@ async function serveRetry(
   json(response, 202, stateOf(track), request);
 }
 
+/**
+ * `GET /v1/sitemaps/tracks`: the completed Tracks in one page, the most viewed
+ * first (the fake's stand-in for the trending score).
+ */
+function serveSitemap(request: IncomingMessage, response: ServerResponse) {
+  const completed = [...tracks.values()]
+    .filter((track) => track.processing?.status === 'COMPLETED')
+    .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
+  const items = completed.map(({ id }) => ({
+    id,
+    updatedAt: '2026-10-14T12:00:00.000Z',
+  }));
+  json(response, 200, { items, nextCursor: null }, request);
+}
+
 async function serveMockSet(
   request: IncomingMessage,
   response: ServerResponse,
@@ -279,6 +297,10 @@ export async function serveTrackRequest(
   }
   if (request.method === 'POST' && pathname === '/v1/tracks') {
     await serveCreate(request, response);
+    return true;
+  }
+  if (request.method === 'GET' && pathname === '/v1/sitemaps/tracks') {
+    serveSitemap(request, response);
     return true;
   }
   const retry = /^\/v1\/tracks\/([^/]+)\/processing\/retry$/.exec(pathname);
