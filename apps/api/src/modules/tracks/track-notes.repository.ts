@@ -3,7 +3,10 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
-import type { DetectedNote } from '../../integrations/note-detection/note-detection-output.js';
+import {
+  type DetectedNote,
+  pitchOfFrequency,
+} from '../../integrations/note-detection/note-detection-output.js';
 
 /** The vocal notes of Tracks (CONTEXT.md "Track"). */
 @Injectable()
@@ -27,11 +30,9 @@ export class TrackNotesRepository {
     await this.txHost.tx.insert(trackNotes).values(
       notes.map((note) => ({
         trackId,
-        note: note.note,
-        octave: note.octave,
+        pitch: pitchOfFrequency(note.frequencyMean),
         start: note.start,
         end: note.end,
-        frequencyMean: note.frequencyMean,
       })),
     );
   }

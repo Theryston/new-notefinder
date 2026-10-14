@@ -92,6 +92,13 @@
       "when": 1791891105255,
       "tag": "0012_track-favorites",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791944689946,
+      "tag": "0013_track-notes-pitch",
+      "breakpoints": true
     }
   ]
 }

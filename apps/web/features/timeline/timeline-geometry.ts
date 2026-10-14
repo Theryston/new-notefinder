@@ -1,6 +1,6 @@
 import type { TrackNote } from '@notefinder/contracts';
 
-import { midiOf } from '@/lib/music-notes';
+import { keyOf } from '@/lib/music-notes';
 
 /** Where the playhead sits in the roll, as a share of its width (DESIGN.md). */
 export const PLAYHEAD_RATIO = 0.4;
@@ -26,7 +26,7 @@ export type LaneRange = { low: number; high: number };
  * least {@link MIN_LANES} of them (a Track with no notes rests on C4 to C5).
  */
 export function laneRangeOf(notes: readonly TrackNote[]): LaneRange {
-  const midis = notes.map(midiOf);
+  const midis = notes.map(keyOf);
   if (midis.length === 0) {
     return { low: 60 - LANE_PADDING, high: 72 + LANE_PADDING };
   }

@@ -31,9 +31,9 @@ const practice = (overrides: Partial<InitialPractice['header']> = {}) =>
     },
     notes: {
       notes: [
-        { note: 'E', octave: 4, start: 0, end: 1 },
-        { note: 'C#', octave: 3, start: 1, end: 2 },
-        { note: 'E', octave: 4, start: 2, end: 3 },
+        { pitch: 64, start: 0, end: 1 },
+        { pitch: 49, start: 1, end: 2 },
+        { pitch: 64, start: 2, end: 3 },
       ],
     },
   }) satisfies InitialPractice;

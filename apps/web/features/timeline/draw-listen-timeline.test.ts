@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -63,11 +63,15 @@ function recordingContext() {
 }
 
 const sung = (
-  name: TrackNote['note'],
+  name: (typeof PITCH_CLASS_NAMES)[number],
   octave: number,
   start: number,
   end: number,
-): TrackNote => ({ note: name, octave, start, end });
+): TrackNote => ({
+  pitch: (octave + 1) * 12 + PITCH_CLASS_NAMES.indexOf(name),
+  start,
+  end,
+});
 
 const notes = [sung('C', 4, 0, 1), sung('D', 4, 2, 4), sung('E', 4, 5, 6)];
 

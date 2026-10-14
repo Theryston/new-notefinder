@@ -1,13 +1,13 @@
 import type { TrackNote } from '@notefinder/contracts';
 
-import { midiOf, noteName } from '@/lib/music-notes';
+import { keyOf, noteName } from '@/lib/music-notes';
 
 /** The notes a Track sings, once each, from the lowest to the highest. */
 export function distinctNoteNames(
   notes: readonly TrackNote[],
   limit = Number.POSITIVE_INFINITY,
 ): string[] {
-  const midis = [...new Set(notes.map(midiOf))].sort((a, b) => a - b);
+  const midis = [...new Set(notes.map(keyOf))].sort((a, b) => a - b);
   return midis.slice(0, limit).map(noteName);
 }
 

@@ -23,7 +23,7 @@ const header = {
   hasNotes: true,
 };
 
-const notes = { notes: [{ note: 'C', octave: 4, start: 0, end: 1 }] };
+const notes = { notes: [{ pitch: 60, start: 0, end: 1 }] };
 
 describe('getInitialPractice', () => {
   beforeEach(() => {

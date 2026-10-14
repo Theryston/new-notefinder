@@ -1,6 +1,6 @@
 import type { TrackNote } from '@notefinder/contracts';
 
-import { isSharpKey, midiOf, noteName } from '@/lib/music-notes';
+import { isSharpKey, keyOf, noteName } from '@/lib/music-notes';
 
 import {
   fitsLabel,
@@ -111,7 +111,7 @@ function drawNoteLabel(
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(
-    noteName(midiOf(note)),
+    noteName(keyOf(note)),
     box.x + 5,
     box.y + box.height / 2,
     box.width - 8,
@@ -128,7 +128,7 @@ function drawNotes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
     if (right < KEYBOARD_WIDTH || x > width) continue;
     const box = {
       x,
-      y: laneTop(midiOf(note), range, height) + 1,
+      y: laneTop(keyOf(note), range, height) + 1,
       width: Math.max(right - x, 2),
       height: Math.max(lane - 2, 1),
     };

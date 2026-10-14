@@ -1,11 +1,13 @@
-import type { TrackNote } from '@notefinder/contracts';
+import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { distinctNoteNames, noteRangeOf } from './note-summary';
 
-const note = (name: TrackNote['note'], octave: number): TrackNote => ({
-  note: name,
-  octave,
+const note = (
+  name: (typeof PITCH_CLASS_NAMES)[number],
+  octave: number,
+): TrackNote => ({
+  pitch: (octave + 1) * 12 + PITCH_CLASS_NAMES.indexOf(name),
   start: 0,
   end: 1,
 });

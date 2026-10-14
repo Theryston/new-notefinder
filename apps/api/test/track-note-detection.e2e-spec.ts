@@ -56,19 +56,26 @@ const runJobsUntil = async (
 const storedNotesOf = (testApp: TestApp, trackId: string) =>
   testApp.db
     .select({
-      note: trackNotes.note,
-      octave: trackNotes.octave,
+      pitch: trackNotes.pitch,
       start: trackNotes.start,
       end: trackNotes.end,
-      frequencyMean: trackNotes.frequencyMean,
     })
     .from(trackNotes)
     .where(eq(trackNotes.trackId, trackId))
     .orderBy(asc(trackNotes.start));
 
-/** The notes a Track should hold once its Processing completes with FAKE_NOTES. */
-const expectedNotes = (notes: readonly FakeNote[]): FakeNote[] =>
-  [...notes].sort((a, b) => a.start - b.start);
+/**
+ * The notes a Track should hold once its Processing completes with these
+ * worker notes: the pitch is the MIDI number of the worker's mean frequency.
+ */
+const expectedNotes = (notes: readonly FakeNote[]) =>
+  [...notes]
+    .sort((a, b) => a.start - b.start)
+    .map((note) => ({
+      pitch: expect.closeTo(69 + 12 * Math.log2(note.frequencyMean / 440), 6),
+      start: note.start,
+      end: note.end,
+    }));
 
 describe('Track Processing note detection (e2e)', () => {
   let app: TrackProcessingApp;
@@ -313,11 +320,9 @@ describe('Track Processing note detection (e2e)', () => {
     const trackId = await requestTrack(app);
     await testApp.db.insert(trackNotes).values({
       trackId,
-      note: 'G',
-      octave: 3,
+      pitch: 55,
       start: 0.1,
       end: 0.2,
-      frequencyMean: 196,
     });
 
     await runTrackJobs(testApp);

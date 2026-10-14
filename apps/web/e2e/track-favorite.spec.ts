@@ -18,7 +18,7 @@ const completedTrack = (id: string): FakeTrack => ({
   artistCredit: [{ name: 'Queen', joinPhrase: '' }],
   durationMs: 248_000,
   processing: { status: 'COMPLETED' },
-  notes: [{ note: 'E', octave: 4, start: 2, end: 3 }],
+  notes: [{ pitch: 64, start: 2, end: 3 }],
   contributors: [],
 });
 

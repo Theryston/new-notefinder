@@ -153,30 +153,14 @@ export const trackDetailSchema = trackHeaderSchema.extend({
 
 export type TrackDetail = z.infer<typeof trackDetailSchema>;
 
-/** The twelve pitch class names, sharps as `#`. */
-export const PITCH_CLASS_NAMES = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-] as const;
-
 /**
- * One vocal note: its pitch class, its octave in MIDI numbering (`A4` is 4) and
- * when it is sung, in seconds from the start of the Track. The octave is a bare
- * integer, as the note detection reports it, so a stored note never fails a read.
+ * One vocal note (CONTEXT.md): a single continuous pitch held from `start` to
+ * `end`, in seconds from the start of the Track. `pitch` is a MIDI number (A4 is
+ * 69) and may fall between two keys (a Zod number is always finite); the note's name is the nearest key, which
+ * `pitchName` computes for every client.
  */
 export const trackNoteSchema = z.object({
-  note: z.enum(PITCH_CLASS_NAMES),
-  octave: z.number().int(),
+  pitch: z.number(),
   start: z.number().nonnegative(),
   end: z.number().nonnegative(),
 });

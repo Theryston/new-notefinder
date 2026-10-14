@@ -1,16 +1,9 @@
-import type { PITCH_CLASS_NAMES } from '@notefinder/contracts';
-import {
-  doublePrecision,
-  index,
-  integer,
-  pgTable,
-  text,
-} from 'drizzle-orm/pg-core';
+import { doublePrecision, index, pgTable, text } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
 
 /**
- * One vocal note of a Track (CONTEXT.md "Track"), as the note detection of a
+ * One Vocal note of a Track (CONTEXT.md), as the note detection of a
  * completed Processing found it. The Processing that completes a Track replaces
  * all of its notes at once; they are never edited one by one.
  */
@@ -21,15 +14,11 @@ export const trackNotes = pgTable(
     trackId: text()
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
-    /** The pitch class name, `C` to `B`, sharps as `#` (`A#`). */
-    note: text().$type<(typeof PITCH_CLASS_NAMES)[number]>().notNull(),
-    /** The octave of the note in MIDI numbering (`A4` is 4). */
-    octave: integer().notNull(),
+    /** A MIDI number (A4 is 69), possibly between two keys. */
+    pitch: doublePrecision().notNull(),
     /** Seconds from the start of the Track. */
     start: doublePrecision().notNull(),
     end: doublePrecision().notNull(),
-    /** The mean frequency of the note, in Hz. */
-    frequencyMean: doublePrecision().notNull(),
     ...timestamps,
   },
   // The notes of a Track in the order they are sung: the timeline reads them so.
