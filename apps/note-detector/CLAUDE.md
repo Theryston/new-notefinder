@@ -15,10 +15,9 @@ Python, not Node. The monorepo runs it through Turbo with a thin `package.json`
 that calls `uv`.
 
 **State today:** the job contract, the handler, the Pitch curve encoding, the
-transfer helpers and the image exist. Vocal separation is wired. The other
-model steps (Vocal notes, Pitch curve) are not yet: `__main__.py` raises for
-each until its adapter lands, so a half-built image can never complete a
-Processing.
+transfer helpers and the image exist. Vocal separation and Vocal notes (GAME medium)
+are wired. The Pitch curve step is not yet: `__main__.py` raises until its
+adapter lands, so a half-built image can never complete a Processing.
 
 ## The job contract
 
@@ -142,6 +141,81 @@ adapter: anything it decides goes in a pure module with tests.
   `uv sync --group model --group parity-separation` then
   `uv run pytest -m parity tests/parity`. The fixture is synthetic unless
   `NOTE_DETECTOR_PARITY_FIXTURE` names a stereo 44.1 kHz WAV.
+
+## Vocal notes: GAME medium (ONNX)
+
+The Vocal notes come from GAME medium (openvpi/GAME, MIT), run from its
+official ONNX release (v1.0.3, medium) on `onnxruntime-gpu`, through our own
+loop that reproduces GAME's `infer.py extract`. No GAME training code, torch
+or Lightning is involved.
+
+- `game_slicer.py`: a port of GAME's `slicer2.py` with `extract`'s parameters
+  (-40 dB, 1 s minimum clip, 200 ms minimum silence, 100 ms kept). The vocals
+  are cut at silences. Digital zeros give no clip; noise below -40 dB counts
+  as silence but each cut keeps the quietest frame, so it can leave a clip of
+  up to 100 ms, as in GAME. The sample rate is the model's, not a constant.
+  GAME's branch for a silence no longer than the kept silence is left out:
+  those parameters never reach it.
+- `game_decode.py`: the D3PM loop control (`d3pm_times`, `sample_boundaries`)
+  and the decoding of boundaries into regions and of regions into notes
+  (clip offset, clamping to the clip length, unvoiced regions dropped, overlap
+  trimming between clips, as GAME's callbacks do).
+- `game_pipeline.py`: per clip, encoder, then the segmenter's D3PM sampling,
+  then the estimator, behind the `GameModules` protocol, so it is tested with
+  fakes. Pure, covered at 100%.
+- `game_io.py`: what the adapter feeds the graphs (inputs and dtypes, the
+  graph's accepted inputs, the region count, the sample-rate guard, the
+  weights directory from an injected environment). Pure.
+- `game.py`: the onnxruntime adapter (omitted from coverage), only the calls
+  into onnxruntime and soundfile. The three sessions (`encoder`, `segmenter`,
+  `estimator`; `dur2bd`/`bd2dur` are not needed, their work is in
+  `game_decode.py`) are created once per worker, in `main()`, before the first
+  job. Clips run one at a time (batch 1). The sample rate and timestep come
+  from the release's `config.json`, and the boundary radius is
+  `round(0.02 / timestep)` frames, as `infer.py` computes it.
+- `weights.py` + `game-weights.json`: the image build downloads the release
+  files and checks each sha256 (see Weights).
+
+GAME's defaults, all in `game_decode.py`: 8 D3PM steps from t0 = 0
+(`t = 0, 1/8 .. 7/8`), boundary threshold 0.2, boundary radius 0.02 s (2
+frames at the release's 10 ms), presence threshold 0.2, language 0 (unset: the model has no
+Portuguese and "unset" measured as good as "en"). The vocals the separation
+step writes are 44.1 kHz, the model's rate; any other rate fails the job.
+
+The notes' `pitch` is GAME's continuous MIDI score of the region.
+
+### Weights
+
+`game-weights.json` pins the release zip (`GAME-1.0.3-medium-onnx.zip`, about
+180 MB, ONNX opset 17) by url and sha256. The Dockerfile runs `weights.py`
+over it (the build fails when the checksum differs), unpacks it with the
+standard library and keeps the four files the worker uses in
+`/app/weights/game-medium` (override with `NOTE_DETECTOR_GAME_DIR`):
+`config.json`, `encoder.onnx`, `segmenter.onnx`, `estimator.onnx`. The zip also
+holds `dur2bd.onnx` and `bd2dur.onnx`, which are not needed. A cold start
+never touches the network.
+
+The release's `config.json` is `samplerate` 44100, `timestep` 0.01,
+`languages` `{en: 1, ja: 2, yue: 3, zh: 4}` (so the segmenter has a `language`
+input; we always pass 0), `loop` true, `embedding_dim` 256. Graph inputs and
+outputs, as the adapter uses them: encoder `waveform [B, L]`, `duration [B]`
+-> `x_seg`, `x_est`, `maskT`; segmenter `x_seg`, `language`,
+`known_boundaries`, `prev_boundaries`, `t`, `maskT`, `threshold`, `radius`
+-> `boundaries`; estimator `x_est`, `boundaries`, `maskT`, `maskN`,
+`threshold` -> `presence`, `scores`.
+
+### Parity test
+
+`tests/test_game_parity.py` (marker `parity`) runs only when the weights are
+present. It runs GAME's official `infer.py extract --batch-size 1` (PyTorch
+checkpoint, from a checkout of openvpi/GAME at tag v1.0.3 and its own
+environment) and our ONNX loop on the same input, a synthesized sung-like
+melody (or `GAME_FIXTURE`), then compares: note count within 10%, 90% of the
+official notes matched one-to-one by onset and offset within 50 ms, and
+pitches within half a semitone. D3PM sampling is stochastic on both sides
+(GAME's boundary removal is unseeded), hence the tolerance. The environment variables it reads are listed in the module
+docstring. Its second test checks our slicer cuts exactly like GAME's
+`slicer2.py` (needs only `GAME_REPO`).
 
 ## Commands (from `apps/note-detector`, or `nub run <task> --filter=note-detector`)
 

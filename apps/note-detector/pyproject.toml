@@ -79,6 +79,7 @@ source = ["note_detector"]
 # the GPU image; the tests cover the pure logic and the contract around it.
 omit = [
   "note_detector/__main__.py",
+  "note_detector/game.py",
   "note_detector/vendor/*",
   "note_detector/separation.py",
 ]
