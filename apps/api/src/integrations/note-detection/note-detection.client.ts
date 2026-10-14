@@ -5,28 +5,33 @@ import {
   runpodJobStateOf,
 } from './runpod-job.js';
 
-// RunPod's serverless API for the endpoint that runs apps/nfp-audio (ADR 0004):
-// a job is started with `/run` and read with `/status`. The only code that
-// calls it. Features depend on this class, so tests replace it at this boundary.
+// RunPod's serverless API for the endpoint that runs apps/note-detector
+// (ADR 0004, ADR 0007): a job is started with `/run` and read with `/status`.
+// The only code that calls it. Features depend on this class, so tests replace
+// it at this boundary.
 const RUNPOD_API_URL = 'https://api.runpod.ai/v2';
 
 // Without a deadline, a RunPod API that stops answering would hold a step open.
 const REQUEST_TIMEOUT_MS = 15_000;
 
+/** Where the worker puts a file: a presigned PUT and the URL it will have. */
+export type NoteDetectionUpload = {
+  presignedPutUrl: string;
+  contentType: string;
+  publicUrl: string;
+};
+
 /**
- * The input of a note detection job, as `apps/nfp-audio` reads it (its
- * CLAUDE.md, "The job contract"). The worker gets URLs only: the presigned
- * upload and the public URL it will have, never storage credentials.
+ * The input of a note detection job, as `apps/note-detector` reads it (its
+ * CLAUDE.md and `note_detector/contract.py`). The worker gets URLs only: each
+ * presigned upload and the public URL it will have, never storage credentials.
  */
 export type NoteDetectionInput = {
   processingId: string;
   /** The public URL of the Processing's music WAV. */
   musicUrl: string;
-  vocalsUpload: {
-    presignedPutUrl: string;
-    contentType: string;
-    publicUrl: string;
-  };
+  vocalsUpload: NoteDetectionUpload;
+  pitchCurveUpload: NoteDetectionUpload;
 };
 
 export class NoteDetectionClient {

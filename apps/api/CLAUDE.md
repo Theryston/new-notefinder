@@ -304,7 +304,10 @@ isn't obvious), so the import script can be written from those notes.
 - A Track's Processing is a BullMQ job in this process: it downloads the
   audio through the RapidAPI service, converts it to WAV with `ffmpeg` (the
   API needs `ffmpeg` installed; `FFMPEG_PATH` names the binary) and stores it,
-  then starts `apps/nfp-audio` on RunPod and polls its status with delayed
+  then starts `apps/note-detector` on RunPod (its job contract is in its
+  CLAUDE.md and `note_detector/contract.py`: the input carries a vocals and a
+  Pitch curve upload, the output the notes `{ pitch, start, end }`, both
+  URLs and the detector version) and polls its status with delayed
   jobs (no inbound callback). A step that waits (a RapidAPI conversion) answers
   a wait outcome and is checked again by a delayed run of the same step, with a
   round number in its job payload; the budget of checks is in

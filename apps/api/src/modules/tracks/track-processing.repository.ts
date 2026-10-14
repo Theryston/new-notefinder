@@ -8,6 +8,7 @@ import {
   type TrackProcessingVideoSource,
 } from '@notefinder/contracts';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { albumTracks } from '../../database/schema/albums.js';
 import { trackArtists } from '../../database/schema/artists.js';
@@ -16,7 +17,11 @@ import {
   type TrackContributionKind,
   TrackContributorRepository,
 } from './track-contributor.repository.js';
-import type { Mp3Kind, StoredAudioUrls } from './track-processing-outputs.js';
+import type {
+  Mp3Kind,
+  ProcessingDetection,
+  StoredAudioUrls,
+} from './track-processing-outputs.js';
 import type { TrackProcessingRow } from './track-processing-view.js';
 import { TrackRequestLimitRepository } from './track-request-limit.repository.js';
 
@@ -163,17 +168,12 @@ export class TrackProcessingRepository {
     step: TrackProcessingStep,
     dueStatuses: readonly TrackProcessingStatus[],
   ): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({
-        status: step,
-        startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
-        // A running step resumes nothing: a retry's start step is spent.
-        resumeFrom: null,
-      })
-      .where(processingInStatus(processingId, dueStatuses))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, dueStatuses, {
+      status: step,
+      startedAt: sql`coalesce(${trackProcessings.startedAt}, now())`,
+      // A running step resumes nothing: a retry's start step is spent.
+      resumeFrom: null,
+    });
   }
 
   /** The video a step chose, and where it was found, while the step runs. */
@@ -182,12 +182,10 @@ export class TrackProcessingRepository {
     step: TrackProcessingStep,
     video: { videoId: string; source: TrackProcessingVideoSource },
   ): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({ videoId: video.videoId, videoSource: video.source })
-      .where(processingInStatus(processingId, [step]))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, [step], {
+      videoId: video.videoId,
+      videoSource: video.source,
+    });
   }
 
   /** The URL of the music WAV the download stored; null while it has none. */
@@ -205,12 +203,9 @@ export class TrackProcessingRepository {
    * the Processing is no longer in that step, which keeps its row as it is.
    */
   async saveMusicWavUrl(processingId: string, url: string): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({ musicWavUrl: url })
-      .where(processingInStatus(processingId, ['DOWNLOADING_AUDIO']))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, ['DOWNLOADING_AUDIO'], {
+      musicWavUrl: url,
+    });
   }
 
   /** The RunPod job of the note detection, once a run has started it; null before. */
@@ -229,23 +224,29 @@ export class TrackProcessingRepository {
    * Processing is no longer in the vocals stage.
    */
   async saveRunpodJobId(processingId: string, jobId: string): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({ runpodJobId: jobId })
-      .where(processingInStatus(processingId, ['EXTRACTING_VOCALS']))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, ['EXTRACTING_VOCALS'], {
+      runpodJobId: jobId,
+    });
   }
 
-  /**
-   * The vocals WAV the notes stage read from the job's output. False when the
-   * Processing is no longer in the notes stage.
-   */
-  async saveVocalsWavUrl(processingId: string, url: string): Promise<boolean> {
+  /** What the notes stage read from the job's output. False if it moved on. */
+  async saveDetection(
+    processingId: string,
+    detection: ProcessingDetection,
+  ): Promise<boolean> {
+    return this.setInStatus(processingId, ['DETECTING_NOTES'], detection);
+  }
+
+  /** Sets columns while the Processing is in one of `statuses`; false if it moved on. */
+  private async setInStatus(
+    processingId: string,
+    statuses: readonly TrackProcessingStatus[],
+    values: PgUpdateSetSource<typeof trackProcessings>,
+  ): Promise<boolean> {
     const rows = await this.txHost.tx
       .update(trackProcessings)
-      .set({ vocalsWavUrl: url })
-      .where(processingInStatus(processingId, ['DETECTING_NOTES']))
+      .set(values)
+      .where(processingInStatus(processingId, statuses))
       .returning({ id: trackProcessings.id });
     return rows.length > 0;
   }
@@ -255,17 +256,12 @@ export class TrackProcessingRepository {
     processingId: string,
     lastStep: TrackProcessingStep,
   ): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({
-        status: 'COMPLETED',
-        failureCode: null,
-        resumeFrom: null,
-        finishedAt: new Date(),
-      })
-      .where(processingInStatus(processingId, [lastStep]))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, [lastStep], {
+      status: 'COMPLETED',
+      failureCode: null,
+      resumeFrom: null,
+      finishedAt: new Date(),
+    });
   }
 
   /**
@@ -281,17 +277,12 @@ export class TrackProcessingRepository {
       resumeFrom: TrackProcessingStep;
     },
   ): Promise<boolean> {
-    const rows = await this.txHost.tx
-      .update(trackProcessings)
-      .set({
-        status: 'FAILED',
-        failureCode: failure.code,
-        resumeFrom: failure.resumeFrom,
-        finishedAt: new Date(),
-      })
-      .where(processingInStatus(processingId, dueStatuses))
-      .returning({ id: trackProcessings.id });
-    return rows.length > 0;
+    return this.setInStatus(processingId, dueStatuses, {
+      status: 'FAILED',
+      failureCode: failure.code,
+      resumeFrom: failure.resumeFrom,
+      finishedAt: new Date(),
+    });
   }
 
   /** The audio URLs of a Processing; the Processing must exist. */

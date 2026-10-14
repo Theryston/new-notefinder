@@ -27,8 +27,15 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --group model && uv cache clean
 
-# The model weights are downloaded here, one step per model, each pinned by
-# sha256 in its own manifest (see CLAUDE.md).
+# The model weights are downloaded here, pinned by sha256 (see CLAUDE.md).
+
+# Mel-Band RoFormer "Kim" vocals weights and their published config, pinned by
+# sha256 in separation-weights.json (the build fails on a mismatch).
+COPY separation-weights.json /tmp/separation/separation-weights.json
+COPY note_detector/weights.py /tmp/separation/weights.py
+RUN python /tmp/separation/weights.py \
+      /tmp/separation/separation-weights.json /app/weights/mel-band-roformer \
+    && rm -rf /tmp/separation
 
 # RMVPE (Pitch curve): the RVC project's checkpoint (MIT), pinned to a commit
 # of its Hugging Face repo in rmvpe-weights.json with its sha256; weights.py
