@@ -56,19 +56,22 @@ const runJobsUntil = async (
 const storedNotesOf = (testApp: TestApp, trackId: string) =>
   testApp.db
     .select({
-      note: trackNotes.note,
-      octave: trackNotes.octave,
+      pitch: trackNotes.pitch,
       start: trackNotes.start,
       end: trackNotes.end,
-      frequencyMean: trackNotes.frequencyMean,
     })
     .from(trackNotes)
     .where(eq(trackNotes.trackId, trackId))
     .orderBy(asc(trackNotes.start));
 
-/** The notes a Track should hold once its Processing completes with FAKE_NOTES. */
-const expectedNotes = (notes: readonly FakeNote[]): FakeNote[] =>
-  [...notes].sort((a, b) => a.start - b.start);
+/**
+ * The notes a Track holds once its Processing completes with FAKE_NOTES: the
+ * pitches are the MIDI numbers of 466.16 Hz (A#4) and 523.25 Hz (C5).
+ */
+const EXPECTED_NOTES = [
+  { pitch: expect.closeTo(70, 2), start: 1.23, end: 1.61 },
+  { pitch: expect.closeTo(72, 2), start: 2.0, end: 2.4 },
+];
 
 describe('Track Processing note detection (e2e)', () => {
   let app: TrackProcessingApp;
@@ -112,9 +115,7 @@ describe('Track Processing note detection (e2e)', () => {
       runpodJobId: 'runpod-job-1',
       vocalsWavUrl: publicUrl,
     });
-    expect(await storedNotesOf(testApp, trackId)).toEqual(
-      expectedNotes(FAKE_NOTES),
-    );
+    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
   });
 
   it('lets the worker upload the vocals through the presigned URL, served at the public URL', async () => {
@@ -313,18 +314,14 @@ describe('Track Processing note detection (e2e)', () => {
     const trackId = await requestTrack(app);
     await testApp.db.insert(trackNotes).values({
       trackId,
-      note: 'G',
-      octave: 3,
+      pitch: 55,
       start: 0.1,
       end: 0.2,
-      frequencyMean: 196,
     });
 
     await runTrackJobs(testApp);
 
-    expect(await storedNotesOf(testApp, trackId)).toEqual(
-      expectedNotes(FAKE_NOTES),
-    );
+    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
   });
 
   it('completes a Track whose worker detected no notes, with none stored', async () => {

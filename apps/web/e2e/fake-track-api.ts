@@ -32,7 +32,7 @@ export type FakeTrack = {
   durationMs?: number | null;
   youtubeVideoId?: string | null;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
-  notes?: { note: string; octave: number; start: number; end: number }[];
+  notes?: { pitch: number; start: number; end: number }[];
   /** `null` for a Track that never had a Processing. */
   processing: FakeTrackProcessing | null;
   contributors?: {

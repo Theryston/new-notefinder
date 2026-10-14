@@ -3,7 +3,9 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
-import type { DetectedNote } from '../../integrations/note-detection/note-detection-output.js';
+
+/** A Vocal note to store: a MIDI pitch held from `start` to `end` (seconds). */
+export type NoteToStore = { pitch: number; start: number; end: number };
 
 /** The vocal notes of Tracks (CONTEXT.md "Track"). */
 @Injectable()
@@ -16,7 +18,7 @@ export class TrackNotesRepository {
    */
   async replaceNotes(
     trackId: string,
-    notes: readonly DetectedNote[],
+    notes: readonly NoteToStore[],
   ): Promise<void> {
     await this.txHost.tx
       .delete(trackNotes)
@@ -27,11 +29,9 @@ export class TrackNotesRepository {
     await this.txHost.tx.insert(trackNotes).values(
       notes.map((note) => ({
         trackId,
-        note: note.note,
-        octave: note.octave,
+        pitch: note.pitch,
         start: note.start,
         end: note.end,
-        frequencyMean: note.frequencyMean,
       })),
     );
   }

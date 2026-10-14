@@ -1,14 +1,13 @@
-import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
+import { nearestKey, pitchName, type TrackNote } from '@notefinder/contracts';
 
-/** The MIDI number of a note (`A4` is 69, `C-1` is 0). */
-export function midiOf(note: Pick<TrackNote, 'note' | 'octave'>): number {
-  return (note.octave + 1) * 12 + PITCH_CLASS_NAMES.indexOf(note.note);
+/** The key of a note: the MIDI number nearest to its pitch (`A4` is 69). */
+export function keyOf(note: Pick<TrackNote, 'pitch'>): number {
+  return nearestKey(note.pitch);
 }
 
-/** The name of a MIDI number, as the notes write it (`C#4`). */
-export function noteName(midi: number): string {
-  const pitchClass = PITCH_CLASS_NAMES[((midi % 12) + 12) % 12];
-  return `${pitchClass}${Math.floor(midi / 12) - 1}`;
+/** The name of the key nearest to a pitch, as notes write it (`C#4`). */
+export function noteName(pitch: number): string {
+  return pitchName(pitch);
 }
 
 /** Whether the key of this MIDI number is a black one (a sharp). */

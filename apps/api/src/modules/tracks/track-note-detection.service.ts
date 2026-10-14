@@ -8,6 +8,7 @@ import {
   type NoteDetectionOutput,
   noteDetectionOutputOf,
 } from '../../integrations/note-detection/note-detection-output.js';
+import { pitchOfFrequency } from '../../integrations/note-detection/pitch-of-frequency.js';
 import type { RunpodJobState } from '../../integrations/note-detection/runpod-job.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import {
@@ -160,7 +161,14 @@ export class TrackNoteDetectionService {
     if (!saved) {
       return STOPPED;
     }
-    await this.notes.replaceNotes(processing.trackId, output.notes);
+    await this.notes.replaceNotes(
+      processing.trackId,
+      output.notes.map((note) => ({
+        pitch: pitchOfFrequency(note.frequencyMean),
+        start: note.start,
+        end: note.end,
+      })),
+    );
     return DONE;
   }
 

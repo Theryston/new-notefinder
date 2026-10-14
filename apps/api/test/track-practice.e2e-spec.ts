@@ -64,11 +64,9 @@ describe('Track practice reads (e2e)', () => {
       );
       await testApp.db.insert(trackNotes).values({
         trackId: track.id,
-        note: 'D',
-        octave: 4,
+        pitch: 62,
         start: 1,
         end: 2,
-        frequencyMean: 293.66,
       });
 
       const response = await get(track.id).expect(200);
@@ -138,19 +136,15 @@ describe('Track practice reads (e2e)', () => {
       await testApp.db.insert(trackNotes).values([
         {
           trackId: track.id,
-          note: 'E',
-          octave: 4,
+          pitch: 64.2,
           start: 5,
           end: 6.5,
-          frequencyMean: 329.63,
         },
         {
           trackId: track.id,
-          note: 'C#',
-          octave: 3,
+          pitch: 49,
           start: 1.25,
           end: 2,
-          frequencyMean: 138.59,
         },
       ]);
 
@@ -158,8 +152,8 @@ describe('Track practice reads (e2e)', () => {
 
       expect(trackNotesSchema.parse(response.body)).toEqual({
         notes: [
-          { note: 'C#', octave: 3, start: 1.25, end: 2 },
-          { note: 'E', octave: 4, start: 5, end: 6.5 },
+          { pitch: 49, start: 1.25, end: 2 },
+          { pitch: 64.2, start: 5, end: 6.5 },
         ],
       });
     });

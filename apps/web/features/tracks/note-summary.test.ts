@@ -1,14 +1,7 @@
-import type { TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { noteOn as note } from '@/lib/note-fixtures';
 import { distinctNoteNames, noteRangeOf } from './note-summary';
-
-const note = (name: TrackNote['note'], octave: number): TrackNote => ({
-  note: name,
-  octave,
-  start: 0,
-  end: 1,
-});
 
 const sung = [note('E', 4), note('C#', 3), note('E', 4), note('B', 3)];
 

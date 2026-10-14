@@ -13,6 +13,7 @@ export * from './music-catalog-recording.js';
 export * from './music-catalog-release-group.js';
 export * from './music-catalog-search.js';
 export * from './pagination.js';
+export * from './pitch.js';
 export * from './revalidation.js';
 export * from './search.js';
 export * from './track-processing.js';

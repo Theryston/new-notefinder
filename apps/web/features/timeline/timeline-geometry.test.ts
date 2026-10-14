@@ -1,5 +1,6 @@
-import type { TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
+
+import { noteOn as note } from '@/lib/note-fixtures';
 
 import {
   fitsLabel,
@@ -15,13 +16,6 @@ import {
   timeToX,
   xToTime,
 } from './timeline-geometry';
-
-const note = (name: TrackNote['note'], octave: number): TrackNote => ({
-  note: name,
-  octave,
-  start: 0,
-  end: 1,
-});
 
 describe('laneRangeOf', () => {
   it('fits the Track range with a lane of room on each side', () => {

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { PITCH_CLASS_NAMES } from '@notefinder/contracts';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
@@ -25,8 +24,7 @@ export type TrackPracticeRow = {
 
 /** A stored note. */
 export type StoredNote = {
-  note: (typeof PITCH_CLASS_NAMES)[number];
-  octave: number;
+  pitch: number;
   start: number;
   end: number;
 };
@@ -74,8 +72,7 @@ export class TrackPracticeRepository {
   findNotes(trackId: string): Promise<StoredNote[]> {
     return this.txHost.tx
       .select({
-        note: trackNotes.note,
-        octave: trackNotes.octave,
+        pitch: trackNotes.pitch,
         start: trackNotes.start,
         end: trackNotes.end,
       })

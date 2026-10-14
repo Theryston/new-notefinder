@@ -17,9 +17,9 @@ const track = (id: string): FakeTrack => ({
   youtubeVideoId: 'dQw4w9WgXcQ',
   processing: { status: 'COMPLETED' },
   notes: [
-    { note: 'C#', octave: 3, start: 0, end: 1.5 },
-    { note: 'E', octave: 4, start: 2, end: 3 },
-    { note: 'G', octave: 4, start: 3.5, end: 5 },
+    { pitch: 49, start: 0, end: 1.5 },
+    { pitch: 64, start: 2, end: 3 },
+    { pitch: 67, start: 3.5, end: 5 },
   ],
   contributors: [],
 });

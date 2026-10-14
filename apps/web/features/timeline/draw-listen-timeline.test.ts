@@ -1,6 +1,8 @@
 import type { TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { noteOn as sung } from '@/lib/note-fixtures';
+
 import {
   drawListenTimeline,
   KEYBOARD_WIDTH,
@@ -61,13 +63,6 @@ function recordingContext() {
   };
   return { ctx: ctx as unknown as TimelineContext, bars, labels, fills };
 }
-
-const sung = (
-  name: TrackNote['note'],
-  octave: number,
-  start: number,
-  end: number,
-): TrackNote => ({ note: name, octave, start, end });
 
 const notes = [sung('C', 4, 0, 1), sung('D', 4, 2, 4), sung('E', 4, 5, 6)];
 
