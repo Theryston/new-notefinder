@@ -1,4 +1,7 @@
-import type { NoteDetectionInput } from '../../src/integrations/note-detection/note-detection.client.js';
+import type {
+  NoteDetectionInput,
+  NoteDetectionUpload,
+} from '../../src/integrations/note-detection/note-detection.client.js';
 import {
   type RunpodJobState,
   runpodJobStateOf,
@@ -18,7 +21,8 @@ export const FAKE_DETECTOR_VERSION = 'note-detector@0123abc';
  * What a check of the fake RunPod answers, as RunPod's `/status` sends it: the
  * job's status, and the worker's progress update (its stage) while it runs. A
  * `COMPLETED` answer carries the output the worker would give for the job: the
- * vocals and Pitch curve URLs it was asked to upload to, its version, and the notes the spec sets. The fake
+ * vocals and Pitch curve URLs it was asked to upload to, its version, and
+ * the notes the spec sets. The fake
  * hands these bodies to the real state mapping, so each status is read the way
  * the client reads it.
  */
@@ -105,7 +109,7 @@ export class FakeNoteDetection {
   }
 
   private upload(
-    target: NoteDetectionInput['vocalsUpload'],
+    target: NoteDetectionUpload,
     body: Uint8Array<ArrayBuffer>,
   ): Promise<Response> {
     return fetch(target.presignedPutUrl, {

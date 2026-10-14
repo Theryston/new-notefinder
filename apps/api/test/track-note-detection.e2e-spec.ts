@@ -68,9 +68,6 @@ const storedNotesOf = (testApp: TestApp, trackId: string) =>
     .where(eq(trackNotes.trackId, trackId))
     .orderBy(asc(trackNotes.start));
 
-/** The notes a Track holds once its Processing completes with FAKE_NOTES. */
-const EXPECTED_NOTES = FAKE_NOTES;
-
 describe('Track Processing note detection (e2e)', () => {
   let app: TrackProcessingApp;
   let testApp: TestApp;
@@ -124,7 +121,7 @@ describe('Track Processing note detection (e2e)', () => {
       pitchCurveUrl,
       detectorVersion: FAKE_DETECTOR_VERSION,
     });
-    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
+    expect(await storedNotesOf(testApp, trackId)).toEqual(FAKE_NOTES);
   });
 
   it('lets the worker upload the vocals through the presigned URL, served at the public URL', async () => {
@@ -140,24 +137,6 @@ describe('Track Processing note detection (e2e)', () => {
     expect(stored.status).toBe(200);
     expect(stored.headers.get('content-type')).toBe('audio/wav');
     expect(new Uint8Array(await stored.arrayBuffer())).toEqual(wav);
-  });
-
-  it('lets the worker upload the Pitch curve through the presigned URL, served at the public URL', async () => {
-    const trackId = await requestTrack(app);
-    await runTrackJobs(testApp);
-    const curve = new Uint8Array([0, 0, 52, 27, 100, 27]);
-
-    const upload = await app.noteDetection.uploadPitchCurve(
-      'runpod-job-1',
-      curve,
-    );
-
-    expect(upload.status).toBe(200);
-    const processing = await processingRowOf(testApp, trackId);
-    const stored = await fetch(processing.pitchCurveUrl ?? '');
-    expect(stored.status).toBe(200);
-    expect(stored.headers.get('content-type')).toBe('application/octet-stream');
-    expect(new Uint8Array(await stored.arrayBuffer())).toEqual(curve);
   });
 
   it('lets the worker upload the Pitch curve through the presigned URL, served at the public URL', async () => {
@@ -333,14 +312,11 @@ describe('Track Processing note detection (e2e)', () => {
     });
   });
 
-  it('fails with INTERNAL when the output breaks the worker contract, and stores no notes', async () => {
-    // An infinite pitch is no pitch: the output breaks the worker's contract.
-    const malformed: FakeNote = {
-      pitch: Number.POSITIVE_INFINITY,
-      start: 1.23,
-      end: 1.61,
-    };
-    app.noteDetection.notes = [malformed];
+  it('fails with INTERNAL when the output breaks the worker contract, and stores nothing', async () => {
+    // A string pitch survives the JSON body and breaks the contract.
+    app.noteDetection.notes = [
+      { pitch: 'high', start: 1.23, end: 1.61 } as unknown as FakeNote,
+    ];
     const trackId = await requestTrack(app);
 
     await runTrackJobs(testApp);
@@ -349,6 +325,11 @@ describe('Track Processing note detection (e2e)', () => {
       status: 'FAILED',
       failureCode: 'INTERNAL',
       resumeFrom: 'EXTRACTING_VOCALS',
+    });
+    expect(await processingRowOf(testApp, trackId)).toMatchObject({
+      vocalsWavUrl: null,
+      pitchCurveUrl: null,
+      detectorVersion: null,
     });
     expect(await storedNotesOf(testApp, trackId)).toEqual([]);
   });
@@ -364,7 +345,7 @@ describe('Track Processing note detection (e2e)', () => {
 
     await runTrackJobs(testApp);
 
-    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
+    expect(await storedNotesOf(testApp, trackId)).toEqual(FAKE_NOTES);
   });
 
   it('completes a Track whose worker detected no notes, with none stored', async () => {

@@ -5,9 +5,10 @@ import {
   runpodJobStateOf,
 } from './runpod-job.js';
 
-// RunPod's serverless API for the endpoint that runs apps/note-detector (ADR 0004, ADR 0007):
-// a job is started with `/run` and read with `/status`. The only code that
-// calls it. Features depend on this class, so tests replace it at this boundary.
+// RunPod's serverless API for the endpoint that runs apps/note-detector
+// (ADR 0004, ADR 0007): a job is started with `/run` and read with `/status`.
+// The only code that calls it. Features depend on this class, so tests replace
+// it at this boundary.
 const RUNPOD_API_URL = 'https://api.runpod.ai/v2';
 
 // Without a deadline, a RunPod API that stops answering would hold a step open.

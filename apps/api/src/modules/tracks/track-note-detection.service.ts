@@ -165,8 +165,9 @@ export class TrackNoteDetectionService {
 
   /**
    * Stores the notes stage's output in one transaction: the vocals' and Pitch
-   * curve's URLs and the detector version on the Processing, and the Track's notes replaced by these. A Processing that
-   * moved on keeps its row, and the Track keeps its notes.
+   * curve's URLs and the detector version on the Processing, and the Track's
+   * notes replaced by these. A Processing that moved on keeps its row, and the
+   * Track keeps its notes.
    */
   @Transactional()
   private async saveOutput(

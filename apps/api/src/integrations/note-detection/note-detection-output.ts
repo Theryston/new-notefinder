@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const detectedNoteSchema = z.object({
   /** The continuous MIDI pitch (A4 is 69). */
-  pitch: z.number().finite(),
+  pitch: z.number(),
   /** Seconds from the start of the vocals. */
   start: z.number().nonnegative(),
   end: z.number().nonnegative(),

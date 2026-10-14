@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 // The answers of RunPod's serverless API, for the endpoint that runs
-// apps/note-detector (ADR 0004, ADR 0007). A job starts with `/run` and its state is read
-// from `/status`. The worker reports each stage as a progress update, which
+// apps/note-detector (ADR 0004, ADR 0007). A job starts with `/run` and its
+// state is read from `/status`. The worker reports each stage as a progress update, which
 // `/status` answers as the output of a running job; a finished job answers the
 // worker's output. Parsed here, so the client only moves JSON and the rules of
 // a job's state are testable on their own.
