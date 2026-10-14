@@ -46,6 +46,15 @@ const requireUser = (user: CurrentUserRow | undefined): CurrentUserRow => {
   return user;
 };
 
+const requireSettings = (
+  settings: PracticeSettingsRow | undefined,
+): PracticeSettingsRow => {
+  if (!settings) {
+    throw new AppException('UNAUTHORIZED', 'User no longer exists');
+  }
+  return settings;
+};
+
 /** Why something failed, looking through wrappers to their `cause`. */
 const reasonOf = (error: unknown): string => {
   const cause = error instanceof Error ? error.cause : undefined;
@@ -103,18 +112,29 @@ export class UsersService {
     return this.usersRepository.setLocale(userId, locale);
   }
 
-  /** The daily target and time zone of a User; `UNAUTHORIZED` when gone. */
+  /** The practice settings of a User; `UNAUTHORIZED` when gone. */
   async getPracticeSettings(userId: string): Promise<PracticeSettings> {
-    const settings = await this.usersRepository.findPracticeSettings(userId);
-    if (!settings) {
-      throw new AppException('UNAUTHORIZED', 'User no longer exists');
-    }
-    return settings;
+    return requireSettings(
+      await this.usersRepository.findPracticeSettings(userId),
+    );
   }
 
-  /** Keeps the time zone the User's practice day follows. */
-  setTimeZone(userId: string, timeZone: string): Promise<void> {
-    return this.usersRepository.setTimeZone(userId, timeZone);
+  /**
+   * The same, locking the User until the transaction ends: for a heartbeat,
+   * which reads the practice clock and moves it.
+   */
+  async lockPracticeSettings(userId: string): Promise<PracticeSettings> {
+    return requireSettings(
+      await this.usersRepository.lockPracticeSettings(userId),
+    );
+  }
+
+  /** Keeps the time zone of a heartbeat and moves the practice clock. */
+  recordPracticeHeartbeat(
+    userId: string,
+    heartbeat: { timeZone: string; clockAt: Date },
+  ): Promise<void> {
+    return this.usersRepository.recordPracticeHeartbeat(userId, heartbeat);
   }
 
   /**

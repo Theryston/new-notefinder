@@ -12,7 +12,11 @@ const repository = {
   saveHeartbeat: vi.fn(),
   findCompletedDays: vi.fn(),
 };
-const users = { getPracticeSettings: vi.fn(), setTimeZone: vi.fn() };
+const users = {
+  getPracticeSettings: vi.fn(),
+  lockPracticeSettings: vi.fn(),
+  recordPracticeHeartbeat: vi.fn(),
+};
 
 const NOW = new Date('2026-03-10T12:00:00Z');
 const day = (overrides = {}) => ({
@@ -32,10 +36,13 @@ describe('StreaksService', () => {
     vi.resetAllMocks();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
-    users.getPracticeSettings.mockResolvedValue({
+    const settings = {
       dailyPracticeTargetSeconds: null,
       timeZone: 'UTC',
-    });
+      lastPracticeHeartbeatAt: null,
+    };
+    users.getPracticeSettings.mockResolvedValue(settings);
+    users.lockPracticeSettings.mockResolvedValue(settings);
     repository.findCompletedDays.mockResolvedValue([]);
     const { db, pool } = fakeTransactionalDatabase();
     moduleRef = await Test.createTestingModule({
@@ -75,6 +82,7 @@ describe('StreaksService', () => {
     users.getPracticeSettings.mockResolvedValue({
       dailyPracticeTargetSeconds: 900,
       timeZone: 'Asia/Tokyo',
+      lastPracticeHeartbeatAt: null,
     });
     vi.setSystemTime(new Date('2026-03-10T16:00:00Z'));
     repository.findDay.mockResolvedValue(undefined);
@@ -91,6 +99,7 @@ describe('StreaksService', () => {
     users.getPracticeSettings.mockResolvedValue({
       dailyPracticeTargetSeconds: 60,
       timeZone: null,
+      lastPracticeHeartbeatAt: null,
     });
     repository.findDay.mockResolvedValue(day({ listenedSeconds: 500 }));
 
@@ -99,30 +108,43 @@ describe('StreaksService', () => {
     );
   });
 
-  it('keeps the time zone only when the heartbeat changes it', async () => {
+  it('keeps the time zone of the heartbeat and moves the practice clock', async () => {
     repository.lockDay.mockResolvedValue(day());
-
-    await service.heartbeat('user-1', { elapsedSeconds: 5, timeZone: 'UTC' });
-    expect(users.setTimeZone).not.toHaveBeenCalled();
 
     await service.heartbeat('user-1', {
       elapsedSeconds: 5,
       timeZone: 'Asia/Tokyo',
     });
-    expect(users.setTimeZone).toHaveBeenCalledWith('user-1', 'Asia/Tokyo');
+
+    expect(users.recordPracticeHeartbeat).toHaveBeenCalledWith('user-1', {
+      timeZone: 'Asia/Tokyo',
+      clockAt: NOW,
+    });
+  });
+
+  it('checks the heartbeat against the clock of the User, not of the day', async () => {
+    users.lockPracticeSettings.mockResolvedValue({
+      dailyPracticeTargetSeconds: null,
+      timeZone: 'UTC',
+      lastPracticeHeartbeatAt: new Date(NOW.getTime() - 4_000),
+    });
+    repository.lockDay.mockResolvedValue(day());
+
+    const result = await service.heartbeat('user-1', {
+      elapsedSeconds: 20,
+      timeZone: 'Pacific/Kiritimati',
+    });
+
+    expect(result.creditedSeconds).toBe(4);
   });
 
   it('completes the day on the heartbeat that reaches the target', async () => {
-    users.getPracticeSettings.mockResolvedValue({
+    users.lockPracticeSettings.mockResolvedValue({
       dailyPracticeTargetSeconds: 30,
       timeZone: 'UTC',
+      lastPracticeHeartbeatAt: null,
     });
-    repository.lockDay.mockResolvedValue(
-      day({
-        listenedSeconds: 20,
-        lastHeartbeatAt: new Date(NOW.getTime() - 60_000),
-      }),
-    );
+    repository.lockDay.mockResolvedValue(day({ listenedSeconds: 20 }));
 
     const result = await service.heartbeat('user-1', {
       elapsedSeconds: 15,
@@ -155,7 +177,7 @@ describe('StreaksService', () => {
   });
 
   it('writes nothing for a heartbeat with less than a second', async () => {
-    repository.lockDay.mockResolvedValue(day());
+    repository.findDay.mockResolvedValue(undefined);
 
     const result = await service.heartbeat('user-1', {
       elapsedSeconds: 0.4,
@@ -163,6 +185,8 @@ describe('StreaksService', () => {
     });
 
     expect(result.creditedSeconds).toBe(0);
+    expect(repository.lockDay).not.toHaveBeenCalled();
     expect(repository.saveHeartbeat).not.toHaveBeenCalled();
+    expect(users.recordPracticeHeartbeat).not.toHaveBeenCalled();
   });
 });

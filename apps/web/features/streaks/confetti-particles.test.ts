@@ -25,7 +25,7 @@ describe('createParticles', () => {
     expect(particles.every((p) => p.vy < 0)).toBe(true);
   });
 
-  it('falls back to the brand color without colors', () => {
+  it('falls back to the current text color without colors', () => {
     const [particle] = createParticles({
       count: 1,
       origin: { x: 0, y: 0 },
@@ -33,7 +33,7 @@ describe('createParticles', () => {
       random: () => 0.5,
     });
 
-    expect(particle?.color).toBe('#fa4900');
+    expect(particle?.color).toBe('currentColor');
   });
 });
 

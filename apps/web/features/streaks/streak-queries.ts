@@ -19,12 +19,13 @@ export function browserTimeZone(): string {
  * session, so only a signed-in User asks for it.
  */
 export function streakStatusQueryOptions() {
+  const timeZone = browserTimeZone();
   return queryOptions({
-    queryKey: streakKeys.status(),
+    queryKey: streakKeys.status(timeZone),
     queryFn: ({ signal }) =>
       browserApi('/me/streak', {
         schema: streakStatusSchema,
-        query: { timeZone: browserTimeZone() },
+        query: { timeZone },
         signal,
       }),
     // The heartbeats keep it current while the music plays.

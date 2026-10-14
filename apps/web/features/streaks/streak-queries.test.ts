@@ -47,7 +47,7 @@ describe('streakStatusQueryOptions', () => {
     const options = streakStatusQueryOptions();
     const signal = new AbortController().signal;
 
-    expect(options.queryKey).toEqual(streakKeys.status());
+    expect(options.queryKey).toEqual(streakKeys.status(browserTimeZone()));
     const queryFn = options.queryFn;
     if (typeof queryFn !== 'function') throw new Error('no query function');
     await expect(

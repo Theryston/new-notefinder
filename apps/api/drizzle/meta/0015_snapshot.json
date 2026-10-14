@@ -1,5 +1,5 @@
 {
-  "id": "426d0bd3-dbe2-4b25-a712-852f1b942ca2",
+  "id": "a2b0c014-4474-4157-8291-948ffea0a7f8",
   "prevId": "05429b78-1328-4820-bf41-b95d19631001",
   "version": "7",
   "dialect": "postgresql",
@@ -2346,6 +2346,12 @@
         "time_zone": {
           "name": "time_zone",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_practice_heartbeat_at": {
+          "name": "last_practice_heartbeat_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

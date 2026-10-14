@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-skeleton';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
@@ -33,7 +33,7 @@ const StreakRing = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <Skeleton className="size-10 shrink-0 rounded-full" />,
+    loading: StreakRingSkeleton,
   },
 );
 

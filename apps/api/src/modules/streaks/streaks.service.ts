@@ -7,7 +7,7 @@ import type {
 } from '@notefinder/contracts';
 import { UsersService } from '../users/users.service.js';
 import {
-  creditedSecondsOf,
+  creditHeartbeat,
   currentStreakDays,
   DEFAULT_TARGET_SECONDS,
   localDayOf,
@@ -54,10 +54,12 @@ export class StreaksService {
   }
 
   /**
-   * Credits the heartbeat (see `creditedSecondsOf`), keeps the time zone it
-   * names and completes the day when the target is reached. Two heartbeats of
-   * one User run one after the other (the day's row is locked), so only one of
-   * them can complete the day.
+   * Credits the heartbeat (see `creditHeartbeat`), keeps the time zone it names
+   * and completes the day when the target is reached. The User's row is locked
+   * first: their heartbeats run one after the other, against one practice clock
+   * for every day and zone, so only one of them can complete a day and
+   * switching zones starts no second clock. A heartbeat with no whole second
+   * writes nothing.
    */
   @Transactional()
   async heartbeat(
@@ -65,34 +67,37 @@ export class StreaksService {
     body: StreakHeartbeatBody,
   ): Promise<StreakHeartbeatResult> {
     const now = new Date();
-    const settings = await this.users.getPracticeSettings(userId);
-    if (settings.timeZone !== body.timeZone) {
-      await this.users.setTimeZone(userId, body.timeZone);
-    }
+    const settings = await this.users.lockPracticeSettings(userId);
     const day = localDayOf(now, body.timeZone);
-    const row = await this.streaks.lockDay(userId, day);
     const target = validTarget(settings.dailyPracticeTargetSeconds);
-
-    const creditedSeconds = creditedSecondsOf({
+    const credit = creditHeartbeat({
       elapsedSeconds: body.elapsedSeconds,
-      lastHeartbeatAt: row.lastHeartbeatAt,
+      lastHeartbeatAt: settings.lastPracticeHeartbeatAt,
       now,
     });
-    // A heartbeat with nothing to credit is not a sign of life: leaving the
-    // last heartbeat alone keeps the clock check honest.
     if (body.elapsedSeconds < 1) {
       return {
-        status: await this.statusOf(userId, row, day, target),
+        status: await this.statusOf(
+          userId,
+          await this.streaks.findDay(userId, day),
+          day,
+          target,
+        ),
         justCompleted: false,
         creditedSeconds: 0,
       };
     }
 
-    const listenedSeconds = row.listenedSeconds + creditedSeconds;
+    await this.users.recordPracticeHeartbeat(userId, {
+      timeZone: body.timeZone,
+      clockAt: credit.clockAt,
+    });
+    const row = await this.streaks.lockDay(userId, day);
+    const listenedSeconds = row.listenedSeconds + credit.creditedSeconds;
     const justCompleted = !row.completed && listenedSeconds >= target;
     await this.streaks.saveHeartbeat(row.id, {
       listenedSeconds,
-      heartbeatAt: now,
+      heartbeatAt: credit.clockAt,
       completesDay: justCompleted,
     });
     const saved: PracticeDayRow = {
@@ -103,7 +108,7 @@ export class StreaksService {
     return {
       status: await this.statusOf(userId, saved, day, target),
       justCompleted,
-      creditedSeconds,
+      creditedSeconds: credit.creditedSeconds,
     };
   }
 

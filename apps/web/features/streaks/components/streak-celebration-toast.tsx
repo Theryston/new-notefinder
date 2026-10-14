@@ -16,11 +16,11 @@ export function StreakCelebrationToast({
     <div
       role="status"
       data-testid="streak-celebration"
-      className="flex w-80 max-w-[calc(100vw-1.5rem)] items-center gap-4 rounded-2xl bg-primary px-5 py-4 text-primary-foreground shadow-xl"
+      className="flex w-full items-center gap-4 rounded-2xl bg-primary px-5 py-4 text-primary-foreground shadow-lg"
     >
       <FlameIcon aria-hidden="true" className="size-9 shrink-0 fill-current" />
       <div className="flex min-w-0 flex-col">
-        <p className="font-extrabold text-2xl leading-none tracking-tighter">
+        <p className="font-extrabold text-4xl leading-none tracking-tighter">
           {title}
         </p>
         <p className="mt-1 font-semibold text-sm">{description}</p>

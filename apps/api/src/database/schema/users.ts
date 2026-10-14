@@ -1,5 +1,12 @@
 import { LOCALES } from '@notefinder/contracts';
-import { boolean, integer, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 
 // Same values as the legacy Prisma `Role` enum, so the import copies them.
@@ -41,5 +48,10 @@ export const users = pgTable('users', {
   // rolls over at midnight there. Null until they practice; the legacy had no
   // zone, so imported users start null and read as UTC.
   timeZone: text(),
+  // Where the User's practice clock stands: the server-side time the last
+  // practice heartbeat was measured from, across every day and time zone, so
+  // switching zones cannot start a second clock. Null until they practice (and
+  // for imported users).
+  lastPracticeHeartbeatAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });

@@ -21,6 +21,12 @@ const practiceDayColumns = {
   lastHeartbeatAt: dailyPracticeStreaks.lastHeartbeatAt,
 };
 
+const ofDay = (userId: string, day: string) =>
+  and(
+    eq(dailyPracticeStreaks.userId, userId),
+    eq(dailyPracticeStreaks.day, day),
+  );
+
 @Injectable()
 export class StreaksRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
@@ -32,12 +38,7 @@ export class StreaksRepository {
     const [row] = await this.txHost.tx
       .select(practiceDayColumns)
       .from(dailyPracticeStreaks)
-      .where(
-        and(
-          eq(dailyPracticeStreaks.userId, userId),
-          eq(dailyPracticeStreaks.day, day),
-        ),
-      )
+      .where(ofDay(userId, day))
       .limit(1);
     return row;
   }
@@ -57,12 +58,7 @@ export class StreaksRepository {
     const [row] = await this.txHost.tx
       .select(practiceDayColumns)
       .from(dailyPracticeStreaks)
-      .where(
-        and(
-          eq(dailyPracticeStreaks.userId, userId),
-          eq(dailyPracticeStreaks.day, day),
-        ),
-      )
+      .where(ofDay(userId, day))
       .for('update');
     if (row === undefined) {
       throw new Error('The practice day row is missing after its insert');

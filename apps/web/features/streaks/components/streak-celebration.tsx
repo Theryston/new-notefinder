@@ -11,9 +11,12 @@ const FRAME_CAP_SECONDS = 0.05;
 function confettiColors(): string[] {
   const styles = getComputedStyle(document.documentElement);
   const read = (token: string) => styles.getPropertyValue(token).trim();
-  return [read('--primary'), read('--success'), read('--foreground'), '#fff']
-    .filter((color) => color !== '')
-    .slice(0, 4);
+  return [
+    read('--primary'),
+    read('--success'),
+    read('--foreground'),
+    read('--primary-foreground'),
+  ].filter((color) => color !== '');
 }
 
 /** Two rising notes, a soft "goal" chime. */
@@ -109,10 +112,7 @@ export function StreakCelebration({ burst }: { burst: number }) {
   }, [burst]);
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[60]"
-    >
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50">
       <canvas
         ref={canvas}
         data-testid="streak-confetti"

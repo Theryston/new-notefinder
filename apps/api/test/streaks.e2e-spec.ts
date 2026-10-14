@@ -333,27 +333,80 @@ describe('Streaks (e2e)', () => {
     });
 
     it('puts the same instant on different days in two time zones', async () => {
-      const tokyoUser = await createUser(spec.testApp.db, { username: 'ada' });
+      const saoPauloUser = await createUser(spec.testApp.db, {
+        username: 'ada',
+      });
       const tokyo = await spec.client
         .post('/v1/me/streak/heartbeat')
         .send({ elapsedSeconds: 5, timeZone: TOKYO })
         .expect(200);
       const tokyoDay = streakHeartbeatResultSchema.parse(tokyo.body).status.day;
       await spec.client.post('/v1/auth/sign-out').send({});
-      await signInAs(tokyoUser);
+      await signInAs(saoPauloUser);
       const saoPaulo = await heartbeat(5, SAO_PAULO);
 
       expect(tokyoDay).toBe('2026-03-10');
       expect(saoPaulo.status.day).toBe('2026-03-09');
     });
 
-    it('counts the day of a late-night session on the day it started in the zone', async () => {
+    it('checks the clock across days: a heartbeat right after midnight is bounded by the previous day', async () => {
+      at('2026-03-10T02:59:50Z');
+      await heartbeat(20, SAO_PAULO);
+      at('2026-03-10T03:00:00Z');
+
+      const result = await heartbeat(20, SAO_PAULO);
+
+      expect(result.status.day).toBe('2026-03-10');
+      expect(result.creditedSeconds).toBe(10);
+    });
+
+    it('keeps one clock per User, however the time zone is switched', async () => {
+      const first = await heartbeat(20, 'Pacific/Kiritimati');
+      const second = await heartbeat(20, 'Etc/GMT+12');
+      const third = await heartbeat(20, 'Pacific/Kiritimati');
+
+      expect(first.creditedSeconds).toBe(20);
+      expect(second.status.day).not.toBe(first.status.day);
+      expect(second.creditedSeconds).toBe(0);
+      expect(third.creditedSeconds).toBe(0);
+      const rows = await spec.testApp.db
+        .select({ listened: dailyPracticeStreaks.listenedSeconds })
+        .from(dailyPracticeStreaks)
+        .where(eq(dailyPracticeStreaks.userId, user.id));
+      expect(rows.reduce((sum, row) => sum + row.listened, 0)).toBe(20);
+    });
+
+    it('credits a 5 s heartbeat that arrives a few milliseconds early in full', async () => {
+      await heartbeat(20);
+      at(new Date(new Date(NIGHT).getTime() + 4_990).toISOString());
+
+      expect((await heartbeat(5)).creditedSeconds).toBe(5);
+    });
+
+    it('writes nothing for a heartbeat with no seconds to credit', async () => {
+      await heartbeat(0, TOKYO);
+
+      const [row] = await spec.testApp.db
+        .select({ timeZone: users.timeZone })
+        .from(users)
+        .where(eq(users.id, user.id));
+      expect(row?.timeZone).toBeNull();
+      expect(
+        await spec.testApp.db
+          .select()
+          .from(dailyPracticeStreaks)
+          .where(eq(dailyPracticeStreaks.userId, user.id)),
+      ).toEqual([]);
+    });
+
+    it('credits the heartbeat after local midnight to the new day', async () => {
       // 23:59:50 in Sao Paulo, then 00:00:10 the next day.
       at('2026-03-10T02:59:50Z');
       await heartbeat(20, SAO_PAULO);
       at('2026-03-10T03:00:10Z');
       const result = await heartbeat(20, SAO_PAULO);
 
+      // The 20 s since the last heartbeat all fall in the new day.
       expect(result.status).toMatchObject({
         day: '2026-03-10',
         listenedSeconds: 20,

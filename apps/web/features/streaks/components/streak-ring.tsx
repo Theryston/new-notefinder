@@ -14,7 +14,6 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { Link, usePathname } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
@@ -25,6 +24,7 @@ import { streakStatusQueryOptions } from '../streak-queries';
 import { StreakCelebration } from './streak-celebration';
 import { StreakCelebrationToast } from './streak-celebration-toast';
 import { StreakRingGraphic } from './streak-ring-graphic';
+import { StreakRingSkeleton } from './streak-ring-skeleton';
 
 const TRIGGER_CLASS = cn(
   buttonVariants({ variant: 'ghost', size: 'icon' }),
@@ -33,7 +33,7 @@ const TRIGGER_CLASS = cn(
 
 /** What a visitor sees on the ring: an invite to create an account. */
 function VisitorRing() {
-  const t = useTranslations('tracks.practice.streak');
+  const t = useTranslations('streaks');
   const pathname = usePathname();
 
   return (
@@ -53,13 +53,13 @@ function VisitorRing() {
         <div className="flex flex-wrap gap-2">
           <Link
             href={{ pathname: '/sign-up', query: { redirectTo: pathname } }}
-            className={buttonVariants({ size: 'sm' })}
+            className={buttonVariants()}
           >
             {t('inviteCreate')}
           </Link>
           <Link
             href={{ pathname: '/sign-in', query: { redirectTo: pathname } }}
-            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+            className={buttonVariants({ variant: 'ghost' })}
           >
             {t('inviteSignIn')}
           </Link>
@@ -70,7 +70,7 @@ function VisitorRing() {
 }
 
 function StreakDetails({ status }: { status: StreakStatus }) {
-  const t = useTranslations('tracks.practice.streak');
+  const t = useTranslations('streaks');
   const left = remainingParts(status.listenedSeconds, status.targetSeconds);
 
   return (
@@ -85,16 +85,15 @@ function StreakDetails({ status }: { status: StreakStatus }) {
       </PopoverDescription>
       <p className="text-muted-foreground text-xs">
         {t('goal', { minutes: Math.round(status.targetSeconds / 60) })}
-        {' · '}
-        {t('countsWhilePlaying')}
       </p>
+      <p className="text-muted-foreground text-xs">{t('countsWhilePlaying')}</p>
     </>
   );
 }
 
 /** The signed-in User's ring: today's practice, counted while `playing`. */
 function UserRing({ playing }: { playing: boolean }) {
-  const t = useTranslations('tracks.practice.streak');
+  const t = useTranslations('streaks');
   const status = useQuery(streakStatusQueryOptions());
   const [burst, setBurst] = useState(0);
   const celebrate = useCallback(
@@ -109,10 +108,10 @@ function UserRing({ playing }: { playing: boolean }) {
             })}
           />
         ),
-        // The block is the toast: Sonner's glass card around it would dull it.
+        // The block is the toast. The Toaster gives every toast the glass
+        // card (`unstyled` does not remove it), so it is undone here, per toast.
         {
           duration: 6_000,
-          unstyled: true,
           className:
             'border-0! bg-transparent! p-0! shadow-none! backdrop-blur-none!',
         },
@@ -123,7 +122,7 @@ function UserRing({ playing }: { playing: boolean }) {
   useStreakHeartbeat(playing, celebrate);
 
   if (status.data === undefined) {
-    return <Skeleton className="size-10 shrink-0 rounded-full" />;
+    return <StreakRingSkeleton />;
   }
   const progress = ringProgress(
     status.data.listenedSeconds,
@@ -163,8 +162,7 @@ export function StreakRing({ playing }: { playing: boolean }) {
     <SessionUserBoundary
       render={(user, loading) => {
         if (user) return <UserRing playing={playing} />;
-        if (loading)
-          return <Skeleton className="size-10 shrink-0 rounded-full" />;
+        if (loading) return <StreakRingSkeleton />;
         return <VisitorRing />;
       }}
     />

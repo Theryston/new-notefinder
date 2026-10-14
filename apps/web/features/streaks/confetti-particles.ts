@@ -40,7 +40,7 @@ export function createParticles(options: {
       size: 6 + random() * 6,
       rotation: random() * Math.PI * 2,
       spin: (random() - 0.5) * 12,
-      color: colors[index % colors.length] ?? '#fa4900',
+      color: colors[index % colors.length] ?? 'currentColor',
       life: LIFE_SECONDS * (0.7 + random() * 0.3),
     };
   });

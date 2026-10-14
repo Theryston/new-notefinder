@@ -42,26 +42,46 @@ export function currentStreakDays(
   return days;
 }
 
+/** What a heartbeat earns, and where the User's server-side clock stands after it. */
+export type HeartbeatCredit = {
+  creditedSeconds: number;
+  /** The moment the next heartbeat is measured from. */
+  clockAt: Date;
+};
+
 /**
  * How many of the `elapsedSeconds` a heartbeat reports are credited: at most
- * the cap per call, and, once there is an earlier heartbeat, at most what the
- * API's own clock saw pass since it (checked against the server clock, as in
- * the legacy app, so a client cannot claim time it did not spend).
+ * the cap per call and, once the User has an earlier heartbeat, at most the
+ * time the API's own clock saw pass since it, rounded to the nearest second
+ * (a 5 s timer arrives a few milliseconds early as often as late; flooring
+ * would drop a second every other beat). The clock is the User's, across all
+ * days and time zones, checked against the server clock as in the legacy app.
+ *
+ * Rounding alone would let a client that calls every half second earn a
+ * second per call. So when the server's clock is what limited the credit, the
+ * clock only advances by the seconds credited (it may sit up to half a second
+ * ahead of `now`): bursts then share the real time instead of each rounding up.
  */
-export function creditedSecondsOf(options: {
+export function creditHeartbeat(options: {
   elapsedSeconds: number;
   lastHeartbeatAt: Date | null;
   now: Date;
-}): number {
+}): HeartbeatCredit {
   const { elapsedSeconds, lastHeartbeatAt, now } = options;
   const requested = Math.min(
     Math.max(0, Math.floor(elapsedSeconds)),
     STREAK_MAX_HEARTBEAT_SECONDS,
   );
   if (lastHeartbeatAt === null) {
-    return requested;
+    return { creditedSeconds: requested, clockAt: now };
   }
-  const passed = (now.getTime() - lastHeartbeatAt.getTime()) / 1000;
-  const allowed = Math.max(0, Math.floor(passed));
-  return Math.min(requested, allowed);
+  const passedMs = now.getTime() - lastHeartbeatAt.getTime();
+  const allowed = Math.max(0, Math.round(passedMs / 1000));
+  if (requested < allowed) {
+    return { creditedSeconds: requested, clockAt: now };
+  }
+  return {
+    creditedSeconds: allowed,
+    clockAt: new Date(lastHeartbeatAt.getTime() + allowed * 1000),
+  };
 }

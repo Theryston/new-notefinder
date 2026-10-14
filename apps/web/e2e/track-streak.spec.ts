@@ -42,7 +42,8 @@ function hidePage(page: Page) {
 }
 
 for (const { locale, messages } of cases) {
-  const { dock, streak } = messages.tracks.practice;
+  const { dock } = messages.tracks.practice;
+  const { streaks: streak } = messages;
 
   test.describe(`daily practice streak (${locale})`, () => {
     // The practice day follows the browser's zone, which heartbeats send.

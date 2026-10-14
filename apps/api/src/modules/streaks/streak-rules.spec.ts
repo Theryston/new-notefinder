@@ -1,5 +1,5 @@
 import {
-  creditedSecondsOf,
+  creditHeartbeat,
   currentStreakDays,
   localDayOf,
   previousDay,
@@ -64,44 +64,69 @@ describe('currentStreakDays', () => {
   });
 });
 
-describe('creditedSecondsOf', () => {
+describe('creditHeartbeat', () => {
   const now = new Date('2026-03-10T12:00:00Z');
-  const secondsAgo = (seconds: number) =>
-    new Date(now.getTime() - seconds * 1000);
+  const msAgo = (ms: number) => new Date(now.getTime() - ms);
+  const credit = (elapsedSeconds: number, sinceMs: number | null) =>
+    creditHeartbeat({
+      elapsedSeconds,
+      lastHeartbeatAt: sinceMs === null ? null : msAgo(sinceMs),
+      now,
+    });
 
   it('credits what was reported on the first heartbeat, up to the cap', () => {
-    const credit = (elapsedSeconds: number) =>
-      creditedSecondsOf({ elapsedSeconds, lastHeartbeatAt: null, now });
-
-    expect(credit(5)).toBe(5);
-    expect(credit(5.9)).toBe(5);
-    expect(credit(20)).toBe(20);
-    expect(credit(300)).toBe(20);
-    expect(credit(0)).toBe(0);
+    expect(credit(5, null).creditedSeconds).toBe(5);
+    expect(credit(5.9, null).creditedSeconds).toBe(5);
+    expect(credit(20, null).creditedSeconds).toBe(20);
+    expect(credit(300, null).creditedSeconds).toBe(20);
+    expect(credit(0, null).creditedSeconds).toBe(0);
+    expect(credit(5, null).clockAt).toEqual(now);
   });
 
-  it('credits at most the time the server clock saw pass', () => {
-    const credit = (elapsed: number, since: number) =>
-      creditedSecondsOf({
-        elapsedSeconds: elapsed,
-        lastHeartbeatAt: secondsAgo(since),
-        now,
-      });
+  it('credits at most the time the server clock saw pass, rounded', () => {
+    expect(credit(20, 3_000).creditedSeconds).toBe(3);
+    expect(credit(20, 3_400).creditedSeconds).toBe(3);
+    expect(credit(20, 3_600).creditedSeconds).toBe(4);
+    expect(credit(5, 60_000).creditedSeconds).toBe(5);
+    expect(credit(20, 60_000).creditedSeconds).toBe(20);
+  });
 
-    expect(credit(20, 3)).toBe(3);
-    expect(credit(20, 3.9)).toBe(3);
-    expect(credit(20, 0)).toBe(0);
-    expect(credit(5, 60)).toBe(5);
-    expect(credit(20, 60)).toBe(20);
+  it('credits a 5 s heartbeat that is a few milliseconds early in full', () => {
+    expect(credit(5, 4_990).creditedSeconds).toBe(5);
+  });
+
+  it('credits nothing to heartbeats a few milliseconds apart', () => {
+    expect(credit(5, 10).creditedSeconds).toBe(0);
+    expect(credit(5, 0).creditedSeconds).toBe(0);
   });
 
   it('credits nothing for a heartbeat stamped in the future', () => {
-    expect(
-      creditedSecondsOf({
-        elapsedSeconds: 5,
-        lastHeartbeatAt: secondsAgo(-10),
-        now,
-      }),
-    ).toBe(0);
+    expect(credit(5, -10_000).creditedSeconds).toBe(0);
+  });
+
+  it('moves the clock by the seconds credited when the clock limited them', () => {
+    const result = credit(20, 3_400);
+
+    expect(result.clockAt).toEqual(msAgo(3_400 - 3_000));
+  });
+
+  it('moves the clock to now when the report limited the credit', () => {
+    expect(credit(5, 60_000).clockAt).toEqual(now);
+  });
+
+  it('does not pay twice for bursts: half-second calls share the real time', () => {
+    let clock = new Date(0);
+    let total = 0;
+    for (let ms = 500; ms <= 10_000; ms += 500) {
+      const result = creditHeartbeat({
+        elapsedSeconds: 20,
+        lastHeartbeatAt: clock,
+        now: new Date(ms),
+      });
+      total += result.creditedSeconds;
+      clock = result.clockAt;
+    }
+
+    expect(total).toBeLessThanOrEqual(10);
   });
 });
