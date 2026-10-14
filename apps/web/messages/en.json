@@ -158,6 +158,10 @@
         "title": "We found no voice in this recording",
         "description": "This looks like an instrumental, so there are no vocal notes to show."
       },
+      "lyrics": {
+        "title": "Lyrics",
+        "currentLine": "Line being sung"
+      },
       "favorite": {
         "add": "Add to favorites",
         "remove": "Remove from favorites",

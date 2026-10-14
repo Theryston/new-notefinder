@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import type { InitialPractice } from '../practice-queries';
 import {
+  trackLyricsQueryOptions,
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
 } from '../track-practice-query';
@@ -57,6 +58,9 @@ export function TrackPracticeView({
     ),
   );
 
+  // Lyrics are a bonus: while they load, or if they fail, the page goes on.
+  const lyrics = useQuery(trackLyricsQueryOptions(trackId, initial?.lyrics));
+
   if (header.data === undefined) {
     return header.isError ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -73,6 +77,7 @@ export function TrackPracticeView({
       <PracticeBody
         header={header.data}
         notes={notes.data}
+        lyrics={lyrics.data}
         failed={notes.isError}
         fakePlayer={fakePlayer}
       />

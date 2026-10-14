@@ -3,8 +3,10 @@ import 'server-only';
 import {
   cacheTags,
   type TrackDetail,
+  type TrackLyrics,
   type TrackNotes,
   trackDetailSchema,
+  trackLyricsSchema,
   trackNotesSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
@@ -37,10 +39,23 @@ async function getTrackNotes(trackId: string): Promise<TrackNotes> {
   });
 }
 
+/** The Timed lyrics of a Track, cached under their own tag. */
+async function getTrackLyrics(trackId: string): Promise<TrackLyrics> {
+  'use cache';
+  cacheTag(cacheTags.trackLyrics(trackId));
+  cacheLife('max');
+
+  return serverApi(`/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+    schema: trackLyricsSchema,
+  });
+}
+
 /** What the server renders the practice view from. */
 export type InitialPractice = {
   header: TrackDetail;
   notes: TrackNotes | undefined;
+  /** Undefined when the lyrics were not read; the browser then asks. */
+  lyrics?: TrackLyrics;
 };
 
 /**
@@ -59,6 +74,20 @@ export async function getInitialPractice(
       getTrackNotes(trackId),
     ]);
     return { header, notes: header.hasNotes ? notes : undefined };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The Timed lyrics for the first render, or undefined when the API fails: they
+ * are a bonus, so the page keeps rendering and the browser asks again.
+ */
+export async function getInitialLyrics(
+  trackId: string,
+): Promise<TrackLyrics | undefined> {
+  try {
+    return await getTrackLyrics(trackId);
   } catch {
     return undefined;
   }

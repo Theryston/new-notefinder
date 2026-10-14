@@ -4,7 +4,10 @@ import { getTranslations } from 'next-intl/server';
 
 import { TrackProcessingSection } from '@/features/tracks/components/track-processing-section';
 import { practiceMetadata } from '@/features/tracks/practice-metadata';
-import { getInitialPractice } from '@/features/tracks/practice-queries';
+import {
+  getInitialLyrics,
+  getInitialPractice,
+} from '@/features/tracks/practice-queries';
 import { getTrackProcessingResult } from '@/features/tracks/queries';
 import { getServerEnv } from '@/lib/env/server';
 import { localeAlternates } from '@/lib/i18n/metadata';
@@ -47,6 +50,14 @@ export async function generateMetadata({
   };
 }
 
+async function getInitialPracticeWithLyrics(trackId: string) {
+  const [practice, lyrics] = await Promise.all([
+    getInitialPractice(trackId),
+    getInitialLyrics(trackId),
+  ]);
+  return practice && { ...practice, lyrics };
+}
+
 /**
  * Thin Track route: reads the ID, fetches the Track's state and renders it
  * (the Processing view, or the practice view once the Processing completed). A legacy ID permanently redirects (308) to the new ID with the query
@@ -73,7 +84,7 @@ export default async function TrackRoutePage({
   }
   const initialPractice =
     result.state.processing?.status === 'COMPLETED'
-      ? await getInitialPractice(result.state.track.id)
+      ? await getInitialPracticeWithLyrics(result.state.track.id)
       : undefined;
   return (
     <TrackProcessingSection

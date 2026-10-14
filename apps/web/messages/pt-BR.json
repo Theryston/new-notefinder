@@ -158,6 +158,10 @@
         "title": "Não encontramos voz nesta gravação",
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
       },
+      "lyrics": {
+        "title": "Letra",
+        "currentLine": "Linha sendo cantada"
+      },
       "favorite": {
         "add": "Adicionar aos favoritos",
         "remove": "Remover dos favoritos",
