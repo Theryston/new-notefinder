@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackProcessingState } from '@notefinder/contracts';
+import type { TrackLyrics, TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 
 import { Toaster } from '@/components/ui/sonner';
@@ -25,10 +25,12 @@ import { TrackProcessingStatus } from './track-processing-status';
 export function TrackProcessingView({
   initialState,
   initialPractice,
+  initialLyrics,
   fakePlayer,
 }: {
   initialState: TrackProcessingState;
   initialPractice: InitialPractice | undefined;
+  initialLyrics: TrackLyrics | undefined;
   fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.processing');
@@ -52,6 +54,7 @@ export function TrackProcessingView({
         <TrackPracticeView
           trackId={state.track.id}
           initial={initialPractice}
+          initialLyrics={initialLyrics}
           fakePlayer={fakePlayer}
         />
       </>

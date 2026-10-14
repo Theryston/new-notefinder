@@ -174,3 +174,28 @@ export const trackNotesSchema = z.object({
 });
 
 export type TrackNotes = z.infer<typeof trackNotesSchema>;
+
+/** One word of a Track's Timed lyrics, timed to the Track's audio. */
+export const trackLyricWordSchema = z.object({
+  text: z.string(),
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+});
+
+export type TrackLyricWord = z.infer<typeof trackLyricWordSchema>;
+
+/** One sung line, containing its words in order. */
+export const trackLyricLineSchema = z.object({
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+  words: z.array(trackLyricWordSchema).max(500),
+});
+
+export type TrackLyricLine = z.infer<typeof trackLyricLineSchema>;
+
+/** `GET /v1/tracks/:trackId/lyrics`: the Track's Timed lyrics. */
+export const trackLyricsSchema = z.object({
+  lines: z.array(trackLyricLineSchema).max(10000),
+});
+
+export type TrackLyrics = z.infer<typeof trackLyricsSchema>;

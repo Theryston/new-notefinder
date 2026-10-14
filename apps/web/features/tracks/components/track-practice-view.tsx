@@ -1,5 +1,6 @@
 'use client';
 
+import type { TrackLyrics } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import type { InitialPractice } from '../practice-queries';
 import {
+  trackLyricsQueryOptions,
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
 } from '../track-practice-query';
@@ -40,10 +42,12 @@ function TrackPracticeSkeleton() {
 export function TrackPracticeView({
   trackId,
   initial,
+  initialLyrics,
   fakePlayer,
 }: {
   trackId: string;
   initial: InitialPractice | undefined;
+  initialLyrics: TrackLyrics | undefined;
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
 }) {
@@ -56,6 +60,7 @@ export function TrackPracticeView({
       initial?.notes,
     ),
   );
+  const lyrics = useQuery(trackLyricsQueryOptions(trackId, initialLyrics));
 
   if (header.data === undefined) {
     return header.isError ? (
@@ -73,6 +78,9 @@ export function TrackPracticeView({
       <PracticeBody
         header={header.data}
         notes={notes.data}
+        lyrics={lyrics.data}
+        lyricsFailed={lyrics.isError}
+        lyricsPending={lyrics.isPending}
         failed={notes.isError}
         fakePlayer={fakePlayer}
       />

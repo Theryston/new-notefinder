@@ -33,6 +33,11 @@ export type FakeTrack = {
   youtubeVideoId?: string | null;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
+  lyrics?: {
+    start: number;
+    end: number;
+    words: { text: string; start: number; end: number }[];
+  }[];
   /** `null` for a Track that never had a Processing. */
   processing: FakeTrackProcessing | null;
   contributors?: {
@@ -305,6 +310,16 @@ export async function serveTrackRequest(
       (track) => ({
         notes: track.notes ?? [],
       }),
+    );
+    return true;
+  }
+  const lyrics = /^\/v1\/tracks\/([^/]+)\/lyrics$/.exec(pathname);
+  if (lyrics?.[1] && request.method === 'GET') {
+    serveTrackRead(
+      decodeURIComponent(lyrics[1]),
+      request,
+      response,
+      (track) => ({ lines: track.lyrics ?? [] }),
     );
     return true;
   }

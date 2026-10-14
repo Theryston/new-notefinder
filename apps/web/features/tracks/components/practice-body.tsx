@@ -1,9 +1,14 @@
 'use client';
 
-import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
+import type {
+  TrackDetail,
+  TrackLyrics,
+  TrackNotes,
+} from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRef } from 'react';
+import { parseAsBoolean, parseAsFloat, useQueryState } from 'nuqs';
+import { useEffect, useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { NoteTimeline } from '@/features/timeline/components/note-timeline';
@@ -13,7 +18,9 @@ import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { usePlaybackState } from '../stores/playback-store';
 import { PracticeDock } from './practice-dock';
+import { TimedLyrics } from './timed-lyrics';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
@@ -80,6 +87,37 @@ function durationSecondsOf(header: TrackDetail, notes: TrackNotes | undefined) {
   return last ? last.end : 0;
 }
 
+function usePracticeUrlState(controller: PlaybackController | null) {
+  const scrollTarget = useRef<HTMLDivElement>(null);
+  const initialSeekApplied = useRef(false);
+  const [timelineFocus] = useQueryState('timeline-focus', parseAsBoolean);
+  const [time] = useQueryState('time', parseAsFloat);
+  const playbackStatus = usePlaybackState((state) => state.status);
+
+  useEffect(() => {
+    if (timelineFocus) {
+      scrollTarget.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [timelineFocus]);
+
+  useEffect(() => {
+    if (
+      controller &&
+      playbackStatus === 'ready' &&
+      time !== null &&
+      !initialSeekApplied.current
+    ) {
+      controller.seek(time);
+      initialSeekApplied.current = true;
+    }
+  }, [controller, playbackStatus, time]);
+
+  return scrollTarget;
+}
+
 /**
  * The practice view below the title row: the note timeline (or the "no voice"
  * message for a Track without notes) and the dock that plays the Track's
@@ -89,15 +127,22 @@ function durationSecondsOf(header: TrackDetail, notes: TrackNotes | undefined) {
 export function PracticeBody({
   header,
   notes,
+  lyrics,
   failed,
+  lyricsFailed,
+  lyricsPending,
   fakePlayer,
 }: {
   header: TrackDetail;
   notes: TrackNotes | undefined;
+  lyrics: TrackLyrics | undefined;
   failed: boolean;
+  lyricsFailed: boolean;
+  lyricsPending: boolean;
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
 }) {
+  const t = useTranslations('tracks.practice');
   const hostRef = useRef<HTMLDivElement>(null);
   const controller = usePlayback({
     hostRef,
@@ -106,18 +151,37 @@ export function PracticeBody({
     fake: fakePlayer,
   });
   usePlaybackShortcuts(controller);
+  const scrollTarget = usePracticeUrlState(controller);
 
   return (
     <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
-      {header.hasNotes ? (
-        <TrackTimeline
-          header={header}
-          notes={notes}
-          failed={failed}
-          controller={controller}
-        />
+      <div
+        ref={scrollTarget}
+        data-testid="track-timeline"
+        className="scroll-mt-6"
+      >
+        {header.hasNotes ? (
+          <TrackTimeline
+            header={header}
+            notes={notes}
+            failed={failed}
+            controller={controller}
+          />
+        ) : (
+          <NoVoice />
+        )}
+      </div>
+      {lyricsFailed ? (
+        <p role="alert" className="text-muted-foreground text-sm">
+          {t('loadError')}
+        </p>
+      ) : lyricsPending && lyrics === undefined ? (
+        <Skeleton className="h-20 w-full rounded-2xl" />
       ) : (
-        <NoVoice />
+        <TimedLyrics
+          lyrics={lyrics}
+          onSeek={(seconds) => controller?.seek(seconds)}
+        />
       )}
       {header.youtubeVideoId === null ? null : (
         <PracticeDock

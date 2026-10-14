@@ -3,8 +3,10 @@ import 'server-only';
 import {
   cacheTags,
   type TrackDetail,
+  type TrackLyrics,
   type TrackNotes,
   trackDetailSchema,
+  trackLyricsSchema,
   trackNotesSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
@@ -37,6 +39,17 @@ async function getTrackNotes(trackId: string): Promise<TrackNotes> {
   });
 }
 
+/** The Track's Timed lyrics, cached separately from its notes. */
+async function getTrackLyrics(trackId: string): Promise<TrackLyrics> {
+  'use cache';
+  cacheTag(cacheTags.trackLyrics(trackId));
+  cacheLife('max');
+
+  return serverApi(`/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+    schema: trackLyricsSchema,
+  });
+}
+
 /** What the server renders the practice view from. */
 export type InitialPractice = {
   header: TrackDetail;
@@ -59,6 +72,17 @@ export async function getInitialPractice(
       getTrackNotes(trackId),
     ]);
     return { header, notes: header.hasNotes ? notes : undefined };
+  } catch {
+    return undefined;
+  }
+}
+
+/** Server-rendered lyrics for a completed Track, whether it has Vocal notes. */
+export async function getInitialLyrics(
+  trackId: string,
+): Promise<TrackLyrics | undefined> {
+  try {
+    return await getTrackLyrics(trackId);
   } catch {
     return undefined;
   }

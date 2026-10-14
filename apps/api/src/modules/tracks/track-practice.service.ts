@@ -1,5 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
+import { Injectable, Optional } from '@nestjs/common';
+import type {
+  TrackDetail,
+  TrackLyrics,
+  TrackNotes,
+} from '@notefinder/contracts';
+import { TrackLyricsRepository } from './track-lyrics.repository.js';
 import { TrackPracticeRepository } from './track-practice.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 
@@ -12,6 +17,7 @@ export class TrackPracticeService {
   constructor(
     private readonly practice: TrackPracticeRepository,
     private readonly processing: TrackProcessingService,
+    @Optional() private readonly lyrics?: TrackLyricsRepository,
   ) {}
 
   async getHeader(trackId: string): Promise<TrackDetail> {
@@ -49,5 +55,16 @@ export class TrackPracticeService {
       await this.processing.assertTrackExists(trackId);
     }
     return { notes };
+  }
+
+  async getLyrics(trackId: string): Promise<TrackLyrics> {
+    if (!this.lyrics) {
+      throw new Error('Track lyrics repository is unavailable');
+    }
+    const lines = await this.lyrics.findTimedLyrics(trackId);
+    if (lines.length === 0) {
+      await this.processing.assertTrackExists(trackId);
+    }
+    return { lines };
   }
 }

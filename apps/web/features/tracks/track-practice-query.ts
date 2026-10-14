@@ -1,7 +1,9 @@
 import {
   type TrackDetail,
+  type TrackLyrics,
   type TrackNotes,
   trackDetailSchema,
+  trackLyricsSchema,
   trackNotesSchema,
 } from '@notefinder/contracts';
 import { queryOptions } from '@tanstack/react-query';
@@ -44,6 +46,22 @@ export function trackNotesQueryOptions(
         signal,
       }),
     enabled,
+    initialData: initial,
+  });
+}
+
+/** Timed lyrics, read by the browser when the Processing completes in place. */
+export function trackLyricsQueryOptions(
+  trackId: string,
+  initial: TrackLyrics | undefined,
+) {
+  return queryOptions({
+    queryKey: trackKeys.lyrics(trackId),
+    queryFn: ({ signal }) =>
+      browserApi(`/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+        schema: trackLyricsSchema,
+        signal,
+      }),
     initialData: initial,
   });
 }

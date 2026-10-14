@@ -1,4 +1,4 @@
-import type { TrackProcessingState } from '@notefinder/contracts';
+import type { TrackLyrics, TrackProcessingState } from '@notefinder/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -15,10 +15,12 @@ import { TrackProcessingView } from './track-processing-view';
 export async function TrackProcessingSection({
   initialState,
   initialPractice,
+  initialLyrics,
   fakePlayer,
 }: {
   initialState: TrackProcessingState;
   initialPractice: InitialPractice | undefined;
+  initialLyrics: TrackLyrics | undefined;
   /** The e2e build's flag: the practice view plays with a fake clock. */
   fakePlayer: boolean;
 }) {
@@ -29,6 +31,7 @@ export async function TrackProcessingSection({
       <TrackProcessingView
         initialState={initialState}
         initialPractice={initialPractice}
+        initialLyrics={initialLyrics}
         fakePlayer={fakePlayer}
       />
     </NextIntlClientProvider>

@@ -139,6 +139,9 @@
         "label": "Linha do tempo das notas de {title}. {count, plural, one {# nota} other {# notas}}, de {low} a {high}",
         "labelEmpty": "Linha do tempo das notas de {title}"
       },
+      "lyrics": {
+        "heading": "Letra"
+      },
       "dock": {
         "label": "Controles de reprodução",
         "play": "Tocar",

@@ -25,9 +25,11 @@ import {
   type CreateTrackResult,
   createTrackResultSchema,
   type TrackDetail,
+  type TrackLyrics,
   type TrackNotes,
   type TrackProcessingState,
   trackDetailSchema,
+  trackLyricsSchema,
   trackNotesSchema,
   trackProcessingStateSchema,
 } from '@notefinder/contracts';
@@ -121,6 +123,20 @@ export class TracksController {
   })
   getNotes(@Param() params: TrackIdParamDto): Promise<TrackNotes> {
     return this.trackPractice.getNotes(params.trackId);
+  }
+
+  // Public: Timed lyrics for the practice page; a Track may have no lines.
+  @Public()
+  @Get(':trackId/lyrics')
+  @ZodSerializerDto(trackLyricsSchema)
+  @ApiOkResponse({ description: "The Track's Timed lyrics in sung order." })
+  @ApiNotFoundResponse({
+    description:
+      'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
+      '(`RESOURCE_MOVED`).',
+  })
+  getLyrics(@Param() params: TrackIdParamDto): Promise<TrackLyrics> {
+    return this.trackPractice.getLyrics(params.trackId);
   }
 
   // Public: the page is shared while the Track processes. A legacy ID answers
