@@ -112,9 +112,10 @@ filterbank, chunk plan, salience decoding) is in `rmvpe_math.py`, covered at
   and from coverage; do not restyle it.
 - **Weights:** the RVC project's `rmvpe.pt` (MIT, 181 MB), pinned to a commit
   of `lj1995/VoiceConversionWebUI` on Hugging Face and verified by sha256
-  (`6d62215f...c193`) by `fetch_weights.py` in a Dockerfile `RUN`. They live at
+  (`6d62215f...c193`) by `weights.py`, driven by `rmvpe-weights.json`, in a
+  Dockerfile `RUN`. They live at
   `/app/weights/rmvpe.pt`. To change the model, change the URL and the
-  checksum in the Dockerfile together.
+  checksum in the manifest together.
 - **Parameters:** audio mixed to mono and resampled to 16 kHz; centered STFT
   with 1024 window and 160-sample hop (10 ms), 128 HTK mel bins from 30 Hz to
   8 kHz, log with a 1e-5 floor. The salience (360 bins, 20 cents apart) is
