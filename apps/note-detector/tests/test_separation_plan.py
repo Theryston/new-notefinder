@@ -3,6 +3,7 @@ import pytest
 
 from note_detector.separation_plan import (
     OverlapAdd,
+    chunk_batches,
     overlap_weights,
     plan_chunks,
 )
@@ -43,19 +44,24 @@ def test_one_extra_sample_past_a_chunk_adds_a_chunk():
     assert plan.padded_length == 1000
 
 
-def test_every_sample_is_covered_by_a_full_chunk():
+def test_the_padded_length_ends_exactly_at_the_last_chunk():
     plan = plan_chunks(total_samples=5003, chunk_size=800, overlap=4)
 
-    assert plan.padded_length >= 5003
-    assert all(
-        later - earlier == 200
-        for earlier, later in zip(plan.starts, plan.starts[1:], strict=False)
-    )
+    assert plan.padded_length == 5200
+    assert plan.starts[-1] == 4400
 
 
 @pytest.mark.parametrize(
     ("total", "chunk", "overlap"),
-    [(0, 800, 4), (-1, 800, 4), (100, 0, 4), (100, 800, 0), (100, 801, 4)],
+    [
+        (0, 800, 4),
+        (-1, 800, 4),
+        (100, 0, 4),
+        (100, -800, 4),
+        (100, 800, 0),
+        (100, 800, -4),
+        (100, 801, 4),
+    ],
 )
 def test_rejects_an_impossible_plan(total, chunk, overlap):
     with pytest.raises(ValueError):
@@ -106,3 +112,30 @@ def test_blending_weights_the_middle_of_a_chunk_over_its_edges():
     expected = weights[300] / (weights[500] + weights[300])
     assert result[0, 500] == pytest.approx(expected)
     assert result[0, 999] == 1
+
+
+def test_chunks_are_batched_in_order_with_a_smaller_last_batch():
+    signal = np.arange(1650, dtype=np.float32)[None, :]
+    plan = plan_chunks(1650, 800, 4)
+
+    batches = list(chunk_batches(signal, plan, batch_size=4))
+
+    assert [starts for starts, _ in batches] == [
+        (0, 200, 400, 600),
+        (800, 1000),
+    ]
+    first, second = batches[0][1], batches[1][1]
+    assert first.shape == (4, 1, 800)
+    assert second.shape == (2, 1, 800)
+    assert first[1, 0, 0] == 200
+    assert second[1, 0, 649] == 1649
+
+
+def test_the_last_chunk_is_padded_with_silence():
+    signal = np.ones((2, 1650), np.float32)
+    plan = plan_chunks(1650, 800, 4)
+
+    last = list(chunk_batches(signal, plan, batch_size=4))[-1][1][-1]
+
+    assert last[:, :650].min() == 1
+    assert last[:, 650:].max() == 0

@@ -4,7 +4,7 @@ Runs only where the weights (and the reference separator) are present, never
 in normal CI; there it is skipped. To run it:
 
     uv sync --group model --group parity-separation
-    NOTE_DETECTOR_WEIGHTS_DIR=<dir with mel-band-roformer/> \
+    NOTE_DETECTOR_SEPARATION_DIR=<dir with the checkpoint and config> \
       uv run pytest -m parity tests/parity
 
 The input is a short synthetic fixture (a vibrato voice-like tone over a
@@ -50,13 +50,18 @@ def test_our_separation_matches_audio_separator(tmp_path: Path):
     pytest.importorskip("torch")
     audio_separator = pytest.importorskip("audio_separator.separator")
 
-    from note_detector.separation import (  # noqa: PLC0415
-        CONFIG_PATH,
-        WEIGHTS_PATH,
-        load_separator,
+    from note_detector.separation import load_separator
+    from note_detector.separation_config import (
+        CONFIG_FILE,
+        WEIGHTS_FILE,
+        separation_directory,
     )
 
-    if not (WEIGHTS_PATH.exists() and CONFIG_PATH.exists()):
+    directory = separation_directory(os.environ)
+    if not (
+        (directory / WEIGHTS_FILE).exists()
+        and (directory / CONFIG_FILE).exists()
+    ):
         pytest.skip("the Mel-Band RoFormer weights are not present")
 
     fixture = os.environ.get("NOTE_DETECTOR_PARITY_FIXTURE")
@@ -69,13 +74,23 @@ def test_our_separation_matches_audio_separator(tmp_path: Path):
     music_path = tmp_path / "music.wav"
     soundfile.write(music_path, music.T, SAMPLE_RATE, subtype="FLOAT")
 
-    ours = load_separator().separate(music)
+    ours = load_separator(directory).separate(music)
 
     reference_separator = audio_separator.Separator(
         output_dir=str(tmp_path),
         output_format="WAV",
         output_single_stem="Vocals",
-        mdxc_params={"overlap": 4, "batch_size": 4},
+        # audio-separator ignores the config's chunk_size and cuts chunks of
+        # stft_hop_length * (segment_size - 1) samples; 801 gives 441 * 800 =
+        # 352800, ours. It also scales input and output to a 0.9 peak by
+        # default, which would show up as a gain difference.
+        normalization_threshold=1.0,
+        mdxc_params={
+            "overlap": 4,
+            "batch_size": 4,
+            "segment_size": 801,
+            "override_model_segment_size": True,
+        },
     )
     reference_separator.load_model(REFERENCE_MODEL)
     (output_name,) = reference_separator.separate(str(music_path))

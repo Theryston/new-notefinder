@@ -8,6 +8,7 @@ the outputs are cross-faded with a window that is low at a chunk's edges,
 where the model is least reliable, and high in its middle.
 """
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
@@ -77,3 +78,19 @@ class OverlapAdd:
     def result(self, total_samples: int) -> np.ndarray:
         blended = self._signal / self._weight_sum
         return blended[:, :total_samples]
+
+
+def chunk_batches(
+    audio: np.ndarray, plan: ChunkPlan, batch_size: int
+) -> Iterator[tuple[tuple[int, ...], np.ndarray]]:
+    """The chunks of `audio` (channels, samples) in batches for the model.
+
+    Yields each batch's chunk starts and the stacked chunks, `(batch,
+    channels, chunk_size)`. The tail is padded with silence to the plan's
+    length; the last batch may be smaller.
+    """
+    padded = np.pad(audio, ((0, 0), (0, plan.padded_length - audio.shape[1])))
+    for first in range(0, len(plan.starts), batch_size):
+        starts = plan.starts[first : first + batch_size]
+        chunks = [padded[:, s : s + plan.chunk_size] for s in starts]
+        yield starts, np.stack(chunks)

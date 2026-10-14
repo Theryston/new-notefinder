@@ -1170,7 +1170,6 @@ dev = [
 ]
 model = [
     { name = "einops" },
-    { name = "librosa" },
     { name = "onnxruntime-gpu" },
     { name = "pyyaml" },
     { name = "rotary-embedding-torch" },
@@ -1197,7 +1196,6 @@ dev = [
 ]
 model = [
     { name = "einops", specifier = ">=0.8" },
-    { name = "librosa", specifier = ">=0.11" },
     { name = "onnxruntime-gpu", specifier = ">=1.22,<1.27" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rotary-embedding-torch", specifier = ">=0.6.1,<0.7" },

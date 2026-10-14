@@ -27,8 +27,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --group model && uv cache clean
 
-# The model weights are downloaded here, pinned by sha256, once each model
-# lands (see CLAUDE.md); none is baked in yet.
+# The model weights are downloaded here, pinned by sha256 (see CLAUDE.md).
 
 # Mel-Band RoFormer "Kim" vocals weights and their published config, pinned by
 # sha256 in separation-weights.json (the build fails on a mismatch).

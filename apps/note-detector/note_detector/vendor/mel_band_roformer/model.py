@@ -1,67 +1,16 @@
-"""Mel-Band RoFormer, inference only.
-
-Vendored and trimmed from ZFTurbo's Music-Source-Separation-Training
-(`models/bs_roformer/mel_band_roformer.py`, `attend.py`), itself derived from
-lucidrains' BS-RoFormer. What was removed: the training loss, multi-stem
-heads, linear attention, PoPE, checkpointing, flash-attention backend
-selection and `beartype`. What was kept: every module and its name, so the
-published "Kim" checkpoint loads with `strict=True`, and the forward pass.
-
-MIT License
-
-Copyright (c) 2024 Roman Solovyev (ZFTurbo)
-Copyright (c) 2023 Phil Wang (lucidrains), BS-RoFormer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
-from dataclasses import dataclass
+"""Mel-Band RoFormer, inference only. See NOTICE and LICENSE in this directory."""
 
 import torch
 from einops import rearrange, reduce, repeat
-from librosa import filters
 from rotary_embedding_torch import RotaryEmbedding
 from torch import nn
 from torch.nn import Module, ModuleList, functional
 
-# The model reads and writes stereo; the published checkpoint is stereo.
-AUDIO_CHANNELS = 2
-
-
-@dataclass(frozen=True)
-class MelBandRoformerConfig:
-    """The `model` section of the checkpoint's published config."""
-
-    dim: int
-    depth: int
-    time_transformer_depth: int
-    freq_transformer_depth: int
-    num_bands: int
-    dim_head: int
-    heads: int
-    sample_rate: int
-    stft_n_fft: int
-    stft_hop_length: int
-    stft_win_length: int
-    mask_estimator_depth: int
-    mlp_expansion_factor: int = 4
-
+from note_detector.mel_filters import mel_filter_bank
+from note_detector.separation_config import (
+    AUDIO_CHANNELS,
+    MelBandRoformerConfig,
+)
 
 class RMSNorm(Module):
     def __init__(self, dim: int) -> None:
@@ -217,10 +166,8 @@ class MaskEstimator(Module):
 def _mel_band_membership(config: MelBandRoformerConfig) -> torch.Tensor:
     """Which STFT bins each mel band covers (binary, as in the paper)."""
     bank = torch.from_numpy(
-        filters.mel(
-            sr=config.sample_rate,
-            n_fft=config.stft_n_fft,
-            n_mels=config.num_bands,
+        mel_filter_bank(
+            config.sample_rate, config.stft_n_fft, config.num_bands
         )
     )
     # The filter bank skips the first bin and can end at 0.0 on some
