@@ -1,0 +1,22 @@
+Mel-Band RoFormer
+
+model.py is taken from ZFTurbo's Music-Source-Separation-Training,
+models/bs_roformer/mel_band_roformer.py and models/bs_roformer/attend.py
+(https://github.com/ZFTurbo/Music-Source-Separation-Training, MIT, see
+LICENSE in this directory), itself derived from lucidrains' BS-RoFormer (MIT).
+It loads the "Kim" vocals checkpoint (KimberleyJSN/melbandroformer, MIT).
+
+Changes, to keep the worker small and the module names equal to the
+checkpoint's keys (it loads with strict=True):
+
+- inference only: the training loss, multi-stem heads, linear attention, PoPE,
+  checkpointing, flash-attention backend selection and beartype are removed;
+- the constructor takes a MelBandRoformerConfig dataclass
+  (note_detector/separation_config.py) instead of keyword arguments;
+- the mel filter bank comes from note_detector/mel_filters.py instead of
+  librosa;
+- attention is torch's scaled_dot_product_attention;
+- the forward pass is split into helper methods.
+
+The weights are not part of this repository; they are downloaded at image
+build time and verified by sha256 (see apps/note-detector/Dockerfile).

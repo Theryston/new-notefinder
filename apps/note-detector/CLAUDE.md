@@ -15,9 +15,10 @@ Python, not Node. The monorepo runs it through Turbo with a thin `package.json`
 that calls `uv`.
 
 **State today:** the job contract, the handler, the Pitch curve encoding, the
-transfer helpers and the image exist. The three model steps (vocal separation,
-Vocal notes, Pitch curve) are not wired yet: `__main__.py` raises for each
-until its adapter lands, so a half-built image can never complete a Processing.
+transfer helpers and the image exist. Vocal separation is wired. The other
+model steps (Vocal notes, Pitch curve) are not yet: `__main__.py` raises for
+each until its adapter lands, so a half-built image can never complete a
+Processing.
 
 ## The job contract
 
@@ -91,9 +92,56 @@ the sha identifies code and models.
 - `note_detector/__main__.py`: the RunPod entrypoint, which wires the real
   steps. Glue only the GPU image exercises, so it is omitted from coverage.
 
-Pure modules are covered at 100% (`fail_under = 100`); model adapters, when
-they land, are omitted from coverage and checked by parity tests that run only
-when the weights are present.
+- Vocal separation: `separation_config.py` (the published config and the
+  weights directory), `separation_plan.py` (chunks, batches, overlap-add),
+  `separation_audio.py` (stereo reads, clipping) and `mel_filters.py` are pure.
+  `separation.py` (torch, soundfile, yaml) is the adapter and
+  `vendor/mel_band_roformer/` the vendored model; both are omitted from
+  coverage.
+
+Pure modules are covered at 100% (`fail_under = 100`); model adapters and
+`vendor/` are omitted from coverage and checked by parity tests that run only
+when the weights are present. Only calls into the model stack belong in an
+adapter: anything it decides goes in a pure module with tests.
+
+## Vocal separation (Mel-Band RoFormer "Kim")
+
+- Model: Mel-Band RoFormer "Kim" vocals (`KimberleyJSN/melbandroformer`, MIT)
+  with its published config from ZFTurbo's Music-Source-Separation-Training
+  (`configs/KimberleyJensen/config_vocals_mel_band_roformer_kj.yaml`): stereo,
+  44.1 kHz, chunk size 352800 samples.
+- `vendor/mel_band_roformer/` is the model class, vendored and trimmed to
+  inference from ZFTurbo's code (MIT; `LICENSE` and `NOTICE` list the
+  changes). Its module names are the checkpoint's keys, so the weights load
+  with `strict=True`; do not rename them. `rotary-embedding-torch` is capped
+  below 0.7 because `audio-separator` (the parity reference) requires it.
+- `separation_config.py` reads the published config: it takes the keys the
+  inference needs, checks that the model is stereo, one stem and unnormalized,
+  and fails on any key it does not know (the deliberately ignored ones are
+  listed there with why). The chunk batch size comes from the config's
+  `inference.batch_size`; the overlap is fixed at 4.
+- `separation_plan.py` is the chunking: a hop of `chunk / overlap`, the tail
+  zero-padded to a full chunk, a strictly positive triangular window and a
+  weighted average where chunks overlap. `mel_filters.py` is the Slaney mel
+  filter bank (what librosa computes), pinned against librosa's values.
+- `separation.py` is the adapter: runs fp32 on CUDA and writes a 16-bit stereo
+  44.1 kHz vocals WAV, clipped to full scale. It logs a warning and runs on the
+  CPU when there is no CUDA device. The input must be 44.1 kHz (the API always
+  sends it): any other rate fails the job instead of being resampled; mono is
+  duplicated. The model loads once per worker process, at startup.
+- Weights: `separation-weights.json` pins the checkpoint (a fixed Hugging Face
+  revision) and the config (a fixed ZFTurbo commit) by sha256; the Dockerfile
+  downloads them with `weights.py` into `/app/weights/mel-band-roformer`
+  (override with `NOTE_DETECTOR_SEPARATION_DIR`) and a mismatch fails the
+  build.
+- Parity test: `tests/parity/test_separation_parity.py` (marker `parity`)
+  separates a short fixture with our code and with `audio-separator` (same
+  model, overlap 4, the same chunk length, no peak normalization) and requires
+  a high SDR between the two. It skips itself
+  without the weights, torch or the reference. Run it with
+  `uv sync --group model --group parity-separation` then
+  `uv run pytest -m parity tests/parity`. The fixture is synthetic unless
+  `NOTE_DETECTOR_PARITY_FIXTURE` names a stereo 44.1 kHz WAV.
 
 ## Commands (from `apps/note-detector`, or `nub run <task> --filter=note-detector`)
 
@@ -130,6 +178,6 @@ that touches it, and publishes it to GHCR on a push to `main`:
 
 The workflow passes the commit as the `GIT_SHA` build arg. RunPod serverless
 endpoints pull the image by tag, so pin an endpoint to a `sha-` tag when a
-release must not move. The weights (about 1.3 GB) will be downloaded at build
+release must not move. The weights (about 1.3 GB) are downloaded at build
 time and verified against pinned sha256 checksums; clean caches in the same
 layer, as the existing steps do, because the hosted runner's disk is the limit.
