@@ -157,6 +157,7 @@
         "transposeDown": "Baixar um semitom",
         "transposeUp": "Subir um semitom",
         "transposeValue": "{semitones, number, ::sign-except-zero}",
+        "transposeReset": "Voltar ao tom original",
         "videoKeepsKey": "Só as notas mudaram de tom. O vídeo continua tocando no tom original."
       },
       "noVoice": {
@@ -174,8 +175,7 @@
       "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
       "key": {
         "MAJOR": "{tonic} maior",
-        "MINOR": "{tonic} menor",
-        "label": "Tom: {key}"
+        "MINOR": "{tonic} menor"
       },
       "range": {
         "label": "Extensão vocal",

@@ -1,5 +1,6 @@
 import { backfillTrackNoteSummaries } from './backfill-track-note-summaries.js';
 import type { Database } from './database.js';
+import { tracks } from './schema/tracks.js';
 
 /**
  * A Drizzle client that answers the backfill's selects in order (the Tracks
@@ -9,12 +10,14 @@ function fakeDatabase(answers: unknown[][]) {
   const queue = [...answers];
   const sets: unknown[] = [];
   const next = () => Promise.resolve(queue.shift() ?? []);
+  // The pending Tracks are read with the first select (from `tracks`, with the
+  // sub-select inside its `where`); a Track's notes with the next ones.
   const db = {
-    selectDistinct: () => ({
-      from: () => ({ innerJoin: () => ({ where: next }) }),
-    }),
     select: () => ({
-      from: () => ({ where: () => ({ orderBy: next }) }),
+      from: (table: unknown) =>
+        table === tracks
+          ? { where: next }
+          : { where: () => ({ orderBy: next }) },
     }),
     update: () => ({
       set: (values: unknown) => {
@@ -22,6 +25,7 @@ function fakeDatabase(answers: unknown[][]) {
         return { where: () => Promise.resolve() };
       },
     }),
+    transaction: (run: (tx: unknown) => Promise<void>) => run(db),
   };
   return { db: db as unknown as Database, sets };
 }

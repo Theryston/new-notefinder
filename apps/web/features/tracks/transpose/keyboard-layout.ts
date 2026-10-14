@@ -2,7 +2,8 @@ import type { TrackVocalRange } from '@notefinder/contracts';
 
 import { isSharpKey } from '@/lib/music-notes';
 
-const SEMITONES_PER_OCTAVE = 12;
+import { SEMITONES_PER_OCTAVE } from './transpose';
+
 /** The keyboard always shows at least this many octaves, so it reads as one. */
 const MIN_OCTAVES = 2;
 

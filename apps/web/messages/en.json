@@ -157,6 +157,7 @@
         "transposeDown": "Lower by a semitone",
         "transposeUp": "Raise by a semitone",
         "transposeValue": "{semitones, number, ::sign-except-zero}",
+        "transposeReset": "Back to the original key",
         "videoKeepsKey": "Only the notes changed key. The video keeps playing in its original key."
       },
       "noVoice": {
@@ -174,8 +175,7 @@
       "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
       "key": {
         "MAJOR": "{tonic} major",
-        "MINOR": "{tonic} minor",
-        "label": "Key: {key}"
+        "MINOR": "{tonic} minor"
       },
       "range": {
         "label": "Vocal range",

@@ -34,7 +34,10 @@ function RangeKeyboard({
       role="img"
       aria-label={label}
       viewBox={`0 0 ${width} ${WHITE_KEY_HEIGHT}`}
-      className="h-8 w-full max-w-64 shrink-0 overflow-hidden rounded-md"
+      // The drawing fills its box, so it lines up with the timeline's edge;
+      // the keys stretch with it and their outlines keep one pixel.
+      preserveAspectRatio="none"
+      className="h-10 w-full shrink-0 overflow-hidden rounded-md border sm:w-64"
     >
       {keys.map((key) => (
         <rect
@@ -42,16 +45,13 @@ function RangeKeyboard({
           x={key.x}
           width={key.black ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH}
           height={key.black ? BLACK_KEY_HEIGHT : WHITE_KEY_HEIGHT}
-          strokeWidth={0.5}
           className={cn(
-            'stroke-border',
-            key.black
-              ? key.inRange
-                ? 'fill-primary stroke-background'
-                : 'fill-foreground/70 stroke-background'
-              : key.inRange
-                ? 'fill-primary/60'
-                : 'fill-card',
+            'stroke-border [vector-effect:non-scaling-stroke]',
+            key.inRange
+              ? 'fill-primary'
+              : key.black
+                ? 'fill-timeline-key-sharp'
+                : 'fill-timeline-key',
           )}
         />
       ))}

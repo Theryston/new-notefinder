@@ -2,7 +2,7 @@ import type { TrackVocalRange } from '@notefinder/contracts';
 
 import { noteName } from '@/lib/music-notes';
 
-const SEMITONES_PER_OCTAVE = 12;
+import { SEMITONES_PER_OCTAVE } from './transpose';
 
 /**
  * What the vocal range line says: the lowest and highest note names, and the

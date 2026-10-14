@@ -1,5 +1,6 @@
 'use client';
 
+import type { TrackKey } from '@notefinder/contracts';
 import { SettingsIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -67,10 +68,12 @@ export function PracticeDock({
   controller,
   hostRef,
   videoId,
+  trackKey,
 }: {
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
+  trackKey: TrackKey | undefined;
 }) {
   const t = useTranslations('tracks.practice.dock');
   const hidden = usePlaybackState((state) => state.videoHidden);
@@ -105,7 +108,7 @@ export function PracticeDock({
         )}
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
-        <TransposeStepper />
+        <TransposeStepper trackKey={trackKey} />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
     </section>

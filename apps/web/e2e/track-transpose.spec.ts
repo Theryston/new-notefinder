@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { createTranslator } from 'next-intl';
 
 import { type FakeTrack, setTrackMock } from './fake-track-api';
@@ -149,24 +149,139 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/tracks/${id}-other`);
       await expect(page.getByTestId('transpose-value')).toHaveText('0');
     });
+
+    test('shows the resulting key next to the offset and goes back to the original key', async ({
+      page,
+    }) => {
+      await openTrack(page, locale, `clx-transpose-reset-${locale}`);
+      const reset = page.getByRole('button', { name: dock.transposeReset });
+      await expect(reset).toHaveCount(0);
+
+      await page.getByRole('button', { name: dock.transposeUp }).click();
+      await page.getByRole('button', { name: dock.transposeUp }).click();
+
+      await expect(page.getByTestId('transpose-key')).toHaveText(
+        keyText('A', 'MAJOR'),
+      );
+      await expect(page.getByTestId('transpose-value')).toHaveText('+2');
+      await reset.click();
+      await expect(page.getByTestId('transpose-key')).toHaveText(
+        keyText('G', 'MAJOR'),
+      );
+      await expect(page.getByTestId('transpose-value')).toHaveText('0');
+      await expect(reset).toHaveCount(0);
+    });
+
+    test('has touch targets of at least 40px in the stepper', async ({
+      page,
+    }) => {
+      await openTrack(page, locale, `clx-transpose-targets-${locale}`);
+      await page.getByRole('button', { name: dock.transposeUp }).click();
+
+      for (const name of [
+        dock.transposeDown,
+        dock.transposeUp,
+        dock.transposeReset,
+      ]) {
+        const box = await page.getByRole('button', { name }).boundingBox();
+        expect(box?.width).toBeGreaterThanOrEqual(40);
+        expect(box?.height).toBeGreaterThanOrEqual(40);
+      }
+    });
+
+    test('separates the artists, the key and the duration with one dot each', async ({
+      page,
+    }) => {
+      const id = `clx-facts-${locale}`;
+      await setTrackMock({ tracks: [track(id)] });
+
+      await page.goto(`/${locale}/tracks/${id}`);
+
+      const facts = page.locator('#track-title + p');
+      await expect(facts).toContainText(keyText('G', 'MAJOR'));
+      const text = ((await facts.textContent()) ?? '').replace(/\s+/g, ' ');
+      expect(text).toContain(`Queen·${keyText('G', 'MAJOR')}·`);
+      expect(text).not.toContain('··');
+    });
   });
 }
 
+const dock = catalogs.en.tracks.practice.dock;
+
+test.describe('the toast and the dock on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('sits above the dock', async ({ page }) => {
+    await openTrack(page, 'en', 'clx-transpose-phone-toast');
+
+    await page.getByRole('button', { name: dock.transposeUp }).click();
+
+    const toast = page.locator('[data-sonner-toast]').first();
+    await expect(toast).toBeVisible();
+    // Sonner slides the toast in; wait for it to settle before measuring.
+    await page.waitForTimeout(600);
+    const toastBox = await toast.boundingBox();
+    const dockBox = await page
+      .getByRole('region', { name: dock.label })
+      .boundingBox();
+    expect(toastBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+    expect((toastBox?.y ?? 0) + (toastBox?.height ?? 0)).toBeLessThanOrEqual(
+      dockBox?.y ?? 0,
+    );
+  });
+});
+
+/** The RGBA a rect is painted with, whatever color syntax the theme used. */
+const paintOf = (rect: Locator) =>
+  rect.evaluate((element) => {
+    const context = document.createElement('canvas').getContext('2d');
+    if (!context) return [0, 0, 0, 0];
+    context.fillStyle = getComputedStyle(element).fill;
+    context.fillRect(0, 0, 1, 1);
+    return [...context.getImageData(0, 0, 1, 1).data];
+  });
+
+const brightness = ([r = 0, g = 0, b = 0]: number[]) => r + g + b;
+
 test.describe('key and range in both themes', () => {
   for (const scheme of ['light', 'dark'] as const) {
-    test(`shows the range strip in ${scheme} mode`, async ({ page }) => {
+    test(`draws a keyboard that is not inverted in ${scheme} mode, with the range in orange`, async ({
+      page,
+    }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await openTrack(page, 'en', `clx-key-range-${scheme}`);
 
       const keyboard = page.getByRole('img', {
         name: /Keyboard with the vocal range/,
       });
-
       await expect(keyboard).toBeVisible();
-      const litKeys = keyboard.locator(
-        'rect.fill-primary, rect[class*="fill-primary"]',
+
+      // Out of the range C#3-G4: the first white key (C3) and a sharp (G#4).
+      const white = await paintOf(keyboard.locator('rect').first());
+      const sharp = await paintOf(
+        keyboard
+          .locator('rect[height="22"]:not([class*="fill-primary"])')
+          .last(),
       );
-      await expect(litKeys.first()).toBeVisible();
+      const lit = await paintOf(
+        keyboard.locator('rect[class*="fill-primary"]').first(),
+      );
+
+      // Black keys are never lighter than white ones, as on a piano.
+      expect(brightness(sharp)).toBeLessThan(brightness(white));
+      expect(lit[0]).toBeGreaterThan(200);
+      expect(lit[1]).toBeLessThan(140);
+      // The drawing fills its box, so it ends where the box does.
+      const edges = await keyboard.evaluate((svg) => ({
+        box: svg.getBoundingClientRect().right,
+        keys: Math.max(
+          ...[...svg.querySelectorAll('rect')].map(
+            (key) => key.getBoundingClientRect().right,
+          ),
+        ),
+      }));
+      expect(edges.box - edges.keys).toBeLessThan(3);
     });
   }
 });

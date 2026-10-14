@@ -135,6 +135,7 @@ export function PracticeBody({
           controller={controller}
           hostRef={hostRef}
           videoId={header.youtubeVideoId}
+          trackKey={header.key}
         />
       )}
     </div>

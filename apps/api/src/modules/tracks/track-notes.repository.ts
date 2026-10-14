@@ -4,10 +4,8 @@ import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
 import { tracks } from '../../database/schema/tracks.js';
+import type { NoteSpan } from './track-note-span.js';
 import { noteSummaryOf } from './track-note-summary.js';
-
-/** A Vocal note to store: a MIDI pitch held from `start` to `end` (seconds). */
-export type NoteToStore = { pitch: number; start: number; end: number };
 
 /** The vocal notes of Tracks (CONTEXT.md "Track"). */
 @Injectable()
@@ -22,7 +20,7 @@ export class TrackNotesRepository {
    */
   async replaceNotes(
     trackId: string,
-    notes: readonly NoteToStore[],
+    notes: readonly NoteSpan[],
   ): Promise<void> {
     await this.txHost.tx
       .delete(trackNotes)

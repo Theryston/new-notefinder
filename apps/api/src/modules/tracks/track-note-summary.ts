@@ -1,4 +1,5 @@
 import { estimateKey } from './track-key.js';
+import type { NoteSpan } from './track-note-span.js';
 import { vocalRangeOf } from './track-vocal-range.js';
 
 /**
@@ -7,9 +8,7 @@ import { vocalRangeOf } from './track-vocal-range.js';
  * replaces the notes, and the backfill writes them for the Tracks completed
  * before they existed.
  */
-export function noteSummaryOf(
-  notes: readonly { pitch: number; start: number; end: number }[],
-) {
+export function noteSummaryOf(notes: readonly NoteSpan[]) {
   const range = vocalRangeOf(notes);
   const key = estimateKey(notes);
   return {

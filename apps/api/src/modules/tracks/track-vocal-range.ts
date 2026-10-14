@@ -1,4 +1,4 @@
-import type { TrackVocalRange } from '@notefinder/contracts';
+import { nearestKey, type TrackVocalRange } from '@notefinder/contracts';
 
 const LOWEST_MIDI = 0;
 const HIGHEST_MIDI = 127;
@@ -15,7 +15,7 @@ export function vocalRangeOf(
     return null;
   }
   const keys = notes.map((note) =>
-    Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, Math.floor(note.pitch + 0.5))),
+    Math.min(HIGHEST_MIDI, Math.max(LOWEST_MIDI, nearestKey(note.pitch))),
   );
   return { lowest: Math.min(...keys), highest: Math.max(...keys) };
 }

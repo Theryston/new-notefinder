@@ -61,6 +61,22 @@ name, like C#4, is the nearest key to it. Found by the Note detection of a
 Processing.
 _Avoid_: MIDI note, frame
 
+**Vocal range**:
+The lowest and highest Vocal note of a Track, as keys (D4 to D5). Stored on the
+Track when a Processing replaces its notes.
+_Avoid_: Tessitura, span
+
+**Key**:
+The tonic and mode (major or minor) a Track is estimated to be in, from how
+long each pitch class is sung. Stored on the Track with its Vocal range.
+_Avoid_: Tone, scale
+
+**Transposition**:
+A number of semitones, up or down, by which the page moves the notes, the Key
+and the Vocal range. It does not change the video's sound. Kept per Track on
+the device.
+_Avoid_: Pitch shift, tune
+
 **Pitch curve**:
 The singer's pitch over the whole Track, moment by moment, including the
 slides and vibrato between and within Vocal notes. Found by the Note detection

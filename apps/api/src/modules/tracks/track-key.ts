@@ -1,8 +1,12 @@
-import type { TrackKey } from '@notefinder/contracts';
+import { nearestKey, type TrackKey } from '@notefinder/contracts';
+import type { NoteSpan } from './track-note-span.js';
 
-// Krumhansl-Schmuckler key finding, as the legacy app did it: the pitch
-// classes a Track sings, weighted by how long each is held, are correlated
-// with the major and minor key profiles in each of the twelve rotations.
+// Key estimation as the legacy app does it (`estimateKey` in its
+// `components/timeline/utils.ts`): the seconds each pitch class is sung form a
+// normalized histogram, which is compared by cosine similarity with the
+// Krumhansl-Schmuckler major and minor profiles rotated to each tonic. The
+// first best score wins, major before minor for one tonic, and a note with no
+// length counts as one second, as there.
 
 const MAJOR_PROFILE = [
   6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
@@ -19,56 +23,51 @@ const PROFILES = [
 
 const PITCH_CLASSES = 12;
 
-/** A note's pitch and the span it is held, which is all the key needs. */
-type KeyNote = { pitch: number; start: number; end: number };
-
-/** Seconds each pitch class is sung, from C (0) to B (11). */
-function pitchClassHistogram(notes: readonly KeyNote[]): number[] {
+/** The normalized seconds each pitch class is sung, from C (0) to B (11). */
+function pitchClassHistogram(notes: readonly NoteSpan[]): number[] {
   const histogram = Array.from({ length: PITCH_CLASSES }, () => 0);
   for (const note of notes) {
-    const key = Math.floor(note.pitch + 0.5);
-    const pitchClass = ((key % PITCH_CLASSES) + PITCH_CLASSES) % PITCH_CLASSES;
-    histogram[pitchClass] =
-      (histogram[pitchClass] ?? 0) + Math.max(0, note.end - note.start);
+    const pitchClass =
+      ((nearestKey(note.pitch) % PITCH_CLASSES) + PITCH_CLASSES) %
+      PITCH_CLASSES;
+    const seconds = Math.max(0, note.end - note.start) || 1;
+    histogram[pitchClass] = (histogram[pitchClass] ?? 0) + seconds;
   }
-  return histogram;
+  const sum = histogram.reduce((total, value) => total + value, 0) || 1;
+  return histogram.map((value) => value / sum);
 }
 
-/** Pearson correlation of two equally long series; 0 when either is flat. */
-function correlation(a: readonly number[], b: readonly number[]): number {
-  const meanA = a.reduce((sum, value) => sum + value, 0) / a.length;
-  const meanB = b.reduce((sum, value) => sum + value, 0) / b.length;
-  let covariance = 0;
-  let varianceA = 0;
-  let varianceB = 0;
+function cosineSimilarity(a: readonly number[], b: readonly number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
   a.forEach((value, index) => {
-    const deltaA = value - meanA;
-    const deltaB = (b[index] ?? 0) - meanB;
-    covariance += deltaA * deltaB;
-    varianceA += deltaA * deltaA;
-    varianceB += deltaB * deltaB;
+    const other = b[index] ?? 0;
+    dot += value * other;
+    normA += value * value;
+    normB += other * other;
   });
-  const spread = Math.sqrt(varianceA * varianceB);
-  return spread === 0 ? 0 : covariance / spread;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB) || 1);
 }
 
-/**
- * The key a set of vocal notes is most likely in, or null when they hold no
- * sound (no notes, or only zero-length ones), since there is nothing to judge.
- */
-export function estimateKey(notes: readonly KeyNote[]): TrackKey | null {
-  const histogram = pitchClassHistogram(notes);
-  if (histogram.every((seconds) => seconds === 0)) {
+/** The profile turned so that its first value falls on `tonic`. */
+function rotated(profile: readonly number[], tonic: number): number[] {
+  return Array.from(
+    { length: PITCH_CLASSES },
+    (_, index) => profile[(index - tonic + PITCH_CLASSES) % PITCH_CLASSES] ?? 0,
+  );
+}
+
+/** The key a set of vocal notes is most likely in, or null without notes. */
+export function estimateKey(notes: readonly NoteSpan[]): TrackKey | null {
+  if (notes.length === 0) {
     return null;
   }
+  const histogram = pitchClassHistogram(notes);
   let best: { key: TrackKey; score: number } | null = null;
   for (let tonic = 0; tonic < PITCH_CLASSES; tonic += 1) {
-    // The histogram seen from this tonic, so the profile's first value is the tonic.
-    const fromTonic = histogram.map(
-      (_, index) => histogram[(index + tonic) % PITCH_CLASSES] ?? 0,
-    );
     for (const { mode, profile } of PROFILES) {
-      const score = correlation(fromTonic, profile);
+      const score = cosineSimilarity(histogram, rotated(profile, tonic));
       if (best === null || score > best.score) {
         best = { key: { tonic, mode }, score };
       }

@@ -99,6 +99,29 @@ function Duration({ ms }: { ms: number }) {
   );
 }
 
+/** The line under the title: artists, then the key and the duration, each after a dot. */
+function TrackFacts({ header }: { header: TrackDetail }) {
+  return (
+    <p className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
+      <span className="truncate">
+        <ArtistCredit credit={header.artistCredit} />
+      </span>
+      {header.key === undefined ? null : (
+        <>
+          <span aria-hidden="true">·</span>
+          <TrackKeyLabel trackKey={header.key} />
+        </>
+      )}
+      {header.durationMs === null ? null : (
+        <>
+          <span aria-hidden="true">·</span>
+          <Duration ms={header.durationMs} />
+        </>
+      )}
+    </p>
+  );
+}
+
 /**
  * The practice page's one-line title row: cover, title, artists (linked),
  * duration and the Contributors' avatars (linked to their Profiles). It wraps
@@ -132,18 +155,7 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
         >
           {header.title}
         </h1>
-        <p className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
-          <span className="truncate">
-            <ArtistCredit credit={header.artistCredit} />
-          </span>
-          <TrackKeyLabel trackKey={header.key} />
-          {header.durationMs === null ? null : (
-            <>
-              <span aria-hidden="true">·</span>
-              <Duration ms={header.durationMs} />
-            </>
-          )}
-        </p>
+        <TrackFacts header={header} />
       </div>
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />
