@@ -8,8 +8,8 @@
 A Track's Processing turns its Recording into vocal notes and Timed lyrics. The
 legacy app ran it as a Trigger.dev task: YouTube Music metadata, audio
 downloaded through a RapidAPI service, vocals separated and notes detected by
-`nfp-audio` (a Python RunPod serverless worker that lived in its own repo,
-now `apps/nfp-audio` in this monorepo; it answered through a Trigger.dev
+the legacy `nfp-audio` Python RunPod serverless worker (which had lived in its
+own repo and was later moved into this monorepo; it answered through a Trigger.dev
 wait-token callback, with an AWS SQS path behind a runtime toggle), and
 Whisper for the words. The new app takes the Recording
 from the Music catalog instead of YouTube Music (ADR 0002), so the YouTube
@@ -32,15 +32,13 @@ video has to be found for it, and there is no Trigger.dev.
   confirm you're not a bot" unless a residential proxy, a PO token provider and
   a JS runtime are kept up to date, and the setup breaks whenever YouTube
   changes. The RapidAPI service handles that on its side.
-- **`nfp-audio` moves into the monorepo as `apps/nfp-audio`** (Python, still a
-  RunPod serverless image published to GHCR; the model weights are a regular
-  git blob, not Git LFS, by maintainer decision). It no longer calls the API:
-  it reads the audio from a URL, uploads the vocals through a presigned URL,
-  reports its two stages with RunPod progress updates and returns the notes as
-  the job output. The API starts it with `/run` and
-  **polls `/status`** with delayed BullMQ jobs, so there is no inbound
-  endpoint and no lost callback. The AWS SQS path and the runtime toggle are
-  dropped.
+- **At the time of this decision, `nfp-audio` moved into the monorepo** as a
+  Python RunPod serverless image published to GHCR. ADR 0007 supersedes this
+  worker choice and its model and contract details; the retired worker and its
+  image have since been removed. The API continues to start the current worker
+  with `/run` and poll `/status` with delayed BullMQ jobs, so there is no
+  inbound endpoint and no lost callback. The AWS SQS path and runtime toggle
+  remain dropped.
 
 ## Considered options
 
@@ -48,8 +46,8 @@ video has to be found for it, and there is no Trigger.dev.
   (see above).
 - **RunPod webhook** to an internal endpoint: push instead of polling, but it
   needs a public endpoint and a fallback when a webhook is lost.
-- **Keeping `nfp-audio` in its own repo**: its contract changes with this
-  pipeline, so the two would have to be released together anyway.
+- **Keeping the original worker in its own repo**: its contract changed with
+  this pipeline, so the two would have had to be released together anyway.
 
 ## Consequences
 

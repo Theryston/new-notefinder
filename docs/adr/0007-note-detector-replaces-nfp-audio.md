@@ -5,7 +5,7 @@
 
 ## Context
 
-The Vocal notes notefinder shows are mostly missing. `apps/nfp-audio` (ADR
+The Vocal notes notefinder shows are mostly missing. The previous worker (ADR
 0004), ported from the legacy app with its parameters frozen on purpose,
 separates the vocals with a CascadedNet (about 8 dB vocals SDR, several dB
 behind the state of the art, and it removes part of the voice with the music)
@@ -89,11 +89,10 @@ share of sung time that has a Vocal note.
 ## Consequences
 
 - The contract between the API and the worker is rebuilt (two presigned
-  uploads, new output); the API, `packages/contracts` and the web move to
-  `{ pitch, start, end }` in sibling work, and `apps/nfp-audio` is deleted
-  once the API runs on the new worker. ADR 0004's description of `nfp-audio`
-  is superseded for the models and the contract; its pipeline, polling and
-  stage names stand.
+  uploads, new output); the API, `packages/contracts` and the web use
+  `{ pitch, start, end }`. The retired worker and its image have been removed.
+  This ADR supersedes ADR 0004's worker choice and its model and contract
+  details; ADR 0004's pipeline, polling and stage names still apply.
 - The image drops TensorFlow and CREPE; it adds about 1.3 GB of weights,
   fetched at build time from fixed URLs and verified against sha256 checksums.
 - License notices stay with the vendored code (ZFTurbo MIT, RMVPE

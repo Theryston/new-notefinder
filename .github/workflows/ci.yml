@@ -22,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
-      # apps/nfp-audio and apps/note-detector (Python) run through turbo's
-      # lint and test:cov tasks, which call uv. Pinned, so the runner's
+      # apps/note-detector (Python) runs through turbo's lint and test:cov
+      # tasks, which call uv. Pinned, so the runner's
       # preinstalled uv (if any) does not decide which resolver checks the
       # lock.
       - uses: astral-sh/setup-uv@v10.2.0
