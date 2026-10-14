@@ -64,6 +64,11 @@ export const trackProcessings = pgTable(
     musicMp3Url: text(),
     vocalsWavUrl: text(),
     vocalsMp3Url: text(),
+    // The Pitch curve file of the vocals (a Uint16 per 10 ms, see
+    // apps/note-detector) and the `note-detector@<git sha>` that made it and
+    // the notes. Set by the notes stage.
+    pitchCurveUrl: text(),
+    detectorVersion: text(),
     // The RunPod job of the note detection, to poll its `/status`.
     runpodJobId: text(),
     startedAt: timestamp({ withTimezone: true }),

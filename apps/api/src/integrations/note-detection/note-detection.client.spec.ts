@@ -13,6 +13,11 @@ const input: NoteDetectionInput = {
     contentType: 'audio/wav',
     publicUrl: 'https://files.test/track-vocals/track-1/processing-1.wav',
   },
+  pitchCurveUpload: {
+    presignedPutUrl: 'https://files.test/pitch-curve.bin?X-Amz-Signature=2',
+    contentType: 'application/octet-stream',
+    publicUrl: 'https://files.test/track-pitch-curves/track-1/processing-1.bin',
+  },
 };
 
 const json = (body: unknown, status = 200): Response =>

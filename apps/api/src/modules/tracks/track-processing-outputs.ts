@@ -14,6 +14,9 @@ export type ProcessingOutputs = {
   musicMp3Url: string | null;
   vocalsWavUrl: string | null;
   vocalsMp3Url: string | null;
+  /** The Pitch curve and the detector version, made with the vocals. */
+  pitchCurveUrl: string | null;
+  detectorVersion: string | null;
   /** The RunPod job of the note detection, which the step polls. */
   runpodJobId: string | null;
 };
@@ -37,6 +40,8 @@ export function carriedOutputsOf(outputs: ProcessingOutputs): CarriedOutputs {
     musicMp3Url: outputs.musicMp3Url,
     vocalsWavUrl: outputs.vocalsWavUrl,
     vocalsMp3Url: outputs.vocalsMp3Url,
+    pitchCurveUrl: outputs.pitchCurveUrl,
+    detectorVersion: outputs.detectorVersion,
   } satisfies CarriedOutputs;
 }
 
@@ -51,3 +56,10 @@ export type StoredAudioUrls = Pick<
 
 /** The Processing an MP3 or lyrics write belongs to: only its ID and its Track. */
 export type ProcessingRef = { id: string; trackId: string };
+
+/** What the notes stage stores from the worker's output besides the notes. */
+export type ProcessingDetection = {
+  vocalsWavUrl: string;
+  pitchCurveUrl: string;
+  detectorVersion: string;
+};
