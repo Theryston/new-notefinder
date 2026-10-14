@@ -10,6 +10,8 @@ const outputs: ProcessingOutputs = {
   musicMp3Url: 'https://storage.test/music.mp3',
   vocalsWavUrl: 'https://storage.test/vocals.wav',
   vocalsMp3Url: 'https://storage.test/vocals.mp3',
+  pitchCurveUrl: 'https://storage.test/pitch-curve.bin',
+  detectorVersion: 'note-detector@0123abc',
   runpodJobId: 'runpod-job-1',
 };
 
@@ -22,6 +24,15 @@ describe('carriedOutputsOf', () => {
       musicMp3Url: 'https://storage.test/music.mp3',
       vocalsWavUrl: 'https://storage.test/vocals.wav',
       vocalsMp3Url: 'https://storage.test/vocals.mp3',
+      pitchCurveUrl: 'https://storage.test/pitch-curve.bin',
+      detectorVersion: 'note-detector@0123abc',
+    });
+  });
+
+  it('carries the Pitch curve and the detector version with the vocals', () => {
+    expect(carriedOutputsOf(outputs)).toMatchObject({
+      pitchCurveUrl: 'https://storage.test/pitch-curve.bin',
+      detectorVersion: 'note-detector@0123abc',
     });
   });
 

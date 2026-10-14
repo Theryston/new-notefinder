@@ -3,12 +3,12 @@ import { Transactional } from '@nestjs-cls/transactional';
 import {
   NoteDetectionClient,
   type NoteDetectionInput,
+  type NoteDetectionUpload,
 } from '../../integrations/note-detection/note-detection.client.js';
 import {
   type NoteDetectionOutput,
   noteDetectionOutputOf,
 } from '../../integrations/note-detection/note-detection-output.js';
-import { pitchOfFrequency } from '../../integrations/note-detection/pitch-of-frequency.js';
 import type { RunpodJobState } from '../../integrations/note-detection/runpod-job.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import {
@@ -32,18 +32,23 @@ import {
 } from './track-step-outcome.js';
 
 const WAV_CONTENT_TYPE = 'audio/wav';
+const PITCH_CURVE_CONTENT_TYPE = 'application/octet-stream';
 
-// The worker uploads the vocals once it has separated them, which can wait for
-// a GPU to start: the upload stays allowed for two hours.
-const VOCALS_UPLOAD_TTL_SECONDS = 2 * 60 * 60;
+// The worker uploads the files once it has made them, which can wait for a GPU
+// to start: the uploads stay allowed for two hours.
+const UPLOAD_TTL_SECONDS = 2 * 60 * 60;
 
 /** The vocals WAV of a Processing: one key per Processing, as the download's WAV is. */
 const vocalsKeyOf = (processing: ProcessingForStep): string =>
   `track-vocals/${processing.trackId}/${processing.id}.wav`;
 
+/** The Pitch curve of a Processing: one key per Processing, next to the vocals. */
+const pitchCurveKeyOf = (processing: ProcessingForStep): string =>
+  `track-pitch-curves/${processing.trackId}/${processing.id}.bin`;
+
 /**
  * The note detection steps (ADR 0004). Both stages drive one RunPod job of
- * `apps/nfp-audio`, which the vocals stage starts and saves the ID of. The
+ * `apps/note-detector`, which the vocals stage starts and saves the ID of. The
  * vocals stage ends when the worker reports its notes stage, and the notes
  * stage reads the job's output. The job is never called back: each check is a
  * delayed re-run of its step.
@@ -82,7 +87,7 @@ export class TrackNoteDetectionService {
 
   /**
    * The notes stage. It reads the job until it completes, then stores its
-   * output: the vocals' URL and the notes.
+   * output: the vocals' and Pitch curve's URLs, the version and the notes.
    */
   async detectNotes(
     processing: ProcessingForStep,
@@ -102,7 +107,7 @@ export class TrackNoteDetectionService {
   }
 
   /**
-   * Starts the job with the Processing's music and its vocals' upload, then
+   * Starts the job with the Processing's music and its two uploads, then
    * saves the job's ID. Stops without saving when the Processing moved on.
    */
   private async startJob(processing: ProcessingForStep): Promise<StepOutcome> {
@@ -121,54 +126,63 @@ export class TrackNoteDetectionService {
   }
 
   /**
-   * The job's input. The worker gets a presigned PUT for the vocals and the
-   * public URL they will have, so it holds no storage credentials.
+   * The job's input. The worker gets a presigned PUT for the vocals and for the
+   * Pitch curve, each with the public URL it will have, so it holds no storage
+   * credentials.
    */
   private async inputOf(
     processing: ProcessingForStep,
     musicUrl: string,
   ): Promise<NoteDetectionInput> {
-    const key = vocalsKeyOf(processing);
     return {
       processingId: processing.id,
       musicUrl,
-      vocalsUpload: {
-        presignedPutUrl: await this.storage.presignPublicPut({
-          key,
-          contentType: WAV_CONTENT_TYPE,
-          expiresInSeconds: VOCALS_UPLOAD_TTL_SECONDS,
-        }),
-        contentType: WAV_CONTENT_TYPE,
-        publicUrl: this.storage.publicUrl(key),
-      },
+      vocalsUpload: await this.uploadOf(
+        vocalsKeyOf(processing),
+        WAV_CONTENT_TYPE,
+      ),
+      pitchCurveUpload: await this.uploadOf(
+        pitchCurveKeyOf(processing),
+        PITCH_CURVE_CONTENT_TYPE,
+      ),
+    };
+  }
+
+  private async uploadOf(
+    key: string,
+    contentType: string,
+  ): Promise<NoteDetectionUpload> {
+    return {
+      presignedPutUrl: await this.storage.presignPublicPut({
+        key,
+        contentType,
+        expiresInSeconds: UPLOAD_TTL_SECONDS,
+      }),
+      contentType,
+      publicUrl: this.storage.publicUrl(key),
     };
   }
 
   /**
-   * Stores the notes stage's output in one transaction: the vocals' URL on the
-   * Processing, and the Track's notes replaced by these. A Processing that
-   * moved on keeps its row, and the Track keeps its notes.
+   * Stores the notes stage's output in one transaction: the vocals' and Pitch
+   * curve's URLs and the detector version on the Processing, and the Track's
+   * notes replaced by these. A Processing that moved on keeps its row, and the
+   * Track keeps its notes.
    */
   @Transactional()
   private async saveOutput(
     processing: ProcessingForStep,
     output: NoteDetectionOutput,
   ): Promise<StepOutcome> {
-    const saved = await this.processings.saveVocalsWavUrl(
-      processing.id,
-      output.vocalsUrl,
-    );
+    const saved = await this.processings.saveDetection(processing.id, {
+      vocalsWavUrl: output.vocalsUrl,
+      pitchCurveUrl: output.pitchCurveUrl,
+      detectorVersion: output.detectorVersion,
+    });
     if (!saved) {
       return STOPPED;
     }
-    await this.notes.replaceNotes(
-      processing.trackId,
-      output.notes.map((note) => ({
-        pitch: pitchOfFrequency(note.frequencyMean),
-        start: note.start,
-        end: note.end,
-      })),
-    );
+    await this.notes.replaceNotes(processing.trackId, output.notes);
     return DONE;
   }
 

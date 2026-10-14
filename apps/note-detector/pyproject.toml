@@ -15,6 +15,9 @@ dependencies = [
 # The model stack, installed in the GPU image and on Linux machines that run
 # the worker for real. Not needed by the tests or the linter.
 model = [
+  "einops>=0.8",
+  "pyyaml>=6.0",
+  "rotary-embedding-torch>=0.6.1,<0.7",
   "onnxruntime-gpu>=1.22,<1.27",
   "soundfile>=0.13",
   # Pinned to the PyPI build that bundles CUDA 12.6, a runtime RunPod hosts
@@ -23,6 +26,11 @@ model = [
   # release built for CUDA 13; 1.22 to 1.26 are CUDA 12 builds that reuse the
   # cuDNN and cuBLAS libraries these wheels bring.
   "torch>=2.7,<2.8",
+]
+# Only for the separation parity test: the reference separator it compares
+# against. Not installed in the image.
+parity-separation = [
+  "audio-separator>=0.35",
 ]
 dev = [
   "pytest>=8.3",
@@ -36,6 +44,9 @@ package = false
 [tool.ruff]
 line-length = 80
 target-version = "py312"
+
+# Vendored third-party code keeps its upstream style.
+extend-exclude = ["note_detector/vendor"]
 
 [tool.ruff.lint]
 # The repo's limits, as Ruff enforces them: cyclomatic complexity 15, 4
@@ -69,4 +80,6 @@ source = ["note_detector"]
 omit = [
   "note_detector/__main__.py",
   "note_detector/game.py",
+  "note_detector/vendor/*",
+  "note_detector/separation.py",
 ]

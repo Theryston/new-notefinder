@@ -21,6 +21,8 @@ const processingOutputColumns = {
   musicMp3Url: trackProcessings.musicMp3Url,
   vocalsWavUrl: trackProcessings.vocalsWavUrl,
   vocalsMp3Url: trackProcessings.vocalsMp3Url,
+  pitchCurveUrl: trackProcessings.pitchCurveUrl,
+  detectorVersion: trackProcessings.detectorVersion,
   runpodJobId: trackProcessings.runpodJobId,
 } satisfies Record<ProcessingOutputKey, AnyPgColumn>;
 
