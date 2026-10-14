@@ -78,6 +78,7 @@ export function TrackPracticeView({
         header={header.data}
         notes={notes.data}
         lyrics={lyrics.data}
+        lyricsLoading={lyrics.isPending}
         failed={notes.isError}
         fakePlayer={fakePlayer}
       />

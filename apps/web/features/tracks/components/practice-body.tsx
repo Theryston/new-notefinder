@@ -16,11 +16,12 @@ import { NoteTimeline } from '@/features/timeline/components/note-timeline';
 
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
-import { useSharedMoment, useTimelineFocus } from '../hooks/use-shared-link';
+import { useTimelineFocus } from '../hooks/use-shared-link';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
 import { PracticeDock } from './practice-dock';
+import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
@@ -119,12 +120,15 @@ export function PracticeBody({
   header,
   notes,
   lyrics,
+  lyricsLoading,
   failed,
   fakePlayer,
 }: {
   header: TrackDetail;
   notes: TrackNotes | undefined;
   lyrics: TrackLyrics | undefined;
+  /** The lyrics are still being read: their slot is held. */
+  lyricsLoading: boolean;
   failed: boolean;
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
@@ -137,9 +141,12 @@ export function PracticeBody({
     fake: fakePlayer,
   });
   usePlaybackShortcuts(controller);
-  useSharedMoment(controller);
   const timelineRef = useRef<HTMLDivElement>(null);
-  useTimelineFocus(timelineRef, notes !== undefined);
+  // The timeline block is on screen once its notes loaded or failed to.
+  useTimelineFocus(
+    timelineRef,
+    header.hasNotes && (notes !== undefined || failed),
+  );
   const hasLyrics = lyrics !== undefined && lyrics.lines.length > 0;
 
   return (
@@ -154,11 +161,14 @@ export function PracticeBody({
           />
           {hasLyrics ? (
             <KaraokeLine lines={lyrics.lines} clock={playbackClock} />
-          ) : null}
+          ) : (
+            lyricsLoading && <div aria-hidden="true" className="min-h-8" />
+          )}
         </div>
       ) : (
         <NoVoice />
       )}
+      <SharedMomentSeek controller={controller} />
       <TrackLyricsBlock lyrics={lyrics} controller={controller} />
       {header.youtubeVideoId === null ? null : (
         <PracticeDock

@@ -3,7 +3,7 @@ import { createStore } from 'zustand/vanilla';
 
 import { DEFAULT_RATE } from '../player/player-port';
 
-type PlaybackStatus =
+export type PlaybackStatus =
   | 'loading'
   | 'ready'
   | 'playing'

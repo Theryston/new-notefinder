@@ -158,6 +158,22 @@ test.describe('timed lyrics on the practice page', () => {
     expect(box?.y).toBeLessThan(150);
   });
 
+  test('scrolls to the timeline with ?timeline-focus=true even when the notes failed to load', async ({
+    page,
+  }) => {
+    const id = 'clx-lyrics-focus-failed';
+    await setTrackMock({ tracks: [track(id, { notesFail: true })] });
+    await page.setViewportSize({ width: 600, height: 500 });
+
+    await page.goto(`/en/tracks/${id}?timeline-focus=true`);
+    await expect(
+      page.getByText(messages.en.tracks.practice.loadError),
+    ).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+  });
+
   test('stays at the top without ?timeline-focus=', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 500 });
     await openTrack(page, 'clx-lyrics-no-focus');

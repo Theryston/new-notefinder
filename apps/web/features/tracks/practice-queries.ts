@@ -80,10 +80,24 @@ export async function getInitialPractice(
 }
 
 /**
+ * What the Track route renders the practice view from: the header and notes,
+ * and the lyrics, read at once. The lyrics are a bonus and never fail the rest.
+ */
+export async function getInitialPracticeWithLyrics(
+  trackId: string,
+): Promise<InitialPractice | undefined> {
+  const [practice, lyrics] = await Promise.all([
+    getInitialPractice(trackId),
+    getInitialLyrics(trackId),
+  ]);
+  return practice && { ...practice, lyrics };
+}
+
+/**
  * The Timed lyrics for the first render, or undefined when the API fails: they
  * are a bonus, so the page keeps rendering and the browser asks again.
  */
-export async function getInitialLyrics(
+async function getInitialLyrics(
   trackId: string,
 ): Promise<TrackLyrics | undefined> {
   try {

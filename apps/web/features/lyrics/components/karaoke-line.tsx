@@ -3,9 +3,11 @@
 import type { TrackLyricLine } from '@notefinder/contracts';
 
 import { cn } from '@/lib/utils';
-
+import {
+  type LyricsClock,
+  useLyricsSignature,
+} from '../hooks/use-lyrics-signature';
 import { lineIndexAt, type WordState, wordStateAt } from '../lyrics-position';
-import { type LyricsClock, useLyricsSignature } from './use-lyrics-signature';
 
 const WORD_CLASS: Record<WordState, string> = {
   sung: 'text-foreground',
@@ -16,8 +18,9 @@ const WORD_CLASS: Record<WordState, string> = {
 /**
  * The line being sung, under the timeline, with the word being sung
  * highlighted. Before the first line starts it shows that line as what comes
- * next; after the last it keeps the last one. It reserves one line of height,
- * so a Track without lyrics never shifts the page.
+ * next; after the last it keeps the last one. The caller mounts it
+ * only once the lyrics are loaded, holding a slot of its height (`min-h-8`)
+ * while they load, so the page does not shift when they arrive.
  */
 export function KaraokeLine({
   lines,

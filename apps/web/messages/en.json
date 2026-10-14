@@ -159,8 +159,7 @@
         "description": "This looks like an instrumental, so there are no vocal notes to show."
       },
       "lyrics": {
-        "title": "Lyrics",
-        "currentLine": "Line being sung"
+        "title": "Lyrics"
       },
       "favorite": {
         "add": "Add to favorites",

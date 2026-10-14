@@ -23,7 +23,7 @@ describe('canSeekToSharedMoment', () => {
     expect(canSeekToSharedMoment('error')).toBe(false);
   });
 
-  it.each(['ready', 'playing', 'paused', 'ended'])(
+  it.each(['ready', 'playing', 'paused', 'ended'] as const)(
     'seeks once %s',
     (status) => {
       expect(canSeekToSharedMoment(status)).toBe(true);

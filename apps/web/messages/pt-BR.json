@@ -159,8 +159,7 @@
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
       },
       "lyrics": {
-        "title": "Letra",
-        "currentLine": "Linha sendo cantada"
+        "title": "Letra"
       },
       "favorite": {
         "add": "Adicionar aos favoritos",

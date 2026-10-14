@@ -5,8 +5,8 @@ import { getTranslations } from 'next-intl/server';
 import { TrackProcessingSection } from '@/features/tracks/components/track-processing-section';
 import { practiceMetadata } from '@/features/tracks/practice-metadata';
 import {
-  getInitialLyrics,
   getInitialPractice,
+  getInitialPracticeWithLyrics,
 } from '@/features/tracks/practice-queries';
 import { getTrackProcessingResult } from '@/features/tracks/queries';
 import { getServerEnv } from '@/lib/env/server';
@@ -48,14 +48,6 @@ export async function generateMetadata({
     description: t('metaDescription', { title }),
     alternates: localeAlternates(locale, `/tracks/${result.state.track.id}`),
   };
-}
-
-async function getInitialPracticeWithLyrics(trackId: string) {
-  const [practice, lyrics] = await Promise.all([
-    getInitialPractice(trackId),
-    getInitialLyrics(trackId),
-  ]);
-  return practice && { ...practice, lyrics };
 }
 
 /**
