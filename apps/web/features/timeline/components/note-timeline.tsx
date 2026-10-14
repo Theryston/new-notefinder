@@ -9,6 +9,11 @@ import {
   drawListenTimeline,
   type TimelineColors,
 } from '../draw-listen-timeline';
+import {
+  drawSingTimeline,
+  type SingTimelineColors,
+  type VoiceSource,
+} from '../draw-sing-timeline';
 import { type LaneRange, laneRangeOf, scrubTime } from '../timeline-geometry';
 
 /**
@@ -40,7 +45,28 @@ function readColors(element: HTMLElement): TimelineColors {
   };
 }
 
-type Measured = { width: number; height: number; colors: TimelineColors };
+/** The extra tokens sing mode draws with (DESIGN.md "Sing mode"). */
+function readSingColors(
+  element: HTMLElement,
+  colors: TimelineColors,
+): SingTimelineColors {
+  const style = getComputedStyle(element);
+  const token = (name: string) => style.getPropertyValue(name).trim();
+  return {
+    ...colors,
+    muted: token('--muted'),
+    mutedLine: token('--muted-foreground'),
+    mutedLabel: token('--muted-foreground'),
+    current: token('--primary'),
+    voice: token('--timeline-pitch'),
+  };
+}
+
+type Measured = {
+  width: number;
+  height: number;
+  colors: SingTimelineColors;
+};
 
 /** Sizes the canvas to its box (at device pixels) and reads the colors. */
 function measure(box: HTMLElement, canvas: HTMLCanvasElement): Measured {
@@ -49,13 +75,19 @@ function measure(box: HTMLElement, canvas: HTMLCanvasElement): Measured {
   canvas.width = Math.round(width * scale);
   canvas.height = Math.round(height * scale);
   canvas.getContext('2d')?.setTransform(scale, 0, 0, scale, 0, 0);
-  return { width, height, colors: readColors(box) };
+  return {
+    width,
+    height,
+    colors: readSingColors(box, readColors(box)),
+  };
 }
 
 type Painting = {
   notes: readonly TrackNote[];
   range: LaneRange;
   clock: TimelineClock | undefined;
+  /** Present while the mic is on: the roll is drawn in sing mode. */
+  voice: VoiceSource | undefined;
 };
 
 /**
@@ -65,7 +97,7 @@ type Painting = {
 function useTimelinePainting(
   boxRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  { notes, range, clock }: Painting,
+  { notes, range, clock, voice }: Painting,
 ) {
   useEffect(() => {
     const box = boxRef.current;
@@ -77,7 +109,9 @@ function useTimelinePainting(
     let drawnAt = Number.NaN;
     const paint = () => {
       drawnAt = clock?.now() ?? 0;
-      drawListenTimeline(ctx, { ...measured, notes, range, now: drawnAt });
+      const frame = { ...measured, notes, range, now: drawnAt };
+      if (voice) drawSingTimeline(ctx, { ...frame, voice });
+      else drawListenTimeline(ctx, frame);
     };
     const remeasure = () => {
       measured = measure(box, canvas);
@@ -96,12 +130,15 @@ function useTimelinePainting(
     const unsubscribe = clock?.subscribe(() => {
       if (clock.now() !== drawnAt) paint();
     });
+    // The voice moves the line even while the Track rests (paused).
+    const unsubscribeVoice = voice?.subscribe(paint);
     return () => {
       resize.disconnect();
       theme.disconnect();
       unsubscribe?.();
+      unsubscribeVoice?.();
     };
-  }, [boxRef, canvasRef, notes, range, clock]);
+  }, [boxRef, canvasRef, notes, range, clock, voice]);
 }
 
 type Drag = { startX: number; startTime: number };
@@ -137,7 +174,8 @@ function useScrub(
  * The note timeline in listen mode (DESIGN.md "Note timeline"), drawn on a
  * canvas that fills its box: a piano roll fitted to the Track's range. With a
  * `clock` it follows playback and can be dragged to seek (`onScrub`); without
- * one the Track rests at its start. `label` names the canvas for assistive
+ * one the Track rests at its start. With a `voice` (the mic is on) it draws in
+ * sing mode instead: labeled lanes and the user's voice line. `label` names the canvas for assistive
  * tech, since its content is not text.
  */
 export function NoteTimeline({
@@ -145,18 +183,21 @@ export function NoteTimeline({
   label,
   clock,
   onScrub,
+  voice,
   className,
 }: {
   notes: readonly TrackNote[];
   label: string;
   clock?: TimelineClock;
   onScrub?: (seconds: number) => void;
+  /** The user's voice; giving one switches the roll to sing mode. */
+  voice?: VoiceSource;
   className?: string;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const range = useMemo(() => laneRangeOf(notes), [notes]);
-  useTimelinePainting(boxRef, canvasRef, { notes, range, clock });
+  useTimelinePainting(boxRef, canvasRef, { notes, range, clock, voice });
   const scrub = useScrub(clock, onScrub);
 
   return (

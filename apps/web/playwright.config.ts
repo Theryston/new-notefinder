@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig, devices } from '@playwright/test';
 
 import { webServerEnv } from './e2e/web-server-env';
@@ -5,6 +7,9 @@ import { webServerEnv } from './e2e/web-server-env';
 const port = 3000;
 const baseURL = `http://localhost:${port}`;
 const isCI = Boolean(process.env.CI);
+const fakeVoice = fileURLToPath(
+  new URL('./e2e/fixtures/a4-440hz.wav', import.meta.url),
+);
 
 /**
  * E2E tests run against a production build (`next start`), so they see the
@@ -36,6 +41,14 @@ export default defineConfig({
         // it unset and uses `playwright install`.
         launchOptions: {
           executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+          // A fake microphone that "sings" a known A4 on a loop, for the
+          // sing mode specs (track-mic.spec.ts). The fake UI grants the
+          // permission without a prompt.
+          args: [
+            '--use-fake-device-for-media-stream',
+            '--use-fake-ui-for-media-stream',
+            `--use-file-for-fake-audio-capture=${fakeVoice}`,
+          ],
         },
       },
     },

@@ -6,10 +6,11 @@ import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DockMicButton } from '@/features/practice/components/dock-mic-button';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
-import { usePlaybackState } from '../stores/playback-store';
+import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
 
@@ -103,7 +104,8 @@ export function PracticeDock({
           <DockProgressTrack controller={controller} />
         )}
       </div>
-      <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
+      <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:flex-row md:self-center">
+        <DockMicButton playback={playbackStore} />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
     </section>

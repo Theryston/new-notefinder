@@ -69,7 +69,10 @@ export type ListenTimelineFrame = {
   colors: TimelineColors;
 };
 
-function drawLanes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
+export function drawLanes(
+  ctx: TimelineContext,
+  frame: ListenTimelineFrame,
+): void {
   const { width, height, range, colors } = frame;
   const lane = laneHeight(range, height);
   ctx.fillStyle = colors.lane;
@@ -88,7 +91,10 @@ function drawLanes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
 }
 
 /** One faint vertical line per second of the Track. */
-function drawBeatLines(ctx: TimelineContext, frame: ListenTimelineFrame): void {
+export function drawBeatLines(
+  ctx: TimelineContext,
+  frame: ListenTimelineFrame,
+): void {
   const { width, height, now, colors } = frame;
   const playheadX = playheadXOf(width, KEYBOARD_WIDTH);
   ctx.fillStyle = colors.border;
@@ -99,15 +105,16 @@ function drawBeatLines(ctx: TimelineContext, frame: ListenTimelineFrame): void {
   }
 }
 
-function drawNoteLabel(
+/** Writes the note's name inside its bar, when the bar has room for it. */
+export function drawNoteLabel(
   ctx: TimelineContext,
   note: TrackNote,
-  box: { x: number; y: number; width: number; height: number },
-  colors: TimelineColors,
+  box: NoteBox,
+  style: { fill: string; fontFamily: string },
 ): void {
   if (!fitsLabel(box.width, box.height)) return;
-  ctx.fillStyle = colors.noteLabel;
-  ctx.font = `600 ${NOTE_FONT_SIZE}px ${colors.fontFamily}`;
+  ctx.fillStyle = style.fill;
+  ctx.font = `600 ${NOTE_FONT_SIZE}px ${style.fontFamily}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(
@@ -118,20 +125,39 @@ function drawNoteLabel(
   );
 }
 
-function drawNotes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
-  const { width, height, notes, range, now, colors } = frame;
+export type NoteBox = { x: number; y: number; width: number; height: number };
+
+/** The bars of the notes that are on screen, in either mode's geometry. */
+export function visibleNoteBoxes(
+  frame: Pick<
+    ListenTimelineFrame,
+    'width' | 'height' | 'notes' | 'range' | 'now'
+  >,
+): { note: TrackNote; box: NoteBox }[] {
+  const { width, height, notes, range, now } = frame;
   const playheadX = playheadXOf(width, KEYBOARD_WIDTH);
   const lane = laneHeight(range, height);
+  const visible: { note: TrackNote; box: NoteBox }[] = [];
   for (const note of notes) {
     const x = timeToX(note.start, now, playheadX);
     const right = timeToX(note.end, now, playheadX);
     if (right < KEYBOARD_WIDTH || x > width) continue;
-    const box = {
-      x,
-      y: laneTop(keyOf(note), range, height) + 1,
-      width: Math.max(right - x, 2),
-      height: Math.max(lane - 2, 1),
-    };
+    visible.push({
+      note,
+      box: {
+        x,
+        y: laneTop(keyOf(note), range, height) + 1,
+        width: Math.max(right - x, 2),
+        height: Math.max(lane - 2, 1),
+      },
+    });
+  }
+  return visible;
+}
+
+function drawNotes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
+  const { now, colors } = frame;
+  for (const { note, box } of visibleNoteBoxes(frame)) {
     const state = noteStateAt(note, now);
     ctx.globalAlpha = state === 'upcoming' ? UPCOMING_ALPHA : 1;
     ctx.fillStyle = state === 'past' ? colors.notePast : colors.note;
@@ -139,7 +165,12 @@ function drawNotes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
     ctx.roundRect(box.x, box.y, box.width, box.height, NOTE_RADIUS);
     ctx.fill();
     ctx.globalAlpha = 1;
-    if (state !== 'past') drawNoteLabel(ctx, note, box, colors);
+    if (state !== 'past') {
+      drawNoteLabel(ctx, note, box, {
+        fill: colors.noteLabel,
+        fontFamily: colors.fontFamily,
+      });
+    }
   }
 }
 
@@ -165,6 +196,33 @@ function drawKeyboard(ctx: TimelineContext, frame: ListenTimelineFrame): void {
   ctx.fillRect(KEYBOARD_WIDTH - 1, 0, 1, height);
 }
 
+/** Runs `draw` clipped to the roll, so notes slide under the keyboard. */
+export function drawInRoll(
+  ctx: TimelineContext,
+  frame: Pick<ListenTimelineFrame, 'width' | 'height'>,
+  draw: () => void,
+): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(KEYBOARD_WIDTH, 0, frame.width - KEYBOARD_WIDTH, frame.height);
+  ctx.clip();
+  draw();
+  ctx.restore();
+}
+
+export function drawPlayhead(
+  ctx: TimelineContext,
+  frame: Pick<ListenTimelineFrame, 'width' | 'height' | 'colors'>,
+): void {
+  ctx.fillStyle = frame.colors.playhead;
+  ctx.fillRect(
+    playheadXOf(frame.width, KEYBOARD_WIDTH) - PLAYHEAD_WIDTH / 2,
+    0,
+    PLAYHEAD_WIDTH,
+    frame.height,
+  );
+}
+
 /**
  * Draws the roll in listen mode: lanes, one-second lines, the notes (upcoming,
  * current, past), the mini keyboard and the fixed playhead. It draws from
@@ -175,23 +233,11 @@ export function drawListenTimeline(
   ctx: TimelineContext,
   frame: ListenTimelineFrame,
 ): void {
-  const { width, height, colors } = frame;
   ctx.save();
   drawLanes(ctx, frame);
   drawBeatLines(ctx, frame);
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(KEYBOARD_WIDTH, 0, width - KEYBOARD_WIDTH, height);
-  ctx.clip();
-  drawNotes(ctx, frame);
-  ctx.restore();
+  drawInRoll(ctx, frame, () => drawNotes(ctx, frame));
   drawKeyboard(ctx, frame);
-  ctx.fillStyle = colors.playhead;
-  ctx.fillRect(
-    playheadXOf(width, KEYBOARD_WIDTH) - PLAYHEAD_WIDTH / 2,
-    0,
-    PLAYHEAD_WIDTH,
-    height,
-  );
+  drawPlayhead(ctx, frame);
   ctx.restore();
 }

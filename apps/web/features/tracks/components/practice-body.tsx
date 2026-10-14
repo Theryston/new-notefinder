@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { SingReadout } from '@/features/practice/components/sing-readout';
+import { useSingVoice } from '@/features/practice/components/sing-voice';
 import { NoteTimeline } from '@/features/timeline/components/note-timeline';
 
 import { usePlayback } from '../hooks/use-playback';
@@ -13,6 +15,7 @@ import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { playbackStore } from '../stores/playback-store';
 import { PracticeDock } from './practice-dock';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 
@@ -43,6 +46,7 @@ function TrackTimeline({
   controller: PlaybackController | null;
 }) {
   const t = useTranslations('tracks.practice');
+  const voice = useSingVoice();
   if (notes === undefined) {
     return failed ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -63,13 +67,19 @@ function TrackTimeline({
     : t('timeline.labelEmpty', { title: header.title });
 
   return (
-    <NoteTimeline
-      notes={notes.notes}
-      label={label}
-      clock={controller ? playbackClock : undefined}
-      onScrub={controller?.seek}
-      className={TIMELINE_BOX_CLASS}
-    />
+    <div className="flex flex-col gap-2">
+      {voice ? (
+        <SingReadout notes={notes.notes} playback={playbackStore} />
+      ) : null}
+      <NoteTimeline
+        notes={notes.notes}
+        label={label}
+        clock={controller ? playbackClock : undefined}
+        onScrub={controller?.seek}
+        voice={voice}
+        className={TIMELINE_BOX_CLASS}
+      />
+    </div>
   );
 }
 
