@@ -9,6 +9,7 @@ import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
+import { TrackKeyLabel } from './track-key-label';
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
@@ -135,6 +136,7 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
           <span className="truncate">
             <ArtistCredit credit={header.artistCredit} />
           </span>
+          <TrackKeyLabel trackKey={header.key} />
           {header.durationMs === null ? null : (
             <>
               <span aria-hidden="true">·</span>

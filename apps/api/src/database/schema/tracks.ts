@@ -1,4 +1,7 @@
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import type {
+  TrackArtistCreditEntry,
+  TrackKeyMode,
+} from '@notefinder/contracts';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -60,6 +63,13 @@ export const tracks = pgTable(
     coverUrl: text(),
     // The YouTube video the timeline plays, set when a Processing chooses it.
     youtubeVideoId: text(),
+    // The vocal range as MIDI numbers (A4 is 69) and the estimated key (a
+    // pitch class, 0 is C, and its mode), written when a Processing replaces
+    // the Track's notes. All null for a Track without notes.
+    vocalRangeLowest: integer(),
+    vocalRangeHighest: integer(),
+    keyTonic: integer(),
+    keyMode: text().$type<TrackKeyMode>(),
     ...timestamps,
   },
   (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],

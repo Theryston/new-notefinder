@@ -152,7 +152,12 @@
         "mute": "Mute",
         "openOnYouTube": "Open on YouTube",
         "error": "The video couldn't be played. You can still open it on YouTube from Settings.",
-        "hideVideo": "Hide video"
+        "hideVideo": "Hide video",
+        "transpose": "Transpose",
+        "transposeDown": "Lower by a semitone",
+        "transposeUp": "Raise by a semitone",
+        "transposeValue": "{semitones, number, ::sign-except-zero}",
+        "videoKeepsKey": "Only the notes changed key. The video keeps playing in its original key."
       },
       "noVoice": {
         "title": "We found no voice in this recording",
@@ -166,7 +171,17 @@
       "loadError": "We couldn't load this track. Try again in a moment.",
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
-      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
+      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
+      "key": {
+        "MAJOR": "{tonic} major",
+        "MINOR": "{tonic} minor",
+        "label": "Key: {key}"
+      },
+      "range": {
+        "label": "Vocal range",
+        "summary": "{low}–{high} · {octaves, plural, one {# octave} other {# octaves}}",
+        "keyboard": "Keyboard with the vocal range {low} to {high} highlighted"
+      }
     }
   },
   "header": {

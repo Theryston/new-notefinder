@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { useRememberedTranspose } from '../hooks/use-remembered-transpose';
 import type { InitialPractice } from '../practice-queries';
 import {
   trackNotesQueryOptions,
@@ -48,6 +49,7 @@ export function TrackPracticeView({
   fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.practice');
+  useRememberedTranspose(trackId);
   const header = useQuery(trackPracticeQueryOptions(trackId, initial?.header));
   const notes = useQuery(
     trackNotesQueryOptions(

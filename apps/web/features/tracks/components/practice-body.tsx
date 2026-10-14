@@ -3,7 +3,7 @@
 import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { NoteTimeline } from '@/features/timeline/components/note-timeline';
@@ -13,8 +13,11 @@ import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { useTranspose } from '../stores/transpose-store';
+import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
+import { VocalRangeStrip } from './vocal-range-strip';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -43,6 +46,11 @@ function TrackTimeline({
   controller: PlaybackController | null;
 }) {
   const t = useTranslations('tracks.practice');
+  const semitones = useTranspose();
+  const shifted = useMemo(
+    () => (notes ? transposeNotes(notes.notes, semitones) : []),
+    [notes, semitones],
+  );
   if (notes === undefined) {
     return failed ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -52,7 +60,7 @@ function TrackTimeline({
       <Skeleton className={TIMELINE_BOX_CLASS} />
     );
   }
-  const range = noteRangeOf(notes.notes);
+  const range = noteRangeOf(shifted);
   const label = range
     ? t('timeline.label', {
         title: header.title,
@@ -64,7 +72,7 @@ function TrackTimeline({
 
   return (
     <NoteTimeline
-      notes={notes.notes}
+      notes={shifted}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}
@@ -110,12 +118,15 @@ export function PracticeBody({
   return (
     <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
       {header.hasNotes ? (
-        <TrackTimeline
-          header={header}
-          notes={notes}
-          failed={failed}
-          controller={controller}
-        />
+        <div className="flex flex-col gap-3">
+          <TrackTimeline
+            header={header}
+            notes={notes}
+            failed={failed}
+            controller={controller}
+          />
+          <VocalRangeStrip range={header.vocalRange} />
+        </div>
       ) : (
         <NoVoice />
       )}

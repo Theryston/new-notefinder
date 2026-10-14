@@ -12,6 +12,7 @@ import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
+import { TransposeStepper } from './transpose-stepper';
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -104,6 +105,7 @@ export function PracticeDock({
         )}
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
+        <TransposeStepper />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
     </section>

@@ -48,7 +48,7 @@ export function TrackProcessingView({
     return (
       <>
         {/* A toast still showing when the view switches (a retry refused) stays. */}
-        <Toaster />
+        <Toaster offset="calc(var(--dock-height, 0px) + 1.5rem)" />
         <TrackPracticeView
           trackId={state.track.id}
           initial={initialPractice}
