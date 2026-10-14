@@ -9,6 +9,7 @@ import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
+import { TrackShareDialog } from './track-share-dialog';
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
@@ -105,6 +106,8 @@ function Duration({ ms }: { ms: number }) {
  * from `sm`.
  */
 export function TrackTitleRow({ header }: { header: TrackDetail }) {
+  const t = useTranslations('tracks.practice');
+
   return (
     <section
       aria-labelledby="track-title"
@@ -139,14 +142,17 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
             <>
               <span aria-hidden="true">·</span>
               <Duration ms={header.durationMs} />
+              <span aria-hidden="true">·</span>
             </>
           )}
+          <span>{t('viewCount', { count: header.viewCount ?? 0 })}</span>
         </p>
       </div>
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />
       ) : null}
       <TrackFavoriteButton trackId={header.id} />
+      <TrackShareDialog trackId={header.id} title={header.title} />
     </section>
   );
 }

@@ -34,6 +34,7 @@ import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingProcessor } from './track-processing.processor.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
+import { TrackPublicService } from './track-public.service.js';
 import { TrackRequestService } from './track-request.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
@@ -44,8 +45,13 @@ import { TrackRetryService } from './track-retry.service.js';
 import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
 import { TrackStepsService } from './track-steps.service.js';
 import { TrackTimedLyricsService } from './track-timed-lyrics.service.js';
+import { TrackTrendingProcessor } from './track-trending.processor.js';
+import { TrackTrendingQueueService } from './track-trending-queue.service.js';
 import { TrackVideoService } from './track-video.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
+import { TrackViewRepository } from './track-view.repository.js';
+import { TRACK_TRENDING_QUEUE } from './track-views.job.js';
+import { TrackViewsService } from './track-views.service.js';
 import { TracksController } from './tracks.controller.js';
 import { TracksRepository } from './tracks.repository.js';
 import { TracksService } from './tracks.service.js';
@@ -61,6 +67,7 @@ import { TracksService } from './tracks.service.js';
     BullModule.registerQueue({ name: TRACK_PROCESSING_QUEUE }),
     BullModule.registerQueue({ name: TRACK_METADATA_QUEUE }),
     BullModule.registerQueue({ name: TRACK_MP3_QUEUE }),
+    BullModule.registerQueue({ name: TRACK_TRENDING_QUEUE }),
     CoverArtModule,
     EmailModule,
     FfmpegModule,
@@ -88,6 +95,7 @@ import { TracksService } from './tracks.service.js';
     TrackRetryLauncherService,
     TrackContributorEmailsService,
     TrackProcessingService,
+    TrackPublicService,
     TrackPracticeRepository,
     TrackPracticeService,
     TrackRequesterService,
@@ -108,6 +116,10 @@ import { TracksService } from './tracks.service.js';
     TrackPipelineService,
     TrackJobRunnerService,
     TrackProcessingProcessor,
+    TrackViewRepository,
+    TrackTrendingQueueService,
+    TrackTrendingProcessor,
+    TrackViewsService,
   ],
   exports: [TracksService, TrackAlbumCoverService],
 })

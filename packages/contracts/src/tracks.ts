@@ -149,9 +149,31 @@ export const trackDetailSchema = trackHeaderSchema.extend({
   youtubeVideoId: z.string().min(1).max(32).nullable(),
   contributors: z.array(trackContributorSchema).max(100),
   hasNotes: z.boolean(),
+  viewCount: z.number().int().nonnegative().optional(),
 });
 
 export type TrackDetail = z.infer<typeof trackDetailSchema>;
+
+/** Optional ID returned by the first view request and reused to attach a User. */
+export const trackViewBodySchema = z.object({
+  viewId: z.string().min(1).max(128).optional(),
+});
+
+export type TrackViewBody = z.infer<typeof trackViewBodySchema>;
+
+/** `POST /v1/tracks/:trackId/views`: the browser-session view ID. */
+export const trackViewSchema = z.object({
+  viewId: z.string().min(1).max(128),
+});
+
+export type TrackView = z.infer<typeof trackViewSchema>;
+
+/** IDs of completed Tracks in trending order, for the public Tracks sitemap. */
+export const trackSitemapSchema = z.object({
+  trackIds: z.array(z.string().min(1).max(128)).max(50_000),
+});
+
+export type TrackSitemap = z.infer<typeof trackSitemapSchema>;
 
 /**
  * One vocal note (CONTEXT.md): a single continuous pitch held from `start` to

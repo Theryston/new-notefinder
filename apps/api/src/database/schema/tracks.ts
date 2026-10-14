@@ -60,6 +60,7 @@ export const tracks = pgTable(
     coverUrl: text(),
     // The YouTube video the timeline plays, set when a Processing chooses it.
     youtubeVideoId: text(),
+    trendingScore: integer().notNull().default(0),
     ...timestamps,
   },
   (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],

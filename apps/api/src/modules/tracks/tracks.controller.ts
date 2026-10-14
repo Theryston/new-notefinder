@@ -27,9 +27,13 @@ import {
   type TrackDetail,
   type TrackNotes,
   type TrackProcessingState,
+  type TrackSitemap,
+  type TrackView,
   trackDetailSchema,
   trackNotesSchema,
   trackProcessingStateSchema,
+  trackSitemapSchema,
+  trackViewSchema,
 } from '@notefinder/contracts';
 import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -39,10 +43,11 @@ import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { RetryTrackBodyDto } from './retry-track-body.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
-import { TrackPracticeService } from './track-practice.service.js';
 import { TrackProcessingService } from './track-processing.service.js';
+import { TrackPublicService } from './track-public.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
+import { TrackViewBodyDto } from './track-view-body.dto.js';
 
 @ApiTags('tracks')
 @Controller('tracks')
@@ -50,7 +55,7 @@ export class TracksController {
   constructor(
     private readonly trackRequests: TrackRequestFlowService,
     private readonly trackProcessing: TrackProcessingService,
-    private readonly trackPractice: TrackPracticeService,
+    private readonly trackPublic: TrackPublicService,
     private readonly trackRetries: TrackRetryLauncherService,
   ) {}
 
@@ -89,6 +94,16 @@ export class TracksController {
     return { trackId: requested.trackId };
   }
 
+  @Public()
+  @Get('sitemap.xml')
+  @ZodSerializerDto(trackSitemapSchema)
+  @ApiOkResponse({
+    description: 'Completed Track IDs, ordered by their trending score.',
+  })
+  getSitemap(): Promise<TrackSitemap> {
+    return this.trackPublic.sitemap();
+  }
+
   // Public: the practice page of a Track. A legacy ID answers 404
   // `RESOURCE_MOVED` with the new ID, an unknown one 404 `NOT_FOUND`.
   @Public()
@@ -105,7 +120,23 @@ export class TracksController {
       '(`RESOURCE_MOVED`).',
   })
   getTrack(@Param() params: TrackIdParamDto): Promise<TrackDetail> {
-    return this.trackPractice.getHeader(params.trackId);
+    return this.trackPublic.getHeader(params.trackId);
+  }
+
+  @Public()
+  @Post(':trackId/views')
+  @HttpCode(HttpStatus.OK)
+  @ZodSerializerDto(trackViewSchema)
+  @ApiOkResponse({
+    description: 'Creates a browser-session view or attaches its User.',
+  })
+  @ApiNotFoundResponse({ description: 'Unknown Track or view ID.' })
+  recordView(
+    @Param() params: TrackIdParamDto,
+    @Body() body: TrackViewBodyDto | undefined,
+    @CurrentUser() user: AuthUser | undefined,
+  ): Promise<TrackView> {
+    return this.trackPublic.recordView(params.trackId, body?.viewId, user?.id);
   }
 
   // Public: the vocal notes in the order they are sung; empty for a Track
@@ -120,7 +151,7 @@ export class TracksController {
       '(`RESOURCE_MOVED`).',
   })
   getNotes(@Param() params: TrackIdParamDto): Promise<TrackNotes> {
-    return this.trackPractice.getNotes(params.trackId);
+    return this.trackPublic.getNotes(params.trackId);
   }
 
   // Public: the page is shared while the Track processes. A legacy ID answers

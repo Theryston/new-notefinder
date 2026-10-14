@@ -163,6 +163,24 @@
         "remove": "Remove from favorites",
         "signIn": "Sign in to add to favorites"
       },
+      "viewCount": "{count, number} views",
+      "share": {
+        "action": "Share",
+        "title": "Share this track",
+        "description": "Send this track to someone who wants to sing along.",
+        "linkLabel": "Track link",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "includeMoment": "Include current moment",
+        "message": "Sing along to {title} on NoteFinder",
+        "networks": {
+          "whatsapp": "WhatsApp",
+          "telegram": "Telegram",
+          "x": "X",
+          "facebook": "Facebook",
+          "email": "Email"
+        }
+      },
       "loadError": "We couldn't load this track. Try again in a moment.",
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",

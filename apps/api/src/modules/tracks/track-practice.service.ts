@@ -39,6 +39,7 @@ export class TrackPracticeService {
       youtubeVideoId: row.youtubeVideoId,
       contributors: await this.processing.contributorsOf(trackId),
       hasNotes: row.hasNotes,
+      ...(row.viewCount > 0 ? { viewCount: row.viewCount } : {}),
     };
   }
 

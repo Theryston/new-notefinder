@@ -163,6 +163,24 @@
         "remove": "Remover dos favoritos",
         "signIn": "Entre para adicionar aos favoritos"
       },
+      "viewCount": "{count, number} visualizações",
+      "share": {
+        "action": "Compartilhar",
+        "title": "Compartilhar esta faixa",
+        "description": "Envie esta faixa para alguém cantar junto.",
+        "linkLabel": "Link da faixa",
+        "copy": "Copiar link",
+        "copied": "Link copiado",
+        "includeMoment": "Incluir momento atual",
+        "message": "Cante junto com {title} no NoteFinder",
+        "networks": {
+          "whatsapp": "WhatsApp",
+          "telegram": "Telegram",
+          "x": "X",
+          "facebook": "Facebook",
+          "email": "E-mail"
+        }
+      },
       "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes.",
       "durationLabel": "Duração: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
