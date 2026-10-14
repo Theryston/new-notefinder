@@ -163,6 +163,21 @@
         "remove": "Remove from favorites",
         "signIn": "Sign in to add to favorites"
       },
+      "streak": {
+        "ring": "Daily practice: {progress, number, ::percent} of today's goal",
+        "inviteRing": "Daily practice streak",
+        "days": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}",
+        "remaining": "{minutes, number} min {seconds, number} s left today",
+        "reached": "You reached today's goal. Come back tomorrow to keep your streak.",
+        "goal": "Daily goal: {minutes, plural, one {# minute} other {# minutes}}",
+        "countsWhilePlaying": "Practice counts while the music plays.",
+        "inviteTitle": "Build a daily practice streak",
+        "inviteDescription": "Create a free account to count the time you practice each day and keep your streak going.",
+        "inviteCreate": "Create an account",
+        "inviteSignIn": "Sign in",
+        "celebrationTitle": "Daily goal reached!",
+        "celebrationDescription": "{days, number}-day streak. See you tomorrow."
+      },
       "loadError": "We couldn't load this track. Try again in a moment.",
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
