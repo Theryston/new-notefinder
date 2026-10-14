@@ -37,6 +37,22 @@ RUN python /tmp/separation/weights.py \
       /tmp/separation/separation-weights.json /app/weights/mel-band-roformer \
     && rm -rf /tmp/separation
 
+# GAME medium, from its official ONNX release (one zip). weights.py only needs
+# the standard library, so it runs before the code is copied, and the build
+# fails if the zip's sha256 differs from the one pinned in game-weights.json.
+# Only the files the worker uses are kept (not dur2bd/bd2dur); the zip and
+# the unpacked copy are removed in the same layer.
+COPY game-weights.json /tmp/game/game-weights.json
+COPY note_detector/weights.py /tmp/game/weights.py
+RUN python /tmp/game/weights.py /tmp/game/game-weights.json /tmp/game/download \
+    && python -m zipfile -e /tmp/game/download/GAME-1.0.3-medium-onnx.zip \
+      /tmp/game/unpacked \
+    && mkdir -p /app/weights/game-medium \
+    && cd /tmp/game/unpacked/GAME-1.0.3-medium-onnx \
+    && mv config.json encoder.onnx segmenter.onnx estimator.onnx \
+      /app/weights/game-medium/ \
+    && rm -rf /tmp/game
+
 # RMVPE (Pitch curve): the RVC project's checkpoint (MIT), pinned to a commit
 # of its Hugging Face repo in rmvpe-weights.json with its sha256; weights.py
 # fails the build on a mismatch.

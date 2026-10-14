@@ -1,7 +1,7 @@
 """RunPod serverless entrypoint: `python -m note_detector` in the GPU image.
 
-The model steps not wired yet fail the job loudly until their adapter lands,
-so a half-built image can never complete a Processing.
+Wires vocal separation, Vocal notes and the Pitch curve. Each model is
+loaded once at startup and reused by every job.
 """
 
 import logging
@@ -11,17 +11,14 @@ from pathlib import Path
 
 import runpod
 
+from note_detector.game import GameOnnx, notes_in_file
+from note_detector.game_io import game_directory
 from note_detector.handler import Steps, process
-from note_detector.notes import Note
 from note_detector.rmvpe import load_rmvpe, pitch_curve
 from note_detector.separation import Separator, extract_vocals, load_separator
 from note_detector.separation_config import separation_directory
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
-
-
-def _not_wired(step: str) -> RuntimeError:
-    return RuntimeError(f"the {step} step has no model wired yet")
 
 
 @lru_cache(maxsize=1)
@@ -34,16 +31,12 @@ def separate_vocals(music: Path, vocals: Path) -> None:
     extract_vocals(separator(), music, vocals)
 
 
-def detect_notes(vocals: Path) -> list[Note]:
-    raise _not_wired("Vocal notes")
-
-
-def run_job(job: dict[str, object]) -> dict[str, object]:
+def run_job(job: dict[str, object], game: GameOnnx) -> dict[str, object]:
     steps = Steps(
         download=download,
         extract_vocals=separate_vocals,
         upload=upload,
-        detect_notes=detect_notes,
+        detect_notes=lambda vocals: notes_in_file(vocals, game),
         pitch_curve=pitch_curve,
         report_progress=lambda stage: runpod.serverless.progress_update(
             job, stage
@@ -55,10 +48,12 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
-    # Load the models before the first job, so it does not pay for it.
-    load_rmvpe()
+    # The ONNX sessions are created once per worker, before the first job.
+    game = GameOnnx(game_directory(os.environ))
+    # Load the model at startup so the first job does not pay for it.
     separator()
-    runpod.serverless.start({"handler": run_job})
+    load_rmvpe()
+    runpod.serverless.start({"handler": lambda job: run_job(job, game)})
 
 
 if __name__ == "__main__":
