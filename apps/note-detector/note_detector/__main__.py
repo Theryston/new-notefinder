@@ -12,16 +12,13 @@ import runpod
 
 from note_detector.handler import Steps, process
 from note_detector.notes import Note
+from note_detector.separation import extract_vocals, shared_separator
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
 
 
 def _not_wired(step: str) -> RuntimeError:
     return RuntimeError(f"the {step} step has no model wired yet")
-
-
-def extract_vocals(music: Path, vocals: Path) -> None:
-    raise _not_wired("vocal separation")
 
 
 def detect_notes(vocals: Path) -> list[Note]:
@@ -49,6 +46,8 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # Load the model once per worker process, before the first job.
+    shared_separator()
     runpod.serverless.start({"handler": run_job})
 
 

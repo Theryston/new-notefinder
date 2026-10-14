@@ -1,0 +1,12 @@
+[
+  {
+    "name": "MelBandRoformer.ckpt",
+    "url": "https://huggingface.co/KimberleyJSN/melbandroformer/resolve/ac9b0614ab3cd7f77219e18ba494dfd93956c348/MelBandRoformer.ckpt",
+    "sha256": "87201f4d31afb5bc79993230fc49446918425574db48c01c405e44f365c7559e"
+  },
+  {
+    "name": "config.yaml",
+    "url": "https://raw.githubusercontent.com/ZFTurbo/Music-Source-Separation-Training/main/configs/KimberleyJensen/config_vocals_mel_band_roformer_kj.yaml",
+    "sha256": "f63f38eb1e6e40a7db0dade714a5ae257555dd8748f4e774eae8679275a81926"
+  }
+]

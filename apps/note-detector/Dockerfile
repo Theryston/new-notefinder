@@ -30,6 +30,14 @@ RUN uv sync --locked --no-dev --group model && uv cache clean
 # The model weights are downloaded here, pinned by sha256, once each model
 # lands (see CLAUDE.md); none is baked in yet.
 
+# Mel-Band RoFormer "Kim" vocals weights and their published config, pinned by
+# sha256 in separation-weights.json (the build fails on a mismatch).
+COPY separation-weights.json /tmp/separation/separation-weights.json
+COPY note_detector/weights.py /tmp/separation/weights.py
+RUN python /tmp/separation/weights.py \
+      /tmp/separation/separation-weights.json /app/weights/mel-band-roformer \
+    && rm -rf /tmp/separation
+
 COPY note_detector ./note_detector
 
 # The git sha of the build, reported as `note-detector@<sha>` in every job
