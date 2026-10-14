@@ -92,9 +92,11 @@ the sha identifies code and models.
 - `note_detector/__main__.py`: the RunPod entrypoint, which wires the real
   steps. Glue only the GPU image exercises, so it is omitted from coverage.
 
-Pure modules are covered at 100% (`fail_under = 100`); model adapters, when
-they land, are omitted from coverage and checked by parity tests that run only
-when the weights are present.
+Pure modules are covered at 100% (`fail_under = 100`). Model adapters (today
+`game.py`) hold only the calls into the model runtime: they are omitted from
+coverage and checked by parity tests that run only when the weights are
+present. Anything an adapter feeds to a model or decides is built in a pure
+module (e.g. `game_io.py`).
 
 ## Vocal notes: GAME medium (ONNX)
 
@@ -105,9 +107,11 @@ or Lightning is involved.
 
 - `game_slicer.py`: a port of GAME's `slicer2.py` with `extract`'s parameters
   (-40 dB, 1 s minimum clip, 200 ms minimum silence, 100 ms kept). The vocals
-  are cut at silences; silence-only vocals give no clip. GAME's branch for a
-  silence no longer than the kept silence is left out: those parameters never
-  reach it.
+  are cut at silences. Digital zeros give no clip; noise below -40 dB counts
+  as silence but each cut keeps the quietest frame, so it can leave a clip of
+  up to 100 ms, as in GAME. The sample rate is the model's, not a constant.
+  GAME's branch for a silence no longer than the kept silence is left out:
+  those parameters never reach it.
 - `game_decode.py`: the D3PM loop control (`d3pm_times`, `sample_boundaries`)
   and the decoding of boundaries into regions and of regions into notes
   (clip offset, clamping to the clip length, unvoiced regions dropped, overlap
@@ -115,19 +119,24 @@ or Lightning is involved.
 - `game_pipeline.py`: per clip, encoder, then the segmenter's D3PM sampling,
   then the estimator, behind the `GameModules` protocol, so it is tested with
   fakes. Pure, covered at 100%.
-- `game.py`: the onnxruntime adapter (omitted from coverage). The three
-  sessions (`encoder`, `segmenter`, `estimator`; `dur2bd`/`bd2dur` are not
-  needed, their work is in `game_decode.py`) are created once per worker, in
-  `main()`, before the first job. Clips run one at a time (batch 1).
+- `game_io.py`: what the adapter feeds the graphs (inputs and dtypes, the
+  graph's accepted inputs, the region count, the sample-rate guard, the
+  weights directory from an injected environment). Pure.
+- `game.py`: the onnxruntime adapter (omitted from coverage), only the calls
+  into onnxruntime and soundfile. The three sessions (`encoder`, `segmenter`,
+  `estimator`; `dur2bd`/`bd2dur` are not needed, their work is in
+  `game_decode.py`) are created once per worker, in `main()`, before the first
+  job. Clips run one at a time (batch 1). The sample rate and timestep come
+  from the release's `config.json`, and the boundary radius is
+  `round(0.02 / timestep)` frames, as `infer.py` computes it.
 - `weights.py` + `game-weights.json`: the image build downloads the release
   files and checks each sha256 (see Weights).
 
 GAME's defaults, all in `game_decode.py`: 8 D3PM steps from t0 = 0
 (`t = 0, 1/8 .. 7/8`), boundary threshold 0.2, boundary radius 0.02 s (2
-frames of 10 ms), presence threshold 0.2, language 0 (unset: the model has no
-Portuguese and "unset" measured as good as "en"). The model's sample rate
-(44.1 kHz) and timestep come from the release's `config.json`. The vocals the
-separation step writes are 44.1 kHz; any other rate fails the job.
+frames at the release's 10 ms), presence threshold 0.2, language 0 (unset: the model has no
+Portuguese and "unset" measured as good as "en"). The vocals the separation
+step writes are 44.1 kHz, the model's rate; any other rate fails the job.
 
 The notes' `pitch` is GAME's continuous MIDI score of the region.
 
@@ -143,12 +152,13 @@ start never touches the network.
 ### Parity test
 
 `tests/test_game_parity.py` (marker `parity`) runs only when the weights are
-present. It runs GAME's official `infer.py extract` (PyTorch checkpoint, from
-a checkout of openvpi/GAME and its own environment) and our ONNX loop on the
-same short vocals fixture, then compares: note count within 10%, 90% of the
-official notes matched by onset and offset within 50 ms, and pitches within
-half a semitone. D3PM sampling is stochastic on both sides, hence the
-tolerance. The environment variables it reads are listed in the module
+present. It runs GAME's official `infer.py extract --batch-size 1` (PyTorch
+checkpoint, from a checkout of openvpi/GAME at tag v1.0.3 and its own
+environment) and our ONNX loop on the same input, a synthesized sung-like
+melody (or `GAME_FIXTURE`), then compares: note count within 10%, 90% of the
+official notes matched one-to-one by onset and offset within 50 ms, and
+pitches within half a semitone. D3PM sampling is stochastic on both sides
+(GAME's boundary removal is unseeded), hence the tolerance. The environment variables it reads are listed in the module
 docstring. Its second test checks our slicer cuts exactly like GAME's
 `slicer2.py` (needs only `GAME_REPO`).
 
@@ -187,6 +197,6 @@ that touches it, and publishes it to GHCR on a push to `main`:
 
 The workflow passes the commit as the `GIT_SHA` build arg. RunPod serverless
 endpoints pull the image by tag, so pin an endpoint to a `sha-` tag when a
-release must not move. The weights (about 1.3 GB) will be downloaded at build
+release must not move. The weights (about 1.3 GB) are downloaded at build
 time and verified against pinned sha256 checksums; clean caches in the same
 layer, as the existing steps do, because the hosted runner's disk is the limit.

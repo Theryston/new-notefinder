@@ -17,18 +17,22 @@ from note_detector.notes import Note
 D3PM_STEPS = 8
 D3PM_T0 = 0.0
 BOUNDARY_THRESHOLD = 0.2
-# 0.02 s at the model's 10 ms frames.
-BOUNDARY_RADIUS_FRAMES = 2
+BOUNDARY_RADIUS_SECONDS = 0.02
 PRESENCE_THRESHOLD = 0.2
 # Language 0 is "unset or universal"; GAME has no Portuguese and the
 # benchmark found "unset" as good as "en".
 LANGUAGE_UNSET = 0
 
 
-def d3pm_times(steps: int = D3PM_STEPS, t0: float = D3PM_T0) -> list[float]:
+def d3pm_times() -> list[float]:
     """The t of each sampling step: from t0 up to (not including) 1."""
-    step = (1 - t0) / steps
-    return [t0 + i * step for i in range(steps)]
+    step = (1 - D3PM_T0) / D3PM_STEPS
+    return [D3PM_T0 + i * step for i in range(D3PM_STEPS)]
+
+
+def boundary_radius_frames(timestep: float) -> int:
+    """The decoding radius in frames, as `infer.py` computes it."""
+    return round(BOUNDARY_RADIUS_SECONDS / timestep)
 
 
 def sample_boundaries(
@@ -71,9 +75,9 @@ def clip_notes(
     Times are seconds from the vocals' start. A region's end is clamped to the
     clip's length, and an empty one is dropped.
     """
-    ends = np.minimum(np.cumsum(scores.durations), length) + offset
-    starts = np.minimum(np.cumsum(scores.durations) - scores.durations, length)
-    starts = starts + offset
+    cumulative = np.cumsum(scores.durations)
+    ends = np.minimum(cumulative, length) + offset
+    starts = np.minimum(cumulative - scores.durations, length) + offset
     return [
         Note(float(pitch), float(start), float(end))
         for pitch, start, end, voiced in zip(

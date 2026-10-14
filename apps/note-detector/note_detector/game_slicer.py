@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-SAMPLE_RATE = 44100
 THRESHOLD_DB = -40.0
 MIN_LENGTH_MS = 1000
 MIN_INTERVAL_MS = 200
@@ -110,12 +109,12 @@ def _find_cuts(rms: np.ndarray, params: _Params) -> list[tuple[int, int]]:
     return cuts
 
 
-def slice_vocals(
-    waveform: np.ndarray, sample_rate: int = SAMPLE_RATE
-) -> list[Clip]:
+def slice_vocals(waveform: np.ndarray, sample_rate: int) -> list[Clip]:
     """Cuts a mono waveform at its silences.
 
-    A waveform that is silent all through gives no clip.
+    A waveform of digital zeros gives no clip. Noise below -40 dB counts as
+    silence too, but the cut keeps the quietest frame of each silence, so such
+    a waveform can leave a clip of up to 100 ms, as in GAME.
     """
     params = _params(sample_rate)
     if -(-waveform.shape[0] // params.hop) <= params.min_length:

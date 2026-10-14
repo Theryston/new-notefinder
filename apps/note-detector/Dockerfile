@@ -27,8 +27,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --group model && uv cache clean
 
-# The model weights are downloaded here, pinned by sha256, once each model
-# lands (see CLAUDE.md); none is baked in yet.
+# The model weights are downloaded here, pinned by sha256, one step per model
+# (see CLAUDE.md).
 
 # GAME medium, from its official ONNX release. weights.py only needs the
 # standard library, so it runs before the code is copied, and the build fails

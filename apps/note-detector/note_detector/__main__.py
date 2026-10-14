@@ -10,7 +10,8 @@ from pathlib import Path
 
 import runpod
 
-from note_detector.game import find_notes, load_game
+from note_detector.game import GameOnnx, notes_in_file
+from note_detector.game_io import game_directory
 from note_detector.handler import Steps, process
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
@@ -28,12 +29,12 @@ def pitch_curve(vocals: Path) -> list[float]:
     raise _not_wired("Pitch curve")
 
 
-def run_job(job: dict[str, object]) -> dict[str, object]:
+def run_job(job: dict[str, object], game: GameOnnx) -> dict[str, object]:
     steps = Steps(
         download=download,
         extract_vocals=extract_vocals,
         upload=upload,
-        detect_notes=find_notes,
+        detect_notes=lambda vocals: notes_in_file(vocals, game),
         pitch_curve=pitch_curve,
         report_progress=lambda stage: runpod.serverless.progress_update(
             job, stage
@@ -46,8 +47,8 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     # The ONNX sessions are created once per worker, before the first job.
-    load_game()
-    runpod.serverless.start({"handler": run_job})
+    game = GameOnnx(game_directory(os.environ))
+    runpod.serverless.start({"handler": lambda job: run_job(job, game)})
 
 
 if __name__ == "__main__":

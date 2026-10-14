@@ -74,7 +74,7 @@ def _clip_scores(
     return RegionScores(durations, presence, pitches), length
 
 
-def detect_notes(waveform: np.ndarray, modules: GameModules) -> list[Note]:
+def notes_in_waveform(waveform: np.ndarray, modules: GameModules) -> list[Note]:
     """The Vocal notes of mono vocals at the modules' sample rate."""
     notes: list[Note] = []
     for clip in slice_vocals(waveform, modules.sample_rate):

@@ -1,8 +1,8 @@
 import numpy as np
-import pytest
 
 from note_detector.game_decode import (
     RegionScores,
+    boundary_radius_frames,
     clip_notes,
     combine_notes,
     d3pm_times,
@@ -16,12 +16,8 @@ def bools(*values: int) -> np.ndarray:
     return np.array(values, dtype=bool)
 
 
-def test_gamess_defaults_sample_eight_steps_from_zero():
+def test_games_defaults_sample_eight_steps_from_zero():
     assert d3pm_times() == [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875]
-
-
-def test_the_steps_start_at_t0_and_stay_below_one():
-    assert d3pm_times(steps=2, t0=0.5) == [0.5, 0.75]
 
 
 def test_each_step_refines_the_previous_boundaries():
@@ -140,6 +136,7 @@ def test_no_notes_combine_to_none():
     assert combine_notes([]) == []
 
 
-@pytest.mark.parametrize("steps", [1, 8])
-def test_the_steps_never_reach_one(steps):
-    assert max(d3pm_times(steps=steps)) < 1
+def test_the_radius_is_twenty_milliseconds_in_frames():
+    assert boundary_radius_frames(0.01) == 2
+    assert boundary_radius_frames(0.02) == 1
+    assert boundary_radius_frames(0.005) == 4
