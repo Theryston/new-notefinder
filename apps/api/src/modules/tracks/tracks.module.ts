@@ -18,7 +18,9 @@ import { TrackContributorRepository } from './track-contributor.repository.js';
 import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
+import { TrackLyricsController } from './track-lyrics.controller.js';
 import { TrackLyricsRepository } from './track-lyrics.repository.js';
+import { TrackLyricsService } from './track-lyrics.service.js';
 import { TrackLyricsPromptService } from './track-lyrics-prompt.service.js';
 import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
@@ -72,7 +74,7 @@ import { TracksService } from './tracks.service.js';
     WebRevalidationModule,
     YouTubeMusicModule,
   ],
-  controllers: [TracksController],
+  controllers: [TracksController, TrackLyricsController],
   providers: [
     TracksService,
     TracksRepository,
@@ -97,6 +99,7 @@ import { TracksService } from './tracks.service.js';
     TrackNoteDetectionService,
     TrackNotesRepository,
     TrackLyricsRepository,
+    TrackLyricsService,
     TrackMp3Service,
     TrackLyricsPromptService,
     TrackLyricsStepService,
