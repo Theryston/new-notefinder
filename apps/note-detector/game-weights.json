@@ -1,0 +1,6 @@
+[
+  { "name": "config.json", "url": "", "sha256": "" },
+  { "name": "encoder.onnx", "url": "", "sha256": "" },
+  { "name": "segmenter.onnx", "url": "", "sha256": "" },
+  { "name": "estimator.onnx", "url": "", "sha256": "" }
+]

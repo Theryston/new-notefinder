@@ -10,8 +10,8 @@ from pathlib import Path
 
 import runpod
 
+from note_detector.game import find_notes, load_game
 from note_detector.handler import Steps, process
-from note_detector.notes import Note
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
 
@@ -24,10 +24,6 @@ def extract_vocals(music: Path, vocals: Path) -> None:
     raise _not_wired("vocal separation")
 
 
-def detect_notes(vocals: Path) -> list[Note]:
-    raise _not_wired("Vocal notes")
-
-
 def pitch_curve(vocals: Path) -> list[float]:
     raise _not_wired("Pitch curve")
 
@@ -37,7 +33,7 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
         download=download,
         extract_vocals=extract_vocals,
         upload=upload,
-        detect_notes=detect_notes,
+        detect_notes=find_notes,
         pitch_curve=pitch_curve,
         report_progress=lambda stage: runpod.serverless.progress_update(
             job, stage
@@ -49,6 +45,8 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # The ONNX sessions are created once per worker, before the first job.
+    load_game()
     runpod.serverless.start({"handler": run_job})
 
 

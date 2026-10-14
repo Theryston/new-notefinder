@@ -53,6 +53,9 @@ max-statements = 50
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  "parity: compares a model adapter with its reference; runs only when the weights are present",
+]
 
 [tool.coverage.report]
 # The measured modules are at 100% today; this is the ratchet, so any new
@@ -65,4 +68,5 @@ source = ["note_detector"]
 # the GPU image; the tests cover the pure logic and the contract around it.
 omit = [
   "note_detector/__main__.py",
+  "note_detector/game.py",
 ]

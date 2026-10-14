@@ -30,6 +30,15 @@ RUN uv sync --locked --no-dev --group model && uv cache clean
 # The model weights are downloaded here, pinned by sha256, once each model
 # lands (see CLAUDE.md); none is baked in yet.
 
+# GAME medium, from its official ONNX release. weights.py only needs the
+# standard library, so it runs before the code is copied, and the build fails
+# if a file's sha256 differs from the one pinned in game-weights.json.
+COPY game-weights.json /tmp/game/game-weights.json
+COPY note_detector/weights.py /tmp/game/weights.py
+RUN python /tmp/game/weights.py /tmp/game/game-weights.json \
+      /app/weights/game-medium \
+    && rm -rf /tmp/game
+
 COPY note_detector ./note_detector
 
 # The git sha of the build, reported as `note-detector@<sha>` in every job
