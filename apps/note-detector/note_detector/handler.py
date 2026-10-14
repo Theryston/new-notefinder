@@ -29,7 +29,8 @@ class Steps:
     extract_vocals: Callable[[Path, Path], None]
     upload: Callable[[Path, Upload], None]
     detect_notes: Callable[[Path], list[Note]]
-    # One MIDI number per 10 ms frame of the vocals, 0 where nobody sings.
+    # One MIDI number per frame (`pitch_curve.FRAME_SECONDS`) of the vocals,
+    # 0 where nobody sings. An empty curve fails the job.
     pitch_curve: Callable[[Path], Iterable[float]]
     report_progress: Callable[[str], None]
     detector_version: str
@@ -56,7 +57,10 @@ def process(raw_input: object, steps: Steps) -> dict[str, object]:
 
         steps.report_progress(DETECTING_NOTES)
         notes = steps.detect_notes(vocals)
-        curve.write_bytes(encode_pitch_curve(steps.pitch_curve(vocals)))
+        curve_bytes = encode_pitch_curve(steps.pitch_curve(vocals))
+        if not curve_bytes:
+            raise ValueError("the Pitch curve has no frames")
+        curve.write_bytes(curve_bytes)
         steps.upload(curve, job.pitch_curve_upload)
 
     return {

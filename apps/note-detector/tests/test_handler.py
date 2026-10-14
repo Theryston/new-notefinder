@@ -1,4 +1,5 @@
 import struct
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -57,7 +58,7 @@ class FakeWorker:
         self.downloads: list[str] = []
         self.uploads: list[tuple[bytes, Upload]] = []
         self.detected: list[bytes] = []
-        self.curved: list[bytes] = []
+        self.pitch_curve_inputs: list[bytes] = []
         self._notes = notes if notes is not None else [_a4()]
         self._frames = frames if frames is not None else [0.0, 69.0]
         self._fail_at = fail_at
@@ -103,8 +104,12 @@ class FakeWorker:
 
     def pitch_curve(self, vocals: Path) -> list[float]:
         self._step("pitch_curve")
-        self.curved.append(vocals.read_bytes())
+        self.pitch_curve_inputs.append(vocals.read_bytes())
         return self._frames
+
+
+def _raising(_stage: str) -> None:
+    raise RuntimeError("progress failed")
 
 
 def _a4() -> Note:
@@ -154,7 +159,7 @@ def test_detects_notes_and_the_pitch_curve_of_the_vocals_not_the_music():
     process(valid_input(), worker.steps())
 
     assert worker.detected == [VOCALS]
-    assert worker.curved == [VOCALS]
+    assert worker.pitch_curve_inputs == [VOCALS]
 
 
 def test_uploads_the_encoded_pitch_curve_to_its_own_presigned_url():
@@ -199,12 +204,30 @@ def test_orders_the_notes_by_time():
 
 
 def test_answers_with_no_notes_when_none_were_detected():
-    worker = FakeWorker(notes=[], frames=[])
+    worker = FakeWorker(notes=[])
 
     output = process(valid_input(), worker.steps())
 
     assert output["notes"] == []
-    assert worker.uploads[1] == (b"", CURVE_TARGET)
+
+
+def test_an_empty_pitch_curve_fails_the_job_before_uploading_it():
+    worker = FakeWorker(frames=[])
+
+    with pytest.raises(ValueError, match="no frames"):
+        process(valid_input(), worker.steps())
+
+    assert worker.events[-1] == "pitch_curve"
+
+
+def test_a_failing_progress_report_fails_the_job():
+    worker = FakeWorker()
+    steps = replace(worker.steps(), report_progress=_raising)
+
+    with pytest.raises(RuntimeError, match="progress"):
+        process(valid_input(), steps)
+
+    assert worker.downloads == []
 
 
 @pytest.mark.parametrize("missing", ["musicUrl", "pitchCurveUpload"])

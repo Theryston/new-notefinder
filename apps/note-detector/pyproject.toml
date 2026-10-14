@@ -1,7 +1,7 @@
 [project]
 name = "note-detector"
 version = "0.1.0"
-description = "RunPod serverless worker: Note detection for notefinder Processings"
+description = "RunPod serverless worker: Note detection, vocal separation, Vocal notes and Pitch curve"
 requires-python = ">=3.12,<3.13"
 # The API reaches the worker only through RunPod: nothing imports this
 # package, so it is an application, not a library, and is never installed.
@@ -15,12 +15,13 @@ dependencies = [
 # The model stack, installed in the GPU image and on Linux machines that run
 # the worker for real. Not needed by the tests or the linter.
 model = [
-  "onnxruntime-gpu>=1.22,<2",
+  "onnxruntime-gpu>=1.22,<1.27",
   "soundfile>=0.13",
   # Pinned to the PyPI build that bundles CUDA 12.6, a runtime RunPod hosts
   # support. Newer PyPI builds bundle CUDA 13 and need a newer driver than
-  # RunPod hosts may have. onnxruntime-gpu's CUDA 12 build reuses the cuDNN
-  # and cuBLAS libraries these wheels bring.
+  # RunPod hosts may have. onnxruntime-gpu is capped below 1.27, the first
+  # release built for CUDA 13; 1.22 to 1.26 are CUDA 12 builds that reuse the
+  # cuDNN and cuBLAS libraries these wheels bring.
   "torch>=2.7,<2.8",
 ]
 dev = [

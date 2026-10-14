@@ -2,7 +2,7 @@
   "name": "note-detector",
   "version": "0.1.0",
   "private": true,
-  "description": "RunPod serverless worker: Note detection, vocal separation, Vocal notes and Pitch curve (Python, uv)",
+  "description": "RunPod serverless worker: Note detection, vocal separation, Vocal notes and Pitch curve",
   "scripts": {
     "lint": "uv run --locked ruff check . && uv run --locked ruff format --check .",
     "format": "uv run --locked ruff check --fix . && uv run --locked ruff format .",

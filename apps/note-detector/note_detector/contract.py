@@ -30,8 +30,8 @@ def parse_input(raw: object) -> ProcessingInput:
     """Validates a RunPod job input, raising ValueError on the first problem."""
     data = _object(raw, "input")
     return ProcessingInput(
-        processing_id=_text(data, "processingId", "processingId"),
-        music_url=_text(data, "musicUrl", "musicUrl"),
+        processing_id=_text(data, "processingId"),
+        music_url=_text(data, "musicUrl"),
         vocals_upload=_upload(data, "vocalsUpload"),
         pitch_curve_upload=_upload(data, "pitchCurveUpload"),
     )
@@ -54,7 +54,8 @@ def _object(value: object, name: str) -> Mapping[str, object]:
     return value
 
 
-def _text(data: Mapping[str, object], key: str, name: str) -> str:
+def _text(data: Mapping[str, object], key: str, name: str | None = None) -> str:
+    name = name or key
     value = data.get(key)
     if not isinstance(value, str) or not value:
         raise ValueError(f"{name} must be a non-empty string")

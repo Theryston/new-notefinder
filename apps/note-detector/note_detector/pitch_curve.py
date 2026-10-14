@@ -11,6 +11,8 @@ from collections.abc import Iterable
 
 import numpy as np
 
+# Seconds between two values of the file.
+FRAME_SECONDS = 0.01
 UNVOICED = 0
 MAX_VALUE = 0xFFFF
 # Cents per MIDI number.

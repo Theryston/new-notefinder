@@ -115,8 +115,9 @@ Python is pinned in `.python-version` (3.12).
 - `torch` is pinned to `>=2.7,<2.8`. The PyPI builds of that line bundle
   CUDA 12.6; newer PyPI builds bundle CUDA 13 and need a newer driver than
   RunPod hosts may have.
-- `onnxruntime-gpu` is the CUDA 12 build and reuses the cuDNN/cuBLAS
-  libraries torch brings.
+- `onnxruntime-gpu` is pinned to `>=1.22,<1.27`: 1.26 is the last release
+  built for CUDA 12 (1.27 and later depend on CUDA 13 libraries). It reuses
+  the cuDNN/cuBLAS libraries torch brings.
 
 ## Publishing
 
