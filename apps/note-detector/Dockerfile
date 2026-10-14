@@ -53,6 +53,14 @@ RUN python /tmp/game/weights.py /tmp/game/game-weights.json /tmp/game/download \
       /app/weights/game-medium/ \
     && rm -rf /tmp/game
 
+# RMVPE (Pitch curve): the RVC project's checkpoint (MIT), pinned to a commit
+# of its Hugging Face repo in rmvpe-weights.json with its sha256; weights.py
+# fails the build on a mismatch.
+COPY rmvpe-weights.json /tmp/rmvpe/rmvpe-weights.json
+COPY note_detector/weights.py /tmp/rmvpe/weights.py
+RUN python /tmp/rmvpe/weights.py /tmp/rmvpe/rmvpe-weights.json /app/weights \
+    && rm -rf /tmp/rmvpe
+
 COPY note_detector ./note_detector
 
 # The git sha of the build, reported as `note-detector@<sha>` in every job

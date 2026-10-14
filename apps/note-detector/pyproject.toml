@@ -19,6 +19,7 @@ model = [
   "pyyaml>=6.0",
   "rotary-embedding-torch>=0.6.1,<0.7",
   "onnxruntime-gpu>=1.22,<1.27",
+  "scipy>=1.13",
   "soundfile>=0.13",
   # Pinned to the PyPI build that bundles CUDA 12.6, a runtime RunPod hosts
   # support. Newer PyPI builds bundle CUDA 13 and need a newer driver than
@@ -65,6 +66,7 @@ max-statements = 50
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
+  "rmvpe: needs the RMVPE weights (RMVPE_WEIGHTS or /app/weights/rmvpe.pt); skipped without them",
   "parity: compares a model adapter with its reference; runs only when the weights are present",
 ]
 
@@ -79,6 +81,7 @@ source = ["note_detector"]
 # the GPU image; the tests cover the pure logic and the contract around it.
 omit = [
   "note_detector/__main__.py",
+  "note_detector/rmvpe.py",
   "note_detector/game.py",
   "note_detector/vendor/*",
   "note_detector/separation.py",

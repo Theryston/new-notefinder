@@ -1173,6 +1173,7 @@ model = [
     { name = "onnxruntime-gpu" },
     { name = "pyyaml" },
     { name = "rotary-embedding-torch" },
+    { name = "scipy" },
     { name = "soundfile" },
     { name = "torch" },
 ]
@@ -1199,6 +1200,7 @@ model = [
     { name = "onnxruntime-gpu", specifier = ">=1.22,<1.27" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rotary-embedding-torch", specifier = ">=0.6.1,<0.7" },
+    { name = "scipy", specifier = ">=1.13" },
     { name = "soundfile", specifier = ">=0.13" },
     { name = "torch", specifier = ">=2.7,<2.8" },
 ]
