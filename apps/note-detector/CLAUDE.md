@@ -15,9 +15,10 @@ Python, not Node. The monorepo runs it through Turbo with a thin `package.json`
 that calls `uv`.
 
 **State today:** the job contract, the handler, the Pitch curve encoding, the
-transfer helpers and the image exist. The three model steps (vocal separation,
-Vocal notes, Pitch curve) are not wired yet: `__main__.py` raises for each
-until its adapter lands, so a half-built image can never complete a Processing.
+transfer helpers and the image exist. Of the three model steps (vocal
+separation, Vocal notes, Pitch curve) the Pitch curve is wired; `__main__.py`
+raises for each of the others until its adapter lands, so a half-built image
+can never complete a Processing.
 
 ## The job contract
 
@@ -94,6 +95,40 @@ the sha identifies code and models.
 Pure modules are covered at 100% (`fail_under = 100`); model adapters, when
 they land, are omitted from coverage and checked by parity tests that run only
 when the weights are present.
+
+## Pitch curve (RMVPE)
+
+`note_detector/rmvpe.py` computes the Pitch curve of the separated vocals;
+`__main__.py` wires it as the `pitch_curve` step. The pure maths (mel
+filterbank, chunk plan, salience decoding) is in `rmvpe_math.py`, covered at
+100%. `rmvpe.py` is model glue, omitted from coverage.
+
+- **Model:** RMVPE, run in fp32 on CUDA (CPU if there is none), loaded once per
+  worker process (`load_rmvpe` is cached).
+- **Code:** the network classes are vendored in `note_detector/vendor/rmvpe/`
+  (Apache-2.0, `LICENSE` and `NOTICE` kept; source and commit in the notice).
+  The checkpoint uses `DeepUnet0`, so the unused timbre filter it builds is
+  deleted to keep the weights load strict. `vendor/` is excluded from Ruff
+  and from coverage; do not restyle it.
+- **Weights:** the RVC project's `rmvpe.pt` (MIT, 181 MB), pinned to a commit
+  of `lj1995/VoiceConversionWebUI` on Hugging Face and verified by sha256
+  (`6d62215f...c193`) by `fetch_weights.py` in a Dockerfile `RUN`. They live at
+  `/app/weights/rmvpe.pt`. To change the model, change the URL and the
+  checksum in the Dockerfile together.
+- **Parameters:** audio mixed to mono and resampled to 16 kHz; centered STFT
+  with 1024 window and 160-sample hop (10 ms), 128 HTK mel bins from 30 Hz to
+  8 kHz, log with a 1e-5 floor. The salience (360 bins, 20 cents apart) is
+  decoded by the weighted mean of the 9 bins around the peak. **Voicing
+  threshold 0.03**, raw: a frame whose peak is at or below it is unvoiced
+  (`0`), and the Vocal notes never mask it. Frame `i` is centered at
+  `i x 10 ms`, so the curve starts at t = 0 and has `samples // 160 + 1`
+  frames. The spectrogram is run in chunks of 6400 frames with 320 frames of
+  context on each side (discarded), to bound memory on long Tracks.
+- **Check:** `tests/test_rmvpe_weights.py` (marker `rmvpe`) runs the real
+  model on a synthetic sung tone with vibrato and on a vowel-like phrase and
+  asserts the curve is within 25 cents of the truth. It skips unless the model
+  stack is installed and the weights exist (`RMVPE_WEIGHTS`, default
+  `/app/weights/rmvpe.pt`): `RMVPE_WEIGHTS=... uv run pytest -m rmvpe`.
 
 ## Commands (from `apps/note-detector`, or `nub run <task> --filter=note-detector`)
 

@@ -30,6 +30,16 @@ RUN uv sync --locked --no-dev --group model && uv cache clean
 # The model weights are downloaded here, pinned by sha256, once each model
 # lands (see CLAUDE.md); none is baked in yet.
 
+# RMVPE (Pitch curve): the RVC project's checkpoint (MIT), pinned to a commit
+# of its Hugging Face repo and verified by sha256. The script is copied alone
+# so a code change does not download the weights again.
+COPY note_detector/fetch_weights.py /tmp/fetch_weights.py
+RUN python /tmp/fetch_weights.py \
+    https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/e6d0c1a17da07c33557852f9dfa2bd44cc75737d/rmvpe.pt \
+    6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193 \
+    /app/weights/rmvpe.pt \
+    && rm /tmp/fetch_weights.py
+
 COPY note_detector ./note_detector
 
 # The git sha of the build, reported as `note-detector@<sha>` in every job

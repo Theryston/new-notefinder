@@ -1,0 +1,16 @@
+RMVPE (Robust Model for Vocal Pitch Estimation in Polyphonic Music)
+
+The neural network classes in this directory (deepunet.py, seq.py) are taken
+from the Dream-High/RMVPE repository on GitHub, commit
+a6db1cd7d26014aa739383367afd9bab57fc624c (src/deepunet.py, src/seq.py),
+licensed under the Apache License, Version 2.0 (see LICENSE in this
+directory).
+
+Changes: constants.py is new and holds only N_MELS = 128, the value the
+RVC-project checkpoint was trained with (the upstream constants.py says 256,
+which only affects encoder bookkeeping, not parameter shapes). The two copied
+files are otherwise unmodified.
+
+The weights are not part of this repository. They are the RVC project's
+`rmvpe.pt` (MIT), downloaded at image build time and verified by sha256; see
+apps/note-detector/Dockerfile.

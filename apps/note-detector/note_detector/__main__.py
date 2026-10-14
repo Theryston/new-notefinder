@@ -1,7 +1,7 @@
 """RunPod serverless entrypoint: `python -m note_detector` in the GPU image.
 
-The three model steps are not wired yet: each fails the job loudly until its
-adapter lands, so a half-built image can never complete a Processing.
+The model steps not wired yet fail the job loudly until their adapter lands,
+so a half-built image can never complete a Processing.
 """
 
 import logging
@@ -12,6 +12,7 @@ import runpod
 
 from note_detector.handler import Steps, process
 from note_detector.notes import Note
+from note_detector.rmvpe import pitch_curve
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
 
@@ -26,10 +27,6 @@ def extract_vocals(music: Path, vocals: Path) -> None:
 
 def detect_notes(vocals: Path) -> list[Note]:
     raise _not_wired("Vocal notes")
-
-
-def pitch_curve(vocals: Path) -> list[float]:
-    raise _not_wired("Pitch curve")
 
 
 def run_job(job: dict[str, object]) -> dict[str, object]:
