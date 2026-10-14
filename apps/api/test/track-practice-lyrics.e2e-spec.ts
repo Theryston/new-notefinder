@@ -104,6 +104,15 @@ describe('Track Timed lyrics read (e2e)', () => {
     });
   });
 
+  it('answers a Track ID that is too long with 400 VALIDATION_FAILED', async () => {
+    const response = await get(`${'x'.repeat(129)}/lyrics`).expect(400);
+
+    expect(response.body).toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: { location: 'param' },
+    });
+  });
+
   it('answers an unknown Track ID with 404 NOT_FOUND', async () => {
     const response = await get('no-such-track/lyrics').expect(404);
 
