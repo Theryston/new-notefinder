@@ -1,0 +1,67 @@
+[project]
+name = "note-detector"
+version = "0.1.0"
+description = "RunPod serverless worker: Note detection for notefinder Processings"
+requires-python = ">=3.12,<3.13"
+# The API reaches the worker only through RunPod: nothing imports this
+# package, so it is an application, not a library, and is never installed.
+dependencies = [
+  "numpy>=1.26",
+  "requests>=2.32",
+  "runpod>=1.12",
+]
+
+[dependency-groups]
+# The model stack, installed in the GPU image and on Linux machines that run
+# the worker for real. Not needed by the tests or the linter.
+model = [
+  "onnxruntime-gpu>=1.22,<2",
+  "soundfile>=0.13",
+  # Pinned to the PyPI build that bundles CUDA 12.6, a runtime RunPod hosts
+  # support. Newer PyPI builds bundle CUDA 13 and need a newer driver than
+  # RunPod hosts may have. onnxruntime-gpu's CUDA 12 build reuses the cuDNN
+  # and cuBLAS libraries these wheels bring.
+  "torch>=2.7,<2.8",
+]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+
+[tool.ruff.lint]
+# The repo's limits, as Ruff enforces them: cyclomatic complexity 15, 4
+# arguments and 50 statements per function, and pep8 naming. Ruff has no
+# lines-per-function rule, so statements is the closest limit it can check.
+select = ["E", "F", "I", "B", "UP", "C90", "N", "PLR0913", "PLR0915"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-statements = 50
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.coverage.report]
+# The measured modules are at 100% today; this is the ratchet, so any new
+# uncovered line in them fails the run.
+fail_under = 100
+
+[tool.coverage.run]
+source = ["note_detector"]
+# The glue around the model stack (torch, onnxruntime, RunPod) only runs on
+# the GPU image; the tests cover the pure logic and the contract around it.
+omit = [
+  "note_detector/__main__.py",
+]

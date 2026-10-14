@@ -232,6 +232,8 @@ importers:
 
   apps/nfp-audio: {}
 
+  apps/note-detector: {}
+
   apps/web:
     dependencies:
       '@base-ui/react':

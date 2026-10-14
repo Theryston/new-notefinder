@@ -22,6 +22,9 @@ apps/
                   no Nest (Drizzle). Port 3334. See apps/music-catalog/CLAUDE.md.
   nfp-audio/    Python RunPod serverless worker (uv, not Node): vocal separation and
                   note detection for a Processing. No port. See apps/nfp-audio/CLAUDE.md.
+  note-detector/ Python RunPod serverless worker (uv, not Node): its replacement
+                  (Mel-RoFormer + GAME + Pitch curve). No port. See
+                  apps/note-detector/CLAUDE.md and docs/adr/0007.
 packages/
   contracts/    Zod schemas + inferred types shared by api, web and (later) mobile.
 ```
@@ -48,7 +51,7 @@ nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | nfp-audio | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | nfp-audio | note-detector | @notefinder/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
