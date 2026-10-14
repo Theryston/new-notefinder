@@ -142,12 +142,23 @@ The notes' `pitch` is GAME's continuous MIDI score of the region.
 
 ### Weights
 
-`game-weights.json` lists the files of the release (`config.json`,
-`encoder.onnx`, `segmenter.onnx`, `estimator.onnx`) with their url and
-sha256. The Dockerfile runs `weights.py` over it, and the build fails when a
-file has no pinned url/sha256 or its checksum differs. They are baked into
-`/app/weights/game-medium` (override with `NOTE_DETECTOR_GAME_DIR`); a cold
-start never touches the network.
+`game-weights.json` pins the release zip (`GAME-1.0.3-medium-onnx.zip`, about
+180 MB, ONNX opset 17) by url and sha256. The Dockerfile runs `weights.py`
+over it (the build fails when the checksum differs), unpacks it with the
+standard library and keeps the four files the worker uses in
+`/app/weights/game-medium` (override with `NOTE_DETECTOR_GAME_DIR`):
+`config.json`, `encoder.onnx`, `segmenter.onnx`, `estimator.onnx`. The zip also
+holds `dur2bd.onnx` and `bd2dur.onnx`, which are not needed. A cold start
+never touches the network.
+
+The release's `config.json` is `samplerate` 44100, `timestep` 0.01,
+`languages` `{en: 1, ja: 2, yue: 3, zh: 4}` (so the segmenter has a `language`
+input; we always pass 0), `loop` true, `embedding_dim` 256. Graph inputs and
+outputs, as the adapter uses them: encoder `waveform [B, L]`, `duration [B]`
+-> `x_seg`, `x_est`, `maskT`; segmenter `x_seg`, `language`,
+`known_boundaries`, `prev_boundaries`, `t`, `maskT`, `threshold`, `radius`
+-> `boundaries`; estimator `x_est`, `boundaries`, `maskT`, `maskN`,
+`threshold` -> `presence`, `scores`.
 
 ### Parity test
 

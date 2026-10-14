@@ -30,13 +30,20 @@ RUN uv sync --locked --no-dev --group model && uv cache clean
 # The model weights are downloaded here, pinned by sha256, one step per model
 # (see CLAUDE.md).
 
-# GAME medium, from its official ONNX release. weights.py only needs the
-# standard library, so it runs before the code is copied, and the build fails
-# if a file's sha256 differs from the one pinned in game-weights.json.
+# GAME medium, from its official ONNX release (one zip). weights.py only needs
+# the standard library, so it runs before the code is copied, and the build
+# fails if the zip's sha256 differs from the one pinned in game-weights.json.
+# Only the files the worker uses are kept (not dur2bd/bd2dur); the zip and
+# the unpacked copy are removed in the same layer.
 COPY game-weights.json /tmp/game/game-weights.json
 COPY note_detector/weights.py /tmp/game/weights.py
-RUN python /tmp/game/weights.py /tmp/game/game-weights.json \
-      /app/weights/game-medium \
+RUN python /tmp/game/weights.py /tmp/game/game-weights.json /tmp/game/download \
+    && python -m zipfile -e /tmp/game/download/GAME-1.0.3-medium-onnx.zip \
+      /tmp/game/unpacked \
+    && mkdir -p /app/weights/game-medium \
+    && cd /tmp/game/unpacked/GAME-1.0.3-medium-onnx \
+    && mv config.json encoder.onnx segmenter.onnx estimator.onnx \
+      /app/weights/game-medium/ \
     && rm -rf /tmp/game
 
 COPY note_detector ./note_detector
