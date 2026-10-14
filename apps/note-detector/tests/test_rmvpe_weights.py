@@ -14,12 +14,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from note_detector.pitch_curve import FRAME_SECONDS
+
 pytestmark = pytest.mark.rmvpe
 
 WEIGHTS = Path(os.environ.get("RMVPE_WEIGHTS", "/app/weights/rmvpe.pt"))
 RATE = 44100
-TOLERANCE_CENTS = 25
-FRAME = 0.01
+MEDIAN_CENTS = 6
+# A high percentile too, so octave errors on a few frames cannot hide.
+P95_CENTS = 15
 
 
 def write_wav(path: Path, samples: np.ndarray) -> None:
@@ -71,14 +74,22 @@ def curve_of(tmp_path: Path, samples: np.ndarray) -> list[float]:
     return pitch_curve(vocals, WEIGHTS)
 
 
-def cents_off(expected: np.ndarray, curve: list[float], span: slice) -> float:
+def errors_in_cents(
+    expected: np.ndarray, curve: list[float], span: slice
+) -> np.ndarray:
     got = np.array(curve[span])
     assert (got > 0).mean() > 0.9, "the sung frames must be voiced"
-    return float(np.median(np.abs(got - expected[span]) * 100))
+    return np.abs(got - expected[span]) * 100
+
+
+def assert_tracks(expected: np.ndarray, curve: list[float], span: slice):
+    errors = errors_in_cents(expected, curve, span)
+    assert np.median(errors) < MEDIAN_CENTS
+    assert np.percentile(errors, 95) < P95_CENTS
 
 
 def per_frame(midi_per_sample: np.ndarray) -> np.ndarray:
-    return midi_per_sample[:: int(RATE * FRAME)]
+    return midi_per_sample[:: int(RATE * FRAME_SECONDS)]
 
 
 def test_the_curve_tracks_a_sung_tone_with_vibrato(tmp_path):
@@ -93,8 +104,8 @@ def test_the_curve_tracks_a_sung_tone_with_vibrato(tmp_path):
 
     assert len(curve) == seconds * 100 + 1
     expected = per_frame(midi)
-    assert cents_off(expected, curve, slice(20, 90)) < TOLERANCE_CENTS
-    assert cents_off(expected, curve, slice(170, 280)) < TOLERANCE_CENTS
+    assert_tracks(expected, curve, slice(20, 90))
+    assert_tracks(expected, curve, slice(170, 280))
     assert sum(1 for v in curve[110:140] if v > 0) < 6
 
 
@@ -111,4 +122,4 @@ def test_the_curve_follows_a_short_vowel_like_vocal_phrase(tmp_path):
     expected = per_frame(midi)
     for i in range(len(notes)):
         span = slice(i * 60 + 15, i * 60 + 50)
-        assert cents_off(expected, curve, span) < TOLERANCE_CENTS
+        assert_tracks(expected, curve, span)

@@ -2,21 +2,24 @@
 
 RMVPE turns a mel spectrogram into a salience over 360 pitch bins (20 cents
 apart, from about 32.7 Hz). These helpers build the mel filterbank the RVC
-checkpoint was trained with, plan the chunks the spectrogram is run in, and
-decode the salience into one MIDI number per 10 ms frame.
+checkpoint was trained with, do the sizing arithmetic around the network
+(resampling ratio, padding, expected frame count) and decode the salience
+into one MIDI number per 10 ms frame.
 """
 
 import math
-from dataclasses import dataclass
 
 import numpy as np
 
 SAMPLE_RATE = 16000
+# 10 ms at 16 kHz: `pitch_curve.FRAME_SECONDS`, the Pitch curve file's frame.
 HOP_LENGTH = 160
 N_FFT = 1024
 N_MELS = 128
 MEL_FMIN = 30.0
 MEL_FMAX = 8000.0
+# The log of the mel spectrogram never sees less than this.
+LOG_FLOOR = 1e-5
 # RMVPE's own voicing: a frame whose peak salience is at or below this is
 # unvoiced. Kept raw, as the spec decides.
 VOICING_THRESHOLD = 0.03
@@ -42,19 +45,19 @@ def _htk_mel_to_hz(mel: np.ndarray) -> np.ndarray:
     return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
 
 
-def mel_filterbank(
-    sample_rate: int, n_fft: int, n_mels: int, band: tuple[float, float]
-) -> np.ndarray:
-    """HTK mel triangles with Slaney area normalization, (n_mels, bins).
+def mel_filterbank() -> np.ndarray:
+    """HTK mel triangles with Slaney area normalization, (N_MELS, bins).
 
-    Same filters as `librosa.filters.mel(htk=True)`, which the checkpoint was
-    trained with; written out here so the worker needs no librosa.
+    Same filters as `librosa.filters.mel(sr=16000, n_fft=1024, n_mels=128,
+    fmin=30, fmax=8000, htk=True)`, which the checkpoint was trained with;
+    written out here so the worker needs no librosa.
     """
-    fmin, fmax = band
-    fft_freqs = np.linspace(0.0, sample_rate / 2, 1 + n_fft // 2)
+    fft_freqs = np.linspace(0.0, SAMPLE_RATE / 2, 1 + N_FFT // 2)
     edges = _htk_mel_to_hz(
         np.linspace(
-            float(_hz_to_htk_mel(fmin)), float(_hz_to_htk_mel(fmax)), n_mels + 2
+            float(_hz_to_htk_mel(MEL_FMIN)),
+            float(_hz_to_htk_mel(MEL_FMAX)),
+            N_MELS + 2,
         )
     )
     widths = np.diff(edges)
@@ -65,41 +68,30 @@ def mel_filterbank(
     return filters * (2.0 / (edges[2:] - edges[:-2]))[:, None]
 
 
+def resample_ratio(rate: int) -> tuple[int, int]:
+    """(up, down) to bring audio at `rate` Hz to SAMPLE_RATE."""
+    divisor = math.gcd(rate, SAMPLE_RATE)
+    return SAMPLE_RATE // divisor, rate // divisor
+
+
 def frame_count(n_samples: int) -> int:
     """Frames of a centered STFT: frame i is centered at i x 10 ms."""
     return n_samples // HOP_LENGTH + 1
 
 
-def padded_frame_count(n_frames: int) -> int:
-    return FRAME_MULTIPLE * ((n_frames - 1) // FRAME_MULTIPLE + 1)
-
-
-@dataclass(frozen=True)
-class Chunk:
-    """Run frames [start, end); keep [keep_start, keep_end) of the result."""
-
-    start: int
-    end: int
-    keep_start: int
-    keep_end: int
-
-
-def plan_chunks(n_frames: int, size: int, context: int) -> list[Chunk]:
-    """Splits the frames in chunks of `size`, each with `context` frames of
-    surroundings the network sees but whose output is discarded, so a chunk
-    border never decides a pitch (the GRU reads the whole window)."""
-    chunks = []
-    for keep_start in range(0, n_frames, size):
-        keep_end = min(keep_start + size, n_frames)
-        chunks.append(
-            Chunk(
-                start=max(0, keep_start - context),
-                end=min(n_frames, keep_end + context),
-                keep_start=keep_start,
-                keep_end=keep_end,
-            )
+def check_frame_count(n_frames: int, n_samples: int) -> None:
+    """Fails unless the curve has one value per 10 ms from t = 0, which is
+    what the Pitch curve file promises."""
+    expected = frame_count(n_samples)
+    if n_frames != expected:
+        raise ValueError(
+            f"the Pitch curve has {n_frames} frames, expected {expected}"
         )
-    return chunks
+
+
+def frame_padding(n_frames: int) -> int:
+    """Frames to append so the network gets a multiple of FRAME_MULTIPLE."""
+    return -n_frames % FRAME_MULTIPLE
 
 
 def salience_to_midi(
@@ -122,12 +114,13 @@ def salience_to_midi(
     window = centers[:, None] + offsets[None, :]
     weights = np.take_along_axis(padded, window, axis=1)
     weight_sum = weights.sum(axis=1)
+    # A peak above the threshold is in its own window, so the sum is positive.
     voiced = padded.max(axis=1) > threshold
     averaged = np.divide(
         (weights * cents[window]).sum(axis=1),
         weight_sum,
         out=np.zeros(frames),
-        where=voiced & (weight_sum > 0),
+        where=voiced,
     )
     return [_cents_to_midi(value) if value > 0 else 0.0 for value in averaged]
 

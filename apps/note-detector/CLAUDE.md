@@ -91,10 +91,14 @@ the sha identifies code and models.
 - `note_detector/transfer.py`: the music download and the presigned uploads.
 - `note_detector/__main__.py`: the RunPod entrypoint, which wires the real
   steps. Glue only the GPU image exercises, so it is omitted from coverage.
+- `note_detector/weights.py`: the build-time download of the weights named by
+  a manifest (`*-weights.json`), verifying each sha256.
 
-Pure modules are covered at 100% (`fail_under = 100`); model adapters, when
-they land, are omitted from coverage and checked by parity tests that run only
-when the weights are present.
+Pure modules are covered at 100% (`fail_under = 100`); model adapters
+(`rmvpe.py`, and the vendored code under `note_detector/vendor/`) are omitted
+from coverage and checked by tests that run only when the weights are
+present. Keep only model glue in an adapter: any arithmetic around the model
+belongs in a pure module.
 
 ## Pitch curve (RMVPE)
 
@@ -123,11 +127,15 @@ filterbank, chunk plan, salience decoding) is in `rmvpe_math.py`, covered at
   threshold 0.03**, raw: a frame whose peak is at or below it is unvoiced
   (`0`), and the Vocal notes never mask it. Frame `i` is centered at
   `i x 10 ms`, so the curve starts at t = 0 and has `samples // 160 + 1`
-  frames. The spectrogram is run in chunks of 6400 frames with 320 frames of
-  context on each side (discarded), to bound memory on long Tracks.
+  frames; the output is checked against that count. The whole spectrogram is
+  run in a single pass, as RVC does (the GRU reads the full context; about
+  30k frames for a 5-minute Track fit on the GPU). Vocals shorter than 512
+  samples are too short for the centered STFT and fail the job. The model is
+  loaded in `main()`, before the first job.
 - **Check:** `tests/test_rmvpe_weights.py` (marker `rmvpe`) runs the real
   model on a synthetic sung tone with vibrato and on a vowel-like phrase and
-  asserts the curve is within 25 cents of the truth. It skips unless the model
+  asserts a median error under 6 cents and a 95th percentile under 15 (so
+  octave errors on a few frames cannot hide). It skips unless the model
   stack is installed and the weights exist (`RMVPE_WEIGHTS`, default
   `/app/weights/rmvpe.pt`): `RMVPE_WEIGHTS=... uv run pytest -m rmvpe`.
 
@@ -166,6 +174,7 @@ that touches it, and publishes it to GHCR on a push to `main`:
 
 The workflow passes the commit as the `GIT_SHA` build arg. RunPod serverless
 endpoints pull the image by tag, so pin an endpoint to a `sha-` tag when a
-release must not move. The weights (about 1.3 GB) will be downloaded at build
-time and verified against pinned sha256 checksums; clean caches in the same
+release must not move. The weights are downloaded at build time and verified
+against pinned sha256 checksums (RMVPE's 181 MB today; about 1.3 GB once every
+model is in); clean caches in the same
 layer, as the existing steps do, because the hosted runner's disk is the limit.

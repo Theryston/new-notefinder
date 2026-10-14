@@ -27,8 +27,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --group model && uv cache clean
 
-# The model weights are downloaded here, pinned by sha256, once each model
-# lands (see CLAUDE.md); none is baked in yet.
+# The model weights are downloaded here, one step per model, each pinned by
+# sha256 in its own manifest (see CLAUDE.md).
 
 # RMVPE (Pitch curve): the RVC project's checkpoint (MIT), pinned to a commit
 # of its Hugging Face repo in rmvpe-weights.json with its sha256; weights.py

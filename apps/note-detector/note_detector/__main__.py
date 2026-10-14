@@ -12,7 +12,7 @@ import runpod
 
 from note_detector.handler import Steps, process
 from note_detector.notes import Note
-from note_detector.rmvpe import pitch_curve
+from note_detector.rmvpe import load_rmvpe, pitch_curve
 from note_detector.transfer import download, upload
 from note_detector.version import detector_version
 
@@ -46,6 +46,8 @@ def run_job(job: dict[str, object]) -> dict[str, object]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # Load the models before the first job, so it does not pay for it.
+    load_rmvpe()
     runpod.serverless.start({"handler": run_job})
 
 

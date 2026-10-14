@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from note_detector import pitch_curve
 from note_detector import rmvpe_math as maths
 
 
@@ -39,6 +40,16 @@ def test_only_four_bins_each_side_of_the_peak_count():
     assert maths.salience_to_midi(np.array([row])) == [
         pytest.approx(bin_midi(100))
     ]
+
+
+def test_a_bin_four_away_is_in_the_average_and_five_away_is_not():
+    for offset, inside in [(4, True), (-4, True), (5, False), (-5, False)]:
+        row = salience_peaking_at(100)
+        row[100 + offset] = 0.5
+
+        midi = maths.salience_to_midi(np.array([row]))[0]
+
+        assert (midi != pytest.approx(bin_midi(100))) is inside
 
 
 def test_the_window_is_clipped_at_the_edges_of_the_bins():
@@ -81,6 +92,12 @@ def test_the_threshold_can_be_given():
     assert maths.salience_to_midi(np.array([row]), threshold=0.5) == [0.0]
 
 
+def test_one_frame_is_the_pitch_curve_file_frame():
+    assert maths.HOP_LENGTH / maths.SAMPLE_RATE == pytest.approx(
+        pitch_curve.FRAME_SECONDS
+    )
+
+
 def test_frames_are_centered_every_10_ms_from_t_zero():
     assert maths.frame_count(0) == 1
     assert maths.frame_count(159) == 1
@@ -89,47 +106,56 @@ def test_frames_are_centered_every_10_ms_from_t_zero():
     assert maths.frame_count(3 * maths.SAMPLE_RATE) == 301
 
 
+def test_a_curve_with_the_wrong_number_of_frames_is_refused():
+    maths.check_frame_count(301, 3 * maths.SAMPLE_RATE)
+
+    for frames in (300, 302):
+        with pytest.raises(ValueError, match="expected 301"):
+            maths.check_frame_count(frames, 3 * maths.SAMPLE_RATE)
+
+
 @pytest.mark.parametrize(
-    ("frames", "padded"), [(1, 32), (32, 32), (33, 64), (301, 320)]
+    ("frames", "padding"), [(1, 31), (31, 1), (32, 0), (33, 31), (301, 19)]
 )
-def test_frames_are_padded_to_a_multiple_of_32(frames, padded):
-    assert maths.padded_frame_count(frames) == padded
+def test_frames_are_padded_to_a_multiple_of_32(frames, padding):
+    assert maths.frame_padding(frames) == padding
 
 
-def test_chunks_cover_every_frame_once_with_context_around():
-    chunks = maths.plan_chunks(250, size=100, context=10)
-
-    assert chunks == [
-        maths.Chunk(start=0, end=110, keep_start=0, keep_end=100),
-        maths.Chunk(start=90, end=210, keep_start=100, keep_end=200),
-        maths.Chunk(start=190, end=250, keep_start=200, keep_end=250),
-    ]
-
-
-def test_a_short_input_is_one_chunk():
-    assert maths.plan_chunks(5, size=100, context=10) == [
-        maths.Chunk(start=0, end=5, keep_start=0, keep_end=5)
-    ]
+@pytest.mark.parametrize(
+    ("rate", "ratio"),
+    [
+        (44100, (160, 441)),
+        (48000, (1, 3)),
+        (16000, (1, 1)),
+        (22050, (320, 441)),
+    ],
+)
+def test_resample_ratio_to_16_khz(rate, ratio):
+    assert maths.resample_ratio(rate) == ratio
 
 
-def test_mel_filterbank_matches_the_known_htk_construction():
-    filters = maths.mel_filterbank(
-        maths.SAMPLE_RATE,
-        maths.N_FFT,
-        maths.N_MELS,
-        (maths.MEL_FMIN, maths.MEL_FMAX),
-    )
+def test_mel_filterbank_matches_librosa():
+    # Values of librosa.filters.mel(sr=16000, n_fft=1024, n_mels=128,
+    # fmin=30, fmax=8000, htk=True), computed once.
+    filters = maths.mel_filterbank()
 
     assert filters.shape == (maths.N_MELS, maths.N_FFT // 2 + 1)
-    assert filters.min() >= 0
-    # Nothing below fmin or above fmax, and every filter has some weight.
-    freqs = np.linspace(0, maths.SAMPLE_RATE / 2, maths.N_FFT // 2 + 1)
-    assert filters[:, freqs < maths.MEL_FMIN - 16].sum() == 0
-    assert (filters.sum(axis=1) > 0).all()
-    # Slaney normalization: each triangle has area 1 in Hz, about
-    # 2 / (width) x width / 2 per Hz of resolution.
-    areas = filters.sum(axis=1) * (maths.SAMPLE_RATE / maths.N_FFT)
-    assert areas == pytest.approx(np.ones(maths.N_MELS), rel=0.35)
-    # Filters get wider (in bins) with frequency on the mel scale.
-    widths = (filters > 0).sum(axis=1)
-    assert widths[-1] > widths[0]
+    assert filters.sum() == pytest.approx(8.189247131347656, rel=1e-6)
+    for row, total, peak_bin, peak in [
+        (0, 0.0629606768488884, 3, 0.056785039603710175),
+        (1, 0.06330661475658417, 4, 0.050391726195812225),
+        (64, 0.0644158124923706, 118, 0.02016606368124485),
+        (127, 0.06386382132768631, 501, 0.005860890727490187),
+    ]:
+        assert filters[row].sum() == pytest.approx(total, rel=1e-6)
+        assert int(np.argmax(filters[row])) == peak_bin
+        assert filters[row].max() == pytest.approx(peak, rel=1e-6)
+
+
+def test_mel_filterbank_has_nothing_outside_its_band():
+    filters = maths.mel_filterbank()
+
+    # Bins 0 and 1 are 0 and 15.6 Hz, below fmin (30 Hz); the last bin is
+    # fmax itself (8 kHz, Nyquist).
+    assert filters[:, :2].sum() == 0
+    assert filters[:, -1].max() < 1e-12
