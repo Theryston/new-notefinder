@@ -88,8 +88,14 @@ the sha identifies code and models.
   `version.py`: pure logic, no models. The handler takes its steps as injected
   callables, so the contract is tested with fakes.
 - `note_detector/transfer.py`: the music download and the presigned uploads.
+- `note_detector/smoke_validation.py`: pure checks of the smoke job output,
+  uploaded WAV and Uint16 Pitch curve, covered at 100% like the other pure
+  modules.
 - `note_detector/__main__.py`: the RunPod entrypoint, which wires the real
-  steps. Glue only the GPU image exercises, so it is omitted from coverage.
+  steps and loads one instance of each model before starting RunPod. It fails
+  before model loading when CUDA is unavailable. `smoke_test.py`
+  exercises the same real steps against a local HTTP server from the built
+  image; it also requires CUDA.
 
 - Vocal separation: `separation_config.py` (the published config and the
   weights directory), `separation_plan.py` (chunks, batches, overlap-add),
@@ -124,10 +130,10 @@ adapter: anything it decides goes in a pure module with tests.
   weighted average where chunks overlap. `mel_filters.py` is the Slaney mel
   filter bank (what librosa computes), pinned against librosa's values.
 - `separation.py` is the adapter: runs fp32 on CUDA and writes a 16-bit stereo
-  44.1 kHz vocals WAV, clipped to full scale. It logs a warning and runs on the
-  CPU when there is no CUDA device. The input must be 44.1 kHz (the API always
-  sends it): any other rate fails the job instead of being resampled; mono is
-  duplicated. The model loads once per worker process, at startup.
+  44.1 kHz vocals WAV, clipped to full scale. The input must be 44.1 kHz (the
+  API always sends it): any other rate fails the job instead of being
+  resampled; mono is duplicated. The model loads once per worker process, at
+  startup.
 - Weights: `separation-weights.json` pins the checkpoint (a fixed Hugging Face
   revision) and the config (a fixed ZFTurbo commit) by sha256; the Dockerfile
   downloads them with `weights.py` into `/app/weights/mel-band-roformer`
@@ -294,3 +300,28 @@ endpoints pull the image by tag, so pin an endpoint to a `sha-` tag when a
 release must not move. The weights (about 1.3 GB) are downloaded at build
 time and verified against pinned sha256 checksums; clean caches in the same
 layer, as the existing steps do, because the hosted runner's disk is the limit.
+
+## Image smoke test and GPU targets
+
+The production entrypoint is `python -m note_detector`. It loads the GAME,
+Mel-Band RoFormer and RMVPE models once before RunPod starts, then reuses
+those instances for each job. Production targets RunPod A40 / RTX A6000 GPUs
+(48 GB, Ampere); both startup and the smoke command fail promptly with a
+clear error when CUDA is unavailable.
+
+Build the image from this directory with the commit sha that should be
+reported by completed jobs, then run one short synthetic job through the
+real download, separation, note detection, Pitch curve and presigned upload
+steps:
+
+```sh
+docker build --build-arg GIT_SHA="$(git -C ../.. rev-parse HEAD)" -t note-detector:smoke .
+docker run --rm --gpus all note-detector:smoke python smoke_test.py
+```
+
+The command prints the returned `detectorVersion`, notes count, uploaded byte
+counts and progress stages. It uses an in-container HTTP server as the music
+URL and the two presigned PUT URLs, so it needs no API, credentials or
+external storage. On a machine without a GPU, run the same container command
+without `--gpus all`; it should exit before loading model weights with
+`note-detector requires a CUDA GPU`.

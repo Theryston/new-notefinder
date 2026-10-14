@@ -104,7 +104,11 @@ def pitch_curve(
     """One MIDI number per 10 ms frame from t = 0; 0 where RMVPE hears no
     voice. Vocals shorter than 512 samples (32 ms) are too short for the
     centered STFT and fail the job."""
-    model = load_rmvpe(weights)
+    return pitch_curve_with_model(vocals, load_rmvpe(weights))
+
+
+def pitch_curve_with_model(vocals: Path, model: _Rmvpe) -> list[float]:
+    """Computes the Pitch curve with the model loaded at worker startup."""
     audio = _read_mono_16k(vocals)
     salience = model.salience(model.mel(audio))
     maths.check_frame_count(salience.shape[0], len(audio))
