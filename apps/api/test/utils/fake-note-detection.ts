@@ -6,18 +6,19 @@ import {
 
 /** One note of the fake worker's output. */
 export type FakeNote = {
-  note: string;
-  octave: number;
+  pitch: number;
   start: number;
   end: number;
-  frequencyMean: number;
 };
+
+/** The version the fake worker reports, as the real one does. */
+export const FAKE_DETECTOR_VERSION = 'note-detector@0123abc';
 
 /**
  * What a check of the fake RunPod answers, as RunPod's `/status` sends it: the
  * job's status, and the worker's progress update (its stage) while it runs. A
  * `COMPLETED` answer carries the output the worker would give for the job: the
- * vocals URL it was asked to upload to, and the notes the spec sets. The fake
+ * vocals and Pitch curve URLs it was asked to upload to, its version, and the notes the spec sets. The fake
  * hands these bodies to the real state mapping, so each status is read the way
  * the client reads it.
  */
@@ -25,8 +26,8 @@ export type FakeRunpodAnswer = { status: string; output?: string };
 
 /** Two notes a completed job detects by default. */
 export const FAKE_NOTES: FakeNote[] = [
-  { note: 'A#', octave: 4, start: 1.23, end: 1.61, frequencyMean: 466.16 },
-  { note: 'C', octave: 5, start: 2.0, end: 2.4, frequencyMean: 523.25 },
+  { pitch: 70.08, start: 1.23, end: 1.61 },
+  { pitch: 72, start: 2.0, end: 2.4 },
 ];
 
 /**
@@ -80,21 +81,37 @@ export class FakeNoteDetection {
   }
 
   /**
-   * Plays the worker's upload: the vocals WAV goes to the presigned URL of the
-   * job, as `apps/nfp-audio` sends it (the Content-Type of its input).
+   * Plays the worker's vocals upload: the WAV goes to the presigned URL of the
+   * job, with the Content-Type of its input (`apps/note-detector`).
    */
-  async uploadVocals(
+  uploadVocals(jobId: string, wav: Uint8Array<ArrayBuffer>): Promise<Response> {
+    return this.upload(this.inputOf(jobId).vocalsUpload, wav);
+  }
+
+  /** Plays the worker's Pitch curve upload, the same way. */
+  uploadPitchCurve(
     jobId: string,
-    wav: Uint8Array<ArrayBuffer>,
+    curve: Uint8Array<ArrayBuffer>,
   ): Promise<Response> {
+    return this.upload(this.inputOf(jobId).pitchCurveUpload, curve);
+  }
+
+  private inputOf(jobId: string): NoteDetectionInput {
     const input = this.inputs.get(jobId);
     if (input === undefined) {
       throw new Error(`No job ${jobId} was started`);
     }
-    return fetch(input.vocalsUpload.presignedPutUrl, {
+    return input;
+  }
+
+  private upload(
+    target: NoteDetectionInput['vocalsUpload'],
+    body: Uint8Array<ArrayBuffer>,
+  ): Promise<Response> {
+    return fetch(target.presignedPutUrl, {
       method: 'PUT',
-      headers: { 'content-type': input.vocalsUpload.contentType },
-      body: wav,
+      headers: { 'content-type': target.contentType },
+      body,
     });
   }
 
@@ -108,6 +125,8 @@ export class FakeNoteDetection {
       status: 'COMPLETED',
       output: {
         vocalsUrl: this.inputs.get(jobId)?.vocalsUpload.publicUrl,
+        pitchCurveUrl: this.inputs.get(jobId)?.pitchCurveUpload.publicUrl,
+        detectorVersion: FAKE_DETECTOR_VERSION,
         notes: this.notes,
       },
     };

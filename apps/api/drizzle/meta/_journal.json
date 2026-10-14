@@ -99,6 +99,13 @@
       "when": 1791944689946,
       "tag": "0013_track-notes-pitch",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791973817393,
+      "tag": "0014_track-processing-pitch-curve",
+      "breakpoints": true
     }
   ]
 }

@@ -33,7 +33,7 @@ const processings = {
   findRunpodJobId: vi.fn(),
   findMusicWavUrl: vi.fn(),
   saveRunpodJobId: vi.fn(),
-  saveVocalsWavUrl: vi.fn(),
+  saveDetection: vi.fn(),
 };
 const notes = { replaceNotes: vi.fn() };
 
@@ -41,6 +41,10 @@ const MUSIC_URL = 'https://files.test/track-audio/track-1/processing-1.wav';
 const VOCALS_KEY = 'track-vocals/track-1/processing-1.wav';
 const VOCALS_URL = `https://files.test/${VOCALS_KEY}`;
 const PRESIGNED_URL = `https://files.test/${VOCALS_KEY}?X-Amz-Signature=1`;
+const CURVE_KEY = 'track-pitch-curves/track-1/processing-1.bin';
+const CURVE_URL = `https://files.test/${CURVE_KEY}`;
+const CURVE_PRESIGNED_URL = `${CURVE_URL}?X-Amz-Signature=2`;
+const DETECTOR_VERSION = 'note-detector@0123abc';
 
 const processing = (
   overrides: Partial<ProcessingForStep> = {},
@@ -60,15 +64,9 @@ const failureWith = (code: string) =>
 
 const output = {
   vocalsUrl: VOCALS_URL,
-  notes: [
-    {
-      note: 'A#',
-      octave: 4,
-      start: 1.23,
-      end: 1.61,
-      frequencyMean: 468.2,
-    },
-  ],
+  pitchCurveUrl: CURVE_URL,
+  detectorVersion: DETECTOR_VERSION,
+  notes: [{ pitch: 70.08, start: 1.23, end: 1.61 }],
 };
 
 const completed = { kind: 'completed', output };
@@ -86,12 +84,17 @@ describe('TrackNoteDetectionService', () => {
     vi.clearAllMocks();
     client.startJob.mockResolvedValue('runpod-1');
     client.checkJob.mockResolvedValue(running('EXTRACTING_VOCALS'));
-    storage.presignPublicPut.mockResolvedValue(PRESIGNED_URL);
-    storage.publicUrl.mockReturnValue(VOCALS_URL);
+    storage.presignPublicPut.mockImplementation(
+      async ({ key }: { key: string }) =>
+        key === CURVE_KEY ? CURVE_PRESIGNED_URL : PRESIGNED_URL,
+    );
+    storage.publicUrl.mockImplementation((key: string) =>
+      key === CURVE_KEY ? CURVE_URL : VOCALS_URL,
+    );
     processings.findRunpodJobId.mockResolvedValue('runpod-1');
     processings.findMusicWavUrl.mockResolvedValue(MUSIC_URL);
     processings.saveRunpodJobId.mockResolvedValue(true);
-    processings.saveVocalsWavUrl.mockResolvedValue(true);
+    processings.saveDetection.mockResolvedValue(true);
     notes.replaceNotes.mockResolvedValue(undefined);
     moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule],
@@ -120,7 +123,7 @@ describe('TrackNoteDetectionService', () => {
       processings.findRunpodJobId.mockResolvedValue(null);
     });
 
-    it('starts the job with the music and a presigned upload of the vocals, then checks it after a delay', async () => {
+    it('starts the job with the music and presigned uploads of the vocals and the Pitch curve, then checks it after a delay', async () => {
       await expect(
         service.extractVocals(processing(), undefined),
       ).resolves.toEqual({ kind: 'wait', delayMs: 5_000, state: null });
@@ -130,6 +133,11 @@ describe('TrackNoteDetectionService', () => {
         contentType: 'audio/wav',
         expiresInSeconds: 2 * 60 * 60,
       });
+      expect(storage.presignPublicPut).toHaveBeenCalledWith({
+        key: CURVE_KEY,
+        contentType: 'application/octet-stream',
+        expiresInSeconds: 2 * 60 * 60,
+      });
       expect(client.startJob).toHaveBeenCalledWith({
         processingId: 'processing-1',
         musicUrl: MUSIC_URL,
@@ -137,6 +145,11 @@ describe('TrackNoteDetectionService', () => {
           presignedPutUrl: PRESIGNED_URL,
           contentType: 'audio/wav',
           publicUrl: VOCALS_URL,
+        },
+        pitchCurveUpload: {
+          presignedPutUrl: CURVE_PRESIGNED_URL,
+          contentType: 'application/octet-stream',
+          publicUrl: CURVE_URL,
         },
       });
       expect(processings.saveRunpodJobId).toHaveBeenCalledWith(
@@ -201,7 +214,7 @@ describe('TrackNoteDetectionService', () => {
       await expect(
         service.extractVocals(processing(), waitingAt(1)),
       ).resolves.toBe(DONE);
-      expect(processings.saveVocalsWavUrl).not.toHaveBeenCalled();
+      expect(processings.saveDetection).not.toHaveBeenCalled();
       expect(notes.replaceNotes).not.toHaveBeenCalled();
     });
 
@@ -246,40 +259,38 @@ describe('TrackNoteDetectionService', () => {
         service.detectNotes(processing(), waitingAt(2)),
       ).resolves.toEqual({ kind: 'wait', delayMs: 5_000, state: null });
       expect(client.checkJob).toHaveBeenCalledWith('runpod-1');
-      expect(processings.saveVocalsWavUrl).not.toHaveBeenCalled();
+      expect(processings.saveDetection).not.toHaveBeenCalled();
     });
 
-    it('stores the vocals URL and replaces the Track notes once the job completes', async () => {
+    it('stores the vocals and Pitch curve URLs and the version, and replaces the Track notes once the job completes', async () => {
       client.checkJob.mockResolvedValue(completed);
 
       await expect(
         service.detectNotes(processing(), waitingAt(3)),
       ).resolves.toBe(DONE);
 
-      expect(processings.saveVocalsWavUrl).toHaveBeenCalledWith(
-        'processing-1',
-        VOCALS_URL,
-      );
+      expect(processings.saveDetection).toHaveBeenCalledWith('processing-1', {
+        vocalsWavUrl: VOCALS_URL,
+        pitchCurveUrl: CURVE_URL,
+        detectorVersion: DETECTOR_VERSION,
+      });
       expect(notes.replaceNotes).toHaveBeenCalledWith('track-1', [
-        { pitch: expect.closeTo(70.08, 2), start: 1.23, end: 1.61 },
+        { pitch: 70.08, start: 1.23, end: 1.61 },
       ]);
     });
 
-    it('writes the vocals URL and the notes in one transaction', async () => {
+    it('writes the detection and the notes in one transaction', async () => {
       client.checkJob.mockResolvedValue(completed);
 
       await service.detectNotes(processing(), undefined);
 
       expect(db.transaction).toHaveBeenCalledOnce();
-      expect(processings.saveVocalsWavUrl).toHaveBeenCalledWith(
-        'processing-1',
-        VOCALS_URL,
-      );
+      expect(processings.saveDetection).toHaveBeenCalledOnce();
     });
 
     it('stops without replacing the notes when the Processing moved on', async () => {
       client.checkJob.mockResolvedValue(completed);
-      processings.saveVocalsWavUrl.mockResolvedValue(false);
+      processings.saveDetection.mockResolvedValue(false);
 
       await expect(
         service.detectNotes(processing(), undefined),
@@ -290,7 +301,7 @@ describe('TrackNoteDetectionService', () => {
     it('stores a completed job with no notes: the Track has none', async () => {
       client.checkJob.mockResolvedValue({
         kind: 'completed',
-        output: { vocalsUrl: VOCALS_URL, notes: [] },
+        output: { ...output, notes: [] },
       });
 
       await expect(service.detectNotes(processing(), undefined)).resolves.toBe(

@@ -51,3 +51,10 @@ export type StoredAudioUrls = Pick<
 
 /** The Processing an MP3 or lyrics write belongs to: only its ID and its Track. */
 export type ProcessingRef = { id: string; trackId: string };
+
+/** What the notes stage stores from the worker's output besides the notes. */
+export type ProcessingDetection = {
+  vocalsWavUrl: string;
+  pitchCurveUrl: string;
+  detectorVersion: string;
+};
