@@ -5,9 +5,9 @@ export function keyOf(note: Pick<TrackNote, 'pitch'>): number {
   return nearestKey(note.pitch);
 }
 
-/** The name of a MIDI key, as the notes write it (`C#4`). */
-export function noteName(midi: number): string {
-  return pitchName(midi);
+/** The name of the key nearest to a pitch, as notes write it (`C#4`). */
+export function noteName(pitch: number): string {
+  return pitchName(pitch);
 }
 
 /** Whether the key of this MIDI number is a black one (a sharp). */

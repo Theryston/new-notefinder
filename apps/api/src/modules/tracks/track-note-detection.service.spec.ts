@@ -260,7 +260,9 @@ describe('TrackNoteDetectionService', () => {
         'processing-1',
         VOCALS_URL,
       );
-      expect(notes.replaceNotes).toHaveBeenCalledWith('track-1', output.notes);
+      expect(notes.replaceNotes).toHaveBeenCalledWith('track-1', [
+        { pitch: expect.closeTo(70.08, 2), start: 1.23, end: 1.61 },
+      ]);
     });
 
     it('writes the vocals URL and the notes in one transaction', async () => {

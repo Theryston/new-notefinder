@@ -1,5 +1,7 @@
-import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
+
+import { noteOn as sung } from '@/lib/note-fixtures';
 
 import {
   drawListenTimeline,
@@ -61,17 +63,6 @@ function recordingContext() {
   };
   return { ctx: ctx as unknown as TimelineContext, bars, labels, fills };
 }
-
-const sung = (
-  name: (typeof PITCH_CLASS_NAMES)[number],
-  octave: number,
-  start: number,
-  end: number,
-): TrackNote => ({
-  pitch: (octave + 1) * 12 + PITCH_CLASS_NAMES.indexOf(name),
-  start,
-  end,
-});
 
 const notes = [sung('C', 4, 0, 1), sung('D', 4, 2, 4), sung('E', 4, 5, 6)];
 

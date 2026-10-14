@@ -65,17 +65,13 @@ const storedNotesOf = (testApp: TestApp, trackId: string) =>
     .orderBy(asc(trackNotes.start));
 
 /**
- * The notes a Track should hold once its Processing completes with these
- * worker notes: the pitch is the MIDI number of the worker's mean frequency.
+ * The notes a Track holds once its Processing completes with FAKE_NOTES: the
+ * pitches are the MIDI numbers of 466.16 Hz (A#4) and 523.25 Hz (C5).
  */
-const expectedNotes = (notes: readonly FakeNote[]) =>
-  [...notes]
-    .sort((a, b) => a.start - b.start)
-    .map((note) => ({
-      pitch: expect.closeTo(69 + 12 * Math.log2(note.frequencyMean / 440), 6),
-      start: note.start,
-      end: note.end,
-    }));
+const EXPECTED_NOTES = [
+  { pitch: expect.closeTo(70, 2), start: 1.23, end: 1.61 },
+  { pitch: expect.closeTo(72, 2), start: 2.0, end: 2.4 },
+];
 
 describe('Track Processing note detection (e2e)', () => {
   let app: TrackProcessingApp;
@@ -119,9 +115,7 @@ describe('Track Processing note detection (e2e)', () => {
       runpodJobId: 'runpod-job-1',
       vocalsWavUrl: publicUrl,
     });
-    expect(await storedNotesOf(testApp, trackId)).toEqual(
-      expectedNotes(FAKE_NOTES),
-    );
+    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
   });
 
   it('lets the worker upload the vocals through the presigned URL, served at the public URL', async () => {
@@ -327,9 +321,7 @@ describe('Track Processing note detection (e2e)', () => {
 
     await runTrackJobs(testApp);
 
-    expect(await storedNotesOf(testApp, trackId)).toEqual(
-      expectedNotes(FAKE_NOTES),
-    );
+    expect(await storedNotesOf(testApp, trackId)).toEqual(EXPECTED_NOTES);
   });
 
   it('completes a Track whose worker detected no notes, with none stored', async () => {

@@ -1,5 +1,6 @@
-import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
+
+import { noteOn as note } from '@/lib/note-fixtures';
 
 import {
   fitsLabel,
@@ -15,15 +16,6 @@ import {
   timeToX,
   xToTime,
 } from './timeline-geometry';
-
-const note = (
-  name: (typeof PITCH_CLASS_NAMES)[number],
-  octave: number,
-): TrackNote => ({
-  pitch: (octave + 1) * 12 + PITCH_CLASS_NAMES.indexOf(name),
-  start: 0,
-  end: 1,
-});
 
 describe('laneRangeOf', () => {
   it('fits the Track range with a lane of room on each side', () => {

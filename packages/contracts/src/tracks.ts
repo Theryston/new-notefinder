@@ -155,9 +155,10 @@ export type TrackDetail = z.infer<typeof trackDetailSchema>;
 
 /**
  * One vocal note (CONTEXT.md): a single continuous pitch held from `start` to
- * `end`, in seconds from the start of the Track. `pitch` is a MIDI number (A4 is
- * 69) and may fall between two keys (a Zod number is always finite); the note's name is the nearest key, which
- * `pitchName` computes for every client.
+ * `end`, in seconds from the start of the Track. `pitch` is a MIDI number
+ * (A4 is 69) and may fall between two keys (a Zod number is always finite);
+ * the note's name is the nearest key, which `pitchName` computes for every
+ * client.
  */
 export const trackNoteSchema = z.object({
   pitch: z.number(),

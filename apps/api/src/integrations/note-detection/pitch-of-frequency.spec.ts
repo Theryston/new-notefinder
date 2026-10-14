@@ -1,4 +1,4 @@
-import { pitchOfFrequency } from './note-detection-output.js';
+import { pitchOfFrequency } from './pitch-of-frequency.js';
 
 describe('pitchOfFrequency', () => {
   it('puts A4 (440 Hz) at MIDI 69', () => {
