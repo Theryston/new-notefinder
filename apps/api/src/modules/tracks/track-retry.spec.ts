@@ -12,6 +12,8 @@ const failed = (
   musicMp3Url: null,
   vocalsWavUrl: null,
   vocalsMp3Url: null,
+  pitchCurveUrl: null,
+  detectorVersion: null,
   runpodJobId: null,
   ...overrides,
 });
@@ -27,6 +29,8 @@ describe('retryPlanOf', () => {
         musicMp3Url: null,
         vocalsWavUrl: null,
         vocalsMp3Url: null,
+        pitchCurveUrl: null,
+        detectorVersion: null,
       },
     });
   });

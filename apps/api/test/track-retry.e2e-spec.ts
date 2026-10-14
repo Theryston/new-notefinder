@@ -370,4 +370,37 @@ describe('Track retry (e2e)', () => {
       musicWavUrl: failed.musicWavUrl,
     });
   });
+
+  it('keeps the Pitch curve and the detector version a failed run stored, with the vocals', async () => {
+    const revalidations = testApp.queues[WEB_REVALIDATION_QUEUE];
+    if (revalidations === undefined) {
+      throw new Error('The revalidation queue is not faked');
+    }
+    // The run fails after the notes stage, which stored both.
+    const add = revalidations.add;
+    revalidations.add = () => Promise.reject(new Error('Redis is down'));
+    const trackId = await requestAs(await createPasswordUser(testApp.db), 'en');
+    try {
+      await runTrackJobs(testApp);
+    } finally {
+      revalidations.add = add;
+    }
+    const failed = await processingRowOf(testApp, trackId);
+    expect(failed.resumeFrom).toBe('EXTRACTING_LYRICS');
+    expect(failed.pitchCurveUrl).not.toBeNull();
+    expect(failed.detectorVersion).not.toBeNull();
+
+    await retryAs(await createPasswordUser(testApp.db), trackId, 'en');
+    await runTrackJobs(testApp);
+
+    const retry = (await processingsOf(trackId)).find(
+      (row) => row.id !== failed.id,
+    );
+    expect(retry).toMatchObject({
+      status: 'COMPLETED',
+      vocalsWavUrl: failed.vocalsWavUrl,
+      pitchCurveUrl: failed.pitchCurveUrl,
+      detectorVersion: failed.detectorVersion,
+    });
+  });
 });

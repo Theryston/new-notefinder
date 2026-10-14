@@ -14,6 +14,9 @@ export type ProcessingOutputs = {
   musicMp3Url: string | null;
   vocalsWavUrl: string | null;
   vocalsMp3Url: string | null;
+  /** The Pitch curve and the detector version, made with the vocals. */
+  pitchCurveUrl: string | null;
+  detectorVersion: string | null;
   /** The RunPod job of the note detection, which the step polls. */
   runpodJobId: string | null;
 };
@@ -37,6 +40,8 @@ export function carriedOutputsOf(outputs: ProcessingOutputs): CarriedOutputs {
     musicMp3Url: outputs.musicMp3Url,
     vocalsWavUrl: outputs.vocalsWavUrl,
     vocalsMp3Url: outputs.vocalsMp3Url,
+    pitchCurveUrl: outputs.pitchCurveUrl,
+    detectorVersion: outputs.detectorVersion,
   } satisfies CarriedOutputs;
 }
 
