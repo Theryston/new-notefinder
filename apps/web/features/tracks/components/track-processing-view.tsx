@@ -15,6 +15,9 @@ import { TrackPracticeView } from './track-practice-view';
 import { TrackProcessingBanner } from './track-processing-banner';
 import { TrackProcessingStatus } from './track-processing-status';
 
+/** How far a toast sits from the bottom: the dock's height plus some room. */
+const DOCK_CLEARANCE = { bottom: 'calc(var(--dock-height, 0px) + 1.5rem)' };
+
 /**
  * The Track page: while the Processing runs, the banner with the progress
  * ring, then what happens now, the video it chose and its Contributors; once
@@ -48,7 +51,10 @@ export function TrackProcessingView({
     return (
       <>
         {/* A toast still showing when the view switches (a retry refused) stays. */}
-        <Toaster />
+        {/* Above the dock, whatever its height: it publishes `--dock-height`.
+            Sonner has its own offset under 600px, which needs setting too; only the
+            bottom is given, since a single value would apply to every side. */}
+        <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
         <TrackPracticeView
           trackId={state.track.id}
           initial={initialPractice}
