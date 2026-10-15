@@ -187,6 +187,21 @@
       }
     }
   },
+  "streaks": {
+    "ring": "Prática diária: {progress, number, ::percent} da meta de hoje",
+    "inviteRing": "Sequência de prática diária",
+    "days": "{days, plural, =0 {Nenhuma sequência ainda} one {# dia de sequência} other {# dias de sequência}}",
+    "remaining": "{minutes, plural, =0 {Faltam {seconds, number} s hoje} other {Faltam {minutes, number} min {seconds, number} s hoje}}",
+    "reached": "Você atingiu a meta de hoje. Volte amanhã para manter a sequência.",
+    "goal": "Meta diária: {minutes, plural, one {# minuto} other {# minutos}}",
+    "countsWhilePlaying": "A prática conta enquanto a música toca.",
+    "inviteTitle": "Crie uma sequência de prática diária",
+    "inviteDescription": "Crie uma conta gratuita para contar o tempo que você pratica a cada dia e manter sua sequência.",
+    "inviteCreate": "Criar conta",
+    "inviteSignIn": "Entrar",
+    "celebrationTitle": "Meta diária atingida!",
+    "celebrationDescription": "Sequência de {days, number} dias. Até amanhã."
+  },
   "header": {
     "home": "Início do NoteFinder",
     "wordmark": "NoteFinder",

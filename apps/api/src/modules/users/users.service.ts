@@ -12,6 +12,7 @@ import { AVATAR_CONTENT_TYPE, processAvatarImage } from './avatar-image.js';
 import {
   type CurrentUserRow,
   type EmailRecipientRow,
+  type PracticeSettingsRow,
   UsersRepository,
 } from './users.repository.js';
 
@@ -25,6 +26,9 @@ export type PublicUser = {
   name: string;
   image: string | null;
 };
+
+/** What the daily practice streak reads about a User. */
+export type PracticeSettings = PracticeSettingsRow;
 
 /** What a notification email needs about a User (see `findEmailRecipients`). */
 export type EmailRecipient = EmailRecipientRow;
@@ -40,6 +44,15 @@ const requireUser = (user: CurrentUserRow | undefined): CurrentUserRow => {
     throw new AppException('UNAUTHORIZED', 'User no longer exists');
   }
   return user;
+};
+
+const requireSettings = (
+  settings: PracticeSettingsRow | undefined,
+): PracticeSettingsRow => {
+  if (!settings) {
+    throw new AppException('UNAUTHORIZED', 'User no longer exists');
+  }
+  return settings;
 };
 
 /** Why something failed, looking through wrappers to their `cause`. */
@@ -97,6 +110,31 @@ export class UsersService {
    */
   setLocale(userId: string, locale: Locale): Promise<void> {
     return this.usersRepository.setLocale(userId, locale);
+  }
+
+  /** The practice settings of a User; `UNAUTHORIZED` when gone. */
+  async getPracticeSettings(userId: string): Promise<PracticeSettings> {
+    return requireSettings(
+      await this.usersRepository.findPracticeSettings(userId),
+    );
+  }
+
+  /**
+   * The same, locking the User until the transaction ends: for a heartbeat,
+   * which reads the practice clock and moves it.
+   */
+  async lockPracticeSettings(userId: string): Promise<PracticeSettings> {
+    return requireSettings(
+      await this.usersRepository.lockPracticeSettings(userId),
+    );
+  }
+
+  /** Keeps the time zone of a heartbeat and moves the practice clock. */
+  recordPracticeHeartbeat(
+    userId: string,
+    heartbeat: { timeZone: string; clockAt: Date },
+  ): Promise<void> {
+    return this.usersRepository.recordPracticeHeartbeat(userId, heartbeat);
   }
 
   /**

@@ -28,6 +28,12 @@ export type EmailRecipientRow = {
 // Named in migration 0000_init.
 const USERNAME_UNIQUE_CONSTRAINT = 'users_username_unique';
 
+const practiceSettingsColumns = {
+  dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
+  timeZone: users.timeZone,
+  lastPracticeHeartbeatAt: users.lastPracticeHeartbeatAt,
+};
+
 const currentUserColumns = {
   id: users.id,
   name: users.name,
@@ -37,6 +43,13 @@ const currentUserColumns = {
   image: users.image,
   role: users.role,
   createdAt: users.createdAt,
+};
+
+/** What the daily practice streak reads about a User. */
+export type PracticeSettingsRow = {
+  dailyPracticeTargetSeconds: number | null;
+  timeZone: string | null;
+  lastPracticeHeartbeatAt: Date | null;
 };
 
 type SetUsernameResult =
@@ -91,6 +104,47 @@ export class UsersRepository {
   /** Sets the language the User's emails follow. */
   async setLocale(id: string, locale: Locale): Promise<void> {
     await this.txHost.tx.update(users).set({ locale }).where(eq(users.id, id));
+  }
+
+  /** The practice settings of a User, or nothing when gone. */
+  async findPracticeSettings(
+    id: string,
+  ): Promise<PracticeSettingsRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select(practiceSettingsColumns)
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return row;
+  }
+
+  /**
+   * The same, locking the User's row until the transaction ends, so a User's
+   * heartbeats are checked against their clock one after the other.
+   */
+  async lockPracticeSettings(
+    id: string,
+  ): Promise<PracticeSettingsRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select(practiceSettingsColumns)
+      .from(users)
+      .where(eq(users.id, id))
+      .for('update');
+    return row;
+  }
+
+  /** Keeps the time zone of a heartbeat and moves the practice clock. */
+  async recordPracticeHeartbeat(
+    id: string,
+    heartbeat: { timeZone: string; clockAt: Date },
+  ): Promise<void> {
+    await this.txHost.tx
+      .update(users)
+      .set({
+        timeZone: heartbeat.timeZone,
+        lastPracticeHeartbeatAt: heartbeat.clockAt,
+      })
+      .where(eq(users.id, id));
   }
 
   /** The email and language of the Users given, for the ones that exist. */

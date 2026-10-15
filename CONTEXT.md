@@ -126,6 +126,30 @@ album shares one URL. It exists once its Recordings are reprocessed (see
 `docs/adr/0003-album-is-a-release-group.md`).
 _Avoid_: Release (an edition of an album), record, LP
 
+### Practice
+
+**Practice day**:
+The calendar day of a User, in their own time zone (kept from their last
+Heartbeat), which rolls over at their midnight. Legacy practice days are UTC
+days and are imported as they are.
+_Avoid_: Day (alone), UTC day
+
+**Heartbeat**:
+A report from the web that a User listened to a Track for some seconds. The API
+credits it to the Practice day, at most 20 seconds per Heartbeat and never more
+than its own clock saw pass since the User's previous Heartbeat.
+_Avoid_: Ping, tick
+
+**Daily target**:
+How long a User wants to practice each Practice day: 5, 15 or 30 minutes.
+Reaching it completes the day.
+_Avoid_: Goal, quota
+
+**Streak**:
+The run of consecutive completed Practice days ending today, or yesterday while
+today is still open.
+_Avoid_: Series, chain
+
 ### Legacy
 
 **Legacy ID**:

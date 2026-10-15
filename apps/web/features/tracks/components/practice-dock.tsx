@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-skeleton';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
@@ -23,6 +24,19 @@ const DOCK_HEIGHT_VAR = '--dock-height';
 const DockSettings = dynamic(
   () => import('./dock-settings').then((module) => module.DockSettings),
   { ssr: false, loading: SettingsPlaceholder },
+);
+
+// Loaded after the page too: the streak ring brings the popover, the
+// heartbeat and the celebration along, which a listener does not need to paint.
+const StreakRing = dynamic(
+  () =>
+    import('@/features/streaks/components/streak-ring').then(
+      (module) => module.StreakRing,
+    ),
+  {
+    ssr: false,
+    loading: StreakRingSkeleton,
+  },
 );
 
 function SettingsPlaceholder() {
@@ -109,7 +123,10 @@ export function PracticeDock({
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
         <TransposeStepper trackKey={trackKey} />
-        <DockSettings controller={controller} videoId={videoId} />
+        <div className="flex items-center gap-1">
+          <StreakRing playing={status === 'playing'} />
+          <DockSettings controller={controller} videoId={videoId} />
+        </div>
       </div>
     </section>
   );
