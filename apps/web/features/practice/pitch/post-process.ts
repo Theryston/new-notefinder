@@ -50,7 +50,9 @@ export class PitchSmoother {
       return null;
     }
     this.unvoiced = 0;
-    this.history.push(this.settleOctave(frequencyToMidi(reading.frequency)));
+    // Settling an octave can replace history; append to the new array.
+    const midi = this.settleOctave(frequencyToMidi(reading.frequency));
+    this.history.push(midi);
     if (this.history.length > MEDIAN_SIZE) this.history.shift();
     return median(this.history);
   }

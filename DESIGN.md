@@ -347,7 +347,13 @@ x, one lane per semitone on y, playhead fixed at ~40% of the width):
 - Notes are rectangles `rounded-[3px]`: upcoming in `timeline-note` at 80%,
   current at 100%, past in `timeline-note-past`.
 - The note name is written inside the bar (Geist Mono, 9–10px, white) when
-  the bar is wide enough.
+  the bar is wide enough. Short bars put their name beside them when there is
+  clear space, without changing the bar's duration. Labels stay inside the
+  visible roll and avoid other bars and labels; the current note has priority
+  in dense passages. Touching chips of the same note share one name at the
+  start of the sequence, even across word boundaries; their bars remain
+  separate. Collision checks use the text's bounds, not the whole label's
+  padding or neighboring lanes. This placement also applies in sing mode.
 
 ### Sing mode (mic on): lanes with feedback
 

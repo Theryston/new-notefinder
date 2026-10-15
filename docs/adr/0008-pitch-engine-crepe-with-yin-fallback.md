@@ -13,9 +13,19 @@ devices that cannot load or keep up with the model.
 ## Decision
 
 - The engine is a set of small steps in `apps/web/features/practice`: an
-  AudioWorklet captures the mic (echo cancellation and noise suppression on,
-  auto gain off) and feeds the engine, which post-processes every reading
-  (confidence gate, octave-slip correction, median of five).
+  AudioWorklet captures the mic with echo cancellation, noise suppression and
+  auto gain off, preserving sustained singing and its harmonics instead of
+  applying speech processing. Headphones isolate playback from the mic.
+  The classic fallback uses a confidence
+  gate, octave-slip correction and median of five. The model path instead
+  keeps competing pitch peaks and corroborates them with YIN on the same
+  captured frame. Hann-windowed spectral evidence checks whether a root is
+  present beneath a dominant harmonic before resolving octave ambiguity.
+  A temporal tracker preserves fractional slides and vibrato,
+  tolerates at most 64 ms of non-silent uncertainty and confirms consistent
+  large changes using capture time. Measured silence still ends the line.
+  This avoids turning a brief confidence dip into a new phrase or a smooth
+  slide into the median filter's sudden staircase; octaves remain measurable.
 - **Primary: CREPE tiny as ONNX**, run by `onnxruntime-web` (WASM, one thread,
   so no cross-origin isolation headers are needed). The mic's audio is brought
   down to 16 kHz and read in 1024-sample frames every 32 ms.
@@ -45,9 +55,11 @@ devices that cannot load or keep up with the model.
 
 ## Consequences
 
-- Accuracy is judged by singing (no benchmark, per the spec); the unit tests
-  check correctness on synthetic tones and the engine switching, and the e2e
-  test checks the model path on a known A4.
+- Accuracy is judged by singing; unit regressions also cover competing
+  harmonics, diffuse model confidence, interrupted and drifting octave
+  candidates, real leaps, silence and slides. The e2e test checks the model
+  path on a known A4. User recordings can be replayed locally to compare
+  behavior without adding private audio to the repository.
 - A visitor who turns the mic on downloads about 16 MB once (runtime plus
   model); later visits read it from the browser cache.
 - The AudioWorklet module is a plain `.js` file next to the engine, loaded by

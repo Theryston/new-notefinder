@@ -37,6 +37,8 @@ const startContainer = async (): Promise<Started> => {
   try {
     logger.info(`Starting ${MEILISEARCH_IMAGE} with Testcontainers`);
     const container = await new GenericContainer(MEILISEARCH_IMAGE)
+      // Disposable indexes should not compete with host disk I/O.
+      .withTmpFs({ '/meili_data': 'rw,size=512m' })
       .withExposedPorts(MEILISEARCH_PORT)
       .withEnvironment({
         MEILI_MASTER_KEY: MASTER_KEY,

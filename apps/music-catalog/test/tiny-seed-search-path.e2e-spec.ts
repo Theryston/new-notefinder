@@ -31,7 +31,7 @@ describe('tiny seed with MusicBrainz mirror triggers', () => {
         select count(*)::int as count
         from musicbrainz.artist_release_group_pending_update
       `);
-      expect(pending.rows[0]).toEqual({ count: 10 });
+      expect(pending.rows[0]).toEqual({ count: 11 });
       expect((await db.execute(sql`show search_path`)).rows).toEqual(
         before.rows,
       );

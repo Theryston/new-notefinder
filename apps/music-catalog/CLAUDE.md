@@ -510,8 +510,9 @@ network; `full` restores through `mbslave import <urls>`
   MusicBrainz catalog, written with plain SQL (`tiny-seed.ts` +
   `TinySeedRepository`, no Drizzle tables, so a wrong column there fails the
   suite instead of passing twice): ten albums (Queen, Adele, Coldplay,
-  Elis & Tom, Legião Urbana, Michael Jackson and a bootleg without art), their
-  artists and aliases, about 110 Recordings with ISRCs, release groups with
+  Elis & Tom, Legião Urbana, Michael Jackson and a bootleg without art),
+  Ed Sheeran's single "Boat", their artists and aliases, about 110 Recordings
+  with ISRCs, release groups with
   tags and genres, releases with their events, media and tracks. Every MBID is
   the real one, so the Cover Art Archive URLs built from a release MBID load,
   an MBID resolves on musicbrainz.org and the Lyrics LRCLIB knows match. The

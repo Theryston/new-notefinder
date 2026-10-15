@@ -407,6 +407,21 @@
           "sortName": "ポール・マッカートニー"
         }
       ]
+    },
+    {
+      "mbid": "b8a7c51f-362c-4dcb-a259-bc6e0095f0a6",
+      "name": "Ed Sheeran",
+      "sortName": "Sheeran, Ed",
+      "aliases": [
+        {
+          "name": "Edward Christopher Sheeran",
+          "sortName": "Sheeran, Edward Christopher"
+        },
+        {
+          "name": "에드 시런",
+          "sortName": "에드 시런"
+        }
+      ]
     }
   ],
   "genres": [
@@ -581,6 +596,10 @@
     {
       "mbid": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
       "name": "Album"
+    },
+    {
+      "mbid": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+      "name": "Single"
     }
   ],
   "recordings": [
@@ -2464,6 +2483,21 @@
         }
       ],
       "isrcs": []
+    },
+    {
+      "mbid": "f942f4fd-e5ad-43b3-ba4b-e6c0384222ba",
+      "title": "Boat",
+      "lengthMs": 185666,
+      "disambiguation": "",
+      "video": false,
+      "artistCredit": [
+        {
+          "artist": "b8a7c51f-362c-4dcb-a259-bc6e0095f0a6",
+          "name": "Ed Sheeran",
+          "joinPhrase": ""
+        }
+      ],
+      "isrcs": ["GBAHS2201302"]
     }
   ],
   "releaseGroups": [
@@ -3014,6 +3048,24 @@
         }
       ],
       "tags": []
+    },
+    {
+      "mbid": "4792e5c2-1051-4542-97ef-90e152a49902",
+      "title": "Boat",
+      "primaryType": "Single",
+      "artistCredit": [
+        {
+          "artist": "b8a7c51f-362c-4dcb-a259-bc6e0095f0a6",
+          "name": "Ed Sheeran",
+          "joinPhrase": ""
+        }
+      ],
+      "tags": [
+        {
+          "count": 1,
+          "name": "pop"
+        }
+      ]
     }
   ],
   "releases": [
@@ -4272,6 +4324,44 @@
               "title": "Black & Gold",
               "lengthMs": 187000,
               "recording": "d668dd40-adb6-4c10-9edf-1f5a4dcef1ce"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mbid": "0f12e3ea-035d-4c6c-9f61-95a6dfba78f0",
+      "title": "Boat",
+      "releaseGroup": "4792e5c2-1051-4542-97ef-90e152a49902",
+      "status": "Official",
+      "artistCredit": [
+        {
+          "artist": "b8a7c51f-362c-4dcb-a259-bc6e0095f0a6",
+          "name": "Ed Sheeran",
+          "joinPhrase": ""
+        }
+      ],
+      "events": [
+        {
+          "country": "XW",
+          "year": 2023,
+          "month": 4,
+          "day": 21
+        }
+      ],
+      "media": [
+        {
+          "mbid": "7232e32a-c0e0-3f7d-be9d-55ca5081a47d",
+          "position": 1,
+          "title": "",
+          "tracks": [
+            {
+              "mbid": "34c62794-d7c4-471b-9b9c-c40806f50ede",
+              "position": 1,
+              "number": "1",
+              "title": "Boat",
+              "lengthMs": 185000,
+              "recording": "f942f4fd-e5ad-43b3-ba4b-e6c0384222ba"
             }
           ]
         }

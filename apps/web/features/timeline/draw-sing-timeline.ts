@@ -5,7 +5,7 @@ import {
   drawBeatLines,
   drawInRoll,
   drawLanes,
-  drawNoteLabel,
+  drawNoteLabels,
   drawPlayhead,
   KEYBOARD_WIDTH,
   type NoteBox,
@@ -110,16 +110,17 @@ function drawNote(
     ctx.lineWidth = 1;
     ctx.stroke();
   }
-  drawNoteLabel(ctx, note, box, {
-    fill: current ? colors.noteLabel : colors.mutedLabel,
-    fontFamily: colors.fontFamily,
-  });
 }
 
 function drawTargets(ctx: SingTimelineContext, frame: SingTimelineFrame) {
   for (const { note, box } of visibleNoteBoxes(frame)) {
     drawNote(ctx, note, box, frame);
   }
+  drawNoteLabels(ctx, frame, (note, inside) => {
+    if (noteStateAt(note, frame.now) !== 'current')
+      return frame.colors.mutedLabel;
+    return inside ? frame.colors.noteLabel : frame.colors.current;
+  });
 }
 
 /** The user's voice: a 2px line, round caps, a gap wherever nothing is sung. */
