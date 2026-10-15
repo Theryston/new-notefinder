@@ -5,7 +5,7 @@ import { DatabaseModule } from '../../database/database.module.js';
 import { NoteDetectionClient } from '../../integrations/note-detection/note-detection.client.js';
 import { StorageService } from '../../integrations/storage/storage.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
-import { TrackNotesRepository } from './track-notes.repository.js';
+import { TrackNotesService } from './track-notes.service.js';
 import {
   type ProcessingForStep,
   TrackProcessingRepository,
@@ -103,7 +103,7 @@ describe('TrackNoteDetectionService', () => {
         { provide: NoteDetectionClient, useValue: client },
         { provide: StorageService, useValue: storage },
         { provide: TrackProcessingRepository, useValue: processings },
-        { provide: TrackNotesRepository, useValue: notes },
+        { provide: TrackNotesService, useValue: notes },
       ],
     })
       .overrideProvider(DATABASE_POOL)

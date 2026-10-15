@@ -22,6 +22,7 @@ import {
   trackWorks,
 } from '../../database/schema/tracks.js';
 import type { NewTrackCoreRow, NewTrackRows } from './track-from-recording.js';
+import type { NoteSummary } from './track-note-summary.js';
 
 type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
 
@@ -200,6 +201,17 @@ export class TracksRepository {
     await this.txHost.tx
       .update(tracks)
       .set({ coverUrl })
+      .where(eq(tracks.id, trackId));
+  }
+
+  /**
+   * Stores the vocal range and key the Track keeps of its notes (all null for
+   * a Track without notes). It joins the caller's transaction.
+   */
+  async setNoteSummary(trackId: string, summary: NoteSummary): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set(summary)
       .where(eq(tracks.id, trackId));
   }
 

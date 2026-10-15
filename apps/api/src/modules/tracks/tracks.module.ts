@@ -27,6 +27,7 @@ import { TrackMp3Processor } from './track-mp3.processor.js';
 import { TrackMp3Service } from './track-mp3.service.js';
 import { TrackNoteDetectionService } from './track-note-detection.service.js';
 import { TrackNotesRepository } from './track-notes.repository.js';
+import { TrackNotesService } from './track-notes.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TrackPracticeRepository } from './track-practice.repository.js';
 import { TrackPracticeService } from './track-practice.service.js';
@@ -96,6 +97,7 @@ import { TracksService } from './tracks.service.js';
     TrackAudioService,
     TrackNoteDetectionService,
     TrackNotesRepository,
+    TrackNotesService,
     TrackLyricsRepository,
     TrackMp3Service,
     TrackLyricsPromptService,

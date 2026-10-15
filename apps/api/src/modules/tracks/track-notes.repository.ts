@@ -3,9 +3,7 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
-import { tracks } from '../../database/schema/tracks.js';
 import type { NoteSpan } from './track-note-span.js';
-import { noteSummaryOf } from './track-note-summary.js';
 
 /** The vocal notes of Tracks (CONTEXT.md "Track"). */
 @Injectable()
@@ -13,10 +11,8 @@ export class TrackNotesRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
   /**
-   * Replaces the Track's notes with these, and the vocal range and key the
-   * Track keeps of them (all cleared when there are none). It joins the
-   * caller's transaction, so they change together with the Processing that
-   * found them.
+   * Replaces the Track's notes with these. It joins the caller's transaction,
+   * so the notes change together with the Processing that found them.
    */
   async replaceNotes(
     trackId: string,
@@ -25,10 +21,6 @@ export class TrackNotesRepository {
     await this.txHost.tx
       .delete(trackNotes)
       .where(eq(trackNotes.trackId, trackId));
-    await this.txHost.tx
-      .update(tracks)
-      .set(noteSummaryOf(notes))
-      .where(eq(tracks.id, trackId));
     if (notes.length === 0) {
       return;
     }
