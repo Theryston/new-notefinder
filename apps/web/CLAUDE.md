@@ -120,7 +120,7 @@ Legacy public routes (source: `app/` in
 | --- | --- | --- |
 | `/` | | `/[locale]` |
 | `/search` | `q` | `/[locale]/search` |
-| `/tracks/[id]` | | `/[locale]/tracks/[trackId]` |
+| `/tracks/[id]` | `time`, `timeline-focus` | `/[locale]/tracks/[trackId]` |
 | `/artists/[id]` | | `/[locale]/artists/[artistId]` |
 | `/albums/[id]` | | `/[locale]/albums/[albumId]` |
 | `/users/[username]` | | `/[locale]/users/[username]` |

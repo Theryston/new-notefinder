@@ -1,4 +1,4 @@
-# 8. The trending score is recomputed by a debounced job and a daily job
+# 9. The trending score is recomputed by a debounced job and a daily job
 
 - Status: accepted
 - Date: 2026-10-15
@@ -28,8 +28,10 @@ keeps a high score until something recomputes it.
 - **Every day:** a BullMQ job scheduler (`upsertJobScheduler`, registered on
   boot, 00:00 UTC) recomputes every Track whose score is above 0, reading the
   platform averages once. A Track whose views stopped falls to 0 once its
-  windows have rolled. The legacy 7-day staleness check is not kept: a daily
-  run over the scored Tracks is simpler and bounds the lag to one day.
+  windows have rolled. This is a deliberate difference from the legacy app,
+  which only recomputed Tracks whose last calculation was older than 7 days
+  and had views: a daily run over every scored Track is simpler and bounds the
+  lag to one day instead of a week.
 - **Revalidation:** a per-Track refresh revalidates that Track's tag only (the
   view count). The sitemap tag is revalidated by the daily run, since a per-view
   refresh happens every few minutes under steady traffic and the tag also

@@ -4,7 +4,7 @@ import { z } from 'zod';
 // change, so many views cost one recomputation (the legacy app waited the same
 // 15 minutes). A daily repeatable job recomputes every scored Track, since the
 // score's calendar windows roll with time, not only with views. See
-// docs/adr/0008-trending-score-jobs.md.
+// docs/adr/0009-trending-score-jobs.md.
 
 export const TRACK_TRENDING_QUEUE = 'track-trending';
 export const REFRESH_TRENDING_SCORE_JOB = 'refresh-trending-score';

@@ -21,17 +21,17 @@ export type LegacyRoute = {
    * `test.fixme` with this reason.
    */
   todo?: string;
+  /**
+   * Set when the route keeps its legacy URL (a sitemap): there is no locale
+   * redirect to assert, so its test only checks that the URL itself resolves.
+   * Unlike `todo`, it is a real test.
+   */
+  keepsUrl?: true;
 };
 
 const sitemapTodo =
   'proxy.ts skips *.xml paths, so legacy sitemap URLs 404 until the new ' +
   'sitemaps exist (keep them or redirect them there)';
-
-// Shipped: the route keeps its legacy URL, so there is no redirect for the
-// shared legacy-routes spec to assert. e2e/track-share-views.spec.ts covers it.
-const trackSitemapTodo =
-  'the Tracks sitemap keeps its URL (no locale redirect to assert); ' +
-  'covered by track-share-views.spec.ts';
 
 export const legacyRoutes: LegacyRoute[] = [
   { path: '/', implemented: true },
@@ -39,6 +39,10 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/search?q=bohemian%20rhapsody&page=2', implemented: true },
   { path: '/tracks/clx123abc', implemented: true },
   { path: '/tracks/clx123abc?x=1', implemented: true },
+  {
+    path: '/tracks/clx123abc?time=30&timeline-focus=true',
+    implemented: true,
+  },
   { path: '/artists/clx456def', implemented: true },
   { path: '/albums/clx789ghi', implemented: true },
   { path: '/users/john.doe', implemented: false },
@@ -54,11 +58,7 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/setup-username?redirectTo=/me/edit', implemented: true },
   { path: '/terms', implemented: true },
   { path: '/sitemap.xml', implemented: false, todo: sitemapTodo },
-  {
-    path: '/tracks/sitemap/0.xml',
-    implemented: true,
-    todo: trackSitemapTodo,
-  },
+  { path: '/tracks/sitemap/0.xml', implemented: true, keepsUrl: true },
   { path: '/artists/sitemap/0.xml', implemented: false, todo: sitemapTodo },
   { path: '/albums/sitemap/0.xml', implemented: false, todo: sitemapTodo },
 ];

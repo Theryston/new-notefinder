@@ -73,6 +73,15 @@ for (const { locale, messages } of cases) {
       const expected = `${baseURL}/${locale}/tracks/${trackId}?time=10`;
       expect(await clipboardText(page)).toBe(expected);
       await expect(page.getByLabel(share.link)).toHaveValue(expected);
+
+      // Round trip: the copied link opens the Track at that moment, through
+      // the page's own `?time=` handling.
+      await page.goto(expected);
+      await expect(page.getByRole('button', { name: dock.play })).toBeEnabled();
+      await expect(page.getByRole('slider').first()).toHaveAttribute(
+        'aria-valuenow',
+        '10',
+      );
     });
 
     test('copies the plain link once the moment is left out', async ({
@@ -220,17 +229,7 @@ test.describe('Tracks sitemap', () => {
   test('lists the completed Tracks by trending score at the legacy URL, and nothing past it', async ({
     request,
   }) => {
-    await setTrackMock({
-      tracks: [
-        completedTrack('clx-sitemap-cold', 3),
-        completedTrack('clx-sitemap-hot', 900),
-        {
-          ...completedTrack('clx-sitemap-processing', 5000),
-          processing: { status: 'QUEUED' },
-        },
-      ],
-    });
-
+    // The fake API starts with a cold, a hot and a still-processing Track.
     const response = await request.get('/tracks/sitemap/0.xml');
 
     expect(response.status()).toBe(200);

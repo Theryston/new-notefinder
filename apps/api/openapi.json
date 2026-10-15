@@ -296,6 +296,34 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/lyrics": {
+      "get": {
+        "operationId": "TrackLyricsController_getLyrics_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Track Timed lyrics: lines with words."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/views": {
       "post": {
         "operationId": "TrackViewsController_recordView_v1",
