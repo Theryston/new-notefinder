@@ -27,6 +27,7 @@ export function DockMicButton({ playback }: { playback: PlaybackSource }) {
     <Button
       variant={on ? 'default' : 'secondary'}
       size="icon"
+      className="md:w-auto md:gap-2 md:px-3"
       aria-pressed={on}
       aria-busy={starting}
       aria-label={starting ? t('starting') : on ? t('off') : t('on')}
@@ -40,6 +41,7 @@ export function DockMicButton({ playback }: { playback: PlaybackSource }) {
       ) : (
         <MicOffIcon aria-hidden="true" />
       )}
+      <span className="hidden md:inline">{t('label')}</span>
     </Button>
   );
 }

@@ -22,6 +22,7 @@ import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
 import { playbackStore } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
+import { creditText } from '../track-credit';
 import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
@@ -185,6 +186,8 @@ export function PracticeBody({
           hostRef={hostRef}
           videoId={header.youtubeVideoId}
           trackKey={header.key}
+          trackTitle={header.title}
+          artistText={creditText(header.artistCredit)}
         />
       )}
     </div>

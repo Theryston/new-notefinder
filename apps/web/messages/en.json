@@ -211,6 +211,7 @@
   },
   "practice": {
     "mic": {
+      "label": "Microphone",
       "on": "Turn the microphone on",
       "off": "Turn the microphone off",
       "starting": "Starting the microphone",
@@ -226,6 +227,7 @@
     }
   },
   "streaks": {
+    "practiceLabel": "Practice",
     "ring": "Daily practice: {progress, number, ::percent} of today's goal",
     "inviteRing": "Daily practice streak",
     "days": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}",

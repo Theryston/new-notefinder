@@ -211,6 +211,7 @@
   },
   "practice": {
     "mic": {
+      "label": "Microfone",
       "on": "Ligar o microfone",
       "off": "Desligar o microfone",
       "starting": "Ligando o microfone",
@@ -226,6 +227,7 @@
     }
   },
   "streaks": {
+    "practiceLabel": "Prática",
     "ring": "Prática diária: {progress, number, ::percent} da meta de hoje",
     "inviteRing": "Sequência de prática diária",
     "days": "{days, plural, =0 {Nenhuma sequência ainda} one {# dia de sequência} other {# dias de sequência}}",

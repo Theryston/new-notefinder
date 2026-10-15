@@ -47,10 +47,16 @@ export function DockSettings({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label={t('settings')} />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('settings')}
+            className="md:w-auto md:gap-2 md:px-3"
+          />
         }
       >
         <SettingsIcon aria-hidden="true" />
+        <span className="hidden md:inline">{t('settings')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
