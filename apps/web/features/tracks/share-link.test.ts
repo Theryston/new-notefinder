@@ -13,12 +13,13 @@ describe('shareLink', () => {
     expect(shareLink(PAGE, 83.9)).toBe(`${PAGE}?time=83`);
   });
 
-  it('shares the start of the Track as time=0', () => {
-    expect(shareLink(PAGE, 0)).toBe(`${PAGE}?time=0`);
+  it('leaves time out at the start of the Track, as the legacy app did', () => {
+    expect(shareLink(PAGE, 0)).toBe(PAGE);
+    expect(shareLink(PAGE, 0.9)).toBe(PAGE);
   });
 
   it('never goes before the start', () => {
-    expect(shareLink(PAGE, -3)).toBe(`${PAGE}?time=0`);
+    expect(shareLink(PAGE, -3)).toBe(PAGE);
   });
 
   it('drops the query string and the fragment of the page it is on', () => {

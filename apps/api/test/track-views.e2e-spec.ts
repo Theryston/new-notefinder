@@ -4,14 +4,17 @@ import {
   trackSitemapPageSchema,
   trackViewSchema,
 } from '@notefinder/contracts';
+import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { trackViews } from '../src/database/schema/track-views.js';
 import { tracks } from '../src/database/schema/tracks.js';
 import {
+  REFRESH_SCORED_TRACKS_JOB,
   REFRESH_TRENDING_SCORE_JOB,
   TRACK_TRENDING_QUEUE,
 } from '../src/modules/tracks/track-trending.job.js';
+import { TrackTrendingProcessor } from '../src/modules/tracks/track-trending.processor.js';
 import { TrackTrendingService } from '../src/modules/tracks/track-trending.service.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
@@ -25,6 +28,7 @@ import {
   createCompletedTrack,
   createLegacyTrackId,
 } from './utils/track-processing-factories.js';
+import { createTrackView } from './utils/track-view-factories.js';
 
 // POST /v1/tracks/:trackId/views is public: a visitor's visit counts, and the
 // browser keeps the returned ID to attach the User if they sign in later. The
@@ -109,10 +113,9 @@ describe('Track views and trending (e2e)', () => {
     it('leaves a view that already has a User with that User', async () => {
       const owner = await createUser(spec.testApp.db, { username: 'ada' });
       const track = await createTrack(spec.testApp.db);
-      const [view] = await spec.testApp.db
-        .insert(trackViews)
-        .values({ trackId: track.id, userId: owner.id })
-        .returning();
+      const view = await createTrackView(spec.testApp.db, track.id, {
+        userId: owner.id,
+      });
       const other = await createUser(spec.testApp.db, { username: 'grace' });
       await createCredentialAccount(spec.testApp.db, other);
       await signIn(spec.client, {
@@ -122,11 +125,11 @@ describe('Track views and trending (e2e)', () => {
 
       await spec.client
         .post(`/v1/tracks/${track.id}/views`)
-        .send({ viewId: view?.id })
+        .send({ viewId: view.id })
         .expect(200);
 
       expect(await viewsOf(track.id)).toEqual([
-        { id: view?.id, userId: owner.id },
+        { id: view.id, userId: owner.id },
       ]);
     });
 
@@ -229,8 +232,19 @@ describe('Track views and trending (e2e)', () => {
   });
 
   describe('the trending score', () => {
-    it('is 0 until the refresh runs, then follows the views', async () => {
+    /** Runs the oldest job queued in the trending queue, as its worker would. */
+    const runQueuedJob = async () => {
+      const job = spec.testApp.queues[TRACK_TRENDING_QUEUE]?.added.shift();
+      if (job === undefined) throw new Error('No trending job was queued');
+      const processor = new TrackTrendingProcessor(
+        spec.testApp.app.get(TrackTrendingService),
+      );
+      await processor.process(job as Job<unknown>);
+    };
+
+    it('is 0 until the queued job runs, then follows the views', async () => {
       const track = await createTrack(spec.testApp.db);
+      spec.testApp.queues[TRACK_TRENDING_QUEUE]?.added.splice(0);
       for (let n = 0; n < 3; n++) {
         await anonymous()
           .post(`/v1/tracks/${track.id}/views`)
@@ -239,14 +253,14 @@ describe('Track views and trending (e2e)', () => {
       }
       expect(await scoreOf(track.id)).toBe(0);
 
-      await spec.testApp.app.get(TrackTrendingService).refresh(track.id);
+      await runQueuedJob();
 
       // Three views this hour: base = 3 * (1.5 + 1.2 + 1.1 + 1) = 14.4,
       // log10(4) = 0.602, and a boost of at least 1.
       expect(await scoreOf(track.id)).toBeGreaterThanOrEqual(9);
     });
 
-    it('asks the web to revalidate the Track and the sitemap', async () => {
+    it('asks the web to revalidate the Track, and not the sitemap', async () => {
       const track = await createTrack(spec.testApp.db);
       const revalidations = spec.testApp.queues['web-revalidation']?.added;
       revalidations?.splice(0);
@@ -256,7 +270,7 @@ describe('Track views and trending (e2e)', () => {
       expect(revalidations).toEqual([
         {
           name: expect.any(String),
-          data: { tags: [cacheTags.track(track.id), cacheTags.sitemap] },
+          data: { tags: [cacheTags.track(track.id)] },
         },
       ]);
     });
@@ -264,12 +278,10 @@ describe('Track views and trending (e2e)', () => {
     it('ranks a Track viewed more above one viewed less', async () => {
       const quiet = await createTrack(spec.testApp.db);
       const busy = await createTrack(spec.testApp.db);
-      await spec.testApp.db
-        .insert(trackViews)
-        .values([
-          { trackId: quiet.id },
-          ...Array.from({ length: 6 }, () => ({ trackId: busy.id })),
-        ]);
+      await createTrackView(spec.testApp.db, quiet.id);
+      for (let n = 0; n < 6; n++) {
+        await createTrackView(spec.testApp.db, busy.id);
+      }
       const trending = spec.testApp.app.get(TrackTrendingService);
 
       await trending.refresh(quiet.id);
@@ -278,6 +290,30 @@ describe('Track views and trending (e2e)', () => {
       expect(await scoreOf(busy.id)).toBeGreaterThan(
         (await scoreOf(quiet.id)) ?? 0,
       );
+    });
+
+    it('falls to 0 on the daily run once the views of a Track stop', async () => {
+      const stale = await createTrack(spec.testApp.db);
+      const live = await createTrack(spec.testApp.db);
+      // Scored a month ago: no view since, so every window has rolled.
+      await createTrackView(spec.testApp.db, stale.id, {
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+      await createTrackView(spec.testApp.db, live.id);
+      await spec.testApp.db.update(tracks).set({ trendingScore: 500 });
+      const revalidations = spec.testApp.queues['web-revalidation']?.added;
+      revalidations?.splice(0);
+      const queue = spec.testApp.queues[TRACK_TRENDING_QUEUE];
+      queue?.added.splice(0);
+      queue?.added.push({ name: REFRESH_SCORED_TRACKS_JOB, data: {} });
+
+      await runQueuedJob();
+
+      expect(await scoreOf(stale.id)).toBe(0);
+      expect(await scoreOf(live.id)).toBeGreaterThan(0);
+      expect(revalidations).toEqual([
+        { name: expect.any(String), data: { tags: [cacheTags.sitemap] } },
+      ]);
     });
   });
 

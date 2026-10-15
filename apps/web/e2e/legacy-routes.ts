@@ -27,6 +27,12 @@ const sitemapTodo =
   'proxy.ts skips *.xml paths, so legacy sitemap URLs 404 until the new ' +
   'sitemaps exist (keep them or redirect them there)';
 
+// Shipped: the route keeps its legacy URL, so there is no redirect for the
+// shared legacy-routes spec to assert. e2e/track-share-views.spec.ts covers it.
+const trackSitemapTodo =
+  'the Tracks sitemap keeps its URL (no locale redirect to assert); ' +
+  'covered by track-share-views.spec.ts';
+
 export const legacyRoutes: LegacyRoute[] = [
   { path: '/', implemented: true },
   { path: '/search?q=queen', implemented: true },
@@ -48,7 +54,11 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/setup-username?redirectTo=/me/edit', implemented: true },
   { path: '/terms', implemented: true },
   { path: '/sitemap.xml', implemented: false, todo: sitemapTodo },
-  { path: '/tracks/sitemap/0.xml', implemented: false, todo: sitemapTodo },
+  {
+    path: '/tracks/sitemap/0.xml',
+    implemented: true,
+    todo: trackSitemapTodo,
+  },
   { path: '/artists/sitemap/0.xml', implemented: false, todo: sitemapTodo },
   { path: '/albums/sitemap/0.xml', implemented: false, todo: sitemapTodo },
 ];

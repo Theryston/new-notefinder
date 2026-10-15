@@ -22,6 +22,9 @@ export const trackViewSchema = z.object({
 
 export type TrackView = z.infer<typeof trackViewSchema>;
 
+/** The most Tracks one sitemap page lists, and what the web's files ask for. */
+export const TRACK_SITEMAP_PAGE_SIZE = 5000;
+
 /**
  * `GET /v1/sitemaps/tracks`: a page of completed Tracks, the highest trending
  * score first. `updatedAt` is the Track's last change (ISO 8601).
@@ -29,14 +32,19 @@ export type TrackView = z.infer<typeof trackViewSchema>;
 export const listTrackSitemapQuerySchema = cursorPaginationQuerySchema.extend({
   // A sitemap file holds thousands of URLs, so its pages are bigger than a
   // list's.
-  limit: z.coerce.number().int().min(1).max(5000).default(1000),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(TRACK_SITEMAP_PAGE_SIZE)
+    .default(1000),
 });
 
 export type ListTrackSitemapQuery = z.infer<typeof listTrackSitemapQuerySchema>;
 
 export const trackSitemapEntrySchema = z.object({
   id: z.string().min(1).max(128),
-  updatedAt: z.string().min(1).max(40),
+  updatedAt: z.iso.datetime({ offset: true }),
 });
 
 export type TrackSitemapEntry = z.infer<typeof trackSitemapEntrySchema>;

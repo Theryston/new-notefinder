@@ -24,18 +24,19 @@ const completedTrack = (id: string, viewCount = 0): FakeTrack => ({
   viewCount,
 });
 
-/** Plays a moment of the Track and pauses, so the share moment is not 0. */
-async function playAMoment(page: Page, dock: { play: string; pause: string }) {
-  const play = page.getByRole('button', { name: dock.play });
-  await expect(play).toBeEnabled();
-  await play.click();
-  const progress = page.getByRole('slider');
-  await expect
-    .poll(async () =>
-      Number(await progress.first().getAttribute('aria-valuenow')),
-    )
-    .toBeGreaterThanOrEqual(1);
-  await page.getByRole('button', { name: dock.pause }).click();
+/**
+ * Moves the music to a known moment: two arrow presses skip 5 s each, so the
+ * share link must carry exactly 10.
+ */
+async function seekToTenSeconds(page: Page, dock: { play: string }) {
+  await expect(page.getByRole('button', { name: dock.play })).toBeEnabled();
+  await page.locator('main').click({ position: { x: 4, y: 4 } });
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('slider').first()).toHaveAttribute(
+    'aria-valuenow',
+    '10',
+  );
 }
 
 const clipboardText = (page: Page) =>
@@ -57,7 +58,7 @@ for (const { locale, messages } of cases) {
       const trackId = `clx-share-moment-${locale}`;
       await setTrackMock({ tracks: [completedTrack(trackId)] });
       await page.goto(`/${locale}/tracks/${trackId}`);
-      await playAMoment(page, dock);
+      await seekToTenSeconds(page, dock);
 
       await page.getByRole('button', { name: share.open }).click();
       const box = page.getByRole('checkbox', {
@@ -66,12 +67,12 @@ for (const { locale, messages } of cases) {
       await expect(box).toBeChecked();
       await page.getByRole('button', { name: share.copy }).click();
 
-      await expect(page.getByText(share.copied).first()).toBeVisible();
-      const copied = await clipboardText(page);
-      expect(copied).toMatch(
-        new RegExp(`^${baseURL}/${locale}/tracks/${trackId}\\?time=\\d+$`),
-      );
-      await expect(page.getByLabel(share.link)).toHaveValue(copied);
+      await expect(
+        page.getByRole('button', { name: share.copied }),
+      ).toBeVisible();
+      const expected = `${baseURL}/${locale}/tracks/${trackId}?time=10`;
+      expect(await clipboardText(page)).toBe(expected);
+      await expect(page.getByLabel(share.link)).toHaveValue(expected);
     });
 
     test('copies the plain link once the moment is left out', async ({
@@ -81,7 +82,7 @@ for (const { locale, messages } of cases) {
       const trackId = `clx-share-plain-${locale}`;
       await setTrackMock({ tracks: [completedTrack(trackId)] });
       await page.goto(`/${locale}/tracks/${trackId}`);
-      await playAMoment(page, dock);
+      await seekToTenSeconds(page, dock);
 
       await page.getByRole('button', { name: share.open }).click();
       await page
@@ -89,8 +90,25 @@ for (const { locale, messages } of cases) {
         .uncheck();
       await page.getByRole('button', { name: share.copy }).click();
 
-      await expect(page.getByText(share.copied).first()).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: share.copied }),
+      ).toBeVisible();
       expect(await clipboardText(page)).toBe(
+        `${baseURL}/${locale}/tracks/${trackId}`,
+      );
+    });
+
+    test('leaves time out of the link while nothing has played', async ({
+      page,
+      baseURL,
+    }) => {
+      const trackId = `clx-share-start-${locale}`;
+      await setTrackMock({ tracks: [completedTrack(trackId)] });
+      await page.goto(`/${locale}/tracks/${trackId}`);
+
+      await page.getByRole('button', { name: share.open }).click();
+
+      await expect(page.getByLabel(share.link)).toHaveValue(
         `${baseURL}/${locale}/tracks/${trackId}`,
       );
     });
@@ -229,5 +247,52 @@ test.describe('Tracks sitemap', () => {
     // the first read: the sitemap caches its first page.
     expect((await request.get('/tracks/sitemap/7.xml')).status()).toBe(404);
     expect((await request.get('/tracks/sitemap/nope.xml')).status()).toBe(404);
+  });
+});
+
+test.describe('share a Track on a phone', () => {
+  test.use({
+    viewport: { width: 360, height: 740 },
+    hasTouch: true,
+    isMobile: true,
+  });
+
+  test('fits the screen, with 40px touch targets, and copies the link', async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const { share, dock } = catalogs.en.tracks.practice;
+    const trackId = 'clx-share-phone';
+    await setTrackMock({ tracks: [completedTrack(trackId)] });
+    await page.goto(`/en/tracks/${trackId}`);
+    await seekToTenSeconds(page, dock);
+
+    await page.getByRole('button', { name: share.open }).tap();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.x).toBeGreaterThanOrEqual(0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(360);
+    const targets = [
+      dialog.getByRole('button', { name: share.close }),
+      dialog.getByRole('button', { name: share.copy }),
+      dialog.getByText(new RegExp(`^${share.includeMoment.split(' (')[0]}`)),
+      ...(await dialog.getByRole('link').all()),
+    ];
+    for (const target of targets) {
+      const size = await target.boundingBox();
+      expect(size?.height).toBeGreaterThanOrEqual(40);
+      expect(size?.width).toBeGreaterThanOrEqual(40);
+    }
+    await dialog.getByRole('button', { name: share.copy }).tap();
+    await expect(
+      dialog.getByRole('button', { name: share.copied }),
+    ).toBeVisible();
+    expect(await clipboardText(page)).toBe(
+      `${baseURL}/en/tracks/${trackId}?time=10`,
+    );
   });
 });

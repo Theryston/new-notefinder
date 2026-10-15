@@ -3,7 +3,6 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { and, eq, gte, isNull, type SQL, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackViews } from '../../database/schema/track-views.js';
-import { tracks } from '../../database/schema/tracks.js';
 import {
   averageViewsPerTrack,
   type PlatformViewAverages,
@@ -26,7 +25,7 @@ const tracksViewedSince = (start: Date): SQL<number> =>
 /** A recorded view, as far as attaching a User to it needs. */
 export type StoredView = { id: string; userId: string | null };
 
-/** Track views and the numbers the trending score is made of. */
+/** Track views, and the counts the trending score is made of. */
 @Injectable()
 export class TrackViewRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
@@ -99,12 +98,5 @@ export class TrackViewRepository {
       hour: averageViewsPerTrack(row?.hourViews ?? 0, row?.hourTracks ?? 0),
       day: averageViewsPerTrack(row?.dayViews ?? 0, row?.dayTracks ?? 0),
     };
-  }
-
-  async setTrendingScore(trackId: string, score: number): Promise<void> {
-    await this.txHost.tx
-      .update(tracks)
-      .set({ trendingScore: score })
-      .where(eq(tracks.id, trackId));
   }
 }

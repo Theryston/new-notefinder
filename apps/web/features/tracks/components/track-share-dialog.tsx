@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,6 @@ import {
 import { playbackStore } from '../stores/playback-store';
 import { creditText } from '../track-credit';
 
-const CHIP_CLASS =
-  'inline-flex h-9 items-center rounded-full bg-secondary px-4 font-semibold text-secondary-foreground text-sm outline-none transition-colors hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] focus-visible:ring-3 focus-visible:ring-ring/50';
-
 /** The page the visitor is on; `shareLink` drops its query string. */
 const currentPageUrl = () => window.location.href;
 
@@ -41,7 +38,6 @@ function CopyLink({ link }: { link: string }) {
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      toast.success(t('copied'));
     } catch {
       // No clipboard permission or API: leave the link selected for Ctrl+C.
       linkRef.current?.select();
@@ -82,7 +78,7 @@ function NetworkShortcuts({ message }: { message: ShareMessage }) {
             href={shareHref(network, message)}
             target="_blank"
             rel="noopener noreferrer"
-            className={CHIP_CLASS}
+            className={buttonVariants({ variant: 'outline' })}
           >
             {t(`network.${network}`)}
           </a>
@@ -136,7 +132,7 @@ export function TrackShareDialog({
         <CopyLink link={link} />
         <label
           htmlFor={checkboxId}
-          className="flex cursor-pointer items-center gap-3 font-medium text-sm"
+          className="flex min-h-10 cursor-pointer items-center gap-3 font-medium text-sm"
         >
           <input
             id={checkboxId}

@@ -1,5 +1,5 @@
 /** The view a browser session recorded for a Track. */
-export type StoredView = {
+export type SessionView = {
   viewId: string;
   /** Whether a signed-in User is on the view (recorded or attached). */
   attached: boolean;
@@ -26,7 +26,7 @@ export function sessionStorageOrUndefined(): Storage | undefined {
   }
 }
 
-const isStoredView = (value: unknown): value is StoredView =>
+const isStoredView = (value: unknown): value is SessionView =>
   typeof value === 'object' &&
   value !== null &&
   'viewId' in value &&
@@ -39,7 +39,7 @@ const isStoredView = (value: unknown): value is StoredView =>
 export function readStoredView(
   storage: ReadableStorage | undefined,
   trackId: string,
-): StoredView | undefined {
+): SessionView | undefined {
   try {
     const raw = storage?.getItem(keyOf(trackId));
     const parsed: unknown = raw ? JSON.parse(raw) : undefined;
@@ -52,7 +52,7 @@ export function readStoredView(
 export function writeStoredView(
   storage: WritableStorage | undefined,
   trackId: string,
-  view: StoredView,
+  view: SessionView,
 ): void {
   try {
     storage?.setItem(keyOf(trackId), JSON.stringify(view));
@@ -67,7 +67,7 @@ export function writeStoredView(
  * recording another.
  */
 export function nextViewAction(
-  stored: StoredView | undefined,
+  stored: SessionView | undefined,
   signedIn: boolean,
 ): ViewAction {
   if (stored === undefined) return 'record';

@@ -133,7 +133,7 @@ Legacy public routes (source: `app/` in
 | `/setup-username` | `redirectTo` | `/[locale]/setup-username` |
 | `/terms` | | `/[locale]/terms` |
 | `/sitemap.xml` | | `/sitemap.xml` |
-| `/tracks/sitemap/[...path]` | | keep, or redirect to the new sitemap |
+| `/tracks/sitemap/[...path]` | | kept: same URL, `app/tracks/sitemap/[...path]/route.ts` |
 | `/artists/sitemap/[...path]` | | keep, or redirect to the new sitemap |
 | `/albums/sitemap/[...path]` | | keep, or redirect to the new sitemap |
 

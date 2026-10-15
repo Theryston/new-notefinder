@@ -9,11 +9,15 @@ import { users } from './users.js';
  * session. `userId` is null for a visit by someone not signed in, and also
  * after the User is deleted.
  *
- * Legacy mapping: a legacy `TrackView` is (id, trackId, userId?, createdAt)
- * with the legacy Track ID. The import keeps the view ID and `createdAt`,
+ * Legacy mapping: a legacy `TrackView` is (id, trackId, userId?, createdAt,
+ * updatedAt) with the legacy Track ID. The import keeps the view ID,
+ * `createdAt` and `updatedAt` (the legacy column is `@updatedAt`, as here),
  * keeps `userId` as is (users keep their IDs), and translates `trackId`
  * through `legacy_track_ids`. A view whose Track has no new equivalent is
- * dropped and listed in the import report. The trending score is not
+ * dropped and listed in the import report. One behavior differs: deleting a
+ * User cascaded to their views in the legacy app, while here it sets `userId`
+ * to null, so the Track's view count survives; the import only needs the
+ * legacy rows, which still point at existing Users. The trending score is not
  * imported: it is derived from these rows, so the import ends by running the
  * score refresh once per Track that has views.
  */

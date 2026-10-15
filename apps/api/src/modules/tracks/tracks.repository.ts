@@ -9,7 +9,7 @@ import type {
   Mbid,
   TrackArtistCreditEntry,
 } from '@notefinder/contracts';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
@@ -201,6 +201,21 @@ export class TracksRepository {
       .update(tracks)
       .set({ coverUrl })
       .where(eq(tracks.id, trackId));
+  }
+
+  async setTrendingScore(trackId: string, score: number): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set({ trendingScore: score })
+      .where(eq(tracks.id, trackId));
+  }
+
+  /** Tracks with a trending score, which rolls with time as well as views. */
+  findScoredTracks(): Promise<{ id: string }[]> {
+    return this.txHost.tx
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(gt(tracks.trendingScore, 0));
   }
 
   /** The YouTube video the timeline plays, once a Processing has chosen it. */

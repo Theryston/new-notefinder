@@ -167,7 +167,7 @@
       "durationLabel": "Duração: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
       "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
-      "views": "{count, plural, one {# visualização} other {# visualizações}}",
+      "views": "{count, plural, =0 {# visualizações} one {# visualização} other {# visualizações}}",
       "share": {
         "open": "Compartilhar",
         "close": "Fechar",

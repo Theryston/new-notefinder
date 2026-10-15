@@ -2,9 +2,6 @@ import type { TrackSitemapEntry } from '@notefinder/contracts';
 
 import { routing } from '@/lib/i18n/routing';
 
-/** How many Tracks one sitemap file lists (a file may hold 50,000 URLs). */
-export const TRACK_SITEMAP_PAGE_SIZE = 5000;
-
 const escapeXml = (value: string) =>
   value
     .replaceAll('&', '&amp;')

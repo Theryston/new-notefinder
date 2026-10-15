@@ -2,14 +2,13 @@ import 'server-only';
 
 import {
   cacheTags,
+  TRACK_SITEMAP_PAGE_SIZE,
   type TrackSitemapPage,
   trackSitemapPageSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
-
-import { TRACK_SITEMAP_PAGE_SIZE } from './track-sitemap-xml';
 
 /**
  * One page of the Tracks sitemap, after `cursor`. Cached per cursor, so
