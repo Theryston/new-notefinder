@@ -6,6 +6,13 @@ import { syntheticTone } from './synthetic-tone';
 
 const RATE = 48_000;
 
+// These tests are about which engine answers, not about finding a pitch (the
+// YIN tests do that), and a real YIN run per hop is slow when mutated.
+vi.mock('./yin', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./yin')>()),
+  detectPitchYin: () => ({ frequency: 440, confidence: 0.95 }),
+}));
+
 function setup(loadModel: () => Promise<ModelDetector>) {
   const readings: { midi: number | null; window: number }[] = [];
   const log = vi.fn();
@@ -55,7 +62,7 @@ const logged = (log: ReturnType<typeof vi.fn>) =>
 describe('createPitchEngine', () => {
   it('answers with YIN straight away, before the model has loaded', async () => {
     const { engine, readings } = setup(() => new Promise(() => {}));
-    await sing(engine, 0.3);
+    await sing(engine, 0.12);
     expectYin(readings);
   });
 
@@ -73,18 +80,17 @@ describe('createPitchEngine', () => {
     const { engine, readings, log } = setup(() =>
       Promise.reject(new Error('404')),
     );
-    await sing(engine, 0.3);
     await vi.waitFor(() => expect(logged(log)).toContain('failed to load'));
-    await sing(engine, 0.3);
+    await sing(engine, 0.12);
     expectYin(readings);
   });
 
   it('goes back to YIN when the model fails while running', async () => {
     const detect = vi.fn(() => Promise.reject(new Error('boom')));
     const { engine, readings, log } = setupModel(detect);
-    await sing(engine, 0.3);
+    await sing(engine, 0.12);
     await vi.waitFor(() => expect(logged(log)).toContain('gave up (failed)'));
-    await sing(engine, 0.4);
+    await sing(engine, 0.12);
     expectYin(readings);
   });
 
@@ -93,7 +99,7 @@ describe('createPitchEngine', () => {
     const { engine, readings, log } = setupModel(detect);
     await sing(engine, 0.032 * (MAX_DROPPED_FRAMES + 6));
     expect(logged(log)).toContain('gave up (too-slow)');
-    await sing(engine, 0.4);
+    await sing(engine, 0.12);
     expectYin(readings);
   });
 
