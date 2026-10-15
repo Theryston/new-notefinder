@@ -162,7 +162,10 @@
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Voltar ao tom original",
         "transposeOpen": "Mudar tom: {key}",
-        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original."
+        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original.",
+        "vocalsOnly": "Só voz",
+        "audioFollowsKey": "O áudio acompanha a transposição.",
+        "audioError": "Não foi possível reproduzir o áudio armazenado."
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",

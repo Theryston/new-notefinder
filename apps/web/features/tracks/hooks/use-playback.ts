@@ -1,5 +1,6 @@
 'use client';
 
+import type { TrackAudio } from '@notefinder/contracts';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import type { PlaybackController } from '../playback/playback-controller';
@@ -9,6 +10,7 @@ import {
 } from '../playback/start-playback';
 import { createPlayer } from '../player/create-player';
 import { playbackStore } from '../stores/playback-store';
+import { transposeStore } from '../stores/transpose-store';
 
 type UsePlaybackOptions = {
   /** The element the video mounts into; set while the dock is on screen. */
@@ -21,6 +23,7 @@ type UsePlaybackOptions = {
    */
   durationSeconds: number;
   fake: boolean;
+  directAudio?: TrackAudio;
 };
 
 const animationFrames = {
@@ -38,6 +41,7 @@ export function usePlayback({
   videoId,
   durationSeconds,
   fake,
+  directAudio,
 }: UsePlaybackOptions): PlaybackController | null {
   const [controller, setController] = useState<PlaybackController | null>(null);
   const session = useRef<PlaybackSession | null>(null);
@@ -54,14 +58,22 @@ export function usePlayback({
       durationHint: durationRef.current,
       store: playbackStore,
       frames: animationFrames,
-      makePlayer: createPlayer,
+      makePlayer: (options) => createPlayer({ ...options, directAudio }),
       onController: setController,
     });
     return () => {
       session.current?.dispose();
       session.current = null;
     };
-  }, [hostRef, videoId, fake]);
+  }, [hostRef, videoId, fake, directAudio]);
+
+  useEffect(() => {
+    if (!controller || !directAudio) return;
+    controller.setTranspose(transposeStore.getState().semitones);
+    return transposeStore.subscribe(({ semitones }) =>
+      controller.setTranspose(semitones),
+    );
+  }, [controller, directAudio]);
 
   useEffect(() => {
     session.current?.setDurationHint(durationSeconds);

@@ -8,12 +8,13 @@ import type {
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useRef } from 'react';
-
 import { Skeleton } from '@/components/ui/skeleton';
+import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
 import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
 import { SingTimeline } from '@/features/practice/components/sing-timeline';
 
+import { useDirectAudio } from '../hooks/use-direct-audio';
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { useTimelineFocus } from '../hooks/use-shared-link';
@@ -126,14 +127,16 @@ function TrackLyricsBlock({
  * Track's video. The timeline follows the dock's player and can be dragged to
  * seek; the page leaves room under it for the dock, which floats.
  */
-export function PracticeBody({
+function PracticeBodyContent({
   header,
   notes,
   lyrics,
   lyricsLoading,
   failed,
   fakePlayer,
+  admin,
 }: {
+  admin: boolean;
   header: TrackDetail;
   notes: TrackNotes | undefined;
   lyrics: TrackLyrics | undefined;
@@ -143,12 +146,17 @@ export function PracticeBody({
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
 }) {
+  const audio = useDirectAudio(header.id, admin);
+  const directAudio = admin ? audio.data : undefined;
   const hostRef = useRef<HTMLDivElement>(null);
   const controller = usePlayback({
     hostRef,
-    videoId: header.youtubeVideoId,
+    videoId: directAudio
+      ? (header.youtubeVideoId ?? '')
+      : header.youtubeVideoId,
     durationSeconds: durationSecondsOf(header, notes),
     fake: fakePlayer,
+    directAudio,
   });
   usePlaybackShortcuts(controller);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -180,16 +188,29 @@ export function PracticeBody({
       )}
       <SharedMomentSeek controller={controller} />
       <TrackLyricsBlock lyrics={lyrics} controller={controller} />
-      {header.youtubeVideoId === null ? null : (
+      {header.youtubeVideoId === null && !directAudio ? null : (
         <PracticeDock
           controller={controller}
           hostRef={hostRef}
-          videoId={header.youtubeVideoId}
+          videoId={header.youtubeVideoId ?? ''}
+          directAudio={directAudio !== undefined}
           trackKey={header.key}
           trackTitle={header.title}
           artistText={creditText(header.artistCredit)}
         />
       )}
     </div>
+  );
+}
+
+export function PracticeBody(
+  props: Omit<Parameters<typeof PracticeBodyContent>[0], 'admin'>,
+) {
+  return (
+    <SessionUserBoundary
+      render={(user) => (
+        <PracticeBodyContent {...props} admin={user?.role === 'ADMIN'} />
+      )}
+    />
   );
 }
