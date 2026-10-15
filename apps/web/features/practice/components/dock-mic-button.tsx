@@ -25,7 +25,7 @@ export function DockMicButton({ playback }: { playback: PlaybackSource }) {
 
   return (
     <Button
-      variant={on ? 'default' : 'ghost'}
+      variant={on ? 'default' : 'secondary'}
       size="icon"
       aria-pressed={on}
       aria-busy={starting}

@@ -8,6 +8,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 
 import { useClockFormat } from '../hooks/use-clock-format';
@@ -23,7 +24,7 @@ import { playbackStore, usePlaybackState } from '../stores/playback-store';
 type TrackElements = {
   fill: RefObject<HTMLDivElement | null>;
   thumb: RefObject<HTMLDivElement | null>;
-  current: RefObject<HTMLSpanElement | null>;
+  remaining: RefObject<HTMLSpanElement | null>;
   slider: RefObject<HTMLDivElement | null>;
 };
 
@@ -32,29 +33,40 @@ type TrackElements = {
  * subscription, so playing re-renders nothing. Screen readers hear the value
  * once a second, not once a frame.
  */
-function useProgressPainting(elements: TrackElements, total: string) {
+function useProgressPainting(
+  elements: TrackElements,
+  total: string,
+  showRemaining: boolean,
+) {
   const t = useTranslations('tracks.practice.dock');
   const format = useClockFormat();
 
   useEffect(() => {
-    const { fill, thumb, current, slider } = elements;
+    const { fill, thumb, remaining, slider } = elements;
+    let previousTime: string | undefined;
     const paint = () => {
       const { time, duration } = playbackStore.getState();
       const fraction = fractionOfTime(time, duration);
-      const text = format(time);
+      const current = format(time);
+      const text = showRemaining
+        ? t('remainingTime', {
+            time: format(Math.ceil(Math.max(0, duration - time))),
+          })
+        : current;
       if (fill.current) fill.current.style.transform = `scaleX(${fraction})`;
       if (thumb.current) thumb.current.style.left = `${fraction * 100}%`;
-      if (!current.current || current.current.textContent === text) return;
-      current.current.textContent = text;
+      if (!remaining.current || previousTime === current) return;
+      previousTime = current;
+      remaining.current.textContent = text;
       slider.current?.setAttribute('aria-valuenow', String(Math.round(time)));
       slider.current?.setAttribute(
         'aria-valuetext',
-        t('progressValue', { current: text, total }),
+        t('progressValue', { current, total }),
       );
     };
     paint();
     return playbackStore.subscribe(paint);
-  }, [elements, format, total, t]);
+  }, [elements, format, total, t, showRemaining]);
 }
 
 /** Click, drag and keys on the bar all end in a seek. */
@@ -102,11 +114,12 @@ function useSeekHandlers(
 }
 
 const TIME_CLASS =
-  'w-10 shrink-0 font-mono text-muted-foreground text-xs tabular-nums';
+  'flex h-10 w-12 shrink-0 cursor-pointer items-center justify-end rounded-full font-mono text-muted-foreground text-xs tabular-nums outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50';
 
 /**
- * The progress track of the dock: the current time, a bar to click or drag to
- * seek, and the duration.
+ * The progress track of the dock: a bar to click or drag to seek, followed by
+ * a button that toggles remaining and elapsed time. The slider still announces
+ * elapsed time and duration.
  */
 export function DockProgressTrack({
   controller,
@@ -116,26 +129,22 @@ export function DockProgressTrack({
   const t = useTranslations('tracks.practice.dock');
   const format = useClockFormat();
   const duration = usePlaybackState((state) => state.duration);
+  const [showRemaining, setShowRemaining] = useState(true);
   const fill = useRef<HTMLDivElement>(null);
   const thumb = useRef<HTMLDivElement>(null);
-  const current = useRef<HTMLSpanElement>(null);
+  const remaining = useRef<HTMLSpanElement>(null);
   const slider = useRef<HTMLDivElement>(null);
   // Refs never change, so neither does this: the subscription is kept.
   const elements = useMemo<TrackElements>(
-    () => ({ fill, thumb, current, slider }),
+    () => ({ fill, thumb, remaining, slider }),
     [],
   );
   const seek = useSeekHandlers(controller, duration);
   const total = format(duration);
-  useProgressPainting(elements, total);
+  useProgressPainting(elements, total, showRemaining);
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      <span
-        ref={elements.current}
-        aria-hidden="true"
-        className={`${TIME_CLASS} text-right`}
-      />
       {/* The hit area is taller than the 4px bar, so it is easy to grab. */}
       <div
         ref={elements.slider}
@@ -166,9 +175,20 @@ export function DockProgressTrack({
           />
         </div>
       </div>
-      <span aria-hidden="true" className={TIME_CLASS}>
-        {total}
-      </span>
+      <button
+        type="button"
+        aria-label={t(showRemaining ? 'showElapsedTime' : 'showRemainingTime')}
+        className={TIME_CLASS}
+        onClick={() => setShowRemaining((value) => !value)}
+      >
+        <span
+          ref={elements.remaining}
+          data-testid="dock-remaining-time"
+          aria-hidden="true"
+        >
+          {t('remainingTime', { time: total })}
+        </span>
+      </button>
     </div>
   );
 }

@@ -190,37 +190,58 @@ test.describe('track playback dock', () => {
     expect(box.height).toBe(100);
   });
 
-  test('lays the dock out for a desktop: play and progress on one row, the controls under them on the right', async ({
+  test('lays the dock out for a desktop: actions above progress beside the video', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await openTrack(page, 'clx-playback-desktop');
-    const play = await readyToPlay(page);
+    await readyToPlay(page);
 
     const video = (await centerOf(page.getByTestId('dock-video'))).box;
-    const button = (await centerOf(play)).box;
+    const button = (
+      await centerOf(
+        page.getByRole('button', { name: messages.en.streaks.inviteRing }),
+      )
+    ).box;
+    const key = (
+      await centerOf(
+        page.getByRole('button', { name: dock.transpose, exact: true }),
+      )
+    ).box;
     const bar = (await centerOf(progress(page))).box;
     const settings = (
       await centerOf(page.getByRole('button', { name: dock.settings }))
     ).box;
-    const dockBox = (
-      await centerOf(page.getByRole('region', { name: dock.label }))
-    ).box;
 
     expect(video.x).toBeLessThan(button.x);
+    const tools = (
+      await centerOf(
+        page.getByRole('button', { name: dock.settings }).locator('..'),
+      )
+    ).box;
     expect(
-      Math.abs(button.y + button.height / 2 - (bar.y + bar.height / 2)),
+      Math.abs(
+        tools.x - (button.x + button.width) - (key.x - (tools.x + tools.width)),
+      ),
+    ).toBeLessThan(2);
+    expect(key.x).toBeGreaterThanOrEqual(settings.x + settings.width);
+    expect(
+      Math.abs(
+        button.y + button.height / 2 - (settings.y + settings.height / 2),
+      ),
     ).toBeLessThan(4);
-    expect(settings.y).toBeGreaterThanOrEqual(button.y + button.height);
-    // Under the progress track and right-aligned: the last control ends at
-    // the dock's padding.
-    expect(settings.x).toBeGreaterThan(bar.x);
+    expect(bar.y).toBeGreaterThanOrEqual(button.y + button.height);
+    expect(bar.y).toBeGreaterThanOrEqual(settings.y + settings.height);
     expect(
-      dockBox.x + dockBox.width - (settings.x + settings.width),
-    ).toBeLessThan(16);
+      await progress(page).evaluate(
+        (element) => element.parentElement?.getBoundingClientRect().x,
+      ),
+    ).toBe(button.x);
+    expect(settings.x).toBeGreaterThan(bar.x);
+    expect(settings.x + settings.width).toBeLessThanOrEqual(bar.x + bar.width);
   });
 
-  test('lays the dock out for a phone: play and progress on top, the video beside the controls', async ({
+  test('lays the dock out for a phone: actions beside the video and progress underneath', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -234,11 +255,57 @@ test.describe('track playback dock', () => {
       await centerOf(page.getByRole('button', { name: dock.settings }))
     ).box;
 
-    expect(Math.abs(button.y - bar.y)).toBeLessThan(button.height);
-    expect(video.y).toBeGreaterThanOrEqual(button.y + button.height);
-    expect(settings.y).toBeGreaterThanOrEqual(button.y + button.height);
+    expect(button.x).toBeGreaterThanOrEqual(video.x + video.width);
+    expect(bar.y).toBeGreaterThanOrEqual(button.y + button.height);
+    expect(bar.y).toBeGreaterThanOrEqual(settings.y + settings.height);
+    expect(bar.y).toBeGreaterThanOrEqual(video.y + video.height);
+    expect(bar.x).toBeLessThan(button.x);
     expect(settings.x).toBeGreaterThan(video.x + video.width);
     expect(video.x + video.width).toBeLessThanOrEqual(390);
+  });
+
+  test('shows only remaining time beside the bar and updates it when seeking', async ({
+    page,
+  }) => {
+    await openTrack(page, 'clx-playback-remaining');
+    await readyToPlay(page);
+    const remaining = page.getByTestId('dock-remaining-time');
+    await expect(remaining).toHaveText('-4:08');
+    await expect(progress(page)).toHaveAttribute(
+      'aria-valuetext',
+      dock.progressValue
+        .replace('{current}', '0:00')
+        .replace('{total}', '4:08'),
+    );
+    await expect(remaining.locator('..').locator('span')).toHaveCount(1);
+    await progress(page).press('End');
+    await expect(remaining).toHaveText('-0:00');
+    await progress(page).press('Home');
+    await progress(page).press('ArrowRight');
+    await expect(remaining).toHaveText('-4:03');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '5');
+  });
+
+  test('toggles between remaining and elapsed time without seeking', async ({
+    page,
+  }) => {
+    await openTrack(page, 'clx-playback-time-toggle');
+    await readyToPlay(page);
+    const time = page.getByTestId('dock-remaining-time');
+    await progress(page).press('ArrowRight');
+    await expect(time).toHaveText('-4:03');
+
+    await page.getByRole('button', { name: dock.showElapsedTime }).click();
+    await expect(time).toHaveText('0:05');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '5');
+    await progress(page).press('ArrowRight');
+    await expect(time).toHaveText('0:10');
+
+    await page
+      .getByRole('button', { name: dock.showRemainingTime })
+      .press('Enter');
+    await expect(time).toHaveText('-3:58');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '10');
   });
 
   test('leaves room for the dock under the page and keeps the timeline above it', async ({

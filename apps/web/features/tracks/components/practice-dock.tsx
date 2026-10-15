@@ -82,11 +82,9 @@ function usePublishDockHeight(dock: RefObject<HTMLElement | null>) {
 /**
  * The floating glass dock (DESIGN.md "Floating layers"): the YouTube square,
  * play and pause, the progress track, the transpose chip and the Settings menu.
- * On a phone the play button and the progress track are the first row, and the
- * video square sits beside a row of controls; from `md` the video spans two
- * rows, with play and the progress track on the first and the controls under
- * them. In the controls row the transpose chip sits on the left and the rest
- * on the right. The video mounts into `hostRef`.
+ * Actions sit above the progress track. On a phone they wrap beside the
+ * video, with progress across the dock underneath; from `sm` the video spans
+ * both rows. The video mounts into `hostRef`.
  */
 export function PracticeDock({
   controller,
@@ -108,7 +106,7 @@ export function PracticeDock({
     <section
       ref={dock}
       aria-label={t('label')}
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'play_progress''video_controls'] md:grid-cols-[auto_auto_minmax(0,1fr)] md:[grid-template-areas:'video_play_progress''video_controls_controls']"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'video_actions''progress_progress'] sm:[grid-template-areas:'video_actions''video_progress']"
     >
       <div
         ref={hostRef}
@@ -116,8 +114,16 @@ export function PracticeDock({
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
         className="overflow-hidden rounded-lg bg-muted [grid-area:video]"
       />
-      <div className="flex justify-center [grid-area:play]">
-        <DockPlayButton controller={controller} />
+      <div className="flex min-w-0 flex-wrap items-center gap-2 [grid-area:actions] sm:justify-between sm:gap-3">
+        <StreakRing playing={status === 'playing'} />
+        <div className="flex items-center gap-1">
+          <DockMicButton playback={playbackStore} />
+          <DockPlayButton controller={controller} />
+          <DockSettings controller={controller} videoId={videoId} />
+        </div>
+        <TrackKeyContext value={trackKey}>
+          <TransposePopover />
+        </TrackKeyContext>
       </div>
       <div className="flex min-w-0 [grid-area:progress]">
         {status === 'error' ? (
@@ -127,16 +133,6 @@ export function PracticeDock({
         ) : (
           <DockProgressTrack controller={controller} />
         )}
-      </div>
-      <div className="flex items-center justify-between gap-1 self-start [grid-area:controls] md:self-center">
-        <TrackKeyContext value={trackKey}>
-          <TransposePopover />
-        </TrackKeyContext>
-        <div className="flex items-center gap-1">
-          <DockMicButton playback={playbackStore} />
-          <StreakRing playing={status === 'playing'} />
-          <DockSettings controller={controller} videoId={videoId} />
-        </div>
       </div>
       <DockMicNotice />
     </section>

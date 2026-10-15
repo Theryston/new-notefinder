@@ -52,6 +52,29 @@ for (const { locale, messages } of cases) {
       .click();
 
   test.describe(`track key and transpose (${locale})`, () => {
+    test('keeps the chip and adjacent controls still when the key changes', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openTrack(page, locale, `clx-transpose-stable-${locale}`);
+      const chip = (tonic: string) =>
+        page.getByRole('button', {
+          name: t('dock.transposeOpen', { key: keyText(tonic, 'MAJOR') }),
+        });
+      const settings = page.getByRole('button', { name: dock.settings });
+      const before = await chip('G').boundingBox();
+      const controlsBefore = await settings.boundingBox();
+      expect(before).not.toBeNull();
+      expect(controlsBefore).not.toBeNull();
+      await chip('G').click();
+      for (const tonic of ['G#', 'A']) {
+        await page.getByRole('button', { name: dock.transposeUp }).click();
+        await expect(chip(tonic)).toBeVisible();
+        expect(await chip(tonic).boundingBox()).toEqual(before);
+        expect(await settings.boundingBox()).toEqual(controlsBefore);
+      }
+    });
+
     test('shows the key in the title row', async ({ page }) => {
       await openTrack(page, locale, `clx-key-range-${locale}`);
 

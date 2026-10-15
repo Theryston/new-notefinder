@@ -18,8 +18,8 @@ import { useTranspose } from '../stores/transpose-store';
 export const TrackKeyContext = createContext<TrackKey | undefined>(undefined);
 
 export const TRANSPOSE_CHIP_CLASS = cn(
-  buttonVariants({ variant: 'outline' }),
-  'gap-1.5 px-3.5 font-medium',
+  buttonVariants({ variant: 'secondary' }),
+  'w-32 gap-1.5 px-3 font-medium sm:w-40',
 );
 
 /** The key the Track is in now and, once moved, the offset (`A major +2`). */
@@ -30,6 +30,11 @@ export function TransposeChipLabel() {
 
   return (
     <>
+      {keyText === null ? null : (
+        <span className="hidden text-muted-foreground sm:inline">
+          {t('transposeLabel')}
+        </span>
+      )}
       <span>{keyText ?? t('transpose')}</span>
       {semitones === 0 ? null : (
         <span className="font-mono text-muted-foreground text-xs tabular-nums">
