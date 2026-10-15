@@ -170,7 +170,7 @@ export type TrackVocalRange = z.infer<typeof trackVocalRangeSchema>;
  * `GET /v1/tracks/:trackId`: the Track page's header. `durationMs` is null when
  * MusicBrainz has no length; `youtubeVideoId` is null until a Processing
  * chooses a video; `hasNotes` tells a Track with vocal notes from an
- * instrumental one.
+ * instrumental one; `viewCount` is how many times the Track was viewed.
  */
 export const trackDetailSchema = trackHeaderSchema.extend({
   artistCredit: z.array(linkedArtistCreditEntrySchema).max(30),
@@ -178,6 +178,9 @@ export const trackDetailSchema = trackHeaderSchema.extend({
   youtubeVideoId: z.string().min(1).max(32).nullable(),
   contributors: z.array(trackContributorSchema).max(100),
   hasNotes: z.boolean(),
+  // Optional so clients built before the field keep parsing; the API always
+  // sends it.
+  viewCount: z.number().int().nonnegative().optional(),
   // Absent for a Track whose notes have no summary (an instrumental).
   vocalRange: trackVocalRangeSchema.optional(),
   key: trackKeySchema.optional(),

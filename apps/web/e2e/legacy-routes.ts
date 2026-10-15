@@ -21,6 +21,12 @@ export type LegacyRoute = {
    * `test.fixme` with this reason.
    */
   todo?: string;
+  /**
+   * Set when the route keeps its legacy URL (a sitemap): there is no locale
+   * redirect to assert, so its test only checks that the URL itself resolves.
+   * Unlike `todo`, it is a real test.
+   */
+  keepsUrl?: true;
 };
 
 const sitemapTodo =
@@ -52,7 +58,7 @@ export const legacyRoutes: LegacyRoute[] = [
   { path: '/setup-username?redirectTo=/me/edit', implemented: true },
   { path: '/terms', implemented: true },
   { path: '/sitemap.xml', implemented: false, todo: sitemapTodo },
-  { path: '/tracks/sitemap/0.xml', implemented: false, todo: sitemapTodo },
+  { path: '/tracks/sitemap/0.xml', implemented: true, keepsUrl: true },
   { path: '/artists/sitemap/0.xml', implemented: false, todo: sitemapTodo },
   { path: '/albums/sitemap/0.xml', implemented: false, todo: sitemapTodo },
 ];

@@ -37,6 +37,7 @@ export type FakeTrack = {
   /** The length in milliseconds the practice header shows; null by default. */
   durationMs?: number | null;
   youtubeVideoId?: string | null;
+  viewCount?: number;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
   /** The vocal range (MIDI numbers) and key the header shows; absent by default. */
@@ -104,7 +105,9 @@ const defaultTrack: FakeTrack = {
   processing: { status: 'QUEUED' },
 };
 
-const tracks = new Map<string, FakeTrack>([[defaultTrack.id, defaultTrack]]);
+export const tracks = new Map<string, FakeTrack>([
+  [defaultTrack.id, defaultTrack],
+]);
 const legacyMap = new Map<string, string>();
 const requests = new Map<string, FakeTrackRequestAnswer>();
 
@@ -150,6 +153,7 @@ function practiceHeaderOf(track: FakeTrack) {
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
+    viewCount: track.viewCount ?? 0,
     ...(track.vocalRange ? { vocalRange: track.vocalRange } : {}),
     ...(track.key ? { key: track.key } : {}),
   };
@@ -339,12 +343,8 @@ export async function serveTrackRequest(
   }
   const header = /^\/v1\/tracks\/([^/]+)$/.exec(pathname);
   if (header?.[1] && request.method === 'GET') {
-    serveTrackRead(
-      decodeURIComponent(header[1]),
-      request,
-      response,
-      practiceHeaderOf,
-    );
+    const id = decodeURIComponent(header[1]);
+    serveTrackRead(id, request, response, practiceHeaderOf);
     return true;
   }
   return false;

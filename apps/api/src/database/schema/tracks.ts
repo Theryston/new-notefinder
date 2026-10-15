@@ -63,6 +63,10 @@ export const tracks = pgTable(
     coverUrl: text(),
     // The YouTube video the timeline plays, set when a Processing chooses it.
     youtubeVideoId: text(),
+    // How hot the Track is, from its recent views (see `trending-score.ts`);
+    // recomputed by a delayed job after views, 0 until then. Not imported
+    // from the legacy app: it is derived from the imported views.
+    trendingScore: integer().notNull().default(0),
     // The vocal range as MIDI numbers (A4 is 69) and the estimated key (a
     // pitch class, 0 is C, and its mode), written when a Processing replaces
     // the Track's notes. All null for a Track without notes.
@@ -72,7 +76,11 @@ export const tracks = pgTable(
     keyMode: text().$type<TrackKeyMode>(),
     ...timestamps,
   },
-  (table) => [unique('tracks_recording_mbid_unique').on(table.recordingMbid)],
+  (table) => [
+    unique('tracks_recording_mbid_unique').on(table.recordingMbid),
+    // The sitemap lists the highest score first.
+    index().on(table.trendingScore, table.id),
+  ],
 );
 
 /**

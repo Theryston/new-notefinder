@@ -15,6 +15,7 @@ import {
 import { PracticeBody } from './practice-body';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 import { TrackTitleRow } from './track-title-row';
+import { TrackViewRecorder } from './track-view-recorder';
 
 /** Same-dimension stand-in for the practice view while it loads. */
 function TrackPracticeSkeleton() {
@@ -75,6 +76,7 @@ export function TrackPracticeView({
 
   return (
     <div className="flex flex-col gap-6 pb-6 md:pb-8">
+      <TrackViewRecorder trackId={trackId} />
       <TrackTitleRow header={header.data} />
       <PracticeBody
         header={header.data}

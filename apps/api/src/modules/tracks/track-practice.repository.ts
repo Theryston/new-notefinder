@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import type { TrackKeyMode } from '@notefinder/contracts';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import { trackNotes } from '../../database/schema/track-notes.js';
+import { trackViews } from '../../database/schema/track-views.js';
 import {
   type StoredArtistCreditEntry,
   tracks,
@@ -21,6 +22,7 @@ export type TrackPracticeRow = {
   /** The Artists the Track is linked to, which the credit names link to. */
   artists: { id: string; mbid: string }[];
   hasNotes: boolean;
+  viewCount: number;
   vocalRangeLowest: number | null;
   vocalRangeHighest: number | null;
   keyTonic: number | null;
@@ -62,7 +64,7 @@ export class TrackPracticeRepository {
     if (row === undefined) {
       return undefined;
     }
-    const [linked, firstNote] = await Promise.all([
+    const [linked, firstNote, views] = await Promise.all([
       this.txHost.tx
         .select({ id: artists.id, mbid: artists.mbid })
         .from(trackArtists)
@@ -73,8 +75,17 @@ export class TrackPracticeRepository {
         .from(trackNotes)
         .where(eq(trackNotes.trackId, trackId))
         .limit(1),
+      this.txHost.tx
+        .select({ total: count() })
+        .from(trackViews)
+        .where(eq(trackViews.trackId, trackId)),
     ]);
-    return { ...row, artists: linked, hasNotes: firstNote.length > 0 };
+    return {
+      ...row,
+      artists: linked,
+      hasNotes: firstNote.length > 0,
+      viewCount: views[0]?.total ?? 0,
+    };
   }
 
   /** The Track's vocal notes in the order they are sung. */

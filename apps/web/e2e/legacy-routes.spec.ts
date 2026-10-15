@@ -9,6 +9,16 @@ const localeCases = [
 
 test.describe('legacy routes', () => {
   for (const route of legacyRoutes) {
+    if (route.keepsUrl) {
+      test(`${route.path} keeps its URL and does not 404`, async ({
+        request,
+      }) => {
+        const response = await request.get(route.path, { maxRedirects: 0 });
+        expect(response.status()).toBe(200);
+      });
+      continue;
+    }
+
     if (route.todo) {
       // Sitemaps keep their unprefixed URL, so the only requirement is that
       // they resolve.

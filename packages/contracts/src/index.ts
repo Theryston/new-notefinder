@@ -18,5 +18,6 @@ export * from './revalidation.js';
 export * from './search.js';
 export * from './streaks.js';
 export * from './track-processing.js';
+export * from './track-views.js';
 export * from './tracks.js';
 export * from './users.js';

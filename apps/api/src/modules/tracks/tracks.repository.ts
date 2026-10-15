@@ -9,7 +9,7 @@ import type {
   Mbid,
   TrackArtistCreditEntry,
 } from '@notefinder/contracts';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
@@ -21,10 +21,9 @@ import {
   trackTags,
   trackWorks,
 } from '../../database/schema/tracks.js';
+import { type ByTrack, groupByTrack } from './group-by-track.js';
 import type { NewTrackCoreRow, NewTrackRows } from './track-from-recording.js';
 import type { NoteSummary } from './track-note-summary.js';
-
-type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
 
 /** The companion rows of a new Track (everything but the core row). */
 type NewTrackDetails = Omit<NewTrackRows, 'track'>;
@@ -204,6 +203,21 @@ export class TracksRepository {
       .where(eq(tracks.id, trackId));
   }
 
+  async setTrendingScore(trackId: string, score: number): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set({ trendingScore: score })
+      .where(eq(tracks.id, trackId));
+  }
+
+  /** Tracks with a trending score, which rolls with time as well as views. */
+  findScoredTracks(): Promise<{ id: string }[]> {
+    return this.txHost.tx
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(gt(tracks.trendingScore, 0));
+  }
+
   /**
    * Stores the vocal range and key the Track keeps of its notes (all null for
    * a Track without notes). It joins the caller's transaction.
@@ -352,15 +366,4 @@ export class TracksRepository {
       .orderBy(asc(trackExternalLinks.linkType), asc(trackExternalLinks.url));
     return groupByTrack(rows);
   }
-}
-
-function groupByTrack<T extends { trackId: string }>(rows: T[]): ByTrack<T> {
-  const byTrack: ByTrack<T> = new Map();
-  for (const row of rows) {
-    const { trackId, ...rest } = row;
-    const list = byTrack.get(trackId) ?? [];
-    list.push(rest);
-    byTrack.set(trackId, list);
-  }
-  return byTrack;
 }

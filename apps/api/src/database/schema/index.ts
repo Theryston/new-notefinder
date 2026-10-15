@@ -10,5 +10,6 @@ export * from './track-favorites.js';
 export * from './track-lyrics.js';
 export * from './track-notes.js';
 export * from './track-processings.js';
+export * from './track-views.js';
 export * from './tracks.js';
 export * from './users.js';

@@ -92,6 +92,7 @@ describe('Track practice reads (e2e)', () => {
           },
         ],
         hasNotes: true,
+        viewCount: 0,
       });
     });
 

@@ -11,7 +11,12 @@ import {
   type FakeTrack,
   paginateFakeTracks,
 } from './fake-artist-tracks.ts';
-import { serveSession, serveTrackRequest } from './fake-track-api.ts';
+import {
+  tracks as fakeTracks,
+  serveSession,
+  serveTrackRequest,
+} from './fake-track-api.ts';
+import { serveSitemap, sitemapTracks } from './fake-track-sitemap.ts';
 
 /**
  * Fake API for the artist Playwright suite and the legacy-routes suite.
@@ -269,6 +274,10 @@ const serveRequest = async (
     return;
   if (url.pathname === '/v1/auth/get-session') {
     serveSession(request, response);
+    return;
+  }
+  if (url.pathname === '/v1/sitemaps/tracks') {
+    serveSitemap([...sitemapTracks, ...fakeTracks.values()], request, response);
     return;
   }
   if (await serveTrackRequest(request, response, url.pathname)) return;

@@ -45,10 +45,20 @@ import { TrackRequesterService } from './track-requester.service.js';
 import { TrackRetryRepository } from './track-retry.repository.js';
 import { TrackRetryService } from './track-retry.service.js';
 import { TrackRetryLauncherService } from './track-retry-launcher.service.js';
+import { TrackSitemapController } from './track-sitemap.controller.js';
+import { TrackSitemapRepository } from './track-sitemap.repository.js';
+import { TrackSitemapService } from './track-sitemap.service.js';
 import { TrackStepsService } from './track-steps.service.js';
 import { TrackTimedLyricsService } from './track-timed-lyrics.service.js';
+import { TRACK_TRENDING_QUEUE } from './track-trending.job.js';
+import { TrackTrendingProcessor } from './track-trending.processor.js';
+import { TrackTrendingService } from './track-trending.service.js';
+import { TrackTrendingQueueService } from './track-trending-queue.service.js';
 import { TrackVideoService } from './track-video.service.js';
 import { TrackVideoStepService } from './track-video-step.service.js';
+import { TrackViewRepository } from './track-view.repository.js';
+import { TrackViewsController } from './track-views.controller.js';
+import { TrackViewsService } from './track-views.service.js';
 import { TracksController } from './tracks.controller.js';
 import { TracksRepository } from './tracks.repository.js';
 import { TracksService } from './tracks.service.js';
@@ -64,6 +74,7 @@ import { TracksService } from './tracks.service.js';
     BullModule.registerQueue({ name: TRACK_PROCESSING_QUEUE }),
     BullModule.registerQueue({ name: TRACK_METADATA_QUEUE }),
     BullModule.registerQueue({ name: TRACK_MP3_QUEUE }),
+    BullModule.registerQueue({ name: TRACK_TRENDING_QUEUE }),
     CoverArtModule,
     EmailModule,
     FfmpegModule,
@@ -75,7 +86,12 @@ import { TracksService } from './tracks.service.js';
     WebRevalidationModule,
     YouTubeMusicModule,
   ],
-  controllers: [TracksController, TrackLyricsController],
+  controllers: [
+    TracksController,
+    TrackLyricsController,
+    TrackViewsController,
+    TrackSitemapController,
+  ],
   providers: [
     TracksService,
     TracksRepository,
@@ -113,6 +129,13 @@ import { TracksService } from './tracks.service.js';
     TrackPipelineService,
     TrackJobRunnerService,
     TrackProcessingProcessor,
+    TrackViewRepository,
+    TrackViewsService,
+    TrackTrendingQueueService,
+    TrackTrendingService,
+    TrackTrendingProcessor,
+    TrackSitemapRepository,
+    TrackSitemapService,
   ],
   exports: [TracksService, TrackAlbumCoverService],
 })

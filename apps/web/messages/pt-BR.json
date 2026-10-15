@@ -184,6 +184,29 @@
         "label": "Extensão vocal",
         "summary": "{low}–{high} · {octaves, plural, one {# oitava} other {# oitavas}}",
         "keyboard": "Teclado com a extensão vocal de {low} a {high} destacada"
+      },
+      "views": "{count, plural, =0 {# visualizações} one {# visualização} other {# visualizações}}",
+      "share": {
+        "open": "Compartilhar",
+        "close": "Fechar",
+        "title": "Compartilhar esta música",
+        "description": "Envie {title} para quem pode cantá-la.",
+        "link": "Link para compartilhar",
+        "copy": "Copiar link",
+        "copied": "Link copiado",
+        "copyFailed": "Não conseguimos copiar o link. Selecione-o e copie manualmente.",
+        "includeMoment": "Incluir o momento atual ({time})",
+        "networks": "Compartilhar em",
+        "text": "Cante {title}, de {artists}, com o NoteFinder",
+        "textNoArtists": "Cante {title} com o NoteFinder",
+        "subject": "{title} no NoteFinder",
+        "network": {
+          "whatsapp": "WhatsApp",
+          "telegram": "Telegram",
+          "x": "X",
+          "facebook": "Facebook",
+          "email": "E-mail"
+        }
       }
     }
   },
