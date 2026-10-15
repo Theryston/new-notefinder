@@ -3,13 +3,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
-import { postTrackView } from '../track-view-query';
-import {
-  nextViewAction,
-  readStoredView,
-  sessionStorageOrUndefined,
-  writeStoredView,
-} from '../track-view-session';
+import { synchronizeTrackView } from '../track-view-sync';
 
 /**
  * Counts the visit once per browser session: the first one records a view and
@@ -22,21 +16,13 @@ export function useTrackView(trackId: string, signedIn: boolean) {
   // Strict Mode runs effects twice; a ref survives that remount.
   const sent = useRef<string | null>(null);
   const { mutate } = useMutation({
-    mutationFn: ({ viewId }: { viewId: string | undefined }) =>
-      postTrackView(trackId, viewId),
-    onSuccess: (viewId) =>
-      writeStoredView(sessionStorageOrUndefined(), trackId, {
-        viewId,
-        attached: signedIn,
-      }),
+    mutationFn: () => synchronizeTrackView(trackId, signedIn),
   });
 
   useEffect(() => {
-    const stored = readStoredView(sessionStorageOrUndefined(), trackId);
-    const action = nextViewAction(stored, signedIn);
-    const attempt = `${trackId}:${action}:${signedIn}`;
-    if (action === 'none' || sent.current === attempt) return;
+    const attempt = `${trackId}:${signedIn}`;
+    if (sent.current === attempt) return;
     sent.current = attempt;
-    mutate({ viewId: action === 'attach' ? stored?.viewId : undefined });
+    mutate();
   }, [trackId, signedIn, mutate]);
 }

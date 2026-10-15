@@ -19,7 +19,7 @@ const TrackShareDialog = dynamic(
 /** The title row's share button; it opens the share dialog. */
 export function TrackShareButton({ header }: { header: TrackDetail }) {
   const t = useTranslations('tracks.practice.share');
-  const [opened, setOpened] = useState(false);
+  const [opening, setOpening] = useState(0);
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,14 +33,19 @@ export function TrackShareButton({ header }: { header: TrackDetail }) {
         aria-haspopup="dialog"
         className="shrink-0"
         onClick={() => {
-          setOpened(true);
+          setOpening((value) => value + 1);
           setOpen(true);
         }}
       >
         <Share2Icon aria-hidden="true" />
       </Button>
-      {opened ? (
-        <TrackShareDialog header={header} open={open} onOpenChange={setOpen} />
+      {opening > 0 ? (
+        <TrackShareDialog
+          key={opening}
+          header={header}
+          open={open}
+          onOpenChange={setOpen}
+        />
       ) : null}
     </>
   );
