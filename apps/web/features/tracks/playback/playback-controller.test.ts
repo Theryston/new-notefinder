@@ -168,48 +168,7 @@ describe('PlaybackController', () => {
     expect(store.getState().muted).toBe(false);
   });
 
-  it('pauses when the video is hidden', async () => {
-    const { controller, store } = await setUp();
-    controller.play();
-
-    controller.hideVideo();
-
-    expect(store.getState()).toMatchObject({
-      videoHidden: true,
-      status: 'paused',
-    });
-    expect(pending.size).toBe(0);
-  });
-
-  it('shows the video before it plays when play is pressed while hidden', async () => {
-    const { controller, store, player } = await setUp();
-    controller.hideVideo();
-    const play = vi.spyOn(player, 'play');
-
-    controller.play();
-
-    // YouTube may not play a hidden iframe: nothing plays until the reveal
-    // has been drawn, one frame later.
-    expect(store.getState().videoHidden).toBe(false);
-    expect(play).not.toHaveBeenCalled();
-    runFrame();
-    expect(play).toHaveBeenCalledOnce();
-    expect(store.getState().status).toBe('playing');
-  });
-
-  it('does not play after a late hide cancels the pending play', async () => {
-    const { controller, player } = await setUp();
-    controller.hideVideo();
-    const play = vi.spyOn(player, 'play');
-    controller.play();
-
-    controller.hideVideo();
-    runFrame();
-
-    expect(play).not.toHaveBeenCalled();
-  });
-
-  it('plays at once when the video is already showing', async () => {
+  it('plays at once', async () => {
     const { controller, player } = await setUp();
     const play = vi.spyOn(player, 'play');
 
@@ -247,17 +206,6 @@ describe('PlaybackController', () => {
     await player.load();
     controller.setDurationHint(300);
     expect(store.getState().duration).toBe(100);
-  });
-
-  it('hides the video of a paused player without playing it', async () => {
-    const { controller, store } = await setUp();
-
-    controller.hideVideo();
-
-    expect(store.getState()).toMatchObject({
-      videoHidden: true,
-      status: 'ready',
-    });
   });
 
   it('stops everything when disposed', async () => {

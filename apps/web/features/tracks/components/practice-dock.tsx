@@ -85,9 +85,8 @@ function usePublishDockHeight(dock: RefObject<HTMLElement | null>) {
  * On a phone the play button and the progress track are the first row, and the
  * video square sits beside a row of controls; from `md` the video spans two
  * rows, with play and the progress track on the first and the controls under
- * them, aligned right. With the video hidden it is one line everywhere. The
- * video mounts into `hostRef`, which stays in the page even when hidden, so
- * showing it again needs no reload.
+ * them. In the controls row the transpose chip sits on the left and the rest
+ * on the right. The video mounts into `hostRef`.
  */
 export function PracticeDock({
   controller,
@@ -101,7 +100,6 @@ export function PracticeDock({
   trackKey: TrackKey | undefined;
 }) {
   const t = useTranslations('tracks.practice.dock');
-  const hidden = usePlaybackState((state) => state.videoHidden);
   const status = usePlaybackState((state) => state.status);
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
@@ -110,15 +108,13 @@ export function PracticeDock({
     <section
       ref={dock}
       aria-label={t('label')}
-      data-hidden={hidden}
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'play_progress''video_controls'] data-[hidden=true]:grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_auto_minmax(0,1fr)] md:data-[hidden=true]:grid-cols-[auto_minmax(0,1fr)_auto] data-[hidden=true]:[grid-template-areas:'play_progress_controls'] md:[grid-template-areas:'video_play_progress''video_controls_controls'] md:data-[hidden=true]:[grid-template-areas:'play_progress_controls']"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'play_progress''video_controls'] md:grid-cols-[auto_auto_minmax(0,1fr)] md:[grid-template-areas:'video_play_progress''video_controls_controls']"
     >
       <div
         ref={hostRef}
         data-testid="dock-video"
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
-        className="overflow-hidden rounded-lg bg-muted [grid-area:video] data-[hidden=true]:hidden"
-        data-hidden={hidden}
+        className="overflow-hidden rounded-lg bg-muted [grid-area:video]"
       />
       <div className="flex justify-center [grid-area:play]">
         <DockPlayButton controller={controller} />
@@ -132,13 +128,15 @@ export function PracticeDock({
           <DockProgressTrack controller={controller} />
         )}
       </div>
-      <div className="flex items-center justify-end gap-1 self-start [grid-area:controls] md:self-center">
+      <div className="flex items-center justify-between gap-1 self-start [grid-area:controls] md:self-center">
         <TrackKeyContext value={trackKey}>
           <TransposePopover />
         </TrackKeyContext>
-        <DockMicButton playback={playbackStore} />
-        <StreakRing playing={status === 'playing'} />
-        <DockSettings controller={controller} videoId={videoId} />
+        <div className="flex items-center gap-1">
+          <DockMicButton playback={playbackStore} />
+          <StreakRing playing={status === 'playing'} />
+          <DockSettings controller={controller} videoId={videoId} />
+        </div>
       </div>
       <DockMicNotice />
     </section>

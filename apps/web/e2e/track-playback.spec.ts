@@ -180,27 +180,6 @@ test.describe('track playback dock', () => {
     ).toBeChecked();
   });
 
-  test('hides the video, pausing, and brings it back when playing', async ({
-    page,
-  }) => {
-    await openTrack(page, 'clx-playback-hide');
-    const play = await readyToPlay(page);
-    await play.click();
-    const video = page.getByTestId('dock-video');
-    await expect(video).toBeVisible();
-
-    await page.getByRole('button', { name: dock.settings }).click();
-    await page.getByRole('menuitem', { name: dock.hideVideo }).click();
-
-    await expect(video).toBeHidden();
-    const hiddenAt = await playedSeconds(page);
-    await page.waitForTimeout(1300);
-    expect(await playedSeconds(page)).toBe(hiddenAt);
-    await page.getByRole('button', { name: dock.play }).click();
-    await expect(video).toBeVisible();
-    await expect(page.getByRole('button', { name: dock.pause })).toBeVisible();
-  });
-
   test('shows the YouTube square at 100 by 100', async ({ page }) => {
     await openTrack(page, 'clx-playback-square');
     await readyToPlay(page);
