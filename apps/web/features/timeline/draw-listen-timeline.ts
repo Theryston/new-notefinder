@@ -2,6 +2,7 @@ import type { TrackNote } from '@notefinder/contracts';
 
 import { isSharpKey, keyOf, noteName } from '@/lib/music-notes';
 
+import { layoutNoteLabels } from './note-label-layout';
 import {
   fitsLabel,
   type LaneRange,
@@ -105,8 +106,8 @@ export function drawBeatLines(
   }
 }
 
-/** Writes the note's name inside its bar, when the bar has room for it. */
-export function drawNoteLabel(
+/** Writes the note's name in the clear space reserved by the label layout. */
+function drawNoteLabel(
   ctx: TimelineContext,
   note: TrackNote,
   box: NoteBox,
@@ -126,6 +127,31 @@ export function drawNoteLabel(
 }
 
 export type NoteBox = { x: number; y: number; width: number; height: number };
+
+/** Share collision-aware labels between the listening and singing rolls. */
+export function drawNoteLabels(
+  ctx: TimelineContext,
+  frame: ListenTimelineFrame,
+  fillOf: (note: TrackNote, inside: boolean) => string | null,
+): void {
+  const sources = visibleNoteBoxes(frame).map((source) => ({
+    ...source,
+    label: fillOf(source.note, true) !== null,
+  }));
+  for (const { note, box, inside } of layoutNoteLabels(sources, {
+    left: KEYBOARD_WIDTH,
+    right: frame.width,
+    now: frame.now,
+  })) {
+    const fill = fillOf(note, inside);
+    if (fill !== null) {
+      drawNoteLabel(ctx, note, box, {
+        fill,
+        fontFamily: frame.colors.fontFamily,
+      });
+    }
+  }
+}
 
 /** The bars of the notes that are on screen, in either mode's geometry. */
 export function visibleNoteBoxes(
@@ -165,13 +191,11 @@ function drawNotes(ctx: TimelineContext, frame: ListenTimelineFrame): void {
     ctx.roundRect(box.x, box.y, box.width, box.height, NOTE_RADIUS);
     ctx.fill();
     ctx.globalAlpha = 1;
-    if (state !== 'past') {
-      drawNoteLabel(ctx, note, box, {
-        fill: colors.noteLabel,
-        fontFamily: colors.fontFamily,
-      });
-    }
   }
+  drawNoteLabels(ctx, frame, (note, inside) => {
+    if (noteStateAt(note, now) === 'past') return null;
+    return inside ? colors.noteLabel : colors.keyLabel;
+  });
 }
 
 function drawKeyboard(ctx: TimelineContext, frame: ListenTimelineFrame): void {

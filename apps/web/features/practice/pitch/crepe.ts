@@ -23,16 +23,19 @@ export function normalizeFrame(samples: Float32Array): Float32Array {
 }
 
 /**
- * The pitch CREPE heard: the strongest bin, refined by a weighted average of
- * its neighbours (as the CREPE paper does), and how strong that bin was.
+ * Refines a model peak with a weighted average of its neighbours and keeps
+ * its confidence. Without a candidate center, uses the strongest bin.
  */
 export function decodeActivation(
   probabilities: ArrayLike<number>,
+  center?: number,
 ): PitchReading | null {
   if (probabilities.length === 0) return null;
-  let best = 0;
-  for (let bin = 1; bin < probabilities.length; bin += 1) {
-    if ((probabilities[bin] ?? 0) > (probabilities[best] ?? 0)) best = bin;
+  let best = center ?? 0;
+  if (center === undefined) {
+    for (let bin = 1; bin < probabilities.length; bin += 1) {
+      if ((probabilities[bin] ?? 0) > (probabilities[best] ?? 0)) best = bin;
+    }
   }
   const from = Math.max(0, best - NEIGHBOURS);
   const to = Math.min(probabilities.length - 1, best + NEIGHBOURS);

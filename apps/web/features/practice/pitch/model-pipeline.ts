@@ -1,12 +1,8 @@
-import {
-  CREPE_FRAME,
-  CREPE_RATE,
-  decodeActivation,
-  normalizeFrame,
-} from './crepe';
+import { CREPE_FRAME, CREPE_RATE, normalizeFrame } from './crepe';
 import { Downsampler } from './downsampler';
-import { PitchSmoother } from './post-process';
-import { isSilent, type PitchReading } from './yin';
+import { pitchCandidates } from './pitch-candidates';
+import { PitchTracker } from './pitch-tracker';
+import { detectPitchYin, isSilent } from './yin';
 
 /** What the ML engine needs from a model runtime: one frame in, one pitch out. */
 export type ModelDetector = {
@@ -18,9 +14,6 @@ export type ModelDetector = {
 
 /** New samples (at the model's rate) between two readings: 32 ms. */
 const HOP = 512;
-
-/** The model is more spread than YIN, so its confidence gate is lower. */
-const MODEL_MIN_CONFIDENCE = 0.5;
 
 /**
  * Frames in a row that arrive while the model is still busy with the last one
@@ -44,8 +37,9 @@ export class ModelPipeline {
   readonly windowSeconds = CREPE_FRAME / CREPE_RATE;
   private readonly downsampler: Downsampler;
   private readonly window = new Float32Array(CREPE_FRAME);
-  private readonly smoother = new PitchSmoother(MODEL_MIN_CONFIDENCE);
+  private readonly tracker = new PitchTracker();
   private sinceReading = 0;
+  private elapsed = 0;
   private busy = false;
   private dropped = 0;
   private done = false;
@@ -67,8 +61,9 @@ export class ModelPipeline {
     this.window.copyWithin(0, keep.length);
     this.window.set(keep, CREPE_FRAME - keep.length);
     this.sinceReading += samples.length;
+    this.elapsed += samples.length / CREPE_RATE;
     if (this.sinceReading >= HOP) {
-      this.sinceReading = 0;
+      this.sinceReading %= HOP;
       this.read();
     }
   }
@@ -88,8 +83,9 @@ export class ModelPipeline {
     }
     this.dropped = 0;
     const frame = this.window.slice();
+    const time = this.elapsed - this.windowSeconds / 2;
     if (isSilent(frame)) {
-      this.events.onReading(this.smoother.push(null));
+      this.report([], frame, time);
       return;
     }
     this.busy = true;
@@ -97,13 +93,29 @@ export class ModelPipeline {
       (activation) => {
         this.busy = false;
         if (this.done) return;
-        const reading: PitchReading | null = decodeActivation(activation);
-        this.events.onReading(this.smoother.push(reading));
+        this.report(activation, frame, time);
       },
       () => {
         this.busy = false;
         this.giveUp('failed');
       },
+    );
+  }
+
+  private report(
+    activation: ArrayLike<number>,
+    frame: Float32Array,
+    time: number,
+  ): void {
+    const silent = isSilent(frame);
+    this.events.onReading(
+      this.tracker.push({
+        candidates: pitchCandidates(activation),
+        periodic: silent ? null : detectPitchYin(frame, CREPE_RATE),
+        time,
+        silent,
+        frame,
+      }),
     );
   }
 

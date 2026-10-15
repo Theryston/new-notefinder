@@ -97,14 +97,14 @@ describe('startMicSession', () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it('asks for echo cancellation and noise suppression, without auto gain', async () => {
+  it('requests unprocessed singing audio, without speech filters or auto gain', async () => {
     const constraints: { current?: MediaStreamConstraints } = {};
     stubAudio(undefined, constraints);
     await startMicSession(vi.fn());
     expect(constraints.current).toEqual({
       audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
+        echoCancellation: false,
+        noiseSuppression: false,
         autoGainControl: false,
       },
     });

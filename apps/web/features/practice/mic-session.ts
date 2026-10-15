@@ -6,14 +6,13 @@ import { createPitchEngine } from './pitch/pitch-engine';
 const WORKLET_URL = new URL('./pitch/capture-worklet.js', import.meta.url);
 
 /**
- * Echo cancellation and noise suppression keep the music out of the reading;
- * automatic gain stays off because it pumps the level and breaks the silence
- * gate.
+ * Speech processing can remove sustained vowels and reshape their harmonics.
+ * Preserve the singing signal; headphones keep playback out of the mic.
  */
 const MIC_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
-    echoCancellation: true,
-    noiseSuppression: true,
+    echoCancellation: false,
+    noiseSuppression: false,
     autoGainControl: false,
   },
 };
