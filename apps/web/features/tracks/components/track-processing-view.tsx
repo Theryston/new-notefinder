@@ -16,7 +16,7 @@ import { TrackProcessingBanner } from './track-processing-banner';
 import { TrackProcessingStatus } from './track-processing-status';
 
 /** How far a toast sits from the bottom: the dock's height plus some room. */
-const DOCK_CLEARANCE = 'calc(var(--dock-height, 0px) + 1.5rem)';
+const DOCK_CLEARANCE = { bottom: 'calc(var(--dock-height, 0px) + 1.5rem)' };
 
 /**
  * The Track page: while the Processing runs, the banner with the progress
@@ -52,7 +52,8 @@ export function TrackProcessingView({
       <>
         {/* A toast still showing when the view switches (a retry refused) stays. */}
         {/* Above the dock, whatever its height: it publishes `--dock-height`.
-            Sonner has its own offset under 600px, which needs setting too. */}
+            Sonner has its own offset under 600px, which needs setting too; only the
+            bottom is given, since a single value would apply to every side. */}
         <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
         <TrackPracticeView
           trackId={state.track.id}

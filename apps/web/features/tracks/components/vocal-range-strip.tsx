@@ -46,12 +46,14 @@ function RangeKeyboard({
           width={key.black ? BLACK_KEY_WIDTH : WHITE_KEY_WIDTH}
           height={key.black ? BLACK_KEY_HEIGHT : WHITE_KEY_HEIGHT}
           className={cn(
-            'stroke-border [vector-effect:non-scaling-stroke]',
+            '[vector-effect:non-scaling-stroke]',
+            // Lit keys are separated by the page color, so the range still
+            // reads as keys and not one bar.
             key.inRange
-              ? 'fill-primary'
+              ? 'fill-primary stroke-background'
               : key.black
-                ? 'fill-timeline-key-sharp'
-                : 'fill-timeline-key',
+                ? 'fill-timeline-key-sharp stroke-border'
+                : 'fill-timeline-key stroke-border',
           )}
         />
       ))}

@@ -229,6 +229,9 @@ test.describe('the toast and the dock on a phone', () => {
     expect((toastBox?.y ?? 0) + (toastBox?.height ?? 0)).toBeLessThanOrEqual(
       dockBox?.y ?? 0,
     );
+    // It reads normally: nearly the viewport's width less the side gutters,
+    // not squeezed into a column.
+    expect(toastBox?.width ?? 0).toBeGreaterThan(390 - 2 * 24 - 4);
   });
 });
 
