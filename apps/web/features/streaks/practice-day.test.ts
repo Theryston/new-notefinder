@@ -46,14 +46,12 @@ describe('local midnight refresh', () => {
     ['America/New_York', '2026-03-08T05:00:00Z', 23 * 3_600_000],
     ['America/New_York', '2026-11-01T04:00:00Z', 25 * 3_600_000],
   ])('schedules the next day in %s at %s', (zone, date, expected) => {
-    vi.stubEnv('TZ', zone);
-    expect(nextPracticeDayDelay(new Date(date))).toBe(expected);
+    expect(nextPracticeDayDelay(new Date(date), zone)).toBe(expected);
   });
 
   it('refreshes yesterday to today at midnight without playback', async () => {
-    vi.stubEnv('TZ', 'America/Sao_Paulo');
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-10-15T02:59:58Z'));
+    vi.setSystemTime(new Date('2026-10-14T23:59:58Z'));
     const client = new QueryClient();
     const today = {
       ...yesterday,
