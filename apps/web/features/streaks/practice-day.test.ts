@@ -51,7 +51,7 @@ describe('local midnight refresh', () => {
 
   it('refreshes yesterday to today at midnight without playback', async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-10-14T23:59:58Z'));
+    vi.setSystemTime(new Date(2026, 9, 14, 23, 59, 58));
     const client = new QueryClient();
     const today = {
       ...yesterday,
