@@ -273,3 +273,39 @@
     transition-duration: 1ms !important;
   }
 }
+
+.loop-handle::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  width: 16px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 2px solid var(--background);
+  cursor: ew-resize;
+}
+.loop-handle::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 2px solid var(--background);
+  cursor: ew-resize;
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .practice-fullscreen:fullscreen {
+    padding: 12px;
+    overflow: auto;
+  }
+  .practice-fullscreen:fullscreen [data-testid="karaoke-line"],
+  .practice-fullscreen:fullscreen .practice-lyrics {
+    display: none;
+  }
+  .practice-fullscreen:fullscreen canvas {
+    height: 100%;
+  }
+  .practice-fullscreen:fullscreen [role="img"] {
+    max-height: calc(100dvh - var(--dock-height, 0px) - 80px);
+  }
+}

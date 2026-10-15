@@ -17,6 +17,9 @@ import { SingTimeline } from '@/features/practice/components/sing-timeline';
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { useTimelineFocus } from '../hooks/use-shared-link';
+import { loopRange } from '../listening/listening-math';
+import { useLoop } from '../listening/loop-store';
+import { useListeningTools } from '../listening/use-listening-tools';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
@@ -24,6 +27,7 @@ import { playbackStore } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
 import { creditText } from '../track-credit';
 import { transposeNotes } from '../transpose/transpose';
+import { ListeningActions } from './listening-actions';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
@@ -115,7 +119,27 @@ function TrackLyricsBlock({
     <LyricsBlock
       lines={lyrics.lines}
       clock={playbackClock}
-      onSeek={controller?.seek}
+      onSeek={
+        controller
+          ? (seconds) => {
+              const line = lyrics.lines.find((item) => item.start === seconds);
+              if (
+                line &&
+                useLoop.getState().range &&
+                matchMedia('(max-width: 767px)').matches
+              ) {
+                useLoop.setState({
+                  range: loopRange(
+                    line.start,
+                    line.end,
+                    playbackStore.getState().duration,
+                  ),
+                });
+              }
+              controller.seek(seconds);
+            }
+          : undefined
+      }
     />
   );
 }
@@ -151,6 +175,8 @@ export function PracticeBody({
     fake: fakePlayer,
   });
   usePlaybackShortcuts(controller);
+  useListeningTools(controller);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   // The timeline block is on screen once its notes loaded or failed to.
   useTimelineFocus(
@@ -160,9 +186,17 @@ export function PracticeBody({
   const hasLyrics = lyrics !== undefined && lyrics.lines.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
+    <div
+      ref={fullscreenRef}
+      className="practice-fullscreen flex flex-col gap-6 bg-background pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]"
+    >
       {header.hasNotes ? (
         <div ref={timelineRef} className="flex scroll-mt-20 flex-col gap-3">
+          <ListeningActions
+            notes={notes?.notes ?? []}
+            controller={controller}
+            container={fullscreenRef}
+          />
           <TrackTimeline
             header={header}
             notes={notes}
@@ -179,7 +213,9 @@ export function PracticeBody({
         <NoVoice />
       )}
       <SharedMomentSeek controller={controller} />
-      <TrackLyricsBlock lyrics={lyrics} controller={controller} />
+      <div className="practice-lyrics">
+        <TrackLyricsBlock lyrics={lyrics} controller={controller} />
+      </div>
       {header.youtubeVideoId === null ? null : (
         <PracticeDock
           controller={controller}

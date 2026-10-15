@@ -26,6 +26,7 @@ import type { PlaybackController } from '../playback/playback-controller';
 import { PLAYBACK_RATES } from '../player/player-port';
 import { usePlaybackState } from '../stores/playback-store';
 import { youtubeWatchUrl } from '../youtube-links';
+import { LoopSetting } from './loop-setting';
 
 /**
  * The dock's Settings menu: speed, mute and "Open on YouTube".
@@ -79,6 +80,7 @@ export function DockSettings({
             ))}
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
+        <LoopSetting />
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem
           checked={muted}

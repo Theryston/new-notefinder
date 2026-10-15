@@ -4,6 +4,8 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { cn } from 'cn';
 import type * as React from 'react';
 
+import { useFullscreenContainer } from '@/hooks/use-fullscreen-container';
+
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
@@ -24,8 +26,9 @@ function PopoverContent({
     PopoverPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
   >) {
+  const container = useFullscreenContainer();
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={container ?? undefined}>
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}

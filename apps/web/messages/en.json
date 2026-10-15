@@ -206,6 +206,13 @@
           "facebook": "Facebook",
           "email": "Email"
         }
+      },
+      "listening": {
+        "loop": "Loop section",
+        "loopStart": "Loop start",
+        "loopEnd": "Loop end",
+        "nextNotes": "Next notes",
+        "fullscreen": "Toggle fullscreen"
       }
     }
   },
