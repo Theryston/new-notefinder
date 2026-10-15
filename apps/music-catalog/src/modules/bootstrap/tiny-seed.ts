@@ -4,9 +4,9 @@ import data from './tiny-seed-data.json' with { type: 'json' };
 
 /**
  * What the `tiny` dataset seeds after the empty MusicBrainz schema is
- * created: a small slice of the real MusicBrainz catalog (ten albums, their
- * artists, Recordings, release groups, releases, media, tracks, release
- * events and genres), stored in `tiny-seed-data.json` with its real MBIDs.
+ * created: a small slice of the real MusicBrainz catalog (ten albums, a
+ * single, their artists, Recordings, release groups, releases, media, tracks,
+ * release events and genres), stored in `tiny-seed-data.json` with its real MBIDs.
  * So a cover URL built from a release MBID loads from the Cover Art Archive,
  * an MBID resolves on musicbrainz.org, and the Lyrics LRCLIB knows for these
  * songs match. Every restore of `tiny` lays down the same rows, without

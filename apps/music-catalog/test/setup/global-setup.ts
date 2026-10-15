@@ -35,6 +35,8 @@ const startContainer = async (): Promise<Database> => {
   try {
     logger.info(`Starting ${POSTGRES_IMAGE} with Testcontainers`);
     const container = await new PostgreSqlContainer(POSTGRES_IMAGE)
+      // The disposable database should not compete with host disk I/O.
+      .withTmpFs({ '/var/lib/postgresql/data': 'rw,size=512m' })
       .withStartupTimeout(STARTUP_TIMEOUT_MS)
       .start();
     return {
