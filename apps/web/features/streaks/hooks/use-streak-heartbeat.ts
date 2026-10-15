@@ -22,12 +22,16 @@ import { browserTimeZone, sendHeartbeat } from '../streak-queries';
 export function useStreakHeartbeat(
   playing: boolean,
   onCompleted: (status: StreakStatus) => void,
+  account?: string,
 ) {
   const queryClient = useQueryClient();
   const heartbeat = useMutation({
     mutationFn: sendHeartbeat,
     onSuccess: (result, body) => {
-      queryClient.setQueryData(streakKeys.status(body.timeZone), result.status);
+      queryClient.setQueryData(
+        streakKeys.status(body.timeZone, account),
+        result.status,
+      );
     },
   });
   const send = useRef(heartbeat.mutateAsync);
@@ -39,6 +43,7 @@ export function useStreakHeartbeat(
   const loop = useRef<HeartbeatLoop | null>(null);
 
   useEffect(() => {
+    let active = true;
     const started = startHeartbeatLoop({
       now: () => performance.now(),
       timeZone: browserTimeZone,
@@ -51,7 +56,7 @@ export function useStreakHeartbeat(
         navigator.sendBeacon(url, data);
       },
       onResult: (result) => {
-        if (result.justCompleted) completed.current(result.status);
+        if (active && result.justCompleted) completed.current(result.status);
       },
     });
     started.setPlaying(playingRef.current);
@@ -64,6 +69,7 @@ export function useStreakHeartbeat(
     document.addEventListener('visibilitychange', flushWhenHidden);
     window.addEventListener('pagehide', flush);
     return () => {
+      active = false;
       document.removeEventListener('visibilitychange', flushWhenHidden);
       window.removeEventListener('pagehide', flush);
       // Leaving the practice page (not the browser) keeps what was played.

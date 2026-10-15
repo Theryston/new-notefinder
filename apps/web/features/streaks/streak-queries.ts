@@ -7,6 +7,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { browserApi } from '@/lib/api/browser';
 
+import { nextPracticeDayDelay } from './practice-day';
 import { streakKeys } from './query-keys';
 
 /** The browser's IANA time zone: the practice day follows it. */
@@ -18,10 +19,10 @@ export function browserTimeZone(): string {
  * Today against the daily target (`GET /v1/me/streak`). It depends on the
  * session, so only a signed-in User asks for it.
  */
-export function streakStatusQueryOptions() {
+export function streakStatusQueryOptions(account?: string) {
   const timeZone = browserTimeZone();
   return queryOptions({
-    queryKey: streakKeys.status(timeZone),
+    queryKey: streakKeys.status(timeZone, account),
     queryFn: ({ signal }) =>
       browserApi('/me/streak', {
         schema: streakStatusSchema,
@@ -30,6 +31,8 @@ export function streakStatusQueryOptions() {
       }),
     // The heartbeats keep it current while the music plays.
     staleTime: 60_000,
+    // Refresh the practice day even when the foreground player is paused.
+    refetchInterval: () => nextPracticeDayDelay(),
   });
 }
 

@@ -92,9 +92,9 @@ function StreakDetails({ status }: { status: StreakStatus }) {
 }
 
 /** The signed-in User's ring: today's practice, counted while `playing`. */
-function UserRing({ playing }: { playing: boolean }) {
+function UserRing({ playing, account }: { playing: boolean; account: string }) {
   const t = useTranslations('streaks');
-  const status = useQuery(streakStatusQueryOptions());
+  const status = useQuery(streakStatusQueryOptions(account));
   const [burst, setBurst] = useState(0);
   const celebrate = useCallback(
     (reached: StreakStatus) => {
@@ -119,7 +119,7 @@ function UserRing({ playing }: { playing: boolean }) {
     },
     [t],
   );
-  useStreakHeartbeat(playing, celebrate);
+  useStreakHeartbeat(playing, celebrate, account);
 
   if (status.data === undefined) {
     return <StreakRingSkeleton />;
@@ -161,7 +161,10 @@ export function StreakRing({ playing }: { playing: boolean }) {
   return (
     <SessionUserBoundary
       render={(user, loading) => {
-        if (user) return <UserRing playing={playing} />;
+        if (user)
+          return (
+            <UserRing key={user.email} playing={playing} account={user.email} />
+          );
         if (loading) return <StreakRingSkeleton />;
         return <VisitorRing />;
       }}
