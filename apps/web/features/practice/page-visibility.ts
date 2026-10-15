@@ -14,3 +14,8 @@ export function watchPageHidden(onHidden: () => void): () => void {
     window.removeEventListener('pagehide', onHidden);
   };
 }
+
+/** Whether the tab is hidden right now. */
+export function isPageHidden(): boolean {
+  return document.visibilityState === 'hidden';
+}

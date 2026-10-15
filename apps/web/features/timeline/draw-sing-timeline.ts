@@ -66,6 +66,8 @@ export type SingTimelineFrame = {
   now: number;
   colors: SingTimelineColors;
   voice: VoiceSource;
+  /** The lanes the last frame drew, so a window of lanes stays put. */
+  previousRange?: LaneRange;
 };
 
 const NOTE_RADIUS = 3;
@@ -151,18 +153,20 @@ function drawVoice(ctx: SingTimelineContext, frame: SingTimelineFrame) {
  * Draws the roll in sing mode (DESIGN.md "Sing mode"): every lane labeled with
  * its note, upcoming and past notes muted, the current note in the primary
  * color, and the user's voice on top. Like the listen mode it draws from
- * scratch on every call.
+ * scratch on every call. It returns the lanes it drew, to hand back as
+ * `previousRange` in the next frame.
  */
 export function drawSingTimeline(
   ctx: SingTimelineContext,
   fullFrame: SingTimelineFrame,
-): void {
+): LaneRange {
   const frame = {
     ...fullFrame,
     range: singLaneRange(
       fullFrame.range,
       fullFrame.height,
       singFocusKey(fullFrame.notes, fullFrame.now),
+      fullFrame.previousRange,
     ),
   };
   ctx.save();
@@ -175,4 +179,5 @@ export function drawSingTimeline(
   drawLaneLabels(ctx, frame);
   drawPlayhead(ctx, frame);
   ctx.restore();
+  return frame.range;
 }

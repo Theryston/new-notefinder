@@ -108,11 +108,17 @@ function useTimelinePainting(
 
     let measured = measure(box, canvas);
     let drawnAt = Number.NaN;
+    let singRange: LaneRange | undefined;
     const paint = () => {
       drawnAt = clock?.now() ?? 0;
       const frame = { ...measured, notes, range, now: drawnAt };
-      if (voice) drawSingTimeline(ctx, { ...frame, voice });
-      else drawListenTimeline(ctx, frame);
+      if (voice) {
+        singRange = drawSingTimeline(ctx, {
+          ...frame,
+          voice,
+          previousRange: singRange,
+        });
+      } else drawListenTimeline(ctx, frame);
     };
     const remeasure = () => {
       measured = measure(box, canvas);

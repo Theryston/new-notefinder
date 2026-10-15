@@ -1,7 +1,7 @@
 import { takeHeadphonesTip } from './headphones-tip';
 import { micProblemOf } from './mic-problem';
 import type { MicSession } from './mic-session';
-import { watchPageHidden } from './page-visibility';
+import { isPageHidden, watchPageHidden } from './page-visibility';
 import { micStore } from './stores/mic-store';
 import { voiceTrail } from './voice-trail';
 
@@ -41,6 +41,13 @@ async function startMic(playback: PlaybackSource): Promise<void> {
     const started = await startMicSession(placeReading(playback));
     if (mine !== generation) {
       started.stop();
+      return;
+    }
+    // The tab can be hidden while the browser asks for permission; a mic that
+    // opens in a hidden tab would stay on with nobody looking.
+    if (isPageHidden()) {
+      started.stop();
+      micStore.setState({ status: 'off', notice: null });
       return;
     }
     session = started;

@@ -78,14 +78,21 @@ describe('detectPitchYin', () => {
   });
 
   it('finds the fundamental when it is missing and only its harmonics sound', () => {
-    // 2nd to 5th harmonics of 220 Hz, no 220 Hz itself: the ear still hears 220.
-    const tone = syntheticTone({
-      frequency: 440,
-      sampleRate: SAMPLE_RATE,
-      length: LENGTH,
-      harmonics: [0.8, 0.6, 0.4],
-    });
-    const reading = detectPitchYin(tone, SAMPLE_RATE);
+    // 880, 1320 and 1760 Hz are the 2nd to 4th harmonics of 440 Hz; nothing
+    // sounds at 440 Hz itself, but the waveform still repeats 440 times a second.
+    const parts = [880, 1320, 1760].map((frequency) =>
+      syntheticTone({
+        frequency,
+        sampleRate: SAMPLE_RATE,
+        length: LENGTH,
+        amplitude: 0.2,
+      }),
+    );
+    const tone = parts[0]?.map(
+      (sample, index) =>
+        sample + (parts[1]?.[index] ?? 0) + (parts[2]?.[index] ?? 0),
+    );
+    const reading = detectPitchYin(tone ?? new Float32Array(), SAMPLE_RATE);
     expect(reading?.frequency).toBeCloseTo(440, 0);
   });
 

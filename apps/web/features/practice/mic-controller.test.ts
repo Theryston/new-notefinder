@@ -29,6 +29,10 @@ function stubPage() {
       document.visibilityState = 'hidden';
       document.dispatchEvent(new Event('visibilitychange'));
     },
+    show: () => {
+      document.visibilityState = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    },
     leave: () => window.dispatchEvent(new Event('pagehide')),
   };
 }
@@ -42,6 +46,31 @@ async function startAndCapture(status: string, time: number) {
   });
   await toggleMic(playbackAt(status, time));
   return (midi: number | null, lag: number) => report(midi, lag);
+}
+
+/** Begins starting the mic and hands back the way to finish it later. */
+async function startPending() {
+  let finish: (session: { stop: () => void }) => void = () => {};
+  let fail: (error: unknown) => void = () => {};
+  sessions.start.mockImplementationOnce(
+    () =>
+      new Promise((resolve, reject) => {
+        finish = resolve;
+        fail = reject;
+      }),
+  );
+  void toggleMic(playbackAt('paused', 0));
+  await vi.waitFor(() => expect(sessions.start).toHaveBeenCalled());
+  return {
+    finish: (session: { stop: () => void }) => finish(session),
+    fail: (error: unknown) => fail(error),
+  };
+}
+
+/** The session that arrived late was stopped and the mic is back to off. */
+async function expectLateSessionReleased() {
+  await vi.waitFor(() => expect(sessions.stop).toHaveBeenCalledOnce());
+  expect(micStore.getState()).toEqual(initialMicState);
 }
 
 describe('the mic controller', () => {
@@ -142,27 +171,16 @@ describe('the mic controller', () => {
 
   describe('leaving while the mic is still starting', () => {
     it('stops the session that arrives late instead of leaving it recording', async () => {
-      let finish: (session: { stop: () => void }) => void = () => {};
-      sessions.start.mockImplementation(
-        () => new Promise((resolve) => (finish = resolve)),
-      );
-      void toggleMic(playbackAt('paused', 0));
-      await vi.waitFor(() => expect(sessions.start).toHaveBeenCalled());
+      const { finish } = await startPending();
 
       stopMic();
       finish({ stop: sessions.stop });
 
-      await vi.waitFor(() => expect(sessions.stop).toHaveBeenCalledOnce());
-      expect(micStore.getState()).toEqual(initialMicState);
+      await expectLateSessionReleased();
     });
 
     it('does not show an error that arrives late', async () => {
-      let fail: (error: unknown) => void = () => {};
-      sessions.start.mockImplementation(
-        () => new Promise((_resolve, reject) => (fail = reject)),
-      );
-      void toggleMic(playbackAt('paused', 0));
-      await vi.waitFor(() => expect(sessions.start).toHaveBeenCalled());
+      const { fail } = await startPending();
 
       stopMic();
       fail({ name: 'NotAllowedError' });
@@ -173,13 +191,8 @@ describe('the mic controller', () => {
     });
 
     it('lets a new start work after the cancelled one', async () => {
-      let finish: (session: { stop: () => void }) => void = () => {};
-      sessions.start.mockImplementationOnce(
-        () => new Promise((resolve) => (finish = resolve)),
-      );
+      const { finish } = await startPending();
       sessions.start.mockResolvedValueOnce({ stop: sessions.stop });
-      void toggleMic(playbackAt('paused', 0));
-      await vi.waitFor(() => expect(sessions.start).toHaveBeenCalled());
       stopMic();
 
       await toggleMic(playbackAt('paused', 0));
@@ -206,10 +219,21 @@ describe('the mic controller', () => {
       expect(sessions.stop).toHaveBeenCalledOnce();
     });
 
+    it('releases a mic that finishes starting after the tab was hidden', async () => {
+      const { finish } = await startPending();
+
+      // The user switched tabs at the permission prompt.
+      page.hide();
+      finish({ stop: sessions.stop });
+
+      await expectLateSessionReleased();
+    });
+
     it('keeps the mic when the tab becomes visible again', async () => {
       sessions.start.mockResolvedValue({ stop: sessions.stop });
       await toggleMic(playbackAt('playing', 0));
       page.hide();
+      page.show();
       sessions.stop.mockClear();
       await toggleMic(playbackAt('playing', 0));
       expect(micStore.getState().status).toBe('on');

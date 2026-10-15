@@ -61,4 +61,51 @@ describe('singLaneRange', () => {
   it('always shows at least one lane', () => {
     expect(laneCount(singLaneRange({ low: 36, high: 84 }, 5, 60))).toBe(1);
   });
+
+  describe('with the window it had before', () => {
+    const range = { low: 36, high: 84 };
+    const height = 12 * 11;
+    const window = { low: 55, high: 65 };
+
+    it('does not move while the focus stays inside it', () => {
+      for (const focus of [57, 58, 60, 62, 63]) {
+        expect(singLaneRange(range, height, focus, window)).toEqual(window);
+      }
+    });
+
+    it('does not move on a run of notes inside the window', () => {
+      let shown = window;
+      for (const focus of [60, 62, 59, 63, 58, 61, 57]) {
+        shown = singLaneRange(range, height, focus, shown);
+      }
+      expect(shown).toEqual(window);
+    });
+
+    it('moves, centered on the focus, when it comes within two lanes of an edge', () => {
+      expect(singLaneRange(range, height, 64, window)).toEqual({
+        low: 59,
+        high: 69,
+      });
+      expect(singLaneRange(range, height, 56, window)).toEqual({
+        low: 51,
+        high: 61,
+      });
+    });
+
+    it('moves when the focus left the window altogether', () => {
+      expect(singLaneRange(range, height, 80, window)).toEqual({
+        low: 74,
+        high: 84,
+      });
+    });
+
+    it('stays put without a focus', () => {
+      expect(singLaneRange(range, height, null, window)).toEqual(window);
+    });
+
+    it('ignores a previous window that no longer fits (the box was resized)', () => {
+      const shown = singLaneRange(range, 12 * 7, 60, window);
+      expect(shown).toEqual({ low: 57, high: 63 });
+    });
+  });
 });

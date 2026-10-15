@@ -31,18 +31,42 @@ export function singFocusKey(
   return focus ? keyOf(focus) : null;
 }
 
+/** Lanes of room the focus keeps from the edge of the window before it moves. */
+const EDGE_MARGIN = 2;
+
+function isUsable(previous: LaneRange, range: LaneRange, capacity: number) {
+  return (
+    laneCount(previous) === capacity &&
+    previous.low >= range.low &&
+    previous.high <= range.high
+  );
+}
+
 /**
  * The lanes sing mode draws. A Track whose range is too wide for every lane
- * to be {@link MIN_SING_LANE_PX} tall shows a window of lanes around `focus`
- * (kept inside the Track's range) instead of lanes too thin to label.
+ * to be {@link MIN_SING_LANE_PX} tall shows a window of lanes instead of lanes
+ * too thin to label. The window stays where it was (`previous`) while the
+ * focus is more than {@link EDGE_MARGIN} lanes from its edges, so lanes and
+ * labels do not jump on every note; when the focus gets close to an edge it
+ * moves to center on the focus, inside the Track's range.
  */
 export function singLaneRange(
   range: LaneRange,
   height: number,
   focus: number | null,
+  previous?: LaneRange,
 ): LaneRange {
   const capacity = Math.max(1, Math.floor(height / MIN_SING_LANE_PX));
   if (laneCount(range) <= capacity) return range;
+  if (previous && isUsable(previous, range, capacity)) {
+    const margin = Math.min(EDGE_MARGIN, Math.floor((capacity - 1) / 2));
+    if (
+      focus === null ||
+      (focus >= previous.low + margin && focus <= previous.high - margin)
+    ) {
+      return previous;
+    }
+  }
   const center = focus ?? Math.round((range.low + range.high) / 2);
   const low = Math.min(
     Math.max(Math.round(center - (capacity - 1) / 2), range.low),

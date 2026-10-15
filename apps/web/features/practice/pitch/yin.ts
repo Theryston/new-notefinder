@@ -64,8 +64,9 @@ export function isSilent(samples: Float32Array): boolean {
 }
 
 /**
- * The classic YIN detector, the fallback engine (de Cheveigné and Kawahara, 2002): the voice's
- * fundamental in one window of mic samples, or null for silence and noise.
+ * The classic YIN detector, the fallback engine (de Cheveigné and Kawahara,
+ * 2002): the voice's fundamental in one window of mic samples, or null for
+ * silence and noise.
  * Harmonics do not fool it into reporting an octave up, which is what a
  * singer's rich voice would do to a plain autocorrelation.
  */

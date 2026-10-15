@@ -82,6 +82,16 @@ async function openTrack(
 const dock = (page: Page, label: string) =>
   page.getByRole('region', { name: label });
 
+/** The notice's box does not overlap the timeline's box. */
+async function expectNoticeBelowTimeline(page: Page) {
+  const noticeBox = await page.getByTestId('mic-notice').boundingBox();
+  const timelineBox = await page.locator('canvas').boundingBox();
+  expect(noticeBox).not.toBeNull();
+  expect(timelineBox).not.toBeNull();
+  const timelineBottom = (timelineBox?.y ?? 0) + (timelineBox?.height ?? 0);
+  expect(noticeBox?.y ?? 0).toBeGreaterThanOrEqual(timelineBottom);
+}
+
 for (const locale of ['en', 'pt-BR'] as const) {
   const { mic } = catalogs[locale].practice;
   const { dock: dockMessages } = catalogs[locale].tracks.practice;
@@ -206,17 +216,13 @@ for (const locale of ['en', 'pt-BR'] as const) {
         const notice = page.getByTestId('mic-notice');
         await expect(notice).toBeVisible();
 
-        // Scrolled to the end, where the dock and its notice sit over the page.
+        // Where the page opens, and then scrolled to its end: the notice is a
+        // row of the dock, never over the timeline.
+        await expectNoticeBelowTimeline(page);
         await page.evaluate(() =>
           window.scrollTo(0, document.documentElement.scrollHeight),
         );
-        const noticeBox = await notice.boundingBox();
-        const timelineBox = await page.locator('canvas').boundingBox();
-        expect(noticeBox).not.toBeNull();
-        expect(timelineBox).not.toBeNull();
-        const timelineBottom =
-          (timelineBox?.y ?? 0) + (timelineBox?.height ?? 0);
-        expect(noticeBox?.y ?? 0).toBeGreaterThanOrEqual(timelineBottom);
+        await expectNoticeBelowTimeline(page);
       });
     });
   });
