@@ -58,6 +58,11 @@ function interpolate(diff: Float32Array, lag: number): number {
   return lag + (before - after) / (2 * curve);
 }
 
+/** Whether a window is too quiet to hold a voice. */
+export function isSilent(samples: Float32Array): boolean {
+  return rootMeanSquare(samples) < SILENCE_RMS;
+}
+
 /**
  * The classic YIN detector (de Cheveigné and Kawahara, 2002): the voice's
  * fundamental in one window of mic samples, or null for silence and noise.
@@ -68,7 +73,7 @@ export function detectPitchYin(
   samples: Float32Array,
   sampleRate: number,
 ): PitchReading | null {
-  if (rootMeanSquare(samples) < SILENCE_RMS) return null;
+  if (isSilent(samples)) return null;
   const minLag = Math.floor(sampleRate / MAX_FREQUENCY);
   const maxLag = Math.min(
     Math.ceil(sampleRate / MIN_FREQUENCY),

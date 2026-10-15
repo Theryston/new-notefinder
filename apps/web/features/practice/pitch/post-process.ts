@@ -6,7 +6,7 @@ export function frequencyToMidi(frequency: number): number {
 }
 
 /** Readings less sure than this are treated as not singing. */
-const MIN_CONFIDENCE = 0.85;
+const DEFAULT_MIN_CONFIDENCE = 0.85;
 
 /** How many voiced readings the median looks at. */
 const MEDIAN_SIZE = 5;
@@ -40,9 +40,11 @@ export class PitchSmoother {
   private unvoiced = 0;
   private jumpRun = 0;
 
+  constructor(private readonly minConfidence = DEFAULT_MIN_CONFIDENCE) {}
+
   /** The smoothed MIDI number (fractional), or null where nothing is voiced. */
   push(reading: PitchReading | null): number | null {
-    if (!reading || reading.confidence < MIN_CONFIDENCE) {
+    if (!reading || reading.confidence < this.minConfidence) {
       this.unvoiced += 1;
       if (this.unvoiced >= FORGET_AFTER) this.history = [];
       return null;

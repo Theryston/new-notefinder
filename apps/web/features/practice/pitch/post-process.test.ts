@@ -93,4 +93,10 @@ describe('PitchSmoother', () => {
     // The window holds the last five (1 to 5 semitones up): the middle is 3.
     expect(out).toBeCloseTo(69 + 3);
   });
+
+  it('takes a looser confidence gate when asked to', () => {
+    const reading = { frequency: A4, confidence: 0.6 };
+    expect(new PitchSmoother().push(reading)).toBeNull();
+    expect(new PitchSmoother(0.5).push(reading)).toBeCloseTo(69);
+  });
 });

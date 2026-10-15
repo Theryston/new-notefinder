@@ -86,12 +86,21 @@ for (const locale of ['en', 'pt-BR'] as const) {
       await expect(play).toBeEnabled();
       expect(await voicePixels(page)).toBe(0);
 
+      const debug: string[] = [];
+      page.on('console', (message) => debug.push(message.text()));
       await page.getByRole('button', { name: messages.mic.on }).click();
       await expect(
         page.getByRole('button', { name: messages.mic.off }),
       ).toHaveAttribute('aria-pressed', 'true');
       await play.click();
 
+      // The ML model takes over from the classic detector once it has loaded,
+      // and the note it reads is still the fixture's A4.
+      await expect
+        .poll(() => debug.some((text) => text.includes('ML model')), {
+          timeout: 20_000,
+        })
+        .toBe(true);
       await expect(page.getByTestId('detected-note')).toHaveText('A4');
       await expect(page.getByTestId('target-note')).toHaveText('A4');
       await expect.poll(() => voicePixels(page)).toBeGreaterThan(40);

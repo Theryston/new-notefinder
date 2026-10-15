@@ -1,5 +1,6 @@
 import { latencyCompensation } from './latency';
-import { PitchPipeline } from './pitch/pitch-pipeline';
+import { loadCrepeModel } from './pitch/crepe-model';
+import { createPitchEngine } from './pitch/pitch-engine';
 
 /** The audio thread's capture module; the bundler serves it as a file. */
 const WORKLET_URL = new URL('./pitch/capture-worklet.js', import.meta.url);
@@ -17,6 +18,11 @@ const MIC_CONSTRAINTS: MediaStreamConstraints = {
   },
 };
 
+function debugLog(message: string): void {
+  // biome-ignore lint/suspicious/noConsole: which engine runs is meant to show in debug logs only.
+  console.debug(`[pitch] ${message}`);
+}
+
 export type MicSession = { stop: () => void };
 
 /** Gets a reading and how long before "now" on the Track it was sung. */
@@ -24,8 +30,9 @@ export type OnReading = (midi: number | null, lagSeconds: number) => void;
 
 /**
  * Opens the mic and reports the sung note as it changes. Pitch is found by
- * the classic YIN detector ({@link PitchPipeline}); no model is shipped yet,
- * so this is the only engine, and it says so in the debug log only.
+ * the CREPE model with the classic YIN detector as fallback
+ * ({@link createPitchEngine}); the model and its runtime load here, so only
+ * when the mic is turned on.
  */
 export async function startMicSession(
   onReading: OnReading,
@@ -43,31 +50,35 @@ export async function startMicSession(
     await context.close();
     throw error;
   }
-  const pipeline = new PitchPipeline(context.sampleRate);
   // `latency` is in the spec's track settings but not yet in TypeScript's DOM types.
   const settings: (MediaTrackSettings & { latency?: number }) | undefined =
     stream.getAudioTracks()[0]?.getSettings();
   const inputLatency = settings?.latency;
   const node = new AudioWorkletNode(context, 'pitch-capture');
-  node.port.onmessage = (event: MessageEvent<Float32Array>) => {
-    const lag = latencyCompensation(
-      {
-        baseLatency: context.baseLatency,
-        outputLatency: context.outputLatency,
-        inputLatency,
-      },
-      pipeline.windowSeconds,
-    );
-    for (const reading of pipeline.feed(event.data)) {
-      onReading(reading.midi, lag);
-    }
-  };
+  const engine = createPitchEngine({
+    sampleRate: context.sampleRate,
+    loadModel: loadCrepeModel,
+    onReading: (midi, windowSeconds) =>
+      onReading(
+        midi,
+        latencyCompensation(
+          {
+            baseLatency: context.baseLatency,
+            outputLatency: context.outputLatency,
+            inputLatency,
+          },
+          windowSeconds,
+        ),
+      ),
+    log: debugLog,
+  });
+  node.port.onmessage = (event: MessageEvent<Float32Array>) =>
+    engine.feed(event.data);
   context.createMediaStreamSource(stream).connect(node);
-  // biome-ignore lint/suspicious/noConsole: which engine runs is meant to show in debug logs only.
-  console.debug('[pitch] engine: classic YIN detector');
 
   return {
     stop: () => {
+      engine.stop();
       node.port.onmessage = null;
       node.disconnect();
       for (const track of stream.getTracks()) track.stop();
