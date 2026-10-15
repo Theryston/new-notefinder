@@ -211,18 +211,34 @@ test.describe('track playback dock', () => {
     expect(box.height).toBe(100);
   });
 
-  test('lays the dock out on one row on a desktop', async ({ page }) => {
+  test('lays the dock out for a desktop: play and progress on one row, the controls under them on the right', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await openTrack(page, 'clx-playback-desktop');
     const play = await readyToPlay(page);
 
     const video = (await centerOf(page.getByTestId('dock-video'))).box;
     const button = (await centerOf(play)).box;
+    const bar = (await centerOf(progress(page))).box;
+    const settings = (
+      await centerOf(page.getByRole('button', { name: dock.settings }))
+    ).box;
+    const dockBox = (
+      await centerOf(page.getByRole('region', { name: dock.label }))
+    ).box;
 
-    expect(
-      Math.abs(video.y + video.height / 2 - (button.y + button.height / 2)),
-    ).toBeLessThan(4);
     expect(video.x).toBeLessThan(button.x);
+    expect(
+      Math.abs(button.y + button.height / 2 - (bar.y + bar.height / 2)),
+    ).toBeLessThan(4);
+    expect(settings.y).toBeGreaterThanOrEqual(button.y + button.height);
+    // Under the progress track and right-aligned: the last control ends at
+    // the dock's padding.
+    expect(settings.x).toBeGreaterThan(bar.x);
+    expect(
+      dockBox.x + dockBox.width - (settings.x + settings.width),
+    ).toBeLessThan(16);
   });
 
   test('lays the dock out for a phone: play and progress on top, the video beside the controls', async ({
