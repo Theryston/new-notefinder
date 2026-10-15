@@ -4,7 +4,10 @@ import { getTranslations } from 'next-intl/server';
 
 import { TrackProcessingSection } from '@/features/tracks/components/track-processing-section';
 import { practiceMetadata } from '@/features/tracks/practice-metadata';
-import { getInitialPractice } from '@/features/tracks/practice-queries';
+import {
+  getInitialPractice,
+  getInitialPracticeWithLyrics,
+} from '@/features/tracks/practice-queries';
 import { getTrackProcessingResult } from '@/features/tracks/queries';
 import { getServerEnv } from '@/lib/env/server';
 import { localeAlternates } from '@/lib/i18n/metadata';
@@ -73,7 +76,7 @@ export default async function TrackRoutePage({
   }
   const initialPractice =
     result.state.processing?.status === 'COMPLETED'
-      ? await getInitialPractice(result.state.track.id)
+      ? await getInitialPracticeWithLyrics(result.state.track.id)
       : undefined;
   return (
     <TrackProcessingSection
