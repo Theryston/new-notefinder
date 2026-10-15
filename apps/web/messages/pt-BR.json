@@ -187,6 +187,22 @@
       }
     }
   },
+  "practice": {
+    "mic": {
+      "on": "Ligar o microfone",
+      "off": "Desligar o microfone",
+      "starting": "Ligando o microfone",
+      "headphonesTip": "Dica: use fones de ouvido, para a música não vazar no microfone e atrapalhar a leitura.",
+      "denied": "O microfone está bloqueado. Libere pelo ícone de cadeado ao lado da barra de endereço e tente de novo.",
+      "unavailable": "Não conseguimos usar um microfone. Confira se há um conectado e se nenhum outro app o está usando.",
+      "dismiss": "Dispensar"
+    },
+    "sing": {
+      "target": "Cante",
+      "you": "Você",
+      "none": "–"
+    }
+  },
   "streaks": {
     "ring": "Prática diária: {progress, number, ::percent} da meta de hoje",
     "inviteRing": "Sequência de prática diária",

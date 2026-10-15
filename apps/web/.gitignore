@@ -40,3 +40,6 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ONNX Runtime Web's WASM, copied by scripts/copy-ort-wasm.ts
+/public/ort

@@ -12,7 +12,7 @@ import { useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
 import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
-import { NoteTimeline } from '@/features/timeline/components/note-timeline';
+import { SingTimeline } from '@/features/practice/components/sing-timeline';
 
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
@@ -20,6 +20,7 @@ import { useTimelineFocus } from '../hooks/use-shared-link';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { playbackStore } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
 import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
@@ -79,8 +80,9 @@ function TrackTimeline({
     : t('timeline.labelEmpty', { title: header.title });
 
   return (
-    <NoteTimeline
+    <SingTimeline
       notes={shifted}
+      playback={playbackStore}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}

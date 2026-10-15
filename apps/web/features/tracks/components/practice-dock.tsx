@@ -7,11 +7,13 @@ import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DockMicButton } from '@/features/practice/components/dock-mic-button';
+import { DockMicNotice } from '@/features/practice/components/dock-mic-notice';
 import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-skeleton';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
-import { usePlaybackState } from '../stores/playback-store';
+import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
 import { TransposeStepper } from './transpose-stepper';
@@ -124,10 +126,12 @@ export function PracticeDock({
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
         <TransposeStepper trackKey={trackKey} />
         <div className="flex items-center gap-1">
+          <DockMicButton playback={playbackStore} />
           <StreakRing playing={status === 'playing'} />
           <DockSettings controller={controller} videoId={videoId} />
         </div>
       </div>
+      <DockMicNotice />
     </section>
   );
 }
