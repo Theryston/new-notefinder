@@ -36,8 +36,12 @@ devices that cannot load or keep up with the model.
   run). Which engine runs shows in debug logs only.
 - The voice line is placed on the Track's time minus the browser-reported
   output, base and input latency, plus half the active engine's window
-  (`latencyCompensation`). A per-device calibration offset comes with the
-  calibration ticket.
+  (`latencyCompensation`). The AudioContext's `outputLatency` stands in for
+  YouTube's own output path, which the page cannot measure, so it is an
+  estimate; a per-device calibration offset comes with the calibration ticket.
+- The mic is released as soon as the user turns it off, leaves the page or
+  hides the tab, even if it was still starting: a start that finishes late is
+  stopped at once.
 
 ## Consequences
 

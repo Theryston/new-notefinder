@@ -7,6 +7,7 @@ import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DockMicButton } from '@/features/practice/components/dock-mic-button';
+import { DockMicNotice } from '@/features/practice/components/dock-mic-notice';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
@@ -108,6 +109,7 @@ export function PracticeDock({
         <DockMicButton playback={playbackStore} />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
+      <DockMicNotice />
     </section>
   );
 }

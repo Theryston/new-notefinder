@@ -7,6 +7,13 @@ import { webServerEnv } from './e2e/web-server-env';
 const port = 3000;
 const baseURL = `http://localhost:${port}`;
 const isCI = Boolean(process.env.CI);
+const micSpec = /track-mic\.spec\.ts$/;
+// Escape hatch for machines with a preinstalled Chromium that doesn't match
+// this Playwright version (and can't download one). CI leaves it unset and
+// uses `playwright install`.
+const launchOptions = {
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+};
 const fakeVoice = fileURLToPath(
   new URL('./e2e/fixtures/a4-440hz.wav', import.meta.url),
 );
@@ -34,16 +41,20 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // The mic specs get their own project below: a fake microphone that is
+      // granted without a prompt must not reach any other spec.
+      testIgnore: micSpec,
+      use: { ...devices['Desktop Chrome'], launchOptions },
+    },
+    {
+      name: 'chromium-mic',
+      testMatch: micSpec,
       use: {
         ...devices['Desktop Chrome'],
-        // Escape hatch for machines with a preinstalled Chromium that doesn't
-        // match this Playwright version (and can't download one). CI leaves
-        // it unset and uses `playwright install`.
         launchOptions: {
-          executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-          // A fake microphone that "sings" a known A4 on a loop, for the
-          // sing mode specs (track-mic.spec.ts). The fake UI grants the
-          // permission without a prompt.
+          ...launchOptions,
+          // A fake microphone that "sings" a known A4 on a loop. The fake UI
+          // grants the permission without a prompt.
           args: [
             '--use-fake-device-for-media-stream',
             '--use-fake-ui-for-media-stream',

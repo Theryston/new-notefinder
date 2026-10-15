@@ -76,4 +76,33 @@ describe('detectPitchYin', () => {
     });
     expect(detectPitchYin(tone, 44_100)?.frequency).toBeCloseTo(300, 0);
   });
+
+  it('finds the fundamental when it is missing and only its harmonics sound', () => {
+    // 2nd to 5th harmonics of 220 Hz, no 220 Hz itself: the ear still hears 220.
+    const tone = syntheticTone({
+      frequency: 440,
+      sampleRate: SAMPLE_RATE,
+      length: LENGTH,
+      harmonics: [0.8, 0.6, 0.4],
+    });
+    const reading = detectPitchYin(tone, SAMPLE_RATE);
+    expect(reading?.frequency).toBeCloseTo(440, 0);
+  });
+
+  it('finds a tone mixed with noise', () => {
+    let seed = 7;
+    const tone = syntheticTone({
+      frequency: 247,
+      sampleRate: SAMPLE_RATE,
+      length: LENGTH,
+      harmonics: [0.4],
+    });
+    const noisy = tone.map((sample) => {
+      seed = (seed * 16807) % 2147483647;
+      return sample + (seed / 2147483647 - 0.5) * 0.2;
+    });
+    const reading = detectPitchYin(noisy, SAMPLE_RATE);
+    const cents = 1200 * Math.log2((reading?.frequency ?? 0) / 247);
+    expect(Math.abs(cents)).toBeLessThan(10);
+  });
 });

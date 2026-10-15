@@ -158,19 +158,8 @@
         "title": "We found no voice in this recording",
         "description": "This looks like an instrumental, so there are no vocal notes to show."
       },
-      "mic": {
-        "on": "Turn the microphone on",
-        "off": "Turn the microphone off",
-        "starting": "Starting the microphone",
-        "headphonesTip": "Tip: wear headphones, so the music doesn't leak into your microphone and spoil the reading.",
-        "denied": "The microphone is blocked. Allow it from the lock icon next to the address bar, then try again.",
-        "unavailable": "We couldn't use a microphone. Check that one is connected and that no other app is using it.",
-        "dismiss": "Dismiss"
-      },
-      "sing": {
-        "target": "Sing",
-        "you": "You",
-        "none": "–"
+      "lyrics": {
+        "title": "Lyrics"
       },
       "favorite": {
         "add": "Add to favorites",
@@ -181,6 +170,22 @@
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
       "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
+    }
+  },
+  "practice": {
+    "mic": {
+      "on": "Turn the microphone on",
+      "off": "Turn the microphone off",
+      "starting": "Starting the microphone",
+      "headphonesTip": "Tip: wear headphones, so the music doesn't leak into your microphone and spoil the reading.",
+      "denied": "The microphone is blocked. Allow it from the lock icon next to the address bar, then try again.",
+      "unavailable": "We couldn't use a microphone. Check that one is connected and that no other app is using it.",
+      "dismiss": "Dismiss"
+    },
+    "sing": {
+      "target": "Sing",
+      "you": "You",
+      "none": "–"
     }
   },
   "header": {

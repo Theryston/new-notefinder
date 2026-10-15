@@ -94,4 +94,35 @@ describe('VoiceTrail', () => {
     expect(trail.segments(0, 5)).toEqual([]);
     expect(trail.latest()).toBeNull();
   });
+
+  it('ends the stretch at the first reading with no pitch, even a hop later', () => {
+    const trail = new VoiceTrail();
+    // One 32 ms hop apart: well inside the gap threshold.
+    trail.push(1, 60);
+    trail.push(1.032, 60);
+    trail.push(1.064, null);
+    trail.push(1.096, 62);
+    trail.push(1.128, 62);
+    expect(trail.segments(0, 5)).toEqual([
+      [
+        { time: 1, midi: 60 },
+        { time: 1.032, midi: 60 },
+      ],
+      [
+        { time: 1.096, midi: 62 },
+        { time: 1.128, midi: 62 },
+      ],
+    ]);
+  });
+
+  it('does not leave a gap marker before the first voice or double ones', () => {
+    const trail = new VoiceTrail();
+    trail.push(0.5, null);
+    trail.push(1, 60);
+    trail.push(1.032, null);
+    trail.push(1.064, null);
+    trail.push(1.096, null);
+    trail.push(1.128, 60);
+    expect(trail.segments(0, 5)).toHaveLength(2);
+  });
 });

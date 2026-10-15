@@ -1,7 +1,6 @@
 import type { TrackNote } from '@notefinder/contracts';
 
 import { noteName } from '@/lib/music-notes';
-
 import {
   drawBeatLines,
   drawInRoll,
@@ -14,6 +13,7 @@ import {
   type TimelineContext,
   visibleNoteBoxes,
 } from './draw-listen-timeline';
+import { singFocusKey, singLaneRange } from './sing-lanes';
 import {
   type LaneRange,
   laneHeight,
@@ -71,8 +71,6 @@ export type SingTimelineFrame = {
 const NOTE_RADIUS = 3;
 const NOTE_FONT_SIZE = 10;
 const VOICE_WIDTH = 2;
-/** Lanes shorter than this have no room for their label. */
-const MIN_LABELED_LANE = 6;
 
 /** Every lane names its note on the left, in place of listen mode's keyboard. */
 function drawLaneLabels(ctx: SingTimelineContext, frame: SingTimelineFrame) {
@@ -80,16 +78,14 @@ function drawLaneLabels(ctx: SingTimelineContext, frame: SingTimelineFrame) {
   const lane = laneHeight(range, height);
   ctx.fillStyle = colors.key;
   ctx.fillRect(0, 0, KEYBOARD_WIDTH, height);
-  if (lane >= MIN_LABELED_LANE) {
-    const size = Math.min(NOTE_FONT_SIZE, Math.floor(lane) - 1);
-    ctx.fillStyle = colors.keyLabel;
-    ctx.font = `500 ${size}px ${colors.fontFamily}`;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    for (let midi = range.low; midi <= range.high; midi += 1) {
-      const top = laneTop(midi, range, height);
-      ctx.fillText(noteName(midi), KEYBOARD_WIDTH - 5, top + lane / 2);
-    }
+  ctx.fillStyle = colors.keyLabel;
+  ctx.font = `500 ${NOTE_FONT_SIZE}px ${colors.fontFamily}`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  // Every lane is at least MIN_SING_LANE_PX tall (see singLaneRange).
+  for (let midi = range.low; midi <= range.high; midi += 1) {
+    const top = laneTop(midi, range, height);
+    ctx.fillText(noteName(midi), KEYBOARD_WIDTH - 5, top + lane / 2);
   }
   ctx.fillStyle = colors.border;
   ctx.fillRect(KEYBOARD_WIDTH - 1, 0, 1, height);
@@ -159,8 +155,16 @@ function drawVoice(ctx: SingTimelineContext, frame: SingTimelineFrame) {
  */
 export function drawSingTimeline(
   ctx: SingTimelineContext,
-  frame: SingTimelineFrame,
+  fullFrame: SingTimelineFrame,
 ): void {
+  const frame = {
+    ...fullFrame,
+    range: singLaneRange(
+      fullFrame.range,
+      fullFrame.height,
+      singFocusKey(fullFrame.notes, fullFrame.now),
+    ),
+  };
   ctx.save();
   drawLanes(ctx, frame);
   drawBeatLines(ctx, frame);

@@ -1,22 +1,28 @@
 'use client';
 
-import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
+import type {
+  TrackDetail,
+  TrackLyrics,
+  TrackNotes,
+} from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { SingReadout } from '@/features/practice/components/sing-readout';
-import { useSingVoice } from '@/features/practice/components/sing-voice';
-import { NoteTimeline } from '@/features/timeline/components/note-timeline';
+import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
+import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
+import { SingTimeline } from '@/features/practice/components/sing-timeline';
 
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
+import { useTimelineFocus } from '../hooks/use-shared-link';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
 import { playbackStore } from '../stores/playback-store';
 import { PracticeDock } from './practice-dock';
+import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
@@ -46,7 +52,6 @@ function TrackTimeline({
   controller: PlaybackController | null;
 }) {
   const t = useTranslations('tracks.practice');
-  const voice = useSingVoice();
   if (notes === undefined) {
     return failed ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -67,19 +72,14 @@ function TrackTimeline({
     : t('timeline.labelEmpty', { title: header.title });
 
   return (
-    <div className="flex flex-col gap-2">
-      {voice ? (
-        <SingReadout notes={notes.notes} playback={playbackStore} />
-      ) : null}
-      <NoteTimeline
-        notes={notes.notes}
-        label={label}
-        clock={controller ? playbackClock : undefined}
-        onScrub={controller?.seek}
-        voice={voice}
-        className={TIMELINE_BOX_CLASS}
-      />
-    </div>
+    <SingTimeline
+      notes={notes.notes}
+      playback={playbackStore}
+      label={label}
+      clock={controller ? playbackClock : undefined}
+      onScrub={controller?.seek}
+      className={TIMELINE_BOX_CLASS}
+    />
   );
 }
 
@@ -91,19 +91,46 @@ function durationSecondsOf(header: TrackDetail, notes: TrackNotes | undefined) {
 }
 
 /**
+ * The Timed lyrics: the karaoke line goes under the timeline, the whole block
+ * below it. Both follow the player and a click on a line seeks there. Nothing
+ * shows for a Track without lyrics.
+ */
+function TrackLyricsBlock({
+  lyrics,
+  controller,
+}: {
+  lyrics: TrackLyrics | undefined;
+  controller: PlaybackController | null;
+}) {
+  if (lyrics === undefined || lyrics.lines.length === 0) return null;
+  return (
+    <LyricsBlock
+      lines={lyrics.lines}
+      clock={playbackClock}
+      onSeek={controller?.seek}
+    />
+  );
+}
+
+/**
  * The practice view below the title row: the note timeline (or the "no voice"
- * message for a Track without notes) and the dock that plays the Track's
- * video. The timeline follows the dock's player and can be dragged to seek;
- * the page leaves room under it for the dock, which floats.
+ * message for a Track without notes), the lyrics and the dock that plays the
+ * Track's video. The timeline follows the dock's player and can be dragged to
+ * seek; the page leaves room under it for the dock, which floats.
  */
 export function PracticeBody({
   header,
   notes,
+  lyrics,
+  lyricsLoading,
   failed,
   fakePlayer,
 }: {
   header: TrackDetail;
   notes: TrackNotes | undefined;
+  lyrics: TrackLyrics | undefined;
+  /** The lyrics are still being read: their slot is held. */
+  lyricsLoading: boolean;
   failed: boolean;
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
@@ -116,19 +143,35 @@ export function PracticeBody({
     fake: fakePlayer,
   });
   usePlaybackShortcuts(controller);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  // The timeline block is on screen once its notes loaded or failed to.
+  useTimelineFocus(
+    timelineRef,
+    header.hasNotes && (notes !== undefined || failed),
+  );
+  const hasLyrics = lyrics !== undefined && lyrics.lines.length > 0;
 
   return (
     <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
       {header.hasNotes ? (
-        <TrackTimeline
-          header={header}
-          notes={notes}
-          failed={failed}
-          controller={controller}
-        />
+        <div ref={timelineRef} className="flex scroll-mt-20 flex-col gap-3">
+          <TrackTimeline
+            header={header}
+            notes={notes}
+            failed={failed}
+            controller={controller}
+          />
+          {hasLyrics ? (
+            <KaraokeLine lines={lyrics.lines} clock={playbackClock} />
+          ) : (
+            lyricsLoading && <div aria-hidden="true" className="min-h-8" />
+          )}
+        </div>
       ) : (
         <NoVoice />
       )}
+      <SharedMomentSeek controller={controller} />
+      <TrackLyricsBlock lyrics={lyrics} controller={controller} />
       {header.youtubeVideoId === null ? null : (
         <PracticeDock
           controller={controller}

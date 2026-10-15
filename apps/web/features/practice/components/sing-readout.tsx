@@ -21,7 +21,7 @@ export function SingReadout({
   notes: readonly TrackNote[];
   playback: PlaybackSource;
 }) {
-  const t = useTranslations('tracks.practice.sing');
+  const t = useTranslations('practice.sing');
   const none = t('none');
   const target = useRef<HTMLSpanElement>(null);
   const detected = useRef<HTMLSpanElement>(null);

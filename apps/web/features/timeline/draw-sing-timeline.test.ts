@@ -185,9 +185,31 @@ describe('drawSingTimeline', () => {
     expect(rec.caps()).toBe('round');
   });
 
-  it('skips the lane labels when lanes are too thin to read', () => {
+  it('labels every lane it draws, even for a Track with a very wide range', () => {
+    const wide = [sung('C', 2, 0, 1), sung('C', 4, 2, 4), sung('C', 6, 5, 6)];
     const { ctx, labels } = recordingContext();
-    drawSingTimeline(ctx, { ...frame(0), height: 60 });
-    expect(labels.filter((label) => label.startsWith('500'))).toEqual([]);
+    drawSingTimeline(ctx, {
+      ...frame(3),
+      notes: wide,
+      range: laneRangeOf(wide),
+      height: 224,
+    });
+    const laneLabels = labels.filter((label) => label.startsWith('500'));
+    // 224px at 12px a lane: 18 labeled lanes, not 50 unreadable ones.
+    expect(laneLabels).toHaveLength(18);
+    expect(laneLabels).toContain('500:C4');
+  });
+
+  it('keeps the lane of the note being sung in view', () => {
+    const wide = [sung('C', 2, 0, 1), sung('C', 4, 2, 4), sung('C', 6, 5, 6)];
+    const high = recordingContext();
+    drawSingTimeline(high.ctx, {
+      ...frame(5.5),
+      notes: wide,
+      range: laneRangeOf(wide),
+      height: 224,
+    });
+    expect(high.labels).toContain('500:C6');
+    expect(high.labels).not.toContain('500:C2');
   });
 });

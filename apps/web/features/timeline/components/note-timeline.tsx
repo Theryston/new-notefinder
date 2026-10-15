@@ -14,6 +14,7 @@ import {
   type SingTimelineColors,
   type VoiceSource,
 } from '../draw-sing-timeline';
+import { coalesceToFrame } from '../frame-coalescer';
 import { type LaneRange, laneRangeOf, scrubTime } from '../timeline-geometry';
 
 /**
@@ -130,9 +131,15 @@ function useTimelinePainting(
     const unsubscribe = clock?.subscribe(() => {
       if (clock.now() !== drawnAt) paint();
     });
-    // The voice moves the line even while the Track rests (paused).
-    const unsubscribeVoice = voice?.subscribe(paint);
+    // The voice moves the line even while the Track rests (paused). It is read
+    // many times per frame, so the canvas is drawn once per frame.
+    const voiceFrame = coalesceToFrame(paint, {
+      request: (callback) => requestAnimationFrame(callback),
+      cancel: (handle) => cancelAnimationFrame(handle),
+    });
+    const unsubscribeVoice = voice?.subscribe(voiceFrame.schedule);
     return () => {
+      voiceFrame.cancel();
       resize.disconnect();
       theme.disconnect();
       unsubscribe?.();
