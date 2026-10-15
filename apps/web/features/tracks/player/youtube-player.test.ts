@@ -295,7 +295,6 @@ describe('YouTubePlayer', () => {
         controller.seek(30);
         controller.setRate(1.25);
         controller.toggleMuted();
-        controller.hideVideo();
         controller.dispose();
       }).not.toThrow();
     });

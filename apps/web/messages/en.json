@@ -146,19 +146,23 @@
         "loading": "Loading the player",
         "progress": "Playback position",
         "progressValue": "{current} of {total}",
+        "remainingTime": "-{time}",
+        "showElapsedTime": "Show elapsed time",
+        "showRemainingTime": "Show remaining time",
         "settings": "Settings",
         "speed": "Speed",
         "speedOption": "{rate, number}×",
         "mute": "Mute",
         "openOnYouTube": "Open on YouTube",
         "error": "The video couldn't be played. You can still open it on YouTube from Settings.",
-        "hideVideo": "Hide video",
         "transpose": "Transpose",
+        "transposeLabel": "Key",
         "transposeDown": "Lower by a semitone",
         "transposeUp": "Raise by a semitone",
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Back to the original key",
-        "videoKeepsKey": "Only the notes changed key. The video keeps playing in its original key."
+        "transposeOpen": "Change key: {key}",
+        "videoKeepsKey": "Only the notes change key. The video keeps playing in its original key."
       },
       "noVoice": {
         "title": "We found no voice in this recording",
@@ -179,11 +183,6 @@
       "key": {
         "MAJOR": "{tonic} major",
         "MINOR": "{tonic} minor"
-      },
-      "range": {
-        "label": "Vocal range",
-        "summary": "{low}–{high} · {octaves, plural, one {# octave} other {# octaves}}",
-        "keyboard": "Keyboard with the vocal range {low} to {high} highlighted"
       },
       "views": "{count, plural, one {# view} other {# views}}",
       "share": {
@@ -212,6 +211,7 @@
   },
   "practice": {
     "mic": {
+      "label": "Microphone",
       "on": "Turn the microphone on",
       "off": "Turn the microphone off",
       "starting": "Starting the microphone",
@@ -227,6 +227,7 @@
     }
   },
   "streaks": {
+    "practiceLabel": "Practice",
     "ring": "Daily practice: {progress, number, ::percent} of today's goal",
     "inviteRing": "Daily practice streak",
     "days": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}",

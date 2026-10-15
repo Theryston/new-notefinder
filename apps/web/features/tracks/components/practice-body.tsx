@@ -22,11 +22,11 @@ import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
 import { playbackStore } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
+import { creditText } from '../track-credit';
 import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
-import { VocalRangeStrip } from './vocal-range-strip';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -174,7 +174,6 @@ export function PracticeBody({
           ) : (
             lyricsLoading && <div aria-hidden="true" className="min-h-8" />
           )}
-          <VocalRangeStrip range={header.vocalRange} />
         </div>
       ) : (
         <NoVoice />
@@ -187,6 +186,8 @@ export function PracticeBody({
           hostRef={hostRef}
           videoId={header.youtubeVideoId}
           trackKey={header.key}
+          trackTitle={header.title}
+          artistText={creditText(header.artistCredit)}
         />
       )}
     </div>

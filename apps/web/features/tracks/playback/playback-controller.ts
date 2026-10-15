@@ -32,7 +32,6 @@ export class PlaybackController {
   private readonly store: StoreApi<PlaybackState>;
   private readonly frames: FrameScheduler;
   private frame: number | null = null;
-  private playFrame: number | null = null;
   private readonly stopListening: () => void;
 
   constructor({
@@ -49,21 +48,10 @@ export class PlaybackController {
   }
 
   play = (): void => {
-    const { status, videoHidden } = this.store.getState();
+    const { status } = this.store.getState();
     if (status === 'loading' || status === 'error') return;
     if (status === 'ended') this.seek(0);
-    if (!videoHidden) {
-      this.port.play();
-      return;
-    }
-    // YouTube may not play while its iframe is hidden, so the video is shown
-    // first and played once the screen has drawn it (the next frame).
-    this.store.setState({ videoHidden: false });
-    this.cancelPendingPlay();
-    this.playFrame = this.frames.request(() => {
-      this.playFrame = null;
-      this.port.play();
-    });
+    this.port.play();
   };
 
   pause = (): void => this.port.pause();
@@ -97,17 +85,6 @@ export class PlaybackController {
     this.store.setState({ muted });
   };
 
-  /** Collapses the dock to a line; YouTube may not play hidden, so it pauses. */
-  hideVideo = (): void => {
-    this.cancelPendingPlay();
-    this.port.pause();
-    this.stopLoop();
-    this.store.setState({ videoHidden: true });
-    if (this.store.getState().status === 'playing') {
-      this.store.setState({ status: 'paused' });
-    }
-  };
-
   /**
    * The Track's length from its header can arrive after the player exists
    * (it falls back to the notes); the player's own length wins once known.
@@ -120,7 +97,6 @@ export class PlaybackController {
   };
 
   dispose = (): void => {
-    this.cancelPendingPlay();
     this.stopLoop();
     this.stopListening();
     this.port.destroy();
@@ -154,11 +130,6 @@ export class PlaybackController {
     }
     this.frame = this.frames.request(this.tick);
   };
-
-  private cancelPendingPlay(): void {
-    if (this.playFrame !== null) this.frames.cancel(this.playFrame);
-    this.playFrame = null;
-  }
 
   private startLoop(): void {
     if (this.frame === null) this.frame = this.frames.request(this.tick);

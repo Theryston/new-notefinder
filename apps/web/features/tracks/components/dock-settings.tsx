@@ -2,7 +2,6 @@
 
 import {
   ExternalLinkIcon,
-  EyeOffIcon,
   SettingsIcon,
   Volume2Icon,
   VolumeXIcon,
@@ -29,7 +28,7 @@ import { usePlaybackState } from '../stores/playback-store';
 import { youtubeWatchUrl } from '../youtube-links';
 
 /**
- * The dock's Settings menu: speed, mute, "Open on YouTube" and "Hide video".
+ * The dock's Settings menu: speed, mute and "Open on YouTube".
  * The dock loads it with a client-only dynamic import, so Base UI's menu stays
  * out of the page's first-load JS.
  */
@@ -48,10 +47,16 @@ export function DockSettings({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label={t('settings')} />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('settings')}
+            className="md:w-auto md:gap-2 md:px-3"
+          />
         }
       >
         <SettingsIcon aria-hidden="true" />
+        <span className="hidden md:inline">{t('settings')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
@@ -97,10 +102,6 @@ export function DockSettings({
         >
           <ExternalLinkIcon aria-hidden="true" />
           {t('openOnYouTube')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => controller?.hideVideo()}>
-          <EyeOffIcon aria-hidden="true" />
-          {t('hideVideo')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

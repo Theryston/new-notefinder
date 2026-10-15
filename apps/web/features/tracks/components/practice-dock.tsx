@@ -16,7 +16,14 @@ import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
-import { TransposeStepper } from './transpose-stepper';
+import { TrackKeyContext, TransposeChipPlaceholder } from './transpose-chip';
+
+// Loaded after the page too, for the same reason as the Settings menu: its
+// placeholder is the chip itself, so the dock paints complete at once.
+const TransposePopover = dynamic(
+  () => import('./transpose-popover').then((module) => module.TransposePopover),
+  { ssr: false, loading: TransposeChipPlaceholder },
+);
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -45,8 +52,15 @@ function SettingsPlaceholder() {
   const t = useTranslations('tracks.practice.dock');
 
   return (
-    <Button variant="ghost" size="icon" disabled aria-label={t('settings')}>
+    <Button
+      variant="ghost"
+      size="icon"
+      disabled
+      aria-label={t('settings')}
+      className="md:w-auto md:gap-2 md:px-3"
+    >
       <SettingsIcon aria-hidden="true" />
+      <span className="hidden md:inline">{t('settings')}</span>
     </Button>
   );
 }
@@ -74,25 +88,26 @@ function usePublishDockHeight(dock: RefObject<HTMLElement | null>) {
 
 /**
  * The floating glass dock (DESIGN.md "Floating layers"): the YouTube square,
- * play and pause, the progress track and the Settings menu. On a phone the
- * play button and the progress track are the first row, and the video square
- * sits beside a column of controls; from `md` it is one row. With the video
- * hidden it is one line everywhere. The video mounts into `hostRef`, which
- * stays in the page even when hidden, so showing it again needs no reload.
+ * play and pause, the progress track, the transpose chip and the Settings menu.
+ * Playback, progress and tools each have a dedicated row. From `sm` the
+ * video spans all three rows; desktop tools have visible labels.
  */
 export function PracticeDock({
   controller,
   hostRef,
   videoId,
   trackKey,
+  trackTitle,
+  artistText,
 }: {
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
   trackKey: TrackKey | undefined;
+  trackTitle: string;
+  artistText: string;
 }) {
   const t = useTranslations('tracks.practice.dock');
-  const hidden = usePlaybackState((state) => state.videoHidden);
   const status = usePlaybackState((state) => state.status);
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
@@ -101,18 +116,35 @@ export function PracticeDock({
     <section
       ref={dock}
       aria-label={t('label')}
-      data-hidden={hidden}
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'play_progress''video_controls'] data-[hidden=true]:grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_auto_minmax(0,1fr)_auto] md:data-[hidden=true]:grid-cols-[auto_minmax(0,1fr)_auto] data-[hidden=true]:[grid-template-areas:'play_progress_controls'] md:[grid-template-areas:'video_play_progress_controls'] md:data-[hidden=true]:[grid-template-areas:'play_progress_controls']"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-4xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl p-2 [grid-template-areas:'video_info''progress_progress''actions_actions'] md:gap-x-4 md:p-3 sm:[grid-template-areas:'video_info''video_progress''video_actions']"
     >
       <div
         ref={hostRef}
         data-testid="dock-video"
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
-        className="overflow-hidden rounded-lg bg-muted [grid-area:video] data-[hidden=true]:hidden"
-        data-hidden={hidden}
+        className="overflow-hidden rounded-lg bg-muted [grid-area:video]"
       />
-      <div className="flex justify-center [grid-area:play]">
+      <div
+        data-testid="dock-track-info"
+        className="flex min-w-0 items-center justify-between gap-3 [grid-area:info]"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="truncate font-semibold text-sm md:text-base">
+            {trackTitle}
+          </p>
+          <p className="line-clamp-2 text-muted-foreground text-xs">
+            {artistText}
+          </p>
+        </div>
         <DockPlayButton controller={controller} />
+      </div>
+      <div className="flex min-w-0 items-center justify-between gap-1 [grid-area:actions] md:gap-3">
+        <DockMicButton playback={playbackStore} />
+        <StreakRing playing={status === 'playing'} />
+        <DockSettings controller={controller} videoId={videoId} />
+        <TrackKeyContext value={trackKey}>
+          <TransposePopover />
+        </TrackKeyContext>
       </div>
       <div className="flex min-w-0 [grid-area:progress]">
         {status === 'error' ? (
@@ -122,14 +154,6 @@ export function PracticeDock({
         ) : (
           <DockProgressTrack controller={controller} />
         )}
-      </div>
-      <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
-        <TransposeStepper trackKey={trackKey} />
-        <div className="flex items-center gap-1">
-          <DockMicButton playback={playbackStore} />
-          <StreakRing playing={status === 'playing'} />
-          <DockSettings controller={controller} videoId={videoId} />
-        </div>
       </div>
       <DockMicNotice />
     </section>

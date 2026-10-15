@@ -22,7 +22,6 @@ export type PlaybackState = {
   duration: number;
   rate: number;
   muted: boolean;
-  videoHidden: boolean;
 };
 
 export const initialPlaybackState: PlaybackState = {
@@ -31,7 +30,6 @@ export const initialPlaybackState: PlaybackState = {
   duration: 0,
   rate: DEFAULT_RATE,
   muted: false,
-  videoHidden: false,
 };
 
 /** One page plays one Track at a time, so the store is a singleton. */

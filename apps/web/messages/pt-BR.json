@@ -146,19 +146,23 @@
         "loading": "Carregando o player",
         "progress": "Posição da reprodução",
         "progressValue": "{current} de {total}",
+        "remainingTime": "-{time}",
+        "showElapsedTime": "Mostrar tempo percorrido",
+        "showRemainingTime": "Mostrar tempo restante",
         "settings": "Configurações",
         "speed": "Velocidade",
         "speedOption": "{rate, number}×",
         "mute": "Silenciar",
         "openOnYouTube": "Abrir no YouTube",
         "error": "Não foi possível tocar o vídeo. Você ainda pode abri-lo no YouTube pelas configurações.",
-        "hideVideo": "Ocultar vídeo",
         "transpose": "Transpor",
+        "transposeLabel": "Tom",
         "transposeDown": "Baixar um semitom",
         "transposeUp": "Subir um semitom",
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Voltar ao tom original",
-        "videoKeepsKey": "Só as notas mudaram de tom. O vídeo continua tocando no tom original."
+        "transposeOpen": "Mudar tom: {key}",
+        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original."
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
@@ -179,11 +183,6 @@
       "key": {
         "MAJOR": "{tonic} maior",
         "MINOR": "{tonic} menor"
-      },
-      "range": {
-        "label": "Extensão vocal",
-        "summary": "{low}–{high} · {octaves, plural, one {# oitava} other {# oitavas}}",
-        "keyboard": "Teclado com a extensão vocal de {low} a {high} destacada"
       },
       "views": "{count, plural, =0 {# visualizações} one {# visualização} other {# visualizações}}",
       "share": {
@@ -212,6 +211,7 @@
   },
   "practice": {
     "mic": {
+      "label": "Microfone",
       "on": "Ligar o microfone",
       "off": "Desligar o microfone",
       "starting": "Ligando o microfone",
@@ -227,6 +227,7 @@
     }
   },
   "streaks": {
+    "practiceLabel": "Prática",
     "ring": "Prática diária: {progress, number, ::percent} da meta de hoje",
     "inviteRing": "Sequência de prática diária",
     "days": "{days, plural, =0 {Nenhuma sequência ainda} one {# dia de sequência} other {# dias de sequência}}",

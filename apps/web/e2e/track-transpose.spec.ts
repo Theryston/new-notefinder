@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { createTranslator } from 'next-intl';
 
 import { type FakeTrack, setTrackMock } from './fake-track-api';
@@ -45,32 +45,48 @@ for (const { locale, messages } of cases) {
   });
   const keyText = (tonic: string, mode: 'MAJOR' | 'MINOR') =>
     t(`key.${mode}`, { tonic });
-  const rangeText = (low: string, high: string, octaves: number) =>
-    t('range.summary', { low, high, octaves });
+  // The stepper lives in a popover behind the dock's chip, named by the key.
+  const openTranspose = (page: Page, key: string) =>
+    page
+      .getByRole('button', { name: t('dock.transposeOpen', { key }) })
+      .click();
 
-  test.describe(`track key, vocal range and transpose (${locale})`, () => {
-    test('shows the key in the title row and the vocal range under the timeline', async ({
+  test.describe(`track key and transpose (${locale})`, () => {
+    test('keeps the chip and adjacent controls still when the key changes', async ({
       page,
     }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openTrack(page, locale, `clx-transpose-stable-${locale}`);
+      const chip = (tonic: string) =>
+        page.getByRole('button', {
+          name: t('dock.transposeOpen', { key: keyText(tonic, 'MAJOR') }),
+        });
+      const settings = page.getByRole('button', { name: dock.settings });
+      const before = await chip('G').boundingBox();
+      const controlsBefore = await settings.boundingBox();
+      expect(before).not.toBeNull();
+      expect(controlsBefore).not.toBeNull();
+      await chip('G').click();
+      for (const tonic of ['G#', 'A']) {
+        await page.getByRole('button', { name: dock.transposeUp }).click();
+        await expect(chip(tonic)).toBeVisible();
+        expect(await chip(tonic).boundingBox()).toEqual(before);
+        expect(await settings.boundingBox()).toEqual(controlsBefore);
+      }
+    });
+
+    test('shows the key in the title row', async ({ page }) => {
       await openTrack(page, locale, `clx-key-range-${locale}`);
 
       await expect(page.getByTestId('track-key')).toHaveText(
         keyText('G', 'MAJOR'),
       );
-      await expect(page.getByTestId('vocal-range')).toHaveText(
-        rangeText('C#3', 'G4', 1.5),
-      );
-      await expect(
-        page.getByRole('img', {
-          name: t('range.keyboard', { low: 'C#3', high: 'G4' }),
-        }),
-      ).toBeVisible();
     });
 
-    test('shows neither without a key and a range', async ({ page }) => {
+    test('shows no key without one', async ({ page }) => {
       const id = `clx-key-range-none-${locale}`;
       await setTrackMock({
-        tracks: [track(id, { key: undefined, vocalRange: undefined })],
+        tracks: [track(id, { key: undefined })],
       });
 
       await page.goto(`/${locale}/tracks/${id}`);
@@ -79,13 +95,13 @@ for (const { locale, messages } of cases) {
         page.getByRole('img', { name: /Under Pressure/ }),
       ).toBeVisible();
       await expect(page.getByTestId('track-key')).toHaveCount(0);
-      await expect(page.getByTestId('vocal-range')).toHaveCount(0);
     });
 
-    test('moves the notes, the key and the range, and says the video keeps its key', async ({
+    test('moves the notes and the key, and says the video keeps its key', async ({
       page,
     }) => {
       await openTrack(page, locale, `clx-transpose-${locale}`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       const up = page.getByRole('button', { name: dock.transposeUp });
 
       await up.click();
@@ -94,9 +110,6 @@ for (const { locale, messages } of cases) {
       await expect(page.getByTestId('transpose-value')).toHaveText('+2');
       await expect(page.getByTestId('track-key')).toHaveText(
         keyText('A', 'MAJOR'),
-      );
-      await expect(page.getByTestId('vocal-range')).toHaveText(
-        rangeText('D#3', 'A4', 1.5),
       );
       // The timeline's description names the notes it draws.
       await expect(
@@ -114,6 +127,7 @@ for (const { locale, messages } of cases) {
 
     test('lowers the Track and stops an octave away', async ({ page }) => {
       await openTrack(page, locale, `clx-transpose-down-${locale}`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       const down = page.getByRole('button', { name: dock.transposeDown });
 
       await down.click();
@@ -134,10 +148,12 @@ for (const { locale, messages } of cases) {
     }) => {
       const id = `clx-transpose-kept-${locale}`;
       await openTrack(page, locale, id);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       await page.getByRole('button', { name: dock.transposeUp }).click();
       await expect(page.getByTestId('transpose-value')).toHaveText('+1');
 
       await page.reload();
+      await openTranspose(page, keyText('G#', 'MAJOR'));
 
       await expect(page.getByTestId('transpose-value')).toHaveText('+1');
       await expect(page.getByTestId('track-key')).toHaveText(
@@ -147,6 +163,7 @@ for (const { locale, messages } of cases) {
       // Another Track starts at its own key.
       await setTrackMock({ tracks: [track(`${id}-other`)] });
       await page.goto(`/${locale}/tracks/${id}-other`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       await expect(page.getByTestId('transpose-value')).toHaveText('0');
     });
 
@@ -154,6 +171,7 @@ for (const { locale, messages } of cases) {
       page,
     }) => {
       await openTrack(page, locale, `clx-transpose-reset-${locale}`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       const reset = page.getByRole('button', { name: dock.transposeReset });
       await expect(reset).toHaveCount(0);
 
@@ -176,6 +194,7 @@ for (const { locale, messages } of cases) {
       page,
     }) => {
       await openTrack(page, locale, `clx-transpose-targets-${locale}`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
       await page.getByRole('button', { name: dock.transposeUp }).click();
 
       for (const name of [
@@ -208,83 +227,32 @@ for (const { locale, messages } of cases) {
 
 const dock = catalogs.en.tracks.practice.dock;
 
-test.describe('the toast and the dock on a phone', () => {
+test.describe('the transpose popover on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('sits above the dock', async ({ page }) => {
-    await openTrack(page, 'en', 'clx-transpose-phone-toast');
-
-    await page.getByRole('button', { name: dock.transposeUp }).click();
-
-    const toast = page.locator('[data-sonner-toast]').first();
-    await expect(toast).toBeVisible();
-    // Sonner slides the toast in; wait for it to settle before measuring.
-    await page.waitForTimeout(600);
-    const toastBox = await toast.boundingBox();
-    const dockBox = await page
-      .getByRole('region', { name: dock.label })
-      .boundingBox();
-    expect(toastBox).not.toBeNull();
-    expect(dockBox).not.toBeNull();
-    expect((toastBox?.y ?? 0) + (toastBox?.height ?? 0)).toBeLessThanOrEqual(
-      dockBox?.y ?? 0,
-    );
-    // It reads normally: nearly the viewport's width less the side gutters,
-    // not squeezed into a column.
-    expect(toastBox?.width ?? 0).toBeGreaterThan(390 - 2 * 24 - 4);
-  });
-});
-
-/** The RGBA a rect is painted with, whatever color syntax the theme used. */
-const paintOf = (rect: Locator) =>
-  rect.evaluate((element) => {
-    const context = document.createElement('canvas').getContext('2d');
-    if (!context) return [0, 0, 0, 0];
-    context.fillStyle = getComputedStyle(element).fill;
-    context.fillRect(0, 0, 1, 1);
-    return [...context.getImageData(0, 0, 1, 1).data];
-  });
-
-const brightness = ([r = 0, g = 0, b = 0]: number[]) => r + g + b;
-
-test.describe('key and range in both themes', () => {
-  for (const scheme of ['light', 'dark'] as const) {
-    test(`draws a keyboard that is not inverted in ${scheme} mode, with the range in orange`, async ({
-      page,
-    }) => {
-      await page.emulateMedia({ colorScheme: scheme });
-      await openTrack(page, 'en', `clx-key-range-${scheme}`);
-
-      const keyboard = page.getByRole('img', {
-        name: /Keyboard with the vocal range/,
-      });
-      await expect(keyboard).toBeVisible();
-
-      // Out of the range C#3-G4: the first white key (C3) and a sharp (G#4).
-      const white = await paintOf(keyboard.locator('rect').first());
-      const sharp = await paintOf(
-        keyboard
-          .locator('rect[height="22"]:not([class*="fill-primary"])')
-          .last(),
-      );
-      const lit = await paintOf(
-        keyboard.locator('rect[class*="fill-primary"]').first(),
-      );
-
-      // Black keys are never lighter than white ones, as on a piano.
-      expect(brightness(sharp)).toBeLessThan(brightness(white));
-      expect(lit[0]).toBeGreaterThan(200);
-      expect(lit[1]).toBeLessThan(140);
-      // The drawing fills its box, so it ends where the box does.
-      const edges = await keyboard.evaluate((svg) => ({
-        box: svg.getBoundingClientRect().right,
-        keys: Math.max(
-          ...[...svg.querySelectorAll('rect')].map(
-            (key) => key.getBoundingClientRect().right,
-          ),
-        ),
-      }));
-      expect(edges.box - edges.keys).toBeLessThan(3);
+  test('opens above the chip, inside the screen', async ({ page }) => {
+    await openTrack(page, 'en', 'clx-transpose-phone-popover');
+    const chip = page.getByRole('button', {
+      name: dock.transposeOpen.replace('{key}', 'G major'),
     });
-  }
+
+    await chip.click();
+
+    const popover = page.getByRole('dialog', { name: dock.transpose });
+    await expect(popover).toBeVisible();
+    await expect(page.getByText(dock.videoKeepsKey)).toBeVisible();
+    // The popover zooms in; wait for it to settle before measuring.
+    await page.waitForTimeout(400);
+    const popoverBox = await popover.boundingBox();
+    const chipBox = await chip.boundingBox();
+    expect(popoverBox).not.toBeNull();
+    expect(chipBox).not.toBeNull();
+    expect(
+      (popoverBox?.y ?? 0) + (popoverBox?.height ?? 0),
+    ).toBeLessThanOrEqual(chipBox?.y ?? 0);
+    expect(popoverBox?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect((popoverBox?.x ?? 0) + (popoverBox?.width ?? 0)).toBeLessThanOrEqual(
+      390,
+    );
+  });
 });

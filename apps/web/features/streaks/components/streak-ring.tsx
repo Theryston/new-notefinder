@@ -28,7 +28,7 @@ import { StreakRingSkeleton } from './streak-ring-skeleton';
 
 const TRIGGER_CLASS = cn(
   buttonVariants({ variant: 'ghost', size: 'icon' }),
-  'shrink-0 rounded-full p-0',
+  'shrink-0 rounded-full p-0 md:w-auto md:gap-2 md:pr-3',
 );
 
 /** What a visitor sees on the ring: an invite to create an account. */
@@ -44,6 +44,7 @@ function VisitorRing() {
         className={TRIGGER_CLASS}
       >
         <StreakRingGraphic progress={0} completed={false} muted />
+        <span className="hidden md:inline">{t('practiceLabel')}</span>
       </PopoverTrigger>
       <PopoverContent side="top" align="end" sideOffset={12}>
         <PopoverTitle className="font-semibold">
@@ -142,6 +143,7 @@ function UserRing({ playing, account }: { playing: boolean; account: string }) {
             progress={progress}
             completed={status.data.completedToday}
           />
+          <span className="hidden md:inline">{t('practiceLabel')}</span>
         </PopoverTrigger>
         <PopoverContent side="top" align="end" sideOffset={12}>
           <StreakDetails status={status.data} />
