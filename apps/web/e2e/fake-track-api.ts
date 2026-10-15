@@ -39,6 +39,9 @@ export type FakeTrack = {
   youtubeVideoId?: string | null;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
+  /** The vocal range (MIDI numbers) and key the header shows; absent by default. */
+  vocalRange?: { lowest: number; highest: number };
+  key?: { tonic: number; mode: 'MAJOR' | 'MINOR' };
   /** Makes the notes request fail (400), to test the timeline's error state. */
   notesFail?: boolean;
   /** The Timed lyrics in sung order; none by default. */
@@ -147,6 +150,8 @@ function practiceHeaderOf(track: FakeTrack) {
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
+    ...(track.vocalRange ? { vocalRange: track.vocalRange } : {}),
+    ...(track.key ? { key: track.key } : {}),
   };
 }
 

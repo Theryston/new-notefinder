@@ -7,7 +7,7 @@ import type {
 } from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
@@ -20,9 +20,12 @@ import { useTimelineFocus } from '../hooks/use-shared-link';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
+import { useTranspose } from '../stores/transpose-store';
+import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
+import { VocalRangeStrip } from './vocal-range-strip';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -51,6 +54,11 @@ function TrackTimeline({
   controller: PlaybackController | null;
 }) {
   const t = useTranslations('tracks.practice');
+  const semitones = useTranspose();
+  const shifted = useMemo(
+    () => (notes ? transposeNotes(notes.notes, semitones) : []),
+    [notes, semitones],
+  );
   if (notes === undefined) {
     return failed ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -60,7 +68,7 @@ function TrackTimeline({
       <Skeleton className={TIMELINE_BOX_CLASS} />
     );
   }
-  const range = noteRangeOf(notes.notes);
+  const range = noteRangeOf(shifted);
   const label = range
     ? t('timeline.label', {
         title: header.title,
@@ -72,7 +80,7 @@ function TrackTimeline({
 
   return (
     <NoteTimeline
-      notes={notes.notes}
+      notes={shifted}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}
@@ -164,6 +172,7 @@ export function PracticeBody({
           ) : (
             lyricsLoading && <div aria-hidden="true" className="min-h-8" />
           )}
+          <VocalRangeStrip range={header.vocalRange} />
         </div>
       ) : (
         <NoVoice />
@@ -175,6 +184,7 @@ export function PracticeBody({
           controller={controller}
           hostRef={hostRef}
           videoId={header.youtubeVideoId}
+          trackKey={header.key}
         />
       )}
     </div>

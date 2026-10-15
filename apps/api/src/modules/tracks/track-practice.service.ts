@@ -1,7 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
-import { TrackPracticeRepository } from './track-practice.repository.js';
+import {
+  TrackPracticeRepository,
+  type TrackPracticeRow,
+} from './track-practice.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
+
+/** The vocal range and the key, left out while the Track has none of them. */
+function summaryOf(row: TrackPracticeRow) {
+  const { vocalRangeLowest, vocalRangeHighest, keyTonic, keyMode } = row;
+  return {
+    ...(vocalRangeLowest === null || vocalRangeHighest === null
+      ? {}
+      : {
+          vocalRange: { lowest: vocalRangeLowest, highest: vocalRangeHighest },
+        }),
+    ...(keyTonic === null || keyMode === null
+      ? {}
+      : { key: { tonic: keyTonic, mode: keyMode } }),
+  };
+}
 
 /**
  * What the Track page reads of a Track. A legacy Track ID answers
@@ -39,6 +57,7 @@ export class TrackPracticeService {
       youtubeVideoId: row.youtubeVideoId,
       contributors: await this.processing.contributorsOf(trackId),
       hasNotes: row.hasNotes,
+      ...summaryOf(row),
     };
   }
 

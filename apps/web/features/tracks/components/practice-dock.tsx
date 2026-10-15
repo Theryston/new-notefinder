@@ -1,5 +1,6 @@
 'use client';
 
+import type { TrackKey } from '@notefinder/contracts';
 import { SettingsIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -12,6 +13,7 @@ import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
+import { TransposeStepper } from './transpose-stepper';
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -66,10 +68,12 @@ export function PracticeDock({
   controller,
   hostRef,
   videoId,
+  trackKey,
 }: {
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
+  trackKey: TrackKey | undefined;
 }) {
   const t = useTranslations('tracks.practice.dock');
   const hidden = usePlaybackState((state) => state.videoHidden);
@@ -104,6 +108,7 @@ export function PracticeDock({
         )}
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
+        <TransposeStepper trackKey={trackKey} />
         <DockSettings controller={controller} videoId={videoId} />
       </div>
     </section>
