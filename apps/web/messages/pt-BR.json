@@ -152,11 +152,20 @@
         "mute": "Silenciar",
         "openOnYouTube": "Abrir no YouTube",
         "error": "Não foi possível tocar o vídeo. Você ainda pode abri-lo no YouTube pelas configurações.",
-        "hideVideo": "Ocultar vídeo"
+        "hideVideo": "Ocultar vídeo",
+        "transpose": "Transpor",
+        "transposeDown": "Baixar um semitom",
+        "transposeUp": "Subir um semitom",
+        "transposeValue": "{semitones, number, ::sign-except-zero}",
+        "transposeReset": "Voltar ao tom original",
+        "videoKeepsKey": "Só as notas mudaram de tom. O vídeo continua tocando no tom original."
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
         "description": "Parece ser uma versão instrumental, então não há notas vocais para mostrar."
+      },
+      "lyrics": {
+        "title": "Letra"
       },
       "favorite": {
         "add": "Adicionar aos favoritos",
@@ -166,7 +175,16 @@
       "loadError": "Não conseguimos carregar esta faixa. Tente de novo em instantes.",
       "durationLabel": "Duração: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
-      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}"
+      "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
+      "key": {
+        "MAJOR": "{tonic} maior",
+        "MINOR": "{tonic} menor"
+      },
+      "range": {
+        "label": "Extensão vocal",
+        "summary": "{low}–{high} · {octaves, plural, one {# oitava} other {# oitavas}}",
+        "keyboard": "Teclado com a extensão vocal de {low} a {high} destacada"
+      }
     }
   },
   "streaks": {

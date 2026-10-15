@@ -17,7 +17,7 @@ import {
   type UnfinishedJobState,
   unfinishedOutcomeOf,
 } from './track-note-detection-polling.js';
-import { TrackNotesRepository } from './track-notes.repository.js';
+import { TrackNotesService } from './track-notes.service.js';
 import type { StepWait } from './track-processing.job.js';
 import {
   type ProcessingForStep,
@@ -61,7 +61,7 @@ export class TrackNoteDetectionService {
     private readonly client: NoteDetectionClient,
     private readonly storage: StorageService,
     private readonly processings: TrackProcessingRepository,
-    private readonly notes: TrackNotesRepository,
+    private readonly notes: TrackNotesService,
   ) {}
 
   /**

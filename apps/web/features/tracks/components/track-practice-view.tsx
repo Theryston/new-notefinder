@@ -5,8 +5,10 @@ import { useTranslations } from 'next-intl';
 
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { useRememberedTranspose } from '../hooks/use-remembered-transpose';
 import type { InitialPractice } from '../practice-queries';
 import {
+  trackLyricsQueryOptions,
   trackNotesQueryOptions,
   trackPracticeQueryOptions,
 } from '../track-practice-query';
@@ -48,6 +50,7 @@ export function TrackPracticeView({
   fakePlayer: boolean;
 }) {
   const t = useTranslations('tracks.practice');
+  useRememberedTranspose(trackId);
   const header = useQuery(trackPracticeQueryOptions(trackId, initial?.header));
   const notes = useQuery(
     trackNotesQueryOptions(
@@ -56,6 +59,9 @@ export function TrackPracticeView({
       initial?.notes,
     ),
   );
+
+  // Lyrics are a bonus: while they load, or if they fail, the page goes on.
+  const lyrics = useQuery(trackLyricsQueryOptions(trackId, initial?.lyrics));
 
   if (header.data === undefined) {
     return header.isError ? (
@@ -73,6 +79,8 @@ export function TrackPracticeView({
       <PracticeBody
         header={header.data}
         notes={notes.data}
+        lyrics={lyrics.data}
+        lyricsLoading={lyrics.isPending}
         failed={notes.isError}
         fakePlayer={fakePlayer}
       />

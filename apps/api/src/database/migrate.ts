@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { Logger } from '@nestjs/common';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { loadEnv } from '../config/env.js';
+import { backfillTrackNoteSummaries } from './backfill-track-note-summaries.js';
 import { createDatabase, createPool } from './database.js';
 
 /**
@@ -21,8 +22,13 @@ const logger = new Logger('Migrate');
 const pool = createPool(loadEnv().DATABASE_URL);
 
 try {
-  await migrate(createDatabase(pool), { migrationsFolder });
+  const db = createDatabase(pool);
+  await migrate(db, { migrationsFolder });
   logger.log('Migrations applied');
+  // Data the new columns need for the Tracks that already exist; SQL cannot
+  // estimate a key, so it runs here, once per Track.
+  const filled = await backfillTrackNoteSummaries(db);
+  logger.log(`Vocal range and key backfilled for ${filled} Tracks`);
 } finally {
   await pool.end();
 }

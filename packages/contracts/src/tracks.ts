@@ -137,6 +137,35 @@ export type LinkedArtistCreditEntry = z.infer<
   typeof linkedArtistCreditEntrySchema
 >;
 
+/** The modes a Track's estimated key can have. */
+export const TRACK_KEY_MODES = ['MAJOR', 'MINOR'] as const;
+
+export const trackKeyModeSchema = z.enum(TRACK_KEY_MODES);
+
+export type TrackKeyMode = z.infer<typeof trackKeyModeSchema>;
+
+/**
+ * The key a Track is estimated to be in: `tonic` is the pitch class (0 is C,
+ * 11 is B) and `mode` is major or minor.
+ */
+export const trackKeySchema = z.object({
+  tonic: z.number().int().min(0).max(11),
+  mode: trackKeyModeSchema,
+});
+
+export type TrackKey = z.infer<typeof trackKeySchema>;
+
+/**
+ * The vocal range of a Track: its lowest and highest vocal note, as MIDI
+ * numbers (A4 is 69).
+ */
+export const trackVocalRangeSchema = z.object({
+  lowest: z.number().int().min(0).max(127),
+  highest: z.number().int().min(0).max(127),
+});
+
+export type TrackVocalRange = z.infer<typeof trackVocalRangeSchema>;
+
 /**
  * `GET /v1/tracks/:trackId`: the Track page's header. `durationMs` is null when
  * MusicBrainz has no length; `youtubeVideoId` is null until a Processing
@@ -149,6 +178,9 @@ export const trackDetailSchema = trackHeaderSchema.extend({
   youtubeVideoId: z.string().min(1).max(32).nullable(),
   contributors: z.array(trackContributorSchema).max(100),
   hasNotes: z.boolean(),
+  // Absent for a Track whose notes have no summary (an instrumental).
+  vocalRange: trackVocalRangeSchema.optional(),
+  key: trackKeySchema.optional(),
 });
 
 export type TrackDetail = z.infer<typeof trackDetailSchema>;
@@ -174,3 +206,34 @@ export const trackNotesSchema = z.object({
 });
 
 export type TrackNotes = z.infer<typeof trackNotesSchema>;
+
+/**
+ * One word of the Timed lyrics (CONTEXT.md), timed to the Track's audio in
+ * seconds from its start.
+ */
+export const trackLyricWordSchema = z.object({
+  text: z.string().min(1).max(200),
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+});
+
+export type TrackLyricWord = z.infer<typeof trackLyricWordSchema>;
+
+/** One line of the Timed lyrics: its span and the words sung in it, in order. */
+export const trackLyricLineSchema = z.object({
+  start: z.number().nonnegative(),
+  end: z.number().nonnegative(),
+  words: z.array(trackLyricWordSchema).max(500),
+});
+
+export type TrackLyricLine = z.infer<typeof trackLyricLineSchema>;
+
+/**
+ * `GET /v1/tracks/:trackId/lyrics`: the Timed lyrics in the order they are
+ * sung; no lines for a Track without any.
+ */
+export const trackLyricsSchema = z.object({
+  lines: z.array(trackLyricLineSchema).max(2000),
+});
+
+export type TrackLyrics = z.infer<typeof trackLyricsSchema>;

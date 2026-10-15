@@ -19,6 +19,12 @@ type FakeTrackProcessing = {
   video?: { id: string; source: 'musicbrainz' | 'youtube_music' } | null;
 };
 
+type FakeLyricLine = {
+  start: number;
+  end: number;
+  words: { text: string; start: number; end: number }[];
+};
+
 export type FakeTrack = {
   id: string;
   title: string;
@@ -33,6 +39,13 @@ export type FakeTrack = {
   youtubeVideoId?: string | null;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
+  /** The vocal range (MIDI numbers) and key the header shows; absent by default. */
+  vocalRange?: { lowest: number; highest: number };
+  key?: { tonic: number; mode: 'MAJOR' | 'MINOR' };
+  /** Makes the notes request fail (400), to test the timeline's error state. */
+  notesFail?: boolean;
+  /** The Timed lyrics in sung order; none by default. */
+  lyrics?: FakeLyricLine[];
   /** `null` for a Track that never had a Processing. */
   processing: FakeTrackProcessing | null;
   contributors?: {
@@ -137,6 +150,8 @@ function practiceHeaderOf(track: FakeTrack) {
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
+    ...(track.vocalRange ? { vocalRange: track.vocalRange } : {}),
+    ...(track.key ? { key: track.key } : {}),
   };
 }
 
@@ -264,6 +279,26 @@ async function serveMockSet(
   json(response, 200, { ok: true }, request);
 }
 
+const facetBodies = {
+  notes: (track: FakeTrack) => ({ notes: track.notes ?? [] }),
+  lyrics: (track: FakeTrack) => ({ lines: track.lyrics ?? [] }),
+};
+
+/** `GET /v1/tracks/:trackId/notes` or `/lyrics`; the notes can be made to fail. */
+function serveFacet(
+  id: string,
+  name: keyof typeof facetBodies,
+  request: IncomingMessage,
+  response: ServerResponse,
+): void {
+  if (name === 'notes' && tracks.get(id)?.notesFail === true) {
+    const body = { statusCode: 400, code: 'BAD_REQUEST', message: 'Fake' };
+    json(response, 400, body, request);
+    return;
+  }
+  serveTrackRead(id, request, response, facetBodies[name]);
+}
+
 /**
  * Answers the track routes. Resolves `false` for any other request, which the
  * artist fake then answers (or 404s).
@@ -296,16 +331,10 @@ export async function serveTrackRequest(
     );
     return true;
   }
-  const notes = /^\/v1\/tracks\/([^/]+)\/notes$/.exec(pathname);
-  if (notes?.[1] && request.method === 'GET') {
-    serveTrackRead(
-      decodeURIComponent(notes[1]),
-      request,
-      response,
-      (track) => ({
-        notes: track.notes ?? [],
-      }),
-    );
+  const facet = /^\/v1\/tracks\/([^/]+)\/(notes|lyrics)$/.exec(pathname);
+  if (facet?.[1] && request.method === 'GET') {
+    const name = facet[2] === 'notes' ? 'notes' : 'lyrics';
+    serveFacet(decodeURIComponent(facet[1]), name, request, response);
     return true;
   }
   const header = /^\/v1\/tracks\/([^/]+)$/.exec(pathname);
