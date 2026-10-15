@@ -12,6 +12,8 @@ import { isSilent, type PitchReading } from './yin';
 export type ModelDetector = {
   /** Runs the model on a normalized 1024-sample, 16 kHz frame. */
   detect(frame: Float32Array): Promise<ArrayLike<number>>;
+  /** Releases runtime resources once any active inference finishes. */
+  dispose?(): Promise<void> | void;
 };
 
 /** New samples (at the model's rate) between two readings: 32 ms. */
@@ -71,6 +73,13 @@ export class ModelPipeline {
     }
   }
 
+  stop(): void {
+    if (this.done) return;
+    this.done = true;
+    // Cleanup is best-effort and must not become an unhandled rejection.
+    void Promise.resolve(this.detector.dispose?.()).catch(() => {});
+  }
+
   private read(): void {
     if (this.busy) {
       this.dropped += 1;
@@ -100,7 +109,7 @@ export class ModelPipeline {
 
   private giveUp(reason: 'failed' | 'too-slow'): void {
     if (this.done) return;
-    this.done = true;
+    this.stop();
     this.events.onGiveUp(reason);
   }
 }

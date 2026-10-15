@@ -35,7 +35,6 @@ export function createPitchEngine({
 
   loadModel().then(
     (detector) => {
-      if (stopped) return;
       const pipeline = new ModelPipeline(sampleRate, detector, {
         onReading: (midi) => onReading(midi, pipeline.windowSeconds),
         onGiveUp: (reason) => {
@@ -44,16 +43,22 @@ export function createPitchEngine({
           log(`pitch engine: model gave up (${reason}), using classic YIN`);
         },
       });
+      if (stopped) {
+        pipeline.stop();
+        return;
+      }
       model = pipeline;
       log('pitch engine: ML model (CREPE tiny)');
     },
     (error: unknown) => {
+      if (stopped) return;
       log(`pitch engine: model failed to load (${String(error)}), using YIN`);
     },
   );
 
   return {
     feed: (block) => {
+      if (stopped) return;
       if (model) {
         model.feed(block);
         return;
@@ -64,6 +69,7 @@ export function createPitchEngine({
     },
     stop: () => {
       stopped = true;
+      model?.stop();
       model = null;
     },
   };
