@@ -3,6 +3,7 @@
 export * from './albums.js';
 export * from './artists.js';
 export * from './auth.js';
+export * from './daily-practice-streaks.js';
 export * from './relations.js';
 export * from './track-contributors.js';
 export * from './track-favorites.js';

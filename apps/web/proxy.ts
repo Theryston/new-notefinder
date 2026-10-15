@@ -88,6 +88,6 @@ export const config = {
     // Everything except API routes, Next internals, root metadata files and
     // requests for static assets (by extension, so legacy paths with dots in
     // IDs or usernames still get redirected).
-    '/((?!api(?:/|$)|_next/|_vercel/|favicon\\.ico$|sitemap\\.xml$|robots\\.txt$|.*\\.(?:ico|png|jpe?g|gif|webp|avif|svg|css|js|map|txt|xml|json|webmanifest|woff2?|ttf|otf|mp3|mp4|webm)$).*)',
+    '/((?!api(?:/|$)|_next/|_vercel/|favicon\\.ico$|sitemap\\.xml$|robots\\.txt$|.*\\.(?:ico|png|jpe?g|gif|webp|avif|svg|css|js|map|txt|xml|json|webmanifest|woff2?|ttf|otf|mp3|mp4|webm|onnx|wasm)$).*)',
   ],
 };

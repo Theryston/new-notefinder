@@ -40,6 +40,9 @@ export type FakeTrack = {
   viewCount?: number;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
+  /** The vocal range (MIDI numbers) and key the header shows; absent by default. */
+  vocalRange?: { lowest: number; highest: number };
+  key?: { tonic: number; mode: 'MAJOR' | 'MINOR' };
   /** Makes the notes request fail (400), to test the timeline's error state. */
   notesFail?: boolean;
   /** The Timed lyrics in sung order; none by default. */
@@ -151,6 +154,8 @@ function practiceHeaderOf(track: FakeTrack) {
     contributors: track.contributors ?? [],
     hasNotes: (track.notes ?? []).length > 0,
     viewCount: track.viewCount ?? 0,
+    ...(track.vocalRange ? { vocalRange: track.vocalRange } : {}),
+    ...(track.key ? { key: track.key } : {}),
   };
 }
 
@@ -338,12 +343,8 @@ export async function serveTrackRequest(
   }
   const header = /^\/v1\/tracks\/([^/]+)$/.exec(pathname);
   if (header?.[1] && request.method === 'GET') {
-    serveTrackRead(
-      decodeURIComponent(header[1]),
-      request,
-      response,
-      practiceHeaderOf,
-    );
+    const id = decodeURIComponent(header[1]);
+    serveTrackRead(id, request, response, practiceHeaderOf);
     return true;
   }
   return false;

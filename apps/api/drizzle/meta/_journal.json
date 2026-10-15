@@ -110,8 +110,22 @@
     {
       "idx": 15,
       "version": "7",
-      "when": 1792004273873,
-      "tag": "0015_track-views-trending",
+      "when": 1792004183728,
+      "tag": "0015_track-key-vocal-range",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792073978052,
+      "tag": "0016_daily-practice-streaks",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792078356416,
+      "tag": "0017_track-views-trending",
       "breakpoints": true
     }
   ]

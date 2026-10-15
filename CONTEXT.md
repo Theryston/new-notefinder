@@ -61,6 +61,22 @@ name, like C#4, is the nearest key to it. Found by the Note detection of a
 Processing.
 _Avoid_: MIDI note, frame
 
+**Vocal range**:
+The lowest and highest Vocal note of a Track, as keys (D4 to D5). Stored on the
+Track when a Processing replaces its notes.
+_Avoid_: Tessitura, span
+
+**Key**:
+The tonic and mode (major or minor) a Track is estimated to be in, from how
+long each pitch class is sung. Stored on the Track with its Vocal range.
+_Avoid_: Tone, scale
+
+**Transposition**:
+A number of semitones, up or down, by which the page moves the notes, the Key
+and the Vocal range. It does not change the video's sound. Kept per Track on
+the device.
+_Avoid_: Pitch shift, tune
+
 **Pitch curve**:
 The singer's pitch over the whole Track, moment by moment, including the
 slides and vibrato between and within Vocal notes. Found by the Note detection
@@ -109,6 +125,30 @@ release group: the album across all of its editions, so every edition of one
 album shares one URL. It exists once its Recordings are reprocessed (see
 `docs/adr/0003-album-is-a-release-group.md`).
 _Avoid_: Release (an edition of an album), record, LP
+
+### Practice
+
+**Practice day**:
+The calendar day of a User, in their own time zone (kept from their last
+Heartbeat), which rolls over at their midnight. Legacy practice days are UTC
+days and are imported as they are.
+_Avoid_: Day (alone), UTC day
+
+**Heartbeat**:
+A report from the web that a User listened to a Track for some seconds. The API
+credits it to the Practice day, at most 20 seconds per Heartbeat and never more
+than its own clock saw pass since the User's previous Heartbeat.
+_Avoid_: Ping, tick
+
+**Daily target**:
+How long a User wants to practice each Practice day: 5, 15 or 30 minutes.
+Reaching it completes the day.
+_Avoid_: Goal, quota
+
+**Streak**:
+The run of consecutive completed Practice days ending today, or yesterday while
+today is still open.
+_Avoid_: Series, chain
 
 ### Legacy
 

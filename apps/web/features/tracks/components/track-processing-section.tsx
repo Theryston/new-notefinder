@@ -8,7 +8,7 @@ import { TrackProcessingView } from './track-processing-view';
 /**
  * The client part of the Track page, given the state the route read (and, for
  * a completed Track, what the practice view renders from). Only
- * the `tracks` messages go to the client (the page's strings and the card's),
+ * the `tracks`, `practice` and `streaks` messages go to the client,
  * plus the `errors` a failed action (the heart) toasts, so the RSC payload
  * stays small.
  */
@@ -22,10 +22,10 @@ export async function TrackProcessingSection({
   /** The e2e build's flag: the practice view plays with a fake clock. */
   fakePlayer: boolean;
 }) {
-  const { errors, tracks } = await getMessages();
+  const { errors, practice, streaks, tracks } = await getMessages();
 
   return (
-    <NextIntlClientProvider messages={{ errors, tracks }}>
+    <NextIntlClientProvider messages={{ errors, practice, streaks, tracks }}>
       <TrackProcessingView
         initialState={initialState}
         initialPractice={initialPractice}

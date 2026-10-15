@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
+import type { TrackKeyMode } from '@notefinder/contracts';
 import { count, eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
@@ -22,6 +23,10 @@ export type TrackPracticeRow = {
   artists: { id: string; mbid: string }[];
   hasNotes: boolean;
   viewCount: number;
+  vocalRangeLowest: number | null;
+  vocalRangeHighest: number | null;
+  keyTonic: number | null;
+  keyMode: TrackKeyMode | null;
 };
 
 /** A stored note. */
@@ -48,6 +53,10 @@ export class TrackPracticeRepository {
         artistCredit: tracks.artistCredit,
         lengthMs: tracks.lengthMs,
         youtubeVideoId: tracks.youtubeVideoId,
+        vocalRangeLowest: tracks.vocalRangeLowest,
+        vocalRangeHighest: tracks.vocalRangeHighest,
+        keyTonic: tracks.keyTonic,
+        keyMode: tracks.keyMode,
       })
       .from(tracks)
       .where(eq(tracks.id, trackId))

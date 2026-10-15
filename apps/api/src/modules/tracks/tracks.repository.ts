@@ -21,9 +21,9 @@ import {
   trackTags,
   trackWorks,
 } from '../../database/schema/tracks.js';
+import { type ByTrack, groupByTrack } from './group-by-track.js';
 import type { NewTrackCoreRow, NewTrackRows } from './track-from-recording.js';
-
-type ByTrack<TRow> = Map<string, Omit<TRow, 'trackId'>[]>;
+import type { NoteSummary } from './track-note-summary.js';
 
 /** The companion rows of a new Track (everything but the core row). */
 type NewTrackDetails = Omit<NewTrackRows, 'track'>;
@@ -218,6 +218,17 @@ export class TracksRepository {
       .where(gt(tracks.trendingScore, 0));
   }
 
+  /**
+   * Stores the vocal range and key the Track keeps of its notes (all null for
+   * a Track without notes). It joins the caller's transaction.
+   */
+  async setNoteSummary(trackId: string, summary: NoteSummary): Promise<void> {
+    await this.txHost.tx
+      .update(tracks)
+      .set(summary)
+      .where(eq(tracks.id, trackId));
+  }
+
   /** The YouTube video the timeline plays, once a Processing has chosen it. */
   async setYoutubeVideoId(
     trackId: string,
@@ -355,15 +366,4 @@ export class TracksRepository {
       .orderBy(asc(trackExternalLinks.linkType), asc(trackExternalLinks.url));
     return groupByTrack(rows);
   }
-}
-
-function groupByTrack<T extends { trackId: string }>(rows: T[]): ByTrack<T> {
-  const byTrack: ByTrack<T> = new Map();
-  for (const row of rows) {
-    const { trackId, ...rest } = row;
-    const list = byTrack.get(trackId) ?? [];
-    list.push(rest);
-    byTrack.set(trackId, list);
-  }
-  return byTrack;
 }

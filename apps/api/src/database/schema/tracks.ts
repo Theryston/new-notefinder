@@ -1,4 +1,7 @@
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import type {
+  TrackArtistCreditEntry,
+  TrackKeyMode,
+} from '@notefinder/contracts';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -64,6 +67,13 @@ export const tracks = pgTable(
     // recomputed by a delayed job after views, 0 until then. Not imported
     // from the legacy app: it is derived from the imported views.
     trendingScore: integer().notNull().default(0),
+    // The vocal range as MIDI numbers (A4 is 69) and the estimated key (a
+    // pitch class, 0 is C, and its mode), written when a Processing replaces
+    // the Track's notes. All null for a Track without notes.
+    vocalRangeLowest: integer(),
+    vocalRangeHighest: integer(),
+    keyTonic: integer(),
+    keyMode: text().$type<TrackKeyMode>(),
     ...timestamps,
   },
   (table) => [

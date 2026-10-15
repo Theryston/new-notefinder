@@ -152,7 +152,13 @@
         "mute": "Mute",
         "openOnYouTube": "Open on YouTube",
         "error": "The video couldn't be played. You can still open it on YouTube from Settings.",
-        "hideVideo": "Hide video"
+        "hideVideo": "Hide video",
+        "transpose": "Transpose",
+        "transposeDown": "Lower by a semitone",
+        "transposeUp": "Raise by a semitone",
+        "transposeValue": "{semitones, number, ::sign-except-zero}",
+        "transposeReset": "Back to the original key",
+        "videoKeepsKey": "Only the notes changed key. The video keeps playing in its original key."
       },
       "noVoice": {
         "title": "We found no voice in this recording",
@@ -170,6 +176,15 @@
       "durationLabel": "Duration: {duration}",
       "durationShort": "{minutes, number}:{seconds, number, ::integer-width/*00}",
       "durationLong": "{hours, number}:{minutes, number, ::integer-width/*00}:{seconds, number, ::integer-width/*00}",
+      "key": {
+        "MAJOR": "{tonic} major",
+        "MINOR": "{tonic} minor"
+      },
+      "range": {
+        "label": "Vocal range",
+        "summary": "{low}–{high} · {octaves, plural, one {# octave} other {# octaves}}",
+        "keyboard": "Keyboard with the vocal range {low} to {high} highlighted"
+      },
       "views": "{count, plural, one {# view} other {# views}}",
       "share": {
         "open": "Share",
@@ -194,6 +209,37 @@
         }
       }
     }
+  },
+  "practice": {
+    "mic": {
+      "on": "Turn the microphone on",
+      "off": "Turn the microphone off",
+      "starting": "Starting the microphone",
+      "headphonesTip": "Tip: wear headphones, so the music doesn't leak into your microphone and spoil the reading.",
+      "denied": "The microphone is blocked. Allow it from the lock icon next to the address bar, then try again.",
+      "unavailable": "We couldn't use a microphone. Check that one is connected and that no other app is using it.",
+      "dismiss": "Dismiss"
+    },
+    "sing": {
+      "target": "Sing",
+      "you": "You",
+      "none": "–"
+    }
+  },
+  "streaks": {
+    "ring": "Daily practice: {progress, number, ::percent} of today's goal",
+    "inviteRing": "Daily practice streak",
+    "days": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}",
+    "remaining": "{minutes, plural, =0 {{seconds, number} s left today} other {{minutes, number} min {seconds, number} s left today}}",
+    "reached": "You reached today's goal. Come back tomorrow to keep your streak.",
+    "goal": "Daily goal: {minutes, plural, one {# minute} other {# minutes}}",
+    "countsWhilePlaying": "Practice counts while the music plays.",
+    "inviteTitle": "Build a daily practice streak",
+    "inviteDescription": "Create a free account to count the time you practice each day and keep your streak going.",
+    "inviteCreate": "Create an account",
+    "inviteSignIn": "Sign in",
+    "celebrationTitle": "Daily goal reached!",
+    "celebrationDescription": "{days, number}-day streak. See you tomorrow."
   },
   "header": {
     "home": "NoteFinder home",

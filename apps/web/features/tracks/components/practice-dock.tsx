@@ -1,17 +1,22 @@
 'use client';
 
+import type { TrackKey } from '@notefinder/contracts';
 import { SettingsIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DockMicButton } from '@/features/practice/components/dock-mic-button';
+import { DockMicNotice } from '@/features/practice/components/dock-mic-notice';
+import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-skeleton';
 
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
-import { usePlaybackState } from '../stores/playback-store';
+import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
+import { TransposeStepper } from './transpose-stepper';
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -21,6 +26,19 @@ const DOCK_HEIGHT_VAR = '--dock-height';
 const DockSettings = dynamic(
   () => import('./dock-settings').then((module) => module.DockSettings),
   { ssr: false, loading: SettingsPlaceholder },
+);
+
+// Loaded after the page too: the streak ring brings the popover, the
+// heartbeat and the celebration along, which a listener does not need to paint.
+const StreakRing = dynamic(
+  () =>
+    import('@/features/streaks/components/streak-ring').then(
+      (module) => module.StreakRing,
+    ),
+  {
+    ssr: false,
+    loading: StreakRingSkeleton,
+  },
 );
 
 function SettingsPlaceholder() {
@@ -66,10 +84,12 @@ export function PracticeDock({
   controller,
   hostRef,
   videoId,
+  trackKey,
 }: {
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
+  trackKey: TrackKey | undefined;
 }) {
   const t = useTranslations('tracks.practice.dock');
   const hidden = usePlaybackState((state) => state.videoHidden);
@@ -104,8 +124,14 @@ export function PracticeDock({
         )}
       </div>
       <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
-        <DockSettings controller={controller} videoId={videoId} />
+        <TransposeStepper trackKey={trackKey} />
+        <div className="flex items-center gap-1">
+          <DockMicButton playback={playbackStore} />
+          <StreakRing playing={status === 'playing'} />
+          <DockSettings controller={controller} videoId={videoId} />
+        </div>
       </div>
+      <DockMicNotice />
     </section>
   );
 }

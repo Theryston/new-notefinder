@@ -9,6 +9,7 @@ import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
+import { TrackKeyLabel } from './track-key-label';
 import { TrackShareButton } from './track-share-button';
 
 const LINK_CLASS =
@@ -102,8 +103,32 @@ function Duration({ ms }: { ms: number }) {
 /** How many times the Track was viewed, with the locale's number format. */
 function ViewCount({ count }: { count: number }) {
   const t = useTranslations('tracks.practice');
-
   return <span className="shrink-0 tabular-nums">{t('views', { count })}</span>;
+}
+
+/** The line under the title: artists, then the key and the duration, each after a dot. */
+function TrackFacts({ header }: { header: TrackDetail }) {
+  return (
+    <p className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
+      <span className="truncate">
+        <ArtistCredit credit={header.artistCredit} />
+      </span>
+      {header.key === undefined ? null : (
+        <>
+          <span aria-hidden="true">·</span>
+          <TrackKeyLabel trackKey={header.key} />
+        </>
+      )}
+      {header.durationMs === null ? null : (
+        <>
+          <span aria-hidden="true">·</span>
+          <Duration ms={header.durationMs} />
+        </>
+      )}
+      <span aria-hidden="true">·</span>
+      <ViewCount count={header.viewCount ?? 0} />
+    </p>
+  );
 }
 
 /**
@@ -139,19 +164,7 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
         >
           {header.title}
         </h1>
-        <p className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
-          <span className="truncate">
-            <ArtistCredit credit={header.artistCredit} />
-          </span>
-          {header.durationMs === null ? null : (
-            <>
-              <span aria-hidden="true">·</span>
-              <Duration ms={header.durationMs} />
-            </>
-          )}
-          <span aria-hidden="true">·</span>
-          <ViewCount count={header.viewCount ?? 0} />
-        </p>
+        <TrackFacts header={header} />
       </div>
       {header.contributors.length > 0 ? (
         <Contributors contributors={header.contributors} />
