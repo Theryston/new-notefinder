@@ -6,7 +6,6 @@ import {
   MIN_TRANSPOSE,
   transposeKey,
   transposeNotes,
-  transposeRange,
 } from './transpose';
 
 describe('clampTranspose', () => {
@@ -58,14 +57,5 @@ describe('transposeKey', () => {
     expect(transposeKey({ tonic: 11, mode: 'MINOR' }, 1).tonic).toBe(0);
     expect(transposeKey({ tonic: 0, mode: 'MINOR' }, -1).tonic).toBe(11);
     expect(transposeKey({ tonic: 5, mode: 'MINOR' }, -12).tonic).toBe(5);
-  });
-});
-
-describe('transposeRange', () => {
-  it('moves both ends', () => {
-    expect(transposeRange({ lowest: 62, highest: 74 }, -2)).toEqual({
-      lowest: 60,
-      highest: 72,
-    });
   });
 });

@@ -16,7 +16,14 @@ import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
-import { TransposeStepper } from './transpose-stepper';
+import { TrackKeyContext, TransposeChipPlaceholder } from './transpose-chip';
+
+// Loaded after the page too, for the same reason as the Settings menu: its
+// placeholder is the chip itself, so the dock paints complete at once.
+const TransposePopover = dynamic(
+  () => import('./transpose-popover').then((module) => module.TransposePopover),
+  { ssr: false, loading: TransposeChipPlaceholder },
+);
 
 /** The custom property the page's bottom padding and the timeline follow. */
 const DOCK_HEIGHT_VAR = '--dock-height';
@@ -74,7 +81,8 @@ function usePublishDockHeight(dock: RefObject<HTMLElement | null>) {
 
 /**
  * The floating glass dock (DESIGN.md "Floating layers"): the YouTube square,
- * play and pause, the progress track and the Settings menu. On a phone the
+ * play and pause, the progress track, the transpose chip and the Settings
+ * menu. On a phone the
  * play button and the progress track are the first row, and the video square
  * sits beside a column of controls; from `md` it is one row. With the video
  * hidden it is one line everywhere. The video mounts into `hostRef`, which
@@ -123,13 +131,13 @@ export function PracticeDock({
           <DockProgressTrack controller={controller} />
         )}
       </div>
-      <div className="flex flex-col items-end gap-1 self-start [grid-area:controls] md:self-center">
-        <TransposeStepper trackKey={trackKey} />
-        <div className="flex items-center gap-1">
-          <DockMicButton playback={playbackStore} />
-          <StreakRing playing={status === 'playing'} />
-          <DockSettings controller={controller} videoId={videoId} />
-        </div>
+      <div className="flex items-center justify-end gap-1 self-start [grid-area:controls] md:self-center">
+        <TrackKeyContext value={trackKey}>
+          <TransposePopover />
+        </TrackKeyContext>
+        <DockMicButton playback={playbackStore} />
+        <StreakRing playing={status === 'playing'} />
+        <DockSettings controller={controller} videoId={videoId} />
       </div>
       <DockMicNotice />
     </section>

@@ -1,10 +1,6 @@
-import type {
-  TrackKey,
-  TrackNote,
-  TrackVocalRange,
-} from '@notefinder/contracts';
+import type { TrackKey, TrackNote } from '@notefinder/contracts';
 
-export const SEMITONES_PER_OCTAVE = 12;
+const SEMITONES_PER_OCTAVE = 12;
 
 /** How far the stepper moves the Track: an octave down to an octave up. */
 export const MIN_TRANSPOSE = -12;
@@ -39,16 +35,5 @@ export function transposeKey(key: TrackKey, semitones: number): TrackKey {
       (((key.tonic + semitones) % SEMITONES_PER_OCTAVE) +
         SEMITONES_PER_OCTAVE) %
       SEMITONES_PER_OCTAVE,
-  };
-}
-
-/** The vocal range a transposed Track has. */
-export function transposeRange(
-  range: TrackVocalRange,
-  semitones: number,
-): TrackVocalRange {
-  return {
-    lowest: range.lowest + semitones,
-    highest: range.highest + semitones,
   };
 }

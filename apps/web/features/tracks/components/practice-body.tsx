@@ -26,7 +26,6 @@ import { transposeNotes } from '../transpose/transpose';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
-import { VocalRangeStrip } from './vocal-range-strip';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -174,7 +173,6 @@ export function PracticeBody({
           ) : (
             lyricsLoading && <div aria-hidden="true" className="min-h-8" />
           )}
-          <VocalRangeStrip range={header.vocalRange} />
         </div>
       ) : (
         <NoVoice />

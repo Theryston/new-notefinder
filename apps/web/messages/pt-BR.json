@@ -158,7 +158,8 @@
         "transposeUp": "Subir um semitom",
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Voltar ao tom original",
-        "videoKeepsKey": "Só as notas mudaram de tom. O vídeo continua tocando no tom original."
+        "transposeOpen": "Mudar tom: {key}",
+        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original."
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
@@ -179,11 +180,6 @@
       "key": {
         "MAJOR": "{tonic} maior",
         "MINOR": "{tonic} menor"
-      },
-      "range": {
-        "label": "Extensão vocal",
-        "summary": "{low}–{high} · {octaves, plural, one {# oitava} other {# oitavas}}",
-        "keyboard": "Teclado com a extensão vocal de {low} a {high} destacada"
       },
       "views": "{count, plural, =0 {# visualizações} one {# visualização} other {# visualizações}}",
       "share": {
