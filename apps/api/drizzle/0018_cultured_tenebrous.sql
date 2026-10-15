@@ -1,0 +1,1 @@
+ALTER TABLE "daily_practice_streaks" ADD COLUMN "reminder_queued_at" timestamp with time zone;
