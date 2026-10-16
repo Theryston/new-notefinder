@@ -314,7 +314,15 @@
     height: 100%;
   }
   .practice-fullscreen:fullscreen div:has(> canvas) {
-    height: max(80px, calc(100dvh - var(--dock-height, 0px) - 36px));
+    height: max(
+      80px,
+      calc(
+        100dvh -
+        var(--dock-height, 0px) -
+        var(--score-feedback-height, 0px) -
+        36px
+      )
+    );
   }
   .practice-fullscreen:fullscreen .dock-fullscreen-exit {
     display: inline-flex;

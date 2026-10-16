@@ -251,6 +251,28 @@
       "start": "Start 10-second calibration",
       "reset": "Reset timing adjustment",
       "count": "{count}"
+    },
+    "scoring": {
+      "difficulty": "Difficulty",
+      "EASY": "Easy ±75 cents",
+      "NORMAL": "Normal ±50 cents",
+      "HARD": "Hard ±25 cents",
+      "octaveMode": "Octave mode",
+      "ANY": "Any octave",
+      "EXACT": "Exact octave",
+      "hit": "Hit",
+      "near": "Near",
+      "miss": "Miss",
+      "waiting": "Sing a note to begin",
+      "sectionScore": "Section: {percent}% · {count} judged",
+      "liveScore": "Accuracy: {percent}% · {count} judged",
+      "stop": "Stop singing",
+      "close": "Close results",
+      "result": "Practice result",
+      "resultDescription": "Your accuracy is the number of hit notes divided by judged notes.",
+      "accuracy": "{percent}%",
+      "judged": "{count, plural, one {# note judged} other {# notes judged}}",
+      "tryAgain": "Try again"
     }
   },
   "streaks": {

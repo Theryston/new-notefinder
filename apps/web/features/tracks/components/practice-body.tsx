@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
 import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
+import { ScoringPreferences } from '@/features/practice/components/scoring-preferences';
 import { SingTimeline } from '@/features/practice/components/sing-timeline';
 import { SingingAids } from '@/features/practice/components/singing-aids';
 
@@ -91,8 +92,11 @@ function TrackTimeline({
 
   return (
     <SingTimeline
+      key={header.id}
       notes={shifted}
       playback={playbackStore}
+      controls={controller}
+      loop={useLoop}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}
@@ -237,6 +241,7 @@ function PracticeBodyContent(props: PracticeBodyProps) {
       ) : (
         <NoVoice />
       )}
+      <ScoringPreferences />
       <SingingAids
         controller={controller}
         playback={playbackStore}

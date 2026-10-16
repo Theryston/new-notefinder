@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CalibrationDialog } from '@/features/practice/components/calibration-dialog';
+import { ScoringSettings } from '@/features/practice/components/scoring-settings';
 import { SingingAidsSettings } from '@/features/practice/components/singing-aids-settings';
 
 import type { PlaybackController } from '../playback/playback-controller';
@@ -97,6 +98,7 @@ export function DockSettings({
             )}
             {t('mute')}
           </DropdownMenuCheckboxItem>
+          <ScoringSettings />
           <SingingAidsSettings
             onCalibrate={() => {
               controller?.pause();
