@@ -215,9 +215,11 @@ export function PracticeBody({
         <NoVoice />
       )}
       <SharedMomentSeek controller={controller} />
-      <div className="practice-lyrics">
-        <TrackLyricsBlock lyrics={lyrics} controller={controller} />
-      </div>
+      {hasLyrics ? (
+        <div className="practice-lyrics">
+          <TrackLyricsBlock lyrics={lyrics} controller={controller} />
+        </div>
+      ) : null}
       {header.youtubeVideoId === null ? null : (
         <PracticeDock
           controller={controller}
