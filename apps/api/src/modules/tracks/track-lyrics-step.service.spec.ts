@@ -38,8 +38,8 @@ const transcribed = {
 
 const expectedLines = [
   {
-    start: 0,
-    end: 1.2,
+    start: 0.1,
+    end: 0.9,
     words: [
       { text: 'Is', start: 0.1, end: 0.4 },
       { text: 'this', start: 0.5, end: 0.9 },

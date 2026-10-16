@@ -127,16 +127,16 @@ const latestProcessingOf = async (testApp: TestApp, trackId: string) => {
 /** The lines the transcription of FAKE_TRANSCRIPTION makes, with their words. */
 const EXPECTED_LINES = [
   {
-    start: 1,
-    end: 2.5,
+    start: 1.1,
+    end: 1.8,
     words: [
       { text: 'Is', start: 1.1, end: 1.3 },
       { text: 'this', start: 1.4, end: 1.8 },
     ],
   },
   {
-    start: 3,
-    end: 4.5,
+    start: 3.1,
+    end: 4.3,
     words: [
       { text: 'the', start: 3.1, end: 3.3 },
       { text: 'real', start: 3.4, end: 3.8 },

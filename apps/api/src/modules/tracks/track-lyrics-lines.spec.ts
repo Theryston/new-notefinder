@@ -8,7 +8,7 @@ const word = (text: string, start: number, end: number) => ({
 });
 
 describe('timedLyricsOf', () => {
-  it('turns each segment into a line with the words it covers, in the order they are sung', () => {
+  it('times each line from first-word start to last-word end, ignoring segments', () => {
     const lines = timedLyricsOf({
       segments: [segment(0, 2), segment(2, 4)],
       words: [
@@ -21,16 +21,16 @@ describe('timedLyricsOf', () => {
 
     expect(lines).toEqual([
       {
-        start: 0,
-        end: 2,
+        start: 0.1,
+        end: 0.9,
         words: [
           { text: 'Is', start: 0.1, end: 0.4 },
           { text: 'this', start: 0.5, end: 0.9 },
         ],
       },
       {
-        start: 2,
-        end: 4,
+        start: 2.1,
+        end: 3.0,
         words: [
           { text: 'the', start: 2.1, end: 2.4 },
           { text: 'real', start: 2.5, end: 3.0 },
@@ -39,7 +39,7 @@ describe('timedLyricsOf', () => {
     ]);
   });
 
-  it('keeps words no segment covers in lines of their own, timed by their words', () => {
+  it('groups words into lines timed by their words, ignoring segments', () => {
     const lines = timedLyricsOf({
       segments: [segment(0, 2), segment(4, 6)],
       words: [
@@ -51,33 +51,36 @@ describe('timedLyricsOf', () => {
     });
 
     expect(lines.map((line) => [line.start, line.end])).toEqual([
-      [0, 2],
-      [2.5, 3.4],
-      [4, 6],
+      [0.5, 0.8],
+      [2.5, 5.0],
     ]);
-    expect(lines[1]?.words.map((item) => item.text)).toEqual(['the', 'real']);
+    expect(lines[1]?.words.map((item) => item.text)).toEqual([
+      'the',
+      'real',
+      'life',
+    ]);
   });
 
-  it('counts a word that starts where a segment ends as outside that segment', () => {
+  it('breaks the line across a hard silence where a segment ends', () => {
     const lines = timedLyricsOf({
       segments: [segment(0, 2)],
       words: [word(' Is', 0.5, 0.8), word(' the', 2.0, 2.4)],
     });
 
     expect(lines.map((line) => [line.start, line.end])).toEqual([
-      [0, 2],
-      [2, 2.4],
+      [0.5, 0.8],
+      [2.0, 2.4],
     ]);
   });
 
-  it('drops a segment without words, and a word without text', () => {
+  it('ignores a segment without words, and drops a word without text', () => {
     const lines = timedLyricsOf({
       segments: [segment(0, 2), segment(2, 4)],
       words: [word(' Is', 0.5, 0.8), word('  ', 0.9, 1.0)],
     });
 
     expect(lines).toEqual([
-      { start: 0, end: 2, words: [{ text: 'Is', start: 0.5, end: 0.8 }] },
+      { start: 0.5, end: 0.8, words: [{ text: 'Is', start: 0.5, end: 0.8 }] },
     ]);
   });
 
