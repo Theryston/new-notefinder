@@ -210,7 +210,14 @@
           "email": "E-mail"
         }
       },
-      "moreToSing": "Mais para cantar"
+      "moreToSing": "Mais para cantar",
+      "listening": {
+        "loop": "Repetir trecho",
+        "loopStart": "Início do trecho",
+        "loopEnd": "Fim do trecho",
+        "nextNotes": "Próximas notas",
+        "fullscreen": "Alternar tela cheia"
+      }
     }
   },
   "practice": {

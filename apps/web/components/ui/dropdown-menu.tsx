@@ -5,6 +5,8 @@ import { cn } from 'cn';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import type * as React from 'react';
 
+import { useFullscreenContainer } from '@/hooks/use-fullscreen-container';
+
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
@@ -29,8 +31,9 @@ function DropdownMenuContent({
     MenuPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
   >) {
+  const container = useFullscreenContainer();
   return (
-    <MenuPrimitive.Portal>
+    <MenuPrimitive.Portal container={container ?? undefined}>
       <MenuPrimitive.Positioner
         className="isolate z-50 outline-none"
         align={align}

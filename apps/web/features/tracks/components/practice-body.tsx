@@ -19,6 +19,9 @@ import { useDirectAudio } from '../hooks/use-direct-audio';
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { useTimelineFocus } from '../hooks/use-shared-link';
+import { loopRange } from '../listening/listening-math';
+import { useLoop } from '../listening/loop-store';
+import { useListeningTools } from '../listening/use-listening-tools';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
@@ -26,6 +29,7 @@ import { playbackStore } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
 import { creditText } from '../track-credit';
 import { transposeNotes } from '../transpose/transpose';
+import { ListeningActions } from './listening-actions';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
@@ -45,6 +49,14 @@ function NoVoice() {
   );
 }
 
+function useTransposedNotes(notes: TrackNotes | undefined) {
+  const semitones = useTranspose();
+  return useMemo(
+    () => (notes ? transposeNotes(notes.notes, semitones) : []),
+    [notes, semitones],
+  );
+}
+
 function TrackTimeline({
   header,
   notes,
@@ -57,11 +69,7 @@ function TrackTimeline({
   controller: PlaybackController | null;
 }) {
   const t = useTranslations('tracks.practice');
-  const semitones = useTranspose();
-  const shifted = useMemo(
-    () => (notes ? transposeNotes(notes.notes, semitones) : []),
-    [notes, semitones],
-  );
+  const shifted = useTransposedNotes(notes);
   if (notes === undefined) {
     return failed ? (
       <p role="alert" className="text-muted-foreground text-sm">
@@ -114,29 +122,41 @@ function TrackLyricsBlock({
 }) {
   if (lyrics === undefined || lyrics.lines.length === 0) return null;
   return (
-    <LyricsBlock
-      lines={lyrics.lines}
-      clock={playbackClock}
-      onSeek={controller?.seek}
-    />
+    <div className="practice-lyrics">
+      <LyricsBlock
+        lines={lyrics.lines}
+        clock={playbackClock}
+        onSeek={
+          controller
+            ? (seconds) => {
+                const line = lyrics.lines.find(
+                  (item) => item.start === seconds,
+                );
+                if (
+                  line &&
+                  useLoop.getState().range &&
+                  matchMedia(
+                    '(max-width: 767px), (max-height: 600px) and (orientation: landscape)',
+                  ).matches
+                ) {
+                  useLoop.setState({
+                    range: loopRange(
+                      line.start,
+                      line.end,
+                      playbackStore.getState().duration,
+                    ),
+                  });
+                }
+                controller.seek(seconds);
+              }
+            : undefined
+        }
+      />
+    </div>
   );
 }
 
-/**
- * The practice view below the title row: the note timeline (or the "no voice"
- * message for a Track without notes), the lyrics and the dock that plays the
- * Track's video. The timeline follows the dock's player and can be dragged to
- * seek; the page leaves room under it for the dock, which floats.
- */
-function PracticeBodyContent({
-  header,
-  notes,
-  lyrics,
-  lyricsLoading,
-  failed,
-  fakePlayer,
-  admin,
-}: {
+type PracticeBodyProps = {
   admin: boolean;
   header: TrackDetail;
   notes: TrackNotes | undefined;
@@ -146,7 +166,14 @@ function PracticeBodyContent({
   failed: boolean;
   /** The e2e build's flag: play with a clock instead of YouTube. */
   fakePlayer: boolean;
-}) {
+};
+
+function usePracticeController({
+  header,
+  notes,
+  fakePlayer,
+  admin,
+}: Pick<PracticeBodyProps, 'header' | 'notes' | 'fakePlayer' | 'admin'>) {
   const audio = useDirectAudio(header.id, admin);
   const directAudio = admin ? audio.data : undefined;
   const hostRef = useRef<HTMLDivElement>(null);
@@ -160,11 +187,21 @@ function PracticeBodyContent({
     directAudio,
   });
   usePlaybackShortcuts(controller);
-  const semitones = useTranspose();
-  const guideNotes = useMemo(
-    () => transposeNotes(notes?.notes ?? [], semitones),
-    [notes, semitones],
-  );
+  useListeningTools(controller);
+  return { controller, directAudio, hostRef };
+}
+
+/**
+ * The practice view below the title row: the note timeline (or the "no voice"
+ * message for a Track without notes), the lyrics and the dock that plays the
+ * Track's video. The timeline follows the dock's player and can be dragged to
+ * seek; the page leaves room under it for the dock, which floats.
+ */
+function PracticeBodyContent(props: PracticeBodyProps) {
+  const { header, notes, lyrics, lyricsLoading, failed } = props;
+  const { controller, directAudio, hostRef } = usePracticeController(props);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
+  const guideNotes = useTransposedNotes(notes);
   const timelineRef = useRef<HTMLDivElement>(null);
   // The timeline block is on screen once its notes loaded or failed to.
   useTimelineFocus(
@@ -174,9 +211,17 @@ function PracticeBodyContent({
   const hasLyrics = lyrics !== undefined && lyrics.lines.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]">
+    <div
+      ref={fullscreenRef}
+      className="practice-fullscreen flex flex-col gap-6 bg-background pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]"
+    >
       {header.hasNotes ? (
         <div ref={timelineRef} className="flex scroll-mt-20 flex-col gap-3">
+          <ListeningActions
+            notes={notes?.notes ?? []}
+            controller={controller}
+            container={fullscreenRef}
+          />
           <TrackTimeline
             header={header}
             notes={notes}
@@ -214,9 +259,7 @@ function PracticeBodyContent({
   );
 }
 
-export function PracticeBody(
-  props: Omit<Parameters<typeof PracticeBodyContent>[0], 'admin'>,
-) {
+export function PracticeBody(props: Omit<PracticeBodyProps, 'admin'>) {
   return (
     <SessionUserBoundary
       render={(user) => (

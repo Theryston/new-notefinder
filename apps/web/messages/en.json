@@ -210,7 +210,14 @@
           "email": "Email"
         }
       },
-      "moreToSing": "More to sing"
+      "moreToSing": "More to sing",
+      "listening": {
+        "loop": "Loop section",
+        "loopStart": "Loop start",
+        "loopEnd": "Loop end",
+        "nextNotes": "Next notes",
+        "fullscreen": "Toggle fullscreen"
+      }
     }
   },
   "practice": {

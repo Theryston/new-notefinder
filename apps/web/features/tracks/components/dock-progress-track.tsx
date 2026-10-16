@@ -21,6 +21,8 @@ import {
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { AudioWaveform } from './audio-waveform';
 
+import { LoopHandles } from './loop-handles';
+
 type TrackElements = {
   fill: RefObject<HTMLDivElement | null>;
   thumb: RefObject<HTMLDivElement | null>;
@@ -177,6 +179,7 @@ export function DockProgressTrack({
             style={{ left: '0%' }}
           />
         </div>
+        <LoopHandles duration={duration} />
       </div>
       <button
         type="button"
