@@ -301,9 +301,9 @@
   border: 0;
   cursor: ew-resize;
 }
-/* Fullscreen is the timeline's stage: the full lyrics and the listening
- * actions stay out, the current line, the readout, the score and the dock
- * stay in, and the roll takes every free pixel of the viewport height. */
+/* Fullscreen is the timeline's stage: the full lyrics stay out, while the
+ * listening actions, current line, readout, score and dock stay in. The roll
+ * takes every free pixel of the viewport height. */
 .practice-fullscreen:fullscreen {
   padding: 12px;
   overflow: auto;

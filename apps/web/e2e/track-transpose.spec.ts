@@ -210,7 +210,7 @@ for (const { locale, messages } of cases) {
       }
     });
 
-    test('separates the artists, the key and the duration with one dot each', async ({
+    test('keeps the key in the transpose chip and separates the track facts', async ({
       page,
     }) => {
       const id = `clx-facts-${locale}`;
@@ -219,10 +219,18 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/tracks/${id}`);
 
       const facts = page.locator('#track-title + p');
-      await expect(facts).toContainText(keyText('G', 'MAJOR'));
       const text = ((await facts.textContent()) ?? '').replace(/\s+/g, ' ');
-      expect(text).toContain(`Queen·${keyText('G', 'MAJOR')}·`);
+      expect(text).toContain('Queen');
+      expect(text).toContain(t('durationLabel', { duration: '4:08' }));
+      expect(text).toContain(t('views', { count: 0 }));
+      await expect(facts.locator('span[aria-hidden="true"]')).toHaveCount(2);
       expect(text).not.toContain('··');
+      const key = keyText('G', 'MAJOR');
+      const chip = page.getByRole('button', {
+        name: t('dock.transposeOpen', { key }),
+      });
+      await expect(chip).toBeVisible();
+      await expect(chip).toContainText(key);
     });
   });
 }
