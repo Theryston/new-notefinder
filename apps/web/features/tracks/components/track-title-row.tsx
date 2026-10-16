@@ -24,8 +24,7 @@ const ContributorsDialog = dynamic(
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
 
-const AVATAR_CLASS =
-  'size-8 ring-2 ring-background [&_[data-slot=avatar-fallback]]:bg-[color-mix(in_oklab,var(--primary)_15%,var(--background))]';
+const AVATAR_CLASS = 'size-8 ring-2 ring-background';
 
 /** The credit, each name linked to its Artist page when it has one. */
 function ArtistCredit({ credit }: { credit: TrackDetail['artistCredit'] }) {
