@@ -14,6 +14,7 @@ import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-sk
 import type { PlaybackController } from '../playback/playback-controller';
 import { YOUTUBE_SQUARE_PX } from '../player/player-port';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
+import { DockFullscreenExit } from './dock-fullscreen-exit';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
 import { TrackKeyContext, TransposeChipPlaceholder } from './transpose-chip';
@@ -140,6 +141,7 @@ export function PracticeDock({
       </div>
       <div className="flex min-w-0 items-center justify-between gap-1 [grid-area:actions] md:gap-3">
         <DockMicButton playback={playbackStore} />
+        <DockFullscreenExit />
         <StreakRing playing={status === 'playing'} />
         <DockSettings controller={controller} videoId={videoId} />
         <TrackKeyContext value={trackKey}>

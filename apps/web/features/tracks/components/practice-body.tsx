@@ -126,7 +126,9 @@ function TrackLyricsBlock({
               if (
                 line &&
                 useLoop.getState().range &&
-                matchMedia('(max-width: 767px)').matches
+                matchMedia(
+                  '(max-width: 767px), (max-height: 600px) and (orientation: landscape)',
+                ).matches
               ) {
                 useLoop.setState({
                   range: loopRange(

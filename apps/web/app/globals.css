@@ -276,21 +276,27 @@
 
 .loop-handle::-webkit-slider-thumb {
   pointer-events: auto;
+  box-sizing: border-box;
   appearance: none;
-  width: 16px;
+  width: 40px;
   height: 40px;
   border-radius: 999px;
   background: var(--primary);
-  border: 2px solid var(--background);
+  border-block: 2px solid var(--background);
+  border-inline: 12px solid transparent;
+  background-clip: padding-box;
   cursor: ew-resize;
 }
 .loop-handle::-moz-range-thumb {
   pointer-events: auto;
-  width: 16px;
+  box-sizing: border-box;
+  width: 40px;
   height: 40px;
   border-radius: 999px;
   background: var(--primary);
-  border: 2px solid var(--background);
+  border-block: 2px solid var(--background);
+  border-inline: 12px solid transparent;
+  background-clip: padding-box;
   cursor: ew-resize;
 }
 @media (orientation: landscape) and (max-height: 600px) {
@@ -298,6 +304,8 @@
     padding: 12px;
     overflow: auto;
   }
+  .practice-fullscreen:fullscreen .practice-listening-actions,
+  .practice-fullscreen:fullscreen div:has(> span > [data-testid="target-note"]),
   .practice-fullscreen:fullscreen [data-testid="karaoke-line"],
   .practice-fullscreen:fullscreen .practice-lyrics {
     display: none;
@@ -305,7 +313,10 @@
   .practice-fullscreen:fullscreen canvas {
     height: 100%;
   }
-  .practice-fullscreen:fullscreen [role="img"] {
-    max-height: calc(100dvh - var(--dock-height, 0px) - 80px);
+  .practice-fullscreen:fullscreen div:has(> canvas) {
+    height: max(80px, calc(100dvh - var(--dock-height, 0px) - 36px));
+  }
+  .practice-fullscreen:fullscreen .dock-fullscreen-exit {
+    display: inline-flex;
   }
 }

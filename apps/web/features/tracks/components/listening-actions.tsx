@@ -32,7 +32,7 @@ export function ListeningActions({
     return playbackStore.subscribe(update);
   }, [notes]);
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="practice-listening-actions flex items-center justify-end gap-2">
       <Button
         ref={next}
         hidden={!notes.length}

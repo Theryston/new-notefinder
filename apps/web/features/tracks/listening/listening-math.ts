@@ -24,15 +24,19 @@ export function moveLoopHandle(
   handle: 'start' | 'end',
   time: number,
   duration: number,
-): LoopRange {
+): LoopRange | null {
+  const normalized = loopRange(range.start, range.end, duration);
+  if (!normalized) return null;
   const minimum = Math.min(0.1, duration);
   if (handle === 'start')
-    return {
-      ...range,
-      start: Math.max(0, Math.min(time, range.end - minimum)),
-    };
-  return {
-    ...range,
-    end: Math.min(duration, Math.max(time, range.start + minimum)),
-  };
+    return loopRange(
+      Math.min(time, normalized.end - minimum),
+      normalized.end,
+      duration,
+    );
+  return loopRange(
+    normalized.start,
+    Math.max(time, normalized.start + minimum),
+    duration,
+  );
 }

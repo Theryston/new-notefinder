@@ -1,11 +1,57 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { type PointerEvent, useRef } from 'react';
 
 import { moveLoopHandle } from '../listening/listening-math';
 import { useLoop } from '../listening/loop-store';
+import { fractionAtPointer, timeAtFraction } from '../playback/playback-math';
+
+/** Native range thumbs inset their endpoints by half their hit width. Map
+ * pointer positions to the whole progress track, just like its seek handler. */
+function useHandlePointer(duration: number) {
+  const dragging = useRef(false);
+  return (handle: 'start' | 'end') => {
+    const move = (event: PointerEvent<HTMLInputElement>) => {
+      const { range } = useLoop.getState();
+      if (!range) return;
+      const fraction = fractionAtPointer(
+        event.clientX,
+        event.currentTarget.getBoundingClientRect(),
+      );
+      useLoop.setState({
+        range: moveLoopHandle(
+          range,
+          handle,
+          timeAtFraction(fraction, duration),
+          duration,
+        ),
+      });
+    };
+    return {
+      onPointerDown: (event: PointerEvent<HTMLInputElement>) => {
+        event.stopPropagation();
+        if (event.button !== 0) return;
+        event.preventDefault();
+        dragging.current = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        move(event);
+      },
+      onPointerMove: (event: PointerEvent<HTMLInputElement>) => {
+        if (dragging.current) move(event);
+      },
+      onPointerUp: () => {
+        dragging.current = false;
+      },
+      onPointerCancel: () => {
+        dragging.current = false;
+      },
+    };
+  };
+}
 
 export function LoopHandles({ duration }: { duration: number }) {
+  const pointer = useHandlePointer(duration);
   const t = useTranslations('tracks.practice.listening');
   const range = useLoop((state) => state.range);
   if (!range || duration <= 0) return null;
@@ -20,7 +66,7 @@ export function LoopHandles({ duration }: { duration: number }) {
           step={0.1}
           value={range[handle]}
           aria-label={t(handle === 'start' ? 'loopStart' : 'loopEnd')}
-          onPointerDown={(event) => event.stopPropagation()}
+          {...pointer(handle)}
           onKeyDown={(event) => event.stopPropagation()}
           onChange={(event) =>
             useLoop.setState({
