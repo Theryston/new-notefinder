@@ -1,9 +1,9 @@
 import type { SubmitPracticeAttemptBody } from '@notefinder/contracts';
 
-import { writePendingAttempt } from './pending-attempt';
-
-type ReadableStorage = Pick<Storage, 'getItem'>;
-type WritableStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+import {
+  type PendingAttemptStorage,
+  writePendingAttempt,
+} from './pending-attempt';
 
 /**
  * Routes a finished run: a signed-in User's is submitted at once through
@@ -21,7 +21,7 @@ export function reportAttempt({
   trackId: string;
   body: SubmitPracticeAttemptBody;
   submit: (body: SubmitPracticeAttemptBody) => void;
-  storage: (ReadableStorage & WritableStorage) | undefined;
+  storage: PendingAttemptStorage | undefined;
 }): void {
   if (signedIn) {
     submit(body);

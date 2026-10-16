@@ -1,5 +1,5 @@
-import { boolean, pgTable, text } from 'drizzle-orm/pg-core';
-import { timestamps } from '../columns.js';
+import { boolean, pgTable, text, unique } from 'drizzle-orm/pg-core';
+import { id, timestamps } from '../columns.js';
 import { octaveMode, practiceDifficulty } from './practice-attempts.js';
 import { users } from './users.js';
 
@@ -14,13 +14,18 @@ import { users } from './users.js';
  * per-preference history: every imported user starts on the page defaults
  * and writes their row on the first change.
  */
-export const userPracticePreferences = pgTable('user_practice_preferences', {
-  userId: text()
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  difficulty: practiceDifficulty().notNull().default('NORMAL'),
-  octaveMode: octaveMode().notNull().default('ANY'),
-  guideMelody: boolean().notNull().default(false),
-  countIn: boolean().notNull().default(true),
-  ...timestamps,
-});
+export const userPracticePreferences = pgTable(
+  'user_practice_preferences',
+  {
+    id: id(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    difficulty: practiceDifficulty().notNull().default('NORMAL'),
+    octaveMode: octaveMode().notNull().default('ANY'),
+    guideMelody: boolean().notNull().default(false),
+    countIn: boolean().notNull().default(true),
+    ...timestamps,
+  },
+  (table) => [unique().on(table.userId)],
+);

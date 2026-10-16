@@ -3,8 +3,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { submitPracticeAttempt } from './attempt-queries';
-import { trackKeys } from './query-keys';
 import { type RequestErrorMessage, requestErrorMessage } from './request-error';
+import { invalidateTrackState } from './track-user-state-query';
 
 /**
  * The mutation behind saving a run: submit it, then read the Track state
@@ -21,9 +21,7 @@ export function submitAttemptMutation(
     mutationFn: (body: SubmitPracticeAttemptBody) =>
       submitPracticeAttempt(trackId, body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: trackKeys.userState(trackId),
-      });
+      void invalidateTrackState(queryClient, trackId);
     },
     onError: (error: unknown) => {
       toast.error(translate(requestErrorMessage(error)));

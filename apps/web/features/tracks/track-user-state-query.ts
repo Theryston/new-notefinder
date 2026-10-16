@@ -1,5 +1,5 @@
 import { trackPracticeStateSchema } from '@notefinder/contracts';
-import { queryOptions } from '@tanstack/react-query';
+import { type QueryClient, queryOptions } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { browserApi } from '@/lib/api/browser';
@@ -34,5 +34,18 @@ export function setTrackFavorite(
   return browserApi(`/me/favorites${trackPath(trackId)}`, {
     method: favorite ? 'PUT' : 'DELETE',
     schema: z.undefined(),
+  });
+}
+
+/**
+ * Reads the Track state again: a saved attempt changes the best scores, so
+ * the title row and the result sheet show them at once.
+ */
+export function invalidateTrackState(
+  queryClient: QueryClient,
+  trackId: string,
+): Promise<void> {
+  return queryClient.invalidateQueries({
+    queryKey: trackKeys.userState(trackId),
   });
 }

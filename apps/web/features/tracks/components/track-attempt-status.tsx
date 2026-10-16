@@ -1,12 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
-import { BestScorePill } from '@/features/practice/components/best-score-pill';
 import { Link } from '@/lib/i18n/navigation';
 
-import { trackUserStateQueryOptions } from '../track-user-state-query';
+import { BestScoreState } from './best-score-state';
 
 /**
  * What a finished run means for the account, drawn inside the result sheet:
@@ -24,12 +22,6 @@ export function TrackAttemptStatus({ trackId }: { trackId: string }) {
       }}
     />
   );
-}
-
-function BestScoreState({ trackId }: { trackId: string }) {
-  const state = useQuery(trackUserStateQueryOptions(trackId));
-  if (state.data === undefined) return null;
-  return <BestScorePill bestScores={state.data.bestScores} />;
 }
 
 function SignInInvite({ trackId }: { trackId: string }) {

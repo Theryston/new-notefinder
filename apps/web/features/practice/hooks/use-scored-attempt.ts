@@ -5,8 +5,12 @@ import type {
   TrackNote,
 } from '@notefinder/contracts';
 import { useEffect, useRef } from 'react';
-import type { BleedSample } from '../bleed';
-import { buildScoredAttemptBody, collectVoiceSample } from '../scored-attempt';
+import {
+  buildScoredAttemptBody,
+  collectVoiceSample,
+  type StampedSample,
+  selectRunSamples,
+} from '../scored-attempt';
 import { scoringSettings } from '../stores/scoring-settings';
 import { voiceTrail } from '../voice-trail';
 import type { useScoring } from './use-scoring';
@@ -32,7 +36,9 @@ export function useScoredAttempt({
   rate: number;
   onAttempt: (body: SubmitPracticeAttemptBody) => void;
 }) {
-  const samples = useRef<BleedSample[]>([]);
+  // Every run on this page shares one collection; the report below scopes
+  // it to the run that just finished, so an earlier run cannot mark this one.
+  const samples = useRef<StampedSample[]>([]);
   // The last result seen: only a fresh finish reports.
   const previous = useRef<unknown>(null);
   const report = useRef(onAttempt);
@@ -48,15 +54,16 @@ export function useScoredAttempt({
 
   const result = scoring.snapshot.result;
   useEffect(() => {
+    const window = scoring.session.runWindow();
     const body = buildScoredAttemptBody({
       result,
       previous: previous.current,
       settings: scoringSettings.getState(),
       transpose,
       rate,
-      samples: samples.current,
+      samples: selectRunSamples(samples.current, window),
       notes,
-      window: scoring.session.runWindow(),
+      window,
     });
     previous.current = result;
     if (body) report.current(body);

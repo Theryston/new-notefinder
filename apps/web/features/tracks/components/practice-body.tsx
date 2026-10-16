@@ -310,10 +310,7 @@ export function PracticeBody(
             signedIn={user !== null}
             userKey={user?.email ?? null}
           />
-          <PendingAttemptSubmitter
-            trackId={props.header.id}
-            signedIn={user !== null}
-          />
+          <PendingAttemptSubmitter signedIn={user !== null} />
           <PracticeBodyContent
             {...props}
             admin={user?.role === 'ADMIN'}

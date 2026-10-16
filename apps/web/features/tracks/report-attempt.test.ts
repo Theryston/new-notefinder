@@ -13,6 +13,10 @@ const memory = () => {
     removeItem: (key: string) => {
       values.delete(key);
     },
+    get length() {
+      return values.size;
+    },
+    key: (index: number) => [...values.keys()][index] ?? null,
   };
 };
 

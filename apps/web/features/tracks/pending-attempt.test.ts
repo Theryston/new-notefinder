@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clearPendingAttempt,
+  listPendingAttempts,
   type PendingAttempt,
   readPendingAttempt,
   writePendingAttempt,
@@ -17,6 +18,10 @@ const memory = () => {
     removeItem: (key: string) => {
       values.delete(key);
     },
+    get length() {
+      return values.size;
+    },
+    key: (index: number) => [...values.keys()][index] ?? null,
   };
 };
 
@@ -54,6 +59,23 @@ describe('pending attempt', () => {
     expect(readPendingAttempt(storage, 'track-2')).toBeUndefined();
   });
 
+  it('lists every waiting run, whatever Track it was sung on', () => {
+    const storage = memory();
+    writePendingAttempt(storage, attempt('track-1'));
+    writePendingAttempt(storage, attempt('track-2'));
+    storage.setItem('notefinder:track-view:track-1', '{}');
+
+    expect(listPendingAttempts(storage)).toEqual([
+      attempt('track-1'),
+      attempt('track-2'),
+    ]);
+  });
+
+  it('lists nothing when nothing waits, or storage is blocked', () => {
+    expect(listPendingAttempts(memory())).toEqual([]);
+    expect(listPendingAttempts(undefined)).toEqual([]);
+  });
+
   it('ignores what is not a run anymore', () => {
     const storage = memory();
     storage.setItem(
@@ -62,6 +84,7 @@ describe('pending attempt', () => {
     );
 
     expect(readPendingAttempt(storage, 'track-1')).toBeUndefined();
+    expect(listPendingAttempts(storage)).toEqual([]);
   });
 
   it('ignores what is not JSON at all', () => {
