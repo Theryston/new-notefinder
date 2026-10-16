@@ -315,13 +315,16 @@
   height: 100%;
 }
 .practice-fullscreen:fullscreen div:has(> canvas) {
+  /* Viewport minus the dock clearance, the live readout and score rows, and
+   * the fixed chrome: 12px padding each side, the 40px listening-actions row
+   * with its 12px gaps, and the 32px karaoke line. */
   height: max(
     80px,
     calc(
       100dvh -
       var(--dock-height, 0px) -
       var(--score-feedback-height, 0px) -
-      80px
+      120px
     )
   );
 }
