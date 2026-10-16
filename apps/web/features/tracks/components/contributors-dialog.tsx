@@ -173,7 +173,7 @@ function ContributorsResults({
   useEffect(() => {
     const target = sentinel.current;
     const root = list.current;
-    if (target === null || root === null || !hasNextPage) return;
+    if (error || target === null || root === null || !hasNextPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && !isFetchingNextPage) {
@@ -184,7 +184,7 @@ function ContributorsResults({
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [error, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const items = (data?.pages ?? []).flatMap((page) => page.items);
   const total = data?.pages[0]?.total ?? 0;

@@ -142,4 +142,70 @@ for (const { locale, messages } of cases) {
     ).toBeVisible();
     expect(requests).toBe(2);
   });
+
+  test(`resumes pagination after retrying a failed page (${locale})`, async ({
+    page,
+  }) => {
+    let nextPageAttempts = 0;
+    const trackId = `contributor-retry-${locale}`;
+    await page.route(`**/v1/tracks/${trackId}/contributors*`, async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.has('cursor')) {
+        nextPageAttempts += 1;
+        if (nextPageAttempts === 1) {
+          await route.fulfill({ status: 503, body: 'temporary error' });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(contributorApiPage(20, 21)),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(contributorApiPage(0, 20)),
+      });
+    });
+    const { dialog, translate } = await openDialog(
+      page,
+      trackId,
+      locale,
+      messages,
+    );
+
+    await expect(
+      dialog.getByText(
+        translate('contributorsDialog.showing', { shown: 20, total: 21 }),
+      ),
+    ).toBeVisible();
+    const list = dialog.getByRole('list');
+    await list.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(dialog.getByRole('alert')).toHaveText(
+      translate('contributorsDialog.loadError'),
+    );
+    await dialog
+      .getByRole('button', { name: translate('contributorsDialog.retry') })
+      .click();
+    await expect(
+      dialog.getByText(
+        translate('contributorsDialog.showing', { shown: 20, total: 21 }),
+      ),
+    ).toBeVisible();
+
+    await list.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(
+      dialog.getByText(
+        translate('contributorsDialog.showing', { shown: 21, total: 21 }),
+      ),
+    ).toBeVisible();
+    expect(nextPageAttempts).toBe(2);
+  });
 }
