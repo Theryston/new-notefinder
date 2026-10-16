@@ -14,7 +14,6 @@ export function SingingAidsSettings({
 }) {
   const t = useTranslations('practice.aids');
   const countIn = useSingingAids((state) => state.countIn);
-  const guide = useSingingAids((state) => state.guideMelody);
   return (
     <>
       <DropdownMenuSeparator />
@@ -23,12 +22,6 @@ export function SingingAidsSettings({
         onCheckedChange={(value) => saveSingingAids({ countIn: value })}
       >
         {t('countIn')}
-      </DropdownMenuCheckboxItem>
-      <DropdownMenuCheckboxItem
-        checked={guide}
-        onCheckedChange={(value) => saveSingingAids({ guideMelody: value })}
-      >
-        {t('guideMelody')}
       </DropdownMenuCheckboxItem>
       <DropdownMenuItem onClick={onCalibrate}>
         {t('calibrate')}

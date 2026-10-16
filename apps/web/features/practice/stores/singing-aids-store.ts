@@ -1,8 +1,19 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
-type Preferences = { countIn: boolean; guideMelody: boolean; offset: number };
-const defaults: Preferences = { countIn: true, guideMelody: false, offset: 0 };
+type Preferences = {
+  countIn: boolean;
+  guideMelody: boolean;
+  /** The visitor picked the guide by hand: auto transpose leaves it alone. */
+  guideMelodyManual: boolean;
+  offset: number;
+};
+const defaults: Preferences = {
+  countIn: true,
+  guideMelody: false,
+  guideMelodyManual: false,
+  offset: 0,
+};
 const KEY = 'notefinder.singing-aids.v1';
 export const singingAidsStore = createStore<Preferences>(() => defaults);
 
@@ -17,6 +28,8 @@ export function loadSingingAids(): void {
           ? raw.countIn
           : true,
       guideMelody: 'guideMelody' in raw && raw.guideMelody === true,
+      guideMelodyManual:
+        'guideMelodyManual' in raw && raw.guideMelodyManual === true,
       offset:
         'offset' in raw &&
         typeof raw.offset === 'number' &&
@@ -37,6 +50,17 @@ export function saveSingingAids(value: Partial<Preferences>): void {
   } catch {
     /* Keep the in-memory preference when storage is unavailable. */
   }
+}
+
+/**
+ * Follows a transposition the visitor did not pick by hand: on away from the
+ * original key, off back on it. A hand-picked guide stays as the visitor
+ * left it, on or off, so this never overrides a manual choice.
+ */
+export function autoGuideMelody(value: boolean): void {
+  const state = singingAidsStore.getState();
+  if (state.guideMelodyManual || state.guideMelody === value) return;
+  saveSingingAids({ guideMelody: value });
 }
 
 export function useSingingAids<T>(selector: (state: Preferences) => T): T {
