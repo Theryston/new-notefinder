@@ -164,17 +164,19 @@ Nested corners: inner radius = outer radius − padding.
   separate by tone (`bg-card` on `bg-background`).
 - **Floating layers are glass**: add the `glass` utility (translucent
   `--glass` fill, 20px blur, hairline border, top highlight, `shadow-lg`) to
-  the header, the player/controls bar, dropdown menus, popovers, toasts and
-  the command palette. Content under glass must stay readable: never put
-  glass over glass.
-- Dialogs and sheets are solid (`bg-popover` / `bg-card`) with `shadow-xl`
-  and a dimmed backdrop (`bg-black/40`, `backdrop-blur-sm`).
+  the header, the player/controls bar, dialogs, dropdown menus, popovers,
+  toasts and the command palette. Content under glass must stay readable:
+  never put glass over glass.
+- Dialogs use the shared `DialogContent` glass surface with `text-foreground`
+  and the glass utility's `shadow-lg`. Sheets stay solid (`bg-popover` /
+  `bg-card`) with `shadow-xl` and a dimmed backdrop (`bg-black/40`,
+  `backdrop-blur-sm`).
 - Page backgrounds are **plain** (`bg-background`). No glows, meshes, noise or
   dot grids behind content. Color comes from covers and featured blocks.
 
 Shadow scale: `shadow-xs` (inputs, pressed), `shadow-sm` (cards),
 `shadow-md` (card hover, sticky elements), `shadow-lg` (glass layers),
-`shadow-xl` (dialogs).
+`shadow-xl` (sheets).
 
 ## Spacing and density
 
@@ -414,7 +416,8 @@ small buttons, `size-6` in the mobile tab bar.
 
 - [ ] Works and looks intentional in light **and** dark.
 - [ ] Uses tokens only (no hex, no arbitrary colors).
-- [ ] Controls are pills, surfaces `rounded-2xl`, floating layers `glass`.
+- [ ] Controls are pills, surfaces `rounded-2xl`, floating layers (including
+      dialogs) `glass`.
 - [ ] Orange is used for the one primary action or the current state, not
       decoration.
 - [ ] Touch targets ≥ 40px; mobile layout checked at 360px width.
