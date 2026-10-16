@@ -259,8 +259,7 @@ function PracticeBodyContent(props: PracticeBodyProps) {
           controller={controller}
           hostRef={hostRef}
           videoId={header.youtubeVideoId ?? ''}
-          directAudio={directAudio !== undefined}
-          expectDirectAudio={expectDirectAudio}
+          audioLayout={directAudio !== undefined || expectDirectAudio}
           trackKey={header.key}
           trackTitle={header.title}
           artistText={creditText(header.artistCredit)}

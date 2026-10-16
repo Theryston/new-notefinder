@@ -20,15 +20,14 @@ import { saveSingingAids, useSingingAids } from '../stores/singing-aids-store';
 
 const BEATS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
-function CalibrationProgress({
-  countIn,
-  remaining,
-  hits,
-}: {
+type CalibrationRunState = {
   countIn: number | null;
   remaining: number | null;
   hits: readonly boolean[];
-}) {
+};
+
+function CalibrationProgress({ run }: { run: CalibrationRunState }) {
+  const { countIn, remaining, hits } = run;
   const t = useTranslations('practice.aids');
   if (countIn !== null) {
     return (
@@ -195,11 +194,7 @@ export function CalibrationDialog({
           <DialogDescription>{t('instructions')}</DialogDescription>
         </DialogHeader>
         <MicLiveBadge micOn={micOn} />
-        <CalibrationProgress
-          countIn={run.countIn}
-          remaining={run.remaining}
-          hits={run.hits}
-        />
+        <CalibrationProgress run={run} />
         <p className="font-mono text-muted-foreground text-xs tabular-nums">
           {t('offset', { milliseconds: Math.round(offset * 1000) })}
         </p>

@@ -35,9 +35,13 @@ export function startCalibration(options: Options): () => void {
       let previous: number | null = null;
       const unwatch = watchCalibrationReading(({ midi, lagSeconds, at }) => {
         options.onVoice?.(midi !== null);
+        // A capture needs a real rhythmic onset: the voice starting from
+        // silence, or a deliberate beep-matching shift. The beeps alternate
+        // three semitones apart, while vibrato wobble stays under one, so a
+        // two-semitone shift requirement keeps wobble from calibrating.
         const transitioned =
           midi !== null &&
-          (previous === null || Math.abs(midi - previous) >= 0.75);
+          (previous === null || Math.abs(midi - previous) >= 2);
         if (step >= 0 && !captured && transitioned && at - soundedAt < 1.05) {
           samples.push(at - soundedAt - lagSeconds);
           captured = true;

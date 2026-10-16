@@ -31,7 +31,11 @@ export function loadSingingAids(): void {
       guideMelodyManual:
         'guideMelodyManual' in raw && typeof raw.guideMelodyManual === 'boolean'
           ? raw.guideMelodyManual
-          : 'guideMelody' in raw && typeof raw.guideMelody === 'boolean',
+          : // Legacy v1 stored no manual mark: only an explicit opt-in
+            // (true, away from the off default) proves a hand-picked choice.
+            // An explicit-off is indistinguishable from never-touched, so it
+            // keeps following the transposition instead of locking auto off.
+            'guideMelody' in raw && raw.guideMelody === true,
       offset:
         'offset' in raw &&
         typeof raw.offset === 'number' &&
