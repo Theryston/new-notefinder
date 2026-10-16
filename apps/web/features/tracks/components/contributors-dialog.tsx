@@ -251,7 +251,10 @@ export function ContributorsDialog({
   const t = useTranslations('tracks.practice.contributorsDialog');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent closeLabel={t('close')} className="max-h-[80dvh]">
+      <DialogContent
+        closeLabel={t('close')}
+        className="max-h-[80dvh] overflow-hidden"
+      >
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
