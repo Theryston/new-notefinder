@@ -194,7 +194,7 @@ export function DockProgressTrack({
       >
         {waveform !== undefined && <AudioWaveform controller={controller} />}
         {waveform === undefined && <ProgressBar elements={elements} />}
-        <LoopHandles duration={duration} />
+        <LoopHandles duration={duration} tall={waveform !== undefined} />
       </div>
       <button
         type="button"

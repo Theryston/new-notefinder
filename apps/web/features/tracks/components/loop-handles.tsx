@@ -78,18 +78,25 @@ function LoopVisual({
   range,
   duration,
   active,
+  tall,
 }: {
   range: LoopRange;
   duration: number;
   active: HandleKind | null;
+  tall: boolean;
 }) {
   const format = useClockFormat();
+  const handleHeight = tall ? 'h-9' : 'h-4.5';
   return (
     <>
       <div
         aria-hidden="true"
         data-testid="loop-region"
-        className="pointer-events-none absolute top-1/2 h-3.5 -translate-y-1/2 rounded-full bg-foreground/10"
+        className={
+          tall
+            ? 'pointer-events-none absolute top-1/2 h-8 -translate-y-1/2 rounded-lg bg-foreground/10'
+            : 'pointer-events-none absolute top-1/2 h-3.5 -translate-y-1/2 rounded-full bg-foreground/10'
+        }
         style={{
           left: `${(range.start / duration) * 100}%`,
           width: `${((range.end - range.start) / duration) * 100}%`,
@@ -104,8 +111,8 @@ function LoopVisual({
             style={{ left: `${(range[handle] / duration) * 100}%` }}
             className={
               dragging
-                ? 'pointer-events-none absolute top-1/2 h-4.5 w-1.5 -translate-x-1/2 -translate-y-1/2 scale-y-115 rounded-full bg-primary shadow-sm ring-2 ring-background transition-[transform,background-color] duration-150 ease-spring'
-                : 'pointer-events-none absolute top-1/2 h-4.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-sm ring-2 ring-background transition-[transform,background-color] duration-150 ease-spring'
+                ? `pointer-events-none absolute top-1/2 ${handleHeight} w-1.5 -translate-x-1/2 -translate-y-1/2 scale-y-110 rounded-full bg-primary shadow-sm ring-2 ring-background transition-[transform,background-color] duration-150 ease-spring`
+                : `pointer-events-none absolute top-1/2 ${handleHeight} w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-sm ring-2 ring-background transition-[transform,background-color] duration-150 ease-spring`
             }
           >
             <span
@@ -124,7 +131,13 @@ function LoopVisual({
   );
 }
 
-export function LoopHandles({ duration }: { duration: number }) {
+export function LoopHandles({
+  duration,
+  tall = false,
+}: {
+  duration: number;
+  tall?: boolean;
+}) {
   const [active, setActive] = useState<HandleKind | null>(null);
   const pointer = useHandlePointer(duration, setActive);
   const t = useTranslations('tracks.practice.listening');
@@ -132,7 +145,12 @@ export function LoopHandles({ duration }: { duration: number }) {
   if (!range || duration <= 0) return null;
   return (
     <>
-      <LoopVisual range={range} duration={duration} active={active} />
+      <LoopVisual
+        range={range}
+        duration={duration}
+        active={active}
+        tall={tall}
+      />
       {(['start', 'end'] as const).map((handle) => (
         <input
           key={handle}
