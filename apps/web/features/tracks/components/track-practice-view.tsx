@@ -18,7 +18,7 @@ import { TrackTitleRow } from './track-title-row';
 import { TrackViewRecorder } from './track-view-recorder';
 
 /** Same-dimension stand-in for the practice view while it loads. */
-function TrackPracticeSkeleton() {
+export function TrackPracticeSkeleton() {
   return (
     <div role="status" className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
@@ -29,6 +29,7 @@ function TrackPracticeSkeleton() {
         </div>
       </div>
       <Skeleton className={TIMELINE_BOX_CLASS} />
+      <div aria-hidden="true" className="min-h-8" />
     </div>
   );
 }

@@ -180,6 +180,10 @@ function usePracticeController({
 }: Pick<PracticeBodyProps, 'header' | 'notes' | 'fakePlayer' | 'admin'>) {
   const audio = useDirectAudio(header.id, admin);
   const directAudio = admin ? audio.data : undefined;
+  // Admins almost always have stored audio: paint its layout (no video
+  // square, vocals toggle, waveform slot) while the URLs load, instead of
+  // flashing the YouTube layout first. A refusal falls back to YouTube.
+  const expectDirectAudio = admin && !audio.isError;
   const hostRef = useRef<HTMLDivElement>(null);
   const controller = usePlayback({
     hostRef,
@@ -192,7 +196,7 @@ function usePracticeController({
   });
   usePlaybackShortcuts(controller);
   useListeningTools(controller);
-  return { controller, directAudio, hostRef };
+  return { controller, directAudio, expectDirectAudio, hostRef };
 }
 
 /**
@@ -203,7 +207,8 @@ function usePracticeController({
  */
 function PracticeBodyContent(props: PracticeBodyProps) {
   const { header, notes, lyrics, lyricsLoading, failed } = props;
-  const { controller, directAudio, hostRef } = usePracticeController(props);
+  const { controller, directAudio, expectDirectAudio, hostRef } =
+    usePracticeController(props);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const guideNotes = useTransposedNotes(notes);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -255,6 +260,7 @@ function PracticeBodyContent(props: PracticeBodyProps) {
           hostRef={hostRef}
           videoId={header.youtubeVideoId ?? ''}
           directAudio={directAudio !== undefined}
+          expectDirectAudio={expectDirectAudio}
           trackKey={header.key}
           trackTitle={header.title}
           artistText={creditText(header.artistCredit)}

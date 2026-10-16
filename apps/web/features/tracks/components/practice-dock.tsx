@@ -101,8 +101,11 @@ export function PracticeDock({
   trackTitle,
   artistText,
   directAudio = false,
+  expectDirectAudio = false,
 }: {
   directAudio?: boolean;
+  /** Stored audio is on its way: paint its layout before the URLs land. */
+  expectDirectAudio?: boolean;
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
@@ -114,6 +117,7 @@ export function PracticeDock({
   const status = usePlaybackState((state) => state.status);
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
+  const audioLayout = directAudio || expectDirectAudio;
 
   return (
     <section
@@ -123,13 +127,13 @@ export function PracticeDock({
     >
       <div
         ref={hostRef}
-        data-testid={directAudio ? undefined : 'dock-video'}
-        hidden={directAudio}
+        data-testid={audioLayout ? undefined : 'dock-video'}
+        hidden={audioLayout}
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
         className="overflow-hidden rounded-lg bg-muted [grid-area:video]"
       />
       <div
-        style={directAudio ? { gridColumn: '1 / -1' } : undefined}
+        style={audioLayout ? { gridColumn: '1 / -1' } : undefined}
         data-testid="dock-track-info"
         className="flex min-w-0 items-center justify-between gap-3 [grid-area:info]"
       >
@@ -145,11 +149,11 @@ export function PracticeDock({
       </div>
       <div className="flex min-w-0 items-center justify-between gap-1 [grid-area:actions] md:gap-3">
         <DockMicButton playback={playbackStore} />
-        {directAudio && <VocalsToggle controller={controller} />}
+        {audioLayout && <VocalsToggle controller={controller} />}
         <StreakRing playing={status === 'playing'} />
         <DockSettings controller={controller} videoId={videoId} />
         <TrackKeyContext value={trackKey}>
-          <TransposePopover directAudio={directAudio} />
+          <TransposePopover directAudio={audioLayout} />
         </TrackKeyContext>
       </div>
       <div className="flex min-w-0 [grid-area:progress]">
