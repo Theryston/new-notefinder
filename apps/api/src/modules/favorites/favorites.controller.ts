@@ -15,14 +15,15 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
-  type UserTrackState,
-  userTrackStateSchema,
+  type TrackPracticeState,
+  trackPracticeStateSchema,
 } from '@notefinder/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
 import { FavoriteTrackParamDto } from './favorite-track-param.dto.js';
 import { FavoritesService } from './favorites.service.js';
+import { TrackStateService } from './track-state.service.js';
 
 const NOT_FOUND =
   'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
@@ -31,7 +32,10 @@ const NOT_FOUND =
 @ApiTags('favorites')
 @Controller('me')
 export class FavoritesController {
-  constructor(private readonly favorites: FavoritesService) {}
+  constructor(
+    private readonly favorites: FavoritesService,
+    private readonly state: TrackStateService,
+  ) {}
 
   // Idempotent: favoriting a favorite changes nothing and answers the same.
   @Put('favorites/:trackId')
@@ -60,14 +64,14 @@ export class FavoritesController {
   }
 
   @Get('tracks/:trackId')
-  @ZodSerializerDto(userTrackStateSchema)
+  @ZodSerializerDto(trackPracticeStateSchema)
   @ApiOkResponse({ description: 'What the User has with the Track.' })
   @ApiUnauthorizedResponse({ description: 'No valid session.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   getTrackState(
     @CurrentUser() user: AuthUser,
     @Param() params: FavoriteTrackParamDto,
-  ): Promise<UserTrackState> {
-    return this.favorites.getTrackState(user.id, params.trackId);
+  ): Promise<TrackPracticeState> {
+    return this.state.getState(user.id, params.trackId);
   }
 }

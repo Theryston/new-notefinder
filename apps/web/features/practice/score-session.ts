@@ -13,6 +13,10 @@ export class ScoreSession {
   private settings: ScoringSettings = defaultScoring;
   private loop: Loop = null;
   private listeners = new Set<() => void>();
+  /** The wall clock the current run started on, for the saved attempt. */
+  private runStart: number | null = null;
+  /** The wall clock the last run finished on, for the saved attempt. */
+  private runEnd: number | null = null;
   private value: {
     judgments: ReturnType<PracticeScore['judgment']>[];
     summary: Summary;
@@ -62,6 +66,8 @@ export class ScoreSession {
     if (this.active) return;
     this.active = true;
     this.latestIndex = -1;
+    this.runStart = Date.now();
+    this.runEnd = null;
     this.score = new PracticeScore(this.notes, this.loop !== null);
     this.publish(null);
   }
@@ -110,9 +116,20 @@ export class ScoreSession {
   finish = (): void => {
     if (!this.active) return;
     this.active = false;
+    this.runEnd = Date.now();
     const summary = this.score.summary(this.settings);
     this.publish(this.loop ? null : summary);
   };
+
+  /**
+   * The wall-clock window of the last finished run, for the attempt the
+   * page saves. Null before the first finish, and while a run is open.
+   */
+  runWindow(): { startedAt: number; endedAt: number } | null {
+    return this.runStart !== null && this.runEnd !== null
+      ? { startedAt: this.runStart, endedAt: this.runEnd }
+      : null;
+  }
 
   dismiss = (): void => this.publish(null);
 

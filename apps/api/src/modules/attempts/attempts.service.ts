@@ -1,0 +1,139 @@
+import { Injectable } from '@nestjs/common';
+import type {
+  BestPracticeScores,
+  PracticeAttempt,
+  PracticeAttemptPage,
+  SubmitPracticeAttemptBody,
+} from '@notefinder/contracts';
+import { practiceSpeedSchema } from '@notefinder/contracts';
+import { AppException } from '../../common/errors/app-exception.js';
+import { TracksService } from '../tracks/tracks.service.js';
+import type {
+  NewPracticeAttempt,
+  PracticeAttemptRow,
+} from './attempts.repository.js';
+import { AttemptsRepository } from './attempts.repository.js';
+import {
+  decodeOwnAttemptCursor,
+  encodeOwnAttemptCursor,
+} from './own-attempt-cursor.js';
+
+/** A run must cover this share of the Track's notes to be saved. */
+const MIN_ATTEMPT_COVERAGE = 0.9;
+
+const toAttempt = (row: PracticeAttemptRow): PracticeAttempt => ({
+  id: row.id,
+  trackId: row.trackId,
+  difficulty: row.difficulty,
+  octaveMode: row.octaveMode,
+  transposeSemitones: row.transposeSemitones,
+  // The database keeps a float; only the dock's speeds ever get in (the
+  // request schema refused the rest), so this re-check cannot fail.
+  speed: practiceSpeedSchema.parse(row.speed),
+  accuracy: row.accuracy,
+  coverage: row.coverage,
+  forwardSkip: row.forwardSkip,
+  bleedSuspected: row.bleedSuspected,
+  startedAt: row.startedAt.toISOString(),
+  endedAt: row.endedAt.toISOString(),
+  createdAt: row.createdAt.toISOString(),
+});
+
+const noScores: BestPracticeScores = {
+  EASY: null,
+  NORMAL: null,
+  HARD: null,
+};
+
+/**
+ * A signed-in User's saved practice runs. Only valid runs are saved: the
+ * scoring already knows the rule (coverage of at least 90%, no forward
+ * seek), and the API enforces it again here so no client can write a run
+ * the page would never submit.
+ */
+@Injectable()
+export class AttemptsService {
+  constructor(
+    private readonly attempts: AttemptsRepository,
+    private readonly tracks: TracksService,
+  ) {}
+
+  /**
+   * Saves a run. A legacy Track ID answers `RESOURCE_MOVED` and an unknown
+   * one `NOT_FOUND`, as every Track read does; a run that covered under 90%
+   * of the notes or skipped forward is refused with `ATTEMPT_REJECTED`.
+   */
+  async submitAttempt(
+    userId: string,
+    trackId: string,
+    body: SubmitPracticeAttemptBody,
+  ): Promise<PracticeAttempt> {
+    await this.tracks.assertTrackExists(trackId);
+    if (body.forwardSkip) {
+      throw new AppException('ATTEMPT_REJECTED', 'The run skipped forward', {
+        reason: 'FORWARD_SKIP',
+      });
+    }
+    if (body.coverage < MIN_ATTEMPT_COVERAGE) {
+      throw new AppException(
+        'ATTEMPT_REJECTED',
+        'The run covered under 90% of the notes',
+        { reason: 'COVERAGE' },
+      );
+    }
+    const attempt: NewPracticeAttempt = {
+      userId,
+      trackId,
+      difficulty: body.difficulty,
+      octaveMode: body.octaveMode,
+      transposeSemitones: body.transposeSemitones,
+      speed: body.speed,
+      accuracy: body.accuracy,
+      coverage: body.coverage,
+      forwardSkip: body.forwardSkip,
+      bleedSuspected: body.bleedSuspected,
+      startedAt: new Date(body.startedAt),
+      endedAt: new Date(body.endedAt),
+    };
+    return toAttempt(await this.attempts.insert(attempt));
+  }
+
+  /** The User's best accuracy per difficulty on a Track, for the title row. */
+  async bestScores(
+    userId: string,
+    trackId: string,
+  ): Promise<BestPracticeScores> {
+    await this.tracks.assertTrackExists(trackId);
+    const rows = await this.attempts.bestAccuracies(userId, trackId);
+    const scores: BestPracticeScores = { ...noScores };
+    for (const row of rows) {
+      scores[row.difficulty] = row.accuracy;
+    }
+    return scores;
+  }
+
+  /** The signed-in User's own attempts, newest first. */
+  async listOwn(
+    userId: string,
+    query: { cursor?: string; limit: number },
+  ): Promise<PracticeAttemptPage> {
+    const rows = await this.attempts.listOwn({
+      userId,
+      after: query.cursor ? decodeOwnAttemptCursor(query.cursor) : undefined,
+      // One more than asked tells whether another page follows.
+      limit: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page.map(toAttempt),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeOwnAttemptCursor({
+              createdAt: last.createdAt.toISOString(),
+              attemptId: last.id,
+            })
+          : null,
+    };
+  }
+}

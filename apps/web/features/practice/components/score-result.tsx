@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,10 +11,18 @@ import {
 } from '@/components/ui/dialog';
 import type { useScoring } from '../hooks/use-scoring';
 
+/**
+ * The sheet of a finished run: the accuracy and "Try again". Whatever the
+ * run means for the account (the best saved score, or the invite to sign in
+ * that keeps the run waiting) is drawn by the Track page above, which owns
+ * the session and the Track state.
+ */
 export function ScoreResult({
   scoring,
+  renderAttemptStatus,
 }: {
   scoring: ReturnType<typeof useScoring>;
+  renderAttemptStatus?: () => ReactNode;
 }) {
   const t = useTranslations('practice.scoring');
   const result = scoring.snapshot.result;
@@ -36,6 +45,7 @@ export function ScoreResult({
           })}
         </p>
         <p>{t('judged', { count: result?.judged ?? 0 })}</p>
+        {renderAttemptStatus?.()}
         <Button onClick={scoring.retry}>{t('tryAgain')}</Button>
       </DialogContent>
     </Dialog>

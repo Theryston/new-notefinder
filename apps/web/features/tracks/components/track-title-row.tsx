@@ -8,6 +8,7 @@ import { Link } from '@/lib/i18n/navigation';
 
 import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
+import { TrackBestScore } from './track-best-score';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
 import { TrackShareButton } from './track-share-button';
@@ -152,7 +153,8 @@ function TrackFacts({ header }: { header: TrackDetail }) {
 
 /**
  * The practice page's one-line title row: cover, title, artists (linked),
- * duration and the Contributors' avatars (linked to their Profiles). It wraps
+ * duration and the Contributors' avatars (linked to their Profiles), plus
+ * the signed-in User's best score at the current difficulty. It wraps
  * on a phone, the avatars dropping under the title, and stays a single row
  * from `sm`.
  */
@@ -192,6 +194,7 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
           trackId={header.id}
         />
       ) : null}
+      <TrackBestScore trackId={header.id} />
       <TrackFavoriteButton trackId={header.id} />
       <TrackShareButton header={header} />
     </section>

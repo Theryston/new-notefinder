@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import type { useScoring } from '../hooks/use-scoring';
 import { useMicState } from '../stores/mic-store';
@@ -63,8 +63,10 @@ function useScoreRowHeight(visible: boolean) {
 
 export function ScoreFeedback({
   scoring,
+  renderAttemptStatus,
 }: {
   scoring: ReturnType<typeof useScoring>;
+  renderAttemptStatus?: () => ReactNode;
 }) {
   const t = useTranslations('practice.scoring');
   const micOn = useMicState((state) => state.status === 'on');
@@ -88,7 +90,12 @@ export function ScoreFeedback({
           </Button>
         </div>
       )}
-      {result !== null && <ScoreResult scoring={scoring} />}
+      {result !== null && (
+        <ScoreResult
+          scoring={scoring}
+          renderAttemptStatus={renderAttemptStatus}
+        />
+      )}
     </>
   );
 }

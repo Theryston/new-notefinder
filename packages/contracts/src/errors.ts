@@ -18,6 +18,9 @@ export const apiErrorCodeSchema = z.enum([
   'RESOURCE_MOVED',
   'CONFLICT',
   'RATE_LIMITED',
+  // A practice run the API refused to save: it covered under 90% of the
+  // notes or skipped forward (422). `details.reason` tells which one.
+  'ATTEMPT_REJECTED',
   // A User asked for more Track Processings than their limits allow (429). The
   // `details` say which limit (`ACTIVE_PROCESSINGS` or `NEW_TRACKS_PER_DAY`).
   'PROCESSING_LIMIT_REACHED',

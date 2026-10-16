@@ -1,0 +1,65 @@
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
+import { id, timestamps } from '../columns.js';
+import { tracks } from './tracks.js';
+import { users } from './users.js';
+
+/** How strict the pitch matching of an attempt was. */
+export const practiceDifficulty = pgEnum('practice_difficulty', [
+  'EASY',
+  'NORMAL',
+  'HARD',
+]);
+
+/** Whether the attempt counted other octaves as hits (`ANY`) or not (`EXACT`). */
+export const octaveMode = pgEnum('octave_mode', ['ANY', 'EXACT']);
+
+/**
+ * A signed-in User's saved practice run on a Track: only runs that covered
+ * at least 90% of the notes without skipping forward are saved (the API
+ * refuses the rest). Attempts have no legacy equivalent: the legacy app kept
+ * no per-run history.
+ */
+export const practiceAttempts = pgTable(
+  'practice_attempts',
+  {
+    id: id(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    trackId: text()
+      .notNull()
+      .references(() => tracks.id, { onDelete: 'cascade' }),
+    difficulty: practiceDifficulty().notNull(),
+    octaveMode: octaveMode().notNull(),
+    transposeSemitones: integer().notNull(),
+    speed: real().notNull(),
+    /** Hit notes divided by judged notes, from 0 to 1. */
+    accuracy: real().notNull(),
+    /** Judged notes divided by the Track's notes, from 0 to 1. */
+    coverage: real().notNull(),
+    forwardSkip: boolean().notNull().default(false),
+    /**
+     * A steady voiced pitch was detected while the Track had no vocal
+     * notes, which suggests the music leaked into the mic.
+     */
+    bleedSuspected: boolean().notNull().default(false),
+    startedAt: timestamp({ withTimezone: true }).notNull(),
+    endedAt: timestamp({ withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    // The best score per difficulty of a User on a Track.
+    index().on(table.userId, table.trackId),
+    // The User's own history, newest first.
+    index().on(table.userId, table.createdAt),
+  ],
+);

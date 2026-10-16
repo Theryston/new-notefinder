@@ -287,7 +287,10 @@
       "resultDescription": "Sua precisão é o número de notas certas dividido pelas notas avaliadas.",
       "accuracy": "{percent}%",
       "judged": "{count, plural, one {# nota avaliada} other {# notas avaliadas}}",
-      "tryAgain": "Tentar de novo"
+      "tryAgain": "Tentar de novo",
+      "bestScore": "Recorde {percent}%",
+      "bestScoreTitle": "Recorde em {difficulty}",
+      "signInToSave": "Entre para salvar essa pontuação"
     }
   },
   "streaks": {
@@ -653,7 +656,8 @@
     "SERVICE_UNAVAILABLE": "O serviço está temporariamente indisponível. Tente novamente em instantes.",
     "GATEWAY_TIMEOUT": "O serviço demorou demais para responder. Tente novamente.",
     "INTERNAL_ERROR": "Algo deu errado. Tente novamente.",
-    "RESOURCE_MOVED": "Este link mudou para um novo endereço. Redirecionando…"
+    "RESOURCE_MOVED": "Este link mudou para um novo endereço. Redirecionando…",
+    "ATTEMPT_REJECTED": "Essa tentativa não contou: cante a música até o fim sem pular trechos."
   },
   "artists": {
     "metaTitle": "{name}",
