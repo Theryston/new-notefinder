@@ -78,7 +78,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
         .click();
       await expect(page.getByTestId('score-readout')).toContainText(
-        t.practice.scoring.hit,
+        '1 note judged',
       );
       await page
         .getByRole('button', {
@@ -91,7 +91,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
         .click();
       await expect(page.getByTestId('score-readout')).toContainText(
-        t.practice.scoring.miss,
+        '2 notes judged',
       );
       await page
         .getByRole('button', {

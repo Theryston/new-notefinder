@@ -69,7 +69,7 @@ export function ScoreFeedback({
   const t = useTranslations('practice.scoring');
   const micOn = useMicState((state) => state.status === 'on');
   const rowRef = useScoreRowHeight(micOn);
-  const { summary, latest, result } = scoring.snapshot;
+  const { summary, result } = scoring.snapshot;
   return (
     <>
       {micOn && (
@@ -78,7 +78,6 @@ export function ScoreFeedback({
           className="flex flex-wrap items-center justify-between gap-2 text-sm"
         >
           <p role="status" data-testid="score-readout">
-            {latest ? `${t(latest)} · ` : null}
             {t(summary.loop ? 'sectionScore' : 'liveScore', {
               percent: Math.round(summary.accuracy * 100),
               count: summary.judged,
