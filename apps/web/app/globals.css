@@ -234,7 +234,7 @@
   }
 }
 
-/* Floating layers (header, player bar, menus, popovers, toasts). */
+/* Floating layers (header, player bar, dialogs, menus, popovers, toasts). */
 @utility glass {
   background-color: var(--glass);
   border: 1px solid var(--glass-border);

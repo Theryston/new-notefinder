@@ -168,9 +168,8 @@ Nested corners: inner radius = outer radius − padding.
   toasts and the command palette. Content under glass must stay readable:
   never put glass over glass.
 - Dialogs use the shared `DialogContent` glass surface with `text-foreground`
-  and the glass utility's `shadow-lg`. Sheets stay solid (`bg-popover` /
-  `bg-card`) with `shadow-xl` and a dimmed backdrop (`bg-black/40`,
-  `backdrop-blur-sm`).
+  over a dimmed backdrop (`bg-black/40`, `backdrop-blur-sm`). Sheets stay
+  solid (`bg-popover` / `bg-card`) with `shadow-xl`.
 - Page backgrounds are **plain** (`bg-background`). No glows, meshes, noise or
   dot grids behind content. Color comes from covers and featured blocks.
 
