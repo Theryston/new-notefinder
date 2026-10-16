@@ -113,3 +113,13 @@ it('keeps the hand-picked mark across reloads', () => {
     offset: 0,
   });
 });
+it('preserves a saved guide choice from before manual choices were tracked', () => {
+  saved = '{"countIn":true,"guideMelody":true,"offset":0}';
+  loadSingingAids();
+  expect(singingAidsStore.getState()).toMatchObject({
+    guideMelody: true,
+    guideMelodyManual: true,
+  });
+  autoGuideMelody(false);
+  expect(singingAidsStore.getState().guideMelody).toBe(true);
+});

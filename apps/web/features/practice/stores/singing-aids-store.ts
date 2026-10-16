@@ -29,7 +29,9 @@ export function loadSingingAids(): void {
           : true,
       guideMelody: 'guideMelody' in raw && raw.guideMelody === true,
       guideMelodyManual:
-        'guideMelodyManual' in raw && raw.guideMelodyManual === true,
+        'guideMelodyManual' in raw && typeof raw.guideMelodyManual === 'boolean'
+          ? raw.guideMelodyManual
+          : 'guideMelody' in raw && typeof raw.guideMelody === 'boolean',
       offset:
         'offset' in raw &&
         typeof raw.offset === 'number' &&

@@ -177,8 +177,8 @@
         "transposeOpen": "Mudar tom: {key}",
         "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original.",
         "vocalsOnly": "Só voz",
-        "vocalsOn": "Ativar só voz",
-        "vocalsOff": "Desativar só voz",
+        "vocalsOn": "Só voz: ativar",
+        "vocalsOff": "Só voz: desativar",
         "audioFollowsKey": "O áudio acompanha a transposição.",
         "audioError": "Não foi possível reproduzir o áudio armazenado."
       },

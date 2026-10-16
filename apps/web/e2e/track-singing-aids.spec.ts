@@ -226,6 +226,34 @@ for (const locale of ['en', 'pt-BR'] as const) {
     await reset();
     await expect(guide()).toBeChecked();
   });
+
+  test(`${locale}: a saved guide choice stays manual after an upgrade`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'notefinder.singing-aids.v1',
+        JSON.stringify({ countIn: true, guideMelody: true, offset: 0 }),
+      );
+    });
+    await openTrack(page, locale, 'legacy-guide');
+    await page
+      .getByRole('button', {
+        name: t.tracks.practice.dock.transpose,
+        exact: true,
+      })
+      .click();
+    const guide = () =>
+      page.getByRole('switch', { name: t.practice.aids.guideMelody });
+    await expect(guide()).toBeChecked();
+    await page
+      .getByRole('button', {
+        name: t.tracks.practice.dock.transposeUp,
+        exact: true,
+      })
+      .click();
+    await expect(guide()).toBeChecked();
+  });
 }
 
 test('calibration stays visible and interactive inside browser fullscreen', async ({

@@ -177,8 +177,8 @@
         "transposeOpen": "Change key: {key}",
         "videoKeepsKey": "Only the notes change key. The video keeps playing in its original key.",
         "vocalsOnly": "Vocals only",
-        "vocalsOn": "Turn vocals-only on",
-        "vocalsOff": "Turn vocals-only off",
+        "vocalsOn": "Vocals only: turn on",
+        "vocalsOff": "Vocals only: turn off",
         "audioFollowsKey": "The audio follows your transposition.",
         "audioError": "The stored audio could not be played."
       },

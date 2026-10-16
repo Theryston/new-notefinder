@@ -12,6 +12,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { GuideMelodyAuto } from '@/features/practice/components/guide-melody-auto';
 import { GuideMelodyControl } from '@/features/practice/components/guide-melody-control';
 
 import { useKeyText } from '../hooks/use-key-text';
@@ -41,39 +42,42 @@ export function TransposePopover({
   const semitones = useTranspose();
 
   return (
-    <Popover>
-      <PopoverTrigger
-        aria-label={
-          keyText === null
-            ? t('transpose')
-            : t('transposeOpen', { key: keyText })
-        }
-        className={TRANSPOSE_CHIP_CLASS}
-      >
-        <TransposeChipLabel />
-      </PopoverTrigger>
-      <PopoverContent side="top" align="end" sideOffset={12}>
-        <div className="flex min-h-10 items-center justify-between gap-2">
-          <PopoverTitle className="font-semibold">
-            {t('transpose')}
-          </PopoverTitle>
-          {semitones === 0 ? null : (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('transposeReset')}
-              onClick={() => setTranspose(0)}
-            >
-              <RotateCcwIcon aria-hidden="true" />
-            </Button>
-          )}
-        </div>
-        <TransposeStepper trackKey={trackKey} />
-        <GuideMelodyControl semitones={semitones} directAudio={directAudio} />
-        <PopoverDescription>
-          {t(directAudio ? 'audioFollowsKey' : 'videoKeepsKey')}
-        </PopoverDescription>
-      </PopoverContent>
-    </Popover>
+    <>
+      <GuideMelodyAuto semitones={semitones} directAudio={directAudio} />
+      <Popover>
+        <PopoverTrigger
+          aria-label={
+            keyText === null
+              ? t('transpose')
+              : t('transposeOpen', { key: keyText })
+          }
+          className={TRANSPOSE_CHIP_CLASS}
+        >
+          <TransposeChipLabel />
+        </PopoverTrigger>
+        <PopoverContent side="top" align="end" sideOffset={12}>
+          <div className="flex min-h-10 items-center justify-between gap-2">
+            <PopoverTitle className="font-semibold">
+              {t('transpose')}
+            </PopoverTitle>
+            {semitones === 0 ? null : (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('transposeReset')}
+                onClick={() => setTranspose(0)}
+              >
+                <RotateCcwIcon aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+          <TransposeStepper trackKey={trackKey} />
+          <GuideMelodyControl />
+          <PopoverDescription>
+            {t(directAudio ? 'audioFollowsKey' : 'videoKeepsKey')}
+          </PopoverDescription>
+        </PopoverContent>
+      </Popover>
+    </>
   );
 }
