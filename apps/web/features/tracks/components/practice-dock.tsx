@@ -100,13 +100,12 @@ export function PracticeDock({
   trackKey,
   trackTitle,
   artistText,
-  audioLayout,
+  directAudio = false,
+  expectDirectAudio = false,
 }: {
-  /**
-   * Stored audio is playing (or on its way: paint its layout before the URLs
-   * land). The caller ORs the live and expected states into one layout flag.
-   */
-  audioLayout: boolean;
+  directAudio?: boolean;
+  /** Stored audio is on its way: paint its layout before the URLs land. */
+  expectDirectAudio?: boolean;
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
@@ -118,6 +117,11 @@ export function PracticeDock({
   const status = usePlaybackState((state) => state.status);
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
+  // The layout follows expected audio before its URLs land, but the
+  // waveform needs live audio: a controller without it answers every
+  // snapshot with a fresh empty array, which loops the waveform's store
+  // subscription instead of settling. Keep the two flags apart.
+  const audioLayout = directAudio || expectDirectAudio;
 
   return (
     <section
@@ -159,12 +163,12 @@ export function PracticeDock({
       <div className="flex min-w-0 [grid-area:progress]">
         {status === 'error' ? (
           <p role="alert" className="self-center text-muted-foreground text-sm">
-            {t(audioLayout ? 'audioError' : 'error')}
+            {t(directAudio ? 'audioError' : 'error')}
           </p>
         ) : (
           <DockProgressTrack
             controller={controller}
-            waveform={audioLayout ? (controller?.waveform() ?? []) : undefined}
+            waveform={directAudio ? (controller?.waveform() ?? []) : undefined}
           />
         )}
       </div>
