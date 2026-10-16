@@ -301,39 +301,31 @@
   border: 0;
   cursor: ew-resize;
 }
+/* Fullscreen is the timeline's stage: the full lyrics and the listening
+ * actions stay out, the current line, the readout, the score and the dock
+ * stay in, and the roll takes every free pixel of the viewport height. */
 .practice-fullscreen:fullscreen {
-  padding-bottom: calc(
-    var(--dock-height, 0px) +
-    max(0.75rem, env(safe-area-inset-bottom)) +
-    0.75rem
+  padding: 12px;
+  overflow: auto;
+}
+.practice-fullscreen:fullscreen .practice-listening-actions,
+.practice-fullscreen:fullscreen .practice-lyrics {
+  display: none;
+}
+.practice-fullscreen:fullscreen canvas {
+  height: 100%;
+}
+.practice-fullscreen:fullscreen div:has(> canvas) {
+  height: max(
+    80px,
+    calc(
+      100dvh -
+      var(--dock-height, 0px) -
+      var(--score-feedback-height, 0px) -
+      80px
+    )
   );
 }
-@media (orientation: landscape) and (max-height: 600px) {
-  .practice-fullscreen:fullscreen {
-    padding: 12px;
-    overflow: auto;
-  }
-  .practice-fullscreen:fullscreen .practice-listening-actions,
-  .practice-fullscreen:fullscreen div:has(> span > [data-testid="target-note"]),
-  .practice-fullscreen:fullscreen [data-testid="karaoke-line"],
-  .practice-fullscreen:fullscreen .practice-lyrics {
-    display: none;
-  }
-  .practice-fullscreen:fullscreen canvas {
-    height: 100%;
-  }
-  .practice-fullscreen:fullscreen div:has(> canvas) {
-    height: max(
-      80px,
-      calc(
-        100dvh -
-        var(--dock-height, 0px) -
-        var(--score-feedback-height, 0px) -
-        36px
-      )
-    );
-  }
-  .practice-fullscreen:fullscreen .dock-fullscreen-exit {
-    display: inline-flex;
-  }
+.practice-fullscreen:fullscreen .dock-fullscreen-exit {
+  display: inline-flex;
 }
