@@ -240,3 +240,9 @@ export const trackLyricsSchema = z.object({
 });
 
 export type TrackLyrics = z.infer<typeof trackLyricsSchema>;
+
+/** The compact header fields used by the practice page's recommendation cards. */
+export const trackRecommendationsSchema = z.object({
+  tracks: z.array(trackHeaderSchema).max(7),
+});
+export type TrackRecommendations = z.infer<typeof trackRecommendationsSchema>;

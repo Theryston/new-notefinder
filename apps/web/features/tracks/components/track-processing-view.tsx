@@ -2,6 +2,7 @@
 
 import type { TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
 
@@ -29,10 +30,12 @@ export function TrackProcessingView({
   initialState,
   initialPractice,
   fakePlayer,
+  recommendations,
 }: {
   initialState: TrackProcessingState;
   initialPractice: InitialPractice | undefined;
   fakePlayer: boolean;
+  recommendations?: ReactNode;
 }) {
   const t = useTranslations('tracks.processing');
   const { data: state } = useTrackProcessing(
@@ -55,11 +58,14 @@ export function TrackProcessingView({
             Sonner has its own offset under 600px, which needs setting too; only the
             bottom is given, since a single value would apply to every side. */}
         <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
-        <TrackPracticeView
-          trackId={state.track.id}
-          initial={initialPractice}
-          fakePlayer={fakePlayer}
-        />
+        <div className="flex flex-col gap-10 md:gap-12">
+          <TrackPracticeView
+            trackId={state.track.id}
+            initial={initialPractice}
+            fakePlayer={fakePlayer}
+          />
+          {recommendations}
+        </div>
       </>
     );
   }

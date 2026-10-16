@@ -111,6 +111,34 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/recommendations": {
+      "get": {
+        "operationId": "TrackRecommendationsController_getRecommendations_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to seven completed Tracks: credited artists, closest vocal range, then trending."
+          },
+          "404": {
+            "description": "Unknown ID (NOT_FOUND), or a legacy ID with its new ID (RESOURCE_MOVED)."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/v1/tracks": {
       "post": {
         "operationId": "TracksController_requestTrack_v1",

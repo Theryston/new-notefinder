@@ -4,6 +4,7 @@ import { getMessages } from 'next-intl/server';
 
 import type { InitialPractice } from '../practice-queries';
 import { TrackProcessingView } from './track-processing-view';
+import { TrackRecommendations } from './track-recommendations';
 
 /**
  * The client part of the Track page, given the state the route read (and, for
@@ -30,6 +31,9 @@ export async function TrackProcessingSection({
         initialState={initialState}
         initialPractice={initialPractice}
         fakePlayer={fakePlayer}
+        recommendations={
+          <TrackRecommendations trackId={initialState.track.id} />
+        }
       />
     </NextIntlClientProvider>
   );
