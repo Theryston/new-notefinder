@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  ListTrackContributorsQuery,
   TrackContributor,
+  TrackContributorsPage,
   TrackProcessingState,
 } from '@notefinder/contracts';
-import { type PublicUser, UsersService } from '../users/users.service.js';
+import { TrackContributorRepository } from './track-contributor.repository.js';
+import {
+  decodeTrackContributorCursor,
+  encodeTrackContributorCursor,
+} from './track-contributor-cursor.js';
 import { throwMovedOrMissing } from './track-not-found.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { toTrackProcessing } from './track-processing-view.js';
@@ -20,7 +26,7 @@ export class TrackProcessingService {
   constructor(
     private readonly tracks: TracksRepository,
     private readonly processings: TrackProcessingRepository,
-    private readonly users: UsersService,
+    private readonly contributors: TrackContributorRepository,
   ) {}
 
   /**
@@ -33,32 +39,78 @@ export class TrackProcessingService {
     if (header === undefined) {
       return this.throwMovedOrMissing(trackId);
     }
-    const [latest, contributors] = await Promise.all([
+    const [latest, contributors, contributorCount] = await Promise.all([
       this.processings.findLatestProcessing(trackId),
-      this.contributorsOf(trackId),
+      this.firstContributors(trackId),
+      this.contributorCount(trackId),
     ]);
     return {
       track: header,
       processing: latest === undefined ? null : toTrackProcessing(latest),
       contributors,
+      contributorCount,
     };
   }
 
   /**
-   * The Track's Contributors in the order they first contributed. One whose
-   * User has no public profile is left out.
+   * One page of the Track's Contributors in first-contribution order, with the
+   * total for the counter. Unknown and legacy IDs answer as every Track read
+   * does (`NOT_FOUND`, or `RESOURCE_MOVED` with the new ID).
    */
-  async contributorsOf(trackId: string): Promise<TrackContributor[]> {
-    const contributors = await this.processings.findContributors(trackId);
-    const profiles = await this.users.findPublicUsers(
-      contributors.map((contributor) => contributor.userId),
+  async listContributors(
+    trackId: string,
+    query: ListTrackContributorsQuery,
+  ): Promise<TrackContributorsPage> {
+    await this.assertTrackExists(trackId);
+    const { rows, total } = await this.contributors.findContributorsPage(
+      trackId,
+      {
+        cursor:
+          query.cursor === undefined
+            ? undefined
+            : decodeTrackContributorCursor(query.cursor),
+        limit: query.limit,
+        query: query.q,
+      },
     );
-    return contributors.flatMap((contributor) => {
-      const profile = profiles.get(contributor.userId);
-      return profile === undefined
-        ? []
-        : [toContributor(contributor.id, profile)];
+    const hasMore = rows.length > query.limit;
+    const items = rows.slice(0, query.limit).map(
+      (row): TrackContributor => ({
+        id: row.id,
+        username: row.username,
+        name: row.name,
+        image: row.image,
+      }),
+    );
+    const anchor = hasMore ? rows[query.limit - 1] : undefined;
+    return {
+      items,
+      nextCursor:
+        anchor === undefined
+          ? null
+          : encodeTrackContributorCursor({
+              contributedAt: anchor.contributedAt.toISOString(),
+              contributorId: anchor.id,
+            }),
+      total,
+    };
+  }
+
+  /** How many Contributors the Track has, for the counter next to the pile. */
+  async contributorCount(trackId: string): Promise<number> {
+    await this.assertTrackExists(trackId);
+    const { total } = await this.contributors.findContributorsPage(trackId, {
+      limit: 1,
     });
+    return total;
+  }
+
+  /** The first Contributors for the header's avatar pile. */
+  private async firstContributors(
+    trackId: string,
+  ): Promise<TrackContributor[]> {
+    const { items } = await this.listContributors(trackId, { limit: 3 });
+    return items;
   }
 
   /**
@@ -76,14 +128,4 @@ export class TrackProcessingService {
   throwMovedOrMissing(trackId: string): Promise<never> {
     return throwMovedOrMissing(this.tracks, trackId);
   }
-}
-
-/** The Contributor as the page shows it: the link, the name and the Avatar. */
-function toContributor(id: string, profile: PublicUser): TrackContributor {
-  return {
-    id,
-    username: profile.username,
-    name: profile.name,
-    image: profile.image,
-  };
 }

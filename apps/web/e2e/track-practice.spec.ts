@@ -284,6 +284,14 @@ for (const { locale, messages } of cases) {
             page.getByRole('link', { name: 'David Bowie' }),
           ).toHaveCount(0);
           await expect(page.locator('time')).toHaveText('4:08');
+          await page
+            .getByRole('button', { name: t('contributorsOpen', { count: 1 }) })
+            .click();
+          await expect(
+            page.getByRole('heading', {
+              name: t('contributorsDialog.title'),
+            }),
+          ).toBeVisible();
           await expect(
             page.getByRole('link', {
               name: t('contributorLink', { name: 'Ada Lovelace' }),

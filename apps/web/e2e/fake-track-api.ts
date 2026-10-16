@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ADA } from './auth-api-mock.ts';
 import { json, readBody } from './fake-api-http.ts';
+import { serveTrackContributors } from './fake-track-contributors.ts';
 import { serveTrackFacet } from './fake-track-facets.ts';
 
 /**
@@ -95,6 +96,7 @@ function stateOf(track: FakeTrack) {
             finishedAt: null,
           },
     contributors: track.contributors ?? [],
+    contributorCount: track.contributors?.length ?? 0,
   };
 }
 
@@ -111,6 +113,7 @@ function practiceHeaderOf(track: FakeTrack) {
     durationMs: track.durationMs ?? null,
     youtubeVideoId: track.youtubeVideoId ?? null,
     contributors: track.contributors ?? [],
+    contributorCount: track.contributors?.length ?? 0,
     hasNotes: (track.notes ?? []).length > 0,
     viewCount: track.viewCount ?? 0,
     ...(track.vocalRange ? { vocalRange: track.vocalRange } : {}),
@@ -274,6 +277,13 @@ export async function serveTrackRequest(
     );
     return true;
   }
+  if (
+    serveTrackContributors(request, response, pathname, {
+      tracks,
+      legacyMap,
+    })
+  )
+    return true;
   if (
     serveTrackFacet(request, response, pathname, {
       tracks,

@@ -135,6 +135,18 @@
       "metaDescriptionNoArtistsNoNotes": "As notas vocais de {title}, em uma linha do tempo para cantar junto.",
       "contributors": "Colaboradores",
       "contributorLink": "Perfil de {name}",
+      "contributorsMore": "+{count, number}",
+      "contributorsOpen": "Ver todos os {count, plural, one {# colaborador} other {# colaboradores}}",
+      "contributorsDialog": {
+        "title": "Colaboradores",
+        "search": "Buscar colaboradores",
+        "showing": "Mostrando {shown, number} de {total, number}",
+        "loadingMore": "Carregando mais colaboradores…",
+        "loadError": "Não foi possível carregar os colaboradores. Tente de novo.",
+        "retry": "Tentar de novo",
+        "empty": "Nenhum colaborador combina com “{query}”.",
+        "close": "Fechar"
+      },
       "timeline": {
         "label": "Linha do tempo das notas de {title}. {count, plural, one {# nota} other {# notas}}, de {low} a {high}",
         "labelEmpty": "Linha do tempo das notas de {title}"

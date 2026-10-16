@@ -20,6 +20,7 @@ const header = {
   durationMs: 248_000,
   youtubeVideoId: null,
   contributors: [],
+  contributorCount: 0,
   hasNotes: true,
 };
 

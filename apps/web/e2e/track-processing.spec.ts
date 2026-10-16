@@ -251,7 +251,16 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('heading', { name: processing.video.title }),
       ).toHaveCount(0);
-      // The Contributors are the avatars of the title row, linked to their Profiles.
+      // The Contributors are the avatar pile of the title row, opening
+      // their dialog with links to their Profiles.
+      const tp = createTranslator({
+        locale,
+        messages,
+        namespace: 'tracks.practice',
+      });
+      await page
+        .getByRole('button', { name: tp('contributorsOpen', { count: 1 }) })
+        .click();
       await expect(
         page.getByRole('link', {
           name: practice.contributorLink.replace('{name}', 'Ada Lovelace'),
@@ -328,6 +337,95 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('link', { name: 'Ada Lovelace' }),
       ).toHaveAttribute('href', `/${locale}/users/ada_singer`);
+    });
+
+    test('pages Contributors with search and infinite scroll', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const trackId = `clx-contributors-dialog-${locale}`;
+      const contributors = [
+        {
+          id: `contributor-${trackId}-ada`,
+          username: 'ada_singer',
+          name: 'Ada Lovelace',
+          image: null,
+        },
+        ...Array.from({ length: 24 }, (_, index) => ({
+          id: `contributor-${trackId}-${index}`,
+          username: `singer_${index}`,
+          name: `Singer ${index}`,
+          image: null,
+        })),
+      ];
+      await setTrackMock({
+        tracks: [
+          trackFixture(trackId, {
+            contributors,
+            processing: {
+              status: 'COMPLETED',
+              video: { id: 'dQw4w9WgXcQ', source: 'youtube_music' },
+            },
+          }),
+        ],
+      });
+      const tp = createTranslator({
+        locale,
+        messages,
+        namespace: 'tracks.practice',
+      });
+
+      await page.goto(`/${locale}/tracks/${trackId}`);
+      await page
+        .getByRole('button', { name: tp('contributorsOpen', { count: 25 }) })
+        .click();
+      const dialog = page.getByRole('dialog');
+      await expect(
+        dialog.getByRole('heading', { name: tp('contributorsDialog.title') }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole('link', {
+          name: tp('contributorLink', { name: 'Ada Lovelace' }),
+        }),
+      ).toHaveAttribute('href', `/${locale}/users/ada_singer`);
+
+      await dialog
+        .getByRole('searchbox', { name: tp('contributorsDialog.search') })
+        .fill('singer_23');
+      await expect(
+        dialog.getByRole('link', {
+          name: tp('contributorLink', { name: 'Singer 23' }),
+        }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByText(
+          tp('contributorsDialog.showing', { shown: 1, total: 1 }),
+        ),
+      ).toBeVisible();
+
+      await dialog
+        .getByRole('searchbox', { name: tp('contributorsDialog.search') })
+        .fill('');
+      await expect(
+        dialog.getByText(
+          tp('contributorsDialog.showing', { shown: 20, total: 25 }),
+        ),
+      ).toBeVisible();
+      await dialog
+        .getByRole('link', {
+          name: tp('contributorLink', { name: 'Singer 18' }),
+        })
+        .scrollIntoViewIfNeeded();
+      await expect(
+        dialog.getByText(
+          tp('contributorsDialog.showing', { shown: 25, total: 25 }),
+        ),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole('link', {
+          name: tp('contributorLink', { name: 'Singer 23' }),
+        }),
+      ).toBeVisible();
     });
 
     test('sends a visitor who is signed out from a result without a Track to sign in, back to the search with its request', async ({

@@ -135,6 +135,18 @@
       "metaDescriptionNoArtistsNoNotes": "The vocal notes of {title}, on a timeline you can sing along to.",
       "contributors": "Contributors",
       "contributorLink": "{name}'s profile",
+      "contributorsMore": "+{count, number}",
+      "contributorsOpen": "Show all {count, plural, one {# contributor} other {# contributors}}",
+      "contributorsDialog": {
+        "title": "Contributors",
+        "search": "Search contributors",
+        "showing": "Showing {shown, number} of {total, number}",
+        "loadingMore": "Loading more contributors…",
+        "loadError": "Contributors could not be loaded. Try again.",
+        "retry": "Try again",
+        "empty": "No contributors match “{query}”.",
+        "close": "Close"
+      },
       "timeline": {
         "label": "Note timeline of {title}. {count, plural, one {# note} other {# notes}}, from {low} to {high}",
         "labelEmpty": "Note timeline of {title}"
