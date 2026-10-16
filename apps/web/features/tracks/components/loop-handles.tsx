@@ -11,13 +11,16 @@ import { fractionAtPointer, timeAtFraction } from '../playback/playback-math';
  * pointer positions to the whole progress track, just like its seek handler. */
 function useHandlePointer(duration: number) {
   const dragging = useRef(false);
+  const grabOffset = useRef(0);
   return (handle: 'start' | 'end') => {
     const move = (event: PointerEvent<HTMLInputElement>) => {
       const { range } = useLoop.getState();
       if (!range) return;
       const fraction = fractionAtPointer(
-        event.clientX,
-        event.currentTarget.getBoundingClientRect(),
+        event.clientX - grabOffset.current,
+        (
+          event.currentTarget.parentElement ?? event.currentTarget
+        ).getBoundingClientRect(),
       );
       useLoop.setState({
         range: moveLoopHandle(
@@ -35,7 +38,14 @@ function useHandlePointer(duration: number) {
         event.preventDefault();
         dragging.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
-        move(event);
+        const { range } = useLoop.getState();
+        const box = (
+          event.currentTarget.parentElement ?? event.currentTarget
+        ).getBoundingClientRect();
+        grabOffset.current =
+          event.clientX -
+          box.x -
+          ((range?.[handle] ?? 0) / duration) * box.width;
       },
       onPointerMove: (event: PointerEvent<HTMLInputElement>) => {
         if (dragging.current) move(event);
@@ -78,7 +88,7 @@ export function LoopHandles({ duration }: { duration: number }) {
               ),
             })
           }
-          className="loop-handle pointer-events-none absolute inset-0 h-10 w-full appearance-none bg-transparent"
+          className="loop-handle pointer-events-none absolute top-0 -left-5 h-10 w-[calc(100%+2.5rem)] appearance-none bg-transparent"
         />
       ))}
     </>
