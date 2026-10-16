@@ -89,7 +89,8 @@ export class TrackProcessingService {
         anchor === undefined
           ? null
           : encodeTrackContributorCursor({
-              contributedAt: anchor.contributedAt.toISOString(),
+              contributedAt:
+                anchor.cursorTimestamp ?? anchor.contributedAt.toISOString(),
               contributorId: anchor.id,
             }),
       total,

@@ -141,6 +141,7 @@
         "title": "Contributors",
         "search": "Search contributors",
         "showing": "Showing {shown, number} of {total, number}",
+        "loading": "Loading contributors…",
         "loadingMore": "Loading more contributors…",
         "loadError": "Contributors could not be loaded. Try again.",
         "retry": "Try again",

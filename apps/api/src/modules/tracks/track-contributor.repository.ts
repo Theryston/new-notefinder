@@ -77,7 +77,7 @@ export class TrackContributorRepository {
 
   /** Wildcards never reach the pattern: the match stays a plain substring. */
   private static searchPattern(query: string): string {
-    return `%${query.replace(/[%_\\]/g, '')}%`;
+    return `%${query.replace(/[\\%_]/g, '\\$&')}%`;
   }
 
   private contributorFilters(
@@ -87,10 +87,10 @@ export class TrackContributorRepository {
   ) {
     const conditions = [eq(trackContributors.trackId, trackId)];
     if (cursor !== undefined) {
-      // Cursors carry millisecond ISO timestamps while the column stores
-      // microseconds: truncate both sides, or a row repeats its own page.
+      // Preserve PostgreSQL's timestamp precision so contributors created
+      // within one millisecond are not skipped at a page boundary.
       conditions.push(
-        sql`(date_trunc('milliseconds', ${trackContributors.createdAt}), ${trackContributors.id}) > (${new Date(cursor.contributedAt)}, ${cursor.contributorId})`,
+        sql`(${trackContributors.createdAt}, ${trackContributors.id}) > (${cursor.contributedAt}::timestamptz, ${cursor.contributorId})`,
       );
     }
     if (query !== undefined) {
@@ -121,6 +121,7 @@ export class TrackContributorRepository {
       name: string;
       image: string | null;
       contributedAt: Date;
+      cursorTimestamp?: string;
     }[];
     total: number;
   }> {
@@ -134,6 +135,7 @@ export class TrackContributorRepository {
           name: users.name,
           image: users.image,
           contributedAt: trackContributors.createdAt,
+          cursorTimestamp: sql<string>`to_char(${trackContributors.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
         })
         .from(trackContributors)
         .innerJoin(users, eq(users.id, trackContributors.userId))

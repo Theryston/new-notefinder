@@ -3,7 +3,7 @@
 import type { TrackContributor } from '@notefinder/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import {
   Dialog,
@@ -15,6 +15,72 @@ import { Link } from '@/lib/i18n/navigation';
 
 import { useContributors } from '../hooks/use-contributors';
 import { ContributorAvatar } from './contributor-avatar';
+
+type ContributorsQuery = ReturnType<typeof useContributors>;
+
+type ContributorResultBodyProps = {
+  query: string;
+  items: TrackContributor[];
+  total: number;
+  isPending: boolean;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  list: RefObject<HTMLUListElement | null>;
+  sentinel: RefObject<HTMLLIElement | null>;
+};
+
+function ContributorResultBody({
+  query,
+  items,
+  total,
+  isPending,
+  isFetchingNextPage,
+  hasNextPage,
+  list,
+  sentinel,
+}: ContributorResultBodyProps) {
+  const t = useTranslations('tracks.practice.contributorsDialog');
+  const shown = items.length;
+
+  return (
+    <>
+      {isPending ? (
+        <p
+          role="status"
+          className="py-6 text-center text-muted-foreground text-sm"
+        >
+          {t('loading')}
+        </p>
+      ) : (
+        <p className="text-muted-foreground text-xs tabular-nums">
+          {t('showing', { shown, total })}
+        </p>
+      )}
+      {isPending ? null : items.length === 0 && !isFetchingNextPage ? (
+        <p className="py-6 text-center text-muted-foreground text-sm">
+          {t('empty', { query })}
+        </p>
+      ) : (
+        <ul
+          ref={list}
+          className="no-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto"
+        >
+          {items.map((item) => (
+            <ContributorRow key={item.id} contributor={item} />
+          ))}
+          {hasNextPage ? (
+            <li ref={sentinel} aria-hidden="true" className="h-px shrink-0" />
+          ) : null}
+        </ul>
+      )}
+      {isFetchingNextPage ? (
+        <p role="status" className="text-center text-muted-foreground text-sm">
+          {t('loadingMore')}
+        </p>
+      ) : null}
+    </>
+  );
+}
 
 const SEARCH_DEBOUNCE_MS = 300;
 const AVATAR_CLASS = 'size-12';
@@ -83,35 +149,38 @@ function ContributorsSearch({
   );
 }
 
-/** Infinite Contributor rows with search, status and retry. */
-function ContributorsList({ trackId }: { trackId: string }) {
+/** Query result, rows and loading states for the dialog. */
+function ContributorsResults({
+  query,
+  result,
+}: {
+  query: string;
+  result: ContributorsQuery;
+}) {
   const t = useTranslations('tracks.practice.contributorsDialog');
-  const [input, setInput] = useState('');
-  const [query, setQuery] = useState('');
-  const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(input.trim()), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [input]);
+  const list = useRef<HTMLUListElement>(null);
+  const sentinel = useRef<HTMLLIElement>(null);
   const {
     data,
     error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isPending,
     refetch,
-  } = useContributors(trackId, query);
+  } = result;
 
   useEffect(() => {
     const target = sentinel.current;
-    if (target === null || !hasNextPage) return;
+    const root = list.current;
+    if (target === null || root === null || !hasNextPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && !isFetchingNextPage) {
           void fetchNextPage();
         }
       },
-      { rootMargin: '600px' },
+      { root, rootMargin: '100px' },
     );
     observer.observe(target);
     return () => observer.disconnect();
@@ -119,51 +188,52 @@ function ContributorsList({ trackId }: { trackId: string }) {
 
   const items = (data?.pages ?? []).flatMap((page) => page.items);
   const total = data?.pages[0]?.total ?? 0;
-  const shown = items.length;
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-6">
+        <p role="alert" className="text-muted-foreground text-sm">
+          {t('loadError')}
+        </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="h-10 rounded-full bg-secondary px-4 font-semibold text-sm outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {t('retry')}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <ContributorResultBody
+      query={query}
+      items={items}
+      total={total}
+      isPending={isPending}
+      isFetchingNextPage={isFetchingNextPage}
+      hasNextPage={hasNextPage ?? false}
+      list={list}
+      sentinel={sentinel}
+    />
+  );
+}
+
+/** Infinite Contributor rows with search, status and retry. */
+function ContributorsList({ trackId }: { trackId: string }) {
+  const [input, setInput] = useState('');
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(input.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [input]);
+  const result = useContributors(trackId, query);
 
   return (
     <>
       <ContributorsSearch value={input} onChange={setInput} />
-      {error ? (
-        <div className="flex flex-col items-center gap-2 py-6">
-          <p role="alert" className="text-muted-foreground text-sm">
-            {t('loadError')}
-          </p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="h-10 rounded-full bg-secondary px-4 font-semibold text-sm outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {t('retry')}
-          </button>
-        </div>
-      ) : (
-        <>
-          <p className="text-muted-foreground text-xs tabular-nums">
-            {t('showing', { shown, total })}
-          </p>
-          {items.length === 0 && !isFetchingNextPage ? (
-            <p className="py-6 text-center text-muted-foreground text-sm">
-              {t('empty', { query })}
-            </p>
-          ) : (
-            <ul className="no-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-              {items.map((item) => (
-                <ContributorRow key={item.id} contributor={item} />
-              ))}
-            </ul>
-          )}
-          <div ref={sentinel} aria-hidden="true" className="h-px shrink-0" />
-          {isFetchingNextPage ? (
-            <p
-              role="status"
-              className="text-center text-muted-foreground text-sm"
-            >
-              {t('loadingMore')}
-            </p>
-          ) : null}
-        </>
-      )}
+      <ContributorsResults query={query} result={result} />
     </>
   );
 }

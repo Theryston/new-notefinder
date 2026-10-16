@@ -141,6 +141,7 @@
         "title": "Colaboradores",
         "search": "Buscar colaboradores",
         "showing": "Mostrando {shown, number} de {total, number}",
+        "loading": "Carregando colaboradores…",
         "loadingMore": "Carregando mais colaboradores…",
         "loadError": "Não foi possível carregar os colaboradores. Tente de novo.",
         "retry": "Tentar de novo",
