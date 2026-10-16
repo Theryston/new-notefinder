@@ -52,7 +52,17 @@ export class PlaybackController {
     this.stopListening = port.onState(this.onPlayerState);
   }
 
+  /** Programmatic resumes (including loop repeats) never count in. */
   play = (): void => {
+    const { status } = this.store.getState();
+    if (status === 'loading' || status === 'error' || status === 'playing')
+      return;
+    this.cancelPendingPlay();
+    if (status === 'ended') this.seek(0);
+    this.port.play();
+  };
+
+  private requestPlay(): void {
     const { status } = this.store.getState();
     if (status === 'loading' || status === 'error') return;
     if (status === 'playing' || this.cancelPlay) return;
@@ -65,7 +75,7 @@ export class PlaybackController {
     };
     if (this.playGate) this.cancelPlay = this.playGate(start) ?? null;
     else start();
-  };
+  }
 
   setPlayGate = (gate: typeof this.playGate): void => {
     this.cancelPendingPlay();
@@ -86,7 +96,7 @@ export class PlaybackController {
   toggle = (): void => {
     if (this.cancelPlay || this.store.getState().status === 'playing')
       this.pause();
-    else this.play();
+    else this.requestPlay();
   };
 
   seek = (seconds: number): void => {

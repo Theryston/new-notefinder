@@ -14,7 +14,10 @@ export function useGuideMelody(
 ) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      setFailed(false);
+      return;
+    }
     let cancelled = false;
     let stop = () => {};
     setFailed(false);

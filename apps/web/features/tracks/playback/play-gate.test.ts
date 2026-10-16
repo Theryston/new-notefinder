@@ -26,12 +26,34 @@ it('delays play entry points and cancels pending play on pause or dispose', asyn
   expect(cancel).toHaveBeenCalledOnce();
   release();
   expect(store.getState().status).not.toBe('playing');
-  controller.play();
+  controller.toggle();
   release();
   expect(store.getState().status).toBe('playing');
   controller.pause();
-  controller.play();
+  controller.toggle();
   controller.dispose();
   release();
   expect(store.getState().status).not.toBe('playing');
+});
+
+it('resumes automatic playback immediately while user initiation still counts in', async () => {
+  const port = new FakePlayer({ durationSeconds: 100 });
+  const store = createStore(() => initialPlaybackState);
+  const controller = new PlaybackController({
+    port,
+    store,
+    frames: { request: () => 1, cancel: () => {} },
+    durationHint: 100,
+  });
+  await port.load();
+  const gate = vi.fn(() => () => {});
+  controller.setPlayGate(gate);
+  controller.play();
+  expect(store.getState().status).toBe('playing');
+  expect(gate).not.toHaveBeenCalled();
+  controller.pause();
+  controller.toggle();
+  expect(store.getState().status).toBe('paused');
+  expect(gate).toHaveBeenCalledOnce();
+  controller.dispose();
 });

@@ -178,3 +178,42 @@ for (const locale of ['en', 'pt-BR'] as const) {
     expect(errors).toEqual([]);
   });
 }
+
+test('calibration stays visible and interactive inside browser fullscreen', async ({
+  page,
+}) => {
+  await openTrack(page, 'en', 'fullscreen');
+  await page
+    .getByRole('button', {
+      name: messages.en.tracks.practice.dock.settings,
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole('menuitem', { name: messages.en.practice.aids.calibrate })
+    .click();
+  await page.locator('main').evaluate((element) => element.requestFullscreen());
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect
+    .poll(() =>
+      dialog.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const top = document.elementFromPoint(
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+        );
+        return (
+          document.fullscreenElement?.contains(element) &&
+          top !== null &&
+          element.contains(top)
+        );
+      }),
+    )
+    .toBe(true);
+  await dialog
+    .getByRole('button', { name: messages.en.practice.aids.close, exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await page.evaluate(() => document.exitFullscreen());
+});

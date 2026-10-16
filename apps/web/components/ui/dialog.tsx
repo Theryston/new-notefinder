@@ -5,6 +5,8 @@ import { cn } from 'cn';
 import { XIcon } from 'lucide-react';
 import type * as React from 'react';
 
+import { useFullscreenContainer } from '@/hooks/use-fullscreen-container';
+
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
@@ -34,8 +36,12 @@ function DialogContent({
   /** The close button's accessible name, translated by the caller. */
   closeLabel: string;
 }) {
+  const container = useFullscreenContainer();
   return (
-    <DialogPrimitive.Portal data-slot="dialog-portal">
+    <DialogPrimitive.Portal
+      data-slot="dialog-portal"
+      container={container ?? undefined}
+    >
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
