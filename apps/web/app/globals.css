@@ -308,7 +308,6 @@
   padding: 12px;
   overflow: auto;
 }
-.practice-fullscreen:fullscreen .practice-listening-actions,
 .practice-fullscreen:fullscreen .practice-lyrics {
   display: none;
 }
@@ -325,7 +324,4 @@
       80px
     )
   );
-}
-.practice-fullscreen:fullscreen .dock-fullscreen-exit {
-  display: inline-flex;
 }
