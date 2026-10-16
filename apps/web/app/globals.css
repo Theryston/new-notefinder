@@ -287,11 +287,10 @@
   box-sizing: border-box;
   appearance: none;
   width: 40px;
-  height: 40px;
+  height: 28px;
   border-radius: 999px;
   background: var(--primary);
-  border-block: 2px solid var(--background);
-  border-inline: 12px solid transparent;
+  border-inline: 17px solid transparent;
   background-clip: padding-box;
   cursor: ew-resize;
 }
@@ -299,11 +298,10 @@
   pointer-events: auto;
   box-sizing: border-box;
   width: 40px;
-  height: 40px;
+  height: 28px;
   border-radius: 999px;
   background: var(--primary);
-  border-block: 2px solid var(--background);
-  border-inline: 12px solid transparent;
+  border-inline: 17px solid transparent;
   background-clip: padding-box;
   cursor: ew-resize;
 }

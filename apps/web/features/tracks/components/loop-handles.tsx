@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { type PointerEvent, useRef } from 'react';
 
-import { moveLoopHandle } from '../listening/listening-math';
+import { useClockFormat } from '../hooks/use-clock-format';
+import { type LoopRange, moveLoopHandle } from '../listening/listening-math';
 import { useLoop } from '../listening/loop-store';
 import { fractionAtPointer, timeAtFraction } from '../playback/playback-math';
 
@@ -60,6 +61,36 @@ function useHandlePointer(duration: number) {
   };
 }
 
+/**
+ * The selected section as a tinted band with its times: the slim posts mark
+ * the edges, the band names the section. Decorative: the sliders own the
+ * accessible names, and clicks still fall through to seeking.
+ */
+function LoopRegion({
+  range,
+  duration,
+}: {
+  range: LoopRange;
+  duration: number;
+}) {
+  const format = useClockFormat();
+  return (
+    <div
+      aria-hidden="true"
+      data-testid="loop-region"
+      className="pointer-events-none absolute top-1/2 flex h-5 min-w-0 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-primary/15"
+      style={{
+        left: `${(range.start / duration) * 100}%`,
+        width: `${((range.end - range.start) / duration) * 100}%`,
+      }}
+    >
+      <span className="truncate px-2 font-mono font-semibold text-foreground text-xs tabular-nums">
+        {format(range.start)} – {format(range.end)}
+      </span>
+    </div>
+  );
+}
+
 export function LoopHandles({ duration }: { duration: number }) {
   const pointer = useHandlePointer(duration);
   const t = useTranslations('tracks.practice.listening');
@@ -67,6 +98,7 @@ export function LoopHandles({ duration }: { duration: number }) {
   if (!range || duration <= 0) return null;
   return (
     <>
+      <LoopRegion range={range} duration={duration} />
       {(['start', 'end'] as const).map((handle) => (
         <input
           key={handle}
