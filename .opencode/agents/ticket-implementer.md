@@ -1,7 +1,7 @@
 ---
 description: Implements one ready-for-agent GitHub issue end to end in its own worktree (code, tests, quality gates) and opens a PR. Give it the issue number plus anything specific (sibling tickets running in parallel, authorized test changes).
 mode: subagent
-model: opencode-go/muse-spark-1.3-contributor#medium
+model: opencode-go/muse-spark-1.3-contributor#xhigh
 permission:
   edit: allow
   bash: allow
