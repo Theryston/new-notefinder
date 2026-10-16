@@ -78,8 +78,7 @@ export function ScoreFeedback({
           className="flex flex-wrap items-center justify-between gap-2 text-sm"
         >
           <p role="status" data-testid="score-readout">
-            {latest ? t(latest) : t('waiting')}
-            {' · '}
+            {latest ? `${t(latest)} · ` : null}
             {t(summary.loop ? 'sectionScore' : 'liveScore', {
               percent: Math.round(summary.accuracy * 100),
               count: summary.judged,

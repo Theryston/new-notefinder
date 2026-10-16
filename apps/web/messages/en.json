@@ -282,7 +282,6 @@
       "hit": "Hit",
       "near": "Near",
       "miss": "Miss",
-      "waiting": "Sing a note to begin",
       "sectionScore": "Section: {percent}% · {count} judged",
       "liveScore": "Accuracy: {percent}% · {count} judged",
       "stop": "Stop singing",

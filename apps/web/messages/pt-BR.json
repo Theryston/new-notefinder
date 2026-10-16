@@ -282,7 +282,6 @@
       "hit": "Acertou",
       "near": "Quase",
       "miss": "Errou",
-      "waiting": "Cante uma nota para começar",
       "sectionScore": "Trecho: {percent}% · {count, plural, one {# avaliada} other {# avaliadas}}",
       "liveScore": "Precisão: {percent}% · {count, plural, one {# avaliada} other {# avaliadas}}",
       "stop": "Parar de cantar",
