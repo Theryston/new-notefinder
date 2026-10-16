@@ -32,9 +32,17 @@ export type BestPracticeScores = z.infer<typeof bestPracticeScoresSchema>;
  * The User's state on a Track with their practice best: what the title row
  * reads to show the score to beat at the current difficulty. Kept separate
  * from {@link userTrackStateSchema} so the favorite shape never changes.
+ *
+ * A response without best scores still parses (as no scores yet), so the
+ * favorite never stalls on the scores: they are a bonus beside it, and the
+ * heart stays usable while they load or fail.
  */
 export const trackPracticeStateSchema = userTrackStateSchema.extend({
-  bestScores: bestPracticeScoresSchema,
+  bestScores: bestPracticeScoresSchema.default({
+    EASY: null,
+    NORMAL: null,
+    HARD: null,
+  }),
 });
 
 export type TrackPracticeState = z.infer<typeof trackPracticeStateSchema>;
