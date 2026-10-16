@@ -105,6 +105,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page
         .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
         .click();
+      await expect(page.getByTestId('score-readout')).toContainText('67%');
       await expect(page.getByRole('dialog')).toBeVisible();
       await expect(page.getByTestId('result-accuracy')).toHaveText('67%');
       await page
@@ -161,6 +162,8 @@ test('device settings persist and octave mode rejudges the current run immediate
   await page
     .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
     .click();
+  await expect(page.getByTestId('score-readout')).toContainText('100%');
+  await expect(page.getByTestId('score-readout')).toContainText('50%');
   await expect(page.getByTestId('score-readout')).toContainText('33%');
   await page
     .getByRole('button', { name: t.tracks.practice.dock.pause, exact: true })
@@ -301,6 +304,8 @@ test('saved exact octave mode judges a reloaded track before Settings is opened'
   await page
     .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
     .click();
+  await expect(page.getByTestId('score-readout')).toContainText('100%');
+  await expect(page.getByTestId('score-readout')).toContainText('50%');
   await expect(page.getByTestId('score-readout')).toContainText('33%');
   await page
     .getByRole('button', { name: t.practice.scoring.stop, exact: true })
