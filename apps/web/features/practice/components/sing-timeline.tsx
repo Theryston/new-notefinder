@@ -15,6 +15,8 @@ import {
 } from '../hooks/use-scoring';
 import { useSingVoice } from '../hooks/use-sing-voice';
 import type { PlaybackSource } from '../mic-controller';
+import { useScoringSettings } from '../stores/scoring-settings';
+import { foldReference, foldVoiceOctave } from '../voice-octave';
 import { ScoreFeedback } from './score-feedback';
 import { SingReadout } from './sing-readout';
 
@@ -43,26 +45,38 @@ export function SingTimeline({
 }) {
   const voice = useSingVoice(playback);
   const scoring = useScoring({ notes, playback, controls, loop });
-  const source = useMemo(
-    () =>
-      voice
-        ? {
-            ...voice,
-            judgment: (note: TrackNote) =>
-              scoring.session.getSnapshot().judgments[notes.indexOf(note)] ??
-              null,
-            subscribe(listener: () => void) {
-              const stopVoice = voice.subscribe(listener);
-              const stopScore = scoring.session.subscribe(listener);
-              return () => {
-                stopVoice();
-                stopScore();
-              };
-            },
-          }
-        : undefined,
-    [voice, scoring.session, notes],
-  );
+  const octaveMode = useScoringSettings((state) => state.octaveMode);
+  const source = useMemo(() => {
+    if (!voice) return undefined;
+    // "Any octave" judges pitch class, so the line folds by whole octaves
+    // onto the notes: a comfortable lower octave draws where it is judged.
+    const fold = octaveMode === 'ANY';
+    return {
+      ...voice,
+      segments: (from: number, to: number) => {
+        const stretches = voice.segments(from, to);
+        if (!fold) return stretches;
+        return stretches.map((segment) =>
+          segment.map((point) => {
+            const reference = foldReference(notes, point.time);
+            return reference === null
+              ? point
+              : { ...point, midi: foldVoiceOctave(point.midi, reference) };
+          }),
+        );
+      },
+      judgment: (note: TrackNote) =>
+        scoring.session.getSnapshot().judgments[notes.indexOf(note)] ?? null,
+      subscribe(listener: () => void) {
+        const stopVoice = voice.subscribe(listener);
+        const stopScore = scoring.session.subscribe(listener);
+        return () => {
+          stopVoice();
+          stopScore();
+        };
+      },
+    };
+  }, [voice, scoring.session, notes, octaveMode]);
 
   return (
     <div className="flex flex-col gap-2">
