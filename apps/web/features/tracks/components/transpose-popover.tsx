@@ -12,6 +12,8 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { GuideMelodyAuto } from '@/features/practice/components/guide-melody-auto';
+import { GuideMelodyControl } from '@/features/practice/components/guide-melody-control';
 
 import { useKeyText } from '../hooks/use-key-text';
 import { setTranspose, useTranspose } from '../stores/transpose-store';
@@ -41,6 +43,7 @@ export function TransposePopover({
 
   return (
     <Popover>
+      <GuideMelodyAuto semitones={semitones} />
       <PopoverTrigger
         aria-label={
           keyText === null
@@ -68,6 +71,7 @@ export function TransposePopover({
           )}
         </div>
         <TransposeStepper trackKey={trackKey} />
+        <GuideMelodyControl />
         <PopoverDescription>
           {t(directAudio ? 'audioFollowsKey' : 'videoKeepsKey')}
         </PopoverDescription>

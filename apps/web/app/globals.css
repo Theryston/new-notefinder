@@ -284,55 +284,48 @@
 
 .loop-handle::-webkit-slider-thumb {
   pointer-events: auto;
-  box-sizing: border-box;
   appearance: none;
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: var(--primary);
-  border-block: 2px solid var(--background);
-  border-inline: 12px solid transparent;
-  background-clip: padding-box;
+  background: transparent;
+  border: 0;
   cursor: ew-resize;
 }
 .loop-handle::-moz-range-thumb {
   pointer-events: auto;
-  box-sizing: border-box;
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: var(--primary);
-  border-block: 2px solid var(--background);
-  border-inline: 12px solid transparent;
-  background-clip: padding-box;
+  background: transparent;
+  border: 0;
   cursor: ew-resize;
 }
-@media (orientation: landscape) and (max-height: 600px) {
-  .practice-fullscreen:fullscreen {
-    padding: 12px;
-    overflow: auto;
-  }
-  .practice-fullscreen:fullscreen .practice-listening-actions,
-  .practice-fullscreen:fullscreen div:has(> span > [data-testid="target-note"]),
-  .practice-fullscreen:fullscreen [data-testid="karaoke-line"],
-  .practice-fullscreen:fullscreen .practice-lyrics {
-    display: none;
-  }
-  .practice-fullscreen:fullscreen canvas {
-    height: 100%;
-  }
-  .practice-fullscreen:fullscreen div:has(> canvas) {
-    height: max(
-      80px,
-      calc(
-        100dvh -
-        var(--dock-height, 0px) -
-        var(--score-feedback-height, 0px) -
-        36px
-      )
-    );
-  }
-  .practice-fullscreen:fullscreen .dock-fullscreen-exit {
-    display: inline-flex;
-  }
+/* Fullscreen is the timeline's stage: the full lyrics stay out, while the
+ * listening actions, current line, readout, score and dock stay in. The roll
+ * takes every free pixel of the viewport height. */
+.practice-fullscreen:fullscreen {
+  padding: 12px;
+  overflow: auto;
+}
+.practice-fullscreen:fullscreen .practice-lyrics {
+  display: none;
+}
+.practice-fullscreen:fullscreen canvas {
+  height: 100%;
+}
+.practice-fullscreen:fullscreen div:has(> canvas) {
+  /* Viewport minus the dock clearance, the live readout and score rows, and
+   * the fixed chrome: 12px padding each side, the 40px listening-actions row
+   * with its 12px gaps, the 32px karaoke line, and 12px below it so the
+   * lyrics sit as far from the dock as they sit from the timeline. */
+  height: max(
+    80px,
+    calc(
+      100dvh -
+      var(--dock-height, 0px) -
+      var(--score-feedback-height, 0px) -
+      132px
+    )
+  );
 }

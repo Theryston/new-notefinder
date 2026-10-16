@@ -75,10 +75,11 @@ for (const { locale, messages } of cases) {
       }
     });
 
-    test('shows the key in the title row', async ({ page }) => {
+    test('shows the key in the transpose chip', async ({ page }) => {
       await openTrack(page, locale, `clx-key-range-${locale}`);
+      await openTranspose(page, keyText('G', 'MAJOR'));
 
-      await expect(page.getByTestId('track-key')).toHaveText(
+      await expect(page.getByTestId('transpose-key')).toHaveText(
         keyText('G', 'MAJOR'),
       );
     });
@@ -94,7 +95,8 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('img', { name: /Under Pressure/ }),
       ).toBeVisible();
-      await expect(page.getByTestId('track-key')).toHaveCount(0);
+      await page.getByRole('button', { name: dock.transpose }).click();
+      await expect(page.getByTestId('transpose-key')).toHaveCount(0);
     });
 
     test('moves the notes and the key, and says the video keeps its key', async ({
@@ -108,7 +110,7 @@ for (const { locale, messages } of cases) {
       await up.click();
 
       await expect(page.getByTestId('transpose-value')).toHaveText('+2');
-      await expect(page.getByTestId('track-key')).toHaveText(
+      await expect(page.getByTestId('transpose-key')).toHaveText(
         keyText('A', 'MAJOR'),
       );
       // The timeline's description names the notes it draws.
@@ -131,14 +133,14 @@ for (const { locale, messages } of cases) {
       const down = page.getByRole('button', { name: dock.transposeDown });
 
       await down.click();
-      await expect(page.getByTestId('track-key')).toHaveText(
+      await expect(page.getByTestId('transpose-key')).toHaveText(
         keyText('F#', 'MAJOR'),
       );
       for (let step = 0; step < 11; step += 1) await down.click();
 
       await expect(page.getByTestId('transpose-value')).toHaveText('-12');
       await expect(down).toBeDisabled();
-      await expect(page.getByTestId('track-key')).toHaveText(
+      await expect(page.getByTestId('transpose-key')).toHaveText(
         keyText('G', 'MAJOR'),
       );
     });
@@ -156,7 +158,7 @@ for (const { locale, messages } of cases) {
       await openTranspose(page, keyText('G#', 'MAJOR'));
 
       await expect(page.getByTestId('transpose-value')).toHaveText('+1');
-      await expect(page.getByTestId('track-key')).toHaveText(
+      await expect(page.getByTestId('transpose-key')).toHaveText(
         keyText('G#', 'MAJOR'),
       );
 
@@ -208,7 +210,7 @@ for (const { locale, messages } of cases) {
       }
     });
 
-    test('separates the artists, the key and the duration with one dot each', async ({
+    test('keeps the key in the transpose chip and separates the track facts', async ({
       page,
     }) => {
       const id = `clx-facts-${locale}`;
@@ -217,10 +219,18 @@ for (const { locale, messages } of cases) {
       await page.goto(`/${locale}/tracks/${id}`);
 
       const facts = page.locator('#track-title + p');
-      await expect(facts).toContainText(keyText('G', 'MAJOR'));
       const text = ((await facts.textContent()) ?? '').replace(/\s+/g, ' ');
-      expect(text).toContain(`Queen·${keyText('G', 'MAJOR')}·`);
+      expect(text).toContain('Queen');
+      expect(text).toContain(t('durationLabel', { duration: '4:08' }));
+      expect(text).toContain(t('views', { count: 0 }));
+      await expect(facts.locator('span[aria-hidden="true"]')).toHaveCount(2);
       expect(text).not.toContain('··');
+      const key = keyText('G', 'MAJOR');
+      const chip = page.getByRole('button', {
+        name: t('dock.transposeOpen', { key }),
+      });
+      await expect(chip).toBeVisible();
+      await expect(chip).toContainText(key);
     });
   });
 }

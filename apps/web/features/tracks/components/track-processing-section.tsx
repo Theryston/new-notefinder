@@ -35,7 +35,10 @@ export async function TrackProcessingSection({
         fakePlayer={fakePlayer}
         recommendations={
           initialState.processing?.status === 'COMPLETED' ? (
-            <Suspense fallback={<TrackRecommendationsSkeleton />}>
+            <Suspense
+              key="track-recommendations"
+              fallback={<TrackRecommendationsSkeleton />}
+            >
               <TrackRecommendations trackId={initialState.track.id} />
             </Suspense>
           ) : null

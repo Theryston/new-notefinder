@@ -132,3 +132,23 @@ test('fullscreen is requested only by its optional button', async ({
     .poll(() => page.evaluate(() => document.fullscreenElement === null))
     .toBe(true);
 });
+
+test('fullscreen keeps the floating dock clear of the current lyric line', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, 'clx-fullscreen-dock-lyrics');
+  const karaoke = page.getByTestId('karaoke-line');
+  await expect(karaoke).toHaveText('Pressure');
+  await page.getByRole('button', { name: tools.fullscreen }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement !== null))
+    .toBe(true);
+  const dockBox = await page
+    .getByRole('region', { name: dock.label })
+    .boundingBox();
+  const line = await karaoke.boundingBox();
+  if (!dockBox || !line) throw new Error('dock or lyric line is missing');
+  expect(line.y + line.height).toBeLessThanOrEqual(dockBox.y);
+  expect(line.y + line.height).toBeGreaterThanOrEqual(dockBox.y - 16);
+});

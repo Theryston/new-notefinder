@@ -370,7 +370,10 @@ Both modes: draw on `<canvas>` with `requestAnimationFrame` (never React
 re-renders per frame). Colors come from the CSS tokens (read once with
 `getComputedStyle` and again when the theme changes). The current note name
 is also shown in the timeline header (mono, `text-primary`). In landscape
-fullscreen, hide every chrome element except the glass controls bar.
+fullscreen, keep the listening actions (next notes and fullscreen exit), the
+current karaoke line, any active sung-note readout, the timeline and glass
+controls dock. Hide the full lyrics so the timeline and current line fit above
+the dock.
 
 ## Motion
 

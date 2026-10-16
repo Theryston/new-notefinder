@@ -8,6 +8,9 @@ describe('device calibration timing', () => {
     expect(shiftedVoiceTime(8.8, 0.15, 0.5)).toBeCloseTo(8.725);
     expect(shiftedVoiceTime(8.8, -0.1, 1.5)).toBeCloseTo(8.95);
   });
+  it('ignores early outlier beats when most responses agree', () => {
+    expect(calibrationOffset([0.65, 0.14, 0.15, 0.16, 0.15])).toBeCloseTo(0.15);
+  });
   it('rejects too few, inconsistent or invalid sung responses', () => {
     expect(calibrationOffset([0.1, 0.1])).toBeNull();
     expect(calibrationOffset([0.1, 0.4, 0.7, 0.9])).toBeNull();

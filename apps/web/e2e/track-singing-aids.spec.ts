@@ -129,6 +129,13 @@ for (const locale of ['en', 'pt-BR'] as const) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await openTrack(page, locale, 'guide');
+    const transpose = () =>
+      page
+        .getByRole('button', {
+          name: t.tracks.practice.dock.transpose,
+          exact: true,
+        })
+        .click();
     const settings = () =>
       page
         .getByRole('button', {
@@ -136,13 +143,11 @@ for (const locale of ['en', 'pt-BR'] as const) {
           exact: true,
         })
         .click();
-    await settings();
-    await expect(
-      page.getByRole('menuitemcheckbox', { name: t.practice.aids.guideMelody }),
-    ).not.toBeChecked();
-    await page
-      .getByRole('menuitemcheckbox', { name: t.practice.aids.guideMelody })
-      .click();
+    const guide = () =>
+      page.getByRole('switch', { name: t.practice.aids.guideMelody });
+    await transpose();
+    await expect(guide()).not.toBeChecked();
+    await guide().click();
     await page.keyboard.press('Escape');
     await page
       .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
@@ -160,10 +165,10 @@ for (const locale of ['en', 'pt-BR'] as const) {
       .getByRole('button', { name: t.tracks.practice.dock.pause, exact: true })
       .click();
     await page.reload();
+    await transpose();
+    await expect(guide()).toBeChecked();
+    await page.keyboard.press('Escape');
     await settings();
-    await expect(
-      page.getByRole('menuitemcheckbox', { name: t.practice.aids.guideMelody }),
-    ).toBeChecked();
     await page
       .getByRole('menuitem', { name: t.practice.aids.calibrate })
       .click();
@@ -176,6 +181,78 @@ for (const locale of ['en', 'pt-BR'] as const) {
       .getByRole('button', { name: t.practice.aids.close, exact: true })
       .click();
     expect(errors).toEqual([]);
+  });
+
+  test(`${locale}: guide melody follows the transposition unless picked by hand`, async ({
+    page,
+  }) => {
+    await openTrack(page, locale, 'auto-guide');
+    await page
+      .getByRole('button', {
+        name: t.tracks.practice.dock.transpose,
+        exact: true,
+      })
+      .click();
+    const guide = () =>
+      page.getByRole('switch', { name: t.practice.aids.guideMelody });
+    const up = () =>
+      page
+        .getByRole('button', {
+          name: t.tracks.practice.dock.transposeUp,
+          exact: true,
+        })
+        .click();
+    const reset = () =>
+      page
+        .getByRole('button', {
+          name: t.tracks.practice.dock.transposeReset,
+          exact: true,
+        })
+        .click();
+    await expect(guide()).not.toBeChecked();
+    await up();
+    await expect(guide()).toBeChecked();
+    await reset();
+    await expect(guide()).not.toBeChecked();
+    await up();
+    await expect(guide()).toBeChecked();
+    await guide().click();
+    await expect(guide()).not.toBeChecked();
+    await reset();
+    await up();
+    await expect(guide()).not.toBeChecked();
+    await guide().click();
+    await expect(guide()).toBeChecked();
+    await reset();
+    await expect(guide()).toBeChecked();
+  });
+
+  test(`${locale}: a saved guide choice stays manual after an upgrade`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'notefinder.singing-aids.v1',
+        JSON.stringify({ countIn: true, guideMelody: true, offset: 0 }),
+      );
+    });
+    await openTrack(page, locale, 'legacy-guide');
+    await page
+      .getByRole('button', {
+        name: t.tracks.practice.dock.transpose,
+        exact: true,
+      })
+      .click();
+    const guide = () =>
+      page.getByRole('switch', { name: t.practice.aids.guideMelody });
+    await expect(guide()).toBeChecked();
+    await page
+      .getByRole('button', {
+        name: t.tracks.practice.dock.transposeUp,
+        exact: true,
+      })
+      .click();
+    await expect(guide()).toBeChecked();
   });
 }
 

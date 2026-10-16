@@ -14,7 +14,7 @@ export async function TrackRecommendations({ trackId }: { trackId: string }) {
   return (
     <section
       aria-labelledby="track-recommendations-title"
-      className="flex flex-col gap-4 pb-[calc(var(--dock-height,0px)+1.5rem)]"
+      className="flex flex-col gap-4"
     >
       <h2
         id="track-recommendations-title"

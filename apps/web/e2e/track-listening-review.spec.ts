@@ -74,7 +74,7 @@ test('landscape phone lyric taps select the loop without narrowing the viewport'
   );
 });
 
-test('landscape phone fullscreen shows only the timeline and dock with a dock exit', async ({
+test('landscape phone fullscreen keeps the current lyric, actions, timeline and dock', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 844, height: 390 });
@@ -84,18 +84,22 @@ test('landscape phone fullscreen shows only the timeline and dock with a dock ex
     'offsetWidth',
     844,
   );
-  await expect(page.locator('.practice-listening-actions')).toBeHidden();
-  await expect(page.getByTestId('karaoke-line')).toBeHidden();
+  const actions = page.locator('.practice-listening-actions');
+  await expect(actions).toBeVisible();
+  await expect(page.getByTestId('karaoke-line')).toBeVisible();
   await expect(page.locator('.practice-lyrics')).toBeHidden();
   const canvas = page.getByRole('img', { name: /Note timeline/ });
   await expect(canvas).toBeVisible();
   const controls = page.getByRole('region', { name: dock.label });
   await expect(controls).toBeVisible();
+  const karaoke = await page.getByTestId('karaoke-line').boundingBox();
   const roll = await canvas.boundingBox();
   const bar = await controls.boundingBox();
-  if (!roll || !bar) throw new Error('fullscreen timeline or dock is missing');
-  expect(roll.y + roll.height).toBeLessThanOrEqual(bar.y);
-  await controls.getByRole('button', { name: tools.fullscreen }).click();
+  if (!roll || !karaoke || !bar)
+    throw new Error('fullscreen timeline, lyric or dock is missing');
+  expect(roll.y + roll.height).toBeLessThanOrEqual(karaoke.y);
+  expect(karaoke.y + karaoke.height).toBeLessThanOrEqual(bar.y);
+  await actions.getByRole('button', { name: tools.fullscreen }).click();
   await expect
     .poll(() => page.evaluate(() => document.fullscreenElement === null))
     .toBe(true);

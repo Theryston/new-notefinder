@@ -1,6 +1,8 @@
-import { TrackProcessingSkeleton } from '@/features/tracks/components/track-processing-skeleton';
+import { TrackPracticeSkeleton } from '@/features/tracks/components/track-practice-view';
 
-/** Same-dimension skeleton while the Track's Processing state streams in. */
+/** Practice-shaped skeleton while the Track's state streams in: completed is
+ * the common case, so loading already looks like practice (a still-loading
+ * Processing run is the exception, and its own view replaces this). */
 export default function TrackLoading() {
-  return <TrackProcessingSkeleton />;
+  return <TrackPracticeSkeleton />;
 }

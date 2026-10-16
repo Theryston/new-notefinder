@@ -1,11 +1,12 @@
 'use client';
 
 import type { TrackNote } from '@notefinder/contracts';
-import { MaximizeIcon, SkipForwardIcon } from 'lucide-react';
+import { MaximizeIcon, SkipForwardIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useFullscreenContainer } from '@/hooks/use-fullscreen-container';
 
 import { nextNotesTarget } from '../listening/listening-math';
 import type { PlaybackController } from '../playback/playback-controller';
@@ -22,6 +23,7 @@ export function ListeningActions({
 }) {
   const t = useTranslations('tracks.practice.listening');
   const next = useRef<HTMLButtonElement>(null);
+  const fullscreen = useFullscreenContainer();
   useEffect(() => {
     const update = () => {
       if (next.current)
@@ -57,7 +59,11 @@ export function ListeningActions({
           void action?.catch(() => undefined);
         }}
       >
-        <MaximizeIcon aria-hidden="true" />
+        {fullscreen ? (
+          <XIcon aria-hidden="true" />
+        ) : (
+          <MaximizeIcon aria-hidden="true" />
+        )}
       </Button>
     </div>
   );

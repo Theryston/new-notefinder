@@ -10,7 +10,6 @@ import { clockMessage } from '../playback/clock-message';
 import { ContributorAvatar } from './contributor-avatar';
 import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
-import { TrackKeyLabel } from './track-key-label';
 import { TrackShareButton } from './track-share-button';
 
 // Loaded on the first click, on the client only: Base UI's dialog stays out
@@ -132,19 +131,13 @@ function ViewCount({ count }: { count: number }) {
   return <span className="shrink-0 tabular-nums">{t('views', { count })}</span>;
 }
 
-/** The line under the title: artists, then the key and the duration, each after a dot. */
+/** The line under the title: artists, then the duration, each after a dot. */
 function TrackFacts({ header }: { header: TrackDetail }) {
   return (
     <p className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
       <span className="truncate">
         <ArtistCredit credit={header.artistCredit} />
       </span>
-      {header.key === undefined ? null : (
-        <>
-          <span aria-hidden="true">·</span>
-          <TrackKeyLabel trackKey={header.key} />
-        </>
-      )}
       {header.durationMs === null ? null : (
         <>
           <span aria-hidden="true">·</span>

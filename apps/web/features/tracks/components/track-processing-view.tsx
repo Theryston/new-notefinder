@@ -62,7 +62,7 @@ export function TrackProcessingView({
           enabled={initialState.processing?.status !== 'COMPLETED'}
         />
         <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
-        <div className="flex flex-col gap-10 md:gap-12">
+        <div className="flex flex-col gap-10 pb-[calc(var(--dock-height,0px)+1.5rem)] md:gap-12">
           <TrackPracticeView
             trackId={state.track.id}
             initial={initialPractice}
