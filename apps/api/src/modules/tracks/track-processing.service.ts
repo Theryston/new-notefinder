@@ -39,16 +39,15 @@ export class TrackProcessingService {
     if (header === undefined) {
       return this.throwMovedOrMissing(trackId);
     }
-    const [latest, contributors, contributorCount] = await Promise.all([
+    const [latest, page] = await Promise.all([
       this.processings.findLatestProcessing(trackId),
-      this.firstContributors(trackId),
-      this.contributorCount(trackId),
+      this.listContributors(trackId, { limit: 3 }),
     ]);
     return {
       track: header,
       processing: latest === undefined ? null : toTrackProcessing(latest),
-      contributors,
-      contributorCount,
+      contributors: page.items,
+      contributorCount: page.total,
     };
   }
 
@@ -104,14 +103,6 @@ export class TrackProcessingService {
       limit: 1,
     });
     return total;
-  }
-
-  /** The first Contributors for the header's avatar pile. */
-  private async firstContributors(
-    trackId: string,
-  ): Promise<TrackContributor[]> {
-    const { items } = await this.listContributors(trackId, { limit: 3 });
-    return items;
   }
 
   /**
