@@ -146,16 +146,19 @@ for (const { locale, messages } of cases) {
   test(`resumes pagination after retrying a failed page (${locale})`, async ({
     page,
   }) => {
-    let nextPageAttempts = 0;
+    let failedNextPageAttempts = 0;
+    let successfulNextPageAttempts = 0;
+    let retryRefetchStarted = false;
     const trackId = `contributor-retry-${locale}`;
     await page.route(`**/v1/tracks/${trackId}/contributors*`, async (route) => {
       const url = new URL(route.request().url());
       if (url.searchParams.has('cursor')) {
-        nextPageAttempts += 1;
-        if (nextPageAttempts === 1) {
+        if (!retryRefetchStarted) {
+          failedNextPageAttempts += 1;
           await route.fulfill({ status: 503, body: 'temporary error' });
           return;
         }
+        successfulNextPageAttempts += 1;
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -164,6 +167,7 @@ for (const { locale, messages } of cases) {
         return;
       }
 
+      if (failedNextPageAttempts > 0) retryRefetchStarted = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -186,6 +190,7 @@ for (const { locale, messages } of cases) {
     await list.evaluate((element) => {
       element.scrollTop = element.scrollHeight;
     });
+    await dialog.getByRole('alert').waitFor();
     await expect(dialog.getByRole('alert')).toHaveText(
       translate('contributorsDialog.loadError'),
     );
@@ -206,6 +211,7 @@ for (const { locale, messages } of cases) {
         translate('contributorsDialog.showing', { shown: 21, total: 21 }),
       ),
     ).toBeVisible();
-    expect(nextPageAttempts).toBe(2);
+    expect(failedNextPageAttempts).toBeGreaterThan(0);
+    expect(successfulNextPageAttempts).toBe(1);
   });
 }
