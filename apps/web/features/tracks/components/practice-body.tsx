@@ -93,6 +93,8 @@ function TrackTimeline({
     <SingTimeline
       notes={shifted}
       playback={playbackStore}
+      controls={controller}
+      loop={useLoop}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}

@@ -60,6 +60,9 @@ function readSingColors(
     mutedLabel: token('--muted-foreground'),
     current: token('--primary'),
     voice: token('--timeline-pitch'),
+    hit: token('--success'),
+    near: token('--warning'),
+    miss: token('--destructive'),
   };
 }
 

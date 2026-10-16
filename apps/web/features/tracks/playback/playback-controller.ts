@@ -32,6 +32,14 @@ export class PlaybackController {
   private readonly store: StoreApi<PlaybackState>;
   private readonly frames: FrameScheduler;
   private frame: number | null = null;
+  private readonly seekListeners = new Set<
+    (from: number, to: number) => void
+  >();
+
+  subscribeSeek = (listener: (from: number, to: number) => void) => {
+    this.seekListeners.add(listener);
+    return () => this.seekListeners.delete(listener);
+  };
   private playGate:
     | ((start: () => void) => (() => void) | undefined)
     | undefined;
@@ -101,6 +109,8 @@ export class PlaybackController {
 
   seek = (seconds: number): void => {
     const target = clampTime(seconds, this.duration());
+    for (const listener of this.seekListeners)
+      listener(this.store.getState().time, target);
     this.port.seek(target);
     // Seeking from the end leaves it, whatever the player reports next.
     if (this.store.getState().status === 'ended') {

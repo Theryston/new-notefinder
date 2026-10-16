@@ -1,14 +1,21 @@
 'use client';
 
 import type { TrackNote } from '@notefinder/contracts';
+import { useMemo } from 'react';
 
 import {
   NoteTimeline,
   type TimelineClock,
 } from '@/features/timeline/components/note-timeline';
 
+import {
+  type ScoringControls,
+  type ScoringLoop,
+  useScoring,
+} from '../hooks/use-scoring';
 import { useSingVoice } from '../hooks/use-sing-voice';
 import type { PlaybackSource } from '../mic-controller';
+import { ScoreFeedback } from './score-feedback';
 import { SingReadout } from './sing-readout';
 
 /**
@@ -19,23 +26,49 @@ import { SingReadout } from './sing-readout';
 export function SingTimeline({
   notes,
   playback,
+  controls,
+  loop,
   ...timeline
 }: {
   notes: readonly TrackNote[];
   playback: PlaybackSource & {
     getState(): { status: string; time: number; rate?: number };
   };
+  controls?: ScoringControls | null;
+  loop?: ScoringLoop;
   label: string;
   clock?: TimelineClock;
   onScrub?: (seconds: number) => void;
   className?: string;
 }) {
   const voice = useSingVoice(playback);
+  const scoring = useScoring({ notes, playback, controls, loop });
+  const source = useMemo(
+    () =>
+      voice
+        ? {
+            ...voice,
+            judgment: (note: TrackNote) =>
+              scoring.session.getSnapshot().judgments[notes.indexOf(note)] ??
+              null,
+            subscribe(listener: () => void) {
+              const stopVoice = voice.subscribe(listener);
+              const stopScore = scoring.session.subscribe(listener);
+              return () => {
+                stopVoice();
+                stopScore();
+              };
+            },
+          }
+        : undefined,
+    [voice, scoring.session, notes],
+  );
 
   return (
     <div className="flex flex-col gap-2">
       {voice ? <SingReadout notes={notes} playback={playback} /> : null}
-      <NoteTimeline notes={notes} voice={voice} {...timeline} />
+      <ScoreFeedback scoring={scoring} />
+      <NoteTimeline notes={notes} voice={source} {...timeline} />
     </div>
   );
 }

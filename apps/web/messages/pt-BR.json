@@ -251,6 +251,28 @@
       "start": "Iniciar calibração de 10 segundos",
       "reset": "Redefinir ajuste de tempo",
       "count": "{count}"
+    },
+    "scoring": {
+      "difficulty": "Dificuldade",
+      "EASY": "Fácil ±75 cents",
+      "NORMAL": "Normal ±50 cents",
+      "HARD": "Difícil ±25 cents",
+      "octaveMode": "Modo de oitava",
+      "ANY": "Qualquer oitava",
+      "EXACT": "Oitava exata",
+      "hit": "Acertou",
+      "near": "Quase",
+      "miss": "Errou",
+      "waiting": "Cante uma nota para começar",
+      "sectionScore": "Trecho: {percent}% · {count} avaliadas",
+      "liveScore": "Precisão: {percent}% · {count} avaliadas",
+      "stop": "Parar de cantar",
+      "close": "Fechar resultado",
+      "result": "Resultado da prática",
+      "resultDescription": "Sua precisão é o número de notas certas dividido pelas notas avaliadas.",
+      "accuracy": "{percent}%",
+      "judged": "{count} notas avaliadas",
+      "tryAgain": "Tentar de novo"
     }
   },
   "streaks": {

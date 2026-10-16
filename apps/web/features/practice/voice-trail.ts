@@ -9,7 +9,8 @@ const MAX_POINTS = 1500;
 /** Seeking back further than this forgets the line drawn ahead of it. */
 const REWIND_SECONDS = 0.25;
 
-type Listener = () => void;
+type Reading = { time: number; midi: number | null };
+type Listener = (reading?: Reading) => void;
 
 /**
  * The user's voice as the timeline draws it: readings placed on the Track's
@@ -39,7 +40,7 @@ export class VoiceTrail {
       this.lastTime = time;
     }
     if (this.points.length > MAX_POINTS) this.points.shift();
-    this.notify();
+    this.notify({ time, midi });
   }
 
   /** The newest reading, even when paused and nothing is placed on the roll. */
@@ -95,8 +96,8 @@ export class VoiceTrail {
     return () => this.listeners.delete(listener);
   }
 
-  private notify(): void {
-    for (const listener of this.listeners) listener();
+  private notify(reading?: Reading): void {
+    for (const listener of this.listeners) listener(reading);
   }
 }
 

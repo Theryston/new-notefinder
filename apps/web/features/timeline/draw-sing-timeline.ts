@@ -33,6 +33,7 @@ export type VoicePoint = { time: number; midi: number };
  */
 export type VoiceSource = {
   segments(from: number, to: number): VoicePoint[][];
+  judgment?(note: TrackNote): 'hit' | 'near' | 'miss' | null;
   subscribe(listener: () => void): () => void;
 };
 
@@ -43,6 +44,9 @@ export type SingTimelineColors = TimelineColors & {
   mutedLabel: string;
   current: string;
   voice: string;
+  hit?: string;
+  near?: string;
+  miss?: string;
 };
 
 export type SingTimelineContext = TimelineContext &
@@ -103,9 +107,14 @@ function drawNote(
   const current = noteStateAt(note, now) === 'current';
   ctx.beginPath();
   ctx.roundRect(box.x, box.y, box.width, box.height, NOTE_RADIUS);
-  ctx.fillStyle = current ? colors.current : colors.muted;
+  const judgment = frame.voice.judgment?.(note);
+  ctx.fillStyle = judgment
+    ? (colors[judgment] ?? colors.current)
+    : current
+      ? colors.current
+      : colors.muted;
   ctx.fill();
-  if (!current) {
+  if (!current && !judgment) {
     ctx.strokeStyle = colors.mutedLine;
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -117,6 +126,11 @@ function drawTargets(ctx: SingTimelineContext, frame: SingTimelineFrame) {
     drawNote(ctx, note, box, frame);
   }
   drawNoteLabels(ctx, frame, (note, inside) => {
+    const judgment = frame.voice.judgment?.(note);
+    if (judgment)
+      return inside
+        ? frame.colors.noteLabel
+        : (frame.colors[judgment] ?? frame.colors.current);
     if (noteStateAt(note, frame.now) !== 'current')
       return frame.colors.mutedLabel;
     return inside ? frame.colors.noteLabel : frame.colors.current;
