@@ -119,9 +119,35 @@ const TIME_CLASS =
   'flex h-10 w-12 shrink-0 cursor-pointer items-center justify-end rounded-full font-mono text-muted-foreground text-xs tabular-nums outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50';
 
 /**
+ * The thin played-versus-total bar, shown only without direct audio: there
+ * the waveform itself carries the progress, so this stays out.
+ */
+function ProgressBar({
+  elements,
+}: {
+  elements: Pick<TrackElements, 'fill' | 'thumb'>;
+}) {
+  return (
+    <div className="relative h-1 w-full rounded-full bg-foreground/15">
+      <div
+        ref={elements.fill}
+        className="absolute inset-0 origin-left rounded-full bg-primary"
+        style={{ transform: 'scaleX(0)' }}
+      />
+      <div
+        ref={elements.thumb}
+        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-sm transition-transform duration-200 ease-spring group-hover:scale-125 group-aria-disabled:hidden"
+        style={{ left: '0%' }}
+      />
+    </div>
+  );
+}
+
+/**
  * The progress track of the dock: a bar to click or drag to seek, followed by
  * a button that toggles remaining and elapsed time. The slider still announces
- * elapsed time and duration.
+ * elapsed time and duration. With direct audio the waveform itself is the
+ * track (played bars in primary, the rest muted), so the thin bar stays out.
  */
 export function DockProgressTrack({
   controller,
@@ -149,7 +175,7 @@ export function DockProgressTrack({
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
-      {/* The hit area is taller than the 4px bar, so it is easy to grab. */}
+      {/* The hit area is taller than the bar, so it is easy to grab. */}
       <div
         ref={elements.slider}
         role="slider"
@@ -167,18 +193,7 @@ export function DockProgressTrack({
         className="group relative flex h-8 min-w-0 flex-1 cursor-pointer touch-none items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:cursor-default"
       >
         {waveform !== undefined && <AudioWaveform controller={controller} />}
-        <div className="relative h-1 w-full rounded-full bg-foreground/15">
-          <div
-            ref={elements.fill}
-            className="absolute inset-0 origin-left rounded-full bg-primary"
-            style={{ transform: 'scaleX(0)' }}
-          />
-          <div
-            ref={elements.thumb}
-            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-sm transition-transform duration-200 ease-spring group-hover:scale-125 group-aria-disabled:hidden"
-            style={{ left: '0%' }}
-          />
-        </div>
+        {waveform === undefined && <ProgressBar elements={elements} />}
         <LoopHandles duration={duration} />
       </div>
       <button
