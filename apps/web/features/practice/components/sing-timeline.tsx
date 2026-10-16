@@ -1,13 +1,17 @@
 'use client';
 
-import type { TrackNote } from '@notefinder/contracts';
-import { useMemo } from 'react';
+import type {
+  SubmitPracticeAttemptBody,
+  TrackNote,
+} from '@notefinder/contracts';
+import { type ReactNode, useMemo } from 'react';
 
 import {
   NoteTimeline,
   type TimelineClock,
 } from '@/features/timeline/components/note-timeline';
 
+import { useScoredAttempt } from '../hooks/use-scored-attempt';
 import {
   type ScoringControls,
   type ScoringLoop,
@@ -24,12 +28,22 @@ import { SingReadout } from './sing-readout';
  * The note timeline that follows the mic: in listen mode it is the plain
  * timeline; with the mic on it is drawn in sing mode (labeled lanes and the
  * user's voice line) and the target and detected notes are written above it.
+ *
+ * A finished run is reported once through `onAttempt` (the Track page above
+ * decides what it means: submit it signed in, keep it waiting as a visitor),
+ * and the result sheet shows whatever `renderAttemptStatus` draws for the
+ * current difficulty. The transposition and the speed arrive as plain values
+ * because they live on the Track page, not in this feature.
  */
 export function SingTimeline({
   notes,
   playback,
   controls,
   loop,
+  transpose,
+  rate,
+  onAttempt,
+  renderAttemptStatus,
   ...timeline
 }: {
   notes: readonly TrackNote[];
@@ -38,6 +52,10 @@ export function SingTimeline({
   };
   controls?: ScoringControls | null;
   loop?: ScoringLoop;
+  transpose: number;
+  rate: number;
+  onAttempt: (body: SubmitPracticeAttemptBody) => void;
+  renderAttemptStatus?: () => ReactNode;
   label: string;
   clock?: TimelineClock;
   onScrub?: (seconds: number) => void;
@@ -45,6 +63,7 @@ export function SingTimeline({
 }) {
   const voice = useSingVoice(playback);
   const scoring = useScoring({ notes, playback, controls, loop });
+  useScoredAttempt({ notes, scoring, transpose, rate, onAttempt });
   const octaveMode = useScoringSettings((state) => state.octaveMode);
   const source = useMemo(() => {
     if (!voice) return undefined;
@@ -81,7 +100,10 @@ export function SingTimeline({
   return (
     <div className="flex flex-col gap-2">
       {voice ? <SingReadout notes={notes} playback={playback} /> : null}
-      <ScoreFeedback scoring={scoring} />
+      <ScoreFeedback
+        scoring={scoring}
+        renderAttemptStatus={renderAttemptStatus}
+      />
       <NoteTimeline notes={notes} voice={source} {...timeline} />
     </div>
   );

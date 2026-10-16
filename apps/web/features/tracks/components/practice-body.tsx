@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+  SubmitPracticeAttemptBody,
   TrackDetail,
   TrackLyrics,
   TrackNotes,
@@ -12,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
 import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
+import { PracticePreferencesSync } from '@/features/practice/components/practice-preferences-sync';
 import { ScoringPreferences } from '@/features/practice/components/scoring-preferences';
 import { SingTimeline } from '@/features/practice/components/sing-timeline';
 import { SingingAids } from '@/features/practice/components/singing-aids';
@@ -20,20 +22,25 @@ import { useDirectAudio } from '../hooks/use-direct-audio';
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { useTimelineFocus } from '../hooks/use-shared-link';
+import { useSubmitAttempt } from '../hooks/use-submit-attempt';
 import { loopRange } from '../listening/listening-math';
 import { useLoop } from '../listening/loop-store';
 import { useListeningTools } from '../listening/use-listening-tools';
 import { noteRangeOf } from '../note-summary';
 import { playbackClock } from '../playback/playback-clock';
 import type { PlaybackController } from '../playback/playback-controller';
-import { playbackStore } from '../stores/playback-store';
+import { reportAttempt } from '../report-attempt';
+import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
 import { creditText } from '../track-credit';
+import { sessionStorageOrUndefined } from '../track-view-session';
 import { transposeNotes } from '../transpose/transpose';
 import { ListeningActions } from './listening-actions';
+import { PendingAttemptSubmitter } from './pending-attempt-submitter';
 import { PracticeDock } from './practice-dock';
 import { SharedMomentSeek } from './shared-moment-seek';
 import { TIMELINE_BOX_CLASS } from './timeline-box-class';
+import { TrackAttemptStatus } from './track-attempt-status';
 
 /** What a Track with no vocal notes shows in place of the timeline. */
 function NoVoice() {
@@ -63,13 +70,18 @@ function TrackTimeline({
   notes,
   failed,
   controller,
+  signedIn,
 }: {
   header: TrackDetail;
   notes: TrackNotes | undefined;
   failed: boolean;
   controller: PlaybackController | null;
+  signedIn: boolean;
 }) {
   const t = useTranslations('tracks.practice');
+  const semitones = useTranspose();
+  const rate = usePlaybackState((state) => state.rate);
+  const submit = useSubmitAttempt(header.id);
   const shifted = useTransposedNotes(notes);
   if (notes === undefined) {
     return failed ? (
@@ -90,6 +102,18 @@ function TrackTimeline({
       })
     : t('timeline.labelEmpty', { title: header.title });
 
+  // A finished run is submitted at once signed in, and kept in the session
+  // for the sign-in to submit as a visitor.
+  const handleAttempt = (body: SubmitPracticeAttemptBody) => {
+    reportAttempt({
+      signedIn,
+      trackId: header.id,
+      body,
+      submit: submit.mutate,
+      storage: sessionStorageOrUndefined(),
+    });
+  };
+
   return (
     <SingTimeline
       key={header.id}
@@ -97,6 +121,10 @@ function TrackTimeline({
       playback={playbackStore}
       controls={controller}
       loop={useLoop}
+      transpose={semitones}
+      rate={rate}
+      onAttempt={handleAttempt}
+      renderAttemptStatus={() => <TrackAttemptStatus trackId={header.id} />}
       label={label}
       clock={controller ? playbackClock : undefined}
       onScrub={controller?.seek}
@@ -205,8 +233,8 @@ function usePracticeController({
  * Track's video. The timeline follows the dock's player and can be dragged to
  * seek; the page leaves room under it for the dock, which floats.
  */
-function PracticeBodyContent(props: PracticeBodyProps) {
-  const { header, notes, lyrics, lyricsLoading, failed } = props;
+function PracticeBodyContent(props: PracticeBodyProps & { signedIn: boolean }) {
+  const { header, notes, lyrics, lyricsLoading, failed, signedIn } = props;
   const { controller, directAudio, expectDirectAudio, hostRef } =
     usePracticeController(props);
   const fullscreenRef = useRef<HTMLDivElement>(null);
@@ -236,6 +264,7 @@ function PracticeBodyContent(props: PracticeBodyProps) {
             notes={notes}
             failed={failed}
             controller={controller}
+            signedIn={signedIn}
           />
           {hasLyrics ? (
             <KaraokeLine lines={lyrics.lines} clock={playbackClock} />
@@ -270,11 +299,24 @@ function PracticeBodyContent(props: PracticeBodyProps) {
   );
 }
 
-export function PracticeBody(props: Omit<PracticeBodyProps, 'admin'>) {
+export function PracticeBody(
+  props: Omit<PracticeBodyProps, 'admin' | 'signedIn'>,
+) {
   return (
     <SessionUserBoundary
       render={(user) => (
-        <PracticeBodyContent {...props} admin={user?.role === 'ADMIN'} />
+        <>
+          <PracticePreferencesSync
+            signedIn={user !== null}
+            userKey={user?.email ?? null}
+          />
+          <PendingAttemptSubmitter signedIn={user !== null} />
+          <PracticeBodyContent
+            {...props}
+            admin={user?.role === 'ADMIN'}
+            signedIn={user !== null}
+          />
+        </>
       )}
     />
   );

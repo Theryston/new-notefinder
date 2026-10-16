@@ -7,9 +7,11 @@ import { StorageModule } from './integrations/storage/storage.module.js';
 import { WebRevalidationModule } from './integrations/web-revalidation/web-revalidation.module.js';
 import { AlbumsModule } from './modules/albums/albums.module.js';
 import { ArtistsModule } from './modules/artists/artists.module.js';
+import { AttemptsModule } from './modules/attempts/attempts.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { PracticePreferencesModule } from './modules/practice-preferences/practice-preferences.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { StreaksModule } from './modules/streaks/streaks.module.js';
 import { TrackMetadataModule } from './modules/track-metadata/track-metadata.module.js';
@@ -39,6 +41,8 @@ import { RedisModule } from './redis/redis.module.js';
     TrackMetadataModule,
     FavoritesModule,
     StreaksModule,
+    AttemptsModule,
+    PracticePreferencesModule,
     UsersModule,
   ],
 })

@@ -287,7 +287,10 @@
       "resultDescription": "Your accuracy is the number of hit notes divided by judged notes.",
       "accuracy": "{percent}%",
       "judged": "{count, plural, one {# note judged} other {# notes judged}}",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "bestScore": "Best {percent}%",
+      "bestScoreTitle": "Best score at {difficulty}",
+      "signInToSave": "Sign in to save this score"
     }
   },
   "streaks": {
@@ -653,7 +656,8 @@
     "SERVICE_UNAVAILABLE": "The service is temporarily unavailable. Try again in a moment.",
     "GATEWAY_TIMEOUT": "The service took too long to answer. Try again.",
     "INTERNAL_ERROR": "Something went wrong. Please try again.",
-    "RESOURCE_MOVED": "This link moved to a new address. Redirecting…"
+    "RESOURCE_MOVED": "This link moved to a new address. Redirecting…",
+    "ATTEMPT_REJECTED": "This run didn't count: sing through the song without skipping ahead."
   },
   "artists": {
     "metaTitle": "{name}",

@@ -14,6 +14,8 @@ export * from './music-catalog-release-group.js';
 export * from './music-catalog-search.js';
 export * from './pagination.js';
 export * from './pitch.js';
+export * from './practice-attempts.js';
+export * from './practice-preferences.js';
 export * from './revalidation.js';
 export * from './search.js';
 export * from './streaks.js';

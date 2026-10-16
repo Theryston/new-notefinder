@@ -846,6 +846,94 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/attempts": {
+      "post": {
+        "operationId": "TrackAttemptsController_submitAttempt_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAttemptBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved attempt."
+          },
+          "400": {
+            "description": "The run is not valid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          },
+          "422": {
+            "description": "The run covered too little or skipped forward."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
+    "/v1/me/attempts": {
+      "get": {
+        "operationId": "MyAttemptsController_listOwn_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The User's own attempts, newest first."
+          },
+          "400": {
+            "description": "The cursor is not one this API issued."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
     "/v1/me/streak": {
       "get": {
         "operationId": "StreaksController_getStatus_v1",
@@ -904,6 +992,51 @@
         },
         "tags": [
           "streaks"
+        ]
+      }
+    },
+    "/v1/me/practice-preferences": {
+      "get": {
+        "operationId": "PracticePreferencesController_getPreferences_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The User's practice preferences, or the defaults."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "practice-preferences"
+        ]
+      },
+      "patch": {
+        "operationId": "PracticePreferencesController_updatePreferences_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePracticePreferencesBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated practice preferences."
+          },
+          "400": {
+            "description": "A preference is not valid."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "practice-preferences"
         ]
       }
     }
@@ -997,6 +1130,72 @@
           "username"
         ]
       },
+      "SubmitAttemptBodyDto": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "NORMAL",
+              "HARD"
+            ]
+          },
+          "octaveMode": {
+            "type": "string",
+            "enum": [
+              "ANY",
+              "EXACT"
+            ]
+          },
+          "transposeSemitones": {
+            "type": "integer",
+            "minimum": -24,
+            "maximum": 24
+          },
+          "speed": {
+            "type": "number"
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "coverage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "forwardSkip": {
+            "type": "boolean"
+          },
+          "bleedSuspected": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "difficulty",
+          "octaveMode",
+          "transposeSemitones",
+          "speed",
+          "accuracy",
+          "coverage",
+          "forwardSkip",
+          "bleedSuspected",
+          "startedAt",
+          "endedAt"
+        ]
+      },
       "StreakHeartbeatBodyDto": {
         "type": "object",
         "properties": {
@@ -1014,6 +1213,36 @@
           "elapsedSeconds",
           "timeZone"
         ]
+      },
+      "UpdatePracticePreferencesBodyDto": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "default": "NORMAL",
+            "type": "string",
+            "enum": [
+              "EASY",
+              "NORMAL",
+              "HARD"
+            ]
+          },
+          "octaveMode": {
+            "default": "ANY",
+            "type": "string",
+            "enum": [
+              "ANY",
+              "EXACT"
+            ]
+          },
+          "guideMelody": {
+            "default": false,
+            "type": "boolean"
+          },
+          "countIn": {
+            "default": true,
+            "type": "boolean"
+          }
+        }
       }
     }
   }
