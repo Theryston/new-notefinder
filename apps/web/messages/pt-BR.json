@@ -210,6 +210,7 @@
           "email": "E-mail"
         }
       },
+      "moreToSing": "Mais para cantar",
       "listening": {
         "loop": "Repetir trecho",
         "loopStart": "Início do trecho",

@@ -40,6 +40,9 @@ import { TRACK_PROCESSING_QUEUE } from './track-processing.job.js';
 import { TrackProcessingProcessor } from './track-processing.processor.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
+import { TrackRecommendationsController } from './track-recommendations.controller.js';
+import { TrackRecommendationsRepository } from './track-recommendations.repository.js';
+import { TrackRecommendationsService } from './track-recommendations.service.js';
 import { TrackRequestService } from './track-request.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';
@@ -90,6 +93,7 @@ import { TracksService } from './tracks.service.js';
     YouTubeMusicModule,
   ],
   controllers: [
+    TrackRecommendationsController,
     TracksController,
     TrackDirectAudioController,
     TrackLyricsController,
@@ -97,6 +101,8 @@ import { TracksService } from './tracks.service.js';
     TrackSitemapController,
   ],
   providers: [
+    TrackRecommendationsRepository,
+    TrackRecommendationsService,
     TracksService,
     TrackDirectAudioRepository,
     TrackDirectAudioService,

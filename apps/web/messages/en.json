@@ -210,6 +210,7 @@
           "email": "Email"
         }
       },
+      "moreToSing": "More to sing",
       "listening": {
         "loop": "Loop section",
         "loopStart": "Loop start",

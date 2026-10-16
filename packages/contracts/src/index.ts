@@ -21,4 +21,8 @@ export { type TrackAudio, trackAudioSchema } from './track-audio.js';
 export * from './track-processing.js';
 export * from './track-views.js';
 export * from './tracks.js';
+export {
+  type TrackRecommendations,
+  trackRecommendationsSchema,
+} from './tracks.js';
 export * from './users.js';
