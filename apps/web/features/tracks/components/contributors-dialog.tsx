@@ -66,7 +66,7 @@ function ContributorsSearch({
 }) {
   const t = useTranslations('tracks.practice.contributorsDialog');
   return (
-    <label className="flex h-10 items-center gap-2 rounded-full bg-muted px-4">
+    <label className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-muted px-4 transition-shadow focus-within:ring-3 focus-within:ring-ring/50">
       <SearchIcon
         aria-hidden="true"
         className="size-4 shrink-0 text-muted-foreground"
