@@ -217,7 +217,7 @@ function PracticeBodyContent(props: PracticeBodyProps) {
   return (
     <div
       ref={fullscreenRef}
-      className="practice-fullscreen flex flex-col gap-6 bg-background pb-[calc(var(--dock-height,0px)+max(0.75rem,env(safe-area-inset-bottom))+0.75rem)]"
+      className="practice-fullscreen flex flex-col gap-6 bg-background"
     >
       {header.hasNotes ? (
         <div ref={timelineRef} className="flex scroll-mt-20 flex-col gap-3">

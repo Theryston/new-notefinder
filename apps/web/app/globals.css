@@ -301,6 +301,13 @@
   border: 0;
   cursor: ew-resize;
 }
+.practice-fullscreen:fullscreen {
+  padding-bottom: calc(
+    var(--dock-height, 0px) +
+    max(0.75rem, env(safe-area-inset-bottom)) +
+    0.75rem
+  );
+}
 @media (orientation: landscape) and (max-height: 600px) {
   .practice-fullscreen:fullscreen {
     padding: 12px;
