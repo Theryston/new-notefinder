@@ -17,6 +17,7 @@ import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { DockPlayButton } from './dock-play-button';
 import { DockProgressTrack } from './dock-progress-track';
 import { TrackKeyContext, TransposeChipPlaceholder } from './transpose-chip';
+import { VocalsToggle } from './vocals-toggle';
 
 // Loaded after the page too, for the same reason as the Settings menu: its
 // placeholder is the chip itself, so the dock paints complete at once.
@@ -99,7 +100,9 @@ export function PracticeDock({
   trackKey,
   trackTitle,
   artistText,
+  directAudio = false,
 }: {
+  directAudio?: boolean;
   controller: PlaybackController | null;
   hostRef: RefObject<HTMLDivElement | null>;
   videoId: string;
@@ -120,11 +123,13 @@ export function PracticeDock({
     >
       <div
         ref={hostRef}
-        data-testid="dock-video"
+        data-testid={directAudio ? undefined : 'dock-video'}
+        hidden={directAudio}
         style={{ width: YOUTUBE_SQUARE_PX, height: YOUTUBE_SQUARE_PX }}
         className="overflow-hidden rounded-lg bg-muted [grid-area:video]"
       />
       <div
+        style={directAudio ? { gridColumn: '1 / -1' } : undefined}
         data-testid="dock-track-info"
         className="flex min-w-0 items-center justify-between gap-3 [grid-area:info]"
       >
@@ -140,19 +145,23 @@ export function PracticeDock({
       </div>
       <div className="flex min-w-0 items-center justify-between gap-1 [grid-area:actions] md:gap-3">
         <DockMicButton playback={playbackStore} />
+        {directAudio && <VocalsToggle controller={controller} />}
         <StreakRing playing={status === 'playing'} />
         <DockSettings controller={controller} videoId={videoId} />
         <TrackKeyContext value={trackKey}>
-          <TransposePopover />
+          <TransposePopover directAudio={directAudio} />
         </TrackKeyContext>
       </div>
       <div className="flex min-w-0 [grid-area:progress]">
         {status === 'error' ? (
           <p role="alert" className="self-center text-muted-foreground text-sm">
-            {t('error')}
+            {t(directAudio ? 'audioError' : 'error')}
           </p>
         ) : (
-          <DockProgressTrack controller={controller} />
+          <DockProgressTrack
+            controller={controller}
+            waveform={directAudio ? (controller?.waveform() ?? []) : undefined}
+          />
         )}
       </div>
       <DockMicNotice />

@@ -79,6 +79,13 @@ export class PlaybackController {
     this.store.setState({ rate });
   };
 
+  setTranspose = (semitones: number): void =>
+    this.port.setTranspose?.(semitones);
+
+  setVocalsOnly = (vocals: boolean): void => this.port.setVocalsOnly?.(vocals);
+
+  waveform = (): readonly number[] => this.port.waveform?.() ?? [];
+
   toggleMuted = (): void => {
     const muted = !this.store.getState().muted;
     this.port.setMuted(muted);

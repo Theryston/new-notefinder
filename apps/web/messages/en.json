@@ -162,7 +162,10 @@
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Back to the original key",
         "transposeOpen": "Change key: {key}",
-        "videoKeepsKey": "Only the notes change key. The video keeps playing in its original key."
+        "videoKeepsKey": "Only the notes change key. The video keeps playing in its original key.",
+        "vocalsOnly": "Vocals only",
+        "audioFollowsKey": "The audio follows your transposition.",
+        "audioError": "The stored audio could not be played."
       },
       "noVoice": {
         "title": "We found no voice in this recording",

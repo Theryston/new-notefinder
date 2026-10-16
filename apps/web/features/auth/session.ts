@@ -4,6 +4,7 @@ import { authKeys } from './query-keys';
 
 /** What the auth screens and the gate need to know about the user. */
 export type SessionUser = {
+  role?: 'ADMIN' | 'USER';
   name: string;
   email: string;
   emailVerified: boolean;
@@ -25,6 +26,9 @@ export function parseSessionUser(body: unknown): SessionUser | null {
   const { name, email, emailVerified, username, image } = body.user;
   if (typeof email !== 'string') return null;
   return {
+    ...(body.user.role === 'ADMIN' || body.user.role === 'USER'
+      ? { role: body.user.role }
+      : {}),
     name: typeof name === 'string' ? name : '',
     email,
     emailVerified: emailVerified === true,
