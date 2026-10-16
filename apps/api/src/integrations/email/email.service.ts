@@ -27,6 +27,8 @@ export type EmailSendOptions = {
    * a replayed step sends an email once.
    */
   jobId?: string;
+  /** Retain deduplication after delivery when a transaction might replay. */
+  retainForSeconds?: number;
 };
 
 /**
@@ -47,7 +49,10 @@ export class EmailService {
     await this.queue.add(EMAIL_JOB, emailMessageSchema.parse(message), {
       // Messages may carry one-time codes: don't keep them in Redis longer
       // than needed to retry or debug a failure.
-      removeOnComplete: true,
+      removeOnComplete:
+        options.retainForSeconds === undefined
+          ? true
+          : { age: options.retainForSeconds },
       removeOnFail: { age: DAY_SECONDS },
       jobId: options.jobId,
     });
