@@ -112,6 +112,8 @@ describe('direct audio async lifecycle', () => {
   });
   it('retains seeks and speed changes made while a source is loading', async () => {
     await player.load();
+    player.play();
+    await settle();
     audio.load.mockImplementation(() => {});
     player.setVocalsOnly(true);
     await settle();

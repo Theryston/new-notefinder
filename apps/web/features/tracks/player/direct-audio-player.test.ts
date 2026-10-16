@@ -75,7 +75,10 @@ describe('DirectAudioPlayer', () => {
     expect(player.duration()).toBe(0);
   });
 
-  it('compensates speed without changing the requested transposition', () => {
+  it('compensates speed without changing the requested transposition', async () => {
+    await player.load();
+    player.play();
+    await settle();
     player.setTranspose(4);
     expect(tone.effect.pitch).toBe(4);
     player.setRate(0.5);
@@ -136,7 +139,7 @@ describe('DirectAudioPlayer', () => {
     await loading;
     expect(audio.src).toBe('');
     expect(states).not.toHaveBeenCalled();
-    expect(tone.disconnect).toHaveBeenCalled();
-    expect(tone.dispose).toHaveBeenCalled();
+    expect(tone.disconnect).not.toHaveBeenCalled();
+    expect(tone.dispose).not.toHaveBeenCalled();
   });
 });

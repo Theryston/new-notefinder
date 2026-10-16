@@ -8,8 +8,8 @@ import { compensatedPitch, waveformPeaks } from './waveform';
 /** Native media seeks and streams; Tone applies transposition after rate correction. */
 export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
   private readonly audio = new Audio();
-  private readonly pitch = new Tone.PitchShift().toDestination();
-  private readonly source: MediaElementAudioSourceNode;
+  private pitch: Tone.PitchShift | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
   private readonly buffers = new Map<string, AudioBuffer>();
   private semitones = 0;
   private rate = 1;
@@ -25,8 +25,6 @@ export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
     super();
     this.audio.crossOrigin = 'anonymous';
     this.audio.preservesPitch = false;
-    this.source = Tone.getContext().createMediaElementSource(this.audio);
-    Tone.connect(this.source, this.pitch);
     this.audio.onended = () => {
       this.playingRequested = false;
       this.emit('ended');
@@ -45,6 +43,7 @@ export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
     void Tone.start()
       .then(async () => {
         if (!this.wantsPlayback(generation)) return false;
+        this.connectGraph();
         await this.audio.play();
         return true;
       })
@@ -56,6 +55,21 @@ export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
       .catch(() => {
         if (this.wantsPlayback(generation)) this.emit('error');
       });
+  }
+
+  // PitchShift starts internal modulation sources. Construct them only after the
+  // user gesture resumes the context, otherwise Tone warns about suspended audio.
+  private connectGraph(): void {
+    if (this.pitch) return;
+    this.pitch = new Tone.PitchShift().toDestination();
+    this.source = Tone.getContext().createMediaElementSource(this.audio);
+    Tone.connect(this.source, this.pitch);
+    this.updatePitch();
+  }
+
+  private updatePitch(): void {
+    if (this.pitch)
+      this.pitch.pitch = compensatedPitch(this.semitones, this.rate);
   }
 
   private wantsPlayback(generation: number): boolean {
@@ -87,12 +101,12 @@ export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
   setRate(rate: number): void {
     this.rate = rate;
     this.audio.playbackRate = rate;
-    this.pitch.pitch = compensatedPitch(this.semitones, rate);
+    this.updatePitch();
   }
 
   setTranspose(semitones: number): void {
     this.semitones = semitones;
-    this.pitch.pitch = compensatedPitch(semitones, this.audio.playbackRate);
+    this.updatePitch();
   }
 
   setMuted(muted: boolean): void {
@@ -118,8 +132,10 @@ export class DirectAudioPlayer extends BasePlayer implements PlayerPort {
     this.audio.load();
     this.audio.onended = null;
     this.audio.onerror = null;
-    this.source.disconnect();
-    this.pitch.dispose();
+    this.source?.disconnect();
+    this.pitch?.dispose();
+    this.source = null;
+    this.pitch = null;
     this.buffers.clear();
     this.clearListeners();
   }
