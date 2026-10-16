@@ -154,7 +154,9 @@ function drawVoice(ctx: SingTimelineContext, frame: SingTimelineFrame) {
       const x = timeToX(point.time, now, playheadX);
       // A lane's middle is where its own note sits; between two lanes is
       // between two semitones.
-      const y = (range.high - point.midi + 0.5) * lane;
+      // Keep the 2px stroke crisp against judgment fills. The captured pitch
+      // stays fractional; only its final screen coordinate is pixel-aligned.
+      const y = Math.round((range.high - point.midi + 0.5) * lane);
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
       // A lone reading has no length: a round-capped hair of a line is a dot.

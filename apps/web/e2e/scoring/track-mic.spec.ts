@@ -1,12 +1,16 @@
 import { expect, type Page, test } from '@playwright/test';
-import { setTrackMock } from '../fake-track-api';
+import { type FakeTrack, setTrackMock } from '../fake-track-api';
 import { messages } from '../messages';
 
 // This filename belongs to the existing chromium-mic project, whose fake WAV
 // sings A4. It exercises capture, pitch detection and scoring together.
 test.use({ permissions: ['microphone'] });
 
-async function open(page: Page, id: string, durationMs = 6500) {
+async function open(
+  page: Page,
+  id: string,
+  options: { durationMs?: number; notes?: FakeTrack['notes'] } = {},
+) {
   await page.addInitScript(() => {
     localStorage.setItem(
       'notefinder.singing-aids.v1',
@@ -18,13 +22,13 @@ async function open(page: Page, id: string, durationMs = 6500) {
       {
         id,
         title: 'Scoring practice',
-        durationMs,
+        durationMs: options.durationMs ?? 12000,
         youtubeVideoId: 'dQw4w9WgXcQ',
         processing: { status: 'COMPLETED' },
-        notes: [
-          { pitch: 69, start: 0.5, end: 2 },
-          { pitch: 71, start: 2.1, end: 3.6 },
-          { pitch: 81, start: 3.7, end: 6 },
+        notes: options.notes ?? [
+          { pitch: 69, start: 0.5, end: 4 },
+          { pitch: 71, start: 4.1, end: 8 },
+          { pitch: 81, start: 8.1, end: 11.5 },
         ],
       },
     ],
@@ -89,9 +93,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('score-readout')).toContainText(
         t.practice.scoring.miss,
       );
+      await page
+        .getByRole('button', {
+          name: t.tracks.practice.dock.pause,
+          exact: true,
+        })
+        .click();
       await expect
         .poll(() => pixels(page, '--destructive'))
         .toBeGreaterThan(100);
+      await page
+        .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
+        .click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await expect(page.getByTestId('result-accuracy')).toHaveText('67%');
       await page
@@ -112,7 +125,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 test('device settings persist and octave mode rejudges the current run immediately', async ({
   page,
 }) => {
-  await open(page, 'scoring-settings', 20000);
+  await open(page, 'scoring-settings', { durationMs: 20000 });
   const t = messages.en;
   const settings = page.getByRole('button', {
     name: t.tracks.practice.dock.settings,
@@ -198,7 +211,7 @@ test('loop sections show a live score and never open a result sheet', async ({
 test('turning off the mic finishes the run and Try again turns it back on', async ({
   page,
 }) => {
-  await open(page, 'scoring-mic-stop', 20000);
+  await open(page, 'scoring-mic-stop', { durationMs: 20000 });
   const t = messages.en;
   await page
     .getByRole('button', { name: t.practice.mic.on, exact: true })
@@ -219,4 +232,78 @@ test('turning off the mic finishes the run and Try again turns it back on', asyn
     page.getByRole('button', { name: t.practice.mic.off, exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('instrumental tracks hydrate settings and preserve the untouched preference', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('notefinder.scoring.v1'))
+      localStorage.setItem(
+        'notefinder.scoring.v1',
+        JSON.stringify({ difficulty: 'HARD', octaveMode: 'EXACT' }),
+      );
+  });
+  await open(page, 'scoring-instrumental', { notes: [] });
+  const t = messages.en;
+  const settings = page.getByRole('button', {
+    name: t.tracks.practice.dock.settings,
+    exact: true,
+  });
+  await settings.click();
+  await expect(
+    page.getByRole('menuitemradio', {
+      name: t.practice.scoring.HARD,
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(
+    page.getByRole('menuitemradio', {
+      name: t.practice.scoring.EXACT,
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await page
+    .getByRole('menuitemradio', { name: t.practice.scoring.EASY, exact: true })
+    .click();
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await settings.click();
+  await expect(
+    page.getByRole('menuitemradio', {
+      name: t.practice.scoring.EASY,
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(
+    page.getByRole('menuitemradio', {
+      name: t.practice.scoring.EXACT,
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-checked', 'true');
+});
+
+test('saved exact octave mode judges a reloaded track before Settings is opened', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'notefinder.scoring.v1',
+      JSON.stringify({ difficulty: 'HARD', octaveMode: 'EXACT' }),
+    );
+  });
+  await open(page, 'scoring-saved-before-menu', { durationMs: 20000 });
+  const t = messages.en;
+  await page
+    .getByRole('button', { name: t.practice.mic.on, exact: true })
+    .click();
+  await expect(page.getByTestId('detected-note')).toHaveText('A4');
+  await page
+    .getByRole('button', { name: t.tracks.practice.dock.play, exact: true })
+    .click();
+  await expect(page.getByTestId('score-readout')).toContainText('33%');
+  await page
+    .getByRole('button', { name: t.practice.scoring.stop, exact: true })
+    .click();
+  await expect(page.getByTestId('result-accuracy')).toHaveText('33%');
 });

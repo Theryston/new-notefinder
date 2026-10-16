@@ -271,7 +271,7 @@
       "result": "Practice result",
       "resultDescription": "Your accuracy is the number of hit notes divided by judged notes.",
       "accuracy": "{percent}%",
-      "judged": "{count} notes judged",
+      "judged": "{count, plural, one {# note judged} other {# notes judged}}",
       "tryAgain": "Try again"
     }
   },

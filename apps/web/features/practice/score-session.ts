@@ -20,7 +20,7 @@ export class ScoreSession {
     latest: ReturnType<PracticeScore['judgment']>;
   };
 
-  constructor(private readonly notes: readonly TrackNote[]) {
+  constructor(private notes: readonly TrackNote[]) {
     this.score = new PracticeScore(notes);
     this.value = {
       judgments: [],
@@ -35,6 +35,22 @@ export class ScoreSession {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
+
+  updateTargets(notes: readonly TrackNote[]): void {
+    const sameTimeline =
+      notes.length === this.notes.length &&
+      notes.every((note, index) => {
+        const previous = this.notes[index];
+        return previous?.start === note.start && previous.end === note.end;
+      });
+    this.notes = notes;
+    if (sameTimeline) this.score.updateTargets(notes);
+    else {
+      this.score = new PracticeScore(notes, this.loop !== null);
+      this.latestIndex = -1;
+      this.publish(null);
+    }
+  }
 
   synchronize(playing: boolean, stopped: boolean): void {
     if (stopped) this.finish();
@@ -74,6 +90,8 @@ export class ScoreSession {
   }
 
   setLoop(loop: Loop): void {
+    if (loop?.start === this.loop?.start && loop?.end === this.loop?.end)
+      return;
     const wasActive = this.active;
     this.loop = loop;
     this.active = false;

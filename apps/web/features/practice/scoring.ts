@@ -38,10 +38,14 @@ export class PracticeScore {
   private skipped = false;
 
   constructor(
-    private readonly notes: readonly TrackNote[],
+    private notes: readonly TrackNote[],
     private readonly loop = false,
   ) {
     this.votes = notes.map(() => new Map());
+  }
+
+  updateTargets(notes: readonly TrackNote[]): void {
+    this.notes = notes;
   }
 
   record(time: number, midi: number | null): void {

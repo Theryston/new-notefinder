@@ -31,7 +31,7 @@ export function ScoreFeedback({
               count: summary.judged,
             })}
           </p>
-          <Button variant="outline" size="sm" onClick={scoring.stop}>
+          <Button variant="outline" onClick={scoring.stop}>
             {t('stop')}
           </Button>
         </div>

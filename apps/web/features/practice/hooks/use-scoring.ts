@@ -1,15 +1,12 @@
 'use client';
 
 import type { TrackNote } from '@notefinder/contracts';
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { shiftedVoiceTime } from '../calibration-math';
 import { type PlaybackSource, toggleMic } from '../mic-controller';
 import { ScoreSession } from '../score-session';
 import { micStore } from '../stores/mic-store';
-import {
-  loadScoringSettings,
-  scoringSettings,
-} from '../stores/scoring-settings';
+import { scoringSettings } from '../stores/scoring-settings';
 import { singingAidsStore } from '../stores/singing-aids-store';
 import { voiceTrail } from '../voice-trail';
 
@@ -37,9 +34,8 @@ type ScoringOptions = {
 
 function connect(
   session: ScoreSession,
-  { playback, controls, loop }: ScoringOptions,
+  { playback, controls, loop }: Omit<ScoringOptions, 'notes'>,
 ) {
-  loadScoringSettings();
   session.setSettings(scoringSettings.getState());
   session.setLoop(loop?.getState().range ?? null);
   const sync = () => {
@@ -89,15 +85,16 @@ async function restart(session: ScoreSession, options: ScoringOptions) {
 
 export function useScoring(options: ScoringOptions) {
   const { notes, playback, controls, loop } = options;
-  const session = useMemo(() => new ScoreSession(notes), [notes]);
+  const [session] = useState(() => new ScoreSession(notes));
+  useEffect(() => session.updateTargets(notes), [session, notes]);
   const snapshot = useSyncExternalStore(
     session.subscribe,
     session.getSnapshot,
     session.getSnapshot,
   );
   useEffect(
-    () => connect(session, { notes, playback, controls, loop }),
-    [session, notes, playback, controls, loop],
+    () => connect(session, { playback, controls, loop }),
+    [session, playback, controls, loop],
   );
   return {
     session,

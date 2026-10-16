@@ -128,3 +128,22 @@ it('starts a fresh section score when the loop repeats', () => {
   session.record(0.5, 62);
   expect(session.getSnapshot().latest).toBe('miss');
 });
+
+it('preserves previous judgments, coverage and a forward skip when targets transpose mid-run', () => {
+  const session = new ScoreSession(notes);
+  session.begin();
+  session.record(0.5, 60);
+  session.seek(0.5, 1);
+  session.updateTargets(
+    notes.map((note) => ({ ...note, pitch: note.pitch + 2 })),
+  );
+  session.record(1.5, 66);
+  session.finish();
+  expect(session.getSnapshot().judgments).toEqual(['hit', 'hit']);
+  expect(session.getSnapshot().result).toMatchObject({
+    accuracy: 1,
+    coverage: 1,
+    forwardSkip: true,
+    submittable: false,
+  });
+});
