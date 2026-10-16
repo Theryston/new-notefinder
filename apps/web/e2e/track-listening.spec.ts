@@ -150,4 +150,5 @@ test('fullscreen keeps the floating dock clear of the current lyric line', async
   const line = await karaoke.boundingBox();
   if (!dockBox || !line) throw new Error('dock or lyric line is missing');
   expect(line.y + line.height).toBeLessThanOrEqual(dockBox.y);
+  expect(line.y + line.height).toBeGreaterThanOrEqual(dockBox.y - 16);
 });
