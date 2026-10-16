@@ -1,7 +1,8 @@
 import type { TrackContributor, TrackDetail } from '@notefinder/contracts';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 
 import { Link } from '@/lib/i18n/navigation';
 
@@ -11,6 +12,14 @@ import { TrackCoverPlaceholder } from './track-cover-placeholder';
 import { TrackFavoriteButton } from './track-favorite-button';
 import { TrackKeyLabel } from './track-key-label';
 import { TrackShareButton } from './track-share-button';
+
+// Loaded on the first click, on the client only: Base UI's dialog stays out
+// of the page's first-load JS, and nothing of it is needed until then.
+const ContributorsDialog = dynamic(
+  () =>
+    import('./contributors-dialog').then((module) => module.ContributorsDialog),
+  { ssr: false },
+);
 
 const LINK_CLASS =
   'rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50';
@@ -41,42 +50,59 @@ function ArtistCredit({ credit }: { credit: TrackDetail['artistCredit'] }) {
 
 function Contributors({
   contributors,
+  total,
+  trackId,
 }: {
   contributors: readonly TrackContributor[];
+  total: number;
+  trackId: string;
 }) {
   const t = useTranslations('tracks.practice');
-
+  const [opening, setOpening] = useState(0);
+  const [open, setOpen] = useState(false);
+  const shown = contributors.slice(0, 3);
+  const extra = total - shown.length;
+  if (shown.length === 0) return null;
   return (
-    <ul aria-label={t('contributors')} className="flex shrink-0 -space-x-2">
-      {contributors.map((contributor) => (
-        <li key={contributor.id}>
-          {contributor.username === null ? (
-            <span
-              title={contributor.name}
-              role="img"
-              aria-label={contributor.name}
-            >
+    <>
+      <button
+        type="button"
+        aria-label={t('contributorsOpen', { count: total })}
+        aria-haspopup="dialog"
+        onClick={() => {
+          setOpening((value) => value + 1);
+          setOpen(true);
+        }}
+        className="flex shrink-0 items-center rounded-full outline-none transition-transform duration-200 ease-spring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97]"
+      >
+        <span aria-hidden="true" className="flex shrink-0 -space-x-2">
+          {shown.map((contributor) => (
+            <span key={contributor.id}>
               <ContributorAvatar
                 contributor={contributor}
                 className={AVATAR_CLASS}
               />
             </span>
-          ) : (
-            <Link
-              href={`/users/${contributor.username}`}
-              aria-label={t('contributorLink', { name: contributor.name })}
-              title={contributor.name}
-              className="block rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <ContributorAvatar
-                contributor={contributor}
-                className={AVATAR_CLASS}
-              />
-            </Link>
-          )}
-        </li>
-      ))}
-    </ul>
+          ))}
+        </span>
+        {extra > 0 ? (
+          <span
+            aria-hidden="true"
+            className="-ml-1 rounded-full bg-secondary px-2 py-1 font-mono font-semibold text-muted-foreground text-xs tabular-nums"
+          >
+            {t('contributorsMore', { count: extra })}
+          </span>
+        ) : null}
+      </button>
+      {opening > 0 ? (
+        <ContributorsDialog
+          key={opening}
+          trackId={trackId}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -167,7 +193,11 @@ export function TrackTitleRow({ header }: { header: TrackDetail }) {
         <TrackFacts header={header} />
       </div>
       {header.contributors.length > 0 ? (
-        <Contributors contributors={header.contributors} />
+        <Contributors
+          contributors={header.contributors}
+          total={header.contributorCount}
+          trackId={header.id}
+        />
       ) : null}
       <TrackFavoriteButton trackId={header.id} />
       <TrackShareButton header={header} />

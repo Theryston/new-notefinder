@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import {
@@ -24,9 +25,11 @@ import {
 import {
   type CreateTrackResult,
   createTrackResultSchema,
+  type TrackContributorsPage,
   type TrackDetail,
   type TrackNotes,
   type TrackProcessingState,
+  trackContributorsPageSchema,
   trackDetailSchema,
   trackNotesSchema,
   trackProcessingStateSchema,
@@ -38,6 +41,7 @@ import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js
 import type { AuthUser } from '../auth/auth.js';
 import { CreateTrackBodyDto } from './create-track-body.dto.js';
 import { RetryTrackBodyDto } from './retry-track-body.dto.js';
+import { TrackContributorsQueryDto } from './track-contributors-query.dto.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';
 import { TrackPracticeService } from './track-practice.service.js';
 import { TrackProcessingService } from './track-processing.service.js';
@@ -121,6 +125,27 @@ export class TracksController {
   })
   getNotes(@Param() params: TrackIdParamDto): Promise<TrackNotes> {
     return this.trackPractice.getNotes(params.trackId);
+  }
+
+  // Public: the Track's Contributors in first-contribution order,
+  // cursor-paginated, with the total for the counter. Same 404s as the header.
+  @Public()
+  @Get(':trackId/contributors')
+  @ZodSerializerDto(trackContributorsPageSchema)
+  @ApiOkResponse({
+    description: "The Track's Contributors, paginated, with their total.",
+  })
+  @ApiBadRequestResponse({ description: 'The cursor, limit or query is bad.' })
+  @ApiNotFoundResponse({
+    description:
+      'Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID ' +
+      '(`RESOURCE_MOVED`).',
+  })
+  getContributors(
+    @Param() params: TrackIdParamDto,
+    @Query() query: TrackContributorsQueryDto,
+  ): Promise<TrackContributorsPage> {
+    return this.trackProcessing.listContributors(params.trackId, query);
   }
 
   // Public: the page is shared while the Track processes. A legacy ID answers

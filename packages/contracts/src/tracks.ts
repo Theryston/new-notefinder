@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { localeSchema } from './locales.js';
 import { mbidSchema } from './music-catalog.js';
+import { cursorPageSchema, cursorPaginationQuerySchema } from './pagination.js';
 import { trackProcessingSchema } from './track-processing.js';
 
 // The Track requests and the Processing state of a Track, as the public API
@@ -86,6 +87,28 @@ export const trackContributorSchema = z.object({
 export type TrackContributor = z.infer<typeof trackContributorSchema>;
 
 /**
+ * `GET /v1/tracks/:trackId/contributors`: one page of the Track's
+ * Contributors in the order they first contributed, with the total for the
+ * counter. `q` matches a username or display name, case-insensitively.
+ */
+export const listTrackContributorsQuerySchema =
+  cursorPaginationQuerySchema.extend({
+    q: z.string().trim().min(1).max(100).optional(),
+  });
+
+export type ListTrackContributorsQuery = z.infer<
+  typeof listTrackContributorsQuerySchema
+>;
+
+export const trackContributorsPageSchema = cursorPageSchema(
+  trackContributorSchema,
+).extend({
+  total: z.number().int().nonnegative(),
+});
+
+export type TrackContributorsPage = z.infer<typeof trackContributorsPageSchema>;
+
+/**
  * `GET /v1/tracks/:trackId/processing`: everything the Processing page shows.
  * `processing` is the latest Processing, or null for a Track that never had
  * one (only tracks imported without a pipeline run). Contributors come in the
@@ -94,7 +117,9 @@ export type TrackContributor = z.infer<typeof trackContributorSchema>;
 export const trackProcessingStateSchema = z.object({
   track: trackHeaderSchema,
   processing: trackProcessingSchema.nullable(),
+  // The first Contributors for the avatar pile; the dialog pages the rest.
   contributors: z.array(trackContributorSchema).max(100),
+  contributorCount: z.number().int().nonnegative(),
 });
 
 export type TrackProcessingState = z.infer<typeof trackProcessingStateSchema>;
@@ -176,7 +201,9 @@ export const trackDetailSchema = trackHeaderSchema.extend({
   artistCredit: z.array(linkedArtistCreditEntrySchema).max(30),
   durationMs: z.number().int().nonnegative().nullable(),
   youtubeVideoId: z.string().min(1).max(32).nullable(),
+  // The first Contributors for the avatar pile; the dialog pages the rest.
   contributors: z.array(trackContributorSchema).max(100),
+  contributorCount: z.number().int().nonnegative(),
   hasNotes: z.boolean(),
   // Optional so clients built before the field keep parsing; the API always
   // sends it.

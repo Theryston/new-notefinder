@@ -8,7 +8,8 @@ const practice = { findPracticeRow: vi.fn(), findNotes: vi.fn() };
 const processing = {
   throwMovedOrMissing: vi.fn(),
   assertTrackExists: vi.fn(),
-  contributorsOf: vi.fn(),
+  listContributors: vi.fn(),
+  contributorCount: vi.fn(),
 };
 
 const row = {
@@ -31,7 +32,12 @@ describe('TrackPracticeService', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    processing.contributorsOf.mockResolvedValue([]);
+    processing.listContributors.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      total: 0,
+    });
+    processing.contributorCount.mockResolvedValue(0);
     const moduleRef = await Test.createTestingModule({
       providers: [
         TrackPracticeService,
@@ -56,6 +62,29 @@ describe('TrackPracticeService', () => {
       durationMs: 248_000,
       youtubeVideoId: 'a01QQZyl-_I',
       hasNotes: true,
+    });
+  });
+
+  it('caps the header pile at three Contributors with their total', async () => {
+    practice.findPracticeRow.mockResolvedValue(row);
+    processing.listContributors.mockResolvedValue({
+      items: Array.from({ length: 3 }, (_, index) => ({
+        id: `contributor-${index}`,
+        username: `singer_${index}`,
+        name: `Singer ${index}`,
+        image: null,
+      })),
+      nextCursor: 'next-page',
+      total: 42,
+    });
+    processing.contributorCount.mockResolvedValue(42);
+
+    const header = await service.getHeader('track-1');
+
+    expect(header.contributors).toHaveLength(3);
+    expect(header.contributorCount).toBe(42);
+    expect(processing.listContributors).toHaveBeenCalledWith('track-1', {
+      limit: 3,
     });
   });
 

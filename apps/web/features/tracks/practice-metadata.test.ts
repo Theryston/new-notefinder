@@ -26,6 +26,7 @@ const practice = (overrides: Partial<InitialPractice['header']> = {}) =>
       durationMs: 248_400,
       youtubeVideoId: null,
       contributors: [],
+      contributorCount: 0,
       hasNotes: true,
       ...overrides,
     },

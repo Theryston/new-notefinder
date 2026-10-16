@@ -23,6 +23,7 @@ const header = {
   durationMs: 248_000,
   youtubeVideoId: null,
   contributors: [],
+  contributorCount: 0,
   hasNotes: true,
 };
 const notes = { notes: [{ pitch: 60, start: 0, end: 1 }] };

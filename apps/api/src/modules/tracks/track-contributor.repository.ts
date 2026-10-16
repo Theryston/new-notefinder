@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, count, eq, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   trackContributionKind,
   trackContributions,
   trackContributors,
 } from '../../database/schema/track-contributors.js';
+import { users } from '../../database/schema/users.js';
+import type { TrackContributorCursor } from './track-contributor-cursor.js';
 
 /** A Contribution's kind, as the schema stores it. */
 export type TrackContributionKind =
@@ -71,5 +73,81 @@ export class TrackContributorRepository {
       .from(trackContributors)
       .where(eq(trackContributors.trackId, trackId))
       .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
+  }
+
+  /** Wildcards never reach the pattern: the match stays a plain substring. */
+  private static searchPattern(query: string): string {
+    return `%${query.replace(/[\\%_]/g, '\\$&')}%`;
+  }
+
+  private contributorFilters(
+    trackId: string,
+    cursor: TrackContributorCursor | undefined,
+    query: string | undefined,
+  ) {
+    const conditions = [eq(trackContributors.trackId, trackId)];
+    if (cursor !== undefined) {
+      // Preserve PostgreSQL's timestamp precision so contributors created
+      // within one millisecond are not skipped at a page boundary.
+      conditions.push(
+        sql`(${trackContributors.createdAt}, ${trackContributors.id}) > (${cursor.contributedAt}::timestamptz, ${cursor.contributorId})`,
+      );
+    }
+    if (query !== undefined) {
+      const pattern = TrackContributorRepository.searchPattern(query);
+      conditions.push(
+        sql`(${users.username} ILIKE ${pattern} OR ${users.name} ILIKE ${pattern})`,
+      );
+    }
+    return and(...conditions);
+  }
+
+  /**
+   * One page of the Track's Contributors with their User's public fields, in
+   * first-contribution order, plus how many match in total. `limit + 1` rows
+   * decide whether a next page exists.
+   */
+  async findContributorsPage(
+    trackId: string,
+    options: {
+      cursor?: TrackContributorCursor;
+      limit: number;
+      query?: string;
+    },
+  ): Promise<{
+    rows: {
+      id: string;
+      username: string | null;
+      name: string;
+      image: string | null;
+      contributedAt: Date;
+      cursorTimestamp?: string;
+    }[];
+    total: number;
+  }> {
+    const { cursor, limit, query } = options;
+    const where = this.contributorFilters(trackId, cursor, query);
+    const [rows, [countRow]] = await Promise.all([
+      this.txHost.tx
+        .select({
+          id: trackContributors.id,
+          username: users.username,
+          name: users.name,
+          image: users.image,
+          contributedAt: trackContributors.createdAt,
+          cursorTimestamp: sql<string>`to_char(${trackContributors.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+        })
+        .from(trackContributors)
+        .innerJoin(users, eq(users.id, trackContributors.userId))
+        .where(where)
+        .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id))
+        .limit(limit + 1),
+      this.txHost.tx
+        .select({ total: count() })
+        .from(trackContributors)
+        .innerJoin(users, eq(users.id, trackContributors.userId))
+        .where(this.contributorFilters(trackId, undefined, query)),
+    ]);
+    return { rows, total: countRow?.total ?? 0 };
   }
 }

@@ -226,7 +226,15 @@
   --sidebar-ring: oklch(0.655 0.222 36.5);
 }
 
-/* Floating layers (header, player bar, menus, popovers, toasts). */
+/* Scrollable lists that keep their scroll without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Floating layers (header, player bar, dialogs, menus, popovers, toasts). */
 @utility glass {
   background-color: var(--glass);
   border: 1px solid var(--glass-border);

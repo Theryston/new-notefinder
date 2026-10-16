@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { trackProcessingStateSchema } from '@notefinder/contracts';
-import { UsersService } from '../users/users.service.js';
+import { TrackContributorRepository } from './track-contributor.repository.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 import { TracksRepository } from './tracks.repository.js';
@@ -11,9 +11,10 @@ const tracks = {
 };
 const processings = {
   findLatestProcessing: vi.fn(),
-  findContributors: vi.fn(),
 };
-const users = { findPublicUsers: vi.fn() };
+const contributors = {
+  findContributorsPage: vi.fn(),
+};
 
 const header = {
   id: 'track-1',
@@ -34,11 +35,17 @@ const latestRow = {
   finishedAt: new Date('2026-10-08T12:01:00.000Z'),
 };
 
-const profile = (id: string, name: string, username: string | null) => ({
+const row = (
+  id: string,
+  username: string | null,
+  name: string,
+  image: string | null = null,
+) => ({
   id,
-  name,
   username,
-  image: null,
+  name,
+  image,
+  contributedAt: new Date('2026-10-08T12:00:00.000Z'),
 });
 
 describe('TrackProcessingService', () => {
@@ -48,14 +55,13 @@ describe('TrackProcessingService', () => {
     vi.clearAllMocks();
     tracks.findTrackHeader.mockResolvedValue(undefined);
     processings.findLatestProcessing.mockResolvedValue(undefined);
-    processings.findContributors.mockResolvedValue([]);
-    users.findPublicUsers.mockResolvedValue(new Map());
+    contributors.findContributorsPage.mockResolvedValue({ rows: [], total: 0 });
     const moduleRef = await Test.createTestingModule({
       providers: [
         TrackProcessingService,
         { provide: TracksRepository, useValue: tracks },
         { provide: TrackProcessingRepository, useValue: processings },
-        { provide: UsersService, useValue: users },
+        { provide: TrackContributorRepository, useValue: contributors },
       ],
     }).compile();
     service = moduleRef.get(TrackProcessingService);
@@ -64,16 +70,13 @@ describe('TrackProcessingService', () => {
   it('shows the header, the latest Processing and the Contributors', async () => {
     tracks.findTrackHeader.mockResolvedValue(header);
     processings.findLatestProcessing.mockResolvedValue(latestRow);
-    processings.findContributors.mockResolvedValue([
-      { id: 'contributor-1', userId: 'user-1' },
-      { id: 'contributor-2', userId: 'user-2' },
-    ]);
-    users.findPublicUsers.mockResolvedValue(
-      new Map([
-        ['user-1', profile('user-1', 'Ada', 'ada')],
-        ['user-2', profile('user-2', 'Grace', null)],
-      ]),
-    );
+    contributors.findContributorsPage.mockResolvedValue({
+      rows: [
+        row('contributor-1', 'ada', 'Ada'),
+        row('contributor-2', null, 'Grace'),
+      ],
+      total: 2,
+    });
 
     const state = await service.getProcessingState('track-1');
 
@@ -107,9 +110,9 @@ describe('TrackProcessingService', () => {
           image: null,
         },
       ],
+      contributorCount: 2,
     });
     expect(trackProcessingStateSchema.parse(state)).toEqual(state);
-    expect(users.findPublicUsers).toHaveBeenCalledWith(['user-1', 'user-2']);
   });
 
   it('answers a Track that never had a Processing with a null Processing', async () => {
@@ -119,22 +122,20 @@ describe('TrackProcessingService', () => {
 
     expect(state.processing).toBeNull();
     expect(state.contributors).toEqual([]);
+    expect(state.contributorCount).toBe(0);
   });
 
-  it('leaves out a Contributor whose account no longer exists', async () => {
+  it('shows a Contributor without a Username unlinked, with a null Username', async () => {
     tracks.findTrackHeader.mockResolvedValue(header);
-    processings.findContributors.mockResolvedValue([
-      { id: 'contributor-1', userId: 'user-1' },
-      { id: 'contributor-2', userId: 'gone' },
-    ]);
-    users.findPublicUsers.mockResolvedValue(
-      new Map([['user-1', profile('user-1', 'Ada', 'ada')]]),
-    );
+    contributors.findContributorsPage.mockResolvedValue({
+      rows: [row('contributor-1', null, 'Ada')],
+      total: 1,
+    });
 
     const state = await service.getProcessingState('track-1');
 
     expect(state.contributors).toEqual([
-      { id: 'contributor-1', username: 'ada', name: 'Ada', image: null },
+      { id: 'contributor-1', username: null, name: 'Ada', image: null },
     ]);
   });
 

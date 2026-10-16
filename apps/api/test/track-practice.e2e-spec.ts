@@ -91,6 +91,7 @@ describe('Track practice reads (e2e)', () => {
             image: null,
           },
         ],
+        contributorCount: 1,
         hasNotes: true,
         viewCount: 0,
       });

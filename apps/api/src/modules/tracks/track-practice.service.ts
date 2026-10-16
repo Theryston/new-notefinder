@@ -43,6 +43,10 @@ export class TrackPracticeService {
     const artistIds = new Map(
       row.artists.map((artist) => [artist.mbid, artist.id]),
     );
+    const [contributors, contributorCount] = await Promise.all([
+      this.processing.listContributors(trackId, { limit: 3 }),
+      this.processing.contributorCount(trackId),
+    ]);
     return {
       id: row.id,
       title: row.title,
@@ -55,7 +59,8 @@ export class TrackPracticeService {
       })),
       durationMs: row.lengthMs,
       youtubeVideoId: row.youtubeVideoId,
-      contributors: await this.processing.contributorsOf(trackId),
+      contributors: contributors.items,
+      contributorCount,
       hasNotes: row.hasNotes,
       viewCount: row.viewCount,
       ...summaryOf(row),

@@ -30,6 +30,7 @@ const stateWith = (
           finishedAt: null,
         },
   contributors: [],
+  contributorCount: 0,
 });
 
 describe('processingRefetchInterval', () => {

@@ -13,6 +13,8 @@ export const trackKeys = {
   lyrics: (trackId: string) => [...trackKeys.all, trackId, 'lyrics'] as const,
   directAudio: (trackId: string) =>
     [...trackKeys.all, trackId, 'direct-audio'] as const,
+  contributors: (trackId: string, query?: { q?: string }) =>
+    [...trackKeys.all, trackId, 'contributors', query ?? {}] as const,
   /** What the signed-in User has with the Track (the favorite). */
   userState: (trackId: string) =>
     [...trackKeys.all, trackId, 'user-state'] as const,

@@ -7,7 +7,8 @@ const practice = { findPracticeRow: vi.fn(), findNotes: vi.fn() };
 const processing = {
   throwMovedOrMissing: vi.fn(),
   assertTrackExists: vi.fn(),
-  contributorsOf: vi.fn(),
+  listContributors: vi.fn(),
+  contributorCount: vi.fn(),
 };
 
 const row = {
@@ -30,7 +31,12 @@ describe('TrackPracticeService header summary', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    processing.contributorsOf.mockResolvedValue([]);
+    processing.listContributors.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      total: 0,
+    });
+    processing.contributorCount.mockResolvedValue(0);
     const moduleRef = await Test.createTestingModule({
       providers: [
         TrackPracticeService,
