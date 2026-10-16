@@ -95,4 +95,11 @@ describe('Track recommendations (e2e)', () => {
       code: 'NOT_FOUND',
     });
   });
+  it('validates overlong public Track IDs', async () => {
+    const response = await get('x'.repeat(129)).expect(400);
+    expect(response.body).toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: { location: 'param' },
+    });
+  });
 });

@@ -52,6 +52,17 @@ export function serveTrackFacet(
     );
     return true;
   }
-  context.read(id, request, response, facetBodies[name]);
+  const delay =
+    name === 'recommendations'
+      ? (context.tracks.get(id)?.recommendationsDelayMs ?? 0)
+      : 0;
+  if (delay > 0) {
+    setTimeout(
+      () => context.read(id, request, response, facetBodies[name]),
+      delay,
+    );
+  } else {
+    context.read(id, request, response, facetBodies[name]);
+  }
   return true;
 }

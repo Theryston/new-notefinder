@@ -26,6 +26,7 @@ export type FakeTrack = {
   youtubeVideoId?: string | null;
   viewCount?: number;
   recommendations?: FakeTrack[];
+  recommendationsDelayMs?: number;
   /** The vocal notes in sung order; a Track without any is an instrumental. */
   notes?: { pitch: number; start: number; end: number }[];
   /** The vocal range (MIDI numbers) and key the header shows; absent by default. */

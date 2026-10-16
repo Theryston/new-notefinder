@@ -68,3 +68,94 @@ test('omits an empty recommendation list without affecting practice', async ({
     page.getByRole('region', { name: messages.en.tracks.practice.moreToSing }),
   ).toHaveCount(0);
 });
+
+test('streams practice before delayed recommendations', async ({ page }) => {
+  const id = 'recommend-streaming';
+  await setTrackMock({
+    tracks: [
+      {
+        id,
+        title: 'Practice first',
+        processing: { status: 'COMPLETED' },
+        recommendationsDelayMs: 4000,
+        recommendations: [
+          {
+            id: 'recommend-streaming-next',
+            title: 'Suggestions later',
+            processing: { status: 'COMPLETED' },
+          },
+        ],
+      },
+    ],
+  });
+  await page.goto(`/en/tracks/${id}`, { waitUntil: 'commit' });
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Practice first' }),
+  ).toBeVisible({ timeout: 2500 });
+  await expect(
+    page.getByRole('heading', {
+      name: messages.en.tracks.practice.noVoice.title,
+    }),
+  ).toBeVisible({ timeout: 1000 });
+  await expect(
+    page.getByRole('region', { name: messages.en.tracks.practice.moreToSing }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: /Suggestions later/ }),
+  ).toBeVisible();
+});
+
+test('refreshes server recommendations after Processing completes without reloading', async ({
+  page,
+}) => {
+  const id = 'recommend-after-completion';
+  const old: FakeTrack = {
+    id: `${id}-trending`,
+    title: 'Old trending suggestion',
+    processing: { status: 'COMPLETED' },
+  };
+  const close: FakeTrack = {
+    id: `${id}-range`,
+    title: 'Closest vocal range',
+    processing: { status: 'COMPLETED' },
+  };
+  await setTrackMock({
+    tracks: [
+      {
+        id,
+        title: 'Growing range',
+        processing: { status: 'DETECTING_NOTES' },
+        recommendations: [old],
+      },
+    ],
+  });
+  await page.goto(`/en/tracks/${id}`);
+  await expect(page.getByRole('progressbar')).toBeVisible();
+  await page.evaluate(() => {
+    document.documentElement.dataset.recommendationVisit = 'original';
+  });
+  await setTrackMock({
+    tracks: [
+      close,
+      {
+        id,
+        title: 'Growing range',
+        processing: { status: 'COMPLETED' },
+        vocalRange: { lowest: 60, highest: 72 },
+        notes: [{ pitch: 60, start: 1, end: 2 }],
+        recommendations: [close],
+      },
+    ],
+  });
+  await expect(
+    page.getByRole('link', { name: /Closest vocal range/ }),
+  ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByRole('link', { name: /Old trending suggestion/ }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.dataset.recommendationVisit,
+    ),
+  ).toBe('original');
+});
