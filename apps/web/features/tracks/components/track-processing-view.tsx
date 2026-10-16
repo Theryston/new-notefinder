@@ -2,6 +2,7 @@
 
 import type { TrackProcessingState } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
 
@@ -9,6 +10,7 @@ import { useElapsedSince } from '../hooks/use-step-elapsed';
 import { useTrackProcessing } from '../hooks/use-track-processing';
 import type { InitialPractice } from '../practice-queries';
 import { displayedPercent } from '../processing-steps';
+import { RefreshPracticeOnCompletion } from './refresh-practice-on-completion';
 import { TrackChosenVideo } from './track-chosen-video';
 import { TrackContributors } from './track-contributors';
 import { TrackPracticeView } from './track-practice-view';
@@ -29,10 +31,12 @@ export function TrackProcessingView({
   initialState,
   initialPractice,
   fakePlayer,
+  recommendations,
 }: {
   initialState: TrackProcessingState;
   initialPractice: InitialPractice | undefined;
   fakePlayer: boolean;
+  recommendations?: ReactNode;
 }) {
   const t = useTranslations('tracks.processing');
   const { data: state } = useTrackProcessing(
@@ -54,12 +58,18 @@ export function TrackProcessingView({
         {/* Above the dock, whatever its height: it publishes `--dock-height`.
             Sonner has its own offset under 600px, which needs setting too; only the
             bottom is given, since a single value would apply to every side. */}
-        <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
-        <TrackPracticeView
-          trackId={state.track.id}
-          initial={initialPractice}
-          fakePlayer={fakePlayer}
+        <RefreshPracticeOnCompletion
+          enabled={initialState.processing?.status !== 'COMPLETED'}
         />
+        <Toaster offset={DOCK_CLEARANCE} mobileOffset={DOCK_CLEARANCE} />
+        <div className="flex flex-col gap-10 md:gap-12">
+          <TrackPracticeView
+            trackId={state.track.id}
+            initial={initialPractice}
+            fakePlayer={fakePlayer}
+          />
+          {recommendations}
+        </div>
       </>
     );
   }
