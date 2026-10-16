@@ -1,3 +1,4 @@
+import { observeCalibrationReading } from './calibration-reading';
 import { takeHeadphonesTip } from './headphones-tip';
 import { micProblemOf } from './mic-problem';
 import type { MicSession } from './mic-session';
@@ -19,6 +20,7 @@ let generation = 0;
 /** Places a reading on the Track; while paused it only feeds the readout. */
 function placeReading(playback: PlaybackSource) {
   return (midi: number | null, lagSeconds: number): void => {
+    observeCalibrationReading(midi, lagSeconds);
     const { status, time } = playback.getState();
     if (status === 'playing') voiceTrail.push(time - lagSeconds, midi);
     else voiceTrail.setLatest(midi);

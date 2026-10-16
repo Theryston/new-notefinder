@@ -227,6 +227,22 @@
       "target": "Sing",
       "you": "You",
       "none": "–"
+    },
+    "aids": {
+      "countIn": "Count-in",
+      "guideMelody": "Guide melody",
+      "calibrate": "Calibrate voice timing",
+      "close": "Close",
+      "instructions": "With headphones and the mic on, sing along with the alternating beeps for 10 seconds. Follow the timing rather than reacting after each beep.",
+      "offset": "Device timing adjustment: {milliseconds} ms",
+      "micRequired": "Turn on the microphone before calibrating.",
+      "remaining": "{count, plural, one {# second remaining} other {# seconds remaining}}",
+      "saved": "Calibration saved on this device.",
+      "retry": "Not enough consistent sung responses. Try again; your previous adjustment is unchanged.",
+      "audioError": "Audio could not start. Try again.",
+      "start": "Start 10-second calibration",
+      "reset": "Reset timing adjustment",
+      "count": "{count}"
     }
   },
   "streaks": {

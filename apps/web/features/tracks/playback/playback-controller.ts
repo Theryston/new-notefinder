@@ -32,6 +32,11 @@ export class PlaybackController {
   private readonly store: StoreApi<PlaybackState>;
   private readonly frames: FrameScheduler;
   private frame: number | null = null;
+  private playGate:
+    | ((start: () => void) => (() => void) | undefined)
+    | undefined;
+  private cancelPlay: (() => void) | null = null;
+  private playGeneration = 0;
   private readonly stopListening: () => void;
 
   constructor({
@@ -47,18 +52,51 @@ export class PlaybackController {
     this.stopListening = port.onState(this.onPlayerState);
   }
 
+  /** Programmatic resumes (including loop repeats) never count in. */
   play = (): void => {
     const { status } = this.store.getState();
-    if (status === 'loading' || status === 'error') return;
+    if (status === 'loading' || status === 'error' || status === 'playing')
+      return;
+    this.cancelPendingPlay();
     if (status === 'ended') this.seek(0);
     this.port.play();
   };
 
-  pause = (): void => this.port.pause();
+  private requestPlay(): void {
+    const { status } = this.store.getState();
+    if (status === 'loading' || status === 'error') return;
+    if (status === 'playing' || this.cancelPlay) return;
+    const generation = ++this.playGeneration;
+    const start = () => {
+      if (generation !== this.playGeneration) return;
+      this.cancelPlay = null;
+      if (this.store.getState().status === 'ended') this.seek(0);
+      this.port.play();
+    };
+    if (this.playGate) this.cancelPlay = this.playGate(start) ?? null;
+    else start();
+  }
+
+  setPlayGate = (gate: typeof this.playGate): void => {
+    this.cancelPendingPlay();
+    this.playGate = gate;
+  };
+
+  cancelPendingPlay(): void {
+    this.playGeneration += 1;
+    this.cancelPlay?.();
+    this.cancelPlay = null;
+  }
+
+  pause = (): void => {
+    this.cancelPendingPlay();
+    this.port.pause();
+  };
 
   toggle = (): void => {
-    if (this.store.getState().status === 'playing') this.pause();
-    else this.play();
+    if (this.cancelPlay || this.store.getState().status === 'playing')
+      this.pause();
+    else this.requestPlay();
   };
 
   seek = (seconds: number): void => {
@@ -104,6 +142,7 @@ export class PlaybackController {
   };
 
   dispose = (): void => {
+    this.cancelPendingPlay();
     this.stopLoop();
     this.stopListening();
     this.port.destroy();

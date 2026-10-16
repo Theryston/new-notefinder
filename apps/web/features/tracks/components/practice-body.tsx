@@ -13,6 +13,7 @@ import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
 import { LyricsBlock } from '@/features/lyrics/components/lyrics-block';
 import { SingTimeline } from '@/features/practice/components/sing-timeline';
+import { SingingAids } from '@/features/practice/components/singing-aids';
 
 import { useDirectAudio } from '../hooks/use-direct-audio';
 import { usePlayback } from '../hooks/use-playback';
@@ -159,6 +160,11 @@ function PracticeBodyContent({
     directAudio,
   });
   usePlaybackShortcuts(controller);
+  const semitones = useTranspose();
+  const guideNotes = useMemo(
+    () => transposeNotes(notes?.notes ?? [], semitones),
+    [notes, semitones],
+  );
   const timelineRef = useRef<HTMLDivElement>(null);
   // The timeline block is on screen once its notes loaded or failed to.
   useTimelineFocus(
@@ -186,6 +192,11 @@ function PracticeBodyContent({
       ) : (
         <NoVoice />
       )}
+      <SingingAids
+        controller={controller}
+        playback={playbackStore}
+        notes={guideNotes}
+      />
       <SharedMomentSeek controller={controller} />
       <TrackLyricsBlock lyrics={lyrics} controller={controller} />
       {header.youtubeVideoId === null && !directAudio ? null : (
