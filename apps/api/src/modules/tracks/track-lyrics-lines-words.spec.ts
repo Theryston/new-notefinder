@@ -358,6 +358,8 @@ describe('timedLyricsOf words-only pipeline', () => {
       expect(line.words.length).toBeLessThanOrEqual(12);
       expect(lineText(line).length).toBeLessThanOrEqual(75);
       expect(line.end - line.start).toBeLessThanOrEqual(7);
+      const cps = lineText(line).length / (line.end - line.start);
+      expect(cps).toBeLessThanOrEqual(20);
     }
     const starts = lines.map((line) => line.start);
     expect([...starts].sort((a, b) => a - b)).toEqual(starts);

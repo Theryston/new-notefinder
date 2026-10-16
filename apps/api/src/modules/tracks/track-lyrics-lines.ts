@@ -270,7 +270,8 @@ const canMerge = (
 };
 
 /** Stub lines folded into a close neighbor, preferring the previous one. A
- * stub that would break caps or cross voices stays on its own. */
+ * stub merges even across a terminal-punctuation break (the stub wins), but
+ * never across speakers, and a stub that would break caps stays on its own. */
 const mergedOf = (phrases: readonly LyricWord[][]): LyricWord[][] => {
   const merged: LyricWord[][] = [];
   for (const phrase of phrases) {
