@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { HttpStatus, Inject, Logger } from '@nestjs/common';
 import { type Job, UnrecoverableError } from 'bullmq';
 import { ENV, type Env } from '../../config/env.js';
@@ -70,6 +70,14 @@ export class EmailProcessor extends WorkerHost {
         : new UnrecoverableError(error);
     }
     this.logger.log(`Sent email (job ${job.id})`);
+  }
+
+  /** BullMQ emits failed for both retryable and terminal delivery errors. */
+  @OnWorkerEvent('failed')
+  onFailed(job: Job<unknown> | undefined, error: Error): void {
+    this.logger.error(
+      `Email delivery failed (job ${job?.id ?? 'unknown'}, attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+    );
   }
 
   private logUnsent(message: EmailMessage): void {

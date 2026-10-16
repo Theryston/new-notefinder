@@ -22,13 +22,15 @@ export function SingTimeline({
   ...timeline
 }: {
   notes: readonly TrackNote[];
-  playback: PlaybackSource;
+  playback: PlaybackSource & {
+    getState(): { status: string; time: number; rate?: number };
+  };
   label: string;
   clock?: TimelineClock;
   onScrub?: (seconds: number) => void;
   className?: string;
 }) {
-  const voice = useSingVoice();
+  const voice = useSingVoice(playback);
 
   return (
     <div className="flex flex-col gap-2">

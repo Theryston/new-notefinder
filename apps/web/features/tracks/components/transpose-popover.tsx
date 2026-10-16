@@ -29,7 +29,11 @@ import { TransposeStepper } from './transpose-stepper';
  * moves the buttons under the User's finger. The dock loads it after the page,
  * like the Settings menu, to keep Base UI's popover out of first-load JS.
  */
-export function TransposePopover() {
+export function TransposePopover({
+  directAudio = false,
+}: {
+  directAudio?: boolean;
+}) {
   const t = useTranslations('tracks.practice.dock');
   const trackKey = use(TrackKeyContext);
   const keyText = useKeyText(trackKey);
@@ -64,7 +68,9 @@ export function TransposePopover() {
           )}
         </div>
         <TransposeStepper trackKey={trackKey} />
-        <PopoverDescription>{t('videoKeepsKey')}</PopoverDescription>
+        <PopoverDescription>
+          {t(directAudio ? 'audioFollowsKey' : 'videoKeepsKey')}
+        </PopoverDescription>
       </PopoverContent>
     </Popover>
   );

@@ -17,6 +17,9 @@ import { TrackAudioService } from './track-audio.service.js';
 import { TrackContributorRepository } from './track-contributor.repository.js';
 import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
+import { TrackDirectAudioController } from './track-direct-audio.controller.js';
+import { TrackDirectAudioRepository } from './track-direct-audio.repository.js';
+import { TrackDirectAudioService } from './track-direct-audio.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TrackLyricsController } from './track-lyrics.controller.js';
 import { TrackLyricsRepository } from './track-lyrics.repository.js';
@@ -88,12 +91,15 @@ import { TracksService } from './tracks.service.js';
   ],
   controllers: [
     TracksController,
+    TrackDirectAudioController,
     TrackLyricsController,
     TrackViewsController,
     TrackSitemapController,
   ],
   providers: [
     TracksService,
+    TrackDirectAudioRepository,
+    TrackDirectAudioService,
     TracksRepository,
     TrackProcessingRepository,
     TrackContributorRepository,

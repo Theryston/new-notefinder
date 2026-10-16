@@ -296,6 +296,34 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/audio": {
+      "get": {
+        "operationId": "TrackDirectAudioController_getAudio_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin-only music and vocals MP3 URLs."
+          },
+          "403": {
+            "description": "Direct audio is restricted."
+          }
+        },
+        "tags": [
+          "tracks"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/lyrics": {
       "get": {
         "operationId": "TrackLyricsController_getLyrics_v1",

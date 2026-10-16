@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from 'react';
-
 import { useClockFormat } from '../hooks/use-clock-format';
 import type { PlaybackController } from '../playback/playback-controller';
 import {
@@ -20,6 +19,7 @@ import {
   timeAtFraction,
 } from '../playback/playback-math';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
+import { AudioWaveform } from './audio-waveform';
 
 import { LoopHandles } from './loop-handles';
 
@@ -125,8 +125,10 @@ const TIME_CLASS =
  */
 export function DockProgressTrack({
   controller,
+  waveform,
 }: {
   controller: PlaybackController | null;
+  waveform?: readonly number[];
 }) {
   const t = useTranslations('tracks.practice.dock');
   const format = useClockFormat();
@@ -164,6 +166,7 @@ export function DockProgressTrack({
         onPointerCancel={seek.onPointerEnd}
         className="group relative flex h-8 min-w-0 flex-1 cursor-pointer touch-none items-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:cursor-default"
       >
+        {waveform !== undefined && <AudioWaveform controller={controller} />}
         <div className="relative h-1 w-full rounded-full bg-foreground/15">
           <div
             ref={elements.fill}

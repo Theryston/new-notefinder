@@ -162,7 +162,10 @@
         "transposeValue": "{semitones, number, ::sign-except-zero}",
         "transposeReset": "Voltar ao tom original",
         "transposeOpen": "Mudar tom: {key}",
-        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original."
+        "videoKeepsKey": "Só as notas mudam de tom. O vídeo continua tocando no tom original.",
+        "vocalsOnly": "Só voz",
+        "audioFollowsKey": "O áudio acompanha a transposição.",
+        "audioError": "Não foi possível reproduzir o áudio armazenado."
       },
       "noVoice": {
         "title": "Não encontramos voz nesta gravação",
@@ -231,6 +234,22 @@
       "target": "Cante",
       "you": "Você",
       "none": "–"
+    },
+    "aids": {
+      "countIn": "Contagem de entrada",
+      "guideMelody": "Melodia guia",
+      "calibrate": "Calibrar tempo da voz",
+      "close": "Fechar",
+      "instructions": "Com fones e o microfone ligado, cante junto com os bipes alternados por 10 segundos. Acompanhe o ritmo em vez de reagir depois de cada bipe.",
+      "offset": "Ajuste de tempo neste dispositivo: {milliseconds} ms",
+      "micRequired": "Ligue o microfone antes de calibrar.",
+      "remaining": "{count, plural, one {# segundo restante} other {# segundos restantes}}",
+      "saved": "Calibração salva neste dispositivo.",
+      "retry": "Não houve respostas cantadas consistentes suficientes. Tente novamente; o ajuste anterior foi mantido.",
+      "audioError": "Não foi possível iniciar o áudio. Tente novamente.",
+      "start": "Iniciar calibração de 10 segundos",
+      "reset": "Redefinir ajuste de tempo",
+      "count": "{count}"
     }
   },
   "streaks": {

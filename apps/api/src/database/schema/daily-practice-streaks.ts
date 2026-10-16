@@ -35,6 +35,8 @@ export const dailyPracticeStreaks = pgTable(
     day: date({ mode: 'string' }).notNull(),
     listenedSeconds: integer().notNull().default(0),
     completed: boolean().notNull().default(false),
+    // Legacy practice days start without a reminder.
+    reminderQueuedAt: timestamp({ withTimezone: true }),
     completedAt: timestamp({ withTimezone: true }),
     lastHeartbeatAt: timestamp({ withTimezone: true }),
     ...timestamps,

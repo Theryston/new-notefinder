@@ -5,6 +5,8 @@ import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
 import { EmailProcessor } from '../src/integrations/email/email.processor.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
+import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
+import { StreakReminderProcessor } from '../src/modules/streaks/streak-reminder.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
 import { TRACK_MP3_QUEUE } from '../src/modules/tracks/track-mp3.job.js';
 import { TrackMp3Processor } from '../src/modules/tracks/track-mp3.processor.js';
@@ -17,6 +19,7 @@ import { REDIS_CLIENT } from '../src/redis/redis.constants.js';
 
 /** Every BullMQ queue registered by the app; add new queues here. */
 const QUEUES = [
+  STREAK_REMINDER_QUEUE,
   WEB_REVALIDATION_QUEUE,
   EMAIL_QUEUE,
   TRACK_PROCESSING_QUEUE,
@@ -26,6 +29,7 @@ const QUEUES = [
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
+  StreakReminderProcessor,
   WebRevalidationProcessor,
   EmailProcessor,
   TrackProcessingProcessor,

@@ -21,6 +21,9 @@ export type PlayerPort = {
   /** The length in seconds, or 0 while the player does not know it. */
   duration(): number;
   setRate(rate: number): void;
+  setTranspose?(semitones: number): void;
+  setVocalsOnly?(vocals: boolean): void;
+  waveform?(): readonly number[];
   setMuted(muted: boolean): void;
   isReady(): boolean;
   /** Listens to state changes; returns the function that stops listening. */
