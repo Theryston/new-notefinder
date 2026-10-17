@@ -61,6 +61,34 @@ export function multipartFile(
   return { filename, contentType, bytes: Buffer.from(content, 'latin1') };
 }
 
+/** The profile a save writes, like the API stores it. */
+export type StoredProfile = {
+  name: string;
+  image: string | null;
+  dailyPracticeTargetSeconds: number | null;
+};
+
+/**
+ * Applies a multipart save to the stored profile, like the API: the trimmed
+ * Name, and the Daily target when its part was sent. Shared by the default
+ * save below and replies that track more (e.g. uploads).
+ */
+export const applyProfileSave = (
+  stored: StoredProfile,
+  request: Request,
+): StoredProfile => {
+  const fields = multipartFields(request);
+  return {
+    ...stored,
+    name: (fields.name ?? '').trim(),
+    ...(fields.dailyPracticeTargetSeconds === undefined
+      ? {}
+      : {
+          dailyPracticeTargetSeconds: Number(fields.dailyPracticeTargetSeconds),
+        }),
+  };
+};
+
 /**
  * Serves `/v1/me`: `GET` answers the stored profile (like the database, so
  * the form pre-fills what a previous save wrote), `PATCH` saves. By default
@@ -73,24 +101,13 @@ export async function mockProfileApi(
   { user, reply }: { user: MockUser; reply?: (request: Request) => MeReply },
 ): Promise<Request[]> {
   const saves: Request[] = [];
-  let stored = {
+  let stored: StoredProfile = {
     name: user.name,
     image: user.image,
     dailyPracticeTargetSeconds: user.dailyPracticeTargetSeconds ?? null,
   };
   const saveLikeApi = (request: Request): MeReply => {
-    const fields = multipartFields(request);
-    stored = {
-      ...stored,
-      name: (fields.name ?? '').trim(),
-      ...(fields.dailyPracticeTargetSeconds === undefined
-        ? {}
-        : {
-            dailyPracticeTargetSeconds: Number(
-              fields.dailyPracticeTargetSeconds,
-            ),
-          }),
-    };
+    stored = applyProfileSave(stored, request);
     return { body: currentUserBody({ ...user, ...stored }) };
   };
 

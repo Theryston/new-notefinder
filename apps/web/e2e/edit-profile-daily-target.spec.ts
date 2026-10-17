@@ -135,8 +135,15 @@ test.describe('edit profile: daily target', () => {
 
     for (const [seconds, minutes] of presets) {
       await targetRadio(page, minutes).check();
+      // Toasts stack, so the save's own response (not the toast) marks it
+      // done; the next click waits for the button to re-enable anyway.
+      const saved = page.waitForResponse(
+        (response) =>
+          response.url().includes('/v1/me') &&
+          response.request().method() === 'PATCH',
+      );
       await saveButton(page).click();
-      await expect(page.getByText(edit.saved)).toBeVisible();
+      await saved;
       expect(multipartFields(lastSave(saves))).toMatchObject({
         dailyPracticeTargetSeconds: seconds,
       });

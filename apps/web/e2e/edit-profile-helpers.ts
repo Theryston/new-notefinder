@@ -3,11 +3,12 @@ import { expect, type Page, type Request } from '@playwright/test';
 import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
 import {
+  applyProfileSave,
   currentUserBody,
   type MeReply,
   mockProfileApi,
-  multipartFields,
   multipartFile,
+  type StoredProfile,
 } from './profile-api-mock';
 
 const { header } = messages.en;
@@ -65,16 +66,23 @@ export const pickGif = (page: Page) =>
   pick(page, { name: 'move.gif', mimeType: 'image/gif' });
 
 /**
- * Answers like the API: an upload becomes the user's stored image, and a save
- * without one leaves the image as it was.
+ * Answers like the API: a save keeps the trimmed Name and, when sent, the
+ * Daily target, an upload becomes the user's stored image, and a save
+ * without one leaves the image as it was. The answer is the updated profile,
+ * like the API's, so the form shows what it saved.
  */
 export const storesUploads = () => {
-  let image: string | null = null;
+  let stored: StoredProfile = {
+    name: ada.name,
+    image: ada.image,
+    dailyPracticeTargetSeconds: ada.dailyPracticeTargetSeconds ?? null,
+  };
   return (request: Request): MeReply => {
-    if (multipartFile(request, 'avatar')) image = STORED_IMAGE;
-    return {
-      body: currentUserBody({ ...ada, image }, multipartFields(request).name),
-    };
+    if (multipartFile(request, 'avatar')) {
+      stored = { ...stored, image: STORED_IMAGE };
+    }
+    stored = applyProfileSave(stored, request);
+    return { body: currentUserBody({ ...ada, ...stored }) };
   };
 };
 
