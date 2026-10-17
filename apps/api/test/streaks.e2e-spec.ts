@@ -68,8 +68,9 @@ describe('Streaks (e2e)', () => {
     // Sign in on the real clock: the session must exist before time moves.
     user = await createUser(spec.testApp.db, {
       username: 'grace',
-      // A short target, so a test completes the day in a few heartbeats.
-      dailyPracticeTargetSeconds: 40,
+      // The smallest preset, so a test completes the day in as few
+      // heartbeats as a preset allows.
+      dailyPracticeTargetSeconds: 300,
     });
     await signInAs(user);
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -136,7 +137,7 @@ describe('Streaks (e2e)', () => {
       expect(await status()).toMatchObject({
         completedToday: true,
         currentStreakDays: 3,
-        listenedSeconds: 40,
+        listenedSeconds: 300,
       });
     });
 
@@ -193,7 +194,7 @@ describe('Streaks (e2e)', () => {
         status: {
           day: '2026-03-10',
           listenedSeconds: 5,
-          targetSeconds: 40,
+          targetSeconds: 300,
           completedToday: false,
           currentStreakDays: 0,
         },
@@ -241,46 +242,60 @@ describe('Streaks (e2e)', () => {
     });
 
     it('completes the day once the target is reached, and says so once', async () => {
+      // Fifteen 20 s heartbeats reach the 300 s target; each needs the
+      // server clock moved past the previous one to credit in full.
       await heartbeat(20);
-      at(later(NIGHT, 20).toISOString());
+      for (let step = 1; step <= 13; step++) {
+        at(later(NIGHT, step * 20).toISOString());
+        await heartbeat(20);
+      }
+      at(later(NIGHT, 280).toISOString());
       const reached = await heartbeat(20);
 
       expect(reached.justCompleted).toBe(true);
       expect(reached.status).toMatchObject({
         completedToday: true,
-        listenedSeconds: 40,
+        listenedSeconds: 300,
         currentStreakDays: 1,
       });
 
-      at(later(NIGHT, 40).toISOString());
+      at(later(NIGHT, 300).toISOString());
       const after = await heartbeat(20);
       expect(after.justCompleted).toBe(false);
       expect(after.status).toMatchObject({
         completedToday: true,
-        listenedSeconds: 40,
+        listenedSeconds: 300,
         currentStreakDays: 1,
       });
     });
 
     it('keeps the completion time of the heartbeat that reached the target', async () => {
       await heartbeat(20);
-      at(later(NIGHT, 20).toISOString());
+      for (let step = 1; step <= 13; step++) {
+        at(later(NIGHT, step * 20).toISOString());
+        await heartbeat(20);
+      }
+      at(later(NIGHT, 280).toISOString());
       await heartbeat(20);
-      at(later(NIGHT, 40).toISOString());
+      at(later(NIGHT, 300).toISOString());
       await heartbeat(20);
 
       const [row] = await spec.testApp.db
         .select()
         .from(dailyPracticeStreaks)
         .where(eq(dailyPracticeStreaks.userId, user.id));
-      expect(row?.completedAt).toEqual(later(NIGHT, 20));
-      expect(row?.listenedSeconds).toBe(60);
+      expect(row?.completedAt).toEqual(later(NIGHT, 280));
+      expect(row?.listenedSeconds).toBe(320);
     });
 
     it('extends the streak across days', async () => {
       await seedDays(['2026-03-09', '2026-03-08']);
       await heartbeat(20);
-      at(later(NIGHT, 20).toISOString());
+      for (let step = 1; step <= 13; step++) {
+        at(later(NIGHT, step * 20).toISOString());
+        await heartbeat(20);
+      }
+      at(later(NIGHT, 280).toISOString());
 
       const result = await heartbeat(20);
 

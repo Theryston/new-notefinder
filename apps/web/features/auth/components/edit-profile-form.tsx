@@ -9,7 +9,7 @@ import type {
 import {
   asDailyPracticeTargetSeconds,
   DEFAULT_DAILY_PRACTICE_TARGET_SECONDS,
-} from '@notefinder/contracts';
+} from '@notefinder/contracts/daily-target-rules';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';

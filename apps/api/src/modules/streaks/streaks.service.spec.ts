@@ -97,14 +97,27 @@ describe('StreaksService', () => {
 
   it('caps the listened seconds at the target', async () => {
     users.getPracticeSettings.mockResolvedValue({
-      dailyPracticeTargetSeconds: 60,
+      dailyPracticeTargetSeconds: 300,
       timeZone: null,
       lastPracticeHeartbeatAt: null,
     });
     repository.findDay.mockResolvedValue(day({ listenedSeconds: 500 }));
 
     await expect(service.getStatus('user-1', undefined)).resolves.toMatchObject(
-      { listenedSeconds: 60, completedToday: false },
+      { listenedSeconds: 300, completedToday: false },
+    );
+  });
+
+  it('reads a legacy non-preset target as the fallback', async () => {
+    users.getPracticeSettings.mockResolvedValue({
+      dailyPracticeTargetSeconds: 40,
+      timeZone: null,
+      lastPracticeHeartbeatAt: null,
+    });
+    repository.findDay.mockResolvedValue(day({ listenedSeconds: 500 }));
+
+    await expect(service.getStatus('user-1', undefined)).resolves.toMatchObject(
+      { targetSeconds: 300, listenedSeconds: 300, completedToday: false },
     );
   });
 
@@ -140,11 +153,11 @@ describe('StreaksService', () => {
 
   it('completes the day on the heartbeat that reaches the target', async () => {
     users.lockPracticeSettings.mockResolvedValue({
-      dailyPracticeTargetSeconds: 30,
+      dailyPracticeTargetSeconds: 300,
       timeZone: 'UTC',
       lastPracticeHeartbeatAt: null,
     });
-    repository.lockDay.mockResolvedValue(day({ listenedSeconds: 20 }));
+    repository.lockDay.mockResolvedValue(day({ listenedSeconds: 290 }));
 
     const result = await service.heartbeat('user-1', {
       elapsedSeconds: 15,
@@ -153,7 +166,7 @@ describe('StreaksService', () => {
 
     expect(result).toMatchObject({ justCompleted: true, creditedSeconds: 15 });
     expect(repository.saveHeartbeat).toHaveBeenCalledWith('day-1', {
-      listenedSeconds: 35,
+      listenedSeconds: 305,
       heartbeatAt: NOW,
       completesDay: true,
     });

@@ -54,9 +54,14 @@ export function EditProfile() {
           : current,
     );
     // The save answered the updated profile, so pre-filling it next time
-    // needs no refetch. Today's streak status reads the new target on its
-    // next fetch (its own cache still applies until then).
+    // needs no refetch. Today's streak status reads the new target at once:
+    // every streak query hangs off the 'streak' root key (see
+    // features/streaks/query-keys), matched here by predicate because a
+    // feature never imports another feature's queries.
     queryClient.setQueryData<CurrentUser>(authKeys.currentUser(), saved);
+    void queryClient.invalidateQueries({
+      predicate: (query) => query.queryKey[0] === 'streak',
+    });
   };
 
   return (

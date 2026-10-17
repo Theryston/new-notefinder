@@ -4,6 +4,7 @@ export * from './auth.js';
 export * from './auth-rules.js';
 export * from './avatar-rules.js';
 export * from './cache-tags.js';
+export * from './daily-target-rules.js';
 export * from './errors.js';
 export * from './locales.js';
 export * from './me-tracks.js';

@@ -1,6 +1,6 @@
 'use client';
 
-import { DAILY_PRACTICE_TARGET_SECONDS } from '@notefinder/contracts';
+import { DAILY_PRACTICE_TARGET_SECONDS } from '@notefinder/contracts/daily-target-rules';
 import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
