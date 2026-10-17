@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { escapeHtml, renderEmailDocument } from './email-html.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 type AccountExistsEmailCopy = {
@@ -7,6 +7,7 @@ type AccountExistsEmailCopy = {
   intro: string;
   action: string;
   ignore: string;
+  footerNote: string;
 };
 
 // User-facing copy lives only here, one entry per locale.
@@ -18,6 +19,8 @@ const MESSAGES = {
     action:
       'If it was you, sign in instead. Forgot your password? Use "Forgot password" on the sign-in page to get a reset code.',
     ignore: "If it wasn't you, ignore this email. Your account hasn't changed.",
+    footerNote:
+      'You received this email because someone tried to create a notefinder account with this address.',
   },
   'pt-BR': {
     subject: 'Você já tem uma conta no notefinder',
@@ -26,12 +29,16 @@ const MESSAGES = {
     action:
       'Se foi você, é só entrar. Esqueceu a senha? Use "Esqueci minha senha" na página de entrar para receber um código.',
     ignore: 'Se não foi você, ignore este email. Nada mudou na sua conta.',
+    footerNote:
+      'Você recebeu este email porque alguém tentou criar uma conta no notefinder com este email.',
   },
 } as const satisfies Record<EmailLocale, AccountExistsEmailCopy>;
 
 export type AccountExistsEmailInput = {
   to: string;
   locale: EmailLocale;
+  /** Base of the web app for footer links; the production site stands in. */
+  webUrl?: string;
 };
 
 /**
@@ -43,16 +50,21 @@ export type AccountExistsEmailInput = {
 export const renderAccountExistsEmail = ({
   to,
   locale,
+  webUrl,
 }: AccountExistsEmailInput): EmailMessage => {
   const copy: AccountExistsEmailCopy = MESSAGES[locale];
 
   const text = [copy.intro, '', copy.action, '', copy.ignore].join('\n');
-  const html = renderEmailDocument(
+  const html = renderEmailLayout({
     locale,
-    `    <p style="margin:0 0 16px;">${escapeHtml(copy.intro)}</p>
-    <p style="margin:0 0 16px;">${escapeHtml(copy.action)}</p>
-    <p style="margin:0;color:#6b7280;font-size:14px;">${escapeHtml(copy.ignore)}</p>`,
-  );
+    preheader: copy.intro,
+    title: copy.subject,
+    intro: copy.intro,
+    details: [copy.action],
+    closing: copy.ignore,
+    footerNote: copy.footerNote,
+    termsUrl: buildTermsUrl(webUrl, locale),
+  });
 
   return { to, subject: copy.subject, html, text };
 };

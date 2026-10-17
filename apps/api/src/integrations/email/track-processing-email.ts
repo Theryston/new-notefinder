@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { escapeHtml, renderEmailDocument } from './email-html.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 type TrackEmailCopy = {
@@ -7,6 +7,7 @@ type TrackEmailCopy = {
   intro: string;
   action: string;
   link: string;
+  footerNote: string;
 };
 
 // User-facing copy lives only here, one entry per locale.
@@ -17,6 +18,8 @@ const COMPLETED = {
       'The vocal notes and timed lyrics of a track you contributed to are ready.',
     action: 'Open the track to start practicing.',
     link: 'Open the track',
+    footerNote:
+      'You received this email because you contributed to this track on notefinder.',
   },
   'pt-BR': {
     subject: 'As notas da sua música estão prontas no notefinder',
@@ -24,6 +27,8 @@ const COMPLETED = {
       'As notas vocais e a letra sincronizada de uma música em que você participou estão prontas.',
     action: 'Abra a música para começar a praticar.',
     link: 'Abrir a música',
+    footerNote:
+      'Você recebeu este email porque participou desta música no notefinder.',
   },
 } as const satisfies Record<EmailLocale, TrackEmailCopy>;
 
@@ -35,6 +40,8 @@ const FAILED = {
     action:
       'Open the track to see why. If the failure can be retried, you can try again there.',
     link: 'Open the track',
+    footerNote:
+      'You received this email because you contributed to this track on notefinder.',
   },
   'pt-BR': {
     subject: 'Não conseguimos terminar as notas de uma música',
@@ -43,6 +50,8 @@ const FAILED = {
     action:
       'Abra a música para ver o motivo. Se for possível tentar de novo, você pode fazer isso por lá.',
     link: 'Abrir a música',
+    footerNote:
+      'Você recebeu este email porque participou desta música no notefinder.',
   },
 } as const satisfies Record<EmailLocale, TrackEmailCopy>;
 
@@ -58,12 +67,16 @@ const renderTrackEmail = (
   { to, locale, trackUrl }: TrackEmailInput,
 ): EmailMessage => {
   const text = [copy.intro, '', copy.action, '', `${copy.link}: ${trackUrl}`];
-  const html = renderEmailDocument(
+  const html = renderEmailLayout({
     locale,
-    `    <p style="margin:0 0 16px;">${escapeHtml(copy.intro)}</p>
-    <p style="margin:0 0 16px;">${escapeHtml(copy.action)}</p>
-    <p style="margin:0;"><a href="${escapeHtml(trackUrl)}">${escapeHtml(copy.link)}</a></p>`,
-  );
+    preheader: copy.intro,
+    title: copy.subject,
+    intro: copy.intro,
+    details: [copy.action],
+    cta: { label: copy.link, href: trackUrl },
+    footerNote: copy.footerNote,
+    termsUrl: buildTermsUrl(trackUrl, locale),
+  });
   return { to, subject: copy.subject, html, text: text.join('\n') };
 };
 
