@@ -9,6 +9,7 @@ import { type MouseEvent, type RefObject, useState } from 'react';
 import { TrackCoverPlaceholder } from '@/features/tracks/components/track-cover-placeholder';
 import { useFullscreenContainer } from '@/hooks/use-fullscreen-container';
 import { Link } from '@/lib/i18n/navigation';
+import { cn } from '@/lib/utils';
 
 import { useSearchSuggestions } from '../hooks/use-search-suggestions';
 import { searchHref } from '../search-href';
@@ -108,7 +109,7 @@ function SuggestionRow({
         aria-selected="false"
         onMouseDown={keepFieldFocused}
         onClick={onNavigate}
-        className={`${ROW_CLASS} hover:bg-foreground/10`}
+        className={cn(ROW_CLASS, 'hover:bg-foreground/10')}
       >
         {body}
       </Link>
@@ -138,7 +139,10 @@ function SearchForRow({
       aria-selected="false"
       onMouseDown={keepFieldFocused}
       onClick={onNavigate}
-      className={`${ROW_CLASS} min-h-12 font-medium text-sm hover:bg-foreground/10`}
+      className={cn(
+        ROW_CLASS,
+        'min-h-12 font-medium text-sm hover:bg-foreground/10',
+      )}
     >
       <span className="flex size-12 shrink-0 items-center justify-center">
         <SearchIcon className="size-4 text-muted-foreground" />
