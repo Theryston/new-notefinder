@@ -1,9 +1,9 @@
 'use client';
 
+import type { DailyPracticeTargetSeconds } from '@notefinder/contracts/daily-target-rules';
 import { DAILY_PRACTICE_TARGET_SECONDS } from '@notefinder/contracts/daily-target-rules';
 import { useTranslations } from 'next-intl';
 import { useId } from 'react';
-import type { UseFormRegisterReturn } from 'react-hook-form';
 
 import { cn } from '@/lib/utils';
 
@@ -11,14 +11,19 @@ import { cn } from '@/lib/utils';
  * The Daily target presets as selectable cards. Native radios sharing one
  * name, so the group is operable by keyboard and announced as a radio group
  * with no extra wiring. Only the four presets are expressible: there is no
- * custom, fractional or hour-based input.
+ * custom, fractional or hour-based input. Controlled from the form value,
+ * which also carries the pre-selected preset.
  */
 export function DailyTargetPicker({
   selected,
-  registration,
+  name,
+  onPick,
+  onBlur,
 }: {
   selected: number | undefined;
-  registration: UseFormRegisterReturn<'dailyPracticeTargetSeconds'>;
+  name: string;
+  onPick: (seconds: DailyPracticeTargetSeconds) => void;
+  onBlur: () => void;
 }) {
   const t = useTranslations('profile.edit.dailyTarget');
   const descriptionId = useId();
@@ -38,10 +43,12 @@ export function DailyTargetPicker({
             <label key={seconds} className="relative cursor-pointer">
               <input
                 type="radio"
+                name={name}
                 value={seconds}
                 className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                {...registration}
                 checked={selected === seconds}
+                onChange={() => onPick(seconds)}
+                onBlur={onBlur}
               />
               <span
                 className={cn(

@@ -13,7 +13,7 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -141,9 +141,6 @@ function ProfileSection({
   );
   const nameError = form.formState.errors.name;
   const pending = form.formState.isSubmitting;
-  // Controlled from the form value: an uncontrolled radio compares the
-  // number default against the text DOM value and never pre-selects it.
-  const selectedTarget = form.watch('dailyPracticeTargetSeconds');
 
   return (
     <EditSection title={t('sections.profile')}>
@@ -165,11 +162,17 @@ function ProfileSection({
             {...form.register('name')}
           />
         </FormField>
-        <DailyTargetPicker
-          selected={selectedTarget}
-          registration={form.register('dailyPracticeTargetSeconds', {
-            valueAsNumber: true,
-          })}
+        <Controller
+          name="dailyPracticeTargetSeconds"
+          control={form.control}
+          render={({ field }) => (
+            <DailyTargetPicker
+              selected={field.value}
+              name={field.name}
+              onPick={(seconds) => field.onChange(seconds)}
+              onBlur={field.onBlur}
+            />
+          )}
         />
         <Button
           type="submit"
