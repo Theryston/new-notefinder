@@ -115,9 +115,16 @@ jobs:
           docker run --rm -v "$RUNNER_TEMP/openapi:/specs" tufin/oasdiff:v1.32.1 \
             breaking /specs/base.json /specs/head.json --fail-on ERR
 
-  e2e:
+  # The e2e suites run in parallel jobs that share nothing but the Turbo
+  # remote cache: each installs (with a warm package store) and runs one
+  # suite. Together they replace a single sequential job that no longer fit
+  # in one runner timeout. API and Music catalog suites start their own
+  # Postgres with Testcontainers on the runner's Docker (no `services:`
+  # block; see apps/api/test/setup/global-setup.ts and
+  # apps/music-catalog/test/setup/global-setup.ts).
+  e2e-api:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
@@ -128,6 +135,14 @@ jobs:
         with:
           nub-version: 0.9.5
 
+      - name: Cache package store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: nub-store-${{ runner.os }}-${{ hashFiles('nub.lock') }}
+          restore-keys: |
+            nub-store-${{ runner.os }}-
+
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
@@ -135,6 +150,33 @@ jobs:
       # `ffmpeg`), and its e2e suite runs that conversion for real.
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: API e2e tests
+        run: nub run test:e2e --filter=api
+
+  e2e-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nubjs/setup-nub@v0
+        with:
+          nub-version: 0.9.5
+
+      - name: Cache package store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: nub-store-${{ runner.os }}-${{ hashFiles('nub.lock') }}
+          restore-keys: |
+            nub-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: nub install --frozen-lockfile
 
       # The Music catalog e2e suite creates the MusicBrainz schema with
       # mbslave's SQL scripts, downloaded from GitHub at the pinned tag and
@@ -158,40 +200,114 @@ jobs:
           path: apps/music-catalog/node_modules/.cache/mbslave-${{ steps.mbslave.outputs.ref }}
           key: mbslave-sql-${{ steps.mbslave.outputs.ref }}
 
+      - name: Music catalog e2e tests
+        run: nub run test:e2e --filter=music-catalog
+
+  e2e-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nubjs/setup-nub@v0
+        with:
+          nub-version: 0.9.5
+
+      - name: Cache package store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: nub-store-${{ runner.os }}-${{ hashFiles('nub.lock') }}
+          restore-keys: |
+            nub-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: nub install --frozen-lockfile
+
       # Chromium matching the installed @playwright/test version, plus the
-      # system libraries it needs on the runner.
+      # system libraries it needs on the runner. The browser download is
+      # cached, keyed on the web lockfile entry; `--with-deps` still ensures
+      # the system libraries.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+
       - name: Install Playwright Chromium
         working-directory: apps/web
         run: nub exec playwright install --with-deps chromium
 
-      # Builds what each suite needs (web runs against a production build),
-      # then runs the API and Music catalog e2e tests and the web Playwright
-      # suite. The API and Music catalog suites start their own Postgres with
-      # Testcontainers on the runner's Docker (no `services:` block; see
-      # apps/api/test/setup/global-setup.ts and
-      # apps/music-catalog/test/setup/global-setup.ts).
-      - name: E2E tests
-        run: nub run test:e2e
+      # Builds the production build the suite runs against (`web#test:e2e`
+      # depends on `web#build`, usually a remote cache hit), then runs the
+      # web Playwright suite. Playwright mocks the API (apps/web/e2e).
+      - name: Web e2e tests
+        run: nub run test:e2e --filter=web
         env:
           # Inlined into the web build: the browser needs an API URL to build
-          # its auth client. Playwright mocks the API (apps/web/e2e).
+          # its auth client.
           NEXT_PUBLIC_API_URL: http://127.0.0.1:3333
 
-      # Lighthouse on the production build test:e2e just made (assertions in
-      # apps/web/lighthouserc.cjs). Uses the runner's preinstalled Chrome.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-web-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 14
+
+  # Lighthouse on a production build (assertions in
+  # apps/web/lighthouserc.cjs). Uses the runner's preinstalled Chrome. It
+  # builds the same `web#build` the e2e-web job makes (a remote cache hit
+  # once that job uploads it, a local rebuild otherwise), so it runs in
+  # parallel with the suites instead of after them.
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nubjs/setup-nub@v0
+        with:
+          nub-version: 0.9.5
+
+      - name: Cache package store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: nub-store-${{ runner.os }}-${{ hashFiles('nub.lock') }}
+          restore-keys: |
+            nub-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: nub install --frozen-lockfile
+
+      - name: Build web
+        working-directory: apps/web
+        run: nub run build --filter=web
+        env:
+          # Same env the e2e-web job builds with: the value is inlined and
+          # part of the build hash, so this is a cache hit, not a rebuild.
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:3333
+
       - name: Lighthouse
         working-directory: apps/web
         run: nub run lighthouse
 
-      - name: Upload Playwright and Lighthouse reports
+      - name: Upload Lighthouse report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-reports
-          path: |
-            apps/web/playwright-report/
-            apps/web/test-results/
-            apps/web/.lighthouseci/
+          name: lighthouse-report
+          path: apps/web/.lighthouseci/
           # .lighthouseci is a hidden folder, skipped by default.
           include-hidden-files: true
           retention-days: 14
