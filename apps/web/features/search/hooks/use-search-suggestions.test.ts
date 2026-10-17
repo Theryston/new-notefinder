@@ -1,5 +1,14 @@
-import { QueryClient } from '@tanstack/react-query';
+// @vitest-environment happy-dom
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { SEARCH_DEBOUNCE_MS } from '../search-params';
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock('@/lib/env/client', () => ({
   getClientEnv: () => ({ NEXT_PUBLIC_API_URL: 'https://api.test' }),
@@ -88,11 +97,61 @@ describe('searchSuggestionsQueryOptions', () => {
     ]);
   });
 
-  it('exposes the header hook over the options', async () => {
-    const { useSearchSuggestions } = await import('./use-search-suggestions');
+  it('fetches on the shared debounce with the latest query', async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValue(Response.json({ results: [] }));
+      const { useSearchSuggestions } = await import('./use-search-suggestions');
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
 
-    // The header autocomplete UI consumes the hook; pinned here so the
-    // export stays referenced while that UI lands.
-    expect(useSearchSuggestions).toBeDefined();
+      function Harness({ query }: { query: string }) {
+        useSearchSuggestions(query);
+        return null;
+      }
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      try {
+        const renderQuery = (query: string) =>
+          act(async () => {
+            root.render(
+              createElement(
+                QueryClientProvider,
+                { client },
+                createElement(Harness, { query }),
+              ),
+            );
+          });
+
+        await renderQuery('');
+        await renderQuery('q');
+        await renderQuery('qu');
+        await renderQuery('queen');
+
+        // Rapid typing stays inside the shared debounce: nothing fetched.
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS - 1);
+        });
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        // The debounce elapses: a single fetch with the latest query.
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1);
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [input] = fetchMock.mock.lastCall ?? [];
+        expect(new URL(String(input)).searchParams.get('query')).toBe('queen');
+      } finally {
+        await act(async () => {
+          root.unmount();
+        });
+        container.remove();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
