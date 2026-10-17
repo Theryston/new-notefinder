@@ -37,8 +37,8 @@ const MESSAGES = {
 export type AccountExistsEmailInput = {
   to: string;
   locale: EmailLocale;
-  /** Site base for footer links (env.WEB_URL in production). */
-  webUrl?: string;
+  /** Site base for footer links, env.WEB_URL in production. */
+  webUrl: string;
 };
 
 /**

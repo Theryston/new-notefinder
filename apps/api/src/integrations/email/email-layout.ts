@@ -16,12 +16,6 @@ const SANS =
   "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const MONO = 'Geist Mono,ui-monospace,Menlo,monospace';
 
-// Every production caller passes the site base: the auth emails get
-// env.WEB_URL threaded from auth.ts, and the others give the page URL they
-// already carry. Only unit specs that call the renderers and EmailService
-// directly skip it, so the production site stands in for them.
-const DEFAULT_WEB_URL = 'https://notefinder.com.br';
-
 // Footer copy the layout itself renders, per locale (web: footer.terms).
 const FOOTER_COPY = {
   en: { termsLabel: 'Terms of use' },
@@ -58,17 +52,12 @@ export type EmailLayoutInput = {
 };
 
 /**
- * Terms link of the email footer: the web app's `/{locale}/terms` page.
- * Templates pass the page URL they already carry (track, practice) or the
- * site base (auth, env.WEB_URL); without one the production site stands in.
+ * Terms link of the email footer: the web app's `/{locale}/terms` page,
+ * built from a URL of the site the template carries (auth: env.WEB_URL
+ * threaded from auth.ts; track and practice: the page URL they render).
  */
-export const buildTermsUrl = (
-  url: string | undefined,
-  locale: EmailLocale,
-): string => {
-  const origin = url === undefined ? DEFAULT_WEB_URL : new URL(url).origin;
-  return `${origin}/${locale}/terms`;
-};
+export const buildTermsUrl = (url: string, locale: EmailLocale): string =>
+  `${new URL(url).origin}/${locale}/terms`;
 
 const localeTag = (locale: EmailLocale): string =>
   locale === 'pt-BR' ? 'PT' : 'EN';

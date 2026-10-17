@@ -48,6 +48,7 @@ describe('EmailService', () => {
       otp: '654321',
       locale: 'pt-BR',
       expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
     });
     expect(queue.add).toHaveBeenCalledWith(
       EMAIL_JOB,
@@ -61,7 +62,11 @@ describe('EmailService', () => {
   });
 
   it('renders and enqueues account-exists emails in the requested locale', async () => {
-    await service.sendAccountExists({ to: 'ana@example.com', locale: 'en' });
+    await service.sendAccountExists({
+      to: 'ana@example.com',
+      locale: 'en',
+      webUrl: 'https://notefinder.test',
+    });
     expect(queue.add).toHaveBeenCalledWith(
       EMAIL_JOB,
       expect.objectContaining({

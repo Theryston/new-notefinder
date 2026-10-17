@@ -60,8 +60,8 @@ export type OtpEmailInput = {
   otp: string;
   locale: EmailLocale;
   expiresInMinutes: number;
-  /** Site base for footer links (env.WEB_URL in production). */
-  webUrl?: string;
+  /** Site base for footer links, env.WEB_URL in production. */
+  webUrl: string;
 };
 
 export const renderOtpEmail = ({

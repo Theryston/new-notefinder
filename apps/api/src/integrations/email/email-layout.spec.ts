@@ -101,9 +101,9 @@ describe('buildTermsUrl', () => {
     );
   });
 
-  it('falls back to the production site when no URL is given', () => {
-    expect(buildTermsUrl(undefined, 'pt-BR')).toBe(
-      'https://notefinder.com.br/pt-BR/terms',
+  it('accepts the bare site base the auth emails carry', () => {
+    expect(buildTermsUrl('http://localhost:3000', 'en')).toBe(
+      'http://localhost:3000/en/terms',
     );
   });
 });
