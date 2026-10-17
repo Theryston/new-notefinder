@@ -432,7 +432,8 @@ test.describe('edit profile: saving an Avatar', () => {
 
 const dailyTarget = messages.en.profile.edit.dailyTarget;
 const targetRadio = (page: Page, minutes: string) =>
-  page.getByRole('radio', { name: minutes });
+  // Exact: '5 minutes' is a substring of '15 minutes'.
+  page.getByRole('radio', { name: minutes, exact: true });
 
 /** Opens the page as `user`, with the profile API answering saves. */
 async function openAs(page: Page, user: MockUser) {
@@ -538,9 +539,9 @@ test.describe('edit profile: daily target', () => {
     await expect(page.getByRole('group', { name: pt.label })).toContainText(
       pt.description,
     );
-    await expect(page.getByRole('radio', { name: '5 minutos' })).toBeChecked();
+    await expect(targetRadio(page, '5 minutos')).toBeChecked();
 
-    await page.getByRole('radio', { name: '30 minutos' }).check();
+    await targetRadio(page, '30 minutos').check();
     await page
       .getByRole('button', { name: messages['pt-BR'].profile.edit.save })
       .click();
@@ -548,6 +549,6 @@ test.describe('edit profile: daily target', () => {
     await expect(
       page.getByText(messages['pt-BR'].profile.edit.saved),
     ).toBeVisible();
-    await expect(page.getByRole('radio', { name: '30 minutos' })).toBeChecked();
+    await expect(targetRadio(page, '30 minutos')).toBeChecked();
   });
 });

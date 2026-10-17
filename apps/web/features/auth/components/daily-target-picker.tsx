@@ -33,11 +33,11 @@ export function DailyTargetPicker({
         {DAILY_PRACTICE_TARGET_SECONDS.map((seconds) => {
           const minutes = seconds / 60;
           return (
-            <label key={seconds} className="cursor-pointer">
+            <label key={seconds} className="relative cursor-pointer">
               <input
                 type="radio"
                 value={seconds}
-                className="peer sr-only"
+                className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 {...registration}
               />
               <span
