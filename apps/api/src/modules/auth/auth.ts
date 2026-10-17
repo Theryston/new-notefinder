@@ -252,7 +252,11 @@ export const createAuth = ({
     }),
     emailAndPassword: {
       ...staticOptions.emailAndPassword,
-      onExistingUserSignUp: notifyExistingUserSignUp(emailService, logger),
+      onExistingUserSignUp: notifyExistingUserSignUp(
+        emailService,
+        logger,
+        env.WEB_URL,
+      ),
     },
     socialProviders: socialProviders(env),
     rateLimit: rateLimitOptions(env, new RedisThrottlerStorage(redis)),
@@ -265,7 +269,7 @@ export const createAuth = ({
         usernameValidator: isValidUsername,
         displayUsername: false,
       }),
-      emailOtpPlugin(emailService, logger),
+      emailOtpPlugin(emailService, logger, env.WEB_URL),
     ],
     hooks: {
       before: enforceSignUpRules,

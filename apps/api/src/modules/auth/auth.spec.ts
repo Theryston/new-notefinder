@@ -158,6 +158,8 @@ describe('createAuth', () => {
         otp: '123456',
         locale: 'pt-BR',
         expiresInMinutes: expect.any(Number),
+        // The footer terms link is built from the web base (WEB_URL default).
+        webUrl: 'http://localhost:3000',
       });
     });
 
@@ -207,6 +209,7 @@ describe('createAuth', () => {
       expect(emailService.sendAccountExists).toHaveBeenCalledWith({
         to: 'ana@example.com',
         locale: 'pt-BR',
+        webUrl: 'http://localhost:3000',
       });
     });
 
@@ -216,6 +219,7 @@ describe('createAuth', () => {
       expect(emailService.sendAccountExists).toHaveBeenCalledWith({
         to: 'ana@example.com',
         locale: 'en',
+        webUrl: 'http://localhost:3000',
       });
     });
 

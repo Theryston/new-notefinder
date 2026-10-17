@@ -29,7 +29,11 @@ const enqueueInBackground = (
 };
 
 /** Email verification and password reset with emailed 6-digit codes. */
-export const emailOtpPlugin = (emailService: EmailService, logger: Logger) =>
+export const emailOtpPlugin = (
+  emailService: EmailService,
+  logger: Logger,
+  webUrl: string,
+) =>
   emailOTP({
     otpLength: OTP_LENGTH,
     expiresIn: OTP_EXPIRES_IN_SECONDS,
@@ -52,6 +56,7 @@ export const emailOtpPlugin = (emailService: EmailService, logger: Logger) =>
           otp,
           locale: resolveEmailLocale(headers?.get('accept-language')),
           expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
+          webUrl,
         }),
         logger,
         'a code email',
@@ -69,12 +74,14 @@ export const notifyExistingUserSignUp =
   (
     emailService: EmailService,
     logger: Logger,
+    webUrl: string,
   ): EmailAndPasswordOptions['onExistingUserSignUp'] =>
   async ({ user }, request) => {
     enqueueInBackground(
       emailService.sendAccountExists({
         to: user.email,
         locale: resolveEmailLocale(request?.headers.get('accept-language')),
+        webUrl,
       }),
       logger,
       'an account-exists email',

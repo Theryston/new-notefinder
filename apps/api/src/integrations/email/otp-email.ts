@@ -60,7 +60,7 @@ export type OtpEmailInput = {
   otp: string;
   locale: EmailLocale;
   expiresInMinutes: number;
-  /** Base of the web app for footer links; the production site stands in. */
+  /** Site base for footer links (env.WEB_URL in production). */
   webUrl?: string;
 };
 

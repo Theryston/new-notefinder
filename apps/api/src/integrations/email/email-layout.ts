@@ -16,9 +16,10 @@ const SANS =
   "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const MONO = 'Geist Mono,ui-monospace,Menlo,monospace';
 
-// The auth emails carry no page URL, and their callers can't add one
-// without changing the exact-shape inputs asserted in auth.spec.ts, so
-// their footer falls back to the production site (the WEB_URL default).
+// Every production caller passes the site base: the auth emails get
+// env.WEB_URL threaded from auth.ts, and the others give the page URL they
+// already carry. Only unit specs that call the renderers and EmailService
+// directly skip it, so the production site stands in for them.
 const DEFAULT_WEB_URL = 'https://notefinder.com.br';
 
 // Footer copy the layout itself renders, per locale (web: footer.terms).
@@ -58,8 +59,8 @@ export type EmailLayoutInput = {
 
 /**
  * Terms link of the email footer: the web app's `/{locale}/terms` page.
- * Templates pass the page URL they already carry (track, practice) or
- * their optional site base; without one the production site stands in.
+ * Templates pass the page URL they already carry (track, practice) or the
+ * site base (auth, env.WEB_URL); without one the production site stands in.
  */
 export const buildTermsUrl = (
   url: string | undefined,
