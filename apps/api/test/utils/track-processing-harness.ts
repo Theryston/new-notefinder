@@ -11,8 +11,8 @@ import { trackProcessings } from '../../src/database/schema/track-processings.js
 import { tracks } from '../../src/database/schema/tracks.js';
 import { AudioDownloadClient } from '../../src/integrations/audio-download/audio-download.client.js';
 import { CoverArtClient } from '../../src/integrations/cover-art/cover-art.client.js';
+import { ElevenLabsTranscriptionClient } from '../../src/integrations/elevenlabs/elevenlabs-transcription.client.js';
 import { NoteDetectionClient } from '../../src/integrations/note-detection/note-detection.client.js';
-import { OpenAiTranscriptionClient } from '../../src/integrations/openai/openai-transcription.client.js';
 import { WEB_REVALIDATION_QUEUE } from '../../src/integrations/web-revalidation/web-revalidation.job.js';
 import { YouTubeMusicClient } from '../../src/integrations/youtube-music/youtube-music.client.js';
 import { TRACK_PROCESSING_QUEUE } from '../../src/modules/tracks/track-processing.job.js';
@@ -119,7 +119,7 @@ export type TrackProcessingApp = {
   audio: FakeAudioDownload;
   /** RunPod's note detection; each spec sets the answers of its job. */
   noteDetection: FakeNoteDetection;
-  /** OpenAI's transcription of the Timed lyrics; each spec sets its answers. */
+  /** Scribe's transcription of the Timed lyrics; each spec sets its answers. */
   transcription: FakeTranscription;
   close: () => Promise<void>;
 };
@@ -158,7 +158,7 @@ export const startTrackProcessingApp =
           .useValue(audio)
           .overrideProvider(NoteDetectionClient)
           .useValue(noteDetection)
-          .overrideProvider(OpenAiTranscriptionClient)
+          .overrideProvider(ElevenLabsTranscriptionClient)
           .useValue(transcription),
     };
     const testApp = await createTestApp(options);

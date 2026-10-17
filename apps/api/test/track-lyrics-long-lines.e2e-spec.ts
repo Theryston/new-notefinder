@@ -1,3 +1,4 @@
+import type { Transcription } from '../src/integrations/elevenlabs/scribe-output.js';
 import { TrackLyricsRepository } from '../src/modules/tracks/track-lyrics.repository.js';
 import { TRACK_MP3_QUEUE } from '../src/modules/tracks/track-mp3.job.js';
 import { runStepJobSchema } from '../src/modules/tracks/track-processing.job.js';
@@ -55,39 +56,43 @@ const workerUploadsVocals = async (
   expect(upload.status).toBe(200);
 };
 
-/** A long word stream in a single provider segment, with phrase gaps. */
-const LONG_WORD_STREAM = {
-  segments: [{ start: 0, end: 80 }],
+/**
+ * A long Scribe word stream with phrase gaps, as `scribe_v2` answers it: no
+ * provider segments, one voice for the verse and another for the answer, so a
+ * speaker change breaks the lines too.
+ */
+const LONG_WORD_STREAM: Transcription = {
+  segments: [],
   words: [
-    { word: ' Mama,', start: 0.5, end: 0.9 },
-    { word: ' just', start: 1.0, end: 1.2 },
-    { word: ' killed', start: 1.3, end: 1.7 },
-    { word: ' a', start: 1.8, end: 1.9 },
-    { word: ' man.', start: 2.0, end: 2.4 },
-    { word: ' Put', start: 3.3, end: 3.5 },
-    { word: ' a', start: 3.6, end: 3.7 },
-    { word: ' gun', start: 3.8, end: 4.1 },
-    { word: ' against', start: 4.2, end: 4.6 },
-    { word: ' his', start: 4.7, end: 4.9 },
-    { word: ' head,', start: 5.0, end: 5.4 },
-    { word: ' pulled', start: 5.5, end: 5.9 },
-    { word: ' my', start: 6.0, end: 6.2 },
-    { word: ' trigger,', start: 6.3, end: 6.8 },
-    { word: ' now', start: 6.9, end: 7.2 },
-    { word: " he's", start: 7.3, end: 7.6 },
-    { word: ' dead.', start: 7.7, end: 8.2 },
-    { word: ' Mama,', start: 9.4, end: 9.8 },
-    { word: ' life', start: 9.9, end: 10.2 },
-    { word: ' had', start: 10.3, end: 10.5 },
-    { word: ' just', start: 10.6, end: 10.8 },
-    { word: ' begun.', start: 10.9, end: 11.4 },
-    { word: ' Did', start: 14.0, end: 14.3 },
-    { word: ' not', start: 14.4, end: 14.6 },
-    { word: ' mean', start: 14.7, end: 15.0 },
-    { word: ' to', start: 15.1, end: 15.2 },
-    { word: ' make', start: 15.3, end: 15.6 },
-    { word: ' you', start: 15.7, end: 15.9 },
-    { word: ' cry.', start: 16.0, end: 16.4 },
+    { word: 'Mama,', start: 0.5, end: 0.9, speaker: 'speaker_0' },
+    { word: 'just', start: 1.0, end: 1.2, speaker: 'speaker_0' },
+    { word: 'killed', start: 1.3, end: 1.7, speaker: 'speaker_0' },
+    { word: 'a', start: 1.8, end: 1.9, speaker: 'speaker_0' },
+    { word: 'man.', start: 2.0, end: 2.4, speaker: 'speaker_0' },
+    { word: 'Put', start: 3.3, end: 3.5, speaker: 'speaker_0' },
+    { word: 'a', start: 3.6, end: 3.7, speaker: 'speaker_0' },
+    { word: 'gun', start: 3.8, end: 4.1, speaker: 'speaker_0' },
+    { word: 'against', start: 4.2, end: 4.6, speaker: 'speaker_0' },
+    { word: 'his', start: 4.7, end: 4.9, speaker: 'speaker_0' },
+    { word: 'head,', start: 5.0, end: 5.4, speaker: 'speaker_0' },
+    { word: 'pulled', start: 5.5, end: 5.9, speaker: 'speaker_0' },
+    { word: 'my', start: 6.0, end: 6.2, speaker: 'speaker_0' },
+    { word: 'trigger,', start: 6.3, end: 6.8, speaker: 'speaker_0' },
+    { word: 'now', start: 6.9, end: 7.2, speaker: 'speaker_0' },
+    { word: "he's", start: 7.3, end: 7.6, speaker: 'speaker_0' },
+    { word: 'dead.', start: 7.7, end: 8.2, speaker: 'speaker_0' },
+    { word: 'Mama,', start: 9.4, end: 9.8, speaker: 'speaker_1' },
+    { word: 'life', start: 9.9, end: 10.2, speaker: 'speaker_1' },
+    { word: 'had', start: 10.3, end: 10.5, speaker: 'speaker_1' },
+    { word: 'just', start: 10.6, end: 10.8, speaker: 'speaker_1' },
+    { word: 'begun.', start: 10.9, end: 11.4, speaker: 'speaker_1' },
+    { word: 'Did', start: 14.0, end: 14.3, speaker: 'speaker_1' },
+    { word: 'not', start: 14.4, end: 14.6, speaker: 'speaker_1' },
+    { word: 'mean', start: 14.7, end: 15.0, speaker: 'speaker_1' },
+    { word: 'to', start: 15.1, end: 15.2, speaker: 'speaker_1' },
+    { word: 'make', start: 15.3, end: 15.6, speaker: 'speaker_1' },
+    { word: 'you', start: 15.7, end: 15.9, speaker: 'speaker_1' },
+    { word: 'cry.', start: 16.0, end: 16.4, speaker: 'speaker_1' },
   ],
 };
 
@@ -109,7 +114,7 @@ describe('Track Processing long lyric lines (e2e)', () => {
     testApp.queues[TRACK_MP3_QUEUE]?.added.splice(0);
   });
 
-  it('stores many short lines from one long provider segment', async () => {
+  it('stores many short lines from one long word stream', async () => {
     app.transcription.transcription = LONG_WORD_STREAM;
     const trackId = await requestTrack(app);
     await runUntilLyricsStep(testApp);

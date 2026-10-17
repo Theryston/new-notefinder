@@ -2,11 +2,11 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { AudioDownloadModule } from '../../integrations/audio-download/audio-download.module.js';
 import { CoverArtModule } from '../../integrations/cover-art/cover-art.module.js';
+import { ElevenLabsTranscriptionModule } from '../../integrations/elevenlabs/elevenlabs-transcription.module.js';
 import { EmailModule } from '../../integrations/email/email.module.js';
 import { FfmpegModule } from '../../integrations/ffmpeg/ffmpeg.module.js';
 import { MusicCatalogModule } from '../../integrations/music-catalog/music-catalog.module.js';
 import { NoteDetectionModule } from '../../integrations/note-detection/note-detection.module.js';
-import { OpenAiTranscriptionModule } from '../../integrations/openai/openai-transcription.module.js';
 import { StorageModule } from '../../integrations/storage/storage.module.js';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
 import { YouTubeMusicModule } from '../../integrations/youtube-music/youtube-music.module.js';
@@ -24,7 +24,6 @@ import { TrackJobRunnerService } from './track-job-runner.service.js';
 import { TrackLyricsController } from './track-lyrics.controller.js';
 import { TrackLyricsRepository } from './track-lyrics.repository.js';
 import { TrackLyricsService } from './track-lyrics.service.js';
-import { TrackLyricsPromptService } from './track-lyrics-prompt.service.js';
 import { TrackLyricsStepService } from './track-lyrics-step.service.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
 import { TRACK_MP3_QUEUE } from './track-mp3.job.js';
@@ -86,7 +85,7 @@ import { TracksService } from './tracks.service.js';
     FfmpegModule,
     MusicCatalogModule,
     NoteDetectionModule,
-    OpenAiTranscriptionModule,
+    ElevenLabsTranscriptionModule,
     StorageModule,
     UsersModule,
     WebRevalidationModule,
@@ -131,7 +130,6 @@ import { TracksService } from './tracks.service.js';
     TrackLyricsRepository,
     TrackLyricsService,
     TrackMp3Service,
-    TrackLyricsPromptService,
     TrackLyricsStepService,
     TrackTimedLyricsService,
     TrackMp3Processor,

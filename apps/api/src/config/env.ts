@@ -168,10 +168,10 @@ const envSchema = z
     // below); elsewhere a Processing without them fails its note detection.
     RUNPOD_API_KEY: optional(z.string().min(1)),
     RUNPOD_ENDPOINT_ID: optional(z.string().min(1)),
-    // OpenAI key of the Timed lyrics transcription (`whisper-1`, ADR 0004).
+    // ElevenLabs key of the Timed lyrics transcription (Scribe v2, #234).
     // Required in production: the transcription module refuses to boot there
-    // without it (see openai-transcription.factory.ts).
-    OPENAI_API_KEY: optional(z.string().min(1)),
+    // without it (see elevenlabs-transcription.factory.ts).
+    ELEVENLABS_API_KEY: optional(z.string().min(1)),
   })
   .check((ctx) => {
     const env = ctx.value;
