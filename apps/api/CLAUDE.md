@@ -59,7 +59,7 @@ src/
     web-revalidation/     enqueue + POST cache tags to the web's /api/revalidate
     email/                EmailService (Resend) + OTP templates (en, pt-BR), sent via a job
     storage/              StorageService (public objects on any S3 API) + its S3 implementation
-    ytmusic/ sqs/ openai/ …
+    ytmusic/ sqs/ elevenlabs/ …
   modules/                one folder per feature (domain)
     tracks/
       tracks.module.ts
@@ -374,7 +374,7 @@ isn't obvious), so the import script can be written from those notes.
     (`fileParallelism: false`); tests must not depend on order.
   - Test-only controllers live in separate non-spec files under `test/` and
     need `@Public()` unless they test auth.
-- External services (RapidAPI, RunPod, OpenAI, YT Music, email) are always mocked at the
+- External services (RapidAPI, RunPod, ElevenLabs, YT Music, email) are always mocked at the
   integration-module boundary. `ffmpeg` is a local binary, not a service: e2e
   runs it for real (CI installs it), on the MP3 fixture in `test/fixtures/`.
   File storage is the exception: e2e runs
