@@ -2,12 +2,15 @@
 
 import { LoaderCircle, SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { FormEvent, RefObject } from 'react';
+import type { FocusEvent, FormEvent, RefObject } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { SearchHotkeyHint } from './search-hotkey-hint';
+
+/** The listbox id the field points at with `aria-controls`. */
+export const HEADER_SUGGESTIONS_LISTBOX_ID = 'header-search-suggestions';
 
 /** The pill search field, with the `⌘K` keycap from `md` up. */
 function SearchField({
@@ -16,6 +19,9 @@ function SearchField({
   onChange,
   onSubmit,
   onEscape,
+  onFieldFocus,
+  onFieldBlur,
+  listOpen,
   loading,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
@@ -23,6 +29,9 @@ function SearchField({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEscape: () => void;
+  onFieldFocus: () => void;
+  onFieldBlur: (event: FocusEvent<HTMLInputElement>) => void;
+  listOpen: boolean;
   loading: boolean;
 }) {
   const t = useTranslations('header.search');
@@ -35,10 +44,14 @@ function SearchField({
         name="q"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onFocus={onFieldFocus}
+        onBlur={onFieldBlur}
         enterKeyHint="search"
         autoComplete="off"
         aria-label={t('label')}
         aria-keyshortcuts="Meta+K Control+K"
+        aria-expanded={listOpen}
+        aria-controls={listOpen ? HEADER_SUGGESTIONS_LISTBOX_ID : undefined}
         placeholder={t('placeholder')}
         onKeyDown={(event) => {
           if (event.key !== 'Escape') return;
@@ -65,12 +78,16 @@ function SearchField({
 export type HeaderSearchBarProps = {
   expanded: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
+  searchRef: RefObject<HTMLElement | null>;
   inputValue: string;
   onInputChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEscape: () => void;
   onOpen: () => void;
   onCancel: () => void;
+  onFieldFocus: () => void;
+  onFieldBlur: (event: FocusEvent<HTMLInputElement>) => void;
+  listOpen: boolean;
   loading: boolean;
 };
 
@@ -78,12 +95,16 @@ export type HeaderSearchBarProps = {
 export function HeaderSearchBar({
   expanded,
   inputRef,
+  searchRef,
   inputValue,
   onInputChange,
   onSubmit,
   onEscape,
   onOpen,
   onCancel,
+  onFieldFocus,
+  onFieldBlur,
+  listOpen,
   loading,
 }: HeaderSearchBarProps) {
   const t = useTranslations('header.search');
@@ -101,6 +122,7 @@ export function HeaderSearchBar({
         <SearchIcon className="size-5" />
       </Button>
       <search
+        ref={searchRef}
         data-expanded={expanded || undefined}
         className="absolute inset-0 z-10 hidden items-center gap-1 rounded-full bg-popover p-2 data-expanded:flex md:static md:flex md:max-w-105 md:flex-1 md:bg-transparent md:p-0"
       >
@@ -110,6 +132,9 @@ export function HeaderSearchBar({
           onChange={onInputChange}
           onSubmit={onSubmit}
           onEscape={onEscape}
+          onFieldFocus={onFieldFocus}
+          onFieldBlur={onFieldBlur}
+          listOpen={listOpen}
           loading={loading}
         />
         <Button
