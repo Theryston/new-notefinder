@@ -16,7 +16,24 @@ const SANS =
   "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const MONO = 'Geist Mono,ui-monospace,Menlo,monospace';
 
-const TERMS_URL = 'https://notefinder.com.br/terms';
+// The auth emails carry no page URL, and their callers can't add one
+// without changing the exact-shape inputs asserted in auth.spec.ts, so
+// their footer falls back to the production site (the WEB_URL default).
+const DEFAULT_WEB_URL = 'https://notefinder.com.br';
+
+// Footer copy the layout itself renders, per locale (web: footer.terms).
+const FOOTER_COPY = {
+  en: { termsLabel: 'Terms of use' },
+  'pt-BR': { termsLabel: 'Termos de uso' },
+} as const satisfies Record<EmailLocale, { termsLabel: string }>;
+
+/** Pill CTA of the emails that link somewhere (track page, practice). */
+type EmailCta = {
+  /** Visible label, already translated. */
+  label: string;
+  /** Full URL of the linked page. */
+  href: string;
+};
 
 export type EmailLayoutInput = {
   locale: EmailLocale;
@@ -29,16 +46,27 @@ export type EmailLayoutInput = {
   /** Extra paragraphs after the intro (e.g. an expiry line). Plain text. */
   details: string[];
   /** Single code rendered as a letter-spaced pill. Plain text. */
-  highlight?: string;
+  code?: string;
   /** Quiet closing line (e.g. "ignore this email"). Plain text. */
   closing?: string;
-  /**
-   * Pill CTA of the emails that link somewhere (track page, practice):
-   * visible label (already translated) and full URL of the linked page.
-   */
-  cta?: { label: string; href: string };
-  /** Quiet reason line shown above Terms in the footer. Plain text. */
+  cta?: EmailCta;
+  /** Quiet reason line shown above the Terms link. Plain text. */
   footerNote: string;
+  /** Terms page of the web app for this locale; see buildTermsUrl. */
+  termsUrl: string;
+};
+
+/**
+ * Terms link of the email footer: the web app's `/{locale}/terms` page.
+ * Templates pass the page URL they already carry (track, practice) or
+ * their optional site base; without one the production site stands in.
+ */
+export const buildTermsUrl = (
+  url: string | undefined,
+  locale: EmailLocale,
+): string => {
+  const origin = url === undefined ? DEFAULT_WEB_URL : new URL(url).origin;
+  return `${origin}/${locale}/terms`;
 };
 
 const localeTag = (locale: EmailLocale): string =>
@@ -53,7 +81,7 @@ const mjmlResultSchema = z.object({
   errors: z.array(z.unknown()),
 });
 
-const renderCta = (cta: { label: string; href: string }): string =>
+const renderCta = (cta: EmailCta): string =>
   `        <mj-table>
           <tr><td align="left" style="padding:12px 0 28px;"><a href="${escapeHtml(cta.href)}" style="display:inline-block;background-color:${BRAND};color:${PAGE};font-family:${SANS};font-size:14px;font-weight:600;text-decoration:none;border-radius:999px;padding:12px 28px;">${escapeHtml(cta.label)}</a></td></tr>
         </mj-table>`;
@@ -65,9 +93,9 @@ const renderBody = (input: EmailLayoutInput): string => {
     `        <mj-text font-size="24px" font-weight="800" padding="0 0 8px">${escapeHtml(input.title)}</mj-text>`,
     `        <mj-text>${escapeHtml(input.intro)}</mj-text>`,
   ];
-  if (input.highlight !== undefined) {
+  if (input.code !== undefined) {
     parts.push(
-      `        <mj-text padding="0 0 24px"><div style="background-color:${FILL};border-radius:12px;padding:12px 24px;display:inline-block;font-family:${MONO};font-size:32px;font-weight:700;letter-spacing:8px;color:${INK};">${escapeHtml(input.highlight)}</div></mj-text>`,
+      `        <mj-text padding="0 0 24px"><div style="background-color:${FILL};border-radius:12px;padding:12px 24px;display:inline-block;font-family:${MONO};font-size:32px;font-weight:700;letter-spacing:8px;color:${INK};">${escapeHtml(input.code)}</div></mj-text>`,
     );
   }
   for (const detail of input.details) {
@@ -83,7 +111,7 @@ const renderBody = (input: EmailLayoutInput): string => {
   }
   parts.push(
     `        <mj-divider border-color="${RULE}" border-width="1px" padding="0 0 16px" />`,
-    `        <mj-text font-size="12px" color="${MUTED}" padding="0">${escapeHtml(input.footerNote)}<br /><a href="${TERMS_URL}" style="color:${MUTED};">Terms of use</a> · ${localeTag(input.locale)}</mj-text>`,
+    `        <mj-text font-size="12px" color="${MUTED}" padding="0">${escapeHtml(input.footerNote)}<br /><a href="${escapeHtml(input.termsUrl)}" style="color:${MUTED};">${escapeHtml(FOOTER_COPY[input.locale].termsLabel)}</a> · ${localeTag(input.locale)}</mj-text>`,
   );
   return parts.join('\n');
 };

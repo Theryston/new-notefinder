@@ -1,4 +1,8 @@
-import { type EmailLayoutInput, renderEmailLayout } from './email-layout.js';
+import {
+  buildTermsUrl,
+  type EmailLayoutInput,
+  renderEmailLayout,
+} from './email-layout.js';
 import { EMAIL_LOCALES } from './email-locale.js';
 
 const baseInput = (locale: EmailLayoutInput['locale']): EmailLayoutInput => ({
@@ -8,6 +12,7 @@ const baseInput = (locale: EmailLayoutInput['locale']): EmailLayoutInput => ({
   intro: 'Use this code to practice:',
   details: ['It expires in 10 minutes.'],
   footerNote: 'You got this because you practice on notefinder.',
+  termsUrl: `https://notefinder.test/${locale}/terms`,
 });
 
 describe('renderEmailLayout', () => {
@@ -25,17 +30,17 @@ describe('renderEmailLayout', () => {
       // Hidden inbox preview and quiet footer.
       expect(html).toContain('Preview of the email');
       expect(html).toContain('You got this because you practice');
-      expect(html).toContain('https://notefinder.com.br/terms');
-      expect(html).toContain('Terms of use');
+      expect(html).toContain(`href="https://notefinder.test/${locale}/terms"`);
+      // Terms label in the email's own language (web: footer.terms).
+      expect(html).toContain(
+        locale === 'pt-BR' ? 'Termos de uso' : 'Terms of use',
+      );
       expect(html).toContain(locale === 'pt-BR' ? '· PT' : '· EN');
     },
   );
 
   it('renders the code as a single letter-spaced pill', () => {
-    const html = renderEmailLayout({
-      ...baseInput('en'),
-      highlight: '482913',
-    });
+    const html = renderEmailLayout({ ...baseInput('en'), code: '482913' });
 
     expect(html).toContain('482913');
     expect(html).toContain('letter-spacing:8px');
@@ -64,12 +69,14 @@ describe('renderEmailLayout', () => {
       title: 'Hi <b>there</b>',
       intro: 'Use "this" code:',
       details: [],
-      highlight: '<123>',
+      code: '<123>',
       closing: "Don't <blink>",
       cta: { label: '<go>', href: 'https://notefinder.test/?a=1&b=2' },
       footerNote: 'Fish & chips',
+      termsUrl: 'https://notefinder.test/en/terms?x=1&y=2',
     });
 
+    // The layout escapes every string, so the markup carries the entities.
     expect(html).toContain('Fish &amp; chips &lt;yum&gt;');
     expect(html).toContain('Hi &lt;b&gt;there&lt;/b&gt;');
     expect(html).toContain('&quot;this&quot;');
@@ -77,6 +84,26 @@ describe('renderEmailLayout', () => {
     expect(html).toContain('Don&#39;t &lt;blink&gt;');
     expect(html).toContain('&lt;go&gt;');
     expect(html).toContain('?a=1&amp;b=2');
+    expect(html).toContain(
+      'href="https://notefinder.test/en/terms?x=1&amp;y=2"',
+    );
     expect(html).not.toContain('<b>there</b>');
+  });
+});
+
+describe('buildTermsUrl', () => {
+  it('derives the site from a page URL the email already carries', () => {
+    expect(
+      buildTermsUrl('https://notefinder.test/pt-BR/tracks/track-1', 'pt-BR'),
+    ).toBe('https://notefinder.test/pt-BR/terms');
+    expect(buildTermsUrl('https://notefinder.test/en', 'en')).toBe(
+      'https://notefinder.test/en/terms',
+    );
+  });
+
+  it('falls back to the production site when no URL is given', () => {
+    expect(buildTermsUrl(undefined, 'pt-BR')).toBe(
+      'https://notefinder.com.br/pt-BR/terms',
+    );
   });
 });

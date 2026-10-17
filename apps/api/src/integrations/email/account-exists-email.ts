@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { renderEmailLayout } from './email-layout.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 type AccountExistsEmailCopy = {
@@ -37,6 +37,8 @@ const MESSAGES = {
 export type AccountExistsEmailInput = {
   to: string;
   locale: EmailLocale;
+  /** Base of the web app for footer links; the production site stands in. */
+  webUrl?: string;
 };
 
 /**
@@ -48,6 +50,7 @@ export type AccountExistsEmailInput = {
 export const renderAccountExistsEmail = ({
   to,
   locale,
+  webUrl,
 }: AccountExistsEmailInput): EmailMessage => {
   const copy: AccountExistsEmailCopy = MESSAGES[locale];
 
@@ -60,6 +63,7 @@ export const renderAccountExistsEmail = ({
     details: [copy.action],
     closing: copy.ignore,
     footerNote: copy.footerNote,
+    termsUrl: buildTermsUrl(webUrl, locale),
   });
 
   return { to, subject: copy.subject, html, text };

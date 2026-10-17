@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { renderEmailLayout } from './email-layout.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 const COPY = {
@@ -35,6 +35,7 @@ export function renderStreakReminderEmail(input: {
       details: [],
       cta: { label: copy.link, href: input.siteUrl },
       footerNote: copy.footerNote,
+      termsUrl: buildTermsUrl(input.siteUrl, input.locale),
     }),
   };
 }

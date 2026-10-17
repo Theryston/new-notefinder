@@ -18,6 +18,7 @@ describe('renderEmailLayout validation', () => {
         intro: 'Intro',
         details: [],
         footerNote: 'Footer note',
+        termsUrl: 'https://notefinder.test/en/terms',
       }),
     ).toThrow('Invalid email MJML');
   });

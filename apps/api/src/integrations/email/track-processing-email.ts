@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { renderEmailLayout } from './email-layout.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 type TrackEmailCopy = {
@@ -75,6 +75,7 @@ const renderTrackEmail = (
     details: [copy.action],
     cta: { label: copy.link, href: trackUrl },
     footerNote: copy.footerNote,
+    termsUrl: buildTermsUrl(trackUrl, locale),
   });
   return { to, subject: copy.subject, html, text: text.join('\n') };
 };

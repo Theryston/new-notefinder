@@ -1,5 +1,5 @@
 import type { EmailMessage } from './email.job.js';
-import { renderEmailLayout } from './email-layout.js';
+import { buildTermsUrl, renderEmailLayout } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 /** One-time-code emails the app sends (email verification, password reset). */
@@ -60,6 +60,8 @@ export type OtpEmailInput = {
   otp: string;
   locale: EmailLocale;
   expiresInMinutes: number;
+  /** Base of the web app for footer links; the production site stands in. */
+  webUrl?: string;
 };
 
 export const renderOtpEmail = ({
@@ -68,6 +70,7 @@ export const renderOtpEmail = ({
   otp,
   locale,
   expiresInMinutes,
+  webUrl,
 }: OtpEmailInput): EmailMessage => {
   const copy: OtpEmailCopy = MESSAGES[locale][type];
   const expiry = copy.expiry(expiresInMinutes);
@@ -79,9 +82,10 @@ export const renderOtpEmail = ({
     title: copy.subject,
     intro: copy.intro,
     details: [expiry],
-    highlight: otp,
+    code: otp,
     closing: copy.ignore,
     footerNote: copy.footerNote,
+    termsUrl: buildTermsUrl(webUrl, locale),
   });
 
   return { to, subject: copy.subject, html, text };
