@@ -95,6 +95,92 @@ describe('Streaks (e2e)', () => {
   });
 
   describe('GET /v1/me/streak', () => {
+    describe('changing the Daily target mid-day', () => {
+      const saveTarget = (value: string) =>
+        spec.client
+          .patch('/v1/me')
+          .field('name', user.name)
+          .field('dailyPracticeTargetSeconds', value);
+
+      const seedDay = (
+        day: string,
+        listenedSeconds: number,
+        completed: boolean,
+      ) =>
+        spec.testApp.db
+          .insert(dailyPracticeStreaks)
+          .values({ userId: user.id, day, listenedSeconds, completed });
+
+      it('reports the new target at once, then completes today on the next heartbeat', async () => {
+        // 400 s would already complete the 5-minute default, so start at 900.
+        await saveTarget('900').expect(200);
+        await seedDay('2026-03-10', 400, false);
+        expect(await status()).toMatchObject({
+          targetSeconds: 900,
+          listenedSeconds: 400,
+          completedToday: false,
+        });
+
+        await saveTarget('300').expect(200);
+
+        // The ring recalculates immediately: the full 300 s count.
+        expect(await status()).toMatchObject({
+          targetSeconds: 300,
+          listenedSeconds: 300,
+        });
+        // The next heartbeat reaches the lowered target and celebrates once.
+        const reached = await heartbeat(1);
+        expect(reached.justCompleted).toBe(true);
+        expect(reached.status).toMatchObject({
+          targetSeconds: 300,
+          listenedSeconds: 300,
+          completedToday: true,
+          currentStreakDays: 1,
+        });
+      });
+
+      it('keeps today completed after the target is raised', async () => {
+        await seedDay('2026-03-10', 300, true);
+
+        await saveTarget('1800').expect(200);
+
+        expect(await status()).toMatchObject({
+          targetSeconds: 1800,
+          listenedSeconds: 1800,
+          completedToday: true,
+          currentStreakDays: 1,
+        });
+        expect((await heartbeat(5)).justCompleted).toBe(false);
+      });
+
+      it('leaves past completed days alone when the target changes', async () => {
+        await seedDay('2026-03-09', 300, true);
+        await seedDay('2026-03-08', 300, true);
+
+        await saveTarget('1800').expect(200);
+
+        const rows = await spec.testApp.db
+          .select({
+            day: dailyPracticeStreaks.day,
+            listenedSeconds: dailyPracticeStreaks.listenedSeconds,
+            completed: dailyPracticeStreaks.completed,
+          })
+          .from(dailyPracticeStreaks)
+          .where(eq(dailyPracticeStreaks.userId, user.id));
+        expect(rows).toHaveLength(2);
+        expect(rows).toEqual(
+          expect.arrayContaining([
+            { day: '2026-03-09', listenedSeconds: 300, completed: true },
+            { day: '2026-03-08', listenedSeconds: 300, completed: true },
+          ]),
+        );
+        expect(await status()).toMatchObject({
+          completedToday: false,
+          currentStreakDays: 2,
+        });
+      });
+    });
+
     it('starts empty, at the default target when the User never picked one', async () => {
       const other = await createUser(spec.testApp.db, { username: 'ada' });
       await spec.client.post('/v1/auth/sign-out').send({});
