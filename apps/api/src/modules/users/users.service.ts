@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  asDailyPracticeTargetSeconds,
   type CurrentUser,
   cacheTags,
   type Locale,
@@ -33,10 +34,19 @@ export type PracticeSettings = PracticeSettingsRow;
 /** What a notification email needs about a User (see `findEmailRecipients`). */
 export type EmailRecipient = EmailRecipientRow;
 
-const toCurrentUser = (user: CurrentUserRow): CurrentUser => ({
-  ...user,
-  createdAt: user.createdAt.toISOString(),
-});
+const toCurrentUser = (user: CurrentUserRow): CurrentUser => {
+  const { dailyPracticeTargetSeconds: stored, ...rest } = user;
+  return {
+    ...rest,
+    // A row built without the column reads like before (no key); a stored
+    // value is narrowed to a preset, so the response never carries a custom
+    // number a client could not have picked.
+    ...(stored === undefined
+      ? {}
+      : { dailyPracticeTargetSeconds: asDailyPracticeTargetSeconds(stored) }),
+    createdAt: user.createdAt.toISOString(),
+  };
+};
 
 /** The session outlived its user (deleted in between). */
 const requireUser = (user: CurrentUserRow | undefined): CurrentUserRow => {
@@ -161,7 +171,8 @@ export class UsersService {
 
   /**
    * What the user changes about how they appear to others (`PATCH /v1/me`):
-   * the Name and, optionally, a new Avatar. Returns the updated user.
+   * the Name, optionally a new Avatar, and optionally the Daily target.
+   * Returns the updated user.
    */
   async updateProfile(
     userId: string,
@@ -175,20 +186,36 @@ export class UsersService {
   }
 
   /**
-   * Without an Avatar only the Name is written and the current image stays
-   * (Google's, a legacy one or none). With one, the file is stored first and
-   * both are written in a single update, so a failed upload leaves the
-   * profile untouched.
+   * Without an Avatar only the Name (and, when picked, the Daily target) is
+   * written and the current image stays (Google's, a legacy one or none).
+   * With one, the file is stored first and everything is written in a single
+   * update, so a failed upload leaves the profile untouched. An absent
+   * target leaves the stored one alone.
    */
   private async saveProfile(
     userId: string,
-    { name, avatar }: UpdateMeBody,
+    { name, avatar, dailyPracticeTargetSeconds }: UpdateMeBody,
   ): Promise<CurrentUserRow | undefined> {
     if (!avatar) {
-      return this.usersRepository.updateName(userId, name);
+      if (dailyPracticeTargetSeconds === undefined) {
+        return this.usersRepository.updateName(userId, name);
+      }
+      return this.usersRepository.updateNameAndTarget(
+        userId,
+        name,
+        dailyPracticeTargetSeconds,
+      );
     }
     const image = await this.storeAvatar(userId, avatar);
-    return this.usersRepository.updateNameAndImage(userId, name, image);
+    if (dailyPracticeTargetSeconds === undefined) {
+      return this.usersRepository.updateNameAndImage(userId, name, image);
+    }
+    return this.usersRepository.updateNameImageAndTarget(
+      userId,
+      name,
+      image,
+      dailyPracticeTargetSeconds,
+    );
   }
 
   /**

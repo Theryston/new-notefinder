@@ -557,7 +557,7 @@
             "description": "The signed-in user, updated."
           },
           "400": {
-            "description": "The Name is empty or too long, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image."
+            "description": "The Name is empty or too long, the Daily target is not one of the presets, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image."
           },
           "401": {
             "description": "No valid session."
@@ -1110,6 +1110,34 @@
             "format": "binary",
             "contentEncoding": "binary",
             "maxLength": 5242880
+          },
+          "dailyPracticeTargetSeconds": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  300
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  600
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  900
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1800
+                ]
+              }
+            ]
           }
         },
         "required": [

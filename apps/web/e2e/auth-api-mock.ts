@@ -18,6 +18,8 @@ export type MockUser = {
   username: string | null;
   image: string | null;
   createdAt: string;
+  /** The stored Daily target, like `GET /v1/me` answers it. */
+  dailyPracticeTargetSeconds?: number | null;
   updatedAt: string;
 };
 

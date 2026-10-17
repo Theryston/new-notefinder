@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { useRouter } from '@/lib/i18n/navigation';
 
+import { currentUserQueryOptions } from '../current-user-query';
 import { authKeys } from '../query-keys';
 import { authHref } from '../redirect-to';
 import { type SessionUser, sessionUserOptions } from '../session';
@@ -24,6 +25,12 @@ export function EditProfile() {
   const { data: user } = useQuery(sessionUserOptions());
   const queryClient = useQueryClient();
   const router = useRouter();
+  // The stored profile: the source of truth for the Daily target, so a
+  // choice made on another device (or since sign-in) pre-fills correctly.
+  const { data: currentUser, isPending: currentUserPending } = useQuery({
+    ...currentUserQueryOptions(),
+    enabled: Boolean(user?.username && user.emailVerified),
+  });
 
   useEffect(() => {
     // `null` is the answer "nobody is signed in"; `undefined` is still
@@ -34,9 +41,11 @@ export function EditProfile() {
   }, [user, router]);
 
   if (!user?.username || !user.emailVerified) return <EditProfileSkeleton />;
+  // A failed read pre-fills the fallback target instead of hiding the form.
+  if (currentUserPending) return <EditProfileSkeleton />;
 
-  // The header reads the same session, so it shows the saved Name at once.
-  const showSaved = (saved: CurrentUser) =>
+  const showSaved = (saved: CurrentUser) => {
+    // The header reads the same session, so it shows the saved Name at once.
     queryClient.setQueryData<SessionUser | null>(
       authKeys.session(),
       (current) =>
@@ -44,10 +53,16 @@ export function EditProfile() {
           ? { ...current, name: saved.name, image: saved.image ?? undefined }
           : current,
     );
+    // The save answered the updated profile, so pre-filling it next time
+    // needs no refetch. Today's streak status reads the new target on its
+    // next fetch (its own cache still applies until then).
+    queryClient.setQueryData<CurrentUser>(authKeys.currentUser(), saved);
+  };
 
   return (
     <EditProfileForm
       user={{ ...user, username: user.username }}
+      dailyTargetSeconds={currentUser?.dailyPracticeTargetSeconds ?? null}
       onSaved={showSaved}
     />
   );

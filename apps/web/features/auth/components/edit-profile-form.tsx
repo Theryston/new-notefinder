@@ -3,7 +3,12 @@
 import type {
   ApiErrorCode,
   CurrentUser,
+  DailyPracticeTargetSeconds,
   UpdateMeBody,
+} from '@notefinder/contracts';
+import {
+  asDailyPracticeTargetSeconds,
+  DEFAULT_DAILY_PRACTICE_TARGET_SECONDS,
 } from '@notefinder/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
@@ -25,6 +30,7 @@ import {
   type AvatarPickerState,
   useAvatarPicker,
 } from './avatar-picker';
+import { DailyTargetPicker } from './daily-target-picker';
 import { EditSection } from './edit-section';
 import { FormAlert } from './form-alert';
 import { FormField, fieldErrorProps } from './form-field';
@@ -40,10 +46,18 @@ const LOAD_FAILED: UpdateProfileResult = {
   code: 'INTERNAL_ERROR',
 };
 
+/** The stored target as one of the presets: anything else reads as the fallback. */
+const asPreset = (
+  seconds: number | null | undefined,
+): DailyPracticeTargetSeconds =>
+  asDailyPracticeTargetSeconds(seconds) ??
+  DEFAULT_DAILY_PRACTICE_TARGET_SECONDS;
+
 /** The form, its saving and what to do once the API accepts the change. */
 function useProfileForm(
   user: ProfileUser,
   picker: AvatarPickerState,
+  initialTarget: DailyPracticeTargetSeconds,
   onSaved: (user: CurrentUser) => void,
 ) {
   const t = useTranslations('profile.edit');
@@ -56,9 +70,16 @@ function useProfileForm(
     },
   });
   const [errorCode, setErrorCode] = useState<ApiErrorCode | null>(null);
+  // What the target was when the form (re)started: only a change from it is
+  // sent, so an untouched form saves exactly like before.
+  const [targetBaseline, setTargetBaseline] =
+    useState<DailyPracticeTargetSeconds>(initialTarget);
   const form = useForm<UpdateMeBody>({
     resolver: updateMeResolver,
-    defaultValues: { name: user.name },
+    defaultValues: {
+      name: user.name,
+      dailyPracticeTargetSeconds: initialTarget,
+    },
   });
   // Load validation now, so it is ready on the first submit.
   useEffect(() => {
@@ -68,15 +89,28 @@ function useProfileForm(
   const onSubmit = form.handleSubmit(async (values) => {
     setErrorCode(null);
     const result = await mutation
-      .mutateAsync({ ...values, avatar: picker.file ?? undefined })
+      .mutateAsync({
+        ...values,
+        avatar: picker.file ?? undefined,
+        dailyPracticeTargetSeconds:
+          values.dailyPracticeTargetSeconds !== targetBaseline
+            ? values.dailyPracticeTargetSeconds
+            : undefined,
+      })
       .catch((): UpdateProfileResult => LOAD_FAILED);
     if (!result.ok) {
-      // The typed Name and the picked image stay, so the user can just retry.
+      // The typed Name, the picked image and the picked target stay, so the
+      // user can just retry.
       setErrorCode(result.code);
       return;
     }
-    // Shows the Name as saved (trimmed) and starts a clean form.
-    form.reset({ name: result.user.name });
+    // Shows the Name and the target as saved and starts a clean form.
+    const savedTarget = asPreset(result.user.dailyPracticeTargetSeconds);
+    form.reset({
+      name: result.user.name,
+      dailyPracticeTargetSeconds: savedTarget,
+    });
+    setTargetBaseline(savedTarget);
     picker.clear();
     onSaved(result.user);
     toast.success(t('saved'));
@@ -88,16 +122,23 @@ function useProfileForm(
 /** The editable part: the Avatar and the Name, with the Save that sends them. */
 function ProfileSection({
   user,
+  dailyTargetSeconds,
   onSaved,
 }: {
   user: ProfileUser;
+  dailyTargetSeconds: number | null;
   onSaved: (user: CurrentUser) => void;
 }) {
   const t = useTranslations('profile.edit');
   const tFields = useTranslations('auth.fields');
   const tErrors = useTranslations('errors');
   const picker = useAvatarPicker();
-  const { form, onSubmit, errorCode } = useProfileForm(user, picker, onSaved);
+  const { form, onSubmit, errorCode } = useProfileForm(
+    user,
+    picker,
+    asPreset(dailyTargetSeconds),
+    onSaved,
+  );
   const nameError = form.formState.errors.name;
   const pending = form.formState.isSubmitting;
 
@@ -121,6 +162,11 @@ function ProfileSection({
             {...form.register('name')}
           />
         </FormField>
+        <DailyTargetPicker
+          registration={form.register('dailyPracticeTargetSeconds', {
+            valueAsNumber: true,
+          })}
+        />
         <Button
           type="submit"
           size="lg"
@@ -141,21 +187,28 @@ function ProfileSection({
 }
 
 /**
- * The Name and the Avatar are editable, saved together with `PATCH /v1/me`
- * (`onSaved` gets the updated user); Username, email and password are shown
- * for reference below (the password leads to the recovery flow).
+ * The Name, the Avatar and the Daily target are editable, saved together
+ * with `PATCH /v1/me` (`onSaved` gets the updated user); Username, email and
+ * password are shown for reference below (the password leads to the recovery
+ * flow).
  */
 export function EditProfileForm({
   user,
+  dailyTargetSeconds,
   onSaved,
 }: {
   user: ProfileUser;
+  dailyTargetSeconds: number | null;
   onSaved: (user: CurrentUser) => void;
 }) {
   return (
     // `items-start`: the card keeps its own height beside the taller form.
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
-      <ProfileSection user={user} onSaved={onSaved} />
+      <ProfileSection
+        user={user}
+        dailyTargetSeconds={dailyTargetSeconds}
+        onSaved={onSaved}
+      />
       <AccountSection user={user} />
     </div>
   );

@@ -187,6 +187,127 @@ describe('PATCH /v1/me (e2e)', () => {
     });
   });
 
+  describe('the Daily target', () => {
+    const targetInDatabase = async () => {
+      const [row] = await spec.testApp.db
+        .select({ target: users.dailyPracticeTargetSeconds })
+        .from(users)
+        .where(eq(users.id, user.id));
+      return row?.target;
+    };
+
+    // Like the browser: the target travels as a text part of the same
+    // multipart save as the Name.
+    const saveTarget = (value: string) =>
+      spec.client
+        .patch('/v1/me')
+        .field('name', 'Grace Hopper')
+        .field('dailyPracticeTargetSeconds', value);
+
+    it.each([300, 600, 900, 1800])(
+      'saves the %i seconds preset and reads it back',
+      async (seconds) => {
+        const response = await saveTarget(String(seconds)).expect(200);
+
+        expect(response.body.dailyPracticeTargetSeconds).toBe(seconds);
+        expect(currentUserSchema.parse(response.body)).toEqual(response.body);
+        expect(await targetInDatabase()).toBe(seconds);
+        const me = await spec.client.get('/v1/me').expect(200);
+        expect(me.body.dailyPracticeTargetSeconds).toBe(seconds);
+      },
+    );
+
+    it.each([
+      ['a non-preset number', '301'],
+      ['zero', '0'],
+      ['an hour in seconds', '3600'],
+      ['minutes instead of seconds', '15'],
+      ['a fractional minute', '300.5'],
+      ['text', 'long'],
+      ['an empty part', ''],
+    ])('rejects %s and keeps the stored target', async (_label, value) => {
+      await saveTarget('900').expect(200);
+
+      const response = await saveTarget(value).expect(400);
+
+      expect(response.body).toMatchObject({
+        statusCode: 400,
+        code: 'VALIDATION_FAILED',
+        details: {
+          location: 'body',
+          issues: [
+            expect.objectContaining({
+              path: ['dailyPracticeTargetSeconds'],
+            }),
+          ],
+        },
+      });
+      expect(await targetInDatabase()).toBe(900);
+      expect(revalidations()).toHaveLength(1);
+    });
+
+    it('leaves the stored target alone when the part is absent', async () => {
+      await saveTarget('900').expect(200);
+      revalidations().length = 0;
+
+      const response = await spec.client
+        .patch('/v1/me')
+        .field('name', 'Rear Admiral')
+        .expect(200);
+
+      expect(response.body.dailyPracticeTargetSeconds).toBe(900);
+      expect(await targetInDatabase()).toBe(900);
+    });
+
+    it('reads null for a User who never picked one, and the streak falls back to 5 minutes', async () => {
+      const me = await spec.client.get('/v1/me').expect(200);
+      expect(me.body.dailyPracticeTargetSeconds).toBeNull();
+
+      const streak = await spec.client
+        .get('/v1/me/streak?timeZone=UTC')
+        .expect(200);
+      expect(streak.body).toMatchObject({
+        targetSeconds: 300,
+        listenedSeconds: 0,
+        completedToday: false,
+      });
+    });
+
+    it('reports the new target in the streak status of the current practice day', async () => {
+      await saveTarget('900').expect(200);
+
+      const streak = await spec.client
+        .get('/v1/me/streak?timeZone=UTC')
+        .expect(200);
+
+      expect(streak.body).toMatchObject({
+        day: new Date().toISOString().slice(0, 10),
+        targetSeconds: 900,
+        listenedSeconds: 0,
+        completedToday: false,
+      });
+    });
+
+    it('saves the Avatar together with the target in a single action', async () => {
+      const response = await spec.client
+        .patch('/v1/me')
+        .field('name', 'Rear Admiral')
+        .field('dailyPracticeTargetSeconds', '1800')
+        .attach('avatar', await createImage(), {
+          filename: 'avatar.png',
+          contentType: 'image/png',
+        })
+        .expect(200);
+
+      expect(response.body.dailyPracticeTargetSeconds).toBe(1800);
+      expect(response.body.image).toMatch(/^https?:\/\//);
+      expect(await targetInDatabase()).toBe(1800);
+      const me = await spec.client.get('/v1/me').expect(200);
+      expect(me.body.dailyPracticeTargetSeconds).toBe(1800);
+      expect(me.body.image).toBe(response.body.image);
+    });
+  });
+
   describe('invalid requests', () => {
     it.each([
       ['an empty Name', ''],

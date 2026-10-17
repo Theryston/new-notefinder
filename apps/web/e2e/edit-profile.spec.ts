@@ -429,3 +429,125 @@ test.describe('edit profile: saving an Avatar', () => {
     await expect(headerImage(page)).toHaveAttribute('src', STORED_IMAGE);
   });
 });
+
+const dailyTarget = messages.en.profile.edit.dailyTarget;
+const targetRadio = (page: Page, minutes: string) =>
+  page.getByRole('radio', { name: minutes });
+
+/** Opens the page as `user`, with the profile API answering saves. */
+async function openAs(page: Page, user: MockUser) {
+  await mockAuthApi(page, { user });
+  const saves = await mockProfileApi(page, { user });
+  await page.goto('/en/me/edit');
+  await expect(nameInput(page)).toBeVisible();
+  await expect(targetRadio(page, '5 minutes')).toBeVisible();
+  return saves;
+}
+
+test.describe('edit profile: daily target', () => {
+  test('pre-selects 5 minutes for a user who never picked one', async ({
+    page,
+  }) => {
+    await openAsAda(page);
+
+    await expect(targetRadio(page, '5 minutes')).toBeChecked();
+    for (const minutes of ['10 minutes', '15 minutes', '30 minutes']) {
+      await expect(targetRadio(page, minutes)).not.toBeChecked();
+    }
+  });
+
+  test('offers only the four presets, with no custom input', async ({
+    page,
+  }) => {
+    await openAsAda(page);
+    const group = page.getByRole('group', { name: dailyTarget.label });
+
+    await expect(group.getByRole('radio')).toHaveCount(4);
+    await expect(group.getByRole('spinbutton')).toHaveCount(0);
+    await expect(group.getByRole('textbox')).toHaveCount(0);
+    await expect(group.getByRole('combobox')).toHaveCount(0);
+  });
+
+  test('picks another preset and saves it with the profile', async ({
+    page,
+  }) => {
+    const saves = await openAsAda(page);
+
+    await targetRadio(page, '15 minutes').check();
+    await nameInput(page).fill('Ada King');
+    await saveButton(page).click();
+
+    await expect(page.getByText(edit.saved)).toBeVisible();
+    expect(saves).toHaveLength(1);
+    expect(multipartFields(lastSave(saves))).toEqual({
+      name: 'Ada King',
+      dailyPracticeTargetSeconds: '900',
+    });
+  });
+
+  test('sends no target part when it was not changed', async ({ page }) => {
+    const saves = await openAsAda(page);
+
+    await nameInput(page).fill('Ada King');
+    await saveButton(page).click();
+
+    await expect(page.getByText(edit.saved)).toBeVisible();
+    expect(multipartFields(lastSave(saves))).toEqual({ name: 'Ada King' });
+  });
+
+  test('prefills the saved target', async ({ page }) => {
+    await openAs(page, {
+      ...ada,
+      dailyPracticeTargetSeconds: 900,
+    });
+
+    await expect(targetRadio(page, '15 minutes')).toBeChecked();
+  });
+
+  test('keeps the saved target after reloading', async ({ page }) => {
+    const saves = await openAsAda(page);
+
+    await targetRadio(page, '30 minutes').check();
+    await saveButton(page).click();
+    await expect(page.getByText(edit.saved)).toBeVisible();
+    expect(saves).toHaveLength(1);
+
+    await page.reload();
+    await expect(targetRadio(page, '30 minutes')).toBeChecked();
+  });
+
+  test('keeps the picked target when saving fails', async ({ page }) => {
+    await openAsAda(page, () => rateLimited);
+
+    await targetRadio(page, '10 minutes').check();
+    await saveButton(page).click();
+
+    await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+      errors.RATE_LIMITED,
+    );
+    await expect(targetRadio(page, '10 minutes')).toBeChecked();
+    await expect(saveButton(page)).toBeEnabled();
+  });
+
+  test('is translated to Portuguese', async ({ page }) => {
+    const pt = messages['pt-BR'].profile.edit.dailyTarget;
+    await mockAuthApi(page, { user: ada });
+    await mockProfileApi(page, { user: ada });
+    await page.goto('/pt-BR/me/edit');
+
+    await expect(page.getByRole('group', { name: pt.label })).toContainText(
+      pt.description,
+    );
+    await expect(page.getByRole('radio', { name: '5 minutos' })).toBeChecked();
+
+    await page.getByRole('radio', { name: '30 minutos' }).check();
+    await page
+      .getByRole('button', { name: messages['pt-BR'].profile.edit.save })
+      .click();
+
+    await expect(
+      page.getByText(messages['pt-BR'].profile.edit.saved),
+    ).toBeVisible();
+    await expect(page.getByRole('radio', { name: '30 minutos' })).toBeChecked();
+  });
+});

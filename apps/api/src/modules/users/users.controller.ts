@@ -51,8 +51,8 @@ export class UsersController {
   @ApiOkResponse({ description: 'The signed-in user, updated.' })
   @ApiBadRequestResponse({
     description:
-      'The Name is empty or too long, or the Avatar is over 5 MB or not a ' +
-      'PNG, JPEG or WEBP image.',
+      'The Name is empty or too long, the Daily target is not one of the ' +
+      'presets, or the Avatar is over 5 MB or not a PNG, JPEG or WEBP image.',
   })
   @ApiUnauthorizedResponse({ description: 'No valid session.' })
   @ApiForbiddenResponse({ description: 'The user has no username yet.' })
