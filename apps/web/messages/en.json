@@ -38,6 +38,13 @@
     },
     "loadMore": "Load more"
   },
+  "notFound": {
+    "metaTitle": "Page not found",
+    "title": "Page not found",
+    "description": "We couldn't find what you're looking for. Go back home or search for the song you want.",
+    "home": "Back to home",
+    "search": "Search songs"
+  },
   "tracks": {
     "card": {
       "play": "Play {title}",

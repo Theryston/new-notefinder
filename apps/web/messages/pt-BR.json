@@ -38,6 +38,13 @@
     },
     "loadMore": "Carregar mais"
   },
+  "notFound": {
+    "metaTitle": "Página não encontrada",
+    "title": "Página não encontrada",
+    "description": "Não conseguimos encontrar o que você procura. Volte para o início ou pesquise a música que você quer.",
+    "home": "Voltar para o início",
+    "search": "Pesquisar música"
+  },
   "tracks": {
     "card": {
       "play": "Tocar {title}",
