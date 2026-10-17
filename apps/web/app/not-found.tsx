@@ -6,7 +6,11 @@ import { Container } from '@/components/container';
 import { NotFoundTheme } from '@/components/not-found-theme';
 import { NotFoundView } from '@/components/not-found-view';
 import { detectLocale } from '@/lib/i18n/detect-locale';
-import { type Locale, localeCookieName } from '@/lib/i18n/routing';
+import {
+  isLocale,
+  localeCookieName,
+  requestLocaleHeader,
+} from '@/lib/i18n/routing';
 import en from '@/messages/en.json';
 import ptBR from '@/messages/pt-BR.json';
 
@@ -33,9 +37,15 @@ const fontMono = Geist_Mono({
   display: 'optional',
 });
 
-async function getNotFoundLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
+async function getNotFoundLocale() {
   const headerStore = await headers();
+  // The URL locale wins (like every other page): the proxy stamps it on every
+  // locale-prefixed request, so a shared `/pt-BR/…` link always renders
+  // Portuguese, even for a visitor whose browser is English. Only requests
+  // that never passed the proxy fall back to detection.
+  const fromUrl = headerStore.get(requestLocaleHeader);
+  if (isLocale(fromUrl)) return fromUrl;
+  const cookieStore = await cookies();
   return detectLocale({
     cookie: cookieStore.get(localeCookieName)?.value,
     country: headerStore.get('cf-ipcountry'),

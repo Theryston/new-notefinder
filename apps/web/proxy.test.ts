@@ -78,6 +78,10 @@ describe('proxy artist guard', () => {
     expect(response.headers.get('x-middleware-rewrite')).toBe(
       'http://localhost:3000/_not-found',
     );
+    // The rewrite keeps the URL locale, so the 404 renders its language.
+    expect(
+      response.headers.get('x-middleware-request-x-notefinder-locale'),
+    ).toBe('en');
   });
 
   it('lets a known artist through to the page', async () => {
@@ -90,6 +94,11 @@ describe('proxy artist guard', () => {
 
     expect(response.headers.get('location')).toBeNull();
     expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+    // Pass-through keeps the URL locale for the render (the root 404 reads
+    // it instead of guessing the language).
+    expect(
+      response.headers.get('x-middleware-request-x-notefinder-locale'),
+    ).toBe('en');
   });
 
   it('lets the page render when the API is down', async () => {
@@ -119,10 +128,13 @@ describe('proxy artist guard', () => {
     const proxy = await loadProxy();
 
     const response = await proxy(
-      new NextRequest('http://localhost:3000/en/search?q=queen'),
+      new NextRequest('http://localhost:3000/pt-BR/search?q=queen'),
     );
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(response.headers.get('location')).toBeNull();
+    expect(
+      response.headers.get('x-middleware-request-x-notefinder-locale'),
+    ).toBe('pt-BR');
   });
 });

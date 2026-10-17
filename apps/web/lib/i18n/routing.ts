@@ -2,6 +2,15 @@ import { defineRouting } from 'next-intl/routing';
 
 export const localeCookieName = 'NEXT_LOCALE';
 
+/**
+ * Request header the proxy sets with the URL locale on every locale-prefixed
+ * request (and on its `/_not-found` rewrite). The root `not-found` has no
+ * `[locale]` segment, so without this it could only guess the language from
+ * cookies/headers and would mistranslate shared links opened by visitors with
+ * another language.
+ */
+export const requestLocaleHeader = 'x-notefinder-locale';
+
 export const routing = defineRouting({
   locales: ['en', 'pt-BR'],
   defaultLocale: 'en',

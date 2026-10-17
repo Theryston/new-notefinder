@@ -7,7 +7,24 @@ import {
 } from '@/lib/entity-route';
 import { getServerEnv } from '@/lib/env/server';
 import { detectLocale } from '@/lib/i18n/detect-locale';
-import { isLocale, localeCookieName } from '@/lib/i18n/routing';
+import {
+  isLocale,
+  type Locale,
+  localeCookieName,
+  requestLocaleHeader,
+} from '@/lib/i18n/routing';
+
+/**
+ * Forwards the URL locale to the render as a request header (same mechanism
+ * the runtime uses for middleware header overrides). The catalog rewrite
+ * keeps the locale this way too, so `/_not-found` knows which language to
+ * render.
+ */
+function requestInitWithLocale(request: NextRequest, locale: Locale) {
+  const headers = new Headers(request.headers);
+  headers.set(requestLocaleHeader, locale);
+  return { request: { headers } };
+}
 
 /**
  * Guards `/<locale>/artists/<id>`, `/<locale>/albums/<id>` and
@@ -42,7 +59,10 @@ async function checkCatalogRoute(
     );
   }
   if (verdict.kind === 'missing') {
-    return NextResponse.rewrite(new URL('/_not-found', request.url));
+    return NextResponse.rewrite(
+      new URL('/_not-found', request.url),
+      requestInitWithLocale(request, route.locale),
+    );
   }
   return undefined;
 }
@@ -63,7 +83,10 @@ export async function proxy(request: NextRequest) {
   // A URL that already has a locale is always respected.
   if (isLocale(firstSegment)) {
     // Catalog IDs need a verdict before anything streams (see above).
-    return (await checkCatalogRoute(request)) ?? NextResponse.next();
+    return (
+      (await checkCatalogRoute(request)) ??
+      NextResponse.next(requestInitWithLocale(request, firstSegment))
+    );
   }
 
   const locale = detectLocale({
