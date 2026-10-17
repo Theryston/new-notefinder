@@ -10,12 +10,13 @@ function query() {
   if (typeof queryFn !== 'function') throw new Error('no query function');
   return {
     options,
-    run: (body: unknown, status = 200, init?: RequestInit) => {
+    run: (body: unknown, status = 200) => {
       fetchMock.mockResolvedValue(Response.json(body, { status }));
-      return queryFn({
-        ...init,
-        queryKey: options.queryKey,
-      } as Parameters<typeof queryFn>[0]);
+      const signal = new AbortController().signal;
+      return {
+        result: queryFn({ signal } as Parameters<typeof queryFn>[0]),
+        signal,
+      };
     },
   };
 }
@@ -30,7 +31,9 @@ describe('currentUserQueryOptions', () => {
     const { options, run } = query();
 
     expect(options.queryKey).toEqual(authKeys.currentUser());
-    await expect(run({ dailyPracticeTargetSeconds: 900 })).resolves.toEqual({
+    await expect(
+      run({ dailyPracticeTargetSeconds: 900 }).result,
+    ).resolves.toEqual({
       dailyPracticeTargetSeconds: 900,
     });
     expect(fetchMock).toHaveBeenCalledWith(
@@ -45,7 +48,7 @@ describe('currentUserQueryOptions', () => {
       const { run } = query();
 
       await expect(
-        run({ dailyPracticeTargetSeconds: stored }),
+        run({ dailyPracticeTargetSeconds: stored }).result,
       ).resolves.toEqual({ dailyPracticeTargetSeconds: null });
     },
   );
@@ -53,7 +56,7 @@ describe('currentUserQueryOptions', () => {
   it('reads a response without the field as the fallback', async () => {
     const { run } = query();
 
-    await expect(run({})).resolves.toEqual({
+    await expect(run({}).result).resolves.toEqual({
       dailyPracticeTargetSeconds: null,
     });
   });
@@ -61,7 +64,7 @@ describe('currentUserQueryOptions', () => {
   it('throws when the read fails, so the form falls back instead', async () => {
     const { run } = query();
 
-    await expect(run({ code: 'UNAUTHORIZED' }, 401)).rejects.toThrow(
+    await expect(run({ code: 'UNAUTHORIZED' }, 401).result).rejects.toThrow(
       'Daily target lookup failed (401)',
     );
   });
