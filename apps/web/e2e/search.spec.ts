@@ -26,18 +26,36 @@ function lastRequest(calls: Request[]): Request {
 
 for (const { locale, messages } of cases) {
   test.describe(`search (${locale})`, () => {
-    test('header typing navigates to the search page live', async ({
-      page,
-    }) => {
+    /**
+     * Opens `url` with auth and search mocked and waits for the header,
+     * returning the field, the starting URL and the search calls to assert
+     * with. Every header test starts here, so the setup never clones.
+     */
+    async function openWithHeader(page: Page, url: string) {
       await mockAuthApi(page);
       const search = await mockSearchApi(page);
-      await page.goto(`/${locale}`);
+      await page.goto(url);
       await headerReady(page, messages.header.account.signIn);
+      return {
+        search,
+        home: page.url(),
+        header: headerField(page, messages.header.search.label),
+      };
+    }
 
-      // No Enter: typing alone navigates, debounced.
-      const header = headerField(page, messages.header.search.label);
+    test('header typing stays on the page until Enter submits it', async ({
+      page,
+    }) => {
+      const { search, home, header } = await openWithHeader(page, `/${locale}`);
+
+      // No Enter: typing alone never navigates, debounced or not, and fires
+      // no search request.
       await header.fill('queen');
+      await page.waitForTimeout(500);
+      await expect(page).toHaveURL(home);
+      expect(search.calls).toHaveLength(0);
 
+      await header.press('Enter');
       await expect(page).toHaveURL(`/${locale}/search?q=queen`);
       await expect(
         page.getByRole('heading', {
@@ -117,45 +135,51 @@ for (const { locale, messages } of cases) {
       await expect(header).toBeFocused();
     });
 
-    test('focusing the header field falls into the search page', async ({
-      page,
-    }) => {
-      await mockAuthApi(page);
-      await mockSearchApi(page);
-      await page.goto(`/${locale}`);
-      await headerReady(page, messages.header.account.signIn);
+    test('focusing the header field stays on the page', async ({ page }) => {
+      const { home, header } = await openWithHeader(page, `/${locale}`);
 
-      // No typing: focusing alone navigates, keeping the focus for typing.
-      const header = headerField(page, messages.header.search.label);
+      // No typing: focusing alone never navigates, keeping the focus.
       await header.focus();
 
-      await expect(page).toHaveURL(`/${locale}/search`);
+      await page.waitForTimeout(500);
+      await expect(page).toHaveURL(home);
       await expect(header).toBeFocused();
-      // Empty: the prompt explains where to type.
+      // Empty: the search prompt is nowhere to be seen.
       await expect(
         page
           .getByRole('main')
           .getByRole('heading', { name: messages.search.prompt.title }),
-      ).toBeVisible();
+      ).toHaveCount(0);
     });
 
-    test('blurring an empty field goes back to the previous page', async ({
+    test('blurring an empty field stays on the page', async ({ page }) => {
+      const { home, header } = await openWithHeader(page, `/${locale}`);
+
+      await header.focus();
+      await header.blur();
+
+      // Nothing to go back to: the visitor stays where they were.
+      await page.waitForTimeout(500);
+      await expect(page).toHaveURL(home);
+    });
+
+    test('leaving the search page clears the header field', async ({
       page,
     }) => {
-      await mockAuthApi(page);
-      await mockSearchApi(page);
-      await page.goto(`/${locale}`);
-      await headerReady(page, messages.header.account.signIn);
+      const { header } = await openWithHeader(
+        page,
+        `/${locale}/search?q=queen`,
+      );
+      await expect(header).toHaveValue('queen');
 
-      const header = headerField(page, messages.header.search.label);
-      await header.focus();
-      await expect(page).toHaveURL(`/${locale}/search`);
-
-      // Clicking outside blurs the empty field: back where it came from.
+      // Any link off the page (here the brand) empties the field, so stale
+      // text never reopens elsewhere.
       await page
-        .getByRole('heading', { level: 1, name: messages.search.title })
+        .getByRole('banner')
+        .getByRole('link', { name: messages.header.home })
         .click();
-      await expect(page).toHaveURL(`/${locale}`);
+      await expect(header).toHaveValue('');
+      await expect(page).toHaveURL(new RegExp(`/${locale}$`));
     });
 
     test('blurring keeps a search reached without a fall', async ({ page }) => {
@@ -171,6 +195,29 @@ for (const { locale, messages } of cases) {
         .getByRole('heading', { level: 1, name: messages.search.title })
         .click();
       await expect(page).toHaveURL(`/${locale}/search`);
+    });
+
+    test('back and forward keep mirroring q in the header field', async ({
+      page,
+    }) => {
+      // Typing updates `q` in place (history replaces), so the round trip
+      // below goes through a pushed page instead.
+      const { header } = await openWithHeader(
+        page,
+        `/${locale}/search?q=queen`,
+      );
+      await expect(header).toHaveValue('queen');
+      await page
+        .getByRole('banner')
+        .getByRole('link', { name: messages.header.home })
+        .click();
+      await expect(header).toHaveValue('');
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/search\?q=queen/);
+      await expect(header).toHaveValue('queen');
+      await page.goForward();
+      await expect(header).toHaveValue('');
     });
 
     test('dims old results while the next query loads', async ({ page }) => {

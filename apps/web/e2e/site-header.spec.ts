@@ -2,6 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
+import { mockSearchApi } from './search-api-mock';
 
 const { header } = messages.en;
 const ada: MockUser = { ...ADA, username: 'ada' };
@@ -23,6 +24,21 @@ const headerReady = (page: Page) =>
   expect(
     page.getByRole('banner').getByRole('link', { name: header.account.signIn }),
   ).toBeVisible();
+
+/**
+ * Opens home with auth and search mocked, returning the header field and
+ * the home URL to assert staying on. Both header search tests start here,
+ * so the setup never clones.
+ */
+async function openHomeWithSearch(page: Page) {
+  await mockAuthApi(page);
+  await mockSearchApi(page);
+  await page.goto('/en');
+  return {
+    home: page.url(),
+    field: page.getByRole('searchbox', { name: header.search.label }),
+  };
+}
 
 test.describe('site header (desktop)', () => {
   test('offers only sign in, coming back to the page', async ({ page }) => {
@@ -91,25 +107,41 @@ test.describe('site header (desktop)', () => {
   });
 
   test('searches from the field, focused with Ctrl K', async ({ page }) => {
-    await mockAuthApi(page);
-    await page.goto('/en');
+    const { home, field } = await openHomeWithSearch(page);
 
-    const field = page.getByRole('searchbox', { name: header.search.label });
     await headerReady(page);
     await page.keyboard.press('Control+k');
     await expect(field).toBeFocused();
 
-    // Focusing alone falls into the search page at once.
-    await expect(page).toHaveURL(/\/en\/search$/);
+    // Focusing alone stays on the page (no fall into search).
+    await page.waitForTimeout(500);
+    await expect(page).toHaveURL(home);
 
-    // A blank query stays there, showing the prompt.
+    // Blurring the empty field stays too (no way back).
+    await field.blur();
+    await page.waitForTimeout(500);
+    await expect(page).toHaveURL(home);
+
+    // Typing never navigates; only Enter does.
+    await field.fill('queen');
+    await page.waitForTimeout(500);
+    await expect(page).toHaveURL(home);
+
+    // A blank query stays there as well.
     await field.fill('   ');
     await field.press('Enter');
-    await expect(page).toHaveURL(/\/en\/search$/);
+    await expect(page).toHaveURL(home);
 
     await field.fill('  bohemian   rhapsody ');
     await field.press('Enter');
-    await expect(page).toHaveURL(/\/en\/search\?q=bohemian\+rhapsody$/);
+    await expect(page).toHaveURL('/en/search?q=bohemian+rhapsody');
+
+    // The query lands in the header field, and the focus is released.
+    const landed = page
+      .getByRole('banner')
+      .getByRole('searchbox', { name: header.search.label });
+    await expect(landed).toHaveValue('bohemian rhapsody');
+    await expect(landed).not.toBeFocused();
   });
 
   test('switches the theme from the header toggle', async ({ page }) => {
@@ -179,52 +211,27 @@ test.describe('site header (mobile)', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test('expands the search over the bar and collapses it', async ({ page }) => {
-    await mockAuthApi(page);
-    await page.goto('/en');
+    const { home, field } = await openHomeWithSearch(page);
 
-    const field = page.getByRole('searchbox', { name: header.search.label });
     await expect(field).toBeHidden();
     await page.getByRole('button', { name: header.search.open }).click();
     await expect(field).toBeFocused();
 
+    // Typing stays on the page; Cancel collapses without navigating.
+    await field.fill('queen');
+    await page.waitForTimeout(500);
+    await expect(page).toHaveURL(home);
     await page.getByRole('button', { name: header.search.cancel }).click();
     await expect(field).toBeHidden();
+    await expect(page).toHaveURL(home);
 
     await page.getByRole('button', { name: header.search.open }).click();
     await field.fill('queen');
     await field.press('Enter');
     await expect(page).toHaveURL(/\/en\/search\?q=queen$/);
-  });
 
-  test('cancelling before the fall into search lands leaves it again', async ({
-    page,
-  }) => {
-    await mockAuthApi(page);
-    await page.goto('/en');
-
-    // Holds the navigation to /search so Cancel is tapped before it commits.
-    let release = () => {};
-    const held = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await page.route('**/en/search**', async (route) => {
-      await held;
-      await route.continue();
-    });
-
-    const field = page.getByRole('searchbox', { name: header.search.label });
-    await page.getByRole('button', { name: header.search.open }).click();
-    await expect(field).toBeFocused();
-    await page.getByRole('button', { name: header.search.cancel }).click();
-    await expect(field).toBeHidden();
-
-    // The fall lands (and is left again) only after this point.
-    const landed = page.waitForURL(/\/en\/search$/);
-    release();
-    await landed;
-
-    await expect(page).toHaveURL(/\/en$/);
-    await expect(field).toBeHidden();
+    // On the search page the field starts expanded.
+    await expect(field).toBeVisible();
   });
 
   test('signed out: search and sign in only, the theme is in the footer', async ({

@@ -2,7 +2,7 @@
 
 import { LoaderCircle, SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { FocusEvent, FormEvent, RefObject } from 'react';
+import type { FormEvent, RefObject } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,6 @@ function SearchField({
   onChange,
   onSubmit,
   onEscape,
-  onFocus,
-  onBlur,
   loading,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
@@ -25,8 +23,6 @@ function SearchField({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEscape: () => void;
-  onFocus: () => void;
-  onBlur: (event: FocusEvent<HTMLInputElement>) => void;
   loading: boolean;
 }) {
   const t = useTranslations('header.search');
@@ -39,8 +35,6 @@ function SearchField({
         name="q"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        onFocus={onFocus}
-        onBlur={onBlur}
         enterKeyHint="search"
         autoComplete="off"
         aria-label={t('label')}
@@ -77,8 +71,6 @@ export type HeaderSearchBarProps = {
   onEscape: () => void;
   onOpen: () => void;
   onCancel: () => void;
-  onFieldFocus: () => void;
-  onFieldBlur: (event: FocusEvent<HTMLInputElement>) => void;
   loading: boolean;
 };
 
@@ -92,8 +84,6 @@ export function HeaderSearchBar({
   onEscape,
   onOpen,
   onCancel,
-  onFieldFocus,
-  onFieldBlur,
   loading,
 }: HeaderSearchBarProps) {
   const t = useTranslations('header.search');
@@ -120,8 +110,6 @@ export function HeaderSearchBar({
           onChange={onInputChange}
           onSubmit={onSubmit}
           onEscape={onEscape}
-          onFocus={onFieldFocus}
-          onBlur={onFieldBlur}
           loading={loading}
         />
         <Button
