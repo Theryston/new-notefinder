@@ -36,7 +36,7 @@ import {
 
 // The lyrics step of a Processing, end to end (ADR 0004): the vocals are stored as
 // MP3 and transcribed into the Track's Timed lyrics, while the music MP3 is a job
-// of its own that never holds the lyrics back. OpenAI is faked at its integration
+// of its own that never holds the lyrics back. Scribe is faked at its integration
 // boundary; the audio goes through the real ffmpeg and the real storage.
 
 type QueuedJob = { name: string; data: unknown };
@@ -180,7 +180,7 @@ describe('Track Processing lyrics (e2e)', () => {
       expect(isMp3(stored.bytes)).toBe(true);
     }
     expect(app.transcription.requests).toHaveLength(1);
-    expect(app.transcription.requests[0]?.lyrics).toBeNull();
+    expect(app.transcription.requests[0]?.audioBytes).toBeGreaterThan(0);
   });
 
   it('reads the Timed lyrics back, lines with their words, in one database query', async () => {
@@ -213,7 +213,7 @@ describe('Track Processing lyrics (e2e)', () => {
     expect(rows.map((row) => row.position)).toEqual([0, 1]);
   });
 
-  it('guides the transcription with the plain Lyrics of the Recording', async () => {
+  it('transcribes the vocals alone, with no Lyrics guidance sent', async () => {
     app.recordings.set(
       testMbid(1),
       bohemian({ lyrics: { plain: 'Is this the real life?', synced: null } }),
@@ -224,13 +224,13 @@ describe('Track Processing lyrics (e2e)', () => {
 
     await runTrackJobs(testApp);
 
-    expect(app.transcription.requests[0]?.lyrics).toBe(
-      'Is this the real life?',
-    );
+    expect(app.transcription.requests).toHaveLength(1);
+    expect(app.transcription.requests[0]?.audioBytes).toBeGreaterThan(0);
+    expect(await timedLyricsOf(testApp, trackId)).toEqual(EXPECTED_LINES);
   });
 
-  it('completes without Timed lyrics when OpenAI keeps refusing, and keeps the vocals MP3', async () => {
-    app.transcription.requestFailure = new Error('OpenAI is down');
+  it('completes without Timed lyrics when Scribe keeps refusing, and keeps the vocals MP3', async () => {
+    app.transcription.requestFailure = new Error('ElevenLabs is down');
     const trackId = await requestTrack(app);
     await runUntilLyricsStep(testApp);
     await workerUploadsVocals(app, trackId);
@@ -264,7 +264,7 @@ describe('Track Processing lyrics (e2e)', () => {
     convert.mockRestore();
   });
 
-  it('completes with no lines when OpenAI heard no words', async () => {
+  it('completes with no lines when Scribe heard no words', async () => {
     app.transcription.transcription = { segments: [], words: [] };
     const trackId = await requestTrack(app);
     await runUntilLyricsStep(testApp);
@@ -288,11 +288,11 @@ describe('Track Processing lyrics (e2e)', () => {
     if (job === undefined) {
       throw new Error('No lyrics job is queued');
     }
-    app.transcription.requestFailure = new Error('OpenAI is down');
+    app.transcription.requestFailure = new Error('ElevenLabs is down');
 
     // BullMQ's first attempt: the job throws, so it is retried.
     await expect(runner.run(job.name, job.data, false)).rejects.toThrow(
-      'OpenAI is down',
+      'ElevenLabs is down',
     );
     expect(await processingRowOf(testApp, trackId)).toMatchObject({
       status: 'EXTRACTING_LYRICS',
@@ -394,7 +394,7 @@ describe('Track Processing lyrics (e2e)', () => {
     expect(await timedLyricsOf(testApp, trackId)).toEqual(EXPECTED_LINES);
 
     // The retry's transcription is refused: the Processing falls back.
-    app.transcription.requestFailure = new Error('OpenAI is down');
+    app.transcription.requestFailure = new Error('ElevenLabs is down');
     await retryTrackAs(
       testApp,
       await createPasswordUser(testApp.db),

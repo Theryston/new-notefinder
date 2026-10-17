@@ -1,4 +1,4 @@
-import type { Transcription } from '../../integrations/openai/transcription-output.js';
+import type { Transcription } from '../../integrations/elevenlabs/scribe-output.js';
 
 // The Timed lyrics of a transcription (CONTEXT.md "Timed lyrics"), built from
 // word timestamps only. Provider segments are ignored: a long provider segment
@@ -23,9 +23,8 @@ export type TimedLyricLine = {
 };
 
 /**
- * A transcribed word with its timing, plus the diarized speaker when the
- * provider knows it. Whisper answers have no speaker (always undefined, so no
- * speaker break); a later provider fills it and the same pipeline breaks on it.
+ * A transcribed word with its timing, plus the diarized voice when the
+ * transcription carries one. Words without a voice never break on it.
  */
 type InputWord = Transcription['words'][number] & {
   speaker?: string;
@@ -85,7 +84,7 @@ const CONJUNCTIONS = new Set([
 const byStart = <T extends { start: number }>(items: readonly T[]): T[] =>
   [...items].sort((a, b) => a.start - b.start);
 
-/** The words that have text, trimmed of the blank Whisper puts before each one. */
+/** The words that have text, trimmed of the blank around them. */
 const wordsOf = (words: readonly InputWord[]): LyricWord[] =>
   words.flatMap(({ word, start, end, speaker }) => {
     const text = word.trim();
