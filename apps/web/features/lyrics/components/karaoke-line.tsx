@@ -7,7 +7,7 @@ import {
   type LyricsClock,
   useLyricsSignature,
 } from '../hooks/use-lyrics-signature';
-import { lineIndexAt, type WordState, wordStateAt } from '../lyrics-position';
+import { karaokeLineAt, type WordState, wordStateAt } from '../lyrics-position';
 
 const WORD_CLASS: Record<WordState, string> = {
   sung: 'text-foreground',
@@ -18,7 +18,9 @@ const WORD_CLASS: Record<WordState, string> = {
 /**
  * The line being sung, under the timeline, with the word being sung
  * highlighted. Before the first line starts it shows that line as what comes
- * next; after the last it keeps the last one. The caller mounts it
+ * next; a finished line holds briefly, then the slot previews the next line
+ * for read-ahead, and after the last line it clears (keeping its height so
+ * the page does not shift). The caller mounts it
  * only once the lyrics are loaded, holding a slot of its height (`min-h-8`)
  * while they load, so the page does not shift when they arrive.
  */
@@ -31,14 +33,23 @@ export function KaraokeLine({
 }) {
   useLyricsSignature(lines, clock);
   const time = clock.now();
-  const line = lines[Math.max(0, lineIndexAt(lines, time))];
+  const display = karaokeLineAt(lines, time);
+  const line = display < 0 ? undefined : lines[display];
+  if (line === undefined) {
+    return (
+      <p
+        data-testid="karaoke-line"
+        className="min-h-8 text-center font-semibold text-lg leading-8 md:text-xl"
+      />
+    );
+  }
 
   return (
     <p
       data-testid="karaoke-line"
       className="min-h-8 text-center font-semibold text-lg leading-8 md:text-xl"
     >
-      {line?.words.map((word, index) => {
+      {line.words.map((word, index) => {
         const state = wordStateAt(word, time);
         return (
           <span

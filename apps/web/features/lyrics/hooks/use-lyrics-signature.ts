@@ -15,9 +15,9 @@ export type LyricsClock = {
 };
 
 /**
- * Re-renders the caller only when what the lyrics show changes (a new active
- * line, a word starting or ending), not on every tick of the clock. The server
- * and the first client render both start the Track at 0.
+ * Re-renders the caller only when what the lyrics show changes (the karaoke
+ * slot's displayed line, a word starting or ending), not on every tick of
+ * the clock. The server and the first client render both start the Track at 0.
  */
 export function useLyricsSignature(
   lines: readonly TrackLyricLine[],
