@@ -1,10 +1,14 @@
 import { type SearchQuery, searchQuerySchema } from '@notefinder/contracts';
 
+import { SEARCH_SUGGESTIONS_LIMIT } from './search-params';
+
 /**
  * TanStack Query keys for track search. The results key carries the parsed
  * public query, so defaults are applied once and each query text plus scope
  * caches separately; the infinite key pages on top of it without the offset
- * (every page shares it, the offset travels as the page param).
+ * (every page shares it, the offset travels as the page param); the
+ * suggestions key is the header autocomplete's own key (fixed `metadata`
+ * scope and short limit), so its cache never mixes with the search page's.
  */
 export const searchKeys = {
   all: ['search'] as const,
@@ -15,6 +19,18 @@ export const searchKeys = {
     return [
       ...searchKeys.all,
       'infinite',
+      { query: parsed.query, scope: parsed.scope, limit: parsed.limit },
+    ] as const;
+  },
+  suggestions: (query: string) => {
+    const parsed = searchQuerySchema.parse({
+      query,
+      scope: 'metadata',
+      limit: SEARCH_SUGGESTIONS_LIMIT,
+    });
+    return [
+      ...searchKeys.all,
+      'suggestions',
       { query: parsed.query, scope: parsed.scope, limit: parsed.limit },
     ] as const;
   },

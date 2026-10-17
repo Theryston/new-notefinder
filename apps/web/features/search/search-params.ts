@@ -6,6 +6,9 @@ export const SEARCH_MIN_QUERY_LENGTH = 1;
 /** How long typing waits before the URL (and the fetch) updates. */
 export const SEARCH_DEBOUNCE_MS = 230;
 
+/** How many Recordings the header autocomplete asks for (a short list). */
+export const SEARCH_SUGGESTIONS_LIMIT = 6;
+
 /**
  * What the user typed, without leading/trailing blanks and with runs of
  * whitespace collapsed, so `q` in the URL and the API query stay canonical.
