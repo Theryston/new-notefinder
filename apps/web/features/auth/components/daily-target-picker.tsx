@@ -14,8 +14,10 @@ import { cn } from '@/lib/utils';
  * custom, fractional or hour-based input.
  */
 export function DailyTargetPicker({
+  selected,
   registration,
 }: {
+  selected: number | undefined;
   registration: UseFormRegisterReturn<'dailyPracticeTargetSeconds'>;
 }) {
   const t = useTranslations('profile.edit.dailyTarget');
@@ -39,6 +41,7 @@ export function DailyTargetPicker({
                 value={seconds}
                 className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 {...registration}
+                checked={selected === seconds}
               />
               <span
                 className={cn(

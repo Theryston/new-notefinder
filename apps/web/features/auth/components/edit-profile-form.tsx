@@ -141,6 +141,9 @@ function ProfileSection({
   );
   const nameError = form.formState.errors.name;
   const pending = form.formState.isSubmitting;
+  // Controlled from the form value: an uncontrolled radio compares the
+  // number default against the text DOM value and never pre-selects it.
+  const selectedTarget = form.watch('dailyPracticeTargetSeconds');
 
   return (
     <EditSection title={t('sections.profile')}>
@@ -163,6 +166,7 @@ function ProfileSection({
           />
         </FormField>
         <DailyTargetPicker
+          selected={selectedTarget}
           registration={form.register('dailyPracticeTargetSeconds', {
             valueAsNumber: true,
           })}
