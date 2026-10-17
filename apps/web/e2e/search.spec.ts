@@ -48,12 +48,22 @@ for (const { locale, messages } of cases) {
     }) => {
       const { search, home, header } = await openWithHeader(page, `/${locale}`);
 
-      // No Enter: typing alone never navigates, debounced or not, and fires
-      // no search request.
+      // No Enter: typing alone never navigates, debounced or not. It only
+      // fires the header suggestions fetch (metadata scope, 6 rows).
       await header.fill('queen');
       await page.waitForTimeout(500);
       await expect(page).toHaveURL(home);
-      expect(search.calls).toHaveLength(0);
+      const suggestions = search.calls.filter(
+        (call) => searchParamsOf(call).limit === '6',
+      );
+      expect(suggestions.length).toBeGreaterThan(0);
+      const lastSuggestion = suggestions[suggestions.length - 1];
+      if (!lastSuggestion) throw new Error('expected a suggestions request');
+      expect(searchParamsOf(lastSuggestion)).toMatchObject({
+        query: 'queen',
+        scope: 'metadata',
+        limit: '6',
+      });
 
       await header.press('Enter');
       await expect(page).toHaveURL(`/${locale}/search?q=queen`);

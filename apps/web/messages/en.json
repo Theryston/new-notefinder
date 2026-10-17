@@ -318,7 +318,10 @@
       "placeholder": "Search songs, artists…",
       "loading": "Searching…",
       "open": "Search",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "suggestions": "Search suggestions",
+      "searchFor": "Search for “{query}”",
+      "noResults": "No songs found"
     },
     "account": {
       "signIn": "Sign in",

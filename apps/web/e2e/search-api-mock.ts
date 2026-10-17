@@ -7,12 +7,14 @@ type SearchMockItem = {
   title: string;
   artist: string;
   trackId: string | null;
+  /** Cover art URL; without one the card renders its placeholder. */
+  coverArtUrl?: string | null;
 };
 
 const mbidOf = (n: number): string =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
-/** One hit in the shape of the public search contract (art omitted). */
+/** One hit in the shape of the public search contract. */
 function resultBody(item: SearchMockItem, index: number) {
   return {
     mbid: mbidOf(index + 1),
@@ -22,7 +24,14 @@ function resultBody(item: SearchMockItem, index: number) {
     video: false,
     artistCredit: { name: item.artist, artists: [] },
     genres: [],
-    primaryRelease: null,
+    primaryRelease: item.coverArtUrl
+      ? {
+          mbid: mbidOf(index + 101),
+          title: `${item.title} (release)`,
+          year: null,
+          coverArtUrl: item.coverArtUrl,
+        }
+      : null,
     trackId: item.trackId,
   };
 }
