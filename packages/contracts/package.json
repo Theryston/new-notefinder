@@ -15,6 +15,10 @@
     "./avatar-rules": {
       "types": "./dist/avatar-rules.d.ts",
       "default": "./dist/avatar-rules.js"
+    },
+    "./daily-target-rules": {
+      "types": "./dist/daily-target-rules.d.ts",
+      "default": "./dist/daily-target-rules.js"
     }
   },
   "scripts": {

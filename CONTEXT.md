@@ -141,7 +141,7 @@ than its own clock saw pass since the User's previous Heartbeat.
 _Avoid_: Ping, tick
 
 **Daily target**:
-How long a User wants to practice each Practice day: 5, 15 or 30 minutes.
+How long a User wants to practice each Practice day: 5, 10, 15 or 30 minutes.
 Reaching it completes the day.
 _Avoid_: Goal, quota
 

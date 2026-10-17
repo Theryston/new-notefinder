@@ -72,6 +72,7 @@ describe('GET /v1/me (e2e)', () => {
       image: 'https://example.com/grace.png',
       role: 'USER',
       createdAt: user.createdAt.toISOString(),
+      dailyPracticeTargetSeconds: null,
     });
     expect(currentUserSchema.parse(response.body)).toEqual(response.body);
     expect(Object.keys(response.body).sort()).toEqual(

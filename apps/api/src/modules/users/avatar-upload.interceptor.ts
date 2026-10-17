@@ -13,6 +13,14 @@ import { invalidAvatar } from './avatar-image.js';
 /** The file part of `PATCH /v1/me`, and the body field it fills. */
 const AVATAR_FIELD = 'avatar';
 
+/**
+ * The Daily target text part of `PATCH /v1/me`, and the body field it fills.
+ * Multipart carries text, so the value arrives as e.g. `'600'` and is
+ * coerced to a number here; anything that is not a preset is left for the
+ * schema to reject as `VALIDATION_FAILED`.
+ */
+const DAILY_TARGET_FIELD = 'dailyPracticeTargetSeconds';
+
 // Enforced by multer while the request is read, so an oversized upload is
 // refused as soon as it crosses the limit instead of being buffered whole.
 // The rest of the form is a few short text fields.
@@ -32,9 +40,10 @@ type UploadedFile = {
 
 /**
  * Reads the multipart form of `PATCH /v1/me` and puts the Avatar file in the
- * body as a standard `File`, so the one `updateMeBodySchema` validates the
- * Name and the file together. A file over the size limit is a
- * `VALIDATION_FAILED` like any other bad field.
+ * body as a standard `File` and the Daily target text part in as a number,
+ * so the one `updateMeBodySchema` validates the Name, the file and the
+ * target together. A file over the size limit is a `VALIDATION_FAILED` like
+ * any other bad field.
  */
 @Injectable()
 export class AvatarUploadInterceptor extends FileInterceptor(AVATAR_FIELD, {
@@ -60,6 +69,11 @@ export class AvatarUploadInterceptor extends FileInterceptor(AVATAR_FIELD, {
       request.body[AVATAR_FIELD] = new File([buffer], originalname, {
         type: mimetype,
       });
+    }
+    if (typeof request.body[DAILY_TARGET_FIELD] === 'string') {
+      request.body[DAILY_TARGET_FIELD] = Number(
+        request.body[DAILY_TARGET_FIELD],
+      );
     }
     return handler;
   }

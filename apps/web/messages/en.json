@@ -447,6 +447,11 @@
           "unsupportedType": "Choose a PNG, JPEG or WEBP image.",
           "tooLarge": "That image is over {size}. Choose a smaller one."
         }
+      },
+      "dailyTarget": {
+        "label": "Daily target",
+        "description": "How long you want to practice each day. A day counts toward your streak once you reach it.",
+        "minutes": "{minutes, plural, one {# minute} other {# minutes}}"
       }
     }
   },

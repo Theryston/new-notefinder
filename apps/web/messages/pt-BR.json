@@ -447,6 +447,11 @@
           "unsupportedType": "Escolha uma imagem PNG, JPEG ou WEBP.",
           "tooLarge": "Essa imagem tem mais de {size}. Escolha uma menor."
         }
+      },
+      "dailyTarget": {
+        "label": "Meta diária",
+        "description": "Quanto tempo você quer praticar por dia. O dia conta para sua sequência ao atingir a meta.",
+        "minutes": "{minutes, plural, one {# minuto} other {# minutos}}"
       }
     }
   },

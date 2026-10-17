@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import type {
-  StreakHeartbeatBody,
-  StreakHeartbeatResult,
-  StreakStatus,
+import {
+  asDailyPracticeTargetSeconds,
+  type StreakHeartbeatBody,
+  type StreakHeartbeatResult,
+  type StreakStatus,
 } from '@notefinder/contracts';
 import { UsersService } from '../users/users.service.js';
 import {
@@ -19,10 +20,10 @@ import {
 
 const FALLBACK_TIME_ZONE = 'UTC';
 
+// The same read boundary as the profile: only the presets count, so a
+// legacy non-preset value and the profile never disagree on the target.
 const validTarget = (seconds: number | null): number =>
-  seconds !== null && seconds > 0
-    ? Math.floor(seconds)
-    : DEFAULT_TARGET_SECONDS;
+  asDailyPracticeTargetSeconds(seconds) ?? DEFAULT_TARGET_SECONDS;
 
 /**
  * The daily practice streak. A heartbeat credits listening time to the User's

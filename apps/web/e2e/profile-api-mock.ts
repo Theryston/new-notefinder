@@ -19,6 +19,7 @@ export function currentUserBody(user: MockUser, name = user.name) {
     image,
     role: 'USER',
     createdAt,
+    dailyPracticeTargetSeconds: user.dailyPracticeTargetSeconds ?? null,
   };
 }
 
@@ -61,20 +62,37 @@ export function multipartFile(
 }
 
 /**
- * Serves `PATCH /v1/me`. By default it saves the trimmed Name, like the API;
- * `reply` overrides the answer (errors, slow responses). The returned list
- * records every save request.
+ * Serves `/v1/me`: `GET` answers the stored profile (like the database, so
+ * the form pre-fills what a previous save wrote), `PATCH` saves. By default
+ * a save keeps the trimmed Name and, when sent, the Daily target, like the
+ * API; `reply` overrides the save answer (errors, slow responses). The
+ * returned list records every save request, never the prefill reads.
  */
 export async function mockProfileApi(
   page: Page,
-  {
-    user,
-    reply = (request) => ({
-      body: currentUserBody(user, (multipartFields(request).name ?? '').trim()),
-    }),
-  }: { user: MockUser; reply?: (request: Request) => MeReply },
+  { user, reply }: { user: MockUser; reply?: (request: Request) => MeReply },
 ): Promise<Request[]> {
   const saves: Request[] = [];
+  let stored = {
+    name: user.name,
+    image: user.image,
+    dailyPracticeTargetSeconds: user.dailyPracticeTargetSeconds ?? null,
+  };
+  const saveLikeApi = (request: Request): MeReply => {
+    const fields = multipartFields(request);
+    stored = {
+      ...stored,
+      name: (fields.name ?? '').trim(),
+      ...(fields.dailyPracticeTargetSeconds === undefined
+        ? {}
+        : {
+            dailyPracticeTargetSeconds: Number(
+              fields.dailyPracticeTargetSeconds,
+            ),
+          }),
+    };
+    return { body: currentUserBody({ ...user, ...stored }) };
+  };
 
   await page.route(ME_ROUTE, async (route) => {
     const request = route.request();
@@ -90,8 +108,16 @@ export async function mockProfileApi(
       await route.fulfill({ status: 204, headers });
       return;
     }
+    if (request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        headers,
+        body: JSON.stringify(currentUserBody({ ...user, ...stored })),
+      });
+      return;
+    }
     saves.push(request);
-    const { status = 200, body, delayMs = 0 } = reply(request);
+    const { status = 200, body, delayMs = 0 } = (reply ?? saveLikeApi)(request);
     await new Promise((resolve) => setTimeout(resolve, delayMs));
     await route.fulfill({ status, headers, body: JSON.stringify(body) });
   });

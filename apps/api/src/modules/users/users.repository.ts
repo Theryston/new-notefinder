@@ -6,8 +6,14 @@ import type { DatabaseAdapter } from '../../database/database.js';
 import { users } from '../../database/schema/users.js';
 import { isUniqueViolation } from '../../database/unique-violation.js';
 
-export type CurrentUserRow = Omit<CurrentUser, 'createdAt'> & {
+export type CurrentUserRow = Omit<
+  CurrentUser,
+  'createdAt' | 'dailyPracticeTargetSeconds'
+> & {
   createdAt: Date;
+  // As stored: any integer or null (the column predates the presets).
+  // `toCurrentUser` narrows it to a preset for the response.
+  dailyPracticeTargetSeconds?: number | null;
 };
 
 /** The fields other Users see of an account: no email, no role. */
@@ -43,6 +49,7 @@ const currentUserColumns = {
   image: users.image,
   role: users.role,
   createdAt: users.createdAt,
+  dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
 };
 
 /** What the daily practice streak reads about a User. */
@@ -89,9 +96,37 @@ export class UsersRepository {
     return this.updateProfile(id, { name, image });
   }
 
+  /**
+   * Sets the Name and the Daily target in one statement, so the Profile and
+   * the target are never saved apart.
+   */
+  updateNameAndTarget(
+    id: string,
+    name: string,
+    dailyPracticeTargetSeconds: number,
+  ): Promise<CurrentUserRow | undefined> {
+    return this.updateProfile(id, { name, dailyPracticeTargetSeconds });
+  }
+
+  /**
+   * Sets the Name, the Avatar's URL and the Daily target in one statement,
+   * so the three are never saved apart.
+   */
+  updateNameImageAndTarget(
+    id: string,
+    name: string,
+    image: string,
+    dailyPracticeTargetSeconds: number,
+  ): Promise<CurrentUserRow | undefined> {
+    return this.updateProfile(id, { name, image, dailyPracticeTargetSeconds });
+  }
+
   private async updateProfile(
     id: string,
-    values: Pick<typeof users.$inferInsert, 'name' | 'image'>,
+    values: Pick<
+      typeof users.$inferInsert,
+      'name' | 'image' | 'dailyPracticeTargetSeconds'
+    >,
   ): Promise<CurrentUserRow | undefined> {
     const [row] = await this.txHost.tx
       .update(users)

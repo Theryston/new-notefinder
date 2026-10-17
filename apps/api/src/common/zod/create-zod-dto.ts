@@ -29,6 +29,43 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
 /**
+ * A union of same-type single-value enums (a numeric preset list) is exactly
+ * `{ type, enum }`, so collapse it to the form @nestjs/swagger understands:
+ * Swagger explores `anyOf`/`oneOf` branches as model references and fails
+ * with a "circular dependency" error. Anything else passes through
+ * untouched. The committed document keeps the exact schema anyway
+ * (`cleanupOpenApiDoc` replaces the components Swagger explored).
+ */
+const collapseLiteralUnion = (property: JsonSchema): JsonSchema => {
+  const branches =
+    'anyOf' in property
+      ? property.anyOf
+      : 'oneOf' in property
+        ? property.oneOf
+        : undefined;
+  if (!Array.isArray(branches) || branches.length === 0) {
+    return property;
+  }
+  const singles = branches.map((branch) =>
+    isRecord(branch) && Array.isArray(branch.enum) && branch.enum.length === 1
+      ? { type: branch.type, value: branch.enum[0] }
+      : undefined,
+  );
+  const [first, ...rest] = singles;
+  if (
+    first === undefined ||
+    first.type === undefined ||
+    rest.some((single) => single?.type !== first.type)
+  ) {
+    return property;
+  }
+  return {
+    type: first.type,
+    enum: singles.map((single) => single?.value),
+  };
+};
+
+/**
  * Builds the per-property metadata @nestjs/swagger reads from
  * `_OPENAPI_METADATA_FACTORY`. It is what Swagger uses to expand query/param
  * DTOs into individual parameters; body and response components are replaced
@@ -48,7 +85,7 @@ const toSwaggerPropertyMetadata = (
     Object.entries(properties).map(([key, property]) => [
       key,
       {
-        ...(isRecord(property) ? property : {}),
+        ...(isRecord(property) ? collapseLiteralUnion(property) : {}),
         required: required.includes(key),
       },
     ]),
