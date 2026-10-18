@@ -6,9 +6,11 @@ import {
   sitemapEntrySchema,
   sitemapQuerySchema,
 } from './sitemaps.js';
+import { trackCoverUrlSchema } from './tracks.js';
 
-// Track views and the sitemap ordered by trending score. The sitemap schemas
-// are the shared ones of `sitemaps.ts`; the Tracks names stay as aliases.
+// Track views and the sitemap ordered by trending score. The paging and entry
+// shapes of the sitemap come from the shared `sitemaps.ts`; the Track entry
+// adds its cover on top of them.
 
 /**
  * `POST /v1/tracks/:trackId/views`. Without `viewId` a view is recorded; with
@@ -41,11 +43,12 @@ export type ListTrackSitemapQuery = z.infer<typeof listTrackSitemapQuerySchema>;
 
 /**
  * A listed Track: its ID and last change, plus its cover in our own storage
- * (null until a Processing finds one) for the sitemap's image entry. Optional
- * on input so a listing without covers still parses.
+ * for the sitemap's image entry (null until a Processing finds one). The cover
+ * is `nullish` because the web may deploy before the API that sends it, so a
+ * listing without the field still parses; the API always sends it.
  */
 export const trackSitemapEntrySchema = sitemapEntrySchema.extend({
-  coverUrl: z.string().min(1).max(2000).nullish(),
+  coverUrl: trackCoverUrlSchema.nullish(),
 });
 
 export type TrackSitemapEntry = z.infer<typeof trackSitemapEntrySchema>;

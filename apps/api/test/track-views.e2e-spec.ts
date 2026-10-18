@@ -338,6 +338,24 @@ describe('Track views and trending (e2e)', () => {
       expect(page.nextCursor).toBeNull();
     });
 
+    it('lists each Track cover, and null for a Track without one', async () => {
+      const covered = await createCompletedTrack(spec.testApp.db, {
+        coverUrl: 'https://files.example.com/covers/covered.webp',
+      });
+      const bare = await createCompletedTrack(spec.testApp.db, {});
+
+      const response = await anonymous().get('/v1/sitemaps/tracks').expect(200);
+
+      const page = trackSitemapPageSchema.parse(response.body);
+      const covers = new Map(
+        page.items.map((item) => [item.id, item.coverUrl]),
+      );
+      expect(covers.get(covered.id)).toBe(
+        'https://files.example.com/covers/covered.webp',
+      );
+      expect(covers.get(bare.id)).toBeNull();
+    });
+
     it('pages with cursors, ties broken by Track ID', async () => {
       const first = await createCompletedTrack(spec.testApp.db, {});
       const second = await createCompletedTrack(spec.testApp.db, {});

@@ -9,6 +9,7 @@ const row = (id: string, trendingScore: number) => ({
   id,
   trendingScore,
   updatedAt: new Date('2026-10-14T12:00:00.000Z'),
+  coverUrl: null,
 });
 
 describe('TrackSitemapService', () => {
@@ -38,10 +39,10 @@ describe('TrackSitemapService', () => {
       after: undefined,
       limit: 3,
     });
-    expect(page).toEqual({
+    expect(page).toStrictEqual({
       items: [
-        { id: 'a', updatedAt: '2026-10-14T12:00:00.000Z' },
-        { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z' },
+        { id: 'a', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
+        { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
       ],
       nextCursor: encodeTrackSitemapCursor({ score: 5, trackId: 'b' }),
     });
