@@ -517,6 +517,8 @@ for (const { locale, messages } of localeCatalogs) {
       const { home } = await open(page, `/${locale}`);
 
       await header(page).fill('queen');
+      // Arrows before the answer lands would be reset by it, so wait for rows.
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
       await header(page).press('ArrowDown');
       await expect(highlightedRow(page)).toHaveCount(1);
       await header(page).press('Escape');
@@ -548,6 +550,7 @@ for (const { locale, messages } of localeCatalogs) {
       const { home } = await open(page, `/${locale}`);
 
       await header(page).fill('queen');
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
       await header(page).press('ArrowDown');
       await expect(highlightedRow(page)).toContainText('Under Pressure');
       await header(page).press('Enter');
@@ -575,6 +578,7 @@ for (const { locale, messages } of localeCatalogs) {
         'header-suggestions-listbox',
       );
 
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
       await field.press('ArrowDown');
       await field.press('ArrowDown');
       const radio = rowLink(page, /Radio Ga Ga/);

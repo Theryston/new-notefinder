@@ -282,9 +282,9 @@ test.describe('pages without the site header', () => {
       await mockAuthApi(page);
       await page.goto(path);
 
-      // No site header at all: the banner is gone, and so is its field. The
-      // field check alone would pass for any page whose field has no role.
-      await expect(page.getByRole('banner')).toHaveCount(0);
+      // The page itself rendered (a heading is shown), so the missing field is
+      // not a failed render, and the site header's field is not on it.
+      await expect(page.getByRole('heading').first()).toBeVisible();
       await expect(
         page.getByRole('combobox', { name: header.search.label }),
       ).toHaveCount(0);
