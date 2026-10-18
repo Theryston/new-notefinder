@@ -39,7 +39,14 @@ export const listTrackSitemapQuerySchema = sitemapQuerySchema;
 
 export type ListTrackSitemapQuery = z.infer<typeof listTrackSitemapQuerySchema>;
 
-export const trackSitemapEntrySchema = sitemapEntrySchema;
+/**
+ * A listed Track: its ID and last change, plus its cover in our own storage
+ * (null until a Processing finds one) for the sitemap's image entry. Optional
+ * on input so a listing without covers still parses.
+ */
+export const trackSitemapEntrySchema = sitemapEntrySchema.extend({
+  coverUrl: z.string().min(1).max(2000).nullish(),
+});
 
 export type TrackSitemapEntry = z.infer<typeof trackSitemapEntrySchema>;
 

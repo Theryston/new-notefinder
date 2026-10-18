@@ -56,6 +56,24 @@ describe('TrackSitemapService', () => {
     expect(page.nextCursor).toBeNull();
   });
 
+  it('lists each Track cover in its own storage, null when there is none', async () => {
+    sitemap.listCompleted.mockResolvedValue([
+      { ...row('a', 9), coverUrl: 'https://files.example/a.jpg' },
+      { ...row('b', 5), coverUrl: null },
+    ]);
+
+    const page = await service.list({ limit: 2 });
+
+    expect(page.items).toEqual([
+      {
+        id: 'a',
+        updatedAt: '2026-10-14T12:00:00.000Z',
+        coverUrl: 'https://files.example/a.jpg',
+      },
+      { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
+    ]);
+  });
+
   it('resumes after the cursor it issued', async () => {
     sitemap.listCompleted.mockResolvedValue([]);
 

@@ -11,6 +11,7 @@ export type SitemapTrack = {
   id: string;
   trendingScore: number;
   updatedAt: Date;
+  coverUrl: string | null;
 };
 
 /** The completed Tracks, hottest first. */
@@ -40,6 +41,7 @@ export class TrackSitemapRepository {
         id: tracks.id,
         trendingScore: tracks.trendingScore,
         updatedAt: tracks.updatedAt,
+        coverUrl: tracks.coverUrl,
       })
       .from(tracks)
       .where(afterCursor ? and(completed, afterCursor) : completed)
