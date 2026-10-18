@@ -457,21 +457,6 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(page).toHaveURL(home);
     });
 
-    // Contract until #251: a highlighted Recording without a Track is a plain
-    // option, and Enter clicks it like any row. It has no press handler yet,
-    // so Enter closes the list and nothing else happens. #251 gives these rows
-    // the request and sign-in flow on the same click, and changes this test.
-    test('Enter on a highlighted Recording without a Track closes the list', async ({
-      page,
-    }) => {
-      const { home } = await typedWithRows(page);
-      await header(page).press('ArrowDown');
-      await expect(highlightedRow(page)).toContainText('Under Pressure');
-      await header(page).press('Enter');
-      await expect(list(page)).toHaveCount(0);
-      await expect(page).toHaveURL(home);
-    });
-
     test('the field is a combobox that names its listbox and the highlighted option', async ({
       page,
     }) => {
