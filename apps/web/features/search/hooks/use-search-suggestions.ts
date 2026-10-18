@@ -5,15 +5,13 @@ import {
   queryOptions,
   useQuery,
 } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-
 import { searchKeys } from '../query-keys';
 import {
   isSearchableQuery,
   normalizeSearchQuery,
-  SEARCH_DEBOUNCE_MS,
   SEARCH_SUGGESTIONS_LIMIT,
 } from '../search-params';
+import { useDebouncedQuery } from './use-debounced-query';
 import { fetchSearchPage } from './use-search-results';
 
 /**
@@ -60,13 +58,6 @@ export function searchSuggestionsQueryOptions({ query }: { query: string }) {
  * on every keystroke.
  */
 export function useSearchSuggestions(query: string) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-  useEffect(() => {
-    const timer = setTimeout(
-      () => setDebouncedQuery(query),
-      SEARCH_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(timer);
-  }, [query]);
+  const debouncedQuery = useDebouncedQuery(query);
   return useQuery(searchSuggestionsQueryOptions({ query: debouncedQuery }));
 }

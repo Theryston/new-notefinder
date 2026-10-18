@@ -17,6 +17,7 @@ import {
   updateCombobox,
 } from '../combobox-state-machine';
 import { headerFieldLoading } from '../header-search-loading';
+import { useDebouncedQuery } from '../hooks/use-debounced-query';
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
 import { normalizeSearchQuery, SEARCH_DEBOUNCE_MS } from '../search-params';
@@ -143,11 +144,16 @@ function useSubmitSearch({
  * key factory (which pulls Zod through contracts) stays out of the header
  * bundle.
  */
-function useHeaderLoading(
-  isSearchPage: boolean,
-  inputValue: string,
-  urlQuery: string | null,
-) {
+function useHeaderLoading({
+  isSearchPage,
+  inputValue,
+  urlQuery,
+}: {
+  isSearchPage: boolean;
+  inputValue: string;
+  urlQuery: string | null;
+}) {
+  const debouncedQuery = useDebouncedQuery(inputValue);
   const fetching =
     useIsFetching({
       predicate: (query) => query.queryKey[0] === 'search',
@@ -156,6 +162,7 @@ function useHeaderLoading(
     isSearchPage,
     inputValue,
     urlQuery,
+    debouncedQuery,
     fetching,
   });
 }
@@ -208,12 +215,20 @@ function useSuggestionsCombobox({
   inputRef,
 }: SuggestionsComboboxInput) {
   const [combobox, setCombobox] = useState<ComboboxState>(initialComboboxState);
-  // The rows are not arrow-navigable yet, so the row count is not needed:
-  // only the open state matters here.
-  const send = (event: ComboboxEvent): ComboboxIntent => {
-    const transition = updateCombobox(combobox, event, 0);
+  // The latest state, read and written synchronously: two events in one tick
+  // (a pick blurs the field, which sends again) must not read a stale state.
+  const stateRef = useRef<ComboboxState>(initialComboboxState);
+  const send = useCallback((event: ComboboxEvent): ComboboxIntent => {
+    // The rows are not arrow-navigable yet, so the row count is not needed:
+    // only the open state matters here.
+    const transition = updateCombobox(stateRef.current, event, 0);
+    stateRef.current = transition.state;
     setCombobox(transition.state);
     return transition.intent;
+  }, []);
+  const leaveField = () => {
+    send({ type: 'blurred' });
+    inputRef.current?.blur();
   };
   return {
     open: combobox.open,
@@ -228,9 +243,15 @@ function useSuggestionsCombobox({
     onBlur: () => {
       send({ type: 'blurred' });
     },
-    onPick: () => {
-      send({ type: 'blurred' });
-      inputRef.current?.blur();
+    /** A Track row: the next page must not reopen the old query. */
+    onPickTrack: () => {
+      setInputValue('');
+      leaveField();
+    },
+    /** The Search-for row: the field shows the query the search will use. */
+    onPickSearch: () => {
+      setInputValue(normalizeSearchQuery(inputValue));
+      leaveField();
     },
   };
 }
@@ -276,7 +297,7 @@ export function HeaderSearch() {
     isSearchPage,
   });
 
-  const loading = useHeaderLoading(isSearchPage, inputValue, urlQuery);
+  const loading = useHeaderLoading({ isSearchPage, inputValue, urlQuery });
   const onSubmit = useSubmitSearch({
     inputValue,
     setInputValue,
@@ -308,7 +329,8 @@ export function HeaderSearch() {
           <HeaderSuggestions
             query={inputValue}
             anchor={searchRef}
-            onPick={combobox.onPick}
+            onPickTrack={combobox.onPickTrack}
+            onPickSearch={combobox.onPickSearch}
           />
         </Suspense>
       ) : null}

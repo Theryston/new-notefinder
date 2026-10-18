@@ -82,7 +82,7 @@ function searchReply(state: SearchMockState, request: Request): MockReply {
 }
 
 /** The CORS headers the real API sends, so the browser accepts the reply. */
-function corsHeaders(request: Request): Record<string, string> {
+export function corsHeaders(request: Request): Record<string, string> {
   return {
     'access-control-allow-origin': request.headers().origin ?? '*',
     'access-control-allow-credentials': 'true',

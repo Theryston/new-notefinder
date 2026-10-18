@@ -1,14 +1,12 @@
 'use client';
 
 import { SearchIcon } from 'lucide-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, RefObject } from 'react';
-import { useState } from 'react';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
-import { TrackCoverPlaceholder } from '@/features/tracks/components/track-cover-placeholder';
+import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
 
 import { useSearchSuggestions } from '../hooks/use-search-suggestions';
@@ -16,11 +14,12 @@ import { searchHref } from '../search-href';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { suggestionPanelContent } from '../suggestion-panel';
 
+/** A row is at least 56px tall (DESIGN.md: list rows). */
 const ROW_CLASS =
-  'flex items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
-const LINK_ROW_CLASS = `${ROW_CLASS} hover:bg-foreground/10`;
+  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+const LINK_ROW_CLASS = `${ROW_CLASS} transition-colors duration-150 ease-out hover:bg-foreground/10`;
 
-/** The square cover of a row: the art, or the placeholder without one. */
+/** The 48px square cover of a row: the art, or the placeholder without it. */
 function SuggestionCover({
   coverArtUrl,
   placeholderSeed,
@@ -28,23 +27,13 @@ function SuggestionCover({
   coverArtUrl?: string | null;
   placeholderSeed: string;
 }) {
-  const [artFailed, setArtFailed] = useState(false);
-  const showArt = coverArtUrl && !artFailed;
-
   return (
-    <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-muted">
-      {showArt ? (
-        <Image
-          src={coverArtUrl}
-          alt=""
-          fill
-          sizes="40px"
-          className="object-cover"
-          onError={() => setArtFailed(true)}
-        />
-      ) : (
-        <TrackCoverPlaceholder seed={placeholderSeed} />
-      )}
+    <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+      <TrackCoverArt
+        coverArtUrl={coverArtUrl}
+        placeholderSeed={placeholderSeed}
+        sizes="48px"
+      />
     </span>
   );
 }
@@ -66,16 +55,17 @@ function SuggestionText({
 }
 
 /**
- * One Recording row. With a Track it is a link to that Track page; without
- * one it is static for now (the "generate notes" action comes with the
+ * One Recording row. With a Track it is a link to that Track page, and a pick
+ * clears the field (the next page should not reopen the old query). Without a
+ * Track it is static for now (the "generate notes" action comes with the
  * no-Track rows).
  */
 function SuggestionRow({
   card,
-  onPick,
+  onPickTrack,
 }: {
   card: TrackCardProps;
-  onPick: () => void;
+  onPickTrack: () => void;
 }) {
   const content = (
     <>
@@ -92,7 +82,7 @@ function SuggestionRow({
   return (
     <Link
       href={`/tracks/${card.trackId}`}
-      onClick={onPick}
+      onClick={onPickTrack}
       className={LINK_ROW_CLASS}
     >
       {content}
@@ -113,16 +103,18 @@ function SuggestionRow({
 export function HeaderSuggestions({
   query,
   anchor,
-  onPick,
+  onPickTrack,
+  onPickSearch,
 }: {
   query: string;
   anchor: RefObject<Element | null>;
-  onPick: () => void;
+  onPickTrack: () => void;
+  onPickSearch: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
   const { data } = useSearchSuggestions(query);
   const { items, noSongs } = suggestionPanelContent(data?.results);
-  const searchFor = searchHref(query);
+  const searchForHref = searchHref(query);
 
   return (
     <Popover open>
@@ -138,7 +130,10 @@ export function HeaderSuggestions({
         <ul className="flex flex-col">
           {items.map((item) => (
             <li key={item.mbid}>
-              <SuggestionRow card={toTrackCardProps(item)} onPick={onPick} />
+              <SuggestionRow
+                card={toTrackCardProps(item)}
+                onPickTrack={onPickTrack}
+              />
             </li>
           ))}
           {noSongs ? (
@@ -146,15 +141,15 @@ export function HeaderSuggestions({
               {t('noSongs')}
             </li>
           ) : null}
-          {searchFor ? (
+          {searchForHref ? (
             <li>
               <Link
-                href={searchFor}
-                onClick={onPick}
+                href={searchForHref}
+                onClick={onPickSearch}
                 className={`${LINK_ROW_CLASS} font-medium text-sm`}
               >
                 <SearchIcon aria-hidden="true" className="size-4" />
-                {t('searchFor', { query: searchFor.query.q })}
+                {t('searchFor', { query: searchForHref.query.q })}
               </Link>
             </li>
           ) : null}
