@@ -19,6 +19,7 @@ export * from './practice-attempts.js';
 export * from './practice-preferences.js';
 export * from './revalidation.js';
 export * from './search.js';
+export * from './sitemaps.js';
 export * from './streaks.js';
 export { type TrackAudio, trackAudioSchema } from './track-audio.js';
 export * from './track-processing.js';
