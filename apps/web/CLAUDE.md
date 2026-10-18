@@ -134,8 +134,8 @@ Legacy public routes (source: `app/` in
 | `/terms` | | `/[locale]/terms` |
 | `/sitemap.xml` | | `/sitemap.xml` |
 | `/tracks/sitemap/[...path]` | | kept: same URL, `app/tracks/sitemap/[...path]/route.ts` |
-| `/artists/sitemap/[...path]` | | keep, or redirect to the new sitemap |
-| `/albums/sitemap/[...path]` | | keep, or redirect to the new sitemap |
+| `/artists/sitemap/[...path]` | | kept: same URL, `app/artists/sitemap/[...path]/route.ts` |
+| `/albums/sitemap/[...path]` | | kept: same URL, `app/albums/sitemap/[...path]/route.ts` |
 
 Keep this table up to date whenever a route is added, renamed or removed,
 and mirror it in `e2e/legacy-routes.ts`: every legacy URL is checked to
