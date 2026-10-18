@@ -12,14 +12,14 @@ import { usePathname, useRouter } from '@/lib/i18n/navigation';
 import type { ComboboxEvent, ComboboxIntent } from '../combobox-state-machine';
 import { headerFieldLoading } from '../header-search-loading';
 import { useDebouncedQuery } from '../hooks/use-debounced-query';
+import {
+  type SuggestionsCombobox,
+  useSuggestionsCombobox,
+} from '../hooks/use-suggestions-combobox';
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
 import { normalizeSearchQuery, SEARCH_DEBOUNCE_MS } from '../search-params';
 import { HeaderSearchBar } from './header-search-bar';
-import {
-  type SuggestionsCombobox,
-  useSuggestionsCombobox,
-} from './suggestions-combobox';
 
 /**
  * The suggestions panel (popover plus its query) loads on first open, so the
@@ -262,12 +262,7 @@ export function HeaderSearch() {
 
   useSearchHotkey(expandAndFocus);
 
-  useLiveSearchNavigation({
-    inputValue,
-    urlQuery,
-    setUrlQuery,
-    isSearchPage,
-  });
+  useLiveSearchNavigation({ inputValue, urlQuery, setUrlQuery, isSearchPage });
 
   const loading = useHeaderLoading({ isSearchPage, inputValue, urlQuery });
   const onSubmit = useSubmitSearch({
@@ -288,6 +283,7 @@ export function HeaderSearch() {
         onInputChange={combobox.onInputChange}
         onSubmit={onSubmit}
         onKeyDown={combobox.onKeyDown}
+        suggestionsOpen={combobox.open}
         activeRowId={combobox.activeRowId}
         onOpen={expandAndFocus}
         onCancel={combobox.onCancel}

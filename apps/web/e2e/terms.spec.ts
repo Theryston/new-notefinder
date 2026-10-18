@@ -114,7 +114,7 @@ test.describe('terms page', () => {
       page.getByRole('banner').getByRole('link', { name: header.home }),
     ).toBeVisible();
     await expect(
-      page.getByRole('searchbox', { name: header.search.label }),
+      page.getByRole('combobox', { name: header.search.label }),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: header.skipToContent }),

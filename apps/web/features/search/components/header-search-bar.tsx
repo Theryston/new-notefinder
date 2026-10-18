@@ -7,6 +7,7 @@ import type { FormEvent, KeyboardEvent, RefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+import { SUGGESTIONS_LISTBOX_ID } from '../combobox-keys';
 import { SearchHotkeyHint } from './search-hotkey-hint';
 
 /** The pill search field, with the `⌘K` keycap from `md` up. */
@@ -16,6 +17,7 @@ function SearchField({
   onChange,
   onSubmit,
   onKeyDown,
+  suggestionsOpen,
   activeRowId,
   onFocus,
   onBlur,
@@ -26,6 +28,7 @@ function SearchField({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  suggestionsOpen: boolean;
   activeRowId?: string;
   onFocus: () => void;
   onBlur: () => void;
@@ -46,6 +49,10 @@ function SearchField({
         enterKeyHint="search"
         autoComplete="off"
         aria-label={t('label')}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={suggestionsOpen}
+        aria-controls={suggestionsOpen ? SUGGESTIONS_LISTBOX_ID : undefined}
         aria-keyshortcuts="Meta+K Control+K"
         aria-activedescendant={activeRowId}
         placeholder={t('placeholder')}
@@ -74,6 +81,8 @@ export type HeaderSearchBarProps = {
   onInputChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  /** Whether the suggestions list is shown (the field's `aria-expanded`). */
+  suggestionsOpen: boolean;
   /** The suggestion row the keyboard highlights, if any. */
   activeRowId?: string;
   onOpen: () => void;
@@ -92,6 +101,7 @@ export function HeaderSearchBar({
   onInputChange,
   onSubmit,
   onKeyDown,
+  suggestionsOpen,
   activeRowId,
   onOpen,
   onCancel,
@@ -125,6 +135,7 @@ export function HeaderSearchBar({
           onChange={onInputChange}
           onSubmit={onSubmit}
           onKeyDown={onKeyDown}
+          suggestionsOpen={suggestionsOpen}
           activeRowId={activeRowId}
           onFocus={onFocus}
           onBlur={onBlur}

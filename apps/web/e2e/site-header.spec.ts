@@ -36,7 +36,7 @@ async function openHomeWithSearch(page: Page) {
   await page.goto('/en');
   return {
     home: page.url(),
-    field: page.getByRole('searchbox', { name: header.search.label }),
+    field: page.getByRole('combobox', { name: header.search.label }),
   };
 }
 
@@ -139,7 +139,7 @@ test.describe('site header (desktop)', () => {
     // The query lands in the header field, and the focus is released.
     const landed = page
       .getByRole('banner')
-      .getByRole('searchbox', { name: header.search.label });
+      .getByRole('combobox', { name: header.search.label });
     await expect(landed).toHaveValue('bohemian rhapsody');
     await expect(landed).not.toBeFocused();
   });
@@ -282,8 +282,11 @@ test.describe('pages without the site header', () => {
       await mockAuthApi(page);
       await page.goto(path);
 
+      // No site header at all: the banner is gone, and so is its field. The
+      // field check alone would pass for any page whose field has no role.
+      await expect(page.getByRole('banner')).toHaveCount(0);
       await expect(
-        page.getByRole('searchbox', { name: header.search.label }),
+        page.getByRole('combobox', { name: header.search.label }),
       ).toHaveCount(0);
       await expect(
         page.getByRole('link', { name: header.skipToContent }),

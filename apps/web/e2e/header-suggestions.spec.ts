@@ -139,11 +139,11 @@ for (const { locale, messages } of localeCatalogs) {
   const header = (page: Page) =>
     page
       .getByRole('banner')
-      .getByRole('searchbox', { name: messages.header.search.label });
+      .getByRole('combobox', { name: messages.header.search.label });
   const list = (page: Page) =>
-    page.getByRole('group', { name: suggestions.label });
+    page.getByRole('listbox', { name: suggestions.label });
   const rowLink = (page: Page, name: string | RegExp) =>
-    list(page).getByRole('link', { name });
+    list(page).getByRole('option', { name });
   const spinner = (page: Page) =>
     page
       .getByRole('banner')
@@ -177,7 +177,7 @@ for (const { locale, messages } of localeCatalogs) {
       const { home } = await open(page, `/${locale}`);
 
       await header(page).fill('queen');
-      const rows = list(page).getByRole('listitem');
+      const rows = list(page).getByRole('option');
       await expect(rows).toHaveCount(RANKED.length + 1);
       for (const [index, hit] of RANKED.entries()) {
         await expect(rows.nth(index)).toContainText(hit.title);
@@ -200,7 +200,7 @@ for (const { locale, messages } of localeCatalogs) {
         limit: '6',
       });
       // Six Recordings plus the Search-for row, never a seventh hit.
-      await expect(list(page).getByRole('listitem')).toHaveCount(7);
+      await expect(list(page).getByRole('option')).toHaveCount(7);
     });
 
     test('shows the cover art, or the placeholder, at the design size', async ({
@@ -212,7 +212,7 @@ for (const { locale, messages } of localeCatalogs) {
       await open(page, `/${locale}`);
 
       await header(page).fill('queen');
-      const rows = list(page).getByRole('listitem');
+      const rows = list(page).getByRole('option');
       const art = rows.nth(0).locator('img');
       await expect(art).toHaveCount(1);
       await expect(art).toHaveJSProperty('naturalWidth', 1);
@@ -303,7 +303,7 @@ for (const { locale, messages } of localeCatalogs) {
       await typeThenBlur(page, 'queen');
       const requests = calls.length;
       await header(page).click();
-      await expect(list(page).getByRole('listitem').first()).toBeVisible();
+      await expect(list(page).getByRole('option').first()).toBeVisible();
       expect(calls).toHaveLength(requests);
     });
 
@@ -314,7 +314,7 @@ for (const { locale, messages } of localeCatalogs) {
       const requests = calls.length;
       await page.keyboard.press('Control+k');
       await expect(header(page)).toBeFocused();
-      await expect(list(page).getByRole('listitem').first()).toBeVisible();
+      await expect(list(page).getByRole('option').first()).toBeVisible();
       expect(calls).toHaveLength(requests);
     });
 
@@ -412,6 +412,39 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(list(page)).toHaveCount(0);
       await expect(page).toHaveURL(home);
     });
+
+    test('arrows and Enter open the highlighted Track on a phone', async ({
+      page,
+    }) => {
+      await registerTrack('seedtrack02');
+      const { field } = await typedOnPhone(page);
+
+      await field.press('ArrowDown');
+      await field.press('ArrowDown');
+      await expect(list(page).locator('[data-highlighted]')).toContainText(
+        'Radio Ga Ga',
+      );
+      await field.press('Enter');
+      await expect(page).toHaveURL(/\/tracks\/seedtrack02/);
+    });
+
+    test('Enter with nothing highlighted goes to the full search on a phone', async ({
+      page,
+    }) => {
+      const { field } = await typedOnPhone(page);
+
+      await field.press('Enter');
+      await expect(page).toHaveURL(`/${locale}/search?q=queen`);
+    });
+
+    test('Enter on a blank phone field does nothing', async ({ page }) => {
+      const field = await openOnPhone(page);
+      const home = page.url();
+
+      await field.press('Enter');
+      await expect(page).toHaveURL(home);
+      await expect(list(page)).toHaveCount(0);
+    });
   });
 
   test.describe(`header suggestion keyboard (${locale})`, () => {
@@ -491,6 +524,73 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(header(page)).toBeFocused();
       await expect(header(page)).toHaveValue('queen');
       await expect(page).toHaveURL(home);
+    });
+
+    test('the arrows do nothing on a closed list', async ({ page }) => {
+      const { home } = await open(page, `/${locale}`);
+
+      await header(page).focus();
+      await header(page).press('ArrowDown');
+      await header(page).press('ArrowUp');
+      await expect(list(page)).toHaveCount(0);
+      await expect(header(page)).toBeFocused();
+      await expect(header(page)).toHaveValue('');
+      await expect(page).toHaveURL(home);
+    });
+
+    // Contract until #251: a highlighted Recording without a Track is a plain
+    // option, and Enter clicks it like any row. It has no press handler yet,
+    // so Enter closes the list and nothing else happens. #251 gives these rows
+    // the request and sign-in flow on the same click, and changes this test.
+    test('Enter on a highlighted Recording without a Track closes the list', async ({
+      page,
+    }) => {
+      const { home } = await open(page, `/${locale}`);
+
+      await header(page).fill('queen');
+      await header(page).press('ArrowDown');
+      await expect(highlightedRow(page)).toContainText('Under Pressure');
+      await header(page).press('Enter');
+      await expect(list(page)).toHaveCount(0);
+      await expect(page).toHaveURL(home);
+    });
+
+    test('the field is a combobox that names its listbox and the highlighted option', async ({
+      page,
+    }) => {
+      await open(page, `/${locale}`);
+      const field = header(page);
+
+      await expect(field).toHaveAttribute('aria-expanded', 'false');
+      await expect(field).not.toHaveAttribute('aria-controls');
+      await field.fill('queen');
+      await expect(list(page)).toBeVisible();
+      await expect(field).toHaveAttribute('aria-expanded', 'true');
+      await expect(field).toHaveAttribute(
+        'aria-controls',
+        'header-suggestions-listbox',
+      );
+      await expect(list(page)).toHaveAttribute(
+        'id',
+        'header-suggestions-listbox',
+      );
+
+      await field.press('ArrowDown');
+      await field.press('ArrowDown');
+      const radio = rowLink(page, /Radio Ga Ga/);
+      await expect(radio).toHaveAttribute('aria-selected', 'true');
+      await expect(rowLink(page, /Under Pressure/)).toHaveAttribute(
+        'aria-selected',
+        'false',
+      );
+      await expect(field).toHaveAttribute(
+        'aria-activedescendant',
+        (await radio.getAttribute('id')) ?? '',
+      );
+
+      await field.press('Escape');
+      await expect(field).toHaveAttribute('aria-expanded', 'false');
+      await expect(field).not.toHaveAttribute('aria-activedescendant');
     });
   });
 }
