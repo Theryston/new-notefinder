@@ -16,7 +16,7 @@ export function trackSitemapXml(
 ): string {
   return buildSitemapUrlset(
     entries.map((entry) => ({
-      path: `/tracks/${entry.id}`,
+      segments: ['tracks', entry.id],
       updatedAt: entry.updatedAt,
       type: 'track' as const,
     })),

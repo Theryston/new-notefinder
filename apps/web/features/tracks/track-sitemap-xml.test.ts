@@ -42,6 +42,30 @@ describe('trackSitemapXml', () => {
     expect(xml).toContain('/en/tracks/a%26b');
     expect(xml).not.toContain('a&b');
   });
+
+  it('gives each Track URL x-default, its changefreq and its priority', () => {
+    const xml = trackSitemapXml(
+      [{ id: 'clx-hot', updatedAt: '2026-10-14T12:00:00.000Z' }],
+      'https://notefinder.com.br',
+    );
+
+    expect(xml).toContain(
+      '<xhtml:link rel="alternate" hreflang="x-default" href="https://notefinder.com.br/tracks/clx-hot"/>',
+    );
+    expect(xml).toContain(
+      '<changefreq>daily</changefreq><priority>0.8</priority>',
+    );
+  });
+
+  it('keeps a Track ID with a slash inside one encoded segment', () => {
+    const xml = trackSitemapXml(
+      [{ id: 'a/b', updatedAt: '2026-10-14T12:00:00.000Z' }],
+      'https://notefinder.com.br',
+    );
+
+    expect(xml).toContain('https://notefinder.com.br/en/tracks/a%2Fb');
+    expect(xml).not.toContain('/tracks/a/b');
+  });
 });
 
 describe('sitemapPageIndex', () => {
