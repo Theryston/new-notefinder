@@ -34,7 +34,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// biome-ignore lint/style/noDefaultExport: Next requires a default export for global-not-found.
 export default async function GlobalNotFound() {
   const locale = await currentLocale();
   const { errors } = await getMessages();

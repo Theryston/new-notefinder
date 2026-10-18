@@ -190,6 +190,7 @@
         "apps/web/app/**/error.tsx",
         "apps/web/app/**/global-error.tsx",
         "apps/web/app/**/not-found.tsx",
+        "apps/web/app/**/global-not-found.tsx",
         "apps/web/app/**/template.tsx",
         "apps/web/app/**/default.tsx",
         "apps/web/app/**/opengraph-image.tsx",
