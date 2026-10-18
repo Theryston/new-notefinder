@@ -57,7 +57,7 @@ export const legacyRoutes: LegacyRoute[] = [
   },
   { path: '/setup-username?redirectTo=/me/edit', implemented: true },
   { path: '/terms', implemented: true },
-  { path: '/sitemap.xml', implemented: false, todo: sitemapTodo },
+  { path: '/sitemap.xml', implemented: true, keepsUrl: true },
   { path: '/tracks/sitemap/0.xml', implemented: true, keepsUrl: true },
   { path: '/artists/sitemap/0.xml', implemented: false, todo: sitemapTodo },
   { path: '/albums/sitemap/0.xml', implemented: false, todo: sitemapTodo },
