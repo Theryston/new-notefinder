@@ -1,9 +1,7 @@
 import type { TrackSitemapEntry } from '@notefinder/contracts';
 
-import {
-  buildSitemapUrlset,
-  parseSitemapShardName,
-} from '@/lib/sitemap/sitemap-xml';
+import { sitemapShardIndex } from '@/lib/sitemap/sitemap-shard';
+import { buildSitemapUrlset } from '@/lib/sitemap/sitemap-xml';
 
 /**
  * The sitemap file for a page of Tracks, in the order given (the API sends
@@ -26,8 +24,5 @@ export function trackSitemapXml(
 
 /** The page index a legacy-style sitemap path names (`0.xml` is page 0). */
 export function sitemapPageIndex(path: readonly string[]): number | undefined {
-  if (path.length !== 1) return undefined;
-  const name = path[0];
-  if (name === undefined) return undefined;
-  return parseSitemapShardName(name);
+  return sitemapShardIndex(path);
 }
