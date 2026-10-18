@@ -35,6 +35,33 @@ describe('getArtistSitemapFile', () => {
     expect(cacheTag).toHaveBeenCalledWith('sitemap');
   });
 
+  it('walks the cursors of the earlier files to reach a later one', async () => {
+    mockServerApi
+      .mockResolvedValueOnce(page(['art-a'], 'cursor-1'))
+      .mockResolvedValueOnce(page(['art-b'], 'cursor-2'))
+      .mockResolvedValueOnce(page(['art-c'], null));
+
+    await expect(getArtistSitemapFile(2)).resolves.toEqual(
+      page(['art-c'], null).items,
+    );
+
+    expect(mockServerApi).toHaveBeenCalledTimes(3);
+    expect(mockServerApi).toHaveBeenNthCalledWith(
+      2,
+      '/sitemaps/artists',
+      expect.objectContaining({
+        query: { limit: 5000, cursor: 'cursor-1' },
+      }),
+    );
+    expect(mockServerApi).toHaveBeenNthCalledWith(
+      3,
+      '/sitemaps/artists',
+      expect.objectContaining({
+        query: { limit: 5000, cursor: 'cursor-2' },
+      }),
+    );
+  });
+
   it('is undefined past the last file', async () => {
     mockServerApi.mockResolvedValueOnce(page(['art-a'], null));
 
