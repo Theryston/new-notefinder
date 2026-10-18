@@ -111,6 +111,44 @@
         ]
       }
     },
+    "/v1/sitemaps/albums": {
+      "get": {
+        "operationId": "AlbumSitemapController_listAlbums_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 1000,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of Albums with a completed Track, in ID order."
+          },
+          "400": {
+            "description": "The query or the cursor is bad."
+          }
+        },
+        "tags": [
+          "sitemaps"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/recommendations": {
       "get": {
         "operationId": "TrackRecommendationsController_getRecommendations_v1",
@@ -604,6 +642,44 @@
         ]
       }
     },
+    "/v1/sitemaps/users": {
+      "get": {
+        "operationId": "UserSitemapController_listUsers_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 1000,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of Users with a Username, in ID order."
+          },
+          "400": {
+            "description": "The query or the cursor is bad."
+          }
+        },
+        "tags": [
+          "sitemaps"
+        ]
+      }
+    },
     "/v1/artists/{id}": {
       "get": {
         "operationId": "ArtistsController_getArtist_v1",
@@ -680,6 +756,44 @@
         },
         "tags": [
           "artists"
+        ]
+      }
+    },
+    "/v1/sitemaps/artists": {
+      "get": {
+        "operationId": "ArtistSitemapController_listArtists_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 1000,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of Artists with a completed Track, in ID order."
+          },
+          "400": {
+            "description": "The query or the cursor is bad."
+          }
+        },
+        "tags": [
+          "sitemaps"
         ]
       }
     },
