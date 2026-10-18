@@ -3,21 +3,33 @@
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, RefObject } from 'react';
+import { useEffect } from 'react';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
 
+import {
+  SUGGESTIONS_LISTBOX_ID,
+  suggestionRowId,
+  suggestionRowLayout,
+  suggestionRowProps,
+} from '../combobox-keys';
 import { useSearchSuggestions } from '../hooks/use-search-suggestions';
 import { searchHref } from '../search-href';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { suggestionPanelContent } from '../suggestion-panel';
 
-/** A row is at least 56px tall (DESIGN.md: list rows). */
+/**
+ * A row is at least 56px tall (DESIGN.md: list rows). The highlight is the
+ * keyboard's current row, shown with the same wash as the hover.
+ */
 const ROW_CLASS =
-  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-highlighted:bg-foreground/10';
 const LINK_ROW_CLASS = `${ROW_CLASS} transition-colors duration-150 ease-out hover:bg-foreground/10`;
+
+type RowProps = ReturnType<typeof suggestionRowProps>;
 
 /** The 48px square cover of a row: the art, or the placeholder without it. */
 function SuggestionCover({
@@ -55,16 +67,20 @@ function SuggestionText({
 }
 
 /**
- * One Recording row. With a Track it is a link to that Track page, and a pick
- * clears the field (the next page should not reopen the old query). Without a
- * Track it is static for now (the "generate notes" action comes with the
- * no-Track rows).
+ * One Recording option. With a Track it is a link to that Track page, and a
+ * pick clears the field (the next page should not reopen the old query).
+ *
+ * Without a Track it is a plain option for now. Keyboard Enter on a
+ * highlighted option clicks it whatever its type, so the request and sign-in
+ * flows of the no-Track rows (#251) hang off the same click handler.
  */
 function SuggestionRow({
   card,
+  rowProps,
   onPickTrack,
 }: {
   card: TrackCardProps;
+  rowProps: RowProps;
   onPickTrack: () => void;
 }) {
   const content = (
@@ -77,10 +93,15 @@ function SuggestionRow({
     </>
   );
   if (card.trackId === null) {
-    return <div className={ROW_CLASS}>{content}</div>;
+    return (
+      <div {...rowProps} className={ROW_CLASS}>
+        {content}
+      </div>
+    );
   }
   return (
     <Link
+      {...rowProps}
       href={`/tracks/${card.trackId}`}
       onClick={onPickTrack}
       className={LINK_ROW_CLASS}
@@ -92,29 +113,52 @@ function SuggestionRow({
 
 /**
  * The header suggestions: up to six Recordings in catalog rank order, then
- * the trailing "Search for" row that goes to the full search. A settled empty
- * answer adds a "No songs found" line above the same row (the full search
- * still answers lyrics). The panel is anchored to the search bar, full width
- * on small screens.
+ * the trailing "Search for" option that goes to the full search. A settled
+ * empty answer adds a "No songs found" line above it (the full search still
+ * answers lyrics). The panel is anchored to the search bar, full width on
+ * small screens.
  *
- * Its rows are links, and a press on the panel never moves focus, so the
- * field does not blur (which would close the panel) before the click lands.
+ * The rows form a listbox the field names with `aria-controls`; the highlight
+ * is the field's `aria-activedescendant`. A press on the panel never moves
+ * focus, so the field does not blur (which would close the panel) before the
+ * click lands.
  */
 export function HeaderSuggestions({
   query,
   anchor,
+  highlighted,
+  onRowsChange,
   onPickTrack,
   onPickSearch,
 }: {
   query: string;
   anchor: RefObject<Element | null>;
+  /** The row the keyboard highlights: an index, the Search-for row last. */
+  highlighted: number | null;
+  /** Reports the rows on screen, so the arrow keys wrap inside them. */
+  onRowsChange: (count: number) => void;
   onPickTrack: () => void;
   onPickSearch: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
   const { data } = useSearchSuggestions(query);
-  const { items, noSongs } = suggestionPanelContent(data?.results);
+  const results = data?.results;
+  const { items, noSongs } = suggestionPanelContent(results);
   const searchForHref = searchHref(query);
+  const { searchForIndex } = suggestionRowLayout(items.length);
+
+  // A new answer is a new set of rows: the list reports them so the highlight
+  // starts over. The row count (Search-for included) is the layout's.
+  useEffect(() => {
+    onRowsChange(suggestionRowLayout(results?.length ?? 0).rowCount);
+  }, [results, onRowsChange]);
+
+  useEffect(() => {
+    if (highlighted === null) return;
+    document
+      .getElementById(suggestionRowId(highlighted))
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [highlighted]);
 
   return (
     <Popover open>
@@ -122,38 +166,44 @@ export function HeaderSuggestions({
         anchor={anchor}
         initialFocus={false}
         finalFocus={false}
-        role="group"
-        aria-label={t('label')}
+        role="presentation"
         onMouseDown={(event: MouseEvent) => event.preventDefault()}
         className="max-h-96 w-(--anchor-width) gap-0 overflow-y-auto rounded-xl p-1"
       >
-        <ul className="flex flex-col">
-          {items.map((item) => (
-            <li key={item.mbid}>
-              <SuggestionRow
-                card={toTrackCardProps(item)}
-                onPickTrack={onPickTrack}
-              />
-            </li>
+        <div
+          role="listbox"
+          id={SUGGESTIONS_LISTBOX_ID}
+          aria-label={t('label')}
+          className="flex flex-col"
+        >
+          {items.map((item, index) => (
+            <SuggestionRow
+              key={item.mbid}
+              card={toTrackCardProps(item)}
+              rowProps={suggestionRowProps(index, highlighted)}
+              onPickTrack={onPickTrack}
+            />
           ))}
           {noSongs ? (
-            <li className={`${ROW_CLASS} text-muted-foreground text-sm`}>
+            <div
+              role="presentation"
+              className={`${ROW_CLASS} text-muted-foreground text-sm`}
+            >
               {t('noSongs')}
-            </li>
+            </div>
           ) : null}
           {searchForHref ? (
-            <li>
-              <Link
-                href={searchForHref}
-                onClick={onPickSearch}
-                className={`${LINK_ROW_CLASS} font-medium text-sm`}
-              >
-                <SearchIcon aria-hidden="true" className="size-4" />
-                {t('searchFor', { query: searchForHref.query.q })}
-              </Link>
-            </li>
+            <Link
+              {...suggestionRowProps(searchForIndex, highlighted)}
+              href={searchForHref}
+              onClick={onPickSearch}
+              className={`${LINK_ROW_CLASS} font-medium text-sm`}
+            >
+              <SearchIcon aria-hidden="true" className="size-4" />
+              {t('searchFor', { query: searchForHref.query.q })}
+            </Link>
           ) : null}
-        </ul>
+        </div>
       </PopoverContent>
     </Popover>
   );
