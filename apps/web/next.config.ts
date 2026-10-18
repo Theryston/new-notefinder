@@ -23,6 +23,11 @@ const cacheHandler = new URL('./cache-handlers/redis.ts', import.meta.url).href;
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Unmatched URLs are decided at routing time, so `app/global-not-found.tsx`
+  // answers them with a real 404 status, whatever the page would have streamed.
+  experimental: {
+    globalNotFound: true,
+  },
   images: {
     remotePatterns: [
       // Track covers are front covers of a release...

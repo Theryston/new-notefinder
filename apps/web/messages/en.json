@@ -753,5 +753,13 @@
       "title": "Album not found",
       "description": "We couldn't find this album. It may have been removed or the link is wrong."
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or was moved.",
+    "homeLabel": "Go home",
+    "searchLabel": "Search songs",
+    "metaTitle": "Page not found",
+    "metaDescription": "The page you are looking for does not exist or was moved."
   }
 }

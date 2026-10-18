@@ -126,3 +126,49 @@ describe('proxy artist guard', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 });
+
+describe('proxy locale header', () => {
+  const forwardedLocale = (response: Response) =>
+    response.headers.get('x-middleware-request-x-notefinder-locale');
+
+  it('forwards the URL locale to the page for a locale-prefixed path', async () => {
+    const proxy = await loadProxy();
+
+    const response = await proxy(
+      new NextRequest('http://localhost:3000/pt-BR/search?q=queen'),
+    );
+
+    expect(forwardedLocale(response)).toBe('pt-BR');
+  });
+
+  it('forwards the locale with the missing catalog ID rewrite', async () => {
+    const proxy = await loadProxy();
+    fetchMock.mockResolvedValue(
+      jsonResponse(404, {
+        statusCode: 404,
+        code: 'NOT_FOUND',
+        message: 'Artist not found',
+      }),
+    );
+
+    const response = await proxy(
+      new NextRequest('http://localhost:3000/pt-BR/artists/does-not-exist'),
+    );
+
+    expect(response.headers.get('x-middleware-rewrite')).toBe(
+      'http://localhost:3000/_not-found',
+    );
+    expect(forwardedLocale(response)).toBe('pt-BR');
+  });
+
+  it('does not forward a locale on the unprefixed redirect', async () => {
+    const proxy = await loadProxy();
+
+    const response = await proxy(
+      new NextRequest('http://localhost:3000/tracks/abc'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(forwardedLocale(response)).toBeNull();
+  });
+});

@@ -1,31 +1,13 @@
 import type { Metadata } from 'next';
-import { Figtree, Geist_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 
 import '../globals.css';
+import { HtmlDocument } from '@/components/html-document';
 import { Providers } from '@/components/providers';
 import { AuthGate } from '@/features/auth/components/auth-gate';
 import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
-import { cn } from '@/lib/utils';
-
-// `optional`: the fonts are preloaded, so they are almost always there for
-// the first paint; when they aren't, the page keeps the fallback instead of
-// swapping later. A swap reflows text, and on centered layouts (auth pages)
-// that moves everything and eats the CLS budget (lighthouserc.cjs). The
-// fallback is metric-adjusted to Arial, which not every system has.
-const fontSans = Figtree({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'optional',
-});
-
-const fontMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'optional',
-});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -52,26 +34,15 @@ export default async function LocaleLayout({
   const { errors } = await getMessages();
 
   return (
-    <html
-      lang={locale}
-      suppressHydrationWarning
-      className={cn(
-        'antialiased',
-        fontSans.variable,
-        fontMono.variable,
-        'font-sans',
-      )}
-    >
-      <body>
-        {/* Only the namespaces client components need, to keep the RSC
-            payload small. */}
-        <NextIntlClientProvider messages={{ errors }}>
-          <Providers>
-            <AuthGate />
-            {children}
-          </Providers>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <HtmlDocument locale={locale}>
+      {/* Only the namespaces client components need, to keep the RSC
+          payload small. */}
+      <NextIntlClientProvider messages={{ errors }}>
+        <Providers>
+          <AuthGate />
+          {children}
+        </Providers>
+      </NextIntlClientProvider>
+    </HtmlDocument>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from '@/lib/entity-route';
 import { getServerEnv } from '@/lib/env/server';
 import { detectLocale } from '@/lib/i18n/detect-locale';
+import { withLocaleHeader } from '@/lib/i18n/locale-header';
 import { isLocale, localeCookieName } from '@/lib/i18n/routing';
 
 /**
@@ -42,7 +43,10 @@ async function checkCatalogRoute(
     );
   }
   if (verdict.kind === 'missing') {
-    return NextResponse.rewrite(new URL('/_not-found', request.url));
+    // The framework 404 has no `[locale]` segment to read the locale from.
+    return NextResponse.rewrite(new URL('/_not-found', request.url), {
+      request: { headers: withLocaleHeader(request.headers, route.locale) },
+    });
   }
   return undefined;
 }
@@ -63,7 +67,12 @@ export async function proxy(request: NextRequest) {
   // A URL that already has a locale is always respected.
   if (isLocale(firstSegment)) {
     // Catalog IDs need a verdict before anything streams (see above).
-    return (await checkCatalogRoute(request)) ?? NextResponse.next();
+    return (
+      (await checkCatalogRoute(request)) ??
+      NextResponse.next({
+        request: { headers: withLocaleHeader(request.headers, firstSegment) },
+      })
+    );
   }
 
   const locale = detectLocale({
