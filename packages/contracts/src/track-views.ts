@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
-import { cursorPageSchema, cursorPaginationQuerySchema } from './pagination.js';
+import { cursorPageSchema } from './pagination.js';
+import {
+  SITEMAP_PAGE_SIZE,
+  sitemapEntrySchema,
+  sitemapQuerySchema,
+} from './sitemaps.js';
 
-// Track views and the sitemap ordered by trending score.
+// Track views and the sitemap ordered by trending score. The sitemap schemas
+// are the shared ones of `sitemaps.ts`; the Tracks names stay as aliases.
 
 /**
  * `POST /v1/tracks/:trackId/views`. Without `viewId` a view is recorded; with
@@ -23,29 +29,17 @@ export const trackViewSchema = z.object({
 export type TrackView = z.infer<typeof trackViewSchema>;
 
 /** The most Tracks one sitemap page lists, and what the web's files ask for. */
-export const TRACK_SITEMAP_PAGE_SIZE = 5000;
+export const TRACK_SITEMAP_PAGE_SIZE = SITEMAP_PAGE_SIZE;
 
 /**
  * `GET /v1/sitemaps/tracks`: a page of completed Tracks, the highest trending
  * score first. `updatedAt` is the Track's last change (ISO 8601).
  */
-export const listTrackSitemapQuerySchema = cursorPaginationQuerySchema.extend({
-  // A sitemap file holds thousands of URLs, so its pages are bigger than a
-  // list's.
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(TRACK_SITEMAP_PAGE_SIZE)
-    .default(1000),
-});
+export const listTrackSitemapQuerySchema = sitemapQuerySchema;
 
 export type ListTrackSitemapQuery = z.infer<typeof listTrackSitemapQuerySchema>;
 
-export const trackSitemapEntrySchema = z.object({
-  id: z.string().min(1).max(128),
-  updatedAt: z.iso.datetime({ offset: true }),
-});
+export const trackSitemapEntrySchema = sitemapEntrySchema;
 
 export type TrackSitemapEntry = z.infer<typeof trackSitemapEntrySchema>;
 

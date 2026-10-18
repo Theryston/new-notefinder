@@ -157,4 +157,17 @@ describe('Entity sitemaps (e2e)', () => {
       expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
     });
   });
+
+  // A Profile URL is built from the Username, so each Users entry carries it.
+  it('GET /v1/sitemaps/users: each listed User carries its Username', async () => {
+    const grace = await createUser(spec.testApp.db, { username: 'grace' });
+    await createUser(spec.testApp.db, { username: null });
+
+    const response = await anonymous().get('/v1/sitemaps/users').expect(200);
+
+    const page = userSitemapPageSchema.parse(response.body);
+    expect(page.items).toEqual([
+      { id: grace.id, username: 'grace', updatedAt: expect.any(String) },
+    ]);
+  });
 });
