@@ -4,7 +4,7 @@ import {
   xmlContentType,
 } from '@/lib/sitemap/crawler-response';
 import { requestSiteOrigin } from '@/lib/sitemap/request-origin';
-import { parseSitemapShardName } from '@/lib/sitemap/sitemap-xml';
+import { sitemapShardIndex } from '@/lib/sitemap/sitemap-shard';
 
 /**
  * The general-pages shard (`/pages/sitemap/0.xml`). The curated list fits in
@@ -15,9 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
-  const shard =
-    path.length === 1 ? parseSitemapShardName(path[0] ?? '') : undefined;
-  if (shard !== 0) {
+  if (sitemapShardIndex(path) !== 0) {
     return new Response('Not found', { status: 404 });
   }
   return crawlerResponse(

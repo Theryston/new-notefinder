@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { GET } from './route';
+vi.mock('@/lib/sitemap/request-origin', () => ({
+  requestSiteOrigin: () => 'https://notefinder.com.br',
+}));
 
-const request = new Request('https://notefinder.com.br/pages/sitemap/0.xml', {
-  headers: { 'x-forwarded-host': 'notefinder.com.br' },
-});
+const { GET } = await import('./route');
+
+const request = new Request('https://notefinder.com.br/pages/sitemap/0.xml');
 
 const get = (path: string[]) =>
   GET(request, { params: Promise.resolve({ path }) });
@@ -15,6 +17,7 @@ describe('GET /pages/sitemap/[...path]', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/xml');
+    expect(response.headers.get('vary')).toBe('X-Forwarded-Host, Host');
     const xml = await response.text();
     expect(xml).toContain('<loc>https://notefinder.com.br/en/terms</loc>');
     expect(xml).toContain('<loc>https://notefinder.com.br/pt-BR/sign-in</loc>');
