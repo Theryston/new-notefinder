@@ -251,6 +251,26 @@ describe('TrackPipelineService', () => {
       );
     });
 
+    it('invalidates the shared sitemap tag when a Track completes, before completing it', async () => {
+      processings.findProcessing.mockResolvedValue(
+        processing({
+          status: 'EXTRACTING_LYRICS',
+          videoId: 'video-1',
+          videoSource: 'youtube_music',
+        }),
+      );
+      lyrics.run.mockResolvedValue({ kind: 'done' });
+
+      await pipeline.runStep(lyricsJob, true);
+
+      expect(revalidation.revalidate).toHaveBeenCalledWith(['sitemap']);
+      expect(
+        revalidation.revalidate.mock.invocationCallOrder.at(-1),
+      ).toBeLessThan(
+        processings.markCompleted.mock.invocationCallOrder[0] ?? 0,
+      );
+    });
+
     it('queues the cover keyed by its Processing, with the artwork the video step found', async () => {
       processings.findProcessing.mockResolvedValue(processing());
 

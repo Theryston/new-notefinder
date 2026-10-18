@@ -18,3 +18,35 @@ export async function sitemapFileItems<TItem>(
   }
   return (await readPage(cursor)).items;
 }
+
+/** A sitemap file as a route answers it. `partial` marks a failed read. */
+export type SitemapFile<TItem> = {
+  items: readonly TItem[];
+  partial: boolean;
+};
+
+/**
+ * Reads one sitemap file for a route. `read` answers its items, or undefined
+ * past the last file (a not-found). An upstream failure is logged and answered
+ * as an empty file marked partial: crawlers still get valid XML, the failure
+ * stays in the server log, and the CDN keeps the thin file only briefly. A
+ * bare 500 would make the crawler drop the file, and a silent empty one would
+ * hide the outage.
+ */
+export async function readSitemapFile<TItem>(
+  name: string,
+  read: () => Promise<readonly TItem[] | undefined>,
+): Promise<SitemapFile<TItem> | undefined> {
+  try {
+    const items = await read();
+    return items === undefined ? undefined : { items, partial: false };
+  } catch (error) {
+    console.error(
+      `Sitemap ${name} could not be read, answering it empty: ${messageOf(error)}`,
+    );
+    return { items: [], partial: true };
+  }
+}
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);

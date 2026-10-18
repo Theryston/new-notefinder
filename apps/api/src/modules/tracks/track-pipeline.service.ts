@@ -296,6 +296,9 @@ export class TrackPipelineService {
       cacheTags.tracks,
       ...catalogPageTags(catalog),
     ]);
+    // A completed Track joins the Tracks, Artists and Albums sitemaps, which
+    // share one tag: it drops their cached pages, so the next crawl sees it.
+    await this.revalidation.revalidate([cacheTags.sitemap]);
     await this.processings.markCompleted(processing.id, lastStep);
   }
 
