@@ -9,7 +9,11 @@ import { users } from '../../database/schema/users.js';
 export class StreakReminderRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
-  /** PostgreSQL computes the local calendar, including daylight saving time. */
+  /**
+   * PostgreSQL computes the local calendar, including daylight saving time.
+   * The explicit order makes sends deterministic: without it, Postgres returns
+   * rows in heap order, which an UPDATE to a User changes.
+   */
   async findDue(now: Date) {
     const local = sql`(${now.toISOString()}::timestamptz at time zone ${users.timeZone})`;
     return this.txHost.tx
@@ -36,7 +40,8 @@ export class StreakReminderRepository {
           and today.day = ${local}::date
           and (today.completed or today.reminder_queued_at is not null)
       )
-    `);
+    `)
+      .orderBy(users.createdAt, users.id);
   }
 
   /** Locks the same day as heartbeats, inside the delivery transaction. */

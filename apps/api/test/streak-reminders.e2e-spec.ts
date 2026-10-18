@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import { dailyPracticeStreaks } from '../src/database/schema/daily-practice-streaks.js';
+import { users } from '../src/database/schema/users.js';
 import { EmailService } from '../src/integrations/email/email.service.js';
 import { StreakReminderService } from '../src/modules/streaks/streak-reminder.service.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
@@ -126,5 +128,46 @@ describe('Practice reminders (e2e)', () => {
     ]);
     await service.sendDue(new Date('2026-03-10T13:45:00Z'));
     expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends oldest accounts first even when an update moved their row in the heap', async () => {
+    const older = await seed('UTC');
+    const newer = await seed('UTC');
+    // An UPDATE writes a new row version at the end of the table, so a scan
+    // without ORDER BY would return the older account after the newer one.
+    await app.db
+      .update(users)
+      .set({ name: 'Renamed' })
+      .where(eq(users.id, older.id));
+    await app.app
+      .get(StreakReminderService)
+      .sendDue(new Date('2026-03-10T19:00:00Z'));
+    expect(send.mock.calls.map(([message]) => message.to)).toEqual([
+      older.email,
+      newer.email,
+    ]);
+  });
+
+  it('orders reminders by account creation time, not insertion order', async () => {
+    const newer = await createUser(app.db, {
+      timeZone: 'UTC',
+      createdAt: new Date('2025-06-01T00:00:00Z'),
+    });
+    const older = await createUser(app.db, {
+      timeZone: 'UTC',
+      createdAt: new Date('2025-01-01T00:00:00Z'),
+    });
+    for (const user of [newer, older]) {
+      await app.db
+        .insert(dailyPracticeStreaks)
+        .values({ userId: user.id, day: '2026-03-09', completed: true });
+    }
+    await app.app
+      .get(StreakReminderService)
+      .sendDue(new Date('2026-03-10T19:00:00Z'));
+    expect(send.mock.calls.map(([message]) => message.to)).toEqual([
+      older.email,
+      newer.email,
+    ]);
   });
 });
