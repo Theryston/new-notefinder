@@ -3,6 +3,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
 import { messages as catalogs } from './messages';
+import { turnMicOn } from './sing-with-fake-mic';
 import { mockStreakApi } from './streak-api-mock';
 
 const cases = [
@@ -43,13 +44,15 @@ function hidePage(page: Page) {
 
 for (const { locale, messages } of cases) {
   const { dock } = messages.tracks.practice;
+  const { mic } = messages.practice;
   const { streaks: streak } = messages;
 
   test.describe(`daily practice streak (${locale})`, () => {
-    // The practice day follows the browser's zone, which heartbeats send.
-    test.use({ timezoneId: BROWSER_TIME_ZONE });
+    // The practice day follows the browser's zone, which heartbeats send. The
+    // fake microphone is what the User sings into.
+    test.use({ timezoneId: BROWSER_TIME_ZONE, permissions: ['microphone'] });
 
-    test('the ring advances while the music plays and stands still when paused', async ({
+    test('the ring advances while the User sings and stands still once they stop', async ({
       page,
     }) => {
       await mockAuthApi(page, { user: SINGER });
@@ -58,6 +61,7 @@ for (const { locale, messages } of cases) {
       const ring = page.getByRole('button', { name: /%/ });
       await expect(ring).toHaveAttribute('data-progress', '0');
 
+      await turnMicOn(page, mic);
       await page.getByRole('button', { name: dock.play }).click();
 
       await expect
@@ -68,11 +72,23 @@ for (const { locale, messages } of cases) {
       expect(api.heartbeats[0]).toMatchObject({
         timeZone: BROWSER_TIME_ZONE,
       });
-      await page.getByRole('button', { name: dock.pause }).click();
+      await page.getByRole('button', { name: mic.off }).click();
       await page.waitForTimeout(500);
       const sent = api.heartbeats.length;
       await page.waitForTimeout(6_000);
       expect(api.heartbeats.length).toBeLessThanOrEqual(sent + 1);
+    });
+
+    test('listening without singing credits nothing', async ({ page }) => {
+      await mockAuthApi(page, { user: SINGER });
+      const api = await mockStreakApi(page);
+      await openTrack(page, locale, `clx-streak-silent-${locale}`);
+      await expect(page.getByRole('button', { name: /%/ })).toBeVisible();
+
+      await page.getByRole('button', { name: dock.play }).click();
+      await page.waitForTimeout(6_000);
+
+      expect(api.heartbeats).toHaveLength(0);
     });
 
     test('flushes the pending seconds with a beacon when the page is hidden', async ({
@@ -82,6 +98,7 @@ for (const { locale, messages } of cases) {
       const api = await mockStreakApi(page);
       await openTrack(page, locale, `clx-streak-beacon-${locale}`);
       await expect(page.getByRole('button', { name: /%/ })).toBeVisible();
+      await turnMicOn(page, mic);
       await page.getByRole('button', { name: dock.play }).click();
       await page.waitForTimeout(2_500);
 
@@ -122,6 +139,7 @@ for (const { locale, messages } of cases) {
       await openTrack(page, locale, `clx-streak-goal-${locale}`);
       await expect(page.getByRole('button', { name: /%/ })).toBeVisible();
 
+      await turnMicOn(page, mic);
       await page.getByRole('button', { name: dock.play }).click();
 
       const toast = page.getByTestId('streak-celebration');

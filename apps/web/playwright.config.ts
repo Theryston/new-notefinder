@@ -7,7 +7,8 @@ import { webServerEnv } from './e2e/web-server-env';
 const port = 3000;
 const baseURL = `http://localhost:${port}`;
 const isCI = Boolean(process.env.CI);
-const micSpec = /track-mic\.spec\.ts$/;
+// The streak specs sing into the fake microphone too, so they run there.
+const micSpec = /(track-mic|track-streak|streak-toast-clearance)\.spec\.ts$/;
 // Escape hatch for machines with a preinstalled Chromium that doesn't match
 // this Playwright version (and can't download one). CI leaves it unset and
 // uses `playwright install`.
