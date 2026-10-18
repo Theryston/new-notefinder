@@ -26,6 +26,7 @@ export class TrackSitemapService {
       items: page.map((row) => ({
         id: row.id,
         updatedAt: row.updatedAt.toISOString(),
+        coverUrl: row.coverUrl,
       })),
       nextCursor:
         rows.length > query.limit && last

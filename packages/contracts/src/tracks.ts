@@ -58,6 +58,9 @@ export type TrackArtistCreditEntry = z.infer<
   typeof trackArtistCreditEntrySchema
 >;
 
+/** A Track's cover in our own storage: an absolute URL. */
+export const trackCoverUrlSchema = z.string().min(1).max(2000);
+
 /**
  * The Track header the Processing page shows. The cover is null until a
  * Processing finds one; the artist credit comes from the Recording the Track
@@ -66,7 +69,7 @@ export type TrackArtistCreditEntry = z.infer<
 export const trackHeaderSchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().min(1).max(500),
-  coverUrl: z.string().min(1).max(2000).nullable(),
+  coverUrl: trackCoverUrlSchema.nullable(),
   artistCredit: z.array(trackArtistCreditEntrySchema).max(30),
 });
 
