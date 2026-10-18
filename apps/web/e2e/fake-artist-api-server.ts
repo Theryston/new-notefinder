@@ -17,6 +17,7 @@ import {
   serveTrackRequest,
 } from './fake-track-api.ts';
 import { serveSitemap, sitemapTracks } from './fake-track-sitemap.ts';
+import { serveUserSitemap } from './fake-user-sitemap.ts';
 
 /**
  * Fake API for the artist Playwright suite and the legacy-routes suite.
@@ -237,6 +238,14 @@ const routes: Route[] = [
     method: 'POST',
     pathname: '/__artist-mock/set',
     serve: (request, response) => serveMockSet(request, response),
+  },
+  {
+    method: 'GET',
+    pathname: '/v1/sitemaps/users',
+    serve: (request, response) => {
+      serveUserSitemap(request, response);
+      return Promise.resolve();
+    },
   },
 ];
 

@@ -43,6 +43,9 @@ export type ArtistSitemapPage = z.infer<typeof artistSitemapPageSchema>;
  */
 export const userSitemapEntrySchema = sitemapEntrySchema.extend({
   username: z.string().min(USERNAME_MIN_LENGTH).max(USERNAME_MAX_LENGTH),
+  // The Avatar's absolute URL, when the User has one (Google's photo or an
+  // uploaded one). Optional: the listing may leave it out.
+  image: z.string().nullish(),
 });
 
 export type UserSitemapEntry = z.infer<typeof userSitemapEntrySchema>;
