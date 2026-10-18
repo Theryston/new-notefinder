@@ -8,6 +8,7 @@ import {
 } from '@playwright/test';
 
 import { mockAuthApi } from './auth-api-mock';
+import { type FakeTrack, setTrackMock } from './fake-track-api';
 import { messages as catalogs } from './messages';
 import { corsHeaders, searchParamsOf } from './search-api-mock';
 
@@ -104,6 +105,23 @@ async function mockSuggestions(page: Page, hits: Hit[] = RANKED) {
     });
   });
   return calls;
+}
+
+/**
+ * Registers a processed Track with the fake track API, so its Track page
+ * renders (an unknown ID is a 404 page without the site header).
+ */
+async function registerTrack(id: string) {
+  const track: FakeTrack = {
+    id,
+    title: 'Radio Ga Ga',
+    artistCredit: [{ name: 'Queen', joinPhrase: '' }],
+    durationMs: 248_000,
+    processing: { status: 'COMPLETED' },
+    notes: [{ pitch: 64, start: 2, end: 3 }],
+    contributors: [],
+  };
+  await setTrackMock({ tracks: [track] });
 }
 
 function lastOf(calls: Request[]): Request {
@@ -217,6 +235,7 @@ for (const { locale, messages } of localeCatalogs) {
     test('a suggestion with a Track opens its Track page and clears the field', async ({
       page,
     }) => {
+      await registerTrack('seedtrack02');
       await open(page, `/${locale}`);
 
       await header(page).fill('bohemian');
@@ -339,6 +358,7 @@ for (const { locale, messages } of localeCatalogs) {
     }
 
     test('tapping a Recording opens its Track page', async ({ page }) => {
+      await registerTrack('seedtrack02');
       const field = await openOnPhone(page);
 
       await field.fill('queen');

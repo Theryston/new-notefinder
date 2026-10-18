@@ -73,10 +73,15 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('main').getByText('Bohemian Rhapsody'),
       ).toBeVisible();
-      expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
+      // The search page asks for its own results: two requests in total, and
+      // the last is not the header's six-suggestion request.
+      expect(search.calls).toHaveLength(2);
+      const pageRequest = searchParamsOf(lastRequest(search.calls));
+      expect(pageRequest).toMatchObject({
         query: 'queen',
         scope: 'metadata',
       });
+      expect(pageRequest.limit).not.toBe('6');
       // The Lyrics toggle lives only on the search page, never in the header.
       await expect(
         page
