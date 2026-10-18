@@ -1,4 +1,5 @@
 import {
+  type TrackArtistCreditEntry,
   type TrackProcessing,
   type TrackProcessingFailureCode,
   type TrackProcessingStatus,
@@ -19,6 +20,17 @@ const FINAL_FAILURE_CODES: readonly TrackProcessingFailureCode[] = [
 export const isRetryableFailureCode = (
   code: TrackProcessingFailureCode,
 ): boolean => !FINAL_FAILURE_CODES.includes(code);
+
+/** A Processing that ended and still owes its Contributor emails, with its Track's row. */
+export type EndedProcessing = {
+  trackId: string;
+  status: TrackProcessingStatus;
+  title: string;
+  artistCredit: readonly TrackArtistCreditEntry[];
+  coverUrl: string | null;
+  vocalRangeLowest: number | null;
+  vocalRangeHighest: number | null;
+};
 
 /** A Processing row as the read needs it. */
 export type TrackProcessingRow = {

@@ -71,6 +71,8 @@ export type EmailLayoutInput = EmailWebOrigin & {
   title: string;
   /** Trusted markup for the body; build it with the `email-layout` helpers. */
   body: string;
+  /** Trusted markup inside the featured block, under the title; empty when unused. */
+  featuredDetails?: string;
   /** Why the recipient got this email, shown in the footer. */
   reason: string;
 };
@@ -100,6 +102,7 @@ export const renderEmailLayout = (input: EmailLayoutInput): string => {
     ICON_URL: escapeHtml(`${webUrl}/apple-icon.png`),
     OVERLINE: escapeHtml(input.overline),
     TITLE: escapeHtml(input.title),
+    FEATURED_DETAILS: input.featuredDetails ?? '',
     BODY: input.body,
     FOOTER: footerHtml(input),
   };
@@ -117,6 +120,7 @@ export const renderEmailFromCopy = (
   { locale, webUrl }: EmailWebOrigin & { locale: EmailLocale },
   copy: EmailCopy,
   body: string,
+  featuredDetails?: string,
 ): string =>
   renderEmailLayout({
     locale,
@@ -127,6 +131,7 @@ export const renderEmailFromCopy = (
     title: copy.title,
     reason: copy.reason,
     body,
+    featuredDetails,
   });
 
 /** A body paragraph; the text is escaped here. */
