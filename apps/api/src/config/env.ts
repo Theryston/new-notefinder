@@ -46,6 +46,12 @@ const BRIGHT_DATA_KEYS = [
 // https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
 const S3_BUCKET_NAME = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
 
+// Shared with `readWebUrl`, which parses this one variable on its own.
+const webUrlSchema = z
+  .url()
+  .default('http://localhost:3000')
+  .transform((url) => url.replace(/\/+$/, ''));
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -74,10 +80,7 @@ const envSchema = z
       .transform(parseTrustProxy),
     RATE_LIMIT_TTL_SECONDS: z.coerce.number().int().positive().default(60),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
-    WEB_URL: z
-      .url()
-      .default('http://localhost:3000')
-      .transform((url) => url.replace(/\/+$/, '')),
+    WEB_URL: webUrlSchema,
     // Blank counts as unset, so `REVALIDATE_SECRET=` doesn't fail the boot.
     REVALIDATE_SECRET: z.preprocess(
       (value) => (value === '' ? undefined : value),
@@ -251,6 +254,15 @@ export type Env = z.output<typeof envSchema>;
 
 /** Injection token for the parsed {@link Env}: `@Inject(ENV) env: Env`. */
 export const ENV = Symbol('ENV');
+
+/**
+ * The web app's origin (`WEB_URL`), parsed on its own with the same rule as
+ * in {@link envSchema}. Emails link to the web app, and rendering one must not
+ * need the rest of the environment (the database and Redis) to be set.
+ */
+export const readWebUrl = (
+  source: Record<string, string | undefined> = process.env,
+): string => webUrlSchema.parse(source.WEB_URL);
 
 export const parseEnv = (source: Record<string, string | undefined>): Env => {
   const result = envSchema.safeParse(source);

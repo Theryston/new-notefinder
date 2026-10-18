@@ -1,9 +1,17 @@
 import type { EmailMessage } from './email.job.js';
-import { escapeHtml, renderEmailDocument } from './email-html.js';
+import {
+  emailButton,
+  emailParagraph,
+  renderEmailLayout,
+} from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
 type TrackEmailCopy = {
   subject: string;
+  overline: string;
+  title: string;
+  preheader: string;
+  reason: string;
   intro: string;
   action: string;
   link: string;
@@ -13,6 +21,11 @@ type TrackEmailCopy = {
 const COMPLETED = {
   en: {
     subject: 'Your notes are ready on notefinder',
+    overline: 'Notes ready',
+    title: 'Time to practice',
+    preheader: 'The vocal notes of your track are ready to practice.',
+    reason:
+      'You got this email because you contributed to a track on notefinder.',
     intro:
       'The vocal notes and timed lyrics of a track you contributed to are ready.',
     action: 'Open the track to start practicing.',
@@ -20,6 +33,11 @@ const COMPLETED = {
   },
   'pt-BR': {
     subject: 'As notas da sua música estão prontas no notefinder',
+    overline: 'Notas prontas',
+    title: 'Hora de praticar',
+    preheader: 'As notas vocais da sua música estão prontas para praticar.',
+    reason:
+      'Você recebeu este email porque contribuiu com uma música no notefinder.',
     intro:
       'As notas vocais e a letra sincronizada de uma música em que você participou estão prontas.',
     action: 'Abra a música para começar a praticar.',
@@ -30,6 +48,11 @@ const COMPLETED = {
 const FAILED = {
   en: {
     subject: 'We could not finish the notes of a track',
+    overline: 'Processing failed',
+    title: 'Not ready yet',
+    preheader: 'We could not finish the notes of your track.',
+    reason:
+      'You got this email because you contributed to a track on notefinder.',
     intro:
       'The processing of a track you contributed to failed before its notes were ready.',
     action:
@@ -38,6 +61,11 @@ const FAILED = {
   },
   'pt-BR': {
     subject: 'Não conseguimos terminar as notas de uma música',
+    overline: 'Processamento falhou',
+    title: 'Ainda não ficou pronto',
+    preheader: 'Não conseguimos terminar as notas da sua música.',
+    reason:
+      'Você recebeu este email porque contribuiu com uma música no notefinder.',
     intro:
       'O processamento de uma música em que você participou falhou antes de as notas ficarem prontas.',
     action:
@@ -58,12 +86,16 @@ const renderTrackEmail = (
   { to, locale, trackUrl }: TrackEmailInput,
 ): EmailMessage => {
   const text = [copy.intro, '', copy.action, '', `${copy.link}: ${trackUrl}`];
-  const html = renderEmailDocument(
+  const html = renderEmailLayout({
+    ...copy,
     locale,
-    `    <p style="margin:0 0 16px;">${escapeHtml(copy.intro)}</p>
-    <p style="margin:0 0 16px;">${escapeHtml(copy.action)}</p>
-    <p style="margin:0;"><a href="${escapeHtml(trackUrl)}">${escapeHtml(copy.link)}</a></p>`,
-  );
+    body: [
+      emailParagraph(copy.intro),
+      emailParagraph(copy.action),
+      emailButton(trackUrl, copy.link),
+    ].join('\n'),
+    reason: copy.reason,
+  });
   return { to, subject: copy.subject, html, text: text.join('\n') };
 };
 
