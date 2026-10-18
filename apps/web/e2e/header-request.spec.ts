@@ -23,6 +23,8 @@ const SINGER: MockUser = { ...ADA, username: 'ada_singer' };
 /** What `mockAuthApi` takes: who is signed in, and any endpoint overrides. */
 type AuthOptions = Parameters<typeof mockAuthApi>[1];
 
+type Viewport = 'desktop' | 'phone';
+
 /**
  * The fourth hit of the search mock: a Recording without a Track. Its MBID is
  * the one this spec's Track request answers (keyed by MBID and locale, so the
@@ -34,6 +36,9 @@ const QUERY = 'song';
 
 /** The suggestions of the header for `QUERY`: four hits, the fourth unlinked. */
 const HITS = { totalCount: 4 };
+
+/** The keys that move the highlight from nothing to the fourth hit. */
+const KEYS_TO_UNLINKED = 4;
 
 const trackFixture = (id: string): FakeTrack => ({
   id,
@@ -86,6 +91,22 @@ async function refuseTrackRequests(page: Page) {
   });
 }
 
+/**
+ * Whether a box lies fully inside a viewport of `height` and its centre sits
+ * in the lower half. A toast above the top edge (or under the header) fails.
+ */
+function inLowerHalf(
+  box: { y: number; height: number } | null,
+  height: number,
+): boolean {
+  if (!box) return false;
+  return (
+    box.y >= 0 &&
+    box.y + box.height <= height &&
+    box.y + box.height / 2 > height / 2
+  );
+}
+
 for (const { locale, messages } of localeCatalogs) {
   const suggestions = messages.header.search.suggestions;
   const header = (page: Page) =>
@@ -115,12 +136,95 @@ for (const { locale, messages } of localeCatalogs) {
   // per MBID and locale, and the tests run in parallel.
   const trackId = `clx-header-track-${locale}`;
 
+  /** Answers the Track request with this spec's Track; returns the request counter. */
+  async function answerTrackRequest(page: Page) {
+    await setTrackMock({
+      tracks: [trackFixture(trackId)],
+      requests: { [requestKey]: { trackId, created: true } },
+    });
+    return countTrackRequests(page);
+  }
+
   /** Opens the home page, signed in as `user` (or signed out), with the search mocked. */
   async function open(page: Page, user: MockUser | null) {
     await mockAuthApi(page, { user });
     await mockSearchApi(page, HITS);
     await page.goto(`/${locale}`);
     await expect(header(page)).toBeVisible();
+  }
+
+  /**
+   * Opens `path` with the auth and the search mocked, and brings the field up
+   * focused: a phone opens it from the search button, the desktop field is
+   * focused by hand (it is not focused on load).
+   */
+  async function openField(
+    page: Page,
+    viewport: Viewport,
+    auth: AuthOptions,
+    path = '',
+  ) {
+    await mockAuthApi(page, auth);
+    await mockSearchApi(page, HITS);
+    await page.goto(`/${locale}${path}`);
+    if (viewport === 'phone') {
+      await page
+        .getByRole('banner')
+        .getByRole('button', { name: messages.header.search.open })
+        .tap();
+    } else {
+      await header(page).focus();
+    }
+    await expect(header(page)).toBeFocused();
+  }
+
+  /** The sign-in page the header's sign-in row leads to, with the request marker. */
+  async function expectSignInPage(page: Page) {
+    await expect(page).toHaveURL(
+      `/${locale}/sign-in?redirectTo=${encodeURIComponent(
+        `/search?q=${QUERY}&process=${UNLINKED_MBID}`,
+      )}`,
+    );
+  }
+
+  /** Signs in as SINGER on the sign-in page. */
+  async function signInAsSinger(page: Page) {
+    await page
+      .getByLabel(messages.auth.signIn.emailOrUsername.label)
+      .fill(SINGER.email);
+    await page
+      .getByLabel(messages.auth.fields.password.label, { exact: true })
+      .fill('analytical-1843');
+    await page
+      .getByRole('button', { name: messages.auth.signIn.submit })
+      .click();
+  }
+
+  /** The translated message of a processing limit (`ACTIVE_PROCESSINGS`, max 3). */
+  function limitMessage(page: Page) {
+    return page.getByText(
+      messages.errors.processingLimit.ACTIVE_PROCESSINGS.replace('{max}', '3'),
+    );
+  }
+
+  /** The keyboard highlights the unlinked row: the fourth of the four hits. */
+  async function highlightUnlinked(page: Page) {
+    for (let press = 0; press < KEYS_TO_UNLINKED; press += 1) {
+      await header(page).press('ArrowDown');
+    }
+    await expect(generateButton(page).or(signInLink(page))).toHaveAttribute(
+      'data-highlighted',
+    );
+  }
+
+  /** The field's `aria-activedescendant` names the given (highlighted) row. */
+  async function expectActiveRow(page: Page, row: Locator) {
+    const rowId = await row.getAttribute('id');
+    expect(rowId).not.toBeNull();
+    await expect(header(page)).toHaveAttribute(
+      'aria-activedescendant',
+      rowId ?? '',
+    );
   }
 
   test.describe(`header request for a Recording without a Track (${locale})`, () => {
@@ -140,31 +244,15 @@ for (const { locale, messages } of localeCatalogs) {
     }) => {
       await mockAuthApi(page, { overrides: signInOverrides(SINGER) });
       await mockSearchApi(page, HITS);
-      await setTrackMock({
-        tracks: [trackFixture(trackId)],
-        requests: { [requestKey]: { trackId, created: true } },
-      });
-      const requestsMade = countTrackRequests(page);
+      const requestsMade = await answerTrackRequest(page);
       await page.goto(`/${locale}`);
 
       await header(page).fill(QUERY);
       await signInLink(page).click();
 
       // The sign-in page returns to the search this query came from, with the marker.
-      await expect(page).toHaveURL(
-        `/${locale}/sign-in?redirectTo=${encodeURIComponent(
-          `/search?q=${QUERY}&process=${UNLINKED_MBID}`,
-        )}`,
-      );
-      await page
-        .getByLabel(messages.auth.signIn.emailOrUsername.label)
-        .fill(SINGER.email);
-      await page
-        .getByLabel(messages.auth.fields.password.label, { exact: true })
-        .fill('analytical-1843');
-      await page
-        .getByRole('button', { name: messages.auth.signIn.submit })
-        .click();
+      await expectSignInPage(page);
+      await signInAsSinger(page);
 
       await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
       expect(requestsMade()).toBe(1);
@@ -174,11 +262,7 @@ for (const { locale, messages } of localeCatalogs) {
       page,
     }) => {
       await open(page, SINGER);
-      await setTrackMock({
-        tracks: [trackFixture(trackId)],
-        requests: { [requestKey]: { trackId, created: true } },
-      });
-      const requestsMade = countTrackRequests(page);
+      const requestsMade = await answerTrackRequest(page);
       const release = await holdTrackRequest(page);
 
       await header(page).fill(QUERY);
@@ -205,14 +289,7 @@ for (const { locale, messages } of localeCatalogs) {
       await header(page).fill(QUERY);
       await generateButton(page).click();
 
-      await expect(
-        page.getByText(
-          messages.errors.processingLimit.ACTIVE_PROCESSINGS.replace(
-            '{max}',
-            '3',
-          ),
-        ),
-      ).toBeVisible();
+      await expect(limitMessage(page)).toBeVisible();
       await expect(page).toHaveURL(`/${locale}`);
       await expect(generateButton(page)).toBeEnabled();
       await expect(unlinkedRow(page)).toContainText(suggestions.noNotesYet);
@@ -222,30 +299,8 @@ for (const { locale, messages } of localeCatalogs) {
 
   /**
    * The keyboard reaches the no-Track rows like the Track rows: the arrows
-   * highlight the row, the field points at it, and Enter clicks it. The
-   * unlinked row is the fourth of the four hits.
+   * highlight the row, the field points at it, and Enter clicks it.
    */
-  const KEYS_TO_UNLINKED = 4;
-
-  async function highlightUnlinked(page: Page) {
-    for (let press = 0; press < KEYS_TO_UNLINKED; press += 1) {
-      await header(page).press('ArrowDown');
-    }
-    await expect(generateButton(page).or(signInLink(page))).toHaveAttribute(
-      'data-highlighted',
-    );
-  }
-
-  /** The field's `aria-activedescendant` names the given (highlighted) row. */
-  async function expectActiveRow(page: Page, row: Locator) {
-    const rowId = await row.getAttribute('id');
-    expect(rowId).not.toBeNull();
-    await expect(header(page)).toHaveAttribute(
-      'aria-activedescendant',
-      rowId ?? '',
-    );
-  }
-
   for (const viewport of ['desktop', 'phone'] as const) {
     test.describe(`header request by keyboard, ${viewport} (${locale})`, () => {
       if (viewport === 'phone') {
@@ -256,32 +311,11 @@ for (const { locale, messages } of localeCatalogs) {
         });
       }
 
-      /** The field is open and focused: on a phone it opens from the search button. */
-      async function openField(page: Page, auth: AuthOptions) {
-        await mockAuthApi(page, auth);
-        await mockSearchApi(page, HITS);
-        await page.goto(`/${locale}`);
-        if (viewport === 'phone') {
-          await page
-            .getByRole('banner')
-            .getByRole('button', { name: messages.header.search.open })
-            .tap();
-        } else {
-          // The desktop field is not focused on load.
-          await header(page).focus();
-        }
-        await expect(header(page)).toBeFocused();
-      }
-
       test('a signed-in visitor requests the notes of a highlighted row with Enter', async ({
         page,
       }) => {
-        await openField(page, { user: SINGER });
-        await setTrackMock({
-          tracks: [trackFixture(trackId)],
-          requests: { [requestKey]: { trackId, created: true } },
-        });
-        const requestsMade = countTrackRequests(page);
+        await openField(page, viewport, { user: SINGER });
+        const requestsMade = await answerTrackRequest(page);
 
         await header(page).fill(QUERY);
         await expect(generateButton(page)).toBeVisible();
@@ -296,12 +330,10 @@ for (const { locale, messages } of localeCatalogs) {
       test('a signed-out visitor goes to sign in with Enter on a highlighted row, then returns to request the Track', async ({
         page,
       }) => {
-        await openField(page, { overrides: signInOverrides(SINGER) });
-        await setTrackMock({
-          tracks: [trackFixture(trackId)],
-          requests: { [requestKey]: { trackId, created: true } },
+        await openField(page, viewport, {
+          overrides: signInOverrides(SINGER),
         });
-        const requestsMade = countTrackRequests(page);
+        const requestsMade = await answerTrackRequest(page);
 
         await header(page).fill(QUERY);
         await expect(signInLink(page)).toBeVisible();
@@ -309,20 +341,8 @@ for (const { locale, messages } of localeCatalogs) {
         await expectActiveRow(page, signInLink(page));
         await header(page).press('Enter');
 
-        await expect(page).toHaveURL(
-          `/${locale}/sign-in?redirectTo=${encodeURIComponent(
-            `/search?q=${QUERY}&process=${UNLINKED_MBID}`,
-          )}`,
-        );
-        await page
-          .getByLabel(messages.auth.signIn.emailOrUsername.label)
-          .fill(SINGER.email);
-        await page
-          .getByLabel(messages.auth.fields.password.label, { exact: true })
-          .fill('analytical-1843');
-        await page
-          .getByRole('button', { name: messages.auth.signIn.submit })
-          .click();
+        await expectSignInPage(page);
+        await signInAsSinger(page);
 
         await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
         expect(requestsMade()).toBe(1);
@@ -344,14 +364,7 @@ for (const { locale, messages } of localeCatalogs) {
     await header(page).fill(QUERY);
     await generateButton(page).click();
 
-    await expect(
-      page.getByText(
-        messages.errors.processingLimit.ACTIVE_PROCESSINGS.replace(
-          '{max}',
-          '3',
-        ),
-      ),
-    ).toBeVisible();
+    await expect(limitMessage(page)).toBeVisible();
     await expect(page.locator('[data-sonner-toast]')).toHaveCount(1);
   });
 
@@ -382,21 +395,11 @@ for (const { locale, messages } of localeCatalogs) {
 
       /** A failed request from the header, opened on `path` as a signed-in visitor. */
       async function failHeaderRequest(page: Page, path: string) {
-        await mockAuthApi(page, { user: SINGER });
-        await mockSearchApi(page, HITS);
         await setTrackMock({
           tracks: [trackFixture(`clx-header-pos-${locale}`)],
         });
         await refuseTrackRequests(page);
-        await page.goto(`/${locale}${path}`);
-        if (viewport === 'phone') {
-          await page
-            .getByRole('banner')
-            .getByRole('button', { name: messages.header.search.open })
-            .tap();
-        } else {
-          await header(page).focus();
-        }
+        await openField(page, viewport, { user: SINGER }, path);
         await header(page).fill(QUERY);
         await generateButton(page).click();
       }
@@ -427,20 +430,4 @@ for (const { locale, messages } of localeCatalogs) {
       });
     });
   }
-}
-
-/**
- * Whether a box lies fully inside a viewport of `height` and its centre sits
- * in the lower half. A toast above the top edge (or under the header) fails.
- */
-function inLowerHalf(
-  box: { y: number; height: number } | null,
-  height: number,
-): boolean {
-  if (!box) return false;
-  return (
-    box.y >= 0 &&
-    box.y + box.height <= height &&
-    box.y + box.height / 2 > height / 2
-  );
 }
