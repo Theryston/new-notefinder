@@ -4,7 +4,7 @@ import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
 import { messages as catalogs } from './messages';
 import { countTrackRequests, signInOverrides } from './request-track-mocks';
-import { mockSearchApi } from './search-api-mock';
+import { corsHeaders, mockSearchApi } from './search-api-mock';
 
 const localeCatalogs = (['en', 'pt-BR'] as const).map((locale) => ({
   locale,
@@ -141,6 +141,8 @@ for (const { locale, messages } of localeCatalogs) {
       const release = await holdTrackRequest(page);
 
       await header(page).fill(QUERY);
+      // Before the click the row carries the marker, as the signed-out row does.
+      await expect(unlinkedRow(page)).toContainText(suggestions.noNotesYet);
       await generateButton(page).click();
 
       // While the request is on its way the row spins, and it cannot be pressed again.
@@ -149,6 +151,50 @@ for (const { locale, messages } of localeCatalogs) {
       release();
 
       await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
+      expect(requestsMade()).toBe(1);
+    });
+
+    test('a failed request shows the translated error, stays on the page and can be tried again', async ({
+      page,
+    }) => {
+      await open(page, SINGER);
+      // The browser's own request is answered with a processing limit, so no
+      // Track is involved and the fake API's per-MBID answers stay untouched.
+      await page.route('**/v1/tracks', async (route: Route) => {
+        const request = route.request();
+        const headers = corsHeaders(request);
+        if (request.method() === 'OPTIONS') {
+          await route.fulfill({ status: 204, headers });
+          return;
+        }
+        if (request.method() !== 'POST') return route.fallback();
+        await route.fulfill({
+          status: 429,
+          headers,
+          body: JSON.stringify({
+            statusCode: 429,
+            code: 'PROCESSING_LIMIT_REACHED',
+            message: 'Limit reached',
+            details: { limit: 'ACTIVE_PROCESSINGS', max: 3 },
+          }),
+        });
+      });
+      const requestsMade = countTrackRequests(page);
+
+      await header(page).fill(QUERY);
+      await generateButton(page).click();
+
+      await expect(
+        page.getByText(
+          messages.errors.processingLimit.ACTIVE_PROCESSINGS.replace(
+            '{max}',
+            '3',
+          ),
+        ),
+      ).toBeVisible();
+      await expect(page).toHaveURL(`/${locale}`);
+      await expect(generateButton(page)).toBeEnabled();
+      await expect(unlinkedRow(page)).toContainText(suggestions.noNotesYet);
       expect(requestsMade()).toBe(1);
     });
   });

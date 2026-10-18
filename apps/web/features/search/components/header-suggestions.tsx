@@ -3,13 +3,13 @@
 import type { SearchResultItem } from '@notefinder/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { MouseEvent, RefObject } from 'react';
+import type { MouseEvent, ReactNode, RefObject } from 'react';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
+import { Toaster } from '@/components/ui/sonner';
 import { Spinner } from '@/components/ui/spinner';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { RequestTrackAction } from '@/features/tracks/components/request-track-action';
-import type { TrackCardProps } from '@/features/tracks/components/track-card';
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
 
@@ -17,10 +17,7 @@ import { useSearchSuggestions } from '../hooks/use-search-suggestions';
 import { searchPathFrom, signInToRequestHref } from '../request-sign-in';
 import { searchHref } from '../search-href';
 import { normalizeSearchQuery } from '../search-params';
-import {
-  offersSignInToRequest,
-  offersTrackRequest,
-} from '../search-result-action';
+import { type ResultViewer, resultAction } from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { suggestionPanelContent } from '../suggestion-panel';
 
@@ -91,31 +88,28 @@ function NoNotesMarker({
  * (the request then navigates to the Processing page).
  */
 function RequestSuggestionRow({
-  card,
-  recordingMbid,
+  item,
+  content,
   onPickTrack,
 }: {
-  card: TrackCardProps;
-  recordingMbid: string;
+  item: SearchResultItem;
+  /** The cover and the title, as the row shows them. */
+  content: ReactNode;
   onPickTrack: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
   return (
-    <RequestTrackAction recordingMbid={recordingMbid} onRequested={onPickTrack}>
+    <RequestTrackAction recordingMbid={item.mbid} onRequested={onPickTrack}>
       {({ pending, onRequest }) => (
         <button
           type="button"
           aria-busy={pending}
-          aria-label={t('generateLabel', { title: card.title })}
+          aria-label={t('generateLabel', { title: item.title })}
           disabled={pending}
           onClick={onRequest}
           className={BUTTON_ROW_CLASS}
         >
-          <SuggestionCover
-            coverArtUrl={card.coverArtUrl}
-            placeholderSeed={card.placeholderSeed}
-          />
-          <SuggestionText title={card.title} subtitle={card.subtitle} />
+          {content}
           <NoNotesMarker
             pending={pending}
             label={pending ? t('generating') : t('noNotesYet')}
@@ -141,7 +135,7 @@ function SuggestionRow({
   onPickTrack,
 }: {
   item: SearchResultItem;
-  user: { username: string | null } | null;
+  user: ResultViewer;
   searchPath: string;
   onPickTrack: () => void;
 }) {
@@ -167,17 +161,18 @@ function SuggestionRow({
       </Link>
     );
   }
-  if (offersTrackRequest(item, user)) {
+  const action = resultAction(item, user);
+  if (action === 'request') {
     return (
       <RequestSuggestionRow
-        card={card}
-        recordingMbid={item.mbid}
+        item={item}
+        content={content}
         onPickTrack={onPickTrack}
       />
     );
   }
   const marker = <NoNotesMarker pending={false} label={t('noNotesYet')} />;
-  if (offersSignInToRequest(item, user)) {
+  if (action === 'sign-in') {
     return (
       <Link
         href={signInToRequestHref(searchPath, item.mbid)}
@@ -227,50 +222,54 @@ export function HeaderSuggestions({
   const searchPath = searchPathFrom(normalizeSearchQuery(query), null);
 
   return (
-    <Popover open>
-      <PopoverContent
-        anchor={anchor}
-        initialFocus={false}
-        finalFocus={false}
-        role="group"
-        aria-label={t('label')}
-        onMouseDown={(event: MouseEvent) => event.preventDefault()}
-        className="max-h-96 w-(--anchor-width) gap-0 overflow-y-auto rounded-xl p-1"
-      >
-        <SessionUserBoundary
-          render={(user) => (
-            <ul className="flex flex-col">
-              {items.map((item) => (
-                <li key={item.mbid}>
-                  <SuggestionRow
-                    item={item}
-                    user={user}
-                    searchPath={searchPath}
-                    onPickTrack={onPickTrack}
-                  />
-                </li>
-              ))}
-              {noSongs ? (
-                <li className={`${ROW_CLASS} text-muted-foreground text-sm`}>
-                  {t('noSongs')}
-                </li>
-              ) : null}
-              {searchForHref ? (
-                <li>
-                  <Link
-                    href={searchForHref}
-                    onClick={onPickSearch}
-                    className={`${LINK_ROW_CLASS} font-medium text-sm`}
-                  >
-                    <SearchIcon aria-hidden="true" className="size-4" />
-                    {t('searchFor', { query: searchForHref.query.q })}
-                  </Link>
-                </li>
-              ) : null}
-            </ul>
-          )}
-        />
-      </PopoverContent>
-    </Popover>
+    <>
+      <Popover open>
+        <PopoverContent
+          anchor={anchor}
+          initialFocus={false}
+          finalFocus={false}
+          role="group"
+          aria-label={t('label')}
+          onMouseDown={(event: MouseEvent) => event.preventDefault()}
+          className="max-h-96 w-(--anchor-width) gap-0 overflow-y-auto rounded-xl p-1"
+        >
+          <SessionUserBoundary
+            render={(user) => (
+              <ul className="flex flex-col">
+                {items.map((item) => (
+                  <li key={item.mbid}>
+                    <SuggestionRow
+                      item={item}
+                      user={user}
+                      searchPath={searchPath}
+                      onPickTrack={onPickTrack}
+                    />
+                  </li>
+                ))}
+                {noSongs ? (
+                  <li className={`${ROW_CLASS} text-muted-foreground text-sm`}>
+                    {t('noSongs')}
+                  </li>
+                ) : null}
+                {searchForHref ? (
+                  <li>
+                    <Link
+                      href={searchForHref}
+                      onClick={onPickSearch}
+                      className={`${LINK_ROW_CLASS} font-medium text-sm`}
+                    >
+                      <SearchIcon aria-hidden="true" className="size-4" />
+                      {t('searchFor', { query: searchForHref.query.q })}
+                    </Link>
+                  </li>
+                ) : null}
+              </ul>
+            )}
+          />
+        </PopoverContent>
+      </Popover>
+      {/* A failed request reports by toast, and the home page mounts no Toaster. */}
+      <Toaster />
+    </>
   );
 }

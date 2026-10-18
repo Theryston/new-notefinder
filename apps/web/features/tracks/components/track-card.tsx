@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 
+import type { RequestTrackState } from './request-track-action';
 import { TrackCoverArt } from './track-cover-art';
 
 const PLAY_BADGE_CLASS =
@@ -70,13 +71,6 @@ function RequestBadge({ pending, hint }: { pending: boolean; hint: string }) {
   );
 }
 
-/** Offers "generate notes" on a card without a Track, for one Recording. */
-type TrackCardRequest = {
-  /** The request for this card's Track is on its way. */
-  pending: boolean;
-  onRequest: () => void;
-};
-
 /** The sign-in page, with `redirectTo` back to the search and its request marker. */
 export type SignInHref = {
   pathname: '/sign-in';
@@ -93,7 +87,7 @@ export type TrackCardProps = {
   coverArtUrl?: string | null;
   placeholderSeed: string;
   /** Makes a card without a Track an action; without it the card stays static. */
-  request?: TrackCardRequest;
+  request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
   signIn?: TrackCardSignIn;
 };
