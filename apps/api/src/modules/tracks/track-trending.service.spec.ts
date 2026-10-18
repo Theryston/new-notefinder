@@ -55,6 +55,32 @@ describe('TrackTrendingService', () => {
         cacheTags.track('track-1'),
       ]);
     });
+
+    it('revalidates the sitemap too when the refreshed score changed', async () => {
+      views.countTrackViews.mockResolvedValue(BUSY);
+      tracks.setTrendingScore.mockResolvedValueOnce(true);
+
+      await service.refresh('track-1', NOW);
+
+      expect(revalidation.revalidate).toHaveBeenNthCalledWith(1, [
+        cacheTags.track('track-1'),
+      ]);
+      expect(revalidation.revalidate).toHaveBeenNthCalledWith(2, [
+        cacheTags.sitemap,
+      ]);
+    });
+
+    it('leaves the sitemap alone when the refreshed score did not change', async () => {
+      views.countTrackViews.mockResolvedValue(BUSY);
+      tracks.setTrendingScore.mockResolvedValueOnce(false);
+
+      await service.refresh('track-1', NOW);
+
+      expect(revalidation.revalidate).toHaveBeenCalledTimes(1);
+      expect(revalidation.revalidate).not.toHaveBeenCalledWith([
+        cacheTags.sitemap,
+      ]);
+    });
   });
 
   describe('refreshScored', () => {

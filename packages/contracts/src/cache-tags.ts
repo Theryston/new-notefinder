@@ -12,7 +12,10 @@ export const cacheTags = {
   home: 'home',
   /** Any list of tracks (search results, trending, latest). */
   tracks: 'tracks',
-  /** `/sitemap.xml` and the per-entity (tracks, artists, albums) sitemaps. */
+  /**
+   * The Tracks, Albums, Artists and Users sitemap files. The API sends it when
+   * a Track completes or its trending score changes.
+   */
   sitemap: 'sitemap',
   track: (trackId: string) => `track:${trackId}`,
   trackNotes: (trackId: string) => `track:${trackId}:notes`,

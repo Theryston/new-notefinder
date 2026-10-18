@@ -9,7 +9,10 @@ import {
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
-import { sitemapFileItems } from '@/lib/sitemap/sitemap-file';
+import {
+  countSitemapFiles,
+  sitemapFileItems,
+} from '@/lib/sitemap/sitemap-file';
 
 /**
  * One page of the Artists sitemap, after `cursor`. Cached per cursor; the API
@@ -31,4 +34,9 @@ async function getArtistSitemapPage(
 /** The `index`th sitemap file's Artists, or undefined past the last file. */
 export function getArtistSitemapFile(index: number) {
   return sitemapFileItems(getArtistSitemapPage, index);
+}
+
+/** How many sitemap files the Artists listing has (at least one). */
+export function countArtistSitemapFiles(): Promise<number> {
+  return countSitemapFiles('artists', getArtistSitemapPage);
 }

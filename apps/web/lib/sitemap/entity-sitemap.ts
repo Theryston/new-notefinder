@@ -1,11 +1,7 @@
 import type { SitemapEntry } from '@notefinder/contracts';
 
-import {
-  crawlerResponse,
-  xmlContentType,
-} from '@/lib/sitemap/crawler-response';
 import { requestSiteOrigin } from '@/lib/sitemap/request-origin';
-import { sitemapShardIndex } from '@/lib/sitemap/sitemap-shard';
+import { sitemapFileResponse } from '@/lib/sitemap/sitemap-file-response';
 import {
   buildSitemapUrlset,
   type SitemapContentType,
@@ -38,22 +34,19 @@ export function entitySitemapXml(
  * The answer for an entity sitemap path: the file as XML for the requested
  * origin, or not found. A path that is not a shard never reads the API.
  */
-export async function entitySitemapResponse(options: {
+export function entitySitemapResponse(options: {
   type: EntitySitemapType;
   path: readonly string[];
   siteUrl: string;
   readFile: (index: number) => Promise<SitemapEntry[] | undefined>;
 }): Promise<Response> {
-  const index = sitemapShardIndex(options.path);
-  const entries =
-    index === undefined ? undefined : await options.readFile(index);
-  if (entries === undefined) {
-    return new Response('Not found', { status: 404 });
-  }
-  return crawlerResponse(
-    entitySitemapXml(options.type, entries, options.siteUrl),
-    xmlContentType,
-  );
+  return sitemapFileResponse({
+    name: `${options.type}s`,
+    path: options.path,
+    read: options.readFile,
+    toXml: (entries) =>
+      entitySitemapXml(options.type, entries, options.siteUrl),
+  });
 }
 
 /**

@@ -9,12 +9,13 @@ import {
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
+import { sitemapFileItems } from '@/lib/sitemap/sitemap-file';
 
 /**
  * One page of the Tracks sitemap, after `cursor`. Cached per cursor, so
  * reaching a late file walks the earlier ones only once. The API revalidates
- * the sitemap tag when scores change; the hour is the backstop for Tracks
- * that complete in between.
+ * the sitemap tag when a Track completes or scores change; the hour is the
+ * backstop for the rest.
  */
 async function getTrackSitemapPage(
   cursor: string | undefined,
@@ -30,14 +31,6 @@ async function getTrackSitemapPage(
 }
 
 /** The `index`th sitemap file's Tracks, or undefined past the last file. */
-export async function getTrackSitemapFile(
-  index: number,
-): Promise<TrackSitemapPage['items'] | undefined> {
-  let cursor: string | undefined;
-  for (let page = 0; page < index; page++) {
-    const { nextCursor } = await getTrackSitemapPage(cursor);
-    if (nextCursor === null) return undefined;
-    cursor = nextCursor;
-  }
-  return (await getTrackSitemapPage(cursor)).items;
+export function getTrackSitemapFile(index: number) {
+  return sitemapFileItems(getTrackSitemapPage, index);
 }

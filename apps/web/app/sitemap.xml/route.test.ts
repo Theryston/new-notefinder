@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/sitemap/request-origin', () => ({
   requestSiteOrigin: () => 'https://notefinder.com.br',
 }));
+vi.mock('./sitemap-file-counts', () => ({
+  loadSitemapFileCounts: async () => ({ albums: 1, artists: 1, users: 1 }),
+}));
 
 const { GET } = await import('./route');
 

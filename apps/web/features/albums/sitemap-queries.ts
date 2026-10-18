@@ -9,7 +9,10 @@ import {
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
-import { sitemapFileItems } from '@/lib/sitemap/sitemap-file';
+import {
+  countSitemapFiles,
+  sitemapFileItems,
+} from '@/lib/sitemap/sitemap-file';
 
 /**
  * One page of the Albums sitemap, after `cursor`. Cached per cursor; the API
@@ -31,4 +34,9 @@ async function getAlbumSitemapPage(
 /** The `index`th sitemap file's Albums, or undefined past the last file. */
 export function getAlbumSitemapFile(index: number) {
   return sitemapFileItems(getAlbumSitemapPage, index);
+}
+
+/** How many sitemap files the Albums listing has (at least one). */
+export function countAlbumSitemapFiles(): Promise<number> {
+  return countSitemapFiles('albums', getAlbumSitemapPage);
 }

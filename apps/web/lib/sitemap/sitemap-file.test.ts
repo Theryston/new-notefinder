@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { sitemapFileItems } from './sitemap-file';
+import { readSitemapFile, sitemapFileItems } from './sitemap-file';
 
 const pageOf = (items: string[], nextCursor: string | null) => ({
   items,
@@ -36,5 +36,45 @@ describe('sitemapFileItems', () => {
 
     await expect(sitemapFileItems(readPage, 2)).resolves.toBeUndefined();
     expect(readPage).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('readSitemapFile', () => {
+  it('answers the items as a complete file', async () => {
+    await expect(
+      readSitemapFile('tracks/0.xml', async () => ['a', 'b']),
+    ).resolves.toEqual({ items: ['a', 'b'], partial: false });
+  });
+
+  it('answers undefined past the last file, without logging a failure', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      readSitemapFile('tracks/9.xml', async () => undefined),
+    ).resolves.toBeUndefined();
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('logs an upstream failure and answers an empty partial file, never throwing', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      readSitemapFile('albums/0.xml', async () => {
+        throw new Error('API 503');
+      }),
+    ).resolves.toEqual({ items: [], partial: true });
+    expect(error).toHaveBeenCalledWith(
+      'Sitemap albums/0.xml could not be read, answering it empty: API 503',
+    );
+  });
+
+  it('logs a non-Error failure too', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await readSitemapFile('users/0.xml', () => Promise.reject('timeout'));
+
+    expect(error).toHaveBeenCalledWith(
+      'Sitemap users/0.xml could not be read, answering it empty: timeout',
+    );
   });
 });

@@ -9,7 +9,7 @@ import type {
   Mbid,
   TrackArtistCreditEntry,
 } from '@notefinder/contracts';
-import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, ne } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
@@ -203,11 +203,14 @@ export class TracksRepository {
       .where(eq(tracks.id, trackId));
   }
 
-  async setTrendingScore(trackId: string, score: number): Promise<void> {
-    await this.txHost.tx
+  /** Sets a Track's trending score. True when the score actually changed. */
+  async setTrendingScore(trackId: string, score: number): Promise<boolean> {
+    const changed = await this.txHost.tx
       .update(tracks)
       .set({ trendingScore: score })
-      .where(eq(tracks.id, trackId));
+      .where(and(eq(tracks.id, trackId), ne(tracks.trendingScore, score)))
+      .returning({ id: tracks.id });
+    return changed.length > 0;
   }
 
   /** Tracks with a trending score, which rolls with time as well as views. */

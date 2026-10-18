@@ -6,11 +6,18 @@ const localOrigin = 'http://localhost:3000';
 const extraHost = 'notefinder.example';
 const extraOrigin = `http://${extraHost}`;
 
+// The fake API caps a listing page at two entries: the fake's Albums (6) and
+// Artists (5) therefore span three files each, and its Users (2) one. Pages
+// and Tracks list their first file only.
 const contentSitemaps = [
   '/pages/sitemap/0.xml',
   '/tracks/sitemap/0.xml',
   '/albums/sitemap/0.xml',
+  '/albums/sitemap/1.xml',
+  '/albums/sitemap/2.xml',
   '/artists/sitemap/0.xml',
+  '/artists/sitemap/1.xml',
+  '/artists/sitemap/2.xml',
   '/users/sitemap/0.xml',
 ];
 
@@ -46,7 +53,7 @@ const parseSitemap = (page: Page, xml: string): Promise<ParsedSitemap> =>
   );
 
 test.describe('sitemap index', () => {
-  test('lists the five content sitemaps at the requesting host', async ({
+  test('lists every content sitemap file at the requesting host', async ({
     page,
     request,
   }) => {
