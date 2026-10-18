@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { localeHeaderName } from './lib/i18n/locale-header';
+
 // `proxy.ts` reads validated server env, which imports `server-only`:
 // meaningless outside a bundled server, so stub it for these tests.
 vi.mock('server-only', () => ({}));
@@ -128,8 +130,9 @@ describe('proxy artist guard', () => {
 });
 
 describe('proxy locale header', () => {
+  // Next exposes a header the proxy forwards to the page as this prefixed name.
   const forwardedLocale = (response: Response) =>
-    response.headers.get('x-middleware-request-x-notefinder-locale');
+    response.headers.get(`x-middleware-request-${localeHeaderName}`);
 
   it('forwards the URL locale to the page for a locale-prefixed path', async () => {
     const proxy = await loadProxy();

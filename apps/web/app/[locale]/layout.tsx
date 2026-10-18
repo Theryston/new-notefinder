@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
 
 import '../globals.css';
 import { HtmlDocument } from '@/components/html-document';
 import { Providers } from '@/components/providers';
 import { AuthGate } from '@/features/auth/components/auth-gate';
 import { getSiteUrl } from '@/lib/env/client';
+import { currentLocale } from '@/lib/i18n/current-locale';
 import { routing } from '@/lib/i18n/routing';
 
 export function generateStaticParams() {
@@ -30,7 +31,7 @@ export default async function LocaleLayout({
 }: LayoutProps<'/[locale]'>) {
   // Resolved from `next/root-params` in lib/i18n/request.ts, which also
   // rejects unknown locales with notFound().
-  const locale = await getLocale();
+  const locale = await currentLocale();
   const { errors } = await getMessages();
 
   return (

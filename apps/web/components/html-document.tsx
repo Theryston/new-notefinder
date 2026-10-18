@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { documentClassName } from '@/lib/fonts';
+import type { Locale } from '@/lib/i18n/routing';
 
 /**
  * The `<html>` and `<body>` every document shares: the locale on the root
@@ -11,7 +12,7 @@ export function HtmlDocument({
   locale,
   children,
 }: {
-  locale: string;
+  locale: Locale;
   children: ReactNode;
 }) {
   return (

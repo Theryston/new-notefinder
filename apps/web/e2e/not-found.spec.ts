@@ -116,6 +116,22 @@ test.describe('not found page', () => {
     );
   });
 
+  test('a path the proxy skips gets the English framework 404', async ({
+    page,
+  }) => {
+    // `/api/...` is outside the proxy matcher, so no locale header is sent and
+    // the fallback resolves to the `en` catalog.
+    const response = await page.goto('/api/does-not-exist');
+
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole('heading', { level: 1, name: messages.en.notFound.title }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: messages.en.notFound.homeLabel }),
+    ).toHaveAttribute('href', '/en');
+  });
+
   test('fits a 360px wide screen without horizontal scrolling', async ({
     page,
   }) => {
