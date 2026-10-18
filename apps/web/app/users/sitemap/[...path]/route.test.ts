@@ -1,31 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getAlbumSitemapFile } from '@/features/albums/sitemap-queries';
+import { getUserSitemapFile } from '@/features/users/sitemap-queries';
 
 import { GET } from './route';
 
-vi.mock('@/features/albums/sitemap-queries', () => ({
-  getAlbumSitemapFile: vi.fn(),
+vi.mock('@/features/users/sitemap-queries', () => ({
+  getUserSitemapFile: vi.fn(),
 }));
 vi.mock('@/lib/sitemap/request-origin', () => ({
   requestSiteOrigin: () => 'https://notefinder.com.br',
 }));
 
-const mockFile = vi.mocked(getAlbumSitemapFile);
+const mockFile = vi.mocked(getUserSitemapFile);
 
 const get = (path: string[]) =>
-  GET(new Request('https://notefinder.com.br/albums/sitemap/0.xml'), {
+  GET(new Request('https://internal/users/sitemap/0.xml'), {
     params: Promise.resolve({ path }),
   });
 
-describe('GET /albums/sitemap/[...path]', () => {
+describe('GET /users/sitemap/[...path]', () => {
   beforeEach(() => {
     mockFile.mockReset();
   });
 
-  it('serves the file as XML for the requested host', async () => {
+  it('serves the file as cacheable XML for the requested host', async () => {
     mockFile.mockResolvedValue([
-      { id: 'clx1', updatedAt: '2026-10-14T12:00:00.000Z' },
+      {
+        id: 'user-1',
+        username: 'grace',
+        updatedAt: '2026-10-14T12:00:00.000Z',
+      },
     ]);
 
     const response = await get(['2.xml']);
@@ -33,8 +37,10 @@ describe('GET /albums/sitemap/[...path]', () => {
     expect(mockFile).toHaveBeenCalledWith(2);
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/xml');
+    expect(response.headers.get('cache-control')).toContain('s-maxage=3600');
+    expect(response.headers.get('vary')).toBe('X-Forwarded-Host, Host');
     expect(await response.text()).toContain(
-      '<loc>https://notefinder.com.br/en/albums/clx1</loc>',
+      '<loc>https://notefinder.com.br/en/users/grace</loc>',
     );
   });
 

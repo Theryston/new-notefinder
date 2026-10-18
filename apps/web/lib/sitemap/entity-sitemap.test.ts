@@ -1,7 +1,15 @@
 import { SITEMAP_PAGE_SIZE } from '@notefinder/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
-import { entitySitemapResponse, entitySitemapXml } from './entity-sitemap';
+import {
+  entitySitemapGet,
+  entitySitemapResponse,
+  entitySitemapXml,
+} from './entity-sitemap';
+
+vi.mock('@/lib/sitemap/request-origin', () => ({
+  requestSiteOrigin: () => 'https://notefinder.com.br',
+}));
 
 const origin = 'https://notefinder.com.br';
 const entries = [
@@ -120,5 +128,37 @@ describe('entitySitemapResponse', () => {
     expect((await get(['nope.xml'], readFile)).status).toBe(404);
     expect((await get(['0.xml', 'extra'], readFile)).status).toBe(404);
     expect(readFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('entitySitemapGet', () => {
+  const serve = (
+    GET: ReturnType<typeof entitySitemapGet>,
+    path: string[],
+  ): Promise<Response> =>
+    GET(new Request(`${origin}/albums/sitemap/0.xml`), {
+      params: Promise.resolve({ path }),
+    });
+
+  it.each([
+    ['album', 'albums'],
+    ['artist', 'artists'],
+  ] as const)(
+    'serves the %s file for the requested host, reading its own shard',
+    async (type, segment) => {
+      const readFile = vi.fn().mockResolvedValue(entries);
+
+      const response = await serve(entitySitemapGet(type, readFile), ['2.xml']);
+
+      expect(readFile).toHaveBeenCalledWith(2);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toContain(`${origin}/en/${segment}/alb-b`);
+    },
+  );
+
+  it('answers 404 past the last file', async () => {
+    const GET = entitySitemapGet('album', vi.fn().mockResolvedValue(undefined));
+
+    expect((await serve(GET, ['9.xml'])).status).toBe(404);
   });
 });

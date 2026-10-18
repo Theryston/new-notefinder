@@ -1,14 +1,13 @@
 'use client';
 
 import { PlayIcon } from 'lucide-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 
-import { TrackCoverPlaceholder } from './track-cover-placeholder';
+import { TrackCoverArt } from './track-cover-art';
 
 const PLAY_BADGE_CLASS =
   'absolute right-2 bottom-2 flex size-10 translate-y-1 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-xs transition-[opacity,transform] duration-500 ease-spring group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100';
@@ -112,23 +111,13 @@ function TrackCardCover({
   placeholderSeed: string;
   badge: ReactNode;
 }) {
-  const [artFailed, setArtFailed] = useState(false);
-  const showArt = coverArtUrl && !artFailed;
-
   return (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
-      {showArt ? (
-        <Image
-          src={coverArtUrl}
-          alt=""
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw"
-          className="object-cover"
-          onError={() => setArtFailed(true)}
-        />
-      ) : (
-        <TrackCoverPlaceholder seed={placeholderSeed} />
-      )}
+      <TrackCoverArt
+        coverArtUrl={coverArtUrl}
+        placeholderSeed={placeholderSeed}
+        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw"
+      />
       {badge}
     </span>
   );

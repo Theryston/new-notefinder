@@ -318,7 +318,12 @@
       "placeholder": "Buscar músicas, artistas…",
       "loading": "Buscando…",
       "open": "Buscar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "suggestions": {
+        "label": "Sugestões de músicas",
+        "searchFor": "Buscar por \"{query}\"",
+        "noSongs": "Nenhuma música encontrada"
+      }
     },
     "account": {
       "signIn": "Entrar",

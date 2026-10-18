@@ -16,6 +16,8 @@ function SearchField({
   onChange,
   onSubmit,
   onEscape,
+  onFocus,
+  onBlur,
   loading,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
@@ -23,6 +25,8 @@ function SearchField({
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEscape: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
   loading: boolean;
 }) {
   const t = useTranslations('header.search');
@@ -35,6 +39,8 @@ function SearchField({
         name="q"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
         enterKeyHint="search"
         autoComplete="off"
         aria-label={t('label')}
@@ -71,6 +77,9 @@ export type HeaderSearchBarProps = {
   onEscape: () => void;
   onOpen: () => void;
   onCancel: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+  searchRef: RefObject<HTMLElement | null>;
   loading: boolean;
 };
 
@@ -84,6 +93,9 @@ export function HeaderSearchBar({
   onEscape,
   onOpen,
   onCancel,
+  onFocus,
+  onBlur,
+  searchRef,
   loading,
 }: HeaderSearchBarProps) {
   const t = useTranslations('header.search');
@@ -101,6 +113,7 @@ export function HeaderSearchBar({
         <SearchIcon className="size-5" />
       </Button>
       <search
+        ref={searchRef}
         data-expanded={expanded || undefined}
         className="absolute inset-0 z-10 hidden items-center gap-1 rounded-full bg-popover p-2 data-expanded:flex md:static md:flex md:max-w-105 md:flex-1 md:bg-transparent md:p-0"
       >
@@ -110,6 +123,8 @@ export function HeaderSearchBar({
           onChange={onInputChange}
           onSubmit={onSubmit}
           onEscape={onEscape}
+          onFocus={onFocus}
+          onBlur={onBlur}
           loading={loading}
         />
         <Button

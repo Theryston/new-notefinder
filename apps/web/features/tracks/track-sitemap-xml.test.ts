@@ -57,6 +57,39 @@ describe('trackSitemapXml', () => {
     );
   });
 
+  it('lists a Track cover as its image in every locale URL, and only when there is one', () => {
+    const xml = trackSitemapXml(
+      [
+        {
+          id: 'clx-cover',
+          updatedAt: '2026-10-14T12:00:00.000Z',
+          coverUrl: 'https://files.example/cover.jpg',
+        },
+        {
+          id: 'clx-bare',
+          updatedAt: '2026-10-14T12:00:00.000Z',
+          coverUrl: null,
+        },
+      ],
+      'https://notefinder.com.br',
+    );
+
+    // Two locale URLs per Track: the first pair is the covered Track.
+    const urls = xml.split('<url>').slice(1);
+    expect(urls).toHaveLength(4);
+    for (const url of urls.slice(0, 2)) {
+      expect(url).toContain(
+        '<image:image><image:loc>https://files.example/cover.jpg</image:loc></image:image>',
+      );
+    }
+    for (const url of urls.slice(2)) {
+      expect(url).not.toContain('<image:image>');
+    }
+    expect(xml).toContain(
+      'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
+    );
+  });
+
   it('keeps a Track ID with a slash inside one encoded segment', () => {
     const xml = trackSitemapXml(
       [{ id: 'a/b', updatedAt: '2026-10-14T12:00:00.000Z' }],

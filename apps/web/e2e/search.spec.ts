@@ -48,12 +48,17 @@ for (const { locale, messages } of cases) {
     }) => {
       const { search, home, header } = await openWithHeader(page, `/${locale}`);
 
-      // No Enter: typing alone never navigates, debounced or not, and fires
-      // no search request.
+      // No Enter: typing alone never navigates, debounced or not. It asks
+      // only for the header suggestions (metadata scope, limit 6).
       await header.fill('queen');
       await page.waitForTimeout(500);
       await expect(page).toHaveURL(home);
-      expect(search.calls).toHaveLength(0);
+      expect(search.calls).toHaveLength(1);
+      expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
+        query: 'queen',
+        scope: 'metadata',
+        limit: '6',
+      });
 
       await header.press('Enter');
       await expect(page).toHaveURL(`/${locale}/search?q=queen`);
@@ -68,10 +73,15 @@ for (const { locale, messages } of cases) {
       await expect(
         page.getByRole('main').getByText('Bohemian Rhapsody'),
       ).toBeVisible();
-      expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
+      // The search page asks for its own results: two requests in total, and
+      // the last is not the header's six-suggestion request.
+      expect(search.calls).toHaveLength(2);
+      const pageRequest = searchParamsOf(lastRequest(search.calls));
+      expect(pageRequest).toMatchObject({
         query: 'queen',
         scope: 'metadata',
       });
+      expect(pageRequest.limit).not.toBe('6');
       // The Lyrics toggle lives only on the search page, never in the header.
       await expect(
         page

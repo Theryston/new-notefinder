@@ -45,16 +45,16 @@ const pageOf = (ids: readonly string[], request: IncomingMessage) => {
   };
 };
 
-export const serveAlbumSitemap = (
+export const serveAlbumSitemap = async (
   request: IncomingMessage,
   response: ServerResponse,
-): void => {
+): Promise<void> => {
   json(response, 200, pageOf(sitemapAlbumIds, request), request);
 };
 
-export const serveArtistSitemap = (
+export const serveArtistSitemap = async (
   request: IncomingMessage,
   response: ServerResponse,
-): void => {
+): Promise<void> => {
   json(response, 200, pageOf(sitemapArtistIds, request), request);
 };

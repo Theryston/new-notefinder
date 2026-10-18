@@ -4,6 +4,7 @@ import {
   crawlerResponse,
   xmlContentType,
 } from '@/lib/sitemap/crawler-response';
+import { requestSiteOrigin } from '@/lib/sitemap/request-origin';
 import { sitemapShardIndex } from '@/lib/sitemap/sitemap-shard';
 import {
   buildSitemapUrlset,
@@ -53,4 +54,24 @@ export async function entitySitemapResponse(options: {
     entitySitemapXml(options.type, entries, options.siteUrl),
     xmlContentType,
   );
+}
+
+/**
+ * The `GET` handler of an entity sitemap route: the same answer for every
+ * type, so each route only names its type and its file reader.
+ */
+export function entitySitemapGet(
+  type: EntitySitemapType,
+  readFile: (index: number) => Promise<SitemapEntry[] | undefined>,
+) {
+  return async (
+    request: Request,
+    { params }: { params: Promise<{ path: string[] }> },
+  ): Promise<Response> =>
+    entitySitemapResponse({
+      type,
+      path: (await params).path,
+      siteUrl: requestSiteOrigin(request),
+      readFile,
+    });
 }
