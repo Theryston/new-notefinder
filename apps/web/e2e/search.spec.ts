@@ -48,12 +48,17 @@ for (const { locale, messages } of cases) {
     }) => {
       const { search, home, header } = await openWithHeader(page, `/${locale}`);
 
-      // No Enter: typing alone never navigates, debounced or not, and fires
-      // no search request.
+      // No Enter: typing alone never navigates, debounced or not. It asks
+      // only for the header suggestions (metadata scope, limit 6).
       await header.fill('queen');
       await page.waitForTimeout(500);
       await expect(page).toHaveURL(home);
-      expect(search.calls).toHaveLength(0);
+      expect(search.calls).toHaveLength(1);
+      expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
+        query: 'queen',
+        scope: 'metadata',
+        limit: '6',
+      });
 
       await header.press('Enter');
       await expect(page).toHaveURL(`/${locale}/search?q=queen`);

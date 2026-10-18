@@ -16,6 +16,7 @@ function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
 
 function PopoverContent({
   className,
+  anchor,
   align = 'center',
   alignOffset = 0,
   side = 'bottom',
@@ -24,12 +25,13 @@ function PopoverContent({
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
+    'align' | 'alignOffset' | 'anchor' | 'side' | 'sideOffset'
   >) {
   const container = useFullscreenContainer();
   return (
     <PopoverPrimitive.Portal container={container ?? undefined}>
       <PopoverPrimitive.Positioner
+        anchor={anchor}
         align={align}
         alignOffset={alignOffset}
         side={side}

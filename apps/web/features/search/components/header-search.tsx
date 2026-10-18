@@ -1,17 +1,34 @@
 'use client';
 
 import { useIsFetching } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useQueryState } from 'nuqs';
-import type { FormEvent, SetStateAction } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent, RefObject, SetStateAction } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { usePathname, useRouter } from '@/lib/i18n/navigation';
 
+import {
+  type ComboboxEvent,
+  type ComboboxIntent,
+  type ComboboxState,
+  initialComboboxState,
+  updateCombobox,
+} from '../combobox-state-machine';
+import { headerFieldLoading } from '../header-search-loading';
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
 import { normalizeSearchQuery, SEARCH_DEBOUNCE_MS } from '../search-params';
 import { HeaderSearchBar } from './header-search-bar';
+
+/**
+ * The suggestions panel (popover plus its query) loads on first open, so the
+ * header bundle every page ships stays small.
+ */
+const HeaderSuggestions = dynamic(() =>
+  import('./header-suggestions').then((module) => module.HeaderSuggestions),
+);
 
 /** Listens for `⌘K`/`Ctrl K` and focuses the header field. */
 function useSearchHotkey(focus: () => void) {
@@ -82,14 +99,20 @@ type SubmitSearchInput = {
   setInputValue: (value: SetStateAction<string>) => void;
   isSearchPage: boolean;
   setUrlQuery: (value: string | null) => Promise<URLSearchParams>;
+  send: (event: ComboboxEvent) => ComboboxIntent;
 };
 
-/** Enter submits at once instead of waiting for the debounce. */
+/**
+ * Enter submits at once instead of waiting for the debounce. The combobox
+ * decides: it closes the list and asks for a submit, unless the field is
+ * blank.
+ */
 function useSubmitSearch({
   inputValue,
   setInputValue,
   isSearchPage,
   setUrlQuery,
+  send,
 }: SubmitSearchInput) {
   const router = useRouter();
   return useCallback(
@@ -99,7 +122,8 @@ function useSubmitSearch({
       const normalized = normalizeSearchQuery(
         field instanceof HTMLInputElement ? field.value : inputValue,
       );
-      if (!normalized) return;
+      const intent = send({ type: 'enter-pressed', query: normalized });
+      if (intent.kind !== 'submit-search') return;
       setInputValue(normalized);
       if (isSearchPage) {
         void setUrlQuery(normalized);
@@ -109,25 +133,106 @@ function useSubmitSearch({
       }
       if (field instanceof HTMLInputElement) field.blur();
     },
-    [inputValue, isSearchPage, router, setInputValue, setUrlQuery],
+    [inputValue, isSearchPage, router, send, setInputValue, setUrlQuery],
   );
 }
 
 /**
- * Whether the field spins: from the first keystroke (debounce pending)
- * until the fetch it triggered settles. The key is matched by literal so
- * the key factory (which pulls Zod through contracts) stays out of the
- * header bundle.
+ * Whether the field spins, from the query side (see `headerFieldLoading`)
+ * plus any search request in flight. The key is matched by literal so the
+ * key factory (which pulls Zod through contracts) stays out of the header
+ * bundle.
  */
-function useHeaderLoading(inputValue: string, urlQuery: string | null) {
-  const searching =
+function useHeaderLoading(
+  isSearchPage: boolean,
+  inputValue: string,
+  urlQuery: string | null,
+) {
+  const fetching =
     useIsFetching({
       predicate: (query) => query.queryKey[0] === 'search',
     }) > 0;
-  return (
-    normalizeSearchQuery(inputValue) !== normalizeSearchQuery(urlQuery) ||
-    searching
-  );
+  return headerFieldLoading({
+    isSearchPage,
+    inputValue,
+    urlQuery,
+    fetching,
+  });
+}
+
+type SuggestionsComboboxInput = {
+  inputValue: string;
+  setInputValue: (value: SetStateAction<string>) => void;
+  inputRef: RefObject<HTMLInputElement | null>;
+};
+
+/**
+ * Whether the field is expanded over the header bar on small screens. It
+ * starts expanded on the search page, even after arriving there from
+ * elsewhere. Opening it focuses the field.
+ */
+function useExpandedField(
+  isSearchPage: boolean,
+  inputRef: RefObject<HTMLInputElement | null>,
+) {
+  const [expanded, setExpanded] = useState(isSearchPage);
+
+  useEffect(() => {
+    if (isSearchPage) setExpanded(true);
+  }, [isSearchPage]);
+
+  // Rendered before focusing: the collapsed field is `display: none` on
+  // small screens, and mobile browsers only open the keyboard when the
+  // focus happens in the same tap.
+  const expandAndFocus = useCallback(() => {
+    flushSync(() => setExpanded(true));
+    inputRef.current?.focus();
+  }, [inputRef]);
+
+  const collapse = useCallback(() => {
+    setExpanded(false);
+  }, []);
+
+  return { expanded, expandAndFocus, collapse };
+}
+
+/**
+ * The header combobox: whether the suggestions list is open, and the field
+ * events that move it. The reducer decides; this hook only keeps its state
+ * and runs the DOM side (a pick blurs the field, as Enter does, and the blur
+ * closes the list too).
+ */
+function useSuggestionsCombobox({
+  inputValue,
+  setInputValue,
+  inputRef,
+}: SuggestionsComboboxInput) {
+  const [combobox, setCombobox] = useState<ComboboxState>(initialComboboxState);
+  // The rows are not arrow-navigable yet, so the row count is not needed:
+  // only the open state matters here.
+  const send = (event: ComboboxEvent): ComboboxIntent => {
+    const transition = updateCombobox(combobox, event, 0);
+    setCombobox(transition.state);
+    return transition.intent;
+  };
+  return {
+    open: combobox.open,
+    send,
+    onInputChange: (value: string) => {
+      setInputValue(value);
+      send({ type: 'input-changed', query: value });
+    },
+    onFocus: () => {
+      send({ type: 'focused', query: inputValue });
+    },
+    onBlur: () => {
+      send({ type: 'blurred' });
+    },
+    onPick: () => {
+      send({ type: 'blurred' });
+      inputRef.current?.blur();
+    },
+  };
 }
 
 /**
@@ -139,6 +244,11 @@ function useHeaderLoading(inputValue: string, urlQuery: string | null) {
  * and leaving the page clears the field since other pages have no `q`. On
  * the search page the field starts expanded on small screens, since it is
  * the only field left.
+ *
+ * Outside the search page the field also suggests Recordings while it has
+ * text: the combobox state decides when the list is open (typing and
+ * focusing with text open it, blurring or picking a row closes it), and the
+ * list is never shown on the search page.
  */
 export function HeaderSearch() {
   const pathname = usePathname();
@@ -146,21 +256,16 @@ export function HeaderSearch() {
   const [urlQuery, setUrlQuery] = useQueryState('q');
   const [inputValue, setInputValue] = useSyncedInputValue(urlQuery);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [expanded, setExpanded] = useState(isSearchPage);
-
-  // The field starts expanded on the search page, even after arriving there
-  // from elsewhere.
-  useEffect(() => {
-    if (isSearchPage) setExpanded(true);
-  }, [isSearchPage]);
-
-  // Rendered before focusing: the collapsed field is `display: none` on
-  // small screens, and mobile browsers only open the keyboard when the
-  // focus happens in the same tap.
-  const expandAndFocus = useCallback(() => {
-    flushSync(() => setExpanded(true));
-    inputRef.current?.focus();
-  }, []);
+  const searchRef = useRef<HTMLElement>(null);
+  const { expanded, expandAndFocus, collapse } = useExpandedField(
+    isSearchPage,
+    inputRef,
+  );
+  const combobox = useSuggestionsCombobox({
+    inputValue,
+    setInputValue,
+    inputRef,
+  });
 
   useSearchHotkey(expandAndFocus);
 
@@ -171,28 +276,42 @@ export function HeaderSearch() {
     isSearchPage,
   });
 
-  const collapse = useCallback(() => {
-    setExpanded(false);
-  }, []);
-  const loading = useHeaderLoading(inputValue, urlQuery);
+  const loading = useHeaderLoading(isSearchPage, inputValue, urlQuery);
   const onSubmit = useSubmitSearch({
     inputValue,
     setInputValue,
     isSearchPage,
     setUrlQuery,
+    send: combobox.send,
   });
 
   return (
-    <HeaderSearchBar
-      expanded={expanded}
-      inputRef={inputRef}
-      inputValue={inputValue}
-      onInputChange={setInputValue}
-      onSubmit={onSubmit}
-      onEscape={collapse}
-      onOpen={expandAndFocus}
-      onCancel={collapse}
-      loading={loading}
-    />
+    <>
+      <HeaderSearchBar
+        expanded={expanded}
+        inputRef={inputRef}
+        searchRef={searchRef}
+        inputValue={inputValue}
+        onInputChange={combobox.onInputChange}
+        onSubmit={onSubmit}
+        onEscape={collapse}
+        onOpen={expandAndFocus}
+        onCancel={collapse}
+        onFocus={combobox.onFocus}
+        onBlur={combobox.onBlur}
+        loading={loading}
+      />
+      {combobox.open && !isSearchPage ? (
+        // Its own boundary: while the panel's code loads, the outer one (the
+        // header's skeleton) would hide the field and drop its focus.
+        <Suspense fallback={null}>
+          <HeaderSuggestions
+            query={inputValue}
+            anchor={searchRef}
+            onPick={combobox.onPick}
+          />
+        </Suspense>
+      ) : null}
+    </>
   );
 }
