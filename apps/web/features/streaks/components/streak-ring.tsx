@@ -92,8 +92,8 @@ function StreakDetails({ status }: { status: StreakStatus }) {
   );
 }
 
-/** The signed-in User's ring: today's practice, counted while `playing`. */
-function UserRing({ playing, account }: { playing: boolean; account: string }) {
+/** The signed-in User's ring: today's practice, counted while `singing`. */
+function UserRing({ singing, account }: { singing: boolean; account: string }) {
   const t = useTranslations('streaks');
   const status = useQuery(streakStatusQueryOptions(account));
   const [burst, setBurst] = useState(0);
@@ -120,7 +120,7 @@ function UserRing({ playing, account }: { playing: boolean; account: string }) {
     },
     [t],
   );
-  useStreakHeartbeat(playing, celebrate, account);
+  useStreakHeartbeat(singing, celebrate, account);
 
   if (status.data === undefined) {
     return <StreakRingSkeleton />;
@@ -156,16 +156,16 @@ function UserRing({ playing, account }: { playing: boolean; account: string }) {
 
 /**
  * The daily streak ring of the dock. A signed-in User sees today's practice
- * against their daily target, which counts while the music is `playing`; a
- * visitor sees the ring empty, with an invite to create an account.
+ * against their daily target, which counts while they are `singing` with the
+ * mic on; a visitor sees the ring empty, with an invite to create an account.
  */
-export function StreakRing({ playing }: { playing: boolean }) {
+export function StreakRing({ singing }: { singing: boolean }) {
   return (
     <SessionUserBoundary
       render={(user, loading) => {
         if (user)
           return (
-            <UserRing key={user.email} playing={playing} account={user.email} />
+            <UserRing key={user.email} singing={singing} account={user.email} />
           );
         if (loading) return <StreakRingSkeleton />;
         return <VisitorRing />;

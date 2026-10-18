@@ -1,10 +1,10 @@
 /**
- * Counts the time the music has been playing, so heartbeats can report it.
+ * Counts the time the User has been singing, so heartbeats can report it.
  * Time is read from a monotonic clock the caller passes in (milliseconds), so
  * it is immune to the system clock changing and easy to test.
  */
 export type PracticeMeter = {
-  /** Tells the meter whether the music is playing from `nowMs` on. */
+  /** Tells the meter whether the User is singing from `nowMs` on. */
   setPlaying(playing: boolean, nowMs: number): void;
   /**
    * The whole seconds of practice since the last `take`, which are then

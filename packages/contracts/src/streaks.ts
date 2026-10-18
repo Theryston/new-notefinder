@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// The daily practice streak: `POST /v1/me/streak/heartbeat` credits listening
+// The daily practice streak: `POST /v1/me/streak/heartbeat` credits singing
 // time and `GET /v1/me/streak` reads where today stands. The practice day is
 // the User's own calendar day, so every request names or implies a time zone.
 
@@ -23,7 +23,7 @@ export const timeZoneSchema = z
 
 /**
  * The most seconds one heartbeat credits. The web sends one every 5 s while
- * the music plays, so 20 leaves room for a late or throttled tab.
+ * the User sings, so 20 leaves room for a late or throttled tab.
  */
 export const STREAK_MAX_HEARTBEAT_SECONDS = 20;
 

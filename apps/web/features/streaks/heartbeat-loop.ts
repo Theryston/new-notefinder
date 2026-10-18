@@ -5,7 +5,7 @@ import type {
 
 import { createPracticeMeter } from './practice-meter';
 
-/** How often practice time is reported while the music plays. */
+/** How often practice time is reported while the User is singing. */
 export const HEARTBEAT_INTERVAL_MS = 5_000;
 
 export type HeartbeatLoopDeps = {
@@ -27,7 +27,7 @@ export type HeartbeatLoop = {
 };
 
 /**
- * Reports practice time: a heartbeat every 5 s while the music plays, and the
+ * Reports practice time: a heartbeat every 5 s while the User sings, and the
  * pending seconds through a beacon when the page is hidden or closed. A
  * heartbeat that fails is not retried: that stretch of practice goes
  * uncounted, which is cheaper than crediting it twice.
