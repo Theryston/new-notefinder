@@ -1,4 +1,10 @@
+import {
+  pitchName,
+  type TrackArtistCreditEntry,
+  type TrackVocalRange,
+} from '@notefinder/contracts';
 import type { EmailMessage } from './email.job.js';
+import { escapeHtml } from './email-html.js';
 import {
   type EmailWebOrigin,
   emailButton,
@@ -75,18 +81,72 @@ const FAILED = {
   },
 } as const satisfies Record<EmailLocale, TrackEmailCopy>;
 
-/** One Contributor's email: where it goes, in which language, and the Track's page. */
+/** The Track fields a track email shows, as the Track row stores them. */
+export type TrackEmailTrack = {
+  title: string;
+  artistCredit: readonly TrackArtistCreditEntry[];
+  /** The cover in our own storage; null when the Track has none. */
+  coverUrl: string | null;
+  /** Null for a Track without notes. */
+  vocalRange: TrackVocalRange | null;
+};
+
+/** One Contributor's email: where it goes, in which language, the Track's page and the Track. */
 export type TrackEmailInput = {
   to: string;
   locale: EmailLocale;
   trackUrl: string;
+  track: TrackEmailTrack;
+};
+
+/** The artist credit as the Recording prints it ("Queen feat. David Bowie"). */
+const creditText = (credit: TrackEmailTrack['artistCredit']): string =>
+  credit.map((entry) => `${entry.name}${entry.joinPhrase}`).join('');
+
+/** The two note names of the vocal range, `E2–A4`; undefined without notes. */
+const rangeText = (vocalRange: TrackVocalRange | null): string | undefined =>
+  vocalRange === null
+    ? undefined
+    : `${pitchName(vocalRange.lowest)}–${pitchName(vocalRange.highest)}`;
+
+/** The artist and the range on one line, for the plain-text body. */
+const artistLine = ({ artistCredit, vocalRange }: TrackEmailTrack): string =>
+  [creditText(artistCredit), rangeText(vocalRange)]
+    .filter((part) => part !== undefined && part !== '')
+    .join(' · ');
+
+/**
+ * The Track block under the featured title: the cover, then the track title and
+ * the artist · range line. A missing cover adds no image, since email clients
+ * show no placeholder.
+ */
+const trackDetailsHtml = (track: TrackEmailTrack): string => {
+  const range = rangeText(track.vocalRange);
+  const cover =
+    track.coverUrl === null
+      ? ''
+      : `<img src="${escapeHtml(track.coverUrl)}" width="72" height="72" alt="" style="display:block;width:72px;height:72px;border:0;border-radius:12px;" />`;
+  const rangeHtml =
+    range === undefined
+      ? ''
+      : ` · <span style="font-family:'Geist Mono',monospace;">${escapeHtml(range)}</span>`;
+  return `<div style="margin-top:24px;">${cover}<p style="margin:16px 0 0;font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;">${escapeHtml(track.title)}</p><p style="margin:4px 0 0;font-size:15px;line-height:1.5;">${escapeHtml(creditText(track.artistCredit))}${rangeHtml}</p></div>`;
 };
 
 const renderTrackEmail = (
   copy: TrackEmailCopy,
-  { to, locale, trackUrl, webUrl }: TrackEmailInput & EmailWebOrigin,
+  { to, locale, trackUrl, webUrl, track }: TrackEmailInput & EmailWebOrigin,
 ): EmailMessage => {
-  const text = [copy.intro, '', copy.action, '', `${copy.link}: ${trackUrl}`];
+  const text = [
+    track.title,
+    artistLine(track),
+    '',
+    copy.intro,
+    '',
+    copy.action,
+    '',
+    `${copy.link}: ${trackUrl}`,
+  ];
   const html = renderEmailFromCopy(
     { locale, webUrl },
     copy,
@@ -95,6 +155,7 @@ const renderTrackEmail = (
       emailParagraph(copy.action),
       emailButton(trackUrl, copy.link),
     ].join('\n'),
+    trackDetailsHtml(track),
   );
   return { to, subject: copy.subject, html, text: text.join('\n') };
 };

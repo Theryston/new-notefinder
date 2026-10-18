@@ -10,13 +10,15 @@ export const EMAIL_LAYOUT_SLOTS = [
   'ICON_URL',
   'OVERLINE',
   'TITLE',
+  'FEATURED_DETAILS',
   'BODY',
   'FOOTER',
 ] as const;
 
 /**
  * The MJML source of every email: a featured block (logo, overline, display
- * title) over a quiet body and footer. It is compiled once at module load
+ * title, and for track emails the track's details) over a quiet body and
+ * footer. It is compiled once at module load
  * (see `email-layout.ts`).
  *
  * Colors are the DESIGN.md tokens in hex: email clients have no CSS variables,
@@ -49,7 +51,7 @@ export const EMAIL_LAYOUT_MJML = `<mjml lang="NFSLOT_LANG">
             <span style="text-transform:uppercase;">NFSLOT_OVERLINE</span>
           </mj-text>
           <mj-text color="#FFFFFF" font-size="48px" line-height="1" font-weight="800" letter-spacing="-0.05em" padding="8px 0 0">
-            <h1 style="margin:0;font-size:48px;line-height:1;font-weight:800;letter-spacing:-0.05em;max-width:9ch;">NFSLOT_TITLE</h1>
+            <h1 style="margin:0;font-size:48px;line-height:1;font-weight:800;letter-spacing:-0.05em;max-width:9ch;">NFSLOT_TITLE</h1>NFSLOT_FEATURED_DETAILS
           </mj-text>
         </mj-column>
       </mj-section>

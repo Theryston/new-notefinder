@@ -13,6 +13,7 @@ import type { DatabaseAdapter } from '../../database/database.js';
 import { albumTracks } from '../../database/schema/albums.js';
 import { trackArtists } from '../../database/schema/artists.js';
 import { trackProcessings } from '../../database/schema/track-processings.js';
+import { tracks } from '../../database/schema/tracks.js';
 import {
   type TrackContributionKind,
   TrackContributorRepository,
@@ -332,15 +333,19 @@ export class TrackProcessingRepository {
   }
 
   /** The Track and end of a terminal Processing whose Contributors are not emailed yet. */
-  async findEndedWithoutEmails(
-    processingId: string,
-  ): Promise<{ trackId: string; status: TrackProcessingStatus } | undefined> {
+  async findEndedWithoutEmails(processingId: string) {
     const [row] = await this.txHost.tx
       .select({
         trackId: trackProcessings.trackId,
         status: trackProcessings.status,
+        title: tracks.title,
+        artistCredit: tracks.artistCredit,
+        coverUrl: tracks.coverUrl,
+        vocalRangeLowest: tracks.vocalRangeLowest,
+        vocalRangeHighest: tracks.vocalRangeHighest,
       })
       .from(trackProcessings)
+      .innerJoin(tracks, eq(tracks.id, trackProcessings.trackId))
       .where(
         and(
           processingInStatus(processingId, TRACK_PROCESSING_TERMINAL_STATUSES),

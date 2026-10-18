@@ -20,6 +20,21 @@ const emails = {
 };
 const env = { WEB_URL: 'https://notefinder.test' };
 
+// The Track row the Processing ended with, and the Track fields its emails get.
+const endedTrack = {
+  title: 'Bohemian Rhapsody',
+  artistCredit: [{ name: 'Queen', joinPhrase: '' }],
+  coverUrl: null,
+  vocalRangeLowest: 40,
+  vocalRangeHighest: 69,
+};
+const track = {
+  title: 'Bohemian Rhapsody',
+  artistCredit: [{ name: 'Queen', joinPhrase: '' }],
+  coverUrl: null,
+  vocalRange: { lowest: 40, highest: 69 },
+};
+
 const recipients = new Map([
   ['ana', { id: 'ana', email: 'ana@example.com', locale: 'pt-BR' }],
   ['bob', { id: 'bob', email: 'bob@example.com', locale: 'en' }],
@@ -33,6 +48,7 @@ describe('TrackContributorEmailsService', () => {
     processings.findEndedWithoutEmails.mockResolvedValue({
       trackId: 'track-1',
       status: 'COMPLETED',
+      ...endedTrack,
     });
     processings.findContributors.mockResolvedValue([
       { id: 'c1', userId: 'ana' },
@@ -63,6 +79,7 @@ describe('TrackContributorEmailsService', () => {
         to: 'ana@example.com',
         locale: 'pt-BR',
         trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1',
+        track,
       },
       { jobId: 'track-email-processing-1-ana' },
     );
@@ -71,6 +88,7 @@ describe('TrackContributorEmailsService', () => {
         to: 'bob@example.com',
         locale: 'en',
         trackUrl: 'https://notefinder.test/en/tracks/track-1',
+        track,
       },
       { jobId: 'track-email-processing-1-bob' },
     );
@@ -89,12 +107,30 @@ describe('TrackContributorEmailsService', () => {
     processings.findEndedWithoutEmails.mockResolvedValue({
       trackId: 'track-1',
       status: 'FAILED',
+      ...endedTrack,
     });
 
     await service.notifyIfEnded('processing-1');
 
     expect(emails.sendTrackFailed).toHaveBeenCalledTimes(2);
     expect(emails.sendTrackCompleted).not.toHaveBeenCalled();
+  });
+
+  it('gives the emails no vocal range for a Track without notes', async () => {
+    processings.findEndedWithoutEmails.mockResolvedValue({
+      trackId: 'track-1',
+      status: 'COMPLETED',
+      ...endedTrack,
+      vocalRangeLowest: null,
+      vocalRangeHighest: null,
+    });
+
+    await service.notifyIfEnded('processing-1');
+
+    expect(emails.sendTrackCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({ track: { ...track, vocalRange: null } }),
+      expect.objectContaining({ jobId: 'track-email-processing-1-ana' }),
+    );
   });
 
   it('does nothing while the Processing runs, or once its emails were queued', async () => {

@@ -3,10 +3,14 @@ import type { TrackProcessingStatus } from '@notefinder/contracts';
 import { ENV, type Env } from '../../config/env.js';
 import { EmailService } from '../../integrations/email/email.service.js';
 import type { EmailLocale } from '../../integrations/email/email-locale.js';
-import type { TrackEmailInput } from '../../integrations/email/track-processing-email.js';
+import type {
+  TrackEmailInput,
+  TrackEmailTrack,
+} from '../../integrations/email/track-processing-email.js';
 import { UsersService } from '../users/users.service.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { messageOf } from './track-processing-failure.js';
+import type { EndedProcessing } from './track-processing-view.js';
 
 /** One Contributor's email, and the job ID that makes its enqueue repeatable. */
 type Delivery = { email: TrackEmailInput; jobId: string };
@@ -17,6 +21,23 @@ const trackPageUrl = (
   locale: EmailLocale,
   trackId: string,
 ): string => `${webUrl}/${locale}/tracks/${trackId}`;
+
+/** The Track fields the emails show, from the Track row a Processing ended with. */
+const emailTrackOf = ({
+  title,
+  artistCredit,
+  coverUrl,
+  vocalRangeLowest,
+  vocalRangeHighest,
+}: EndedProcessing): TrackEmailTrack => ({
+  title,
+  artistCredit,
+  coverUrl,
+  vocalRange:
+    vocalRangeLowest === null || vocalRangeHighest === null
+      ? null
+      : { lowest: vocalRangeLowest, highest: vocalRangeHighest },
+});
 
 /**
  * Emails the Contributors of a Processing that ended (CONTEXT.md
@@ -45,7 +66,7 @@ export class TrackContributorEmailsService {
     if (pending === undefined) {
       return;
     }
-    const deliveries = await this.deliveriesOf(processingId, pending.trackId);
+    const deliveries = await this.deliveriesOf(processingId, pending);
     await this.enqueueAll(deliveries, pending.status);
     await this.processings.markContributorsEmailed(processingId);
   }
@@ -83,8 +104,10 @@ export class TrackContributorEmailsService {
 
   private async deliveriesOf(
     processingId: string,
-    trackId: string,
+    ended: EndedProcessing,
   ): Promise<Delivery[]> {
+    const { trackId } = ended;
+    const track = emailTrackOf(ended);
     const contributors = await this.processings.findContributors(trackId);
     const users = await this.users.findEmailRecipients(
       contributors.map((contributor) => contributor.userId),
@@ -94,6 +117,7 @@ export class TrackContributorEmailsService {
         to: user.email,
         locale: user.locale,
         trackUrl: trackPageUrl(this.env.WEB_URL, user.locale, trackId),
+        track,
       },
       jobId: `track-email-${processingId}-${user.id}`,
     }));
