@@ -1,6 +1,6 @@
 'use client';
 
-import { useRequestTrack } from '../hooks/use-request-track';
+import { RequestTrackAction } from './request-track-action';
 import { TrackCard, type TrackCardProps } from './track-card';
 
 /**
@@ -11,15 +11,9 @@ export function RequestTrackCard({
   recordingMbid,
   ...card
 }: Omit<TrackCardProps, 'request' | 'trackId'> & { recordingMbid: string }) {
-  const request = useRequestTrack();
   return (
-    <TrackCard
-      {...card}
-      trackId={null}
-      request={{
-        pending: request.isPending,
-        onRequest: () => request.mutate(recordingMbid),
-      }}
-    />
+    <RequestTrackAction recordingMbid={recordingMbid}>
+      {(request) => <TrackCard {...card} trackId={null} request={request} />}
+    </RequestTrackAction>
   );
 }

@@ -13,10 +13,7 @@ import { TrackCardMoreSkeletons } from '@/features/tracks/components/track-card-
 
 import { useSearchResults } from '../hooks/use-search-results';
 import { signInToRequestHref } from '../request-sign-in';
-import {
-  offersSignInToRequest,
-  offersTrackRequest,
-} from '../search-result-action';
+import { resultAction } from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { SearchEmpty } from './search-empty';
 import { SearchError } from './search-error';
@@ -45,7 +42,8 @@ function SearchResultCards({
         <TrackCardGrid stale={stale}>
           {items.map((item) => {
             const card = toTrackCardProps(item);
-            if (offersTrackRequest(item, user)) {
+            const action = resultAction(item, user);
+            if (action === 'request') {
               return (
                 <RequestTrackCard
                   key={item.mbid}
@@ -54,7 +52,7 @@ function SearchResultCards({
                 />
               );
             }
-            if (offersSignInToRequest(item, user)) {
+            if (action === 'sign-in') {
               return (
                 <TrackCard
                   key={item.mbid}

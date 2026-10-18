@@ -322,7 +322,11 @@
       "suggestions": {
         "label": "Sugestões de músicas",
         "searchFor": "Buscar por \"{query}\"",
-        "noSongs": "Nenhuma música encontrada"
+        "noSongs": "Nenhuma música encontrada",
+        "noNotesYet": "Sem notas ainda",
+        "generateLabel": "Gerar notas de {title}",
+        "generating": "Gerando…",
+        "signInLabel": "Entre para gerar notas de {title}"
       }
     },
     "account": {
