@@ -94,6 +94,23 @@ describe('renderEmailLayout', () => {
     expect(html).toContain(`href="${webUrl}/en"`);
   });
 
+  it('imports Figtree and Geist Mono in the head, and never Roboto', () => {
+    const html = renderEmailLayout(layoutInput);
+
+    expect(html).toContain('family=Figtree');
+    expect(html).toContain('family=Geist+Mono');
+    expect(html).not.toContain('Roboto');
+  });
+
+  it('shows the logo as an image of the web icon, without an SVG', () => {
+    const webUrl = readWebUrl();
+    const html = renderEmailLayout(layoutInput);
+
+    expect(html).toContain(`src="${webUrl}/apple-icon.png"`);
+    expect(html).toMatch(/<img [^>]*alt="" /);
+    expect(html).not.toContain('<svg');
+  });
+
   it('reads WEB_URL without the rest of the environment, and rejects a bad one', () => {
     expect(readWebUrl({ WEB_URL: 'https://notefinder.test/' })).toBe(
       'https://notefinder.test',

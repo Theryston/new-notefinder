@@ -67,4 +67,30 @@ describe('renderOtpEmail', () => {
     // "didn't" in the English copy.
     expect(message.html).toContain('didn&#39;t');
   });
+
+  it('puts the code inside the pill in the body, not only in the preheader', () => {
+    const { html } = renderOtpEmail({
+      to: 'ana@example.com',
+      type: 'email-verification',
+      otp: '482913',
+      locale: 'en',
+      expiresInMinutes: 10,
+    });
+
+    expect(html).toMatch(
+      /<div style="[^"]*border-radius:999px[^"]*">482913<\/div>/,
+    );
+  });
+
+  it('draws the pill with plain px values, not calc()', () => {
+    const { html } = renderOtpEmail({
+      to: 'ana@example.com',
+      type: 'email-verification',
+      otp: '482913',
+      locale: 'en',
+      expiresInMinutes: 10,
+    });
+
+    expect(html).not.toContain('calc(');
+  });
 });

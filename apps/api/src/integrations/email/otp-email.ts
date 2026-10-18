@@ -33,7 +33,7 @@ const MESSAGES = {
       preheader: (otp, minutes) =>
         `Your code is ${otp}. It expires in ${minutes} minutes.`,
       reason:
-        'You got this email because someone asked to verify this address on notefinder.',
+        'You got this email because someone asked to verify this address on NoteFinder.',
       ignore: "If you didn't create a notefinder account, ignore this email.",
     },
     'forget-password': {
@@ -45,7 +45,7 @@ const MESSAGES = {
       preheader: (otp, minutes) =>
         `Your code is ${otp}. It expires in ${minutes} minutes.`,
       reason:
-        'You got this email because someone asked to reset the password of this notefinder account.',
+        'You got this email because someone asked to reset the password of this NoteFinder account.',
       ignore:
         "If you didn't ask to reset your password, ignore this email. Your password stays the same.",
     },
@@ -60,7 +60,7 @@ const MESSAGES = {
       preheader: (otp, minutes) =>
         `Seu código é ${otp}. Ele expira em ${minutes} minutos.`,
       reason:
-        'Você recebeu este email porque alguém pediu para verificar este endereço no notefinder.',
+        'Você recebeu este email porque alguém pediu para verificar este endereço no NoteFinder.',
       ignore: 'Se você não criou uma conta no notefinder, ignore este email.',
     },
     'forget-password': {
@@ -72,7 +72,7 @@ const MESSAGES = {
       preheader: (otp, minutes) =>
         `Seu código é ${otp}. Ele expira em ${minutes} minutos.`,
       reason:
-        'Você recebeu este email porque alguém pediu para redefinir a senha desta conta do notefinder.',
+        'Você recebeu este email porque alguém pediu para redefinir a senha desta conta do NoteFinder.',
       ignore:
         'Se você não pediu para redefinir sua senha, ignore este email. Sua senha continua a mesma.',
     },
@@ -89,7 +89,10 @@ export type OtpEmailInput = {
 
 /** The code sits in one pill, so it reads as a single unit. */
 const codePill = (otp: string): string =>
-  `<div style="display:inline-block;border:2px solid #09090B;border-radius:999px;padding:10px 26px;margin:0 0 20px;font-family:'Geist Mono',ui-monospace,Menlo,Consolas,monospace;font-size:30px;font-weight:600;letter-spacing:0.35em;padding-right:calc(26px - 0.35em);">${escapeHtml(otp)}</div>`;
+  // Right padding is smaller than left by the trailing letter-spacing (0.35em
+  // of 30px, about 10px), so the digits sit centered. Plain px: clients that
+  // drop calc() would otherwise lose the padding entirely.
+  `<div style="display:inline-block;border:2px solid #09090B;border-radius:999px;padding:10px 16px 10px 26px;margin:0 0 20px;font-family:'Geist Mono',ui-monospace,Menlo,Consolas,monospace;font-size:30px;font-weight:600;letter-spacing:0.35em;">${escapeHtml(otp)}</div>`;
 
 export const renderOtpEmail = ({
   to,
@@ -111,8 +114,7 @@ export const renderOtpEmail = ({
     body: [
       emailParagraph(copy.intro),
       codePill(otp),
-      emailParagraph(expiry),
-      emailNote(copy.ignore),
+      emailNote(`${expiry} ${copy.ignore}`),
     ].join('\n'),
     reason: copy.reason,
   });

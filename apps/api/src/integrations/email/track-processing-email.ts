@@ -2,7 +2,7 @@ import type { EmailMessage } from './email.job.js';
 import {
   emailButton,
   emailParagraph,
-  renderEmailLayout,
+  renderEmailFromCopy,
 } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
@@ -25,7 +25,7 @@ const COMPLETED = {
     title: 'Time to practice',
     preheader: 'The vocal notes of your track are ready to practice.',
     reason:
-      'You got this email because you contributed to a track on notefinder.',
+      'You got this email because you contributed to a track on NoteFinder.',
     intro:
       'The vocal notes and timed lyrics of a track you contributed to are ready.',
     action: 'Open the track to start practicing.',
@@ -37,7 +37,7 @@ const COMPLETED = {
     title: 'Hora de praticar',
     preheader: 'As notas vocais da sua música estão prontas para praticar.',
     reason:
-      'Você recebeu este email porque contribuiu com uma música no notefinder.',
+      'Você recebeu este email porque contribuiu com uma música no NoteFinder.',
     intro:
       'As notas vocais e a letra sincronizada de uma música em que você participou estão prontas.',
     action: 'Abra a música para começar a praticar.',
@@ -52,7 +52,7 @@ const FAILED = {
     title: 'Not ready yet',
     preheader: 'We could not finish the notes of your track.',
     reason:
-      'You got this email because you contributed to a track on notefinder.',
+      'You got this email because you contributed to a track on NoteFinder.',
     intro:
       'The processing of a track you contributed to failed before its notes were ready.',
     action:
@@ -65,7 +65,7 @@ const FAILED = {
     title: 'Ainda não ficou pronto',
     preheader: 'Não conseguimos terminar as notas da sua música.',
     reason:
-      'Você recebeu este email porque contribuiu com uma música no notefinder.',
+      'Você recebeu este email porque contribuiu com uma música no NoteFinder.',
     intro:
       'O processamento de uma música em que você participou falhou antes de as notas ficarem prontas.',
     action:
@@ -86,16 +86,15 @@ const renderTrackEmail = (
   { to, locale, trackUrl }: TrackEmailInput,
 ): EmailMessage => {
   const text = [copy.intro, '', copy.action, '', `${copy.link}: ${trackUrl}`];
-  const html = renderEmailLayout({
-    ...copy,
+  const html = renderEmailFromCopy(
     locale,
-    body: [
+    copy,
+    [
       emailParagraph(copy.intro),
       emailParagraph(copy.action),
       emailButton(trackUrl, copy.link),
     ].join('\n'),
-    reason: copy.reason,
-  });
+  );
   return { to, subject: copy.subject, html, text: text.join('\n') };
 };
 

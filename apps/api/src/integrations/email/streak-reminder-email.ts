@@ -2,7 +2,7 @@ import type { EmailMessage } from './email.job.js';
 import {
   emailButton,
   emailParagraph,
-  renderEmailLayout,
+  renderEmailFromCopy,
 } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
@@ -13,7 +13,7 @@ const COPY = {
     title: 'Keep it going',
     preheader: 'Practice today to keep your streak going.',
     reason:
-      'You got this email because daily practice reminders are on for your notefinder account.',
+      'You got this email because daily practice reminders are on for your NoteFinder account.',
     body: 'You reached your daily target yesterday. There is still time to practice today and keep your streak!',
     link: 'Start practicing',
   },
@@ -23,7 +23,7 @@ const COPY = {
     title: 'Continue assim',
     preheader: 'Pratique hoje para manter sua sequência.',
     reason:
-      'Você recebeu este email porque os lembretes diários de prática estão ativados na sua conta do notefinder.',
+      'Você recebeu este email porque os lembretes diários de prática estão ativados na sua conta do NoteFinder.',
     body: 'Você atingiu sua meta diária ontem. Ainda dá tempo de praticar hoje e manter sua sequência!',
     link: 'Começar a praticar',
   },
@@ -39,17 +39,12 @@ export function renderStreakReminderEmail(input: {
     to: input.to,
     subject: copy.subject,
     text: `${copy.body}\n\n${copy.link}: ${input.siteUrl}`,
-    html: renderEmailLayout({
-      locale: input.locale,
-      subject: copy.subject,
-      preheader: copy.preheader,
-      overline: copy.overline,
-      title: copy.title,
-      body: [
-        emailParagraph(copy.body),
-        emailButton(input.siteUrl, copy.link),
-      ].join('\n'),
-      reason: copy.reason,
-    }),
+    html: renderEmailFromCopy(
+      input.locale,
+      copy,
+      [emailParagraph(copy.body), emailButton(input.siteUrl, copy.link)].join(
+        '\n',
+      ),
+    ),
   };
 }

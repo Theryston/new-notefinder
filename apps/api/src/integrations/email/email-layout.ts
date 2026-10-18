@@ -1,7 +1,10 @@
 import mjml2html from 'mjml';
 import { readWebUrl } from '../../config/env.js';
 import { escapeHtml } from './email-html.js';
-import { EMAIL_LAYOUT_MJML } from './email-layout-skeleton.js';
+import {
+  EMAIL_LAYOUT_MJML,
+  EMAIL_LAYOUT_SLOTS,
+} from './email-layout-skeleton.js';
 import type { EmailLocale } from './email-locale.js';
 
 /**
@@ -18,8 +21,10 @@ export const compileMjml = async (source: string): Promise<string> => {
     const reasons = errors.map((error) => error.formattedMessage).join('; ');
     throw new Error(`MJML email layout does not compile: ${reasons}`);
   }
-  // Keep only `<html lang="…">`: MJML adds `dir` and XML namespace attributes
-  // for Outlook's VML and office conditionals, which the layout does not use.
+  // Keep only `<html lang="…">`. MJML also puts `dir` and the `xmlns`,
+  // `xmlns:v` and `xmlns:o` declarations on this tag. Dropping them is what
+  // lets the root read exactly `<html lang="…">`, but the output still has
+  // MJML's `<!--[if mso]>` blocks, and the `o:` ones now lack their namespace.
   // The `lang` slot is filled in at render time, like every other slot.
   return html.replace(/<html\b[^>]*>/, '<html lang="NFSLOT_LANG">');
 };
@@ -28,21 +33,17 @@ export const compileMjml = async (source: string): Promise<string> => {
 // synchronous: the render functions are called from plain code and specs.
 const LAYOUT = await compileMjml(EMAIL_LAYOUT_MJML);
 
-const SLOT_PATTERN =
-  /NFSLOT_(LANG|SUBJECT|PREHEADER|OVERLINE|TITLE|BODY|FOOTER)/g;
+const SLOT_PATTERN = new RegExp(
+  `NFSLOT_(${EMAIL_LAYOUT_SLOTS.join('|')})`,
+  'g',
+);
 
-type Slot =
-  | 'LANG'
-  | 'SUBJECT'
-  | 'PREHEADER'
-  | 'OVERLINE'
-  | 'TITLE'
-  | 'BODY'
-  | 'FOOTER';
+type Slot = (typeof EMAIL_LAYOUT_SLOTS)[number];
 
 type FooterCopy = { terms: string; otherLanguage: string };
 
-// User-facing copy lives only here, one entry per locale.
+// Footer labels are shared by every email, so they live with the layout
+// rather than in each template.
 const FOOTER_COPY = {
   en: { terms: 'Terms of use', otherLanguage: 'Ler em português' },
   'pt-BR': { terms: 'Termos de uso', otherLanguage: 'Read in English' },
@@ -72,14 +73,11 @@ export type EmailLayoutInput = {
 const footerLink = (href: string, label: string): string =>
   `<a href="${escapeHtml(href)}" style="color:#71717A;">${escapeHtml(label)}</a>`;
 
-/**
- * The footer links point at the web app. Every email builds its footer here,
- * so they all use the same origin: `WEB_URL` from the config module, which
- * is the one the app itself was booted with.
- */
-const footerHtml = ({ locale, reason }: EmailLayoutInput): string => {
+const footerHtml = (
+  { locale, reason }: EmailLayoutInput,
+  webUrl: string,
+): string => {
   const copy: FooterCopy = FOOTER_COPY[locale];
-  const webUrl = readWebUrl();
   const links = [
     footerLink(`${webUrl}/${locale}/terms`, copy.terms),
     footerLink(`${webUrl}/${OTHER_LOCALE[locale]}`, copy.otherLanguage),
@@ -90,19 +88,47 @@ const footerHtml = ({ locale, reason }: EmailLayoutInput): string => {
 /**
  * Fills every slot of the compiled layout in one pass: a value is never
  * scanned for slots, so user content cannot collide with the template.
+ *
+ * The footer links and the logo use `WEB_URL` as read by `readWebUrl`, which
+ * reads `process.env`. An e2e override of the injected `Env` does not reach
+ * them.
  */
 export const renderEmailLayout = (input: EmailLayoutInput): string => {
+  const webUrl = readWebUrl();
   const values: Record<Slot, string> = {
     LANG: escapeHtml(input.locale),
     SUBJECT: escapeHtml(input.subject),
     PREHEADER: escapeHtml(input.preheader),
+    ICON_URL: escapeHtml(`${webUrl}/apple-icon.png`),
     OVERLINE: escapeHtml(input.overline),
     TITLE: escapeHtml(input.title),
     BODY: input.body,
-    FOOTER: footerHtml(input),
+    FOOTER: footerHtml(input, webUrl),
   };
   return LAYOUT.replace(SLOT_PATTERN, (_match, slot: Slot) => values[slot]);
 };
+
+/** The parts of an email's copy that the layout shows. */
+export type EmailCopy = Pick<
+  EmailLayoutInput,
+  'subject' | 'preheader' | 'overline' | 'title' | 'reason'
+>;
+
+/** Renders one email from its copy and its body markup, in one place. */
+export const renderEmailFromCopy = (
+  locale: EmailLocale,
+  copy: EmailCopy,
+  body: string,
+): string =>
+  renderEmailLayout({
+    locale,
+    subject: copy.subject,
+    preheader: copy.preheader,
+    overline: copy.overline,
+    title: copy.title,
+    reason: copy.reason,
+    body,
+  });
 
 /** A body paragraph; the text is escaped here. */
 export const emailParagraph = (text: string): string =>

@@ -2,7 +2,7 @@ import type { EmailMessage } from './email.job.js';
 import {
   emailNote,
   emailParagraph,
-  renderEmailLayout,
+  renderEmailFromCopy,
 } from './email-layout.js';
 import type { EmailLocale } from './email-locale.js';
 
@@ -23,9 +23,9 @@ const MESSAGES = {
     subject: 'You already have a notefinder account',
     overline: 'Account',
     title: 'Sign in instead',
-    preheader: 'You already have a notefinder account with this email.',
+    preheader: 'You already have a NoteFinder account with this email.',
     reason:
-      'You got this email because someone tried to sign up on notefinder with this address.',
+      'You got this email because someone tried to sign up on NoteFinder with this address.',
     intro:
       'Someone tried to create a notefinder account with this email, but it already has one.',
     action:
@@ -36,9 +36,9 @@ const MESSAGES = {
     subject: 'Você já tem uma conta no notefinder',
     overline: 'Conta',
     title: 'Entre na sua conta',
-    preheader: 'Você já tem uma conta no notefinder com este email.',
+    preheader: 'Você já tem uma conta no NoteFinder com este email.',
     reason:
-      'Você recebeu este email porque alguém tentou criar uma conta no notefinder com este endereço.',
+      'Você recebeu este email porque alguém tentou criar uma conta no NoteFinder com este endereço.',
     intro:
       'Alguém tentou criar uma conta no notefinder com este email, mas ele já tem uma.',
     action:
@@ -65,16 +65,15 @@ export const renderAccountExistsEmail = ({
   const copy: AccountExistsEmailCopy = MESSAGES[locale];
 
   const text = [copy.intro, '', copy.action, '', copy.ignore].join('\n');
-  const html = renderEmailLayout({
-    ...copy,
+  const html = renderEmailFromCopy(
     locale,
-    body: [
+    copy,
+    [
       emailParagraph(copy.intro),
       emailParagraph(copy.action),
       emailNote(copy.ignore),
     ].join('\n'),
-    reason: copy.reason,
-  });
+  );
 
   return { to, subject: copy.subject, html, text };
 };
