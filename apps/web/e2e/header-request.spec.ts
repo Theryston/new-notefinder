@@ -366,4 +366,81 @@ for (const { locale, messages } of localeCatalogs) {
     await expect(page).toHaveURL(new RegExp(`q=${QUERY}$`));
     await expect(list(page)).toHaveCount(0);
   });
+
+  // The toast of a failed header request is a fixed element. It must stay on
+  // screen and in the lower half of the viewport, where the toasts sit (below
+  // the search bar, above the dock), on every page.
+  for (const viewport of ['desktop', 'phone'] as const) {
+    test.describe(`header failure toast position, ${viewport} (${locale})`, () => {
+      if (viewport === 'phone') {
+        test.use({
+          viewport: { width: 390, height: 844 },
+          isMobile: true,
+          hasTouch: true,
+        });
+      }
+
+      /** A failed request from the header, opened on `path` as a signed-in visitor. */
+      async function failHeaderRequest(page: Page, path: string) {
+        await mockAuthApi(page, { user: SINGER });
+        await mockSearchApi(page, HITS);
+        await setTrackMock({
+          tracks: [trackFixture(`clx-header-pos-${locale}`)],
+        });
+        await refuseTrackRequests(page);
+        await page.goto(`/${locale}${path}`);
+        if (viewport === 'phone') {
+          await page
+            .getByRole('banner')
+            .getByRole('button', { name: messages.header.search.open })
+            .tap();
+        } else {
+          await header(page).focus();
+        }
+        await header(page).fill(QUERY);
+        await generateButton(page).click();
+      }
+
+      /** Waits until the one toast settles inside the lower half of the viewport. */
+      async function expectToastLowerHalf(page: Page) {
+        const toast = page.locator('[data-sonner-toast]');
+        await expect(toast).toHaveCount(1);
+        const size = page.viewportSize();
+        if (!size) throw new Error('the page has no viewport');
+        await expect
+          .poll(async () => inLowerHalf(await toast.boundingBox(), size.height))
+          .toBe(true);
+      }
+
+      test('on a Track page the toast is inside the viewport, in its lower half', async ({
+        page,
+      }) => {
+        await failHeaderRequest(page, `/tracks/clx-header-pos-${locale}`);
+        await expectToastLowerHalf(page);
+      });
+
+      test('on the home page the toast is inside the viewport, in its lower half', async ({
+        page,
+      }) => {
+        await failHeaderRequest(page, '');
+        await expectToastLowerHalf(page);
+      });
+    });
+  }
+}
+
+/**
+ * Whether a box lies fully inside a viewport of `height` and its centre sits
+ * in the lower half. A toast above the top edge (or under the header) fails.
+ */
+function inLowerHalf(
+  box: { y: number; height: number } | null,
+  height: number,
+): boolean {
+  if (!box) return false;
+  return (
+    box.y >= 0 &&
+    box.y + box.height <= height &&
+    box.y + box.height / 2 > height / 2
+  );
 }

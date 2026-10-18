@@ -5,6 +5,7 @@ import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, ReactNode, RefObject } from 'react';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { Toaster } from '@/components/ui/sonner';
@@ -43,6 +44,14 @@ const BUTTON_ROW_CLASS = `${LINK_ROW_CLASS} w-full text-left disabled:cursor-pro
  * header's toasts are tagged with this id and only this Toaster shows them.
  */
 const HEADER_TOASTER_ID = 'header-suggestions';
+
+/**
+ * Same clearance as the Track page's toasts, so a toast never lands on the
+ * practice dock.
+ */
+const TOAST_CLEARANCE = {
+  bottom: 'calc(var(--dock-height, 0px) + 1.5rem)',
+};
 
 type RowProps = ReturnType<typeof suggestionRowProps>;
 
@@ -363,8 +372,19 @@ export function HeaderSuggestions({
           />
         </PopoverContent>
       </Popover>
-      {/* The home page mounts no Toaster, so the header's failures get one. */}
-      <Toaster id={HEADER_TOASTER_ID} />
+      {/*
+        The home page mounts no Toaster, so the header's failures get one. It is
+        portaled to the body: the header is `.glass`, and its backdrop filter
+        would make it the containing block of the toast's fixed position.
+      */}
+      {createPortal(
+        <Toaster
+          id={HEADER_TOASTER_ID}
+          offset={TOAST_CLEARANCE}
+          mobileOffset={TOAST_CLEARANCE}
+        />,
+        document.body,
+      )}
     </>
   );
 }
