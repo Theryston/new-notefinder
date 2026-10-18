@@ -3,6 +3,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { ADA, type MockUser, mockAuthApi, RIGHT_OTP } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
 import { messages as catalogs } from './messages';
+import { countTrackRequests, signInOverrides } from './request-track-mocks';
 import { mockSearchApi } from './search-api-mock';
 
 const cases = [
@@ -37,37 +38,6 @@ const trackFixture = (id: string): FakeTrack => ({
   processing: { status: 'QUEUED' },
   contributors: [],
 });
-
-/**
- * The sign-in endpoints of the mock. Signing in makes `user` the session's
- * user, as the API does, so the search page the round trip returns to sees it.
- */
-function signInOverrides(user: MockUser) {
-  let signedIn = false;
-  return {
-    '/sign-in/email': () => {
-      signedIn = true;
-      return { body: { redirect: false, token: 'token', user } };
-    },
-    '/get-session': () => ({
-      body: signedIn ? { session: { id: 'ses_1' }, user } : null,
-    }),
-  };
-}
-
-/** Counts the `POST /v1/tracks` requests the page sends. */
-function countTrackRequests(page: Page): () => number {
-  let count = 0;
-  page.on('request', (request) => {
-    if (
-      request.method() === 'POST' &&
-      new URL(request.url()).pathname === '/v1/tracks'
-    ) {
-      count += 1;
-    }
-  });
-  return () => count;
-}
 
 /** Fills the sign-in form on the page and submits it, as SINGER. */
 async function signInAsSinger(page: Page, messages: Messages) {

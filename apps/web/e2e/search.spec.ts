@@ -16,7 +16,7 @@ const headerReady = (page: Page, signIn: string) =>
   ).toBeVisible();
 
 const headerField = (page: Page, label: string) =>
-  page.getByRole('banner').getByRole('searchbox', { name: label });
+  page.getByRole('banner').getByRole('combobox', { name: label });
 
 function lastRequest(calls: Request[]): Request {
   const last = calls[calls.length - 1];

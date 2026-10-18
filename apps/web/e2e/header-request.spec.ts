@@ -1,4 +1,10 @@
-import { expect, type Page, type Route, test } from '@playwright/test';
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Route,
+  test,
+} from '@playwright/test';
 
 import { ADA, type MockUser, mockAuthApi } from './auth-api-mock';
 import { type FakeTrack, setTrackMock } from './fake-track-api';
@@ -13,6 +19,9 @@ const localeCatalogs = (['en', 'pt-BR'] as const).map((locale) => ({
 
 /** A signed-in User with a username: the one who can ask for notes. */
 const SINGER: MockUser = { ...ADA, username: 'ada_singer' };
+
+/** What `mockAuthApi` takes: who is signed in, and any endpoint overrides. */
+type AuthOptions = Parameters<typeof mockAuthApi>[1];
 
 /**
  * The fourth hit of the search mock: a Recording without a Track. Its MBID is
@@ -51,24 +60,56 @@ async function holdTrackRequest(page: Page): Promise<() => void> {
   return release;
 }
 
+/**
+ * Answers the browser's `POST /v1/tracks` with a processing limit. The
+ * request never reaches the fake API, so its per-MBID answers stay untouched.
+ */
+async function refuseTrackRequests(page: Page) {
+  await page.route('**/v1/tracks', async (route: Route) => {
+    const request = route.request();
+    const headers = corsHeaders(request);
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers });
+      return;
+    }
+    if (request.method() !== 'POST') return route.fallback();
+    await route.fulfill({
+      status: 429,
+      headers,
+      body: JSON.stringify({
+        statusCode: 429,
+        code: 'PROCESSING_LIMIT_REACHED',
+        message: 'Limit reached',
+        details: { limit: 'ACTIVE_PROCESSINGS', max: 3 },
+      }),
+    });
+  });
+}
+
 for (const { locale, messages } of localeCatalogs) {
   const suggestions = messages.header.search.suggestions;
   const header = (page: Page) =>
     page
       .getByRole('banner')
-      .getByRole('searchbox', { name: messages.header.search.label });
+      .getByRole('combobox', { name: messages.header.search.label });
   const list = (page: Page) =>
-    page.getByRole('group', { name: suggestions.label });
+    page.getByRole('listbox', { name: suggestions.label });
+  // The rows are options of the listbox; the request row is a button that
+  // carries the option role, the sign-in row a link carrying it.
+  // `exact`: the sign-in row's name contains the request row's ("Sign in to
+  // generate notes for …"), so a substring match would find both.
   const generateButton = (page: Page) =>
-    list(page).getByRole('button', {
+    list(page).getByRole('option', {
       name: suggestions.generateLabel.replace('{title}', UNLINKED_TITLE),
+      exact: true,
     });
   const signInLink = (page: Page) =>
-    list(page).getByRole('link', {
+    list(page).getByRole('option', {
       name: suggestions.signInLabel.replace('{title}', UNLINKED_TITLE),
+      exact: true,
     });
   const unlinkedRow = (page: Page) =>
-    list(page).getByRole('listitem').filter({ hasText: UNLINKED_TITLE });
+    list(page).getByRole('option').filter({ hasText: UNLINKED_TITLE });
   const requestKey = `${UNLINKED_MBID}:${locale}`;
   // Both request tests answer with this one Track: the fake API keeps one answer
   // per MBID and locale, and the tests run in parallel.
@@ -158,27 +199,7 @@ for (const { locale, messages } of localeCatalogs) {
       page,
     }) => {
       await open(page, SINGER);
-      // The browser's own request is answered with a processing limit, so no
-      // Track is involved and the fake API's per-MBID answers stay untouched.
-      await page.route('**/v1/tracks', async (route: Route) => {
-        const request = route.request();
-        const headers = corsHeaders(request);
-        if (request.method() === 'OPTIONS') {
-          await route.fulfill({ status: 204, headers });
-          return;
-        }
-        if (request.method() !== 'POST') return route.fallback();
-        await route.fulfill({
-          status: 429,
-          headers,
-          body: JSON.stringify({
-            statusCode: 429,
-            code: 'PROCESSING_LIMIT_REACHED',
-            message: 'Limit reached',
-            details: { limit: 'ACTIVE_PROCESSINGS', max: 3 },
-          }),
-        });
-      });
+      await refuseTrackRequests(page);
       const requestsMade = countTrackRequests(page);
 
       await header(page).fill(QUERY);
@@ -197,5 +218,152 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(unlinkedRow(page)).toContainText(suggestions.noNotesYet);
       expect(requestsMade()).toBe(1);
     });
+  });
+
+  /**
+   * The keyboard reaches the no-Track rows like the Track rows: the arrows
+   * highlight the row, the field points at it, and Enter clicks it. The
+   * unlinked row is the fourth of the four hits.
+   */
+  const KEYS_TO_UNLINKED = 4;
+
+  async function highlightUnlinked(page: Page) {
+    for (let press = 0; press < KEYS_TO_UNLINKED; press += 1) {
+      await header(page).press('ArrowDown');
+    }
+    await expect(generateButton(page).or(signInLink(page))).toHaveAttribute(
+      'data-highlighted',
+    );
+  }
+
+  /** The field's `aria-activedescendant` names the given (highlighted) row. */
+  async function expectActiveRow(page: Page, row: Locator) {
+    const rowId = await row.getAttribute('id');
+    expect(rowId).not.toBeNull();
+    await expect(header(page)).toHaveAttribute(
+      'aria-activedescendant',
+      rowId ?? '',
+    );
+  }
+
+  for (const viewport of ['desktop', 'phone'] as const) {
+    test.describe(`header request by keyboard, ${viewport} (${locale})`, () => {
+      if (viewport === 'phone') {
+        test.use({
+          viewport: { width: 390, height: 844 },
+          isMobile: true,
+          hasTouch: true,
+        });
+      }
+
+      /** The field is open and focused: on a phone it opens from the search button. */
+      async function openField(page: Page, auth: AuthOptions) {
+        await mockAuthApi(page, auth);
+        await mockSearchApi(page, HITS);
+        await page.goto(`/${locale}`);
+        if (viewport === 'phone') {
+          await page
+            .getByRole('banner')
+            .getByRole('button', { name: messages.header.search.open })
+            .tap();
+        } else {
+          // The desktop field is not focused on load.
+          await header(page).focus();
+        }
+        await expect(header(page)).toBeFocused();
+      }
+
+      test('a signed-in visitor requests the notes of a highlighted row with Enter', async ({
+        page,
+      }) => {
+        await openField(page, { user: SINGER });
+        await setTrackMock({
+          tracks: [trackFixture(trackId)],
+          requests: { [requestKey]: { trackId, created: true } },
+        });
+        const requestsMade = countTrackRequests(page);
+
+        await header(page).fill(QUERY);
+        await expect(generateButton(page)).toBeVisible();
+        await highlightUnlinked(page);
+        await expectActiveRow(page, generateButton(page));
+        await header(page).press('Enter');
+
+        await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
+        expect(requestsMade()).toBe(1);
+      });
+
+      test('a signed-out visitor goes to sign in with Enter on a highlighted row, then returns to request the Track', async ({
+        page,
+      }) => {
+        await openField(page, { overrides: signInOverrides(SINGER) });
+        await setTrackMock({
+          tracks: [trackFixture(trackId)],
+          requests: { [requestKey]: { trackId, created: true } },
+        });
+        const requestsMade = countTrackRequests(page);
+
+        await header(page).fill(QUERY);
+        await expect(signInLink(page)).toBeVisible();
+        await highlightUnlinked(page);
+        await expectActiveRow(page, signInLink(page));
+        await header(page).press('Enter');
+
+        await expect(page).toHaveURL(
+          `/${locale}/sign-in?redirectTo=${encodeURIComponent(
+            `/search?q=${QUERY}&process=${UNLINKED_MBID}`,
+          )}`,
+        );
+        await page
+          .getByLabel(messages.auth.signIn.emailOrUsername.label)
+          .fill(SINGER.email);
+        await page
+          .getByLabel(messages.auth.fields.password.label, { exact: true })
+          .fill('analytical-1843');
+        await page
+          .getByRole('button', { name: messages.auth.signIn.submit })
+          .click();
+
+        await expect(page).toHaveURL(`/${locale}/tracks/${trackId}`);
+        expect(requestsMade()).toBe(1);
+      });
+    });
+  }
+
+  test(`a failed header request on a Track page shows its toast once (${locale})`, async ({
+    page,
+  }) => {
+    // The Track page mounts its own Toaster; the header's must not add a second.
+    const pageTrackId = `clx-header-toast-${locale}`;
+    await mockAuthApi(page, { user: SINGER });
+    await mockSearchApi(page, HITS);
+    await setTrackMock({ tracks: [trackFixture(pageTrackId)] });
+    await refuseTrackRequests(page);
+    await page.goto(`/${locale}/tracks/${pageTrackId}`);
+
+    await header(page).fill(QUERY);
+    await generateButton(page).click();
+
+    await expect(
+      page.getByText(
+        messages.errors.processingLimit.ACTIVE_PROCESSINGS.replace(
+          '{max}',
+          '3',
+        ),
+      ),
+    ).toBeVisible();
+    await expect(page.locator('[data-sonner-toast]')).toHaveCount(1);
+  });
+
+  test(`the search page shows no header suggestions (${locale})`, async ({
+    page,
+  }) => {
+    await mockAuthApi(page, { user: SINGER });
+    await mockSearchApi(page, HITS);
+    await page.goto(`/${locale}/search?q=${QUERY}`);
+
+    await header(page).fill(QUERY);
+    await expect(page).toHaveURL(new RegExp(`q=${QUERY}$`));
+    await expect(list(page)).toHaveCount(0);
   });
 }

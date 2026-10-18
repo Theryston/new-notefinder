@@ -4,6 +4,7 @@ import type { SearchResultItem } from '@notefinder/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, ReactNode, RefObject } from 'react';
+import { useEffect } from 'react';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { Toaster } from '@/components/ui/sonner';
@@ -13,6 +14,12 @@ import { RequestTrackAction } from '@/features/tracks/components/request-track-a
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
 
+import {
+  SUGGESTIONS_LISTBOX_ID,
+  suggestionRowId,
+  suggestionRowLayout,
+  suggestionRowProps,
+} from '../combobox-keys';
 import { useSearchSuggestions } from '../hooks/use-search-suggestions';
 import { searchPathFrom, signInToRequestHref } from '../request-sign-in';
 import { searchHref } from '../search-href';
@@ -21,11 +28,23 @@ import { type ResultViewer, resultAction } from '../search-result-action';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { suggestionPanelContent } from '../suggestion-panel';
 
-/** A row is at least 56px tall (DESIGN.md: list rows). */
+/**
+ * A row is at least 56px tall (DESIGN.md: list rows). The highlight is the
+ * keyboard's current row, shown with the same wash as the hover.
+ */
 const ROW_CLASS =
-  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-highlighted:bg-foreground/10';
 const LINK_ROW_CLASS = `${ROW_CLASS} transition-colors duration-150 ease-out hover:bg-foreground/10`;
 const BUTTON_ROW_CLASS = `${LINK_ROW_CLASS} w-full text-left disabled:cursor-progress`;
+
+/**
+ * The Toaster of the header's failed requests. A page with its own Toaster
+ * (the Track page, the profile form) would show a header toast too, so the
+ * header's toasts are tagged with this id and only this Toaster shows them.
+ */
+const HEADER_TOASTER_ID = 'header-suggestions';
+
+type RowProps = ReturnType<typeof suggestionRowProps>;
 
 /** The 48px square cover of a row: the art, or the placeholder without it. */
 function SuggestionCover({
@@ -85,23 +104,31 @@ function NoNotesMarker({
  * A Recording without a Track that a signed-in visitor with a username can
  * request: a click asks for its notes, the same request the search card
  * fires. Once the Track exists the field lets go of the query, as a pick does
- * (the request then navigates to the Processing page).
+ * (the request then navigates to the Processing page). Keyboard Enter on the
+ * highlighted row clicks it, so it takes the same path.
  */
 function RequestSuggestionRow({
   item,
   content,
+  rowProps,
   onPickTrack,
 }: {
   item: SearchResultItem;
   /** The cover and the title, as the row shows them. */
   content: ReactNode;
+  rowProps: RowProps;
   onPickTrack: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
   return (
-    <RequestTrackAction recordingMbid={item.mbid} onRequested={onPickTrack}>
+    <RequestTrackAction
+      recordingMbid={item.mbid}
+      onRequested={onPickTrack}
+      toasterId={HEADER_TOASTER_ID}
+    >
       {({ pending, onRequest }) => (
         <button
+          {...rowProps}
           type="button"
           aria-busy={pending}
           aria-label={t('generateLabel', { title: item.title })}
@@ -121,22 +148,24 @@ function RequestSuggestionRow({
 }
 
 /**
- * One Recording row. With a Track it is a link to that Track page, and a pick
- * clears the field (the next page should not reopen the old query). Without a
- * Track the row follows the result card: a signed-in visitor with a username
- * requests the notes, a signed-out one goes to sign in first and comes back to
- * `searchPath` with the request marker, anyone else sees a static row. Every
- * row without a Track shows the "No notes yet" marker.
+ * One Recording option. With a Track it is a link to that Track page, and a
+ * pick clears the field (the next page should not reopen the old query).
+ * Without a Track the row follows the result card: a signed-in visitor with a
+ * username requests the notes, a signed-out one goes to sign in first and comes
+ * back to `searchPath` with the request marker, anyone else sees a static row.
+ * Every row without a Track shows the "No notes yet" marker.
  */
 function SuggestionRow({
   item,
   user,
   searchPath,
+  rowProps,
   onPickTrack,
 }: {
   item: SearchResultItem;
   user: ResultViewer;
   searchPath: string;
+  rowProps: RowProps;
   onPickTrack: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
@@ -153,6 +182,7 @@ function SuggestionRow({
   if (card.trackId !== null) {
     return (
       <Link
+        {...rowProps}
         href={`/tracks/${card.trackId}`}
         onClick={onPickTrack}
         className={LINK_ROW_CLASS}
@@ -167,6 +197,7 @@ function SuggestionRow({
       <RequestSuggestionRow
         item={item}
         content={content}
+        rowProps={rowProps}
         onPickTrack={onPickTrack}
       />
     );
@@ -175,6 +206,7 @@ function SuggestionRow({
   if (action === 'sign-in') {
     return (
       <Link
+        {...rowProps}
         href={signInToRequestHref(searchPath, item.mbid)}
         aria-label={t('signInLabel', { title: card.title })}
         className={LINK_ROW_CLASS}
@@ -185,7 +217,7 @@ function SuggestionRow({
     );
   }
   return (
-    <div className={ROW_CLASS}>
+    <div {...rowProps} className={ROW_CLASS}>
       {content}
       {marker}
     </div>
@@ -193,33 +225,121 @@ function SuggestionRow({
 }
 
 /**
+ * The listbox and its options: the Recordings in rank order, the "No songs"
+ * line, and the trailing Search-for option. Built once the viewer is known,
+ * so each row can pick its action.
+ */
+function SuggestionOptions({
+  items,
+  noSongs,
+  searchForHref,
+  searchPath,
+  highlighted,
+  onPickTrack,
+  onPickSearch,
+}: {
+  items: SearchResultItem[];
+  noSongs: boolean;
+  searchForHref: ReturnType<typeof searchHref>;
+  searchPath: string;
+  highlighted: number | null;
+  onPickTrack: () => void;
+  onPickSearch: () => void;
+}) {
+  const t = useTranslations('header.search.suggestions');
+  const { searchForIndex } = suggestionRowLayout(items.length);
+  return (
+    <SessionUserBoundary
+      render={(user) => (
+        <div
+          role="listbox"
+          id={SUGGESTIONS_LISTBOX_ID}
+          aria-label={t('label')}
+          className="flex flex-col"
+        >
+          {items.map((item, index) => (
+            <SuggestionRow
+              key={item.mbid}
+              item={item}
+              user={user}
+              searchPath={searchPath}
+              rowProps={suggestionRowProps(index, highlighted)}
+              onPickTrack={onPickTrack}
+            />
+          ))}
+          {noSongs ? (
+            <div
+              role="presentation"
+              className={`${ROW_CLASS} text-muted-foreground text-sm`}
+            >
+              {t('noSongs')}
+            </div>
+          ) : null}
+          {searchForHref ? (
+            <Link
+              {...suggestionRowProps(searchForIndex, highlighted)}
+              href={searchForHref}
+              onClick={onPickSearch}
+              className={`${LINK_ROW_CLASS} font-medium text-sm`}
+            >
+              <SearchIcon aria-hidden="true" className="size-4" />
+              {t('searchFor', { query: searchForHref.query.q })}
+            </Link>
+          ) : null}
+        </div>
+      )}
+    />
+  );
+}
+
+/**
  * The header suggestions: up to six Recordings in catalog rank order, then
- * the trailing "Search for" row that goes to the full search. A settled empty
- * answer adds a "No songs found" line above the same row (the full search
- * still answers lyrics). The panel is anchored to the search bar, full width
- * on small screens.
+ * the trailing "Search for" option that goes to the full search. A settled
+ * empty answer adds a "No songs found" line above it (the full search still
+ * answers lyrics). The panel is anchored to the search bar, full width on
+ * small screens.
  *
- * Rows with a Track are links, rows without one are sign-in links or request
- * buttons (see `SuggestionRow`). A press on the panel never moves focus, so
- * the field does not blur (which would close the panel) before the click lands.
+ * The rows form a listbox the field names with `aria-controls`; the highlight
+ * is the field's `aria-activedescendant`. A press on the panel never moves
+ * focus, so the field does not blur (which would close the panel) before the
+ * click lands.
  */
 export function HeaderSuggestions({
   query,
   anchor,
+  highlighted,
+  onRowsChange,
   onPickTrack,
   onPickSearch,
 }: {
   query: string;
   anchor: RefObject<Element | null>;
+  /** The row the keyboard highlights: an index, the Search-for row last. */
+  highlighted: number | null;
+  /** Reports the rows on screen, so the arrow keys wrap inside them. */
+  onRowsChange: (count: number) => void;
   onPickTrack: () => void;
   onPickSearch: () => void;
 }) {
-  const t = useTranslations('header.search.suggestions');
   const { data } = useSearchSuggestions(query);
-  const { items, noSongs } = suggestionPanelContent(data?.results);
+  const results = data?.results;
+  const { items, noSongs } = suggestionPanelContent(results);
   const searchForHref = searchHref(query);
   // The sign-in round trip returns to this search, as the search page has it.
   const searchPath = searchPathFrom(normalizeSearchQuery(query), null);
+
+  // A new answer is a new set of rows: the list reports them so the highlight
+  // starts over. The row count (Search-for included) is the layout's.
+  useEffect(() => {
+    onRowsChange(suggestionRowLayout(results?.length ?? 0).rowCount);
+  }, [results, onRowsChange]);
+
+  useEffect(() => {
+    if (highlighted === null) return;
+    document
+      .getElementById(suggestionRowId(highlighted))
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [highlighted]);
 
   return (
     <>
@@ -228,48 +348,23 @@ export function HeaderSuggestions({
           anchor={anchor}
           initialFocus={false}
           finalFocus={false}
-          role="group"
-          aria-label={t('label')}
+          role="presentation"
           onMouseDown={(event: MouseEvent) => event.preventDefault()}
           className="max-h-96 w-(--anchor-width) gap-0 overflow-y-auto rounded-xl p-1"
         >
-          <SessionUserBoundary
-            render={(user) => (
-              <ul className="flex flex-col">
-                {items.map((item) => (
-                  <li key={item.mbid}>
-                    <SuggestionRow
-                      item={item}
-                      user={user}
-                      searchPath={searchPath}
-                      onPickTrack={onPickTrack}
-                    />
-                  </li>
-                ))}
-                {noSongs ? (
-                  <li className={`${ROW_CLASS} text-muted-foreground text-sm`}>
-                    {t('noSongs')}
-                  </li>
-                ) : null}
-                {searchForHref ? (
-                  <li>
-                    <Link
-                      href={searchForHref}
-                      onClick={onPickSearch}
-                      className={`${LINK_ROW_CLASS} font-medium text-sm`}
-                    >
-                      <SearchIcon aria-hidden="true" className="size-4" />
-                      {t('searchFor', { query: searchForHref.query.q })}
-                    </Link>
-                  </li>
-                ) : null}
-              </ul>
-            )}
+          <SuggestionOptions
+            items={items}
+            noSongs={noSongs}
+            searchForHref={searchForHref}
+            searchPath={searchPath}
+            highlighted={highlighted}
+            onPickTrack={onPickTrack}
+            onPickSearch={onPickSearch}
           />
         </PopoverContent>
       </Popover>
-      {/* A failed request reports by toast, and the home page mounts no Toaster. */}
-      <Toaster />
+      {/* The home page mounts no Toaster, so the header's failures get one. */}
+      <Toaster id={HEADER_TOASTER_ID} />
     </>
   );
 }

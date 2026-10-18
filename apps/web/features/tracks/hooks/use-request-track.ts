@@ -34,9 +34,11 @@ function requestTrack(
 /**
  * Requests the Track of a Recording and, once it exists (new or already there),
  * takes the User to its Processing page. A failure is a translated toast, by
- * the API's error code (and, for a limit, by which limit it is).
+ * the API's error code (and, for a limit, by which limit it is). `toasterId`
+ * sends that toast to the one Toaster with the same id, so a page that mounts
+ * its own Toaster does not show it twice.
  */
-export function useRequestTrack() {
+export function useRequestTrack({ toasterId }: { toasterId?: string } = {}) {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations();
@@ -52,7 +54,7 @@ export function useRequestTrack() {
       // A request that failed created nothing, so it may be asked again.
       unmarkRequested(tabRequestMarks(), recordingMbid);
       const message = requestErrorMessage(error);
-      toast.error(t(message.key, message.values));
+      toast.error(t(message.key, message.values), { toasterId });
     },
   });
 }

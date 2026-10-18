@@ -20,13 +20,16 @@ export type RequestTrackState = {
 export function RequestTrackAction({
   recordingMbid,
   onRequested,
+  toasterId,
   children,
 }: {
   recordingMbid: string;
   onRequested?: () => void;
+  /** Sends a failure toast to the Toaster with this id (see `useRequestTrack`). */
+  toasterId?: string;
   children: (request: RequestTrackState) => ReactNode;
 }) {
-  const request = useRequestTrack();
+  const request = useRequestTrack({ toasterId });
   return children({
     pending: request.isPending,
     onRequest: () => request.mutate(recordingMbid, { onSuccess: onRequested }),
