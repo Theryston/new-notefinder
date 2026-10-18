@@ -762,5 +762,13 @@
       "title": "Álbum não encontrado",
       "description": "Não encontramos este álbum. Ele pode ter sido removido ou o link está errado."
     }
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "description": "A página que você procura não existe ou foi movida.",
+    "homeLabel": "Voltar ao início",
+    "searchLabel": "Buscar músicas",
+    "metaTitle": "Página não encontrada",
+    "metaDescription": "A página que você procura não existe ou foi movida."
   }
 }

@@ -9,6 +9,7 @@ const row = (id: string, trendingScore: number) => ({
   id,
   trendingScore,
   updatedAt: new Date('2026-10-14T12:00:00.000Z'),
+  coverUrl: null,
 });
 
 describe('TrackSitemapService', () => {
@@ -38,10 +39,10 @@ describe('TrackSitemapService', () => {
       after: undefined,
       limit: 3,
     });
-    expect(page).toEqual({
+    expect(page).toStrictEqual({
       items: [
-        { id: 'a', updatedAt: '2026-10-14T12:00:00.000Z' },
-        { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z' },
+        { id: 'a', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
+        { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
       ],
       nextCursor: encodeTrackSitemapCursor({ score: 5, trackId: 'b' }),
     });
@@ -54,6 +55,24 @@ describe('TrackSitemapService', () => {
 
     expect(page.items).toHaveLength(2);
     expect(page.nextCursor).toBeNull();
+  });
+
+  it('lists each Track cover in its own storage, null when there is none', async () => {
+    sitemap.listCompleted.mockResolvedValue([
+      { ...row('a', 9), coverUrl: 'https://files.example/a.jpg' },
+      { ...row('b', 5), coverUrl: null },
+    ]);
+
+    const page = await service.list({ limit: 2 });
+
+    expect(page.items).toEqual([
+      {
+        id: 'a',
+        updatedAt: '2026-10-14T12:00:00.000Z',
+        coverUrl: 'https://files.example/a.jpg',
+      },
+      { id: 'b', updatedAt: '2026-10-14T12:00:00.000Z', coverUrl: null },
+    ]);
   });
 
   it('resumes after the cursor it issued', async () => {
