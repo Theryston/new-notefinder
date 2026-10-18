@@ -18,17 +18,21 @@ export class TrackTrendingService {
   /**
    * Recomputes one Track, after its views changed. Idempotent: it reads the
    * views as they are now. The Track page shows the view count, so its tag is
-   * revalidated; the sitemap is left to the daily run, since a refresh happens
-   * every few minutes under steady traffic.
+   * revalidated. The sitemap order follows the score, so its tag is revalidated
+   * too, but only when the score changed: under steady traffic a refresh often
+   * leaves the score as it was.
    */
   async refresh(trackId: string, now = new Date()): Promise<void> {
     const starts = viewWindowStarts(now);
-    await this.score(
+    const changed = await this.score(
       trackId,
       starts,
       await this.views.platformAverages(starts),
     );
     await this.revalidation.revalidate([cacheTags.track(trackId)]);
+    if (changed) {
+      await this.revalidation.revalidate([cacheTags.sitemap]);
+    }
   }
 
   /**
@@ -53,9 +57,9 @@ export class TrackTrendingService {
     trackId: string,
     starts: ViewWindowStarts,
     platform: PlatformViewAverages,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const counts = await this.views.countTrackViews(trackId, starts);
-    await this.tracks.setTrendingScore(
+    return this.tracks.setTrendingScore(
       trackId,
       trendingScore(counts, platform),
     );
