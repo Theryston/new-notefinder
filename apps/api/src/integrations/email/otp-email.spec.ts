@@ -14,6 +14,7 @@ describe('renderOtpEmail', () => {
       otp: '482913',
       locale: locale as (typeof EMAIL_LOCALES)[number],
       expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
     });
 
     expect(emailMessageSchema.parse(message)).toEqual(message);
@@ -30,6 +31,7 @@ describe('renderOtpEmail', () => {
       type: 'email-verification',
       otp: '123456',
       expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
     } as const;
 
     expect(renderOtpEmail({ ...input, locale: 'en' })).toMatchObject({
@@ -51,6 +53,7 @@ describe('renderOtpEmail', () => {
           otp: '123456',
           locale: 'en',
           expiresInMinutes: 10,
+          webUrl: 'https://notefinder.test',
         }).subject,
     );
     expect(new Set(subjects).size).toBe(TYPES.length);
@@ -63,8 +66,37 @@ describe('renderOtpEmail', () => {
       otp: '123456',
       locale: 'en',
       expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
     });
     // "didn't" in the English copy.
     expect(message.html).toContain('didn&#39;t');
+  });
+
+  it('puts the code inside the pill in the body, not only in the preheader', () => {
+    const { html } = renderOtpEmail({
+      to: 'ana@example.com',
+      type: 'email-verification',
+      otp: '482913',
+      locale: 'en',
+      expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
+    });
+
+    expect(html).toMatch(
+      /<div style="[^"]*border-radius:999px[^"]*">482913<\/div>/,
+    );
+  });
+
+  it('draws the pill with plain px values, not calc()', () => {
+    const { html } = renderOtpEmail({
+      to: 'ana@example.com',
+      type: 'email-verification',
+      otp: '482913',
+      locale: 'en',
+      expiresInMinutes: 10,
+      webUrl: 'https://notefinder.test',
+    });
+
+    expect(html).not.toContain('calc(');
   });
 });

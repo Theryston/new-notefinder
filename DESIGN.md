@@ -330,6 +330,28 @@ credit, the steps are `h-8` pills (`text-sm font-semibold`): done
 failed `black/40` with an ×, pending outlined white. Pills show a short name
 and carry the full one for screen readers.
 
+### Emails
+
+Emails are light-only: a fixed light theme, with no auto dark mode, since
+mail clients can't be trusted to render a dark version. The colors are the
+hex values of the tokens, because email has no CSS variables.
+
+Exception to the featured-block rule above: every transactional email opens
+with one featured block, even though it isn't editorial content. It holds the
+logo (the 24px `apple-icon`, `alt=""`) with the NoteFinder wordmark, an
+overline (12px, semibold, uppercase, `tracking-wider`) and the display title
+(48px, weight 800, `tracking-tighter`, max ~9ch). Below it: body text (16px,
+line-height 1.5, max ~44ch, `#09090B`), then a black pill CTA with white text
+(the CTA is never white on orange), then a quiet footer (12px, muted: the
+reason for the email, Terms of use and the link to the other language).
+
+A one-time code sits in a single pill: Geist Mono 30px semibold, letter
+spacing 0.35em, 2px `#09090B` border, plain px padding (no `calc()`).
+
+Fonts: Figtree and Geist Mono are imported in the head, with the same system
+fallbacks as the app (`-apple-system, 'Segoe UI', Helvetica, Arial,
+sans-serif` and `ui-monospace, Menlo, Consolas, monospace`).
+
 ### Menus, popovers, toasts
 
 `glass`, `rounded-xl`, 4px padding, items `rounded-lg` `px-3 py-2` with an
