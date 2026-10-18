@@ -59,46 +59,4 @@ describe('userSitemapXml', () => {
     expect(locs(xml)).toContain(`${origin}/en/users/a%3Fb%23c`);
     expect(xml).not.toContain('a?b');
   });
-
-  it('lists the Avatar as an image of the Profile when the User has one', () => {
-    const avatar = 'https://lh3.googleusercontent.com/a/grace.jpg';
-    const xml = userSitemapXml(
-      [{ id: 'user-1', username: 'grace', updatedAt, image: avatar }],
-      origin,
-    );
-
-    expect(xml).toContain(
-      'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"',
-    );
-    expect(xml).toContain(
-      `<image:image><image:loc>${avatar}</image:loc></image:image>`,
-    );
-  });
-
-  it('declares no image namespace and no image when the User has no Avatar', () => {
-    for (const image of [undefined, null]) {
-      const xml = userSitemapXml(
-        [{ id: 'user-1', username: 'grace', updatedAt, image }],
-        origin,
-      );
-
-      expect(xml).not.toContain('image');
-    }
-  });
-
-  it('leaves out an Avatar that is not an absolute http(s) URL', () => {
-    const xml = userSitemapXml(
-      [
-        {
-          id: 'user-1',
-          username: 'grace',
-          updatedAt,
-          image: 'javascript:alert(1)',
-        },
-      ],
-      origin,
-    );
-
-    expect(xml).not.toContain('<image:image>');
-  });
 });

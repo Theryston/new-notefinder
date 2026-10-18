@@ -12,8 +12,11 @@ import { serverApi } from '@/lib/api/server';
 
 /**
  * One page of the Users sitemap, after `cursor`. Cached per cursor, so
- * reaching a late file walks the earlier ones only once. The API revalidates
- * the sitemap tag when the listed Users change; the hour is the backstop.
+ * reaching a late file walks the earlier ones only once. The entries are
+ * tagged `sitemap` so an API revalidation can drop them, but on main only the
+ * track trending job sends it. Until the API revalidates when Users change,
+ * the hourly `cacheLife` is the only freshness for Users: a removed or private
+ * Profile can stay listed for up to an hour.
  */
 async function getUserSitemapPage(
   cursor: string | undefined,

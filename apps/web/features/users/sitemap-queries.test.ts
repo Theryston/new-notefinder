@@ -1,3 +1,4 @@
+import { SITEMAP_PAGE_SIZE } from '@notefinder/contracts';
 import { cacheTag } from 'next/cache';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -61,5 +62,20 @@ describe('getUserSitemapFile', () => {
     mockServerApi.mockResolvedValueOnce(page(['grace'], null));
 
     await expect(getUserSitemapFile(3)).resolves.toBeUndefined();
+  });
+
+  // The API sets `nextCursor` only when its `limit + 1` lookahead finds a row
+  // past the page (apps/api/src/common/sitemap/sitemap-page.ts). So a last
+  // page that is exactly full ends the walk, and the next file is not found
+  // rather than an empty 200.
+  it('is undefined for the file after an exactly full last page', async () => {
+    const fullPage = Array.from(
+      { length: SITEMAP_PAGE_SIZE },
+      (_, index) => `user${index}`,
+    );
+    mockServerApi.mockResolvedValueOnce(page(fullPage, null));
+
+    await expect(getUserSitemapFile(1)).resolves.toBeUndefined();
+    expect(mockServerApi).toHaveBeenCalledTimes(1);
   });
 });

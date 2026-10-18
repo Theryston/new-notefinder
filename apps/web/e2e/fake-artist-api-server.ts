@@ -242,10 +242,7 @@ const routes: Route[] = [
   {
     method: 'GET',
     pathname: '/v1/sitemaps/users',
-    serve: (request, response) => {
-      serveUserSitemap(request, response);
-      return Promise.resolve();
-    },
+    serve: serveUserSitemap,
   },
 ];
 

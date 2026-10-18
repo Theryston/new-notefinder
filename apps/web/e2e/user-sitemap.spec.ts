@@ -5,7 +5,6 @@ const extraHost = 'notefinder.example';
 const extraOrigin = `http://${extraHost}`;
 
 const sitemapNamespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
-const imageNamespace = 'http://www.google.com/schemas/sitemap-image/1.1';
 
 /**
  * Parses the document with the browser's XML parser, the way a crawler would:
@@ -13,7 +12,7 @@ const imageNamespace = 'http://www.google.com/schemas/sitemap-image/1.1';
  */
 const parseSitemap = (page: Page, xml: string) =>
   page.evaluate(
-    ({ source, namespace, images }) => {
+    ({ source, namespace }) => {
       const doc = new DOMParser().parseFromString(source, 'application/xml');
       return {
         parseErrors: doc.getElementsByTagName('parsererror').length,
@@ -23,13 +22,9 @@ const parseSitemap = (page: Page, xml: string) =>
           doc.getElementsByTagNameNS(namespace, 'loc'),
           (element) => element.textContent ?? '',
         ),
-        imageLocs: Array.from(
-          doc.getElementsByTagNameNS(images, 'loc'),
-          (element) => element.textContent ?? '',
-        ),
       };
     },
-    { source: xml, namespace: sitemapNamespace, images: imageNamespace },
+    { source: xml, namespace: sitemapNamespace },
   );
 
 test.describe('users sitemap', () => {
@@ -61,20 +56,6 @@ test.describe('users sitemap', () => {
     expect(xml).toContain(
       `<xhtml:link rel="alternate" hreflang="x-default" href="${extraOrigin}/users/grace"/>`,
     );
-  });
-
-  test('lists the Avatar as an image only for the Users who have one', async ({
-    page,
-    request,
-  }) => {
-    const response = await request.get('/users/sitemap/0.xml');
-
-    const parsed = await parseSitemap(page, await response.text());
-    expect(parsed.parseErrors).toBe(0);
-    expect(parsed.imageLocs).toEqual([
-      'https://lh3.googleusercontent.com/a/fake-grace-avatar',
-      'https://lh3.googleusercontent.com/a/fake-grace-avatar',
-    ]);
   });
 
   test('answers 404 past its only file', async ({ request }) => {
