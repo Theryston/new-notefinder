@@ -375,5 +375,122 @@ for (const { locale, messages } of localeCatalogs) {
       await rowLink(page, searchForLabel('queen')).tap();
       await expect(page).toHaveURL(`/${locale}/search?q=queen`);
     });
+
+    /** Opens the phone field and types a query that shows the list. */
+    async function typedOnPhone(page: Page) {
+      const field = await openOnPhone(page);
+      const home = page.url();
+      await field.fill('queen');
+      await expect(list(page)).toBeVisible();
+      return { field, home };
+    }
+
+    test('the first Escape closes the list and the second collapses the field', async ({
+      page,
+    }) => {
+      const { field, home } = await typedOnPhone(page);
+
+      await field.press('Escape');
+      await expect(list(page)).toHaveCount(0);
+      await expect(field).toBeFocused();
+      await expect(field).toHaveValue('queen');
+      await field.press('Escape');
+      await expect(field).toBeHidden();
+      await expect(page).toHaveURL(home);
+    });
+
+    test('Cancel collapses the field and closes the list without navigating', async ({
+      page,
+    }) => {
+      const { field, home } = await typedOnPhone(page);
+
+      await page
+        .getByRole('banner')
+        .getByRole('button', { name: messages.header.search.cancel })
+        .tap();
+      await expect(field).toBeHidden();
+      await expect(list(page)).toHaveCount(0);
+      await expect(page).toHaveURL(home);
+    });
+  });
+
+  test.describe(`header suggestion keyboard (${locale})`, () => {
+    /** The one row the keyboard highlights, Search-for row included. */
+    const highlightedRow = (page: Page) =>
+      list(page).locator('[data-highlighted]');
+
+    test('arrows move the highlight, and Enter opens the highlighted Track', async ({
+      page,
+    }) => {
+      await registerTrack('seedtrack02');
+      await open(page, `/${locale}`);
+
+      await header(page).fill('queen');
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      await header(page).press('ArrowDown');
+      await header(page).press('ArrowDown');
+      await expect(highlightedRow(page)).toContainText('Radio Ga Ga');
+      await header(page).press('Enter');
+      await expect(page).toHaveURL(/\/tracks\/seedtrack02/);
+    });
+
+    test('ArrowUp from nothing highlights the Search-for row, and ArrowDown wraps back to the first row', async ({
+      page,
+    }) => {
+      await open(page, `/${locale}`);
+
+      await header(page).fill('queen');
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      await header(page).press('ArrowUp');
+      await expect(highlightedRow(page)).toContainText(searchForLabel('queen'));
+      await header(page).press('ArrowDown');
+      await expect(highlightedRow(page)).toContainText('Under Pressure');
+    });
+
+    test('Enter on the highlighted Search-for row goes to the full search', async ({
+      page,
+    }) => {
+      await open(page, `/${locale}`);
+
+      await header(page).fill('queen');
+      await header(page).press('ArrowUp');
+      await header(page).press('Enter');
+      await expect(page).toHaveURL(`/${locale}/search?q=queen`);
+    });
+
+    test('Enter with nothing highlighted goes to the full search', async ({
+      page,
+    }) => {
+      await open(page, `/${locale}`);
+
+      await header(page).fill('  queen ');
+      await header(page).press('Enter');
+      await expect(page).toHaveURL(`/${locale}/search?q=queen`);
+      await expect(header(page)).toHaveValue('queen');
+    });
+
+    test('Enter on a blank field does nothing', async ({ page }) => {
+      const { home } = await open(page, `/${locale}`);
+
+      await header(page).focus();
+      await header(page).press('Enter');
+      await expect(page).toHaveURL(home);
+      await expect(list(page)).toHaveCount(0);
+    });
+
+    test('the first Escape closes the list, keeps the focus and the text', async ({
+      page,
+    }) => {
+      const { home } = await open(page, `/${locale}`);
+
+      await header(page).fill('queen');
+      await header(page).press('ArrowDown');
+      await expect(highlightedRow(page)).toHaveCount(1);
+      await header(page).press('Escape');
+      await expect(list(page)).toHaveCount(0);
+      await expect(header(page)).toBeFocused();
+      await expect(header(page)).toHaveValue('queen');
+      await expect(page).toHaveURL(home);
+    });
   });
 }

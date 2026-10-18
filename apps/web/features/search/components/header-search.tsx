@@ -9,19 +9,17 @@ import { flushSync } from 'react-dom';
 
 import { usePathname, useRouter } from '@/lib/i18n/navigation';
 
-import {
-  type ComboboxEvent,
-  type ComboboxIntent,
-  type ComboboxState,
-  initialComboboxState,
-  updateCombobox,
-} from '../combobox-state-machine';
+import type { ComboboxEvent, ComboboxIntent } from '../combobox-state-machine';
 import { headerFieldLoading } from '../header-search-loading';
 import { useDebouncedQuery } from '../hooks/use-debounced-query';
 import { isSearchHotkey } from '../search-hotkey';
 import { searchHref } from '../search-href';
 import { normalizeSearchQuery, SEARCH_DEBOUNCE_MS } from '../search-params';
 import { HeaderSearchBar } from './header-search-bar';
+import {
+  type SuggestionsCombobox,
+  useSuggestionsCombobox,
+} from './suggestions-combobox';
 
 /**
  * The suggestions panel (popover plus its query) loads on first open, so the
@@ -167,12 +165,6 @@ function useHeaderLoading({
   });
 }
 
-type SuggestionsComboboxInput = {
-  inputValue: string;
-  setInputValue: (value: SetStateAction<string>) => void;
-  inputRef: RefObject<HTMLInputElement | null>;
-};
-
 /**
  * Whether the field is expanded over the header bar on small screens. It
  * starts expanded on the search page, even after arriving there from
@@ -204,56 +196,32 @@ function useExpandedField(
 }
 
 /**
- * The header combobox: whether the suggestions list is open, and the field
- * events that move it. The reducer decides; this hook only keeps its state
- * and runs the DOM side (a pick blurs the field, as Enter does, and the blur
- * closes the list too).
+ * The suggestions panel, while the list is open. Its own boundary: while the
+ * panel's code loads, the outer one (the header's skeleton) would hide the
+ * field and drop its focus.
  */
-function useSuggestionsCombobox({
-  inputValue,
-  setInputValue,
-  inputRef,
-}: SuggestionsComboboxInput) {
-  const [combobox, setCombobox] = useState<ComboboxState>(initialComboboxState);
-  // The latest state, read and written synchronously: two events in one tick
-  // (a pick blurs the field, which sends again) must not read a stale state.
-  const stateRef = useRef<ComboboxState>(initialComboboxState);
-  const send = useCallback((event: ComboboxEvent): ComboboxIntent => {
-    // The rows are not arrow-navigable yet, so the row count is not needed:
-    // only the open state matters here.
-    const transition = updateCombobox(stateRef.current, event, 0);
-    stateRef.current = transition.state;
-    setCombobox(transition.state);
-    return transition.intent;
-  }, []);
-  const leaveField = () => {
-    send({ type: 'blurred' });
-    inputRef.current?.blur();
-  };
-  return {
-    open: combobox.open,
-    send,
-    onInputChange: (value: string) => {
-      setInputValue(value);
-      send({ type: 'input-changed', query: value });
-    },
-    onFocus: () => {
-      send({ type: 'focused', query: inputValue });
-    },
-    onBlur: () => {
-      send({ type: 'blurred' });
-    },
-    /** A Track row: the next page must not reopen the old query. */
-    onPickTrack: () => {
-      setInputValue('');
-      leaveField();
-    },
-    /** The Search-for row: the field shows the query the search will use. */
-    onPickSearch: () => {
-      setInputValue(normalizeSearchQuery(inputValue));
-      leaveField();
-    },
-  };
+function SuggestionsSlot({
+  combobox,
+  query,
+  anchor,
+}: {
+  combobox: SuggestionsCombobox;
+  query: string;
+  anchor: RefObject<Element | null>;
+}) {
+  if (!combobox.open) return null;
+  return (
+    <Suspense fallback={null}>
+      <HeaderSuggestions
+        query={query}
+        anchor={anchor}
+        highlighted={combobox.highlighted}
+        onRowsChange={combobox.onRowsChange}
+        onPickTrack={combobox.onPickTrack}
+        onPickSearch={combobox.onPickSearch}
+      />
+    </Suspense>
+  );
 }
 
 /**
@@ -267,9 +235,11 @@ function useSuggestionsCombobox({
  * the only field left.
  *
  * Outside the search page the field also suggests Recordings while it has
- * text: the combobox state decides when the list is open (typing and
- * focusing with text open it, blurring or picking a row closes it), and the
- * list is never shown on the search page.
+ * text: the combobox state decides when the list is open, and the arrow keys
+ * move a highlight through its rows. Enter opens the highlighted row or, with
+ * none highlighted, submits the search; Escape closes the list first and
+ * collapses the field on the second press. The list is never shown on the
+ * search page.
  */
 export function HeaderSearch() {
   const pathname = usePathname();
@@ -286,6 +256,8 @@ export function HeaderSearch() {
     inputValue,
     setInputValue,
     inputRef,
+    enabled: !isSearchPage,
+    collapse,
   });
 
   useSearchHotkey(expandAndFocus);
@@ -315,25 +287,19 @@ export function HeaderSearch() {
         inputValue={inputValue}
         onInputChange={combobox.onInputChange}
         onSubmit={onSubmit}
-        onEscape={collapse}
+        onKeyDown={combobox.onKeyDown}
+        activeRowId={combobox.activeRowId}
         onOpen={expandAndFocus}
-        onCancel={collapse}
+        onCancel={combobox.onCancel}
         onFocus={combobox.onFocus}
         onBlur={combobox.onBlur}
         loading={loading}
       />
-      {combobox.open && !isSearchPage ? (
-        // Its own boundary: while the panel's code loads, the outer one (the
-        // header's skeleton) would hide the field and drop its focus.
-        <Suspense fallback={null}>
-          <HeaderSuggestions
-            query={inputValue}
-            anchor={searchRef}
-            onPickTrack={combobox.onPickTrack}
-            onPickSearch={combobox.onPickSearch}
-          />
-        </Suspense>
-      ) : null}
+      <SuggestionsSlot
+        combobox={combobox}
+        query={inputValue}
+        anchor={searchRef}
+      />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { LoaderCircle, SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { FormEvent, RefObject } from 'react';
+import type { FormEvent, KeyboardEvent, RefObject } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ function SearchField({
   value,
   onChange,
   onSubmit,
-  onEscape,
+  onKeyDown,
+  activeRowId,
   onFocus,
   onBlur,
   loading,
@@ -24,7 +25,8 @@ function SearchField({
   value: string;
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onEscape: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  activeRowId?: string;
   onFocus: () => void;
   onBlur: () => void;
   loading: boolean;
@@ -45,12 +47,9 @@ function SearchField({
         autoComplete="off"
         aria-label={t('label')}
         aria-keyshortcuts="Meta+K Control+K"
+        aria-activedescendant={activeRowId}
         placeholder={t('placeholder')}
-        onKeyDown={(event) => {
-          if (event.key !== 'Escape') return;
-          event.currentTarget.blur();
-          onEscape();
-        }}
+        onKeyDown={onKeyDown}
         start={<SearchIcon aria-hidden="true" className="size-5" />}
         end={
           loading ? (
@@ -74,7 +73,9 @@ export type HeaderSearchBarProps = {
   inputValue: string;
   onInputChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onEscape: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  /** The suggestion row the keyboard highlights, if any. */
+  activeRowId?: string;
   onOpen: () => void;
   onCancel: () => void;
   onFocus: () => void;
@@ -90,7 +91,8 @@ export function HeaderSearchBar({
   inputValue,
   onInputChange,
   onSubmit,
-  onEscape,
+  onKeyDown,
+  activeRowId,
   onOpen,
   onCancel,
   onFocus,
@@ -122,7 +124,8 @@ export function HeaderSearchBar({
           value={inputValue}
           onChange={onInputChange}
           onSubmit={onSubmit}
-          onEscape={onEscape}
+          onKeyDown={onKeyDown}
+          activeRowId={activeRowId}
           onFocus={onFocus}
           onBlur={onBlur}
           loading={loading}

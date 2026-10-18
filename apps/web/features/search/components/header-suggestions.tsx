@@ -3,20 +3,24 @@
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, RefObject } from 'react';
+import { useEffect } from 'react';
 
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
-
+import { suggestionRowId } from '../combobox-keys';
 import { useSearchSuggestions } from '../hooks/use-search-suggestions';
 import { searchHref } from '../search-href';
 import { toTrackCardProps } from '../search-result-to-track-card';
 import { suggestionPanelContent } from '../suggestion-panel';
 
-/** A row is at least 56px tall (DESIGN.md: list rows). */
+/**
+ * A row is at least 56px tall (DESIGN.md: list rows). The highlight is the
+ * keyboard's current row, shown with the same wash as the hover.
+ */
 const ROW_CLASS =
-  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
+  'flex min-h-14 items-center gap-3 rounded-lg px-3 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-highlighted:bg-foreground/10';
 const LINK_ROW_CLASS = `${ROW_CLASS} transition-colors duration-150 ease-out hover:bg-foreground/10`;
 
 /** The 48px square cover of a row: the art, or the placeholder without it. */
@@ -62,9 +66,13 @@ function SuggestionText({
  */
 function SuggestionRow({
   card,
+  id,
+  highlighted,
   onPickTrack,
 }: {
   card: TrackCardProps;
+  id: string;
+  highlighted: boolean;
   onPickTrack: () => void;
 }) {
   const content = (
@@ -76,11 +84,18 @@ function SuggestionRow({
       <SuggestionText title={card.title} subtitle={card.subtitle} />
     </>
   );
+  const highlight = highlighted || undefined;
   if (card.trackId === null) {
-    return <div className={ROW_CLASS}>{content}</div>;
+    return (
+      <div id={id} data-highlighted={highlight} className={ROW_CLASS}>
+        {content}
+      </div>
+    );
   }
   return (
     <Link
+      id={id}
+      data-highlighted={highlight}
       href={`/tracks/${card.trackId}`}
       onClick={onPickTrack}
       className={LINK_ROW_CLASS}
@@ -103,18 +118,40 @@ function SuggestionRow({
 export function HeaderSuggestions({
   query,
   anchor,
+  highlighted,
+  onRowsChange,
   onPickTrack,
   onPickSearch,
 }: {
   query: string;
   anchor: RefObject<Element | null>;
+  /** The row the keyboard highlights: an index, the Search-for row last. */
+  highlighted: number | null;
+  /** Reports the rows on screen, so the arrow keys wrap inside them. */
+  onRowsChange: (count: number) => void;
   onPickTrack: () => void;
   onPickSearch: () => void;
 }) {
   const t = useTranslations('header.search.suggestions');
   const { data } = useSearchSuggestions(query);
-  const { items, noSongs } = suggestionPanelContent(data?.results);
+  const results = data?.results;
+  const { items, noSongs } = suggestionPanelContent(results);
   const searchForHref = searchHref(query);
+  const searchForIndex = items.length;
+
+  // A new answer is a new set of rows: the list reports them so the highlight
+  // starts over. The Search-for row is always there (the list only shows for
+  // a searchable query), hence the extra row.
+  useEffect(() => {
+    onRowsChange((results?.length ?? 0) + 1);
+  }, [results, onRowsChange]);
+
+  useEffect(() => {
+    if (highlighted === null) return;
+    document
+      .getElementById(suggestionRowId(highlighted))
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [highlighted]);
 
   return (
     <Popover open>
@@ -128,10 +165,12 @@ export function HeaderSuggestions({
         className="max-h-96 w-(--anchor-width) gap-0 overflow-y-auto rounded-xl p-1"
       >
         <ul className="flex flex-col">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.mbid}>
               <SuggestionRow
                 card={toTrackCardProps(item)}
+                id={suggestionRowId(index)}
+                highlighted={highlighted === index}
                 onPickTrack={onPickTrack}
               />
             </li>
@@ -144,6 +183,8 @@ export function HeaderSuggestions({
           {searchForHref ? (
             <li>
               <Link
+                id={suggestionRowId(searchForIndex)}
+                data-highlighted={highlighted === searchForIndex || undefined}
                 href={searchForHref}
                 onClick={onPickSearch}
                 className={`${LINK_ROW_CLASS} font-medium text-sm`}
