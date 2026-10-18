@@ -19,6 +19,35 @@ export async function sitemapFileItems<TItem>(
   return (await readPage(cursor)).items;
 }
 
+/**
+ * How many numeric files a listing has: one per API page, so the count is the
+ * number of pages, found by walking the cursors (each page is cached, so the
+ * walk is cheap after the first index request). An upstream failure is logged
+ * and counts the pages read so far. The count is never below one: file 0
+ * always answers, empty and partial if its own read fails.
+ */
+export async function countSitemapFiles<TItem>(
+  name: string,
+  readPage: (cursor: string | undefined) => Promise<CursorPage<TItem>>,
+): Promise<number> {
+  let files = 0;
+  let cursor: string | undefined;
+  let more = true;
+  try {
+    while (more) {
+      const page = await readPage(cursor);
+      files++;
+      more = page.nextCursor !== null;
+      cursor = page.nextCursor ?? undefined;
+    }
+  } catch (error) {
+    console.error(
+      `Sitemap ${name} could not be counted, listing the ${files} file(s) read so far: ${messageOf(error)}`,
+    );
+  }
+  return Math.max(files, 1);
+}
+
 /** A sitemap file as a route answers it. `partial` marks a failed read. */
 export type SitemapFile<TItem> = {
   items: readonly TItem[];

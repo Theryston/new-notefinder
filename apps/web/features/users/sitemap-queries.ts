@@ -9,7 +9,10 @@ import {
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
-import { sitemapFileItems } from '@/lib/sitemap/sitemap-file';
+import {
+  countSitemapFiles,
+  sitemapFileItems,
+} from '@/lib/sitemap/sitemap-file';
 
 /**
  * One page of the Users sitemap, after `cursor`. Cached per cursor, so
@@ -35,4 +38,9 @@ async function getUserSitemapPage(
 /** The `index`th sitemap file's Users, or undefined past the last file. */
 export function getUserSitemapFile(index: number) {
   return sitemapFileItems(getUserSitemapPage, index);
+}
+
+/** How many sitemap files the Users listing has (at least one). */
+export function countUserSitemapFiles(): Promise<number> {
+  return countSitemapFiles('users', getUserSitemapPage);
 }
