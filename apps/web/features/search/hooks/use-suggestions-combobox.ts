@@ -74,11 +74,15 @@ export function useSuggestionsCombobox({
     if (gated) store.send(gated);
   };
 
+  // The list never shows on the search page, even if a stale state is open, so
+  // neither does its highlight: nothing may point at a row that is not there.
+  const open = isListOpen(state, enabled);
+  const highlighted = open ? state.highlighted : null;
+
   return {
-    // The list never shows on the search page, even if a stale state is open.
-    open: isListOpen(state, enabled),
-    highlighted: state.highlighted,
-    activeRowId: activeRowIdFor(state.highlighted),
+    open,
+    highlighted,
+    activeRowId: activeRowIdFor(highlighted),
     send: store.send,
     onRowsChange: store.reportRows,
     onKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => {

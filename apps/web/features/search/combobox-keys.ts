@@ -96,13 +96,16 @@ export function keyEffects(intent: ComboboxIntent): FieldEffect[] {
     case 'open-suggestion':
       return [{ kind: 'click-row', index: intent.index }];
     case 'collapse-field':
-      return [{ kind: 'blur' }, { kind: 'collapse' }];
+      return cancelEffects;
     default:
       return [];
   }
 }
 
-/** Cancel on a small screen: leave the field and collapse it. */
+/**
+ * Leave the field and collapse it: a cancel, and a second Escape (which a
+ * closed list turns into a collapse on every viewport, as the old header did).
+ */
 export const cancelEffects: FieldEffect[] = [
   { kind: 'blur' },
   { kind: 'collapse' },

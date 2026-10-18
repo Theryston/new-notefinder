@@ -1,134 +1,21 @@
-import {
-  expect,
-  type Locator,
-  type Page,
-  type Request,
-  type Route,
-  test,
-} from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { mockAuthApi } from './auth-api-mock';
-import { type FakeTrack, setTrackMock } from './fake-track-api';
+import {
+  type Hit,
+  lastOf,
+  mockSuggestions,
+  PNG,
+  RANKED,
+  registerTrack,
+} from './header-suggestions-fixtures';
 import { messages as catalogs } from './messages';
-import { corsHeaders, searchParamsOf } from './search-api-mock';
+import { searchParamsOf } from './search-api-mock';
 
 const localeCatalogs = (['en', 'pt-BR'] as const).map((locale) => ({
   locale,
   messages: catalogs[locale],
 }));
-
-/**
- * A 1x1 PNG answered for every optimized image: the browser asks the Next
- * image route, so the cover is the browser's own request and no upstream
- * (the Cover Art Archive) is reached.
- */
-const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
-  'base64',
-);
-
-const mbidOf = (n: number): string =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
-
-/** A Cover Art Archive front of a release (the image route is answered above). */
-const coverOf = (n: number): string =>
-  `https://coverartarchive.org/release/${mbidOf(n)}/front-500`;
-
-type Hit = {
-  title: string;
-  artist: string;
-  trackId: string | null;
-  coverArtUrl?: string;
-};
-
-/**
- * Six Recordings in the order the catalog ranks them. The order is neither
- * alphabetical nor "Tracks first" (the first hit has no Track), so a sort
- * or a reorder by Track status shows up in the row assertions.
- */
-const RANKED: Hit[] = [
-  {
-    title: 'Under Pressure',
-    artist: 'Queen & David Bowie',
-    trackId: null,
-    coverArtUrl: coverOf(101),
-  },
-  { title: 'Radio Ga Ga', artist: 'Queen', trackId: 'seedtrack02' },
-  { title: 'Bohemian Rhapsody', artist: 'Queen', trackId: 'seedtrack01' },
-  { title: 'We Will Rock You', artist: 'Queen', trackId: 'seedtrack03' },
-  { title: 'Killer Queen', artist: 'Queen', trackId: 'seedtrack04' },
-  { title: 'Somebody to Love', artist: 'Queen', trackId: null },
-];
-
-function resultBody(hit: Hit, index: number) {
-  return {
-    mbid: mbidOf(index + 1),
-    title: hit.title,
-    lengthMs: null,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: hit.artist, artists: [] },
-    genres: [],
-    primaryRelease: hit.coverArtUrl
-      ? {
-          mbid: mbidOf(index + 500),
-          title: hit.title,
-          year: 1980,
-          coverArtUrl: hit.coverArtUrl,
-        }
-      : null,
-    trackId: hit.trackId,
-  };
-}
-
-/**
- * Serves the public search for the header suggestions. Like the API, it
- * answers at most `limit` hits in the order given. Returns the requests seen.
- */
-async function mockSuggestions(page: Page, hits: Hit[] = RANKED) {
-  const calls: Request[] = [];
-  await page.route('**/v1/search**', async (route: Route) => {
-    const request = route.request();
-    const headers = corsHeaders(request);
-    if (request.method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers });
-      return;
-    }
-    calls.push(request);
-    const limit = Number(
-      new URL(request.url()).searchParams.get('limit') ?? 20,
-    );
-    await route.fulfill({
-      status: 200,
-      headers,
-      body: JSON.stringify({ results: hits.slice(0, limit).map(resultBody) }),
-    });
-  });
-  return calls;
-}
-
-/**
- * Registers a processed Track with the fake track API, so its Track page
- * renders (an unknown ID is a 404 page without the site header).
- */
-async function registerTrack(id: string) {
-  const track: FakeTrack = {
-    id,
-    title: 'Radio Ga Ga',
-    artistCredit: [{ name: 'Queen', joinPhrase: '' }],
-    durationMs: 248_000,
-    processing: { status: 'COMPLETED' },
-    notes: [{ pitch: 64, start: 2, end: 3 }],
-    contributors: [],
-  };
-  await setTrackMock({ tracks: [track] });
-}
-
-function lastOf(calls: Request[]): Request {
-  const last = calls.at(-1);
-  if (!last) throw new Error('expected a suggestions request');
-  return last;
-}
 
 for (const { locale, messages } of localeCatalogs) {
   const suggestions = messages.header.search.suggestions;
@@ -445,6 +332,37 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(page).toHaveURL(home);
       await expect(list(page)).toHaveCount(0);
     });
+
+    test('the phone field and list expose the same combobox roles', async ({
+      page,
+    }) => {
+      const { field } = await typedOnPhone(page);
+      const radio = rowLink(page, /Radio Ga Ga/);
+
+      await expect(field).toHaveAttribute('aria-expanded', 'true');
+      await expect(field).toHaveAttribute(
+        'aria-controls',
+        'header-suggestions-listbox',
+      );
+      await expect(list(page)).toHaveAttribute(
+        'id',
+        'header-suggestions-listbox',
+      );
+      await expect(list(page).getByRole('option')).toHaveCount(7);
+      await expect(radio).toBeVisible();
+      await field.press('ArrowDown');
+      await field.press('ArrowDown');
+      await expect(radio).toHaveAttribute('aria-selected', 'true');
+      await expect(field).toHaveAttribute(
+        'aria-activedescendant',
+        (await radio.getAttribute('id')) ?? '',
+      );
+
+      await field.press('Escape');
+      await expect(list(page)).toHaveCount(0);
+      await expect(field).toHaveAttribute('aria-expanded', 'false');
+      await expect(field).not.toHaveAttribute('aria-activedescendant');
+    });
   });
 
   test.describe(`header suggestion keyboard (${locale})`, () => {
@@ -452,14 +370,20 @@ for (const { locale, messages } of localeCatalogs) {
     const highlightedRow = (page: Page) =>
       list(page).locator('[data-highlighted]');
 
+    /** Opens the header and types a query, once its first row is rendered. */
+    // Arrows before the answer lands would be reset by it, so wait for rows.
+    const typedWithRows = async (page: Page) => {
+      const opened = await open(page, `/${locale}`);
+      await header(page).fill('queen');
+      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      return opened;
+    };
+
     test('arrows move the highlight, and Enter opens the highlighted Track', async ({
       page,
     }) => {
       await registerTrack('seedtrack02');
-      await open(page, `/${locale}`);
-
-      await header(page).fill('queen');
-      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      await typedWithRows(page);
       await header(page).press('ArrowDown');
       await header(page).press('ArrowDown');
       await expect(highlightedRow(page)).toContainText('Radio Ga Ga');
@@ -470,10 +394,7 @@ for (const { locale, messages } of localeCatalogs) {
     test('ArrowUp from nothing highlights the Search-for row, and ArrowDown wraps back to the first row', async ({
       page,
     }) => {
-      await open(page, `/${locale}`);
-
-      await header(page).fill('queen');
-      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      await typedWithRows(page);
       await header(page).press('ArrowUp');
       await expect(highlightedRow(page)).toContainText(searchForLabel('queen'));
       await header(page).press('ArrowDown');
@@ -514,11 +435,7 @@ for (const { locale, messages } of localeCatalogs) {
     test('the first Escape closes the list, keeps the focus and the text', async ({
       page,
     }) => {
-      const { home } = await open(page, `/${locale}`);
-
-      await header(page).fill('queen');
-      // Arrows before the answer lands would be reset by it, so wait for rows.
-      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      const { home } = await typedWithRows(page);
       await header(page).press('ArrowDown');
       await expect(highlightedRow(page)).toHaveCount(1);
       await header(page).press('Escape');
@@ -547,10 +464,7 @@ for (const { locale, messages } of localeCatalogs) {
     test('Enter on a highlighted Recording without a Track closes the list', async ({
       page,
     }) => {
-      const { home } = await open(page, `/${locale}`);
-
-      await header(page).fill('queen');
-      await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
+      const { home } = await typedWithRows(page);
       await header(page).press('ArrowDown');
       await expect(highlightedRow(page)).toContainText('Under Pressure');
       await header(page).press('Enter');
@@ -595,6 +509,21 @@ for (const { locale, messages } of localeCatalogs) {
       await field.press('Escape');
       await expect(field).toHaveAttribute('aria-expanded', 'false');
       await expect(field).not.toHaveAttribute('aria-activedescendant');
+    });
+
+    // Deliberate on desktop too: the second Escape blurs and collapses the
+    // field, as the header did before the keyboard work. Small screens also
+    // collapse (see the phone tests), so the blur is the desktop part.
+    test('the second Escape blurs the field on desktop and keeps the text', async ({
+      page,
+    }) => {
+      await typedWithRows(page);
+      await header(page).press('Escape');
+      await expect(list(page)).toHaveCount(0);
+      await expect(header(page)).toBeFocused();
+      await header(page).press('Escape');
+      await expect(header(page)).not.toBeFocused();
+      await expect(header(page)).toHaveValue('queen');
     });
   });
 }
