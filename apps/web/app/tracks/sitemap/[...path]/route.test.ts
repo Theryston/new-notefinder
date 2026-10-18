@@ -7,6 +7,9 @@ import { GET } from './route';
 vi.mock('@/features/tracks/sitemap-queries', () => ({
   getTrackSitemapFile: vi.fn(),
 }));
+vi.mock('@/lib/sitemap/request-origin', () => ({
+  requestSiteOrigin: () => 'https://notefinder.com.br',
+}));
 
 const mockFile = vi.mocked(getTrackSitemapFile);
 

@@ -14,7 +14,7 @@ export const cacheTags = {
   tracks: 'tracks',
   /**
    * The Tracks, Albums, Artists and Users sitemap files. The API sends it when
-   * a Track completes or scores change.
+   * a Track completes or its trending score changes.
    */
   sitemap: 'sitemap',
   track: (trackId: string) => `track:${trackId}`,
