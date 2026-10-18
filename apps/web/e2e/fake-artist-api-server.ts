@@ -12,6 +12,10 @@ import {
   paginateFakeTracks,
 } from './fake-artist-tracks.ts';
 import {
+  serveAlbumSitemap,
+  serveArtistSitemap,
+} from './fake-entity-sitemaps.ts';
+import {
   tracks as fakeTracks,
   serveSession,
   serveTrackRequest,
@@ -237,6 +241,22 @@ const routes: Route[] = [
     method: 'POST',
     pathname: '/__artist-mock/set',
     serve: (request, response) => serveMockSet(request, response),
+  },
+  {
+    method: 'GET',
+    pathname: '/v1/sitemaps/albums',
+    serve: (request, response) => {
+      serveAlbumSitemap(request, response);
+      return Promise.resolve();
+    },
+  },
+  {
+    method: 'GET',
+    pathname: '/v1/sitemaps/artists',
+    serve: (request, response) => {
+      serveArtistSitemap(request, response);
+      return Promise.resolve();
+    },
   },
 ];
 
