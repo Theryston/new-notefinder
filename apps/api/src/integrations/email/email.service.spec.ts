@@ -1,6 +1,7 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
 import { ZodError } from 'zod';
+import { ENV } from '../../config/env.js';
 import { EMAIL_JOB, EMAIL_QUEUE } from './email.job.js';
 import { EmailService } from './email.service.js';
 
@@ -14,6 +15,7 @@ describe('EmailService', () => {
       providers: [
         EmailService,
         { provide: getQueueToken(EMAIL_QUEUE), useValue: queue },
+        { provide: ENV, useValue: { WEB_URL: 'https://notefinder.test' } },
       ],
     }).compile();
     service = moduleRef.get(EmailService);
@@ -58,6 +60,25 @@ describe('EmailService', () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it('links the rendered email to the web origin from the injected env', async () => {
+    await service.sendOtp({
+      to: 'ana@example.com',
+      type: 'email-verification',
+      otp: '654321',
+      locale: 'en',
+      expiresInMinutes: 10,
+    });
+    const [, message] = queue.add.mock.calls[0] ?? [];
+    expect(message).toMatchObject({
+      html: expect.stringContaining('href="https://notefinder.test/en/terms"'),
+    });
+    expect(message).toMatchObject({
+      html: expect.stringContaining(
+        'src="https://notefinder.test/apple-icon.png"',
+      ),
+    });
   });
 
   it('renders and enqueues account-exists emails in the requested locale', async () => {

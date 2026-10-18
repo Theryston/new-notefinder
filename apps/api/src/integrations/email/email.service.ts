@@ -1,6 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { ENV, type Env } from '../../config/env.js';
 import {
   type AccountExistsEmailInput,
   renderAccountExistsEmail,
@@ -39,6 +40,7 @@ export type EmailSendOptions = {
 export class EmailService {
   constructor(
     @InjectQueue(EMAIL_QUEUE) private readonly queue: Queue<EmailMessage>,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   /** @throws {ZodError} when the message is invalid. */
@@ -60,12 +62,14 @@ export class EmailService {
 
   /** Sends a one-time code (email verification, password reset). */
   async sendOtp(input: OtpEmailInput): Promise<void> {
-    await this.send(renderOtpEmail(input));
+    await this.send(renderOtpEmail({ ...input, webUrl: this.env.WEB_URL }));
   }
 
   /** Tells the owner of an email that someone tried to sign up with it. */
   async sendAccountExists(input: AccountExistsEmailInput): Promise<void> {
-    await this.send(renderAccountExistsEmail(input));
+    await this.send(
+      renderAccountExistsEmail({ ...input, webUrl: this.env.WEB_URL }),
+    );
   }
 
   /** Tells a Contributor that their Track's notes are ready. */
@@ -73,7 +77,10 @@ export class EmailService {
     input: TrackEmailInput,
     options: EmailSendOptions = {},
   ): Promise<void> {
-    await this.send(renderTrackCompletedEmail(input), options);
+    await this.send(
+      renderTrackCompletedEmail({ ...input, webUrl: this.env.WEB_URL }),
+      options,
+    );
   }
 
   /** Tells a Contributor that their Track's Processing failed. */
@@ -81,6 +88,9 @@ export class EmailService {
     input: TrackEmailInput,
     options: EmailSendOptions = {},
   ): Promise<void> {
-    await this.send(renderTrackFailedEmail(input), options);
+    await this.send(
+      renderTrackFailedEmail({ ...input, webUrl: this.env.WEB_URL }),
+      options,
+    );
   }
 }

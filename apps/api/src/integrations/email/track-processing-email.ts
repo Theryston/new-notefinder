@@ -1,5 +1,6 @@
 import type { EmailMessage } from './email.job.js';
 import {
+  type EmailWebOrigin,
   emailButton,
   emailParagraph,
   renderEmailFromCopy,
@@ -83,11 +84,11 @@ export type TrackEmailInput = {
 
 const renderTrackEmail = (
   copy: TrackEmailCopy,
-  { to, locale, trackUrl }: TrackEmailInput,
+  { to, locale, trackUrl, webUrl }: TrackEmailInput & EmailWebOrigin,
 ): EmailMessage => {
   const text = [copy.intro, '', copy.action, '', `${copy.link}: ${trackUrl}`];
   const html = renderEmailFromCopy(
-    locale,
+    { locale, webUrl },
     copy,
     [
       emailParagraph(copy.intro),
@@ -100,9 +101,10 @@ const renderTrackEmail = (
 
 /** Sent to every Contributor of a Track whose Processing completed. */
 export const renderTrackCompletedEmail = (
-  input: TrackEmailInput,
+  input: TrackEmailInput & EmailWebOrigin,
 ): EmailMessage => renderTrackEmail(COMPLETED[input.locale], input);
 
 /** Sent to every Contributor of a Track whose Processing failed. */
-export const renderTrackFailedEmail = (input: TrackEmailInput): EmailMessage =>
-  renderTrackEmail(FAILED[input.locale], input);
+export const renderTrackFailedEmail = (
+  input: TrackEmailInput & EmailWebOrigin,
+): EmailMessage => renderTrackEmail(FAILED[input.locale], input);

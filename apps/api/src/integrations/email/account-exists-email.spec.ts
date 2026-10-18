@@ -4,7 +4,11 @@ import { EMAIL_LOCALES } from './email-locale.js';
 
 describe('renderAccountExistsEmail', () => {
   it.each(EMAIL_LOCALES)('renders a valid %s email', (locale) => {
-    const message = renderAccountExistsEmail({ to: 'ana@example.com', locale });
+    const message = renderAccountExistsEmail({
+      to: 'ana@example.com',
+      locale,
+      webUrl: 'https://notefinder.test',
+    });
 
     expect(emailMessageSchema.parse(message)).toEqual(message);
     expect(message.to).toBe('ana@example.com');
@@ -13,11 +17,16 @@ describe('renderAccountExistsEmail', () => {
 
   it('writes each locale in its language', () => {
     const to = 'ana@example.com';
-    expect(renderAccountExistsEmail({ to, locale: 'en' })).toMatchObject({
+    const webUrl = 'https://notefinder.test';
+    expect(
+      renderAccountExistsEmail({ to, locale: 'en', webUrl }),
+    ).toMatchObject({
       subject: 'You already have a notefinder account',
       text: expect.stringContaining('Forgot password'),
     });
-    expect(renderAccountExistsEmail({ to, locale: 'pt-BR' })).toMatchObject({
+    expect(
+      renderAccountExistsEmail({ to, locale: 'pt-BR', webUrl }),
+    ).toMatchObject({
       subject: 'Você já tem uma conta no notefinder',
       text: expect.stringContaining('Esqueci minha senha'),
     });
@@ -27,6 +36,7 @@ describe('renderAccountExistsEmail', () => {
     const { html } = renderAccountExistsEmail({
       to: 'ana@example.com',
       locale: 'en',
+      webUrl: 'https://notefinder.test',
     });
     expect(html).toContain('&quot;Forgot password&quot;');
     expect(html).not.toContain('"Forgot password"');

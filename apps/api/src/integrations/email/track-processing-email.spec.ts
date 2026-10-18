@@ -6,6 +6,7 @@ import {
 const input = {
   to: 'ana@example.com',
   trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1?x=1&y=2',
+  webUrl: 'https://notefinder.test',
 };
 
 describe('track processing emails', () => {

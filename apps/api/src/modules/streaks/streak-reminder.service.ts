@@ -42,6 +42,7 @@ export class StreakReminderService {
         to: recipient.email,
         locale: recipient.locale,
         siteUrl: `${this.env.WEB_URL}/${recipient.locale}`,
+        webUrl: this.env.WEB_URL,
       }),
       {
         jobId: `streak-reminder-${recipient.id}-${recipient.day}`,

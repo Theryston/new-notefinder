@@ -1,4 +1,3 @@
-import { readWebUrl } from '../../config/env.js';
 import {
   compileMjml,
   emailButton,
@@ -7,7 +6,10 @@ import {
 } from './email-layout.js';
 import { EMAIL_LAYOUT_MJML } from './email-layout-skeleton.js';
 
+const webUrl = 'https://notefinder.test';
+
 const layoutInput = {
+  webUrl,
   locale: 'en',
   subject: 'Subject',
   preheader: 'Preheader',
@@ -78,8 +80,7 @@ describe('renderEmailLayout', () => {
     expect(html).toContain('Real body');
   });
 
-  it('links the Terms page and the other language on the configured web origin', () => {
-    const webUrl = readWebUrl();
+  it('links the Terms page and the other language on the injected web origin', () => {
     const html = renderEmailLayout(layoutInput);
 
     expect(html).toContain(`href="${webUrl}/en/terms"`);
@@ -87,7 +88,6 @@ describe('renderEmailLayout', () => {
   });
 
   it('links the Terms page of the email locale', () => {
-    const webUrl = readWebUrl();
     const html = renderEmailLayout({ ...layoutInput, locale: 'pt-BR' });
 
     expect(html).toContain(`href="${webUrl}/pt-BR/terms"`);
@@ -103,20 +103,11 @@ describe('renderEmailLayout', () => {
   });
 
   it('shows the logo as an image of the web icon, without an SVG', () => {
-    const webUrl = readWebUrl();
     const html = renderEmailLayout(layoutInput);
 
     expect(html).toContain(`src="${webUrl}/apple-icon.png"`);
     expect(html).toMatch(/<img [^>]*alt="" /);
     expect(html).not.toContain('<svg');
-  });
-
-  it('reads WEB_URL without the rest of the environment, and rejects a bad one', () => {
-    expect(readWebUrl({ WEB_URL: 'https://notefinder.test/' })).toBe(
-      'https://notefinder.test',
-    );
-    expect(readWebUrl({})).toBe('http://localhost:3000');
-    expect(() => readWebUrl({ WEB_URL: 'not a url' })).toThrow();
   });
 
   it('writes the footer links in the other locale names', () => {

@@ -1,5 +1,4 @@
 import mjml2html from 'mjml';
-import { readWebUrl } from '../../config/env.js';
 import { escapeHtml } from './email-html.js';
 import {
   EMAIL_LAYOUT_MJML,
@@ -54,7 +53,13 @@ const OTHER_LOCALE = {
   'pt-BR': 'en',
 } as const satisfies Record<EmailLocale, EmailLocale>;
 
-export type EmailLayoutInput = {
+/** The web app's origin: the logo and the footer links point at it. */
+export type EmailWebOrigin = {
+  /** `WEB_URL` (no trailing slash), from the injected `Env`. */
+  webUrl: string;
+};
+
+export type EmailLayoutInput = EmailWebOrigin & {
   locale: EmailLocale;
   /** The document title; not shown in the body. */
   subject: string;
@@ -73,10 +78,7 @@ export type EmailLayoutInput = {
 const footerLink = (href: string, label: string): string =>
   `<a href="${escapeHtml(href)}" style="color:#71717A;">${escapeHtml(label)}</a>`;
 
-const footerHtml = (
-  { locale, reason }: EmailLayoutInput,
-  webUrl: string,
-): string => {
+const footerHtml = ({ locale, reason, webUrl }: EmailLayoutInput): string => {
   const copy: FooterCopy = FOOTER_COPY[locale];
   const links = [
     footerLink(`${webUrl}/${locale}/terms`, copy.terms),
@@ -88,13 +90,9 @@ const footerHtml = (
 /**
  * Fills every slot of the compiled layout in one pass: a value is never
  * scanned for slots, so user content cannot collide with the template.
- *
- * The footer links and the logo use `WEB_URL` as read by `readWebUrl`, which
- * reads `process.env`. An e2e override of the injected `Env` does not reach
- * them.
  */
 export const renderEmailLayout = (input: EmailLayoutInput): string => {
-  const webUrl = readWebUrl();
+  const { webUrl } = input;
   const values: Record<Slot, string> = {
     LANG: escapeHtml(input.locale),
     SUBJECT: escapeHtml(input.subject),
@@ -103,7 +101,7 @@ export const renderEmailLayout = (input: EmailLayoutInput): string => {
     OVERLINE: escapeHtml(input.overline),
     TITLE: escapeHtml(input.title),
     BODY: input.body,
-    FOOTER: footerHtml(input, webUrl),
+    FOOTER: footerHtml(input),
   };
   return LAYOUT.replace(SLOT_PATTERN, (_match, slot: Slot) => values[slot]);
 };
@@ -116,12 +114,13 @@ export type EmailCopy = Pick<
 
 /** Renders one email from its copy and its body markup, in one place. */
 export const renderEmailFromCopy = (
-  locale: EmailLocale,
+  { locale, webUrl }: EmailWebOrigin & { locale: EmailLocale },
   copy: EmailCopy,
   body: string,
 ): string =>
   renderEmailLayout({
     locale,
+    webUrl,
     subject: copy.subject,
     preheader: copy.preheader,
     overline: copy.overline,

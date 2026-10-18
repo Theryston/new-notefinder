@@ -1,6 +1,7 @@
 import type { EmailMessage } from './email.job.js';
 import { escapeHtml } from './email-html.js';
 import {
+  type EmailWebOrigin,
   emailNote,
   emailParagraph,
   renderEmailLayout,
@@ -100,13 +101,15 @@ export const renderOtpEmail = ({
   otp,
   locale,
   expiresInMinutes,
-}: OtpEmailInput): EmailMessage => {
+  webUrl,
+}: OtpEmailInput & EmailWebOrigin): EmailMessage => {
   const copy: OtpEmailCopy = MESSAGES[locale][type];
   const expiry = copy.expiry(expiresInMinutes);
 
   const text = [copy.intro, '', otp, '', expiry, copy.ignore].join('\n');
   const html = renderEmailLayout({
     locale,
+    webUrl,
     subject: copy.subject,
     preheader: copy.preheader(otp, expiresInMinutes),
     overline: copy.overline,

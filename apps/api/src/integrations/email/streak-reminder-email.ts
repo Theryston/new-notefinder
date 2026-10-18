@@ -1,5 +1,6 @@
 import type { EmailMessage } from './email.job.js';
 import {
+  type EmailWebOrigin,
   emailButton,
   emailParagraph,
   renderEmailFromCopy,
@@ -29,18 +30,20 @@ const COPY = {
   },
 } as const;
 
-export function renderStreakReminderEmail(input: {
-  to: string;
-  locale: EmailLocale;
-  siteUrl: string;
-}): EmailMessage {
+export function renderStreakReminderEmail(
+  input: {
+    to: string;
+    locale: EmailLocale;
+    siteUrl: string;
+  } & EmailWebOrigin,
+): EmailMessage {
   const copy = COPY[input.locale];
   return {
     to: input.to,
     subject: copy.subject,
     text: `${copy.body}\n\n${copy.link}: ${input.siteUrl}`,
     html: renderEmailFromCopy(
-      input.locale,
+      { locale: input.locale, webUrl: input.webUrl },
       copy,
       [emailParagraph(copy.body), emailButton(input.siteUrl, copy.link)].join(
         '\n',

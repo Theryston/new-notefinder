@@ -1,5 +1,6 @@
 import type { EmailMessage } from './email.job.js';
 import {
+  type EmailWebOrigin,
   emailNote,
   emailParagraph,
   renderEmailFromCopy,
@@ -61,12 +62,13 @@ export type AccountExistsEmailInput = {
 export const renderAccountExistsEmail = ({
   to,
   locale,
-}: AccountExistsEmailInput): EmailMessage => {
+  webUrl,
+}: AccountExistsEmailInput & EmailWebOrigin): EmailMessage => {
   const copy: AccountExistsEmailCopy = MESSAGES[locale];
 
   const text = [copy.intro, '', copy.action, '', copy.ignore].join('\n');
   const html = renderEmailFromCopy(
-    locale,
+    { locale, webUrl },
     copy,
     [
       emailParagraph(copy.intro),

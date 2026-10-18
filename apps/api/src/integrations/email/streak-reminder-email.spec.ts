@@ -1,5 +1,6 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
+import { ENV } from '../../config/env.js';
 import { EMAIL_QUEUE } from './email.job.js';
 import { EmailService } from './email.service.js';
 import { renderStreakReminderEmail } from './streak-reminder-email.js';
@@ -19,6 +20,7 @@ describe('Practice reminder email', () => {
         to: 'user@example.com',
         locale,
         siteUrl: `https://notefinder.test/${locale}?a=1&b=2`,
+        webUrl: 'https://notefinder.test',
       });
       expect(email.subject).toBe(subject);
       expect(email.text).toContain(action);
@@ -35,6 +37,7 @@ describe('Practice reminder email', () => {
       providers: [
         EmailService,
         { provide: getQueueToken(EMAIL_QUEUE), useValue: { add } },
+        { provide: ENV, useValue: { WEB_URL: 'https://notefinder.test' } },
       ],
     }).compile();
     await module.get(EmailService).send(
@@ -42,6 +45,7 @@ describe('Practice reminder email', () => {
         to: 'user@example.com',
         locale: 'en',
         siteUrl: 'https://notefinder.test/en',
+        webUrl: 'https://notefinder.test',
       }),
       { jobId: 'reminder-user-day', retainForSeconds: 172800 },
     );
