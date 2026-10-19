@@ -800,6 +800,13 @@
       "memberSince": "Member since {date}",
       "loading": "Loading profile…"
     },
+    "chips": {
+      "label": "Profile highlights",
+      "dailyTarget": "Daily target",
+      "vocalRange": "Vocal range",
+      "mostSungArtist": "Most sung artist",
+      "vocalRangeValue": "{lowest} – {highest}"
+    },
     "notFound": {
       "title": "Profile not found",
       "description": "We couldn't find this profile. It may have been removed or the link is wrong."
