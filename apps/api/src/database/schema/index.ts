@@ -13,5 +13,6 @@ export * from './track-notes.js';
 export * from './track-processings.js';
 export * from './track-views.js';
 export * from './tracks.js';
+export * from './user-follows.js';
 export * from './user-practice-preferences.js';
 export * from './users.js';

@@ -10,6 +10,7 @@ import { ArtistsModule } from './modules/artists/artists.module.js';
 import { AttemptsModule } from './modules/attempts/attempts.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
+import { FollowsModule } from './modules/follows/follows.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { PracticePreferencesModule } from './modules/practice-preferences/practice-preferences.module.js';
 import { ProfileSummaryModule } from './modules/profile-summary/profile-summary.module.js';
@@ -42,6 +43,7 @@ import { RedisModule } from './redis/redis.module.js';
     TracksModule,
     TrackMetadataModule,
     FavoritesModule,
+    FollowsModule,
     StreaksModule,
     AttemptsModule,
     PracticePreferencesModule,

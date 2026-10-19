@@ -1185,6 +1185,109 @@
         ]
       }
     },
+    "/v1/me/following/{userId}": {
+      "put": {
+        "operationId": "FollowsController_follow_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The User is followed."
+          },
+          "400": {
+            "description": "The User tried to follow themselves."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The signed-in User has no username yet (`USERNAME_REQUIRED`)."
+          },
+          "404": {
+            "description": "No User has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      },
+      "delete": {
+        "operationId": "FollowsController_unfollow_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The User is not followed."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The signed-in User has no username yet (`USERNAME_REQUIRED`)."
+          },
+          "404": {
+            "description": "No User has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/{username}/follow": {
+      "get": {
+        "operationId": "ProfileFollowController_getProfileFollow_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether the viewer follows the User."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The signed-in User has no username yet (`USERNAME_REQUIRED`)."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/me/streak": {
       "get": {
         "operationId": "StreaksController_getStatus_v1",
