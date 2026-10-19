@@ -24,6 +24,13 @@ export type PublicUserRow = {
   image: string | null;
 };
 
+/** The banner fields of a Profile, read by username. */
+export type PublicProfileRow = {
+  name: string;
+  image: string | null;
+  createdAt: Date;
+};
+
 /** The fields a notification email needs about a User: where it goes and in what language. */
 export type EmailRecipientRow = {
   id: string;
@@ -211,6 +218,25 @@ export class UsersRepository {
       })
       .from(users)
       .where(inArray(users.id, ids));
+  }
+
+  /**
+   * The public banner fields of the User with this (lowercased) username, or
+   * undefined when no User has it.
+   */
+  async findPublicProfileByUsername(
+    username: string,
+  ): Promise<PublicProfileRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select({
+        name: users.name,
+        image: users.image,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return row;
   }
 
   /**

@@ -22,12 +22,21 @@ module.exports = {
         `http://localhost:${port}/pt-BR/terms`,
         `http://localhost:${port}/en/search?q=queen`,
         `http://localhost:${port}/pt-BR/search?q=queen`,
+        `http://localhost:${port}/en/users/ada_lovelace`,
+        `http://localhost:${port}/pt-BR/users/ada_lovelace`,
       ],
       // The median of 3 runs smooths out noise on shared CI runners.
       numberOfRuns: 3,
       settings: {
         preset: 'desktop',
         chromeFlags: '--no-sandbox --headless=new',
+        // Next streams metadata into <body> for browsers and sends it in
+        // <head> to HTML-limited bots, whose user agents include
+        // `Chrome-Lighthouse`. Lighthouse's desktop preset sends a plain
+        // Chrome user agent, so its SEO audit read the streamed copy. Sending
+        // the token gives it the head copy, as crawlers get.
+        emulatedUserAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Chrome-Lighthouse',
       },
     },
     assert: {

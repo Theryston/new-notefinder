@@ -770,5 +770,21 @@
     "searchLabel": "Buscar músicas",
     "metaTitle": "Página não encontrada",
     "metaDescription": "A página que você procura não existe ou foi movida."
+  },
+  "publicProfile": {
+    "metaTitle": "{name}",
+    "metaDescription": "O perfil de {name} no NoteFinder.",
+    "banner": {
+      "memberSince": "Membro desde {date}",
+      "loading": "Carregando perfil…"
+    },
+    "notFound": {
+      "title": "Perfil não encontrado",
+      "description": "Não encontramos este perfil. Ele pode ter sido removido ou o link está errado."
+    },
+    "unavailable": {
+      "title": "Perfil indisponível",
+      "description": "Não foi possível carregar este perfil agora. Tente novamente em instantes."
+    }
   }
 }

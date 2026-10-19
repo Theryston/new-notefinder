@@ -5,7 +5,7 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { serveAlbumRequest } from './fake-album-api-server.ts';
-import { json, readBody } from './fake-api-http.ts';
+import { json, matchesPath, readBody } from './fake-api-http.ts';
 import {
   defaultArtistTracks,
   type FakeTrack,
@@ -21,6 +21,7 @@ import {
   serveTrackRequest,
 } from './fake-track-api.ts';
 import { serveSitemap, sitemapTracks } from './fake-track-sitemap.ts';
+import { userProfileRoute } from './fake-user-profile.ts';
 import { serveUserSitemap } from './fake-user-sitemap.ts';
 
 /**
@@ -213,7 +214,7 @@ export const setArtistMock = async (
 
 type Route = {
   method: string;
-  pathname: string;
+  pathname: string | ((pathname: string) => boolean);
   serve: (
     request: IncomingMessage,
     response: ServerResponse,
@@ -258,6 +259,7 @@ const routes: Route[] = [
     pathname: '/v1/sitemaps/users',
     serve: serveUserSitemap,
   },
+  userProfileRoute,
 ];
 
 const serveRequest = async (
@@ -269,7 +271,7 @@ const serveRequest = async (
   const url = new URL(request.url ?? '/', `http://${host}:${port}`);
   for (const route of routes) {
     if (route.method !== request.method) continue;
-    if (route.pathname !== '*' && route.pathname !== url.pathname) continue;
+    if (!matchesPath(route.pathname, url.pathname)) continue;
     await route.serve(request, response, url.pathname);
     return;
   }
