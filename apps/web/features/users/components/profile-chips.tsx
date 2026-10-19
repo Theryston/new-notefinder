@@ -1,5 +1,6 @@
 import type { PublicProfile } from '@notefinder/contracts';
 import { getTranslations } from 'next-intl/server';
+
 import { noteName } from '@/lib/music-notes';
 import { cn } from '@/lib/utils';
 
@@ -18,38 +19,45 @@ export async function ProfileChips({ profile }: { profile: PublicProfile }) {
   ) {
     return null;
   }
-  const t = await getTranslations('publicProfile.chips');
+  const [t, targetT] = await Promise.all([
+    getTranslations('publicProfile.chips'),
+    // The same minutes wording the Daily target picker shows.
+    getTranslations('profile.edit.dailyTarget'),
+  ]);
 
   return (
     <ul aria-label={t('label')} className="flex flex-wrap gap-2">
       {dailyPracticeTargetSeconds === undefined ? null : (
-        <ProfileChip
+        <ChipPill
           label={t('dailyTarget')}
-          value={t('dailyTargetValue', {
+          value={targetT('minutes', {
             minutes: dailyPracticeTargetSeconds / 60,
           })}
         />
       )}
       {vocalRange === undefined ? null : (
-        <ProfileChip
+        <ChipPill
           label={t('vocalRange')}
-          value={`${noteName(vocalRange.lowest)} – ${noteName(vocalRange.highest)}`}
+          value={t('vocalRangeValue', {
+            lowest: noteName(vocalRange.lowest),
+            highest: noteName(vocalRange.highest),
+          })}
           mono
         />
       )}
       {mostSungArtist === undefined ? null : (
-        <ProfileChip label={t('mostSungArtist')} value={mostSungArtist.name} />
+        <ChipPill label={t('mostSungArtist')} value={mostSungArtist.name} />
       )}
     </ul>
   );
 }
 
 /**
- * One outlined white pill (the header chips of DESIGN.md "Featured blocks"):
- * the label, then the value. Long values break inside the pill, so a 360px
- * screen wraps them instead of overflowing.
+ * One outlined pill (the header chips of DESIGN.md "Featured blocks"): the
+ * label, then the value. Long values break inside the pill, so a 360px screen
+ * wraps them instead of overflowing.
  */
-function ProfileChip({
+function ChipPill({
   label,
   value,
   mono = false,

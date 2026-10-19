@@ -26,6 +26,15 @@ const profiles = new Map<string, FakeProfile>([
     },
   ],
   [
+    'range_only',
+    {
+      name: 'Range Only',
+      image: null,
+      createdAt: '2026-05-06T07:08:09.000Z',
+      vocalRange: { lowest: 40, highest: 64 },
+    },
+  ],
+  [
     'grace_hopper',
     {
       name: 'Grace Hopper',

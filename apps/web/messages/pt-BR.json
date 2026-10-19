@@ -781,9 +781,9 @@
     "chips": {
       "label": "Destaques do perfil",
       "dailyTarget": "Meta diária",
-      "dailyTargetValue": "{minutes, number} min",
       "vocalRange": "Alcance vocal",
-      "mostSungArtist": "Artista mais cantado"
+      "mostSungArtist": "Artista mais cantado",
+      "vocalRangeValue": "{lowest} – {highest}"
     },
     "notFound": {
       "title": "Perfil não encontrado",

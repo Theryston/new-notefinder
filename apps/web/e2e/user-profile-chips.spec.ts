@@ -1,9 +1,48 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 // The banner's three chips against the fake API (`fake-user-profile.ts`): the
 // Daily target, the Vocal range and the Most sung artist render when the API
-// sends them, are absent when it does not, wrap on a 360px screen, and stay
-// readable in both themes.
+// sends them, the ones it leaves out are absent (every combination, not only
+// all or nothing), the chips wrap on a 360px screen, and each one is an
+// outlined pill with readable text in both themes.
+
+/** The sRGB channels of any CSS color, as the browser itself converts it. */
+const srgbOf = (page: Page, css: string): Promise<[number, number, number]> =>
+  page.evaluate((color) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('No 2D canvas');
+    context.fillStyle = color;
+    context.fillRect(0, 0, 1, 1);
+    const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+    return [r, g, b];
+  }, css);
+
+/** The WCAG contrast ratio between two sRGB colors. */
+const contrastOf = (
+  first: readonly [number, number, number],
+  second: readonly [number, number, number],
+): number => {
+  const luminance = ([r, g, b]: readonly [number, number, number]): number => {
+    const [red, green, blue] = [r, g, b].map((channel) => {
+      const value = channel / 255;
+      return value <= 0.03928
+        ? value / 12.92
+        : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * (red ?? 0) + 0.7152 * (green ?? 0) + 0.0722 * (blue ?? 0);
+  };
+  const [light, dark] = [luminance(first), luminance(second)].sort(
+    (a, b) => b - a,
+  );
+  return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
+};
+
+const chipsOf = (page: Page) =>
+  page.getByRole('list', { name: /Profile highlights|Destaques do perfil/ });
+
 test.describe('public profile chips', () => {
   test('renders the chips the API sends, in the banner', async ({ page }) => {
     await page.goto('/en/users/grace_hopper');
@@ -13,7 +52,7 @@ test.describe('public profile chips', () => {
     await expect(chips).toBeVisible();
     await expect(chips.getByRole('listitem')).toHaveCount(3);
     await expect(chips.getByText('Daily target')).toBeVisible();
-    await expect(chips.getByText('15 min')).toBeVisible();
+    await expect(chips.getByText('15 minutes')).toBeVisible();
     await expect(chips.getByText('Vocal range')).toBeVisible();
     await expect(chips.getByText('C3 – D5')).toBeVisible();
     await expect(chips.getByText('Most sung artist')).toBeVisible();
@@ -29,8 +68,9 @@ test.describe('public profile chips', () => {
 
     const chips = page.getByRole('list', { name: 'Destaques do perfil' });
     await expect(chips.getByText('Meta diária')).toBeVisible();
-    await expect(chips.getByText('15 min')).toBeVisible();
+    await expect(chips.getByText('15 minutos')).toBeVisible();
     await expect(chips.getByText('Alcance vocal')).toBeVisible();
+    await expect(chips.getByText('C3 – D5')).toBeVisible();
     await expect(chips.getByText('Artista mais cantado')).toBeVisible();
   });
 
@@ -40,11 +80,24 @@ test.describe('public profile chips', () => {
     await expect(
       page.getByRole('region', { name: 'Ada Lovelace' }),
     ).toBeVisible();
-    await expect(
-      page.getByRole('list', { name: 'Profile highlights' }),
-    ).toHaveCount(0);
+    await expect(chipsOf(page)).toHaveCount(0);
     await expect(page.getByText('Daily target')).toHaveCount(0);
     await expect(page.getByText('Vocal range')).toHaveCount(0);
+    await expect(page.getByText('Most sung artist')).toHaveCount(0);
+  });
+
+  test('shows only the chips the API sends when some are missing', async ({
+    page,
+  }) => {
+    // Range only: no Daily target and no Most sung artist.
+    await page.goto('/en/users/range_only');
+
+    const chips = chipsOf(page);
+    await expect(chips).toBeVisible();
+    await expect(chips.getByRole('listitem')).toHaveCount(1);
+    await expect(chips.getByText('Vocal range')).toBeVisible();
+    await expect(chips.getByText('E2 – E4')).toBeVisible();
+    await expect(page.getByText('Daily target')).toHaveCount(0);
     await expect(page.getByText('Most sung artist')).toHaveCount(0);
   });
 
@@ -54,7 +107,7 @@ test.describe('public profile chips', () => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('/en/users/grace_hopper');
 
-    const chips = page.getByRole('list', { name: 'Profile highlights' });
+    const chips = chipsOf(page);
     await expect(chips).toBeVisible();
     const overflow = await page.evaluate(
       () =>
@@ -76,15 +129,52 @@ test.describe('public profile chips', () => {
   });
 
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`renders the chips in the ${colorScheme} theme`, async ({ page }) => {
+    test(`draws outlined, readable pills in the ${colorScheme} theme`, async ({
+      page,
+    }) => {
       await page.emulateMedia({ colorScheme });
       await page.goto('/en/users/grace_hopper');
 
-      await expect(
-        page
-          .getByRole('region', { name: 'Grace Hopper' })
-          .getByRole('list', { name: 'Profile highlights' }),
-      ).toBeVisible();
+      const banner = page.getByRole('region', { name: 'Grace Hopper' });
+      const pills = banner
+        .getByRole('list', { name: 'Profile highlights' })
+        .getByRole('listitem');
+      await expect(pills).toHaveCount(3);
+
+      const bannerBackground = await banner.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      const headingText = await banner
+        .getByRole('heading', { level: 1 })
+        .evaluate((element) => getComputedStyle(element).color);
+      for (const pill of await pills.all()) {
+        const style = await pill.evaluate((element) => {
+          const computed = getComputedStyle(element);
+          return {
+            borderStyle: computed.borderTopStyle,
+            borderWidth: computed.borderTopWidth,
+            borderColor: computed.borderTopColor,
+            background: computed.backgroundColor,
+            text: computed.color,
+          };
+        });
+        // Outlined: a visible solid border, and no fill behind the text.
+        expect(style.borderStyle).toBe('solid');
+        expect(style.borderWidth).toBe('1px');
+        expect(style.borderColor).not.toBe('rgba(0, 0, 0, 0)');
+        expect(style.background).toBe('rgba(0, 0, 0, 0)');
+        // Readable: the label keeps the banner's foreground token and a
+        // contrast at least that of large text (3:1). The small pill text
+        // measures lower than WCAG AA's 4.5:1 on the orange token: a design
+        // token question, flagged for the maintainer rather than changed here.
+        expect(style.text).toBe(headingText);
+        expect(
+          contrastOf(
+            await srgbOf(page, style.text),
+            await srgbOf(page, bannerBackground),
+          ),
+        ).toBeGreaterThanOrEqual(3);
+      }
     });
   }
 });
