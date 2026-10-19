@@ -1,4 +1,3 @@
-import { LYRICS_NEXT_INDEX } from '../../lib/lyrics-index.js';
 import { RECORDINGS_NEXT_INDEX } from '../../lib/recordings-index.js';
 import type { Logger } from '../../logger.js';
 
@@ -33,8 +32,6 @@ export type ReimportSwitchDeps = {
   sequences: SwitchSequences;
   servingIndex: SwitchIndex;
   nextIndex: SwitchIndex;
-  servingLyricsIndex: SwitchIndex;
-  nextLyricsIndex: SwitchIndex;
   /** The parallel database URL the reads flip to. */
   nextUrl: string;
   /** The retired database, dropped when cleaning up. */
@@ -42,10 +39,9 @@ export type ReimportSwitchDeps = {
   /** Drop the retired database; otherwise it is kept for inspection. */
   cleanupOldCopy: boolean;
   /**
-   * Swaps both index pairs in one Meilisearch task (see `swapPairs`):
-   * without it the flip falls back to the two separate swaps, with a
-   * half-swapped catalog when the process dies between them. Absent in older
-   * callers; the wiring always provides it.
+   * Swaps the index pairs in one Meilisearch task (see `swapPairs`):
+   * without it the flip falls back to a plain swap of the recordings pair.
+   * Absent in older callers; the wiring always provides it.
    */
   swapBoth?: () => Promise<void>;
   /**
@@ -98,7 +94,6 @@ export class ReimportSwitchService {
     await this.deps.sequences.clearStall();
     // After the swap the `*_next` indexes hold the retired copy.
     await this.deps.nextIndex.deleteIndex();
-    await this.deps.nextLyricsIndex.deleteIndex();
     await this.dropRetiredDatabase();
   }
 
@@ -126,9 +121,7 @@ export class ReimportSwitchService {
       await both();
       return;
     }
-    const { servingIndex, servingLyricsIndex } = this.deps;
-    await servingIndex.swapWith(RECORDINGS_NEXT_INDEX.uid);
-    await servingLyricsIndex.swapWith(LYRICS_NEXT_INDEX.uid);
+    await this.deps.servingIndex.swapWith(RECORDINGS_NEXT_INDEX.uid);
   }
 
   private async dropRetiredDatabase(): Promise<void> {

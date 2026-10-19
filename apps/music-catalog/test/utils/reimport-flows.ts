@@ -6,7 +6,6 @@ import { BootstrapRepository } from '../../src/modules/bootstrap/bootstrap.repos
 import { BootstrapService } from '../../src/modules/bootstrap/bootstrap.service.js';
 import { resolveLatestDumpUrls } from '../../src/modules/bootstrap/dump-urls.js';
 import { RestoreService } from '../../src/modules/bootstrap/restore.service.js';
-import { LyricsRepository } from '../../src/modules/lyrics/lyrics.repository.js';
 import { ReimportRestoreService } from '../../src/modules/reimport/reimport-restore.service.js';
 import { ReimportStateRepository } from '../../src/modules/reimport/reimport-state.repository.js';
 import { applyMusicBrainzSchema } from '../setup/musicbrainz-schema.js';
@@ -125,11 +124,8 @@ export const restoreParallelInto = async (
   return 'restored';
 };
 
-// The serving copy of the flow tests: three Recordings, two with kept
-// Lyrics, indexed and `ready`, with replication stalled on the schema
-// change. A closed port answers the LRCLIB listing, so any download attempt
-// fails the tick instead of hiding: the reimport must never download Lyrics
-// again.
+// The serving copy of the flow tests: three Recordings, indexed and `ready`,
+// with replication stalled on the schema change.
 const serveCatalogFlow = async (
   server: TestServer,
   parallel: ParallelCopy,
@@ -153,17 +149,9 @@ const serveCatalogFlow = async (
   await setBootstrapState(db, { phase: 'restored', dataset: 'full' });
   await setReplicationControl(db, 199_999);
   const worker = createTestWorker(server, {
-    env: {
-      CATALOG_DATASET: 'full',
-      LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-      LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
-    },
+    env: { CATALOG_DATASET: 'full' },
   });
   await worker.tick();
-  await new LyricsRepository(db).saveLyrics([
-    { mbid: mbid(901), plainLyrics: 'same take la', syncedLyrics: null },
-    { mbid: mbid(902), plainLyrics: 'resized take la', syncedLyrics: null },
-  ]);
   // A stale backlog entry: the switch must drop what the retired copy
   // queued, since its MBIDs are meaningless on the new one.
   await addRecording(db, {
@@ -178,8 +166,6 @@ const serveCatalogFlow = async (
   return createTestWorker(server, {
     env: {
       CATALOG_DATASET: 'full',
-      LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-      LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
       REIMPORT_CLEANUP_OLD_COPY: 'false',
     },
     nextCopy: { db: parallel.db, url: parallel.url },

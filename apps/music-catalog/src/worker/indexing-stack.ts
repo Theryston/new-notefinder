@@ -1,7 +1,6 @@
 import type { DatabaseSource } from '../database/database-ref.js';
 import type { MeilisearchIndex } from '../integrations/meilisearch/meilisearch-index.js';
 import { createMeilisearchIndex } from '../integrations/meilisearch/meilisearch-index.js';
-import { LYRICS_INDEX, type LyricsDocument } from '../lib/lyrics-index.js';
 import {
   RECORDINGS_INDEX,
   type RecordingDocument,
@@ -10,8 +9,6 @@ import type { Logger } from '../logger.js';
 import type { BootstrapService } from '../modules/bootstrap/bootstrap.service.js';
 import { IndexingRepository } from '../modules/indexing/indexing.repository.js';
 import { IndexingService } from '../modules/indexing/indexing.service.js';
-import { LyricsRepository } from '../modules/lyrics/lyrics.repository.js';
-import { LyricsService } from '../modules/lyrics/lyrics.service.js';
 import { RecordingDocumentRepository } from '../modules/recording/recording-document.repository.js';
 import { RecordingDocumentService } from '../modules/recording/recording-document.service.js';
 import { RecordingOutboxRepository } from '../modules/sync/recording-outbox.repository.js';
@@ -30,7 +27,6 @@ export type ServingIndexing = {
   documents: RecordingDocumentService;
   /** The worker is the only writer of the indexes: built with its key. */
   index: MeilisearchIndex<RecordingDocument>;
-  lyricsIndex: MeilisearchIndex<LyricsDocument>;
   indexing: IndexingService;
   sync: SyncService;
 };
@@ -53,24 +49,14 @@ export const buildServingIndexing = (
     apiKey: options.writeApiKey,
     ...RECORDINGS_INDEX,
   });
-  const lyricsIndex = createMeilisearchIndex<LyricsDocument>({
-    url: options.meilisearchUrl,
-    apiKey: options.writeApiKey,
-    ...LYRICS_INDEX,
-  });
   return {
     documents,
     index,
-    lyricsIndex,
     indexing: new IndexingService({
       bootstrap,
       documents,
       repository: new IndexingRepository(dbSource),
       index,
-      lyrics: {
-        documents: new LyricsService(new LyricsRepository(dbSource)),
-        index: lyricsIndex,
-      },
       batchSize: options.batchSize,
       logger,
     }),

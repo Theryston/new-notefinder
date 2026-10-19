@@ -65,7 +65,7 @@ services:
             -H "Authorization: Bearer $$MEILI_MASTER_KEY" -H 'Content-Type: application/json' -d "$$1")
           [ "$$code" = 201 ] || [ "$$code" = 409 ] || { echo "Could not create a key (HTTP $$code)"; exit 1; }
         }
-        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings","lyrics"],"expiresAt":null}' &&
+        create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000001","name":"music-catalog-search","actions":["search"],"indexes":["recordings"],"expiresAt":null}' &&
         create_key '{"uid":"5ea2c4a1-0000-4000-8000-000000000002","name":"music-catalog-write","actions":["documents.*","indexes.*","settings.*","tasks.get"],"indexes":["*"],"expiresAt":null}'
 
   # The first import and continuous replication (issues #60 and #62). On

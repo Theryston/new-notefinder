@@ -1,14 +1,9 @@
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
-import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
 import { stallReplication } from './utils/reimport-harness.js';
-import {
-  createTestWorker,
-  useEmptyLyricsIndex,
-  useEmptySearchIndex,
-} from './utils/test-worker.js';
+import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
 
 // The yearly schema change: the stall in `status` while search and
 // `getRecording` answer (see test/utils/reimport-harness.ts for the shared
@@ -22,7 +17,6 @@ describe('yearly schema change: the schema-change stall (e2e)', {
   const { server, client } = useIsolatedServer();
 
   useEmptySearchIndex();
-  useEmptyLyricsIndex();
 
   const { statusResult, searchMbids } = useReimportFlow({
     server,
@@ -39,11 +33,7 @@ describe('yearly schema change: the schema-change stall (e2e)', {
     await setBootstrapState(db, { phase: 'restored', dataset: 'full' });
     await setReplicationControl(db, 199_999);
     const worker = createTestWorker(server(), {
-      env: {
-        CATALOG_DATASET: 'full',
-        LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-        LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
-      },
+      env: { CATALOG_DATASET: 'full' },
     });
     await worker.tick();
 
@@ -60,9 +50,5 @@ describe('yearly schema change: the schema-change stall (e2e)', {
       replicationStalled: { reason: 'schema-change' },
     });
     await expect(searchMbids('Stall Witness')).resolves.toEqual([mbid(911)]);
-    await expect(keptLyricsOf(db, mbid(911))).resolves.toEqual({
-      plain: null,
-      synced: null,
-    });
   });
 });

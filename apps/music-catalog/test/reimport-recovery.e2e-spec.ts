@@ -1,14 +1,10 @@
+import { sql } from 'drizzle-orm';
 import { inject } from 'vitest';
 import { MbslaveClient } from '../src/integrations/mbslave/mbslave-client.js';
 import {
   createMeilisearchIndex,
   type MeilisearchIndex,
 } from '../src/integrations/meilisearch/meilisearch-index.js';
-import {
-  LYRICS_INDEX,
-  LYRICS_NEXT_INDEX,
-  type LyricsDocument,
-} from '../src/lib/lyrics-index.js';
 import {
   RECORDINGS_INDEX,
   RECORDINGS_NEXT_INDEX,
@@ -17,7 +13,6 @@ import {
 import { BootstrapRepository } from '../src/modules/bootstrap/bootstrap.repository.js';
 import { BootstrapService } from '../src/modules/bootstrap/bootstrap.service.js';
 import { RestoreService } from '../src/modules/bootstrap/restore.service.js';
-import { LyricsRepository } from '../src/modules/lyrics/lyrics.repository.js';
 import { RecordingDocumentRepository } from '../src/modules/recording/recording-document.repository.js';
 import { ReimportRestoreService } from '../src/modules/reimport/reimport-restore.service.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
@@ -31,7 +26,6 @@ import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
 import { testLogger } from './utils/create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
-import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
@@ -43,11 +37,7 @@ import {
   useFakeDumps,
   useParallelDatabase,
 } from './utils/reimport-harness.js';
-import {
-  createTestWorker,
-  useEmptyLyricsIndex,
-  useEmptySearchIndex,
-} from './utils/test-worker.js';
+import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
 
 // The yearly schema change: recovering from an interrupted reimport (see
 // test/utils/reimport-harness.ts for the shared setup and the faked
@@ -61,7 +51,6 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
   const { server, client } = useIsolatedServer();
 
   useEmptySearchIndex();
-  useEmptyLyricsIndex();
 
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
@@ -85,20 +74,8 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       apiKey: meilisearch.writeKey,
       ...RECORDINGS_NEXT_INDEX,
     });
-    const lyricsIndex = createMeilisearchIndex<LyricsDocument>({
-      url: meilisearch.url,
-      apiKey: meilisearch.writeKey,
-      ...LYRICS_INDEX,
-    });
-    const nextLyricsIndex = createMeilisearchIndex<LyricsDocument>({
-      url: meilisearch.url,
-      apiKey: meilisearch.writeKey,
-      ...LYRICS_NEXT_INDEX,
-    });
     const delegate = (
-      index:
-        | MeilisearchIndex<RecordingDocument>
-        | MeilisearchIndex<LyricsDocument>,
+      index: MeilisearchIndex<RecordingDocument>,
       failDelete: boolean,
     ): SwitchIndex => {
       let deleteFailed = false;
@@ -130,8 +107,6 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       sequences: new ReplicationRepository(server().db),
       servingIndex: delegate(recordingIndex, false),
       nextIndex: delegate(nextRecordingIndex, true),
-      servingLyricsIndex: delegate(lyricsIndex, false),
-      nextLyricsIndex: delegate(nextLyricsIndex, true),
       nextUrl: parallel().url,
       oldDatabaseName: undefined,
       cleanupOldCopy: true,
@@ -142,7 +117,6 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
             servingUid: RECORDINGS_INDEX.uid,
             nextUid: RECORDINGS_NEXT_INDEX.uid,
           },
-          { servingUid: LYRICS_INDEX.uid, nextUid: LYRICS_NEXT_INDEX.uid },
         ]);
       },
       alreadySwitched: async () => {
@@ -172,8 +146,6 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     const restarted = createTestWorker(server(), {
       env: {
         CATALOG_DATASET: 'full',
-        LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-        LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
         REIMPORT_CLEANUP_OLD_COPY: 'false',
       },
       nextCopy: { db: parallel().db, url: parallel().url },
@@ -243,16 +215,12 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
 
     // Redone from a clean state: the half-restored Recording is gone, the
     // new dump stands complete, and the serving copy never noticed.
-    const carried = new LyricsRepository(parallel().db);
-    await expect(
-      carried.findMatchRecordingsByMbids([mbid(922)]),
-    ).resolves.toEqual([]);
+    const copied = await parallel().db.execute<{ count: string }>(
+      sql`select count(*) as count from musicbrainz.recording where gid = ${mbid(922)}`,
+    );
+    expect(Number(copied.rows[0]?.count)).toBe(0);
     const kept = await new ReimportStateRepository(db).get();
     expect(kept).toMatchObject({ phase: 'indexing' });
-    await expect(keptLyricsOf(server().db, mbid(921))).resolves.toEqual({
-      plain: null,
-      synced: null,
-    });
   });
 
   it('completes a flip lost after the swap instead of swapping back', async () => {
@@ -276,11 +244,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     // The continuing worker adopts the new copy and finishes the first
     // import's phases on it, like the production tick after the flip.
     const restarted = createTestWorker(server(), {
-      env: {
-        CATALOG_DATASET: 'full',
-        LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-        LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
-      },
+      env: { CATALOG_DATASET: 'full' },
       nextCopy: { db: parallel().db, url: parallel().url },
     });
     await restarted.tick();
@@ -325,11 +289,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     // The continuing worker adopts the new copy and finishes the first
     // import's phases on it, like the production tick after the flip.
     const restarted = createTestWorker(server(), {
-      env: {
-        CATALOG_DATASET: 'full',
-        LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-        LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
-      },
+      env: { CATALOG_DATASET: 'full' },
       nextCopy: { db: parallel().db, url: parallel().url },
     });
     await restarted.tick();

@@ -132,7 +132,6 @@ export const useCleanParallelCopy = (parallel: () => ParallelCopy): void => {
     // which is fine).
     const meilisearch = inject('meilisearch');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings_next');
-    void meilisearchRequest(meilisearch, 'DELETE', '/indexes/lyrics_next');
   });
 };
 
