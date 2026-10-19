@@ -12,6 +12,9 @@ import {
   createPracticeAttempt,
 } from './utils/profile-summary-factories.js';
 
+// Noon UTC on 19 October 2026: Kiritimati is already on the 20th.
+const NOON_UTC = '2026-10-19T12:00:00.000Z';
+
 /** Today's calendar day (`YYYY-MM-DD`) in `timeZone`, or in UTC when none. */
 const todayIn = (timeZone = 'UTC'): string =>
   new Intl.DateTimeFormat('en-CA', {
@@ -20,6 +23,15 @@ const todayIn = (timeZone = 'UTC'): string =>
     month: '2-digit',
     day: '2-digit',
   }).format(new Date());
+
+/**
+ * Freezes the clock (only `Date`, so the database and HTTP timers still run)
+ * at one instant, so "today" is the same on every run. The app runs in this
+ * process, so its `new Date()` sees the frozen clock too.
+ */
+const freezeClockAt = (instant: string): void => {
+  vi.useFakeTimers({ now: new Date(instant), toFake: ['Date'] });
+};
 
 /** The calendar day before `day`; pure arithmetic, no time zone involved. */
 const dayBefore = (day: string): string =>
@@ -31,10 +43,9 @@ const dayBefore = (day: string): string =>
 // numbers a visitor sees, with the stat rules (bleed-suspected runs are not
 // sung, every kind of Contribution counts) and the same 404 as the banner.
 //
-// Streak days are seeded as runs that end today, so they do not depend on
-// the exact instant. A run of two days ending today reads as 2 even when the
-// server's clock crosses midnight before the request: the run then ends
-// yesterday, which still counts.
+// Streak tests freeze the clock at one instant and seed runs that end on the
+// frozen "today", so the calendar days are the same on every run and in every
+// time zone under test.
 describe('GET /v1/users/:username/summary (e2e)', () => {
   let testApp: TestApp;
 
@@ -48,6 +59,10 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(testApp.db);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('answers zeros for a User with no practice, favorites or contributions', async () => {
@@ -66,6 +81,7 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
   });
 
   it('counts the streak, sung runs, favorites and contributions of the User', async () => {
+    freezeClockAt(NOON_UTC);
     const user = await createUser(testApp.db, { username: 'ada_lovelace' });
     const track = await createTrack(testApp.db);
     const otherTrack = await createTrack(testApp.db);
@@ -110,13 +126,17 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
   });
 
   it("reads the streak in the owner's stored time zone, not in UTC", async () => {
-    // Kiritimati is UTC+14, so its calendar day is often a day ahead of UTC.
+    // At noon UTC it is already the next day in Kiritimati (UTC+14), so the
+    // owner's zone and UTC name different "today"s. Ignoring the stored zone
+    // would read the UTC day only, and the run below would be 1, not 2.
+    freezeClockAt(NOON_UTC);
     const zone = 'Pacific/Kiritimati';
     const user = await createUser(testApp.db, {
       username: 'kiri_singer',
       timeZone: zone,
     });
     const today = todayIn(zone);
+    expect(today).not.toBe(todayIn());
     await createCompletedDay(testApp.db, user.id, today);
     await createCompletedDay(testApp.db, user.id, dayBefore(today));
 
@@ -128,6 +148,7 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
   });
 
   it('falls back to UTC days for a User who never practiced in a zone', async () => {
+    freezeClockAt(NOON_UTC);
     const user = await createUser(testApp.db, {
       username: 'utc_singer',
       timeZone: null,

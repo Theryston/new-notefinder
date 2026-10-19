@@ -66,7 +66,6 @@ export class TrackContributorRepository {
     await this.txHost.tx.insert(trackContributions).values(row);
   }
 
-  /** The Contributors of a Track, in the order they first contributed. */
   /**
    * How many Contributions the User made, of every kind and on every Track:
    * each row joins through its Contributor, which names the User.
@@ -83,6 +82,7 @@ export class TrackContributorRepository {
     return row?.value ?? 0;
   }
 
+  /** The Contributors of a Track, in the order they first contributed. */
   findContributors(trackId: string): Promise<{ id: string; userId: string }[]> {
     return this.txHost.tx
       .select({ id: trackContributors.id, userId: trackContributors.userId })
