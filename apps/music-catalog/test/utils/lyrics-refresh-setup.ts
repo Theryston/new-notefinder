@@ -20,7 +20,6 @@ import {
   type FakeLrclibServer,
   startFakeLrclibServer,
 } from './fake-lrclib-server.js';
-import { requestRecording } from './get-recording-client.js';
 import { setRefreshState } from './lrclib-refresh-state.js';
 import { addArtist, addRecording, mbid } from './musicbrainz.js';
 import { addRelease, addTrack } from './musicbrainz-relations.js';
@@ -149,17 +148,6 @@ export const refreshedDumpGz = (
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
-};
-
-export const lyricsOf = async (
-  client: TestClient,
-  song: string,
-): Promise<{ plain: string | null; synced: string | null }> => {
-  const response = await requestRecording(client, { mbid: song });
-  if (!response.ok) {
-    throw new Error(`getRecording failed: ${response.error.code}`);
-  }
-  return response.result.lyrics;
 };
 
 export const searchMbids = async (

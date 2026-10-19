@@ -1,4 +1,5 @@
 import { useIsolatedServer } from './utils/isolated-server.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
 import {
@@ -29,13 +30,8 @@ describe('yearly schema change: reimporting beside the serving copy (e2e)', {
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
   const dumps = useFakeDumps();
-  const {
-    statusResult,
-    searchMbids,
-    recordingLyrics,
-    serveCatalog,
-    restoreParallel,
-  } = useReimportFlow({ server, client, parallel, dumps });
+  const { statusResult, searchMbids, serveCatalog, restoreParallel } =
+    useReimportFlow({ server, client, parallel, dumps });
 
   it('reimports into the parallel copy while the serving copy answers', async () => {
     const worker = await serveCatalog();
@@ -59,7 +55,7 @@ describe('yearly schema change: reimporting beside the serving copy (e2e)', {
     });
     await expect(searchMbids('Same Take Song')).resolves.toEqual([mbid(901)]);
     await expect(searchMbids('Brand New Next')).resolves.toEqual([]);
-    await expect(recordingLyrics(mbid(901))).resolves.toEqual({
+    await expect(keptLyricsOf(server().db, mbid(901))).resolves.toEqual({
       plain: 'same take la',
       synced: null,
     });

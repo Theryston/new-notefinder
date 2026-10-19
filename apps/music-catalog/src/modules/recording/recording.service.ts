@@ -1,7 +1,6 @@
 import type { Recording } from '@notefinder/contracts';
 import { missingEntityError } from '../../errors/missing-entity-error.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
-import type { LyricsService } from '../lyrics/lyrics.service.js';
 import { assembleRecording } from './assemble-recording.js';
 import type { RecordingRepository } from './recording.repository.js';
 import type { RecordingDetails, RecordingRow } from './recording-data.js';
@@ -16,12 +15,6 @@ export class RecordingService {
   constructor(
     private readonly repository: RecordingRepository,
     private readonly bootstrap: BootstrapService,
-    /**
-     * Reads the kept Lyrics. Optional so the specs written before Lyrics
-     * keep constructing the service without it; the composition root always
-     * passes it, and without it every Recording answers null Lyrics.
-     */
-    private readonly lyrics?: LyricsService,
   ) {}
 
   /**
@@ -40,14 +33,7 @@ export class RecordingService {
         await this.repository.findMergedInto(mbid),
       );
     }
-    const [details, lyrics] = await Promise.all([
-      this.loadDetails(row),
-      this.lyrics?.getLyrics(row.mbid) ?? {
-        plain: null,
-        synced: null,
-      },
-    ]);
-    return { ...assembleRecording(row, details), lyrics };
+    return assembleRecording(row, await this.loadDetails(row));
   }
 
   // Releases come first because their events depend on them; the rest is

@@ -25,7 +25,6 @@ import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js
 import type { ReplicationStatusSource } from './modules/bootstrap/bootstrap.service.js';
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { LyricsRepository } from './modules/lyrics/lyrics.repository.js';
-import { LyricsService } from './modules/lyrics/lyrics.service.js';
 import { LyricsImportService } from './modules/lyrics/lyrics-import.service.js';
 import { LyricsLookupService } from './modules/lyrics/lyrics-lookup.service.js';
 import { LyricsRefreshRepository } from './modules/lyrics/lyrics-refresh.repository.js';
@@ -163,7 +162,6 @@ export const createMusicCatalogServer = (
   const recording = new RecordingService(
     new RecordingRepository(dbSource),
     bootstrap,
-    new LyricsService(new LyricsRepository(dbSource)),
   );
   const search = new SearchService({
     bootstrap,

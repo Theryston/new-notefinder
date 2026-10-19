@@ -1,6 +1,7 @@
 import { LRCLIB_API_USER_AGENT } from '../src/integrations/lrclib/lrclib-api.js';
 import { useTestServer } from './utils/create-test-server.js';
 import { fakeLrclibDumpGz } from './utils/fake-lrclib-server.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { setRefreshState } from './utils/lrclib-refresh-state.js';
 import {
   addLateSong,
@@ -9,7 +10,6 @@ import {
   DUMP_ONE,
   DUMP_THREE,
   DUMP_TWO,
-  lyricsOf,
   REC_A,
   REC_B,
   refreshedDumpGz,
@@ -41,10 +41,10 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
     });
     try {
       await tickFirst(server(), first);
-      await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+      await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
         plain: expect.stringContaining('fake-lrclib-0'),
       });
-      await expect(lyricsOf(client(), REC_B)).resolves.toEqual({
+      await expect(keptLyricsOf(server().db, REC_B)).resolves.toEqual({
         plain: null,
         synced: null,
       });
@@ -59,7 +59,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await ageRefreshState(server().db, DUMP_ONE);
         await tickWorker(server(), second);
 
-        await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+        await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
           plain: expect.stringContaining('second-pressing'),
           synced: expect.stringContaining('[00:01.00]'),
         });
@@ -87,7 +87,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         path.startsWith('/files/'),
       );
       expect(downloads).toEqual([`/files/${DUMP_ONE}`]);
-      await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+      await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
         plain: expect.stringContaining('fake-lrclib-0'),
       });
     } finally {
@@ -107,7 +107,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       // The listing only keeps the latest dump, so the first tick imports
       // the newer one straight away.
       await tickFirst(server(), servers);
-      await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+      await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
         plain: expect.stringContaining('second-pressing'),
       });
 
@@ -126,7 +126,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         expect(
           third.lrclib.requested.filter((path) => path.startsWith('/files/')),
         ).toHaveLength(0);
-        await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+        await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
           plain: expect.stringContaining('second-pressing'),
         });
 
@@ -141,7 +141,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await tickWorker(server(), third, {
           LRCLIB_REFRESH_MIN_INTERVAL_DAYS: '30',
         });
-        await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+        await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
           plain: expect.stringContaining('third-pressing'),
         });
       } finally {
@@ -159,7 +159,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
     });
     try {
       await tickFirst(server(), servers);
-      await expect(lyricsOf(client(), REC_B)).resolves.toEqual({
+      await expect(keptLyricsOf(server().db, REC_B)).resolves.toEqual({
         plain: null,
         synced: null,
       });
@@ -183,7 +183,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       try {
         await tickWorker(server(), withApi);
 
-        await expect(lyricsOf(client(), REC_B)).resolves.toMatchObject({
+        await expect(keptLyricsOf(server().db, REC_B)).resolves.toMatchObject({
           plain: expect.stringContaining('Harbor words'),
         });
         expect(withApi.api.userAgents.length).toBeGreaterThan(0);
@@ -208,7 +208,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       await tickFirst(server(), servers);
       await tickWorker(server(), servers);
 
-      await expect(lyricsOf(client(), REC_B)).resolves.toEqual({
+      await expect(keptLyricsOf(server().db, REC_B)).resolves.toEqual({
         plain: null,
         synced: null,
       });
@@ -252,7 +252,9 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       try {
         await tickWorker(server(), withApi);
 
-        await expect(lyricsOf(client(), late.mbid)).resolves.toMatchObject({
+        await expect(
+          keptLyricsOf(server().db, late.mbid),
+        ).resolves.toMatchObject({
           plain: expect.stringContaining('Lantern words'),
         });
         // The outbox drained behind the lookup: the metadata index answers.
@@ -312,7 +314,9 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         }
         await ticking;
 
-        await expect(lyricsOf(client(), late.mbid)).resolves.toMatchObject({
+        await expect(
+          keptLyricsOf(server().db, late.mbid),
+        ).resolves.toMatchObject({
           plain: expect.stringContaining('held back by the API'),
         });
       } finally {
@@ -359,7 +363,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       try {
         await tickWorker(server(), strict);
 
-        await expect(lyricsOf(client(), late.mbid)).resolves.toEqual({
+        await expect(keptLyricsOf(server().db, late.mbid)).resolves.toEqual({
           plain: null,
           synced: null,
         });
@@ -387,7 +391,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
       });
 
       await expect(statusPhase(client())).resolves.toBe('ready');
-      await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
+      await expect(keptLyricsOf(server().db, REC_A)).resolves.toMatchObject({
         plain: expect.stringContaining('fake-lrclib-0'),
       });
     } finally {

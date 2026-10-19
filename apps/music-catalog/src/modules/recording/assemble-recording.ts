@@ -43,7 +43,7 @@ const compareReleases = (a: RecordingRelease, b: RecordingRelease): number =>
  * Builds the protocol's `Recording` from the rows read for it. No I/O: the
  * rules that shape the answer are here (which release event a release is
  * shown with, the release order, where the genres come from), so they can be
- * tested on their own. Lyrics are not matched yet: both fields are null.
+ * tested on their own.
  */
 export const assembleRecording = (
   row: RecordingRow,
@@ -66,6 +66,5 @@ export const assembleRecording = (
     tags,
     tagsSource: source,
     externalUrls: details.externalUrls,
-    lyrics: { plain: null, synced: null },
   };
 };

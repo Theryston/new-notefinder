@@ -31,6 +31,7 @@ import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
 import { testLogger } from './utils/create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
@@ -65,13 +66,8 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
   const dumps = useFakeDumps();
-  const {
-    statusResult,
-    searchMbids,
-    recordingLyrics,
-    serveCatalog,
-    restoreParallel,
-  } = useReimportFlow({ server, client, parallel, dumps });
+  const { statusResult, searchMbids, serveCatalog, restoreParallel } =
+    useReimportFlow({ server, client, parallel, dumps });
 
   // The flip below, wired like the worker does (single-task swap, flip
   // record, probe), against the real databases and the real Meilisearch.
@@ -253,7 +249,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     ).resolves.toEqual([]);
     const kept = await new ReimportStateRepository(db).get();
     expect(kept).toMatchObject({ phase: 'indexing' });
-    await expect(recordingLyrics(mbid(921))).resolves.toEqual({
+    await expect(keptLyricsOf(server().db, mbid(921))).resolves.toEqual({
       plain: null,
       synced: null,
     });

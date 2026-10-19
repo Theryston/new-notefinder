@@ -18,7 +18,6 @@ const recording: Recording = {
   tags: [],
   tagsSource: null,
   externalUrls: [],
-  lyrics: { plain: null, synced: null },
 };
 
 const setup = () => {
