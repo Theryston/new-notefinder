@@ -66,6 +66,22 @@ export class TrackContributorRepository {
     await this.txHost.tx.insert(trackContributions).values(row);
   }
 
+  /**
+   * How many Contributions the User made, of every kind and on every Track:
+   * each row joins through its Contributor, which names the User.
+   */
+  async countContributionsOf(userId: string): Promise<number> {
+    const [row] = await this.txHost.tx
+      .select({ value: count() })
+      .from(trackContributions)
+      .innerJoin(
+        trackContributors,
+        eq(trackContributors.id, trackContributions.contributorId),
+      )
+      .where(eq(trackContributors.userId, userId));
+    return row?.value ?? 0;
+  }
+
   /** The Contributors of a Track, in the order they first contributed. */
   findContributors(trackId: string): Promise<{ id: string; userId: string }[]> {
     return this.txHost.tx

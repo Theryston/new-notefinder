@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { PracticePreferencesModule } from './modules/practice-preferences/practice-preferences.module.js';
+import { ProfileSummaryModule } from './modules/profile-summary/profile-summary.module.js';
 import { ProfilesModule } from './modules/profiles/profiles.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { StreaksModule } from './modules/streaks/streaks.module.js';
@@ -44,6 +45,7 @@ import { RedisModule } from './redis/redis.module.js';
     StreaksModule,
     AttemptsModule,
     PracticePreferencesModule,
+    ProfileSummaryModule,
     UsersModule,
     ProfilesModule,
   ],

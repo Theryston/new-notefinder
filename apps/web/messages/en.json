@@ -771,6 +771,28 @@
     "metaTitle": "Page not found",
     "metaDescription": "The page you are looking for does not exist or was moved."
   },
+  "share": {
+    "profile": {
+      "open": "Share",
+      "close": "Close",
+      "title": "Share profile",
+      "description": "Send {name}'s profile to someone who sings.",
+      "link": "Link to share",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "We couldn't copy the link. Select it and copy it by hand.",
+      "networks": "Share on",
+      "text": "See {name}'s profile on NoteFinder",
+      "subject": "{name}'s profile on NoteFinder",
+      "network": {
+        "whatsapp": "WhatsApp",
+        "telegram": "Telegram",
+        "x": "X",
+        "facebook": "Facebook",
+        "email": "Email"
+      }
+    }
+  },
   "publicProfile": {
     "metaTitle": "{name}",
     "metaDescription": "The profile of {name} on NoteFinder.",
@@ -792,6 +814,15 @@
     "unavailable": {
       "title": "Profile unavailable",
       "description": "We couldn't load this profile right now. Try again in a moment."
+    },
+    "summary": {
+      "title": "Summary",
+      "loading": "Loading summary…",
+      "streak": "Streak",
+      "streakUnit": "{count, plural, one {day} other {days}}",
+      "sung": "Sung",
+      "favorites": "Favorites",
+      "contributions": "Contributions"
     }
   }
 }

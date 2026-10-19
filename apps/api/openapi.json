@@ -1154,6 +1154,34 @@
         ]
       }
     },
+    "/v1/users/{username}/summary": {
+      "get": {
+        "operationId": "ProfileSummaryController_getSummary_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The numbers of the Profile Summary section."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/users/{username}": {
       "get": {
         "operationId": "UserProfileController_getPublicProfile_v1",
