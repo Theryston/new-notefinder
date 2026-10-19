@@ -22,7 +22,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
 import { AttemptTrackParamDto } from './attempt-track-param.dto.js';
-import { AttemptsService } from './attempts.service.js';
+import { SubmitAttemptService } from './submit-attempt.service.js';
 import { SubmitAttemptBodyDto } from './submit-attempt-body.dto.js';
 
 const NOT_FOUND =
@@ -32,7 +32,7 @@ const NOT_FOUND =
 @ApiTags('attempts')
 @Controller('tracks/:trackId/attempts')
 export class TrackAttemptsController {
-  constructor(private readonly attempts: AttemptsService) {}
+  constructor(private readonly submitAttempts: SubmitAttemptService) {}
 
   // Only valid runs are saved: under 90% coverage or a forward skip is
   // refused with `ATTEMPT_REJECTED`, so no client can write a run the page
@@ -52,6 +52,6 @@ export class TrackAttemptsController {
     @Param() params: AttemptTrackParamDto,
     @Body() body: SubmitAttemptBodyDto,
   ): Promise<PracticeAttempt> {
-    return this.attempts.submitAttempt(user.id, params.trackId, body);
+    return this.submitAttempts.submit(user.id, params.trackId, body);
   }
 }

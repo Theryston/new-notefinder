@@ -170,6 +170,24 @@ export class UsersService {
   }
 
   /**
+   * Refreshes the cached public Profile of a User whose public chips changed
+   * without a change to the User row (a saved practice attempt). Best effort:
+   * the change is already saved, so a failed lookup or queue is only logged.
+   */
+  async revalidatePublicProfile(userId: string): Promise<void> {
+    try {
+      const user = await this.usersRepository.findCurrentUser(userId);
+      if (user?.username) {
+        await this.revalidateProfile(user.username);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not refresh the Profile of a User: ${reasonOf(error)}`,
+      );
+    }
+  }
+
+  /**
    * What the user changes about how they appear to others (`PATCH /v1/me`):
    * the Name, optionally a new Avatar, and optionally the Daily target.
    * Returns the updated user.
