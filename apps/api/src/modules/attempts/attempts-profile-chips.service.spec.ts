@@ -1,28 +1,38 @@
 import { Test } from '@nestjs/testing';
 import { TracksService } from '../tracks/tracks.service.js';
-import type { ProfileAttemptRow } from './attempts.repository.js';
+import type {
+  ArtistGroupRow,
+  VocalRangeGroupRow,
+} from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import { AttemptsService } from './attempts.service.js';
 
 const repository = {
-  listProfileAttempts: vi.fn(),
+  listVocalRangeGroups: vi.fn(),
+  listArtistGroups: vi.fn(),
 };
 const tracks = { assertTrackExists: vi.fn() };
 
-// One joined row per (attempt, credited artist), as the repository returns it.
-const joined = (
-  overrides: Partial<ProfileAttemptRow> = {},
-): ProfileAttemptRow => ({
-  attemptId: 'attempt-1',
-  transposeSemitones: 0,
-  accuracy: 0.9,
-  forwardSkip: false,
-  bleedSuspected: false,
-  createdAt: new Date('2026-10-01T10:00:00.000Z'),
+const vocalRow = (
+  overrides: Partial<VocalRangeGroupRow> = {},
+): VocalRangeGroupRow => ({
   trackVocalRangeLowest: 48,
   trackVocalRangeHighest: 72,
+  transposeSemitones: 0,
+  forwardSkip: false,
+  bleedSuspected: false,
+  bestAccuracy: 0.9,
+  ...overrides,
+});
+
+const artistRow = (
+  overrides: Partial<ArtistGroupRow> = {},
+): ArtistGroupRow => ({
   artistId: 'artist-a',
   artistName: 'Artist A',
+  bleedSuspected: false,
+  attempts: 1,
+  lastAttemptAt: new Date('2026-10-01T10:00:00.000Z'),
   ...overrides,
 });
 
@@ -41,16 +51,19 @@ describe('AttemptsService.profileChips', () => {
     service = moduleRef.get(AttemptsService);
   });
 
-  it('reads the attempts of the User once', async () => {
-    repository.listProfileAttempts.mockResolvedValue([]);
+  it('reads the grouped runs of the User', async () => {
+    repository.listVocalRangeGroups.mockResolvedValue([]);
+    repository.listArtistGroups.mockResolvedValue([]);
 
     await service.profileChips('user-1');
 
-    expect(repository.listProfileAttempts).toHaveBeenCalledWith('user-1');
+    expect(repository.listVocalRangeGroups).toHaveBeenCalledWith('user-1');
+    expect(repository.listArtistGroups).toHaveBeenCalledWith('user-1');
   });
 
-  it('answers null chips for a User with no attempts', async () => {
-    repository.listProfileAttempts.mockResolvedValue([]);
+  it('answers null chips for a User with no runs', async () => {
+    repository.listVocalRangeGroups.mockResolvedValue([]);
+    repository.listArtistGroups.mockResolvedValue([]);
 
     await expect(service.profileChips('user-1')).resolves.toEqual({
       vocalRange: null,
@@ -58,40 +71,26 @@ describe('AttemptsService.profileChips', () => {
     });
   });
 
-  it('regroups the joined rows of an attempt with its artists', async () => {
-    repository.listProfileAttempts.mockResolvedValue([
-      joined({ artistId: 'artist-a', artistName: 'Artist A' }),
-      joined({ artistId: 'artist-b', artistName: 'Artist B' }),
-      joined({
-        attemptId: 'attempt-2',
-        createdAt: new Date('2026-10-02T10:00:00.000Z'),
-        artistId: 'artist-b',
-        artistName: 'Artist B',
-      }),
+  it('maps the grouped rows into the chip rules', async () => {
+    repository.listVocalRangeGroups.mockResolvedValue([
+      vocalRow({ transposeSemitones: 2 }),
+    ]);
+    repository.listArtistGroups.mockResolvedValue([
+      artistRow({ artistId: 'artist-a', artistName: 'Artist A', attempts: 1 }),
+      artistRow({ artistId: 'artist-b', artistName: 'Artist B', attempts: 3 }),
     ]);
 
     await expect(service.profileChips('user-1')).resolves.toEqual({
-      vocalRange: { lowest: 48, highest: 72 },
-      // Artist B has two attempts (attempt 1 and 2), Artist A one.
+      vocalRange: { lowest: 50, highest: 74 },
       mostSungArtist: { id: 'artist-b', name: 'Artist B' },
     });
   });
 
-  it('counts an attempt once even when its Track credits no artist', async () => {
-    repository.listProfileAttempts.mockResolvedValue([
-      joined({ artistId: null, artistName: null }),
-    ]);
-
-    await expect(service.profileChips('user-1')).resolves.toEqual({
-      vocalRange: { lowest: 48, highest: 72 },
-      mostSungArtist: null,
-    });
-  });
-
   it('reads a Track without notes as no vocal range', async () => {
-    repository.listProfileAttempts.mockResolvedValue([
-      joined({ trackVocalRangeLowest: null, trackVocalRangeHighest: null }),
+    repository.listVocalRangeGroups.mockResolvedValue([
+      vocalRow({ trackVocalRangeLowest: null, trackVocalRangeHighest: null }),
     ]);
+    repository.listArtistGroups.mockResolvedValue([artistRow()]);
 
     await expect(service.profileChips('user-1')).resolves.toEqual({
       vocalRange: null,

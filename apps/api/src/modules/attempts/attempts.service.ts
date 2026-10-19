@@ -11,9 +11,10 @@ import { practiceSpeedSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import type {
+  ArtistGroupRow,
   NewPracticeAttempt,
   PracticeAttemptRow,
-  ProfileAttemptRow,
+  VocalRangeGroupRow,
 } from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import {
@@ -21,9 +22,10 @@ import {
   encodeOwnAttemptCursor,
 } from './own-attempt-cursor.js';
 import {
+  type ArtistGroup,
   deriveMostSungArtist,
   deriveVocalRange,
-  type ProfileAttempt,
+  type VocalRangeGroup,
 } from './profile-chips.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
@@ -53,35 +55,28 @@ const noScores: BestPracticeScores = {
   HARD: null,
 };
 
-/** One entry per attempt, with the artists its Track credits. */
-const groupProfileAttempts = (
-  rows: readonly ProfileAttemptRow[],
-): ProfileAttempt[] => {
-  const byAttempt = new Map<string, ProfileAttempt>();
-  for (const row of rows) {
-    const attempt = byAttempt.get(row.attemptId) ?? {
-      transposeSemitones: row.transposeSemitones,
-      accuracy: row.accuracy,
-      forwardSkip: row.forwardSkip,
-      bleedSuspected: row.bleedSuspected,
-      createdAt: row.createdAt,
-      trackVocalRange:
-        row.trackVocalRangeLowest === null ||
-        row.trackVocalRangeHighest === null
-          ? null
-          : {
-              lowest: row.trackVocalRangeLowest,
-              highest: row.trackVocalRangeHighest,
-            },
-      artists: [],
-    };
-    if (row.artistId !== null && row.artistName !== null) {
-      attempt.artists.push({ id: row.artistId, name: row.artistName });
-    }
-    byAttempt.set(row.attemptId, attempt);
-  }
-  return [...byAttempt.values()];
-};
+/** The Vocal range input of the chip rules, from a grouped row. */
+const toVocalRangeGroup = (row: VocalRangeGroupRow): VocalRangeGroup => ({
+  trackVocalRange:
+    row.trackVocalRangeLowest === null || row.trackVocalRangeHighest === null
+      ? null
+      : {
+          lowest: row.trackVocalRangeLowest,
+          highest: row.trackVocalRangeHighest,
+        },
+  transposeSemitones: row.transposeSemitones,
+  forwardSkip: row.forwardSkip,
+  bleedSuspected: row.bleedSuspected,
+  bestAccuracy: row.bestAccuracy,
+});
+
+/** The Most sung artist input of the chip rules, from a grouped row. */
+const toArtistGroup = (row: ArtistGroupRow): ArtistGroup => ({
+  artist: { id: row.artistId, name: row.artistName },
+  bleedSuspected: row.bleedSuspected,
+  attempts: row.attempts,
+  lastAttemptAt: row.lastAttemptAt,
+});
 
 /**
  * A signed-in User's saved practice runs. Only valid runs are saved: the
@@ -158,12 +153,11 @@ export class AttemptsService {
     vocalRange: TrackVocalRange | null;
     mostSungArtist: MostSungArtist | null;
   }> {
-    const attempts = groupProfileAttempts(
-      await this.attempts.listProfileAttempts(userId),
-    );
+    const vocalGroups = await this.attempts.listVocalRangeGroups(userId);
+    const artistGroups = await this.attempts.listArtistGroups(userId);
     return {
-      vocalRange: deriveVocalRange(attempts),
-      mostSungArtist: deriveMostSungArtist(attempts),
+      vocalRange: deriveVocalRange(vocalGroups.map(toVocalRangeGroup)),
+      mostSungArtist: deriveMostSungArtist(artistGroups.map(toArtistGroup)),
     };
   }
 

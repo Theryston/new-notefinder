@@ -161,6 +161,20 @@ describe('GET /v1/users/:username chips (e2e)', () => {
       expect(body).not.toHaveProperty('vocalRange');
     });
 
+    it('shifts the range down for a negative transposition', async () => {
+      const user = await createUser(db, { username: 'ada' });
+      const track = await createTrack(db, {
+        vocalRangeLowest: 50,
+        vocalRangeHighest: 60,
+      });
+      // Sung three semitones down: D3-A4 (50-60) becomes A2-G#3 (47-57).
+      await attempt(user, track, { transposeSemitones: -3 });
+
+      const body = await profileOf('ada');
+
+      expect(body).toMatchObject({ vocalRange: { lowest: 47, highest: 57 } });
+    });
+
     it('does not count other Users attempts', async () => {
       await createUser(db, { username: 'ada' });
       const grace = await createUser(db, { username: 'grace' });
@@ -212,6 +226,30 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       expect(body).toMatchObject({
         mostSungArtist: { id: honest.id, name: 'Honest' },
+      });
+    });
+
+    it('counts a run on a Track with several artists for each of them', async () => {
+      // Two runs on a Track credited to X and Y, and one run on a Track
+      // credited to Y and Q: Y has three runs, X two, Q one.
+      const user = await createUser(db, { username: 'ada' });
+      const x = await createArtist(db, { name: 'Artist X' });
+      const y = await createArtist(db, { name: 'Artist Y' });
+      const q = await createArtist(db, { name: 'Artist Q' });
+      const xy = await createTrack(db);
+      const yq = await createTrack(db);
+      await linkTrackArtist(db, xy.id, x.id);
+      await linkTrackArtist(db, xy.id, y.id);
+      await linkTrackArtist(db, yq.id, y.id);
+      await linkTrackArtist(db, yq.id, q.id);
+      await attempt(user, xy);
+      await attempt(user, xy);
+      await attempt(user, yq);
+
+      const body = await profileOf('ada');
+
+      expect(body).toMatchObject({
+        mostSungArtist: { id: y.id, name: 'Artist Y' },
       });
     });
 

@@ -16,21 +16,30 @@ type Difficulty = (typeof practiceDifficulty.enumValues)[number];
 export type PracticeAttemptRow = typeof practiceAttempts.$inferSelect;
 
 /**
- * One artist credited on the Track of an attempt. An attempt on a Track with
- * several artists comes back once per artist, so the service regroups them.
- * `artistId` is null for a Track no artist is linked to yet.
+ * The runs of a User that share a Track, a transposition and their flags, with
+ * the best accuracy among them. Enough for the Vocal range: a group holds an
+ * accurate run exactly when its best accuracy reaches the threshold.
  */
-export type ProfileAttemptRow = {
-  attemptId: string;
-  transposeSemitones: number;
-  accuracy: number;
-  forwardSkip: boolean;
-  bleedSuspected: boolean;
-  createdAt: Date;
+export type VocalRangeGroupRow = {
+  // Null for a Track without notes.
   trackVocalRangeLowest: number | null;
   trackVocalRangeHighest: number | null;
-  artistId: string | null;
-  artistName: string | null;
+  transposeSemitones: number;
+  forwardSkip: boolean;
+  bleedSuspected: boolean;
+  bestAccuracy: number;
+};
+
+/**
+ * The runs of a User on the Tracks of one artist, split by the bleed flag,
+ * with how many there are and when the latest one was saved.
+ */
+export type ArtistGroupRow = {
+  artistId: string;
+  artistName: string;
+  bleedSuspected: boolean;
+  attempts: number;
+  lastAttemptAt: Date;
 };
 
 /** The fields of a run the page scored, with its owner and Track. */
@@ -86,28 +95,57 @@ export class AttemptsRepository {
   }
 
   /**
-   * Every attempt of the User with its Track's vocal range and artists, for
-   * the Profile chips. Unordered: the rules are order-independent.
+   * The User's runs on Tracks with a vocal range, grouped by Track,
+   * transposition and flags, so the read grows with the distinct combinations
+   * rather than with the number of runs.
    */
-  listProfileAttempts(userId: string): Promise<ProfileAttemptRow[]> {
+  listVocalRangeGroups(userId: string): Promise<VocalRangeGroupRow[]> {
     return this.txHost.tx
       .select({
-        attemptId: practiceAttempts.id,
-        transposeSemitones: practiceAttempts.transposeSemitones,
-        accuracy: practiceAttempts.accuracy,
-        forwardSkip: practiceAttempts.forwardSkip,
-        bleedSuspected: practiceAttempts.bleedSuspected,
-        createdAt: practiceAttempts.createdAt,
         trackVocalRangeLowest: tracks.vocalRangeLowest,
         trackVocalRangeHighest: tracks.vocalRangeHighest,
-        artistId: artists.id,
-        artistName: artists.name,
+        transposeSemitones: practiceAttempts.transposeSemitones,
+        forwardSkip: practiceAttempts.forwardSkip,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        bestAccuracy: sql<number>`max(${practiceAttempts.accuracy})`,
       })
       .from(practiceAttempts)
       .innerJoin(tracks, eq(tracks.id, practiceAttempts.trackId))
-      .leftJoin(trackArtists, eq(trackArtists.trackId, tracks.id))
-      .leftJoin(artists, eq(artists.id, trackArtists.artistId))
-      .where(eq(practiceAttempts.userId, userId));
+      .where(eq(practiceAttempts.userId, userId))
+      .groupBy(
+        tracks.id,
+        tracks.vocalRangeLowest,
+        tracks.vocalRangeHighest,
+        practiceAttempts.transposeSemitones,
+        practiceAttempts.forwardSkip,
+        practiceAttempts.bleedSuspected,
+      );
+  }
+
+  /**
+   * The User's runs per credited artist, split by the bleed flag: one row per
+   * artist and flag, counting the runs on that artist's Tracks.
+   */
+  listArtistGroups(userId: string): Promise<ArtistGroupRow[]> {
+    return this.txHost.tx
+      .select({
+        artistId: artists.id,
+        artistName: artists.name,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        attempts: sql<number>`count(*)::int`,
+        // Mapped through the column, so the driver's timestamp becomes a Date.
+        lastAttemptAt: sql<Date>`max(${practiceAttempts.createdAt})`.mapWith(
+          practiceAttempts.createdAt,
+        ),
+      })
+      .from(practiceAttempts)
+      .innerJoin(
+        trackArtists,
+        eq(trackArtists.trackId, practiceAttempts.trackId),
+      )
+      .innerJoin(artists, eq(artists.id, trackArtists.artistId))
+      .where(eq(practiceAttempts.userId, userId))
+      .groupBy(artists.id, artists.name, practiceAttempts.bleedSuspected);
   }
 
   /** Up to `limit` attempts of the User after the cursor, newest first. */

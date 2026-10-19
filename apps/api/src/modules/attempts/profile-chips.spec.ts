@@ -1,20 +1,22 @@
 import {
+  type ArtistGroup,
   deriveMostSungArtist,
   deriveVocalRange,
-  type ProfileAttempt,
   VOCAL_RANGE_MIN_ACCURACY,
+  type VocalRangeGroup,
 } from './profile-chips.js';
 
-// A valid run of a Track whose vocal range is C3 (48) to C5 (72), sung at the
-// Track's own pitch. Each test overrides only what it is about.
-const attempt = (overrides: Partial<ProfileAttempt> = {}): ProfileAttempt => ({
+// A group of runs on a Track whose vocal range is C3 (48) to C5 (72), sung at
+// the Track's own pitch with the best run at 90%. Each test overrides only what
+// it is about.
+const rangeGroup = (
+  overrides: Partial<VocalRangeGroup> = {},
+): VocalRangeGroup => ({
+  trackVocalRange: { lowest: 48, highest: 72 },
   transposeSemitones: 0,
-  accuracy: 0.9,
   forwardSkip: false,
   bleedSuspected: false,
-  createdAt: onDay(1),
-  trackVocalRange: { lowest: 48, highest: 72 },
-  artists: [artistA],
+  bestAccuracy: 0.9,
   ...overrides,
 });
 
@@ -26,17 +28,28 @@ function onDay(day: number): Date {
   return new Date(`2026-10-${String(day).padStart(2, '0')}T10:00:00.000Z`);
 }
 
+const artistGroup = (overrides: Partial<ArtistGroup> = {}): ArtistGroup => ({
+  artist: artistA,
+  bleedSuspected: false,
+  attempts: 1,
+  lastAttemptAt: onDay(1),
+  ...overrides,
+});
+
 describe('deriveVocalRange', () => {
-  it('is the Track range of a valid run', () => {
-    expect(deriveVocalRange([attempt()])).toEqual({ lowest: 48, highest: 72 });
+  it('is the Track range of a valid group', () => {
+    expect(deriveVocalRange([rangeGroup()])).toEqual({
+      lowest: 48,
+      highest: 72,
+    });
   });
 
-  it('transposes the range by each attempt semitones, up and down', () => {
-    expect(deriveVocalRange([attempt({ transposeSemitones: 3 })])).toEqual({
+  it('transposes the range by each group semitones, up and down', () => {
+    expect(deriveVocalRange([rangeGroup({ transposeSemitones: 3 })])).toEqual({
       lowest: 51,
       highest: 75,
     });
-    expect(deriveVocalRange([attempt({ transposeSemitones: -5 })])).toEqual({
+    expect(deriveVocalRange([rangeGroup({ transposeSemitones: -5 })])).toEqual({
       lowest: 43,
       highest: 67,
     });
@@ -44,114 +57,132 @@ describe('deriveVocalRange', () => {
 
   it('spans the lowest and highest notes across the practiced Tracks', () => {
     const range = deriveVocalRange([
-      attempt({ trackVocalRange: { lowest: 50, highest: 70 } }),
-      attempt({
+      rangeGroup({ trackVocalRange: { lowest: 50, highest: 70 } }),
+      rangeGroup({
         transposeSemitones: -2,
         trackVocalRange: { lowest: 55, highest: 76 },
       }),
-      attempt({ trackVocalRange: { lowest: 52, highest: 66 } }),
+      rangeGroup({ trackVocalRange: { lowest: 52, highest: 66 } }),
     ]);
 
     expect(range).toEqual({ lowest: 50, highest: 74 });
   });
 
-  it(`counts only runs at ${VOCAL_RANGE_MIN_ACCURACY * 100}% accuracy or more`, () => {
+  it(`counts a group whose best run reaches ${VOCAL_RANGE_MIN_ACCURACY * 100}%`, () => {
     expect(
-      deriveVocalRange([attempt({ accuracy: VOCAL_RANGE_MIN_ACCURACY })]),
+      deriveVocalRange([
+        rangeGroup({ bestAccuracy: VOCAL_RANGE_MIN_ACCURACY }),
+      ]),
     ).toEqual({ lowest: 48, highest: 72 });
-    expect(deriveVocalRange([attempt({ accuracy: 0.8499 })])).toBeNull();
   });
 
-  it('ignores runs that skipped forward', () => {
-    expect(deriveVocalRange([attempt({ forwardSkip: true })])).toBeNull();
+  it('ignores a group whose best run is under the accuracy threshold', () => {
+    expect(deriveVocalRange([rangeGroup({ bestAccuracy: 0.8499 })])).toBeNull();
   });
 
-  it('ignores runs with a suspected bleed', () => {
-    expect(deriveVocalRange([attempt({ bleedSuspected: true })])).toBeNull();
+  it('does not let an inaccurate group widen the range', () => {
+    expect(
+      deriveVocalRange([
+        rangeGroup(),
+        rangeGroup({
+          trackVocalRange: { lowest: 20, highest: 100 },
+          bestAccuracy: 0.5,
+        }),
+      ]),
+    ).toEqual({ lowest: 48, highest: 72 });
+  });
+
+  it('ignores groups that skipped forward', () => {
+    expect(deriveVocalRange([rangeGroup({ forwardSkip: true })])).toBeNull();
+  });
+
+  it('ignores groups with a suspected bleed', () => {
+    expect(deriveVocalRange([rangeGroup({ bleedSuspected: true })])).toBeNull();
   });
 
   it('ignores Tracks without a vocal range', () => {
-    expect(deriveVocalRange([attempt({ trackVocalRange: null })])).toBeNull();
+    expect(
+      deriveVocalRange([rangeGroup({ trackVocalRange: null })]),
+    ).toBeNull();
   });
 
-  it('is null when no attempt qualifies', () => {
+  it('is null when no group qualifies', () => {
     expect(deriveVocalRange([])).toBeNull();
   });
 
-  it('keeps a transposed range inside the MIDI keys', () => {
+  it('keeps a transposed range inside the MIDI keys at the top', () => {
     expect(
       deriveVocalRange([
-        attempt({
+        rangeGroup({
           transposeSemitones: 24,
           trackVocalRange: { lowest: 110, highest: 120 },
         }),
       ]),
     ).toEqual({ lowest: 127, highest: 127 });
   });
+
+  it('keeps a transposed range inside the MIDI keys at the bottom', () => {
+    expect(
+      deriveVocalRange([
+        rangeGroup({
+          transposeSemitones: -8,
+          trackVocalRange: { lowest: 5, highest: 20 },
+        }),
+      ]),
+    ).toEqual({ lowest: 0, highest: 12 });
+  });
 });
 
 describe('deriveMostSungArtist', () => {
-  it('is null when there is no valid attempt', () => {
+  it('is null when there is no group', () => {
     expect(deriveMostSungArtist([])).toBeNull();
+  });
+
+  it('is null when every run of every artist suspected a bleed', () => {
     expect(
-      deriveMostSungArtist([attempt({ bleedSuspected: true })]),
+      deriveMostSungArtist([artistGroup({ bleedSuspected: true })]),
     ).toBeNull();
   });
 
-  it('is the artist with the most valid attempts', () => {
+  it('is the artist with the most valid runs, summed over its groups', () => {
     expect(
       deriveMostSungArtist([
-        attempt({ artists: [artistA] }),
-        attempt({ artists: [artistB] }),
-        attempt({ artists: [artistB] }),
-      ]),
-    ).toEqual(artistB);
-  });
-
-  it('does not count attempts with a suspected bleed', () => {
-    expect(
-      deriveMostSungArtist([
-        attempt({ artists: [artistA] }),
-        attempt({ artists: [artistB], bleedSuspected: true }),
-        attempt({ artists: [artistB], bleedSuspected: true }),
+        artistGroup({ artist: artistA, attempts: 2 }),
+        artistGroup({ artist: artistA, attempts: 1 }),
+        artistGroup({ artist: artistB, attempts: 2 }),
       ]),
     ).toEqual(artistA);
   });
 
-  it('counts runs below the vocal range accuracy and runs that skipped forward', () => {
+  it('does not count runs with a suspected bleed', () => {
     expect(
       deriveMostSungArtist([
-        attempt({ artists: [artistA], accuracy: 0.2, forwardSkip: true }),
-        attempt({ artists: [artistB] }),
+        artistGroup({ artist: artistA, attempts: 1 }),
+        artistGroup({ artist: artistB, attempts: 3, bleedSuspected: true }),
       ]),
     ).toEqual(artistA);
   });
 
-  it('gives an attempt to every artist credited on its Track', () => {
+  it('breaks a tie on the most recent run', () => {
     expect(
       deriveMostSungArtist([
-        attempt({ artists: [artistA, artistB] }),
-        attempt({ artists: [artistB] }),
+        artistGroup({ artist: artistA, lastAttemptAt: onDay(1) }),
+        artistGroup({ artist: artistB, lastAttemptAt: onDay(2) }),
       ]),
     ).toEqual(artistB);
   });
 
-  it('breaks a tie on the most recent attempt', () => {
+  it('takes the most recent run of each artist, whichever group holds it', () => {
     expect(
       deriveMostSungArtist([
-        attempt({ artists: [artistA], createdAt: onDay(1) }),
-        attempt({ artists: [artistB], createdAt: onDay(2) }),
-      ]),
-    ).toEqual(artistB);
-  });
-
-  it('uses the most recent attempt of each artist, not the first one listed', () => {
-    expect(
-      deriveMostSungArtist([
-        attempt({ artists: [artistA], createdAt: onDay(5) }),
-        attempt({ artists: [artistB], createdAt: onDay(3) }),
-        attempt({ artists: [artistB], createdAt: onDay(4) }),
-        attempt({ artists: [artistA], createdAt: onDay(1) }),
+        artistGroup({ artist: artistA, lastAttemptAt: onDay(5) }),
+        artistGroup({
+          artist: artistA,
+          lastAttemptAt: onDay(1),
+          bleedSuspected: false,
+        }),
+        artistGroup({ artist: artistB, lastAttemptAt: onDay(3) }),
+        artistGroup({ artist: artistB, lastAttemptAt: onDay(4) }),
       ]),
     ).toEqual(artistA);
   });
@@ -159,13 +190,24 @@ describe('deriveMostSungArtist', () => {
   it('breaks a full tie on the smaller ID so the answer is stable', () => {
     expect(
       deriveMostSungArtist([
-        attempt({ artists: [artistB], createdAt: onDay(1) }),
-        attempt({ artists: [artistA], createdAt: onDay(1) }),
+        artistGroup({ artist: artistB, lastAttemptAt: onDay(1) }),
+        artistGroup({ artist: artistA, lastAttemptAt: onDay(1) }),
       ]),
     ).toEqual(artistA);
   });
 
-  it('is null for attempts whose Track has no linked artist', () => {
-    expect(deriveMostSungArtist([attempt({ artists: [] })])).toBeNull();
+  it('counts a multi-artist Track once for each credited artist', () => {
+    // One run on a Track credited to A and B, and one on a Track credited to
+    // B and C: B has two runs, A and C one each.
+    expect(
+      deriveMostSungArtist([
+        artistGroup({ artist: artistA, attempts: 1 }),
+        artistGroup({ artist: artistB, attempts: 2 }),
+        artistGroup({
+          artist: { id: 'artist-c', name: 'Artist C' },
+          attempts: 1,
+        }),
+      ]),
+    ).toEqual(artistB);
   });
 });

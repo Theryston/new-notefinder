@@ -2,65 +2,76 @@ import type { MostSungArtist, TrackVocalRange } from '@notefinder/contracts';
 
 /**
  * The Profile chips a User's saved Attempts decide: the Vocal range and the
- * Most sung artist. Pure rules, so the thresholds, the transposition and the
- * tie-break are unit-tested without a database.
+ * Most sung artist. The rules live here, as pure functions over groups of runs
+ * that the repository counted in SQL (see `AttemptsRepository`), so the
+ * thresholds, the transposition and the tie-break are unit-tested without a
+ * database and the read does not grow with the number of runs.
  */
 
-/** An Attempt must reach this accuracy to count toward the Vocal range. */
+/** A run must reach this accuracy to count toward the Vocal range. */
 export const VOCAL_RANGE_MIN_ACCURACY = 0.85;
 
 const MIDI_LOWEST = 0;
 const MIDI_HIGHEST = 127;
 
-/** One saved Attempt with what the chips read: its Track and its artists. */
-export type ProfileAttempt = {
-  transposeSemitones: number;
-  accuracy: number;
-  forwardSkip: boolean;
-  bleedSuspected: boolean;
-  createdAt: Date;
+/**
+ * The runs of one Track, one transposition and one set of flags, with the best
+ * accuracy among them: a group holds a qualifying run exactly when that best
+ * accuracy reaches the threshold.
+ */
+export type VocalRangeGroup = {
   /** The Track's own vocal range, null when it has no notes. */
   trackVocalRange: TrackVocalRange | null;
-  /** The Track's artists, one entry per artist credited on it. */
-  artists: MostSungArtist[];
+  transposeSemitones: number;
+  forwardSkip: boolean;
+  bleedSuspected: boolean;
+  bestAccuracy: number;
 };
 
-/** A run that counts toward the Vocal range: accurate, not leaked or skipped. */
-const countsForVocalRange = (attempt: ProfileAttempt): boolean =>
-  attempt.accuracy >= VOCAL_RANGE_MIN_ACCURACY &&
-  !attempt.forwardSkip &&
-  !attempt.bleedSuspected;
+/** The runs of one artist, split by the bleed flag. */
+export type ArtistGroup = {
+  artist: MostSungArtist;
+  bleedSuspected: boolean;
+  /** How many runs credit this artist with the flag. */
+  attempts: number;
+  lastAttemptAt: Date;
+};
+
+const isQualifyingForRange = (group: VocalRangeGroup): boolean =>
+  group.bestAccuracy >= VOCAL_RANGE_MIN_ACCURACY &&
+  !group.forwardSkip &&
+  !group.bleedSuspected;
 
 const clampMidi = (note: number): number =>
   Math.min(MIDI_HIGHEST, Math.max(MIDI_LOWEST, note));
 
 /**
- * The Track's range as the User sang it: the Attempt's transposition moves
- * the whole range. Clamped to MIDI keys, since a transposed range can reach
- * past the ends of the keyboard.
+ * The Track's range as the User sang it: the transposition moves the whole
+ * range. Clamped to the MIDI keys, because a shifted range past the ends of
+ * the keyboard would not be a valid vocal range on the response.
  */
 const sungRangeOf = (
-  attempt: ProfileAttempt,
   trackRange: TrackVocalRange,
+  transposeSemitones: number,
 ): TrackVocalRange => ({
-  lowest: clampMidi(trackRange.lowest + attempt.transposeSemitones),
-  highest: clampMidi(trackRange.highest + attempt.transposeSemitones),
+  lowest: clampMidi(trackRange.lowest + transposeSemitones),
+  highest: clampMidi(trackRange.highest + transposeSemitones),
 });
 
 /**
- * The lowest and highest notes across the Vocal ranges of the Tracks the
- * User practiced, each transposed by its Attempt. Only accurate runs with no
- * forward skip and no suspected bleed count; null when none qualify.
+ * The lowest and highest notes across the Vocal ranges of the Tracks the User
+ * practiced, each transposed by its runs. Only accurate runs with no forward
+ * skip and no suspected bleed count; null when none qualify.
  */
 export function deriveVocalRange(
-  attempts: readonly ProfileAttempt[],
+  groups: readonly VocalRangeGroup[],
 ): TrackVocalRange | null {
   let range: TrackVocalRange | null = null;
-  for (const attempt of attempts) {
-    if (!countsForVocalRange(attempt) || !attempt.trackVocalRange) {
+  for (const group of groups) {
+    if (!isQualifyingForRange(group) || !group.trackVocalRange) {
       continue;
     }
-    const sung = sungRangeOf(attempt, attempt.trackVocalRange);
+    const sung = sungRangeOf(group.trackVocalRange, group.transposeSemitones);
     range = range
       ? {
           lowest: Math.min(range.lowest, sung.lowest),
@@ -71,39 +82,42 @@ export function deriveVocalRange(
   return range;
 }
 
-type ArtistTally = MostSungArtist & { count: number; lastAt: number };
+type ArtistTally = {
+  artist: MostSungArtist;
+  attempts: number;
+  latestAt: number;
+};
 
-/** Most Attempts first, then the most recent one, then the smaller ID. */
-const byTallyOrder = (a: ArtistTally, b: ArtistTally): number =>
-  b.count - a.count || b.lastAt - a.lastAt || (a.id < b.id ? -1 : 1);
+/** Most runs first, then the most recent one, then the smaller ID. */
+const byMostSung = (a: ArtistTally, b: ArtistTally): number =>
+  b.attempts - a.attempts ||
+  b.latestAt - a.latestAt ||
+  (a.artist.id < b.artist.id ? -1 : 1);
 
 /**
- * The artist with the most valid Attempts (a suspected bleed never counts).
- * Each credited artist of a Track gets the Attempt. Ties go to the artist
- * whose most recent Attempt is newer; a tie on both goes to the smaller ID so
- * the answer never flips between requests.
+ * The artist with the most valid runs (a suspected bleed never counts). A run
+ * on a Track that credits several artists counts for each of them. Ties go to
+ * the artist whose most recent run is newer; a tie on both goes to the smaller
+ * ID so the answer never flips between requests.
  */
 export function deriveMostSungArtist(
-  attempts: readonly ProfileAttempt[],
+  groups: readonly ArtistGroup[],
 ): MostSungArtist | null {
   const tallies = new Map<string, ArtistTally>();
-  for (const attempt of attempts) {
-    if (attempt.bleedSuspected) {
+  for (const group of groups) {
+    if (group.bleedSuspected) {
       continue;
     }
-    for (const artist of attempt.artists) {
-      const previous = tallies.get(artist.id);
-      tallies.set(artist.id, {
-        id: artist.id,
-        name: artist.name,
-        count: (previous?.count ?? 0) + 1,
-        lastAt: Math.max(
-          previous?.lastAt ?? Number.NEGATIVE_INFINITY,
-          attempt.createdAt.getTime(),
-        ),
-      });
-    }
+    const previous = tallies.get(group.artist.id);
+    tallies.set(group.artist.id, {
+      artist: group.artist,
+      attempts: (previous?.attempts ?? 0) + group.attempts,
+      latestAt: Math.max(
+        previous?.latestAt ?? Number.NEGATIVE_INFINITY,
+        group.lastAttemptAt.getTime(),
+      ),
+    });
   }
-  const [winner] = [...tallies.values()].sort(byTallyOrder);
-  return winner ? { id: winner.id, name: winner.name } : null;
+  const [winner] = [...tallies.values()].sort(byMostSung);
+  return winner ? { id: winner.artist.id, name: winner.artist.name } : null;
 }
