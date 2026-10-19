@@ -255,6 +255,8 @@ for (const { locale, messages } of cases) {
         query: 'queen',
       });
       expect(searchParamsOf(lastRequest(search.calls)).scope).toBe('');
+      // No toggle: the page renders no pressed scope button.
+      await expect(main.locator('[aria-pressed]')).toHaveCount(0);
     });
 
     test('shows a skeleton while results load', async ({ page }) => {
