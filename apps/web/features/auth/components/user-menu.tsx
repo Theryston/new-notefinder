@@ -189,14 +189,19 @@ function UserDrawer({ user, currentPath }: Props) {
   );
 }
 
+// The wrappers are flex so the 40px avatar button centers in the header row
+// instead of sitting on its top edge. The 2px right margin brings the avatar's
+// visible right inset level with the top and bottom ones.
+const avatarSlotClassName = 'mr-0.5 items-center';
+
 /** Avatar button opening the signed-in user's menu. */
 export function UserMenu(props: Props) {
   return (
     <>
-      <div className="hidden md:block">
+      <div className={`hidden md:flex ${avatarSlotClassName}`}>
         <UserDropdown {...props} />
       </div>
-      <div className="md:hidden">
+      <div className={`flex md:hidden ${avatarSlotClassName}`}>
         <UserDrawer {...props} />
       </div>
     </>
