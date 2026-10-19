@@ -16,9 +16,8 @@ import { fetchSearchPage } from './use-search-results';
 
 /**
  * Header autocomplete options: the public search with a short limit, in
- * catalog rank order (the matches are used as the
- * search engine ranked them). Its own key keeps the suggestions cache apart
- * from the search page's infinite one. Disabled while the query is not
+ * the order the search engine ranked them. Its own key keeps the suggestions
+ * cache apart from the search page's infinite one. Disabled while the query is not
  * searchable, so a blank field never hits the API; while a new query loads,
  * the previous suggestions stay on screen (no flicker).
  */

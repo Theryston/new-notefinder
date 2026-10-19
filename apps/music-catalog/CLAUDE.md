@@ -531,7 +531,7 @@ network; `full` restores through `mbslave import <urls>`
   (MetaBrainz token required) and only matched Lyrics are kept there.
 
 The dev loop runs on `tiny` (`nub run infra:up`, then `dev`): every search,
-`getRecording` query works end to end against it. Verify
+and `getRecording` work end to end against it. Verify
 against `full` before releases that touch the restore, the seed assumptions
 or sizing: point `MUSICBRAINZ_DUMP_BASE_URL` at the official directory (or a
 full mirror) with `CATALOG_DATASET=full` on a machine with the disk and the

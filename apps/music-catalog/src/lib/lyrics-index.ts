@@ -4,10 +4,10 @@ import type { IndexSettings } from '../integrations/meilisearch/meilisearch-inde
 /**
  * What the worker puts in Meilisearch for one Recording that has Lyrics. No
  * search queries this index yet (search is metadata only; the removal ticket
- * drops it). One text field, so a line of either
- * form matches: the plain Lyrics when known, else the synced ones without
- * their timestamps. Only the MBID is read back: what a result shows comes
- * from Postgres, like for the metadata index.
+ * drops it). One text field, so a line of either form matches: the plain
+ * Lyrics when known, else the synced ones without their timestamps. Only the
+ * MBID is read back: what a result shows comes from Postgres, like for the
+ * metadata index.
  */
 export type LyricsDocument = {
   mbid: string;
