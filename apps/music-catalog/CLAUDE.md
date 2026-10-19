@@ -579,9 +579,9 @@ come from env; version pinned to a stable v1.x in the dev compose
 
 ## No Lyrics
 
-The catalog holds no Lyrics: it never downloads or matches LRCLIB's data
-(ADR 0010). The words of a Track are its Timed lyrics, transcribed by the
-API's Processing, never read from the catalog.
+The catalog holds no Lyrics and imports none from any lyrics source (ADR
+0010). The words of a Track are its Timed lyrics, transcribed by the API's
+Processing, never read from the catalog.
 
 ## Sync (outbox)
 
@@ -1239,16 +1239,14 @@ machine uses them.) `status` shows `restored`, then `indexing` (the worker
 indexes the real Recordings), then `ready`, and the search finds `Bohemian
 Rhapsody`.
 
-Measured on the machine that wrote this ticket, before ADR 0010 removed the
-LRCLIB import (15 GB RAM, Docker 29.7, base images already pulled), from the
-commands above on a clean project: **56 s from `docker compose up -d` to
-`ready`** (the migrations at +10 s, the `tiny` restore done at +23 s, then about
-30 s of the worker generating and importing the fake LRCLIB dump and 2 s
-indexing), a cold build (no layer cache) of the Node image in **79 s** and of
-the mbslave image in **148 s**, **86 MB** of Postgres volume, **1.2 MB** of
-Meilisearch, an empty `dumps`, and under 0.5 GB of RAM for the five long-running
-containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
-(mbslave).
+Measured on the machine that wrote this ticket (15 GB RAM, Docker 29.7, base
+images already pulled), from the commands above on a clean project: the
+migrations finished at +10 s, the `tiny` restore at +23 s, and indexing took
+2 s. A cold build (no layer cache) of the Node image took **79 s** and of the
+mbslave image **148 s**; the stack used **86 MB** of Postgres volume, **1.2 MB**
+of Meilisearch, an empty `dumps` volume, and under 0.5 GB of RAM for the five
+long-running containers (about 370 MiB at rest). The images are 383 MB (Node)
+and 959 MB (mbslave).
 
 ## Database (Drizzle + Postgres)
 

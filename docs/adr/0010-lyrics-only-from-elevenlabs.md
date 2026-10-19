@@ -30,7 +30,7 @@ Scribe v2 in the API. That is the only source the product needs.
   outbox lookup, the `lyrics` search index, the `recording_lyrics` and
   `lrclib_refresh_state` tables (migration `0008_drop_lyrics`), the `LRCLIB_*`
   variables, the `lrclib-scratch` volume and the dump's temporary directory in
-  the Dockerfile (#321 and #310, which also covers the production compose).
+  the Dockerfile (all removed in #321).
 - **Timed lyrics are the only words of a Track**, and they come only from the
   ElevenLabs transcription of its Processing. The catalog never supplies them.
 - **Kept:** the MusicBrainz sync and its Meilisearch `recordings` index, the
