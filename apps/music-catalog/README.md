@@ -1,11 +1,11 @@
 # notefinder Music catalog
 
 Private service that holds every Recording in the world (kept in sync with
-MusicBrainz, plus open Lyrics from LRCLIB) and answers searches over an
-authenticated WebSocket: `status`, `getRecording` (everything known about one
-Recording, by MBID) and `search` (free text over Meilisearch, results in its
-relevance order, by metadata or by a line of Lyrics). Its worker restores and
-indexes the data and keeps it in sync. Full design: issue #55.
+MusicBrainz) and answers searches over an authenticated WebSocket: `status`,
+`getRecording` (everything known about one Recording, by MBID) and `search`
+(free text over Meilisearch, results in its relevance order, by metadata). Its
+worker restores and indexes the data and keeps it in sync. Full design: issue
+#55. It holds no Lyrics ([ADR 0010](../../docs/adr/0010-lyrics-only-from-elevenlabs.md)).
 Rules, layers, the protocol and the operations guide are in
 [`CLAUDE.md`](./CLAUDE.md).
 
