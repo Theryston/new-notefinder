@@ -4,7 +4,6 @@ import {
   SEARCH_DEFAULT_LIMIT,
   SEARCH_MAX_OFFSET,
   type SearchResult,
-  type SearchScope,
   searchResultSchema,
 } from '@notefinder/contracts';
 import {
@@ -19,7 +18,6 @@ import { isSearchableQuery, normalizeSearchQuery } from '../search-params';
 
 export type SearchPageParams = {
   query: string;
-  scope: SearchScope;
   limit: number;
   offset: number;
   signal?: AbortSignal;
@@ -32,32 +30,29 @@ export type SearchPageParams = {
  */
 export function fetchSearchPage({
   query,
-  scope,
   limit,
   offset,
   signal,
 }: SearchPageParams): Promise<SearchResult> {
   return browserApi('/search', {
     schema: searchResultSchema,
-    query: { query, scope, limit, offset },
+    query: { query, limit, offset },
     signal,
   });
 }
 
 export type SearchInfiniteInput = {
   query: string;
-  scope: SearchScope;
   limit?: number;
 };
 
 /**
- * Infinite results keyed by query text plus scope (the offset travels as
- * the page param). Disabled while blank, so the API only sees queries worth
+ * Infinite results keyed by query text (the offset travels as the page
+ * param). Disabled while blank, so the API only sees queries worth
  * answering.
  */
 export function searchInfiniteQueryOptions({
   query,
-  scope,
   limit = SEARCH_DEFAULT_LIMIT,
 }: SearchInfiniteInput) {
   const enabled = isSearchableQuery(query);
@@ -68,11 +63,11 @@ export function searchInfiniteQueryOptions({
     // A disabled query never fetches, but it still needs a stable key: the
     // normalized blank, so every blank spells the same key.
     queryKey: enabled
-      ? searchKeys.infiniteResults({ query, scope, limit })
+      ? searchKeys.infiniteResults({ query, limit })
       : ([
           ...searchKeys.all,
           'infinite',
-          { query: normalizeSearchQuery(query), scope, limit },
+          { query: normalizeSearchQuery(query), limit },
         ] as const),
     queryFn: ({
       pageParam,
@@ -80,7 +75,7 @@ export function searchInfiniteQueryOptions({
     }: {
       pageParam: number;
       signal: AbortSignal;
-    }) => fetchSearchPage({ query, scope, limit, offset: pageParam, signal }),
+    }) => fetchSearchPage({ query, limit, offset: pageParam, signal }),
     initialPageParam: 0,
     getNextPageParam: (
       lastPage: SearchResult,

@@ -19,7 +19,6 @@ describe('createSearchHandler', () => {
 
     expect(service.search).toHaveBeenCalledExactlyOnceWith({
       query: 'yesterday',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
     });
@@ -28,18 +27,26 @@ describe('createSearchHandler', () => {
   it('gives the service what the client chose', async () => {
     const { handler, service } = setup();
 
-    await handler.handle({
-      query: 'yesterday',
-      scope: 'lyrics',
-      limit: 100,
-      offset: 900,
-    });
+    await handler.handle({ query: 'yesterday', limit: 100, offset: 900 });
 
     expect(service.search).toHaveBeenCalledExactlyOnceWith({
       query: 'yesterday',
-      scope: 'lyrics',
       limit: 100,
       offset: 900,
+    });
+  });
+
+  it('ignores a scope sent by an older client: the search is always metadata', async () => {
+    const { handler, service } = setup();
+
+    await expect(
+      handler.handle({ query: 'yesterday', scope: 'lyrics' }),
+    ).resolves.toEqual({ results: [] });
+
+    expect(service.search).toHaveBeenCalledExactlyOnceWith({
+      query: 'yesterday',
+      limit: 20,
+      offset: 0,
     });
   });
 
@@ -60,7 +67,6 @@ describe('createSearchHandler', () => {
     ['a query of blanks', { query: '  \t ' }],
     ['a query that is not text', { query: 7 }],
     ['a query of 257 characters', { query: 'a'.repeat(257) }],
-    ['an unknown scope', { query: 'x', scope: 'all' }],
     ['a limit of 0', { query: 'x', limit: 0 }],
     ['a limit of 101', { query: 'x', limit: 101 }],
     ['a fractional limit', { query: 'x', limit: 1.5 }],

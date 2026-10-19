@@ -5,20 +5,18 @@ import {
   SEARCH_MAX_LIMIT,
   SEARCH_MAX_OFFSET,
   SEARCH_MAX_QUERY_LENGTH,
-  searchScopeSchema,
 } from './music-catalog-search.js';
 
 // The public track search: what the web sends the API and what the API
-// answers. The query mirrors the Music catalog payload semantics (same scope
-// vocabulary, defaults and bounds), so the API forwards it as-is; the result
-// reuses the catalog's summaries untouched and only adds the Track link.
-// Never redeclare these shapes in an app: import them from here.
+// answers. The query mirrors the Music catalog payload semantics (same
+// defaults and bounds), so the API forwards it as-is; the result reuses the
+// catalog's summaries untouched and only adds the Track link. Never redeclare
+// these shapes in an app: import them from here.
 
 // Limits arrive as HTTP query params (strings), so they coerce; the catalog
 // payload takes real numbers over the WebSocket.
 export const searchQuerySchema = z.object({
   query: z.string().trim().min(1).max(SEARCH_MAX_QUERY_LENGTH),
-  scope: searchScopeSchema.default('metadata'),
   limit: z.coerce
     .number()
     .int()

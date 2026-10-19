@@ -105,16 +105,15 @@ const lyricsOf = async (
 const searchMbids = async (
   client: TestClient,
   query: string,
-  scope: 'metadata' | 'lyrics',
 ): Promise<string[]> => {
-  const response = await requestSearch(client, { query, scope });
+  const response = await requestSearch(client, { query });
   if (!response.ok) {
     throw new Error(`search failed: ${response.error.code}`);
   }
   return response.result.results.map((result) => result.mbid);
 };
 
-describe('lyrics: the LRCLIB import, getRecording and lyrics search (e2e)', () => {
+describe('lyrics: the LRCLIB import and getRecording (e2e)', () => {
   const server = useTestServer();
   const client = useTestClient(server);
 
@@ -143,25 +142,12 @@ describe('lyrics: the LRCLIB import, getRecording and lyrics search (e2e)', () =
       });
     });
 
-    it('finds a Recording by a line of its Lyrics, in relevance order', async () => {
-      await arrangeSongbook(server().db);
-      await indexCatalog(server());
-
-      const found = await searchMbids(
-        client(),
-        'fake-lrclib-0 drifting',
-        'lyrics',
-      );
-
-      expect(found[0]).toBe(SONG_ONE);
-    });
-
-    it('never matches on Lyrics in the default metadata scope', async () => {
+    it('never matches a line of the Lyrics: search reads metadata only', async () => {
       await arrangeSongbook(server().db);
       await indexCatalog(server());
 
       await expect(
-        searchMbids(client(), 'fake-lrclib-0 drifting', 'metadata'),
+        searchMbids(client(), 'fake-lrclib-0 drifting'),
       ).resolves.toEqual([]);
     });
   });
@@ -195,12 +181,9 @@ describe('lyrics: the LRCLIB import, getRecording and lyrics search (e2e)', () =
           plain: null,
           synced: null,
         });
-        const found = await searchMbids(
-          client(),
-          'fake-lrclib-2 drifting',
-          'lyrics',
-        );
-        expect(found[0]).toBe(SONG_THREE);
+        await expect(lyricsOf(client(), SONG_THREE)).resolves.toMatchObject({
+          plain: expect.stringContaining('fake-lrclib-2'),
+        });
         expect(lrclib.requested).toEqual([
           '/listing',
           '/files/lrclib-db-dump-20260923T042405Z.sqlite3.gz',

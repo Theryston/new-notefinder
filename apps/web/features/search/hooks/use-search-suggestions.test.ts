@@ -3,8 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { searchKeys } from '../query-keys';
 import { SEARCH_DEBOUNCE_MS } from '../search-params';
+import { searchInfiniteQueryOptions } from './use-search-results';
+import {
+  searchSuggestionsQueryOptions,
+  useSearchSuggestions,
+} from './use-search-suggestions';
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -21,11 +26,8 @@ beforeEach(() => {
 });
 
 describe('searchSuggestionsQueryOptions', () => {
-  it('asks the public endpoint with metadata scope and a limit of 6', async () => {
+  it('asks the public endpoint for a limit of 6', async () => {
     fetchMock.mockResolvedValue(Response.json({ results: [] }));
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
     const queryClient = new QueryClient();
 
     await queryClient.fetchQuery(
@@ -36,40 +38,29 @@ describe('searchSuggestionsQueryOptions', () => {
     const url = new URL(String(input));
     expect(url.pathname).toBe('/v1/search');
     expect(url.searchParams.get('query')).toBe('queen');
-    expect(url.searchParams.get('scope')).toBe('metadata');
+    expect(url.searchParams.has('scope')).toBe(false);
     expect(url.searchParams.get('limit')).toBe('6');
     expect(url.searchParams.get('offset')).toBe('0');
   });
 
   it('keys suggestions apart from the infinite results', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-    const { searchKeys } = await import('../query-keys');
-    const { searchInfiniteQueryOptions } = await import('./use-search-results');
-
     const options = searchSuggestionsQueryOptions({ query: 'queen' });
 
     expect(options.queryKey).toEqual([
       'search',
       'suggestions',
-      { query: 'queen', scope: 'metadata', limit: 6 },
+      { query: 'queen', limit: 6 },
     ]);
     expect(options.queryKey).toEqual(searchKeys.suggestions('queen'));
     expect(options.queryKey).not.toEqual(
       searchInfiniteQueryOptions({
         query: 'queen',
-        scope: 'metadata',
         limit: 6,
       }).queryKey,
     );
   });
 
   it('stays disabled while the query is not searchable', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-
     expect(searchSuggestionsQueryOptions({ query: ' ' })).toMatchObject({
       enabled: false,
     });
@@ -82,26 +73,17 @@ describe('searchSuggestionsQueryOptions', () => {
   });
 
   it('keys every blank the same while disabled', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-
     const blank = searchSuggestionsQueryOptions({ query: ' ' }).queryKey;
     const blanker = searchSuggestionsQueryOptions({ query: '   ' }).queryKey;
 
     expect(blank).toEqual(blanker);
-    expect(blank).toEqual([
-      'search',
-      'suggestions',
-      { query: '', scope: 'metadata', limit: 6 },
-    ]);
+    expect(blank).toEqual(['search', 'suggestions', { query: '', limit: 6 }]);
   });
 
   it('fetches on the shared debounce with the latest query', async () => {
     vi.useFakeTimers();
     try {
       fetchMock.mockResolvedValue(Response.json({ results: [] }));
-      const { useSearchSuggestions } = await import('./use-search-suggestions');
       const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });

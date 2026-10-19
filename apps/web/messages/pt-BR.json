@@ -11,16 +11,11 @@
   },
   "search": {
     "metaTitle": "Buscar",
-    "metaDescription": "Busque qualquer gravação por título, artista ou letra e abra suas notas quando o NoteFinder já a processou.",
+    "metaDescription": "Busque qualquer gravação por título ou artista e abra suas notas quando o NoteFinder já a processou.",
     "title": "Buscar",
     "field": {
       "label": "Buscar músicas e artistas",
       "placeholder": "Buscar músicas, artistas…"
-    },
-    "scope": {
-      "label": "Buscar em",
-      "metadata": "Metadados",
-      "lyrics": "Letras"
     },
     "prompt": {
       "title": "Encontre sua próxima música",
@@ -29,7 +24,7 @@
     "loading": "Carregando resultados…",
     "empty": {
       "title": "Nenhum resultado",
-      "description": "Nada corresponde a “{query}”. Tente outro título, artista ou trecho da letra."
+      "description": "Nada corresponde a “{query}”. Tente outro título ou artista."
     },
     "error": {
       "title": "Busca indisponível",

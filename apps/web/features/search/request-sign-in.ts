@@ -7,16 +7,12 @@ export const PROCESS_PARAM = 'process';
 const BASE = 'http://notefinder.invalid';
 
 /**
- * The search page's path and query, as the visitor's URL has them: `q` and
- * `scope` when they are set. The sign-in round trip returns here.
+ * The search page's path and query, as the visitor's URL has them: `q` when
+ * it is set. The sign-in round trip returns here.
  */
-export function searchPathFrom(
-  query: string | null,
-  scope: string | null,
-): string {
+export function searchPathFrom(query: string | null): string {
   const params = new URLSearchParams();
   if (query !== null) params.set('q', query);
-  if (scope !== null) params.set('scope', scope);
   const search = params.toString();
   return search ? `/search?${search}` : '/search';
 }

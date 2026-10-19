@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   isSearchableQuery,
   normalizeSearchQuery,
-  parseSearchScope,
   SEARCH_DEBOUNCE_MS,
   SEARCH_MIN_QUERY_LENGTH,
 } from './search-params';
@@ -30,24 +29,6 @@ describe('isSearchableQuery', () => {
     expect(isSearchableQuery('queen')).toBe(true);
     expect(isSearchableQuery('')).toBe(false);
     expect(isSearchableQuery('   ')).toBe(false);
-  });
-});
-
-describe('parseSearchScope', () => {
-  it('defaults a missing scope to metadata', () => {
-    expect(parseSearchScope(null)).toBe('metadata');
-    expect(parseSearchScope(undefined)).toBe('metadata');
-    expect(parseSearchScope('')).toBe('metadata');
-  });
-
-  it('keeps the catalog vocabulary', () => {
-    expect(parseSearchScope('metadata')).toBe('metadata');
-    expect(parseSearchScope('lyrics')).toBe('lyrics');
-  });
-
-  it('falls back to metadata for an unknown scope', () => {
-    expect(parseSearchScope('artists')).toBe('metadata');
-    expect(parseSearchScope(42)).toBe('metadata');
   });
 });
 

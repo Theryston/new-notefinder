@@ -53,7 +53,6 @@ describe('search: requests (e2e)', () => {
       ['a query of blanks', { query: ' \t\n ' }],
       ['a query that is not text', { query: 42 }],
       ['a query longer than 256 characters', { query: 'a'.repeat(257) }],
-      ['an unknown scope', { query: 'song', scope: 'everything' }],
       ['a limit of 0', { query: 'song', limit: 0 }],
       ['a limit above 100', { query: 'song', limit: 101 }],
       ['a limit with decimals', { query: 'song', limit: 2.5 }],
@@ -78,7 +77,6 @@ describe('search: requests (e2e)', () => {
     it('accepts the biggest page at the deepest offset', async () => {
       const response = await requestSearch(client(), {
         query: 'song',
-        scope: 'lyrics',
         limit: 100,
         offset: 900,
       });
@@ -86,7 +84,7 @@ describe('search: requests (e2e)', () => {
       expect(response).toMatchObject({ ok: true });
     });
 
-    it('answers no results for the lyrics scope until Lyrics are imported', async () => {
+    it('ignores a scope sent by an older client and searches the metadata', async () => {
       const response = await requestSearch(client(), {
         query: 'yesterday all my troubles',
         scope: 'lyrics',

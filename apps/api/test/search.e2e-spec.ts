@@ -130,7 +130,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
     );
   });
 
-  it('forwards scope and paging to the catalog', async () => {
+  it('ignores a scope an older client sends and forwards the paging', async () => {
     const response = await searchAs('203.0.113.13', {
       query: 'queen',
       scope: 'lyrics',
@@ -144,7 +144,6 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
   it.each([
     { query: '   ' },
     { query: '', scope: 'metadata' },
-    { query: 'queen', scope: 'karaoke' },
     { query: 'queen', limit: '0' },
     { query: 'queen', limit: '101' },
     { query: 'queen', offset: '-1' },

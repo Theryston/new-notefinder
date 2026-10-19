@@ -120,11 +120,8 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
     return response.result;
   };
 
-  const searchMbids = async (
-    query: string,
-    scope?: 'metadata' | 'lyrics',
-  ): Promise<string[]> => {
-    const response = await requestSearch(client(), { query, scope });
+  const searchMbids = async (query: string): Promise<string[]> => {
+    const response = await requestSearch(client(), { query });
     if (!response.ok) {
       throw new Error(`search failed: ${response.error.code}`);
     }
@@ -197,12 +194,13 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       result: { lyrics: { plain: null, synced: null } },
     });
     await expect(
-      searchMbids('fake-lrclib-2 drifting', 'lyrics'),
-    ).resolves.toContain(third?.mbid);
-    // The metadata scope never matches on Lyrics.
-    await expect(
-      searchMbids('fake-lrclib-0 drifting', 'metadata'),
-    ).resolves.toEqual([]);
+      requestRecording(client(), { mbid: third?.mbid ?? '' }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { lyrics: { plain: expect.stringContaining('fake-lrclib-2') } },
+    });
+    // Search never matches on Lyrics, only on metadata.
+    await expect(searchMbids('fake-lrclib-0 drifting')).resolves.toEqual([]);
   });
 
   it('restores the full dump to ready on the first run', async () => {

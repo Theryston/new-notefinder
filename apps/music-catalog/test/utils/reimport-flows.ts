@@ -52,12 +52,8 @@ export const readStatus = async (client: TestClient) => {
 export const searchForMbids = async (
   client: TestClient,
   query: string,
-  scope?: 'metadata' | 'lyrics',
 ): Promise<string[]> => {
-  const response = await requestSearch(
-    client,
-    scope === undefined ? { query } : { query, scope },
-  );
+  const response = await requestSearch(client, { query });
   if (!response.ok) {
     throw new Error(`search failed: ${response.error.code}`);
   }
@@ -206,10 +202,7 @@ const serveCatalogFlow = async (
 
 export type ReimportFlow = {
   statusResult: () => ReturnType<typeof readStatus>;
-  searchMbids: (
-    query: string,
-    scope?: 'metadata' | 'lyrics',
-  ) => Promise<string[]>;
+  searchMbids: (query: string) => Promise<string[]>;
   recordingLyrics: (
     recordingMbid: string,
   ) => ReturnType<typeof readRecordingLyrics>;
@@ -242,8 +235,7 @@ export const useReimportFlow = (options: {
   };
   return {
     statusResult: () => readStatus(client()),
-    searchMbids: (query: string, scope?: 'metadata' | 'lyrics') =>
-      searchForMbids(client(), query, scope),
+    searchMbids: (query: string) => searchForMbids(client(), query),
     recordingLyrics: (recordingMbid: string) =>
       readRecordingLyrics(client(), recordingMbid),
     serveCatalog: () => serveCatalogFlow(server(), needParallel()),

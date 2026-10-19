@@ -29,7 +29,7 @@ export class SearchController {
   @Throttle({ default: { limit: 30, ttl: seconds(60) } })
   @ZodSerializerDto(searchResultSchema)
   @ApiOkResponse({ description: 'Catalog matches, best first.' })
-  @ApiBadRequestResponse({ description: 'The query, scope or paging is bad.' })
+  @ApiBadRequestResponse({ description: 'The query or paging is bad.' })
   @ApiTooManyRequestsResponse({ description: 'Per-IP search rate exceeded.' })
   @ApiServiceUnavailableResponse({ description: 'The Music catalog is down.' })
   @ApiGatewayTimeoutResponse({

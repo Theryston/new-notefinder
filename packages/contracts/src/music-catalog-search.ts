@@ -10,17 +10,6 @@ import { recordingSchema } from './music-catalog-recording.js';
 // (music-catalog.ts): free text in, an ordered list of Recording summaries
 // out. Kept in its own file, like the Recording, so the envelope stays small.
 
-/**
- * What a search looks at: `metadata` (title, artists, releases, ...) or the
- * words of the Lyrics. `lyrics` is accepted already but answers no results
- * until Lyrics are imported.
- */
-export const SEARCH_SCOPES = ['metadata', 'lyrics'] as const;
-
-export const searchScopeSchema = z.enum(SEARCH_SCOPES);
-
-export type SearchScope = z.infer<typeof searchScopeSchema>;
-
 /** The page size when a client does not ask for one. */
 export const SEARCH_DEFAULT_LIMIT = 20;
 
@@ -46,7 +35,6 @@ export const SEARCH_MAX_QUERY_LENGTH = 256;
  */
 export const musicCatalogSearchPayloadSchema = z.object({
   query: z.string().trim().min(1).max(SEARCH_MAX_QUERY_LENGTH),
-  scope: searchScopeSchema.default('metadata'),
   limit: z
     .number()
     .int()

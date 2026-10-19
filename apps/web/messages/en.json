@@ -11,16 +11,11 @@
   },
   "search": {
     "metaTitle": "Search",
-    "metaDescription": "Search every recording by title, artist or lyrics and open its notes when NoteFinder already processed it.",
+    "metaDescription": "Search every recording by title or artist and open its notes when NoteFinder already processed it.",
     "title": "Search",
     "field": {
       "label": "Search songs and artists",
       "placeholder": "Search songs, artists…"
-    },
-    "scope": {
-      "label": "Search in",
-      "metadata": "Metadata",
-      "lyrics": "Lyrics"
     },
     "prompt": {
       "title": "Find your next song",
@@ -29,7 +24,7 @@
     "loading": "Loading results…",
     "empty": {
       "title": "No matches",
-      "description": "Nothing matched “{query}”. Try another title, artist or lyric."
+      "description": "Nothing matched “{query}”. Try another title or artist."
     },
     "error": {
       "title": "Search is unavailable",

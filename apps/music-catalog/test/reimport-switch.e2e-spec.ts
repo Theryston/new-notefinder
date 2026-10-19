@@ -68,8 +68,7 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
 
     // Lyrics were reused from our own schema, with the match rerun and no
     // new download (the LRCLIB endpoints are closed ports in this suite):
-    // the unchanged take kept its Lyrics, the resized one lost them, and
-    // the lyrics scope finds the carried Lyrics on the new copy.
+    // the unchanged take kept its Lyrics, the resized one lost them.
     await expect(recordingLyrics(mbid(901))).resolves.toEqual({
       plain: 'same take la',
       synced: null,
@@ -78,9 +77,6 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
       plain: null,
       synced: null,
     });
-    await expect(searchMbids('same take la', 'lyrics')).resolves.toEqual([
-      mbid(901),
-    ]);
 
     // The old copy is deleted: the `*_next` indexes are gone, the stale
     // backlog is dropped, and the flip record names the new database on

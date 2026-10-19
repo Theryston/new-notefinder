@@ -9,14 +9,12 @@ import { offersSignInToRequest } from './search-result-action';
 const MBID = '00000000-0000-4000-8000-000000000002';
 
 describe('searchPathFrom', () => {
-  it('keeps the query and scope the URL has', () => {
-    expect(searchPathFrom('queen', 'lyrics')).toBe(
-      '/search?q=queen&scope=lyrics',
-    );
+  it('keeps the query the URL has', () => {
+    expect(searchPathFrom('queen')).toBe('/search?q=queen');
   });
 
   it('is the bare search path without a query', () => {
-    expect(searchPathFrom(null, null)).toBe('/search');
+    expect(searchPathFrom(null)).toBe('/search');
   });
 });
 
@@ -48,12 +46,10 @@ describe('signInToRequestHref', () => {
     });
   });
 
-  it('keeps the scope of the search in the redirect', () => {
-    const { query } = signInToRequestHref('/search?q=queen&scope=lyrics', MBID);
+  it('drops a legacy scope from the redirect: the search is metadata only', () => {
+    const { query } = signInToRequestHref(searchPathFrom('queen'), MBID);
 
-    expect(query.redirectTo).toBe(
-      `/search?q=queen&scope=lyrics&process=${MBID}`,
-    );
+    expect(query.redirectTo).toBe(`/search?q=queen&process=${MBID}`);
   });
 });
 

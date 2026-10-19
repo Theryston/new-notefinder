@@ -378,13 +378,12 @@ integer ids of MusicBrainz are internal and never leave the service.
 
 ## `search`
 
-Payload `{ query, scope?, limit?, offset? }`:
+Payload `{ query, limit?, offset? }`. Search finds Recordings by metadata
+only: the `recordings` index, never the Lyrics. A `scope` sent by an older
+client is ignored (the payload schema drops unknown fields).
 
 - `query`: text, trimmed, 1 to 256 characters (`SEARCH_MAX_QUERY_LENGTH`).
   Anything else, blanks included, is `VALIDATION_FAILED`.
-- `scope`: `metadata` (default) or `lyrics`. The metadata scope only asks the
-  `recordings` index (it never matches on Lyrics) and the lyrics scope only
-  the `lyrics` index (see "Lyrics (LRCLIB)").
 - `limit`: 1 to 100, default 20. `offset`: 0 to 900, default 0. A client can
   reach the first 1000 matches of a query (Meilisearch's
   `pagination.maxTotalHits`, which the index settings pin to
@@ -532,7 +531,7 @@ network; `full` restores through `mbslave import <urls>`
   (MetaBrainz token required) and only matched Lyrics are kept there.
 
 The dev loop runs on `tiny` (`nub run infra:up`, then `dev`): every search,
-`getRecording` and Lyrics-scope query works end to end against it. Verify
+and `getRecording` work end to end against it. Verify
 against `full` before releases that touch the restore, the seed assumptions
 or sizing: point `MUSICBRAINZ_DUMP_BASE_URL` at the official directory (or a
 full mirror) with `CATALOG_DATASET=full` on a machine with the disk and the
@@ -592,9 +591,9 @@ come from env; version pinned to a stable v1.x in the dev compose
 - **`lyrics` index**, primary key `mbid` (the Recording's MBID). One document
   per Recording with kept Lyrics (`LyricsDocument`, `src/lib/lyrics-index.ts`):
   a single `lyrics` text, the plain Lyrics when known, else the synced lines
-  without their LRC timestamps. `search` with `scope: lyrics` asks only this
-  index, in the same way (MBIDs only, summaries from Postgres, Meilisearch's
-  order kept); the server's search-only key already covers both indexes.
+  without their LRC timestamps. The worker keeps it up to date, but no search
+  queries it: search was made metadata-only (issue #307), and the index
+  is removed in a follow-up ticket.
 - **Indexing flow** (`IndexingService.run`, one worker tick): while the phase
   is `restoring` or there is no bootstrap row, nothing happens. On `restored`
   the worker records `indexing`, applies the settings **of both indexes**, and
@@ -664,9 +663,7 @@ job, not this import's.
   tie-breaker). No confident match means no Lyrics: a Recording without a
   length, or with only an album tie on other albums, keeps null Lyrics.
 - **Reads.** `getRecording` returns the kept plain and synced (LRC) Lyrics,
-  null otherwise. `search` with `scope: lyrics` searches the `lyrics` index
-  (primary key the MBID), in Meilisearch's relevance order; the default
-  `metadata` scope never touches it.
+  null otherwise. `search` never reads Lyrics.
 - **Refresh** (`LyricsRefreshService.refreshOnce`, one worker tick, `full`
   only): once the catalog is `ready`, each tick polls `LRCLIB_LISTING_URL`
   for a newer dump key (at most every `LRCLIB_REFRESH_CHECK_INTERVAL_MS`,
@@ -1601,9 +1598,7 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   worker tick generates the fake dump, imports and indexes it, and the spec
   asserts over the WebSocket that a matched Recording has plain and synced
   Lyrics, that the tie and length-less Recordings have none, that a
-  lyrics-scope search finds a Recording by a line of its Lyrics (first, in
-  Meilisearch's relevance order) and that the metadata scope never matches on
-  Lyrics. In `full` mode a tiny dump built by the same generator is served
+  search never matches a line of those Lyrics (search reads metadata only). In `full` mode a tiny dump built by the same generator is served
   gzipped by a fake HTTP server (`test/utils/fake-lrclib-server.ts`, listing
   plus files, like `fake-dump-server.ts`), and the spec covers the download
   path the same way, plus a dump with an unexpected schema: the tick still
@@ -1614,8 +1609,7 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   `full` mode, with the dump listing and the public API behind fake HTTP
   servers (`test/utils/fake-lrclib-server.ts` and
   `test/utils/fake-lrclib-api-server.ts`). It covers the refresh from a newer
-  dump over a worker tick (`getRecording` returns the new Lyrics and the
-  lyrics scope finds the new text, still in Meilisearch's relevance order),
+  dump over a worker tick (`getRecording` returns the new Lyrics),
   the skip of an already-imported dump (no second download), the wait past
   the minimum interval (still imported once it passes), the Lyrics of an
   outbox Recording from the API (with the `User-Agent` the fake server
