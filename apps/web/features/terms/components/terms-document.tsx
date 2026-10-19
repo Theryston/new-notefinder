@@ -9,7 +9,7 @@ import { termsRichText } from './terms-rich-text';
 type SectionId = keyof typeof en.terms.sections;
 
 // ISO date of the last change to the terms. Bump it with any edit to them.
-const LAST_UPDATED = '2025-10-31';
+const LAST_UPDATED = '2026-10-19';
 
 // In display order; the heading number is the position. `list` is the bullet
 // list some sections carry after their intro.

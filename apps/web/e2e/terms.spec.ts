@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 
 import { messages } from './messages';
 
-const ISSUES_URL = 'https://github.com/Theryston/notefinder/issues';
+const CONTACT_EMAIL = 'hello@theryston.dev';
+const REPOSITORY_URL = 'https://github.com/Theryston/new-notefinder';
 
 // The order the terms are numbered in (and the legacy page used).
 const sectionOrder = [
@@ -23,11 +24,11 @@ const sectionOrder = [
 ] as const;
 
 const locales = [
-  { locale: 'en', terms: messages.en.terms, updated: 'October 31, 2025' },
+  { locale: 'en', terms: messages.en.terms, updated: 'October 19, 2026' },
   {
     locale: 'pt-BR',
     terms: messages['pt-BR'].terms,
-    updated: '31 de outubro de 2025',
+    updated: '19 de outubro de 2026',
   },
 ] as const;
 
@@ -86,13 +87,35 @@ test.describe('terms page', () => {
     ).toBeVisible();
   });
 
-  test('links to the issue tracker for contact, in a new tab', async ({
+  test('tells artists how to ask for their music to be removed', async ({
     page,
   }) => {
+    await page.goto('/en/terms');
+
+    const section = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: /Music Content/ }) });
+    await expect(
+      section.getByRole('link', { name: CONTACT_EMAIL }),
+    ).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+  });
+
+  test('gives the contact e-mail as a mailto link', async ({ page }) => {
     await page.goto('/pt-BR/terms');
 
-    const link = page.getByRole('link', { name: ISSUES_URL });
-    await expect(link).toHaveAttribute('href', ISSUES_URL);
+    const section = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Contato' }) });
+    const link = section.getByRole('link', { name: CONTACT_EMAIL });
+    await expect(link).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`);
+    await expect(link).not.toHaveAttribute('target', '_blank');
+  });
+
+  test('links to the source repository, in a new tab', async ({ page }) => {
+    await page.goto('/en/terms');
+
+    const link = page.getByRole('link', { name: REPOSITORY_URL });
+    await expect(link).toHaveAttribute('href', REPOSITORY_URL);
     await expect(link).toHaveAttribute('target', '_blank');
     await expect(link).toHaveAttribute('rel', /noopener/);
   });

@@ -360,7 +360,7 @@
       },
       "service": {
         "title": "Descrição do Serviço",
-        "body": "O NoteFinder é uma plataforma que auxilia usuários a descobrir as notas vocais de músicas. Nosso serviço fornece ferramentas de análise musical e visualização de notas para fins educacionais e de entretenimento."
+        "body": "O NoteFinder é uma plataforma que auxilia usuários a descobrir as notas vocais de músicas. Nosso serviço fornece ferramentas de análise musical e visualização de notas para fins educacionais e de entretenimento. O código-fonte é open source, licenciado sob a Licença MIT, e está disponível em <repository>{repositoryUrl}</repository>. A licença cobre apenas o código-fonte e não concede nenhum direito sobre as músicas ou outros conteúdos de terceiros exibidos no site."
       },
       "copyright": {
         "title": "Conteúdo Musical e Direitos Autorais",
@@ -371,7 +371,8 @@
           "noModification": "Não modificamos, redistribuímos ou revendemos o conteúdo musical; todos os direitos autorais e conexos permanecem com seus respectivos titulares.",
           "noStorage": "Não efetuamos upload/armazenamento de fonogramas em nossos servidores, exceto quando cobertos por licença válida que nos autorize a reprodução interna conforme descrito acima.",
           "analysisTool": "O NoteFinder atua como uma ferramenta de análise e visualização de dados musicais e respeita a legislação aplicável de direitos autorais."
-        }
+        },
+        "artistRemoval": "Se você for um artista cuja música está disponível no NoteFinder e não quiser que ela esteja no site, basta entrar em contato pelo e-mail <email>{address}</email>."
       },
       "acceptableUse": {
         "title": "Uso Aceitável",
@@ -419,7 +420,7 @@
       },
       "contact": {
         "title": "Contato",
-        "body": "Se você tiver alguma dúvida sobre estes Termos e Condições, entre em contato conosco através de uma issue no nosso GitHub: <link>{url}</link>."
+        "body": "Se você tiver alguma dúvida sobre estes Termos e Condições, entre em contato conosco pelo e-mail <email>{address}</email>."
       },
       "general": {
         "title": "Disposições Gerais",
