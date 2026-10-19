@@ -81,8 +81,12 @@ test.describe('public profile owner view', () => {
     await expect(editProfile(page)).toBeVisible();
     const heading = page.getByRole('heading', { level: 1 });
 
-    expect((await share.boundingBox())?.y).toBe(visitorShare?.y);
-    expect((await heading.boundingBox())?.y).toBe(visitorHeading?.y);
+    const ownerShare = await share.boundingBox();
+    const ownerHeading = await heading.boundingBox();
+    expect(visitorShare).not.toBeNull();
+    expect(visitorHeading).not.toBeNull();
+    expect(ownerShare?.y).toBe(visitorShare?.y);
+    expect(ownerHeading?.y).toBe(visitorHeading?.y);
   });
 
   test('the owner view fits a 360px screen, light and dark', async ({

@@ -13,7 +13,8 @@ import { PRACTICE_HISTORY_PAGE_SIZE } from './practice-history-page-size';
 
 /**
  * The first page of a Profile's history, read on each request: runs change as
- * soon as a User practices, so the history is not cached. `undefined` when the
+ * soon as a User practices, so the history is not cached across requests (the
+ * `cache()` only shares one render's read). `undefined` when the
  * API cannot answer, so the list falls back to a browser request and says so
  * in place rather than failing the Profile. `null` when the owner hid the
  * section from visitors, which the section then leaves out.

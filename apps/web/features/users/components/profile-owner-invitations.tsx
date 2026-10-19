@@ -18,7 +18,11 @@ export async function ProfileOwnerInvitations({
   username: string;
 }) {
   const [favorites, history] = await Promise.all([
-    getPublicFavoritesPage(username).catch(() => undefined),
+    getPublicFavoritesPage(username).catch((error: unknown) => {
+      // Logged, so an outage is visible, as the favorites section does.
+      console.error(`Favorite songs of ${username} could not be read`, error);
+      return undefined;
+    }),
     getPracticeHistoryFirstPage(username),
   ]);
   const sections = invitedSections({
