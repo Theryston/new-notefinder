@@ -27,6 +27,16 @@ test.describe('public profile page', () => {
     await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
   });
 
+  test('stays up with a notice when the API fails', async ({ page }) => {
+    const response = await page.goto('/en/users/broken');
+
+    expect(response?.status()).toBe(200);
+    await expect(
+      page.getByRole('heading', { name: 'Profile unavailable' }),
+    ).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
   test('redirects a mixed-case username with 308, keeping the query', async ({
     request,
     baseURL,

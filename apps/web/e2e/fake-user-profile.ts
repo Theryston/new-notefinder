@@ -37,6 +37,15 @@ async function serveUserProfile(
 ): Promise<void> {
   const username = decodeURIComponent(pathname.slice('/v1/users/'.length));
   const normalized = username.toLowerCase();
+  if (normalized === 'broken') {
+    json(
+      response,
+      500,
+      { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Broken on purpose' },
+      request,
+    );
+    return;
+  }
   const profile = profiles.get(normalized);
   if (!profile) {
     json(

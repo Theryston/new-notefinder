@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
+import { NoticeMessage } from '@/components/notice-message';
 import { ProfileBanner } from '@/features/users/components/profile-banner';
 import { getPublicProfile } from '@/features/users/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
@@ -25,12 +26,13 @@ export async function generateMetadata({
   params: Promise<UserRouteParams>;
 }): Promise<Metadata> {
   const { locale, username } = await params;
-  const profile = await getPublicProfile(username);
+  const t = await getTranslations('publicProfile');
+  const profile = await getPublicProfile(username).catch(() => undefined);
   if (!profile) {
-    // No metadata of their own; the proxy answers unknown usernames first.
+    // Nothing to describe: the layout's site metadata applies. The API being
+    // unreachable is the same here, and the page says so in its body.
     return {};
   }
-  const t = await getTranslations('publicProfile');
   return {
     title: t('metaTitle', { name: profile.name }),
     description: t('metaDescription', { name: profile.name }),
@@ -42,6 +44,8 @@ export async function generateMetadata({
  * Thin Profile route: reads the username, then renders the banner of the
  * cached public Profile. A mixed-case username permanently redirects (308)
  * to the lowercase path, keeping the query; an unknown one is a real 404.
+ * When the API cannot be reached, the page stays up and says so in place
+ * rather than failing the whole document.
  */
 export default async function UserProfilePage({
   params,
@@ -56,7 +60,10 @@ export default async function UserProfilePage({
       `/${locale}/users/${encodeURIComponent(username.toLowerCase())}${queryStringOf(await searchParams)}`,
     );
   }
-  const profile = await getPublicProfile(username);
+  const profile = await getPublicProfile(username).catch(() => undefined);
+  if (profile === undefined) {
+    return <ProfileUnavailable />;
+  }
   if (!profile) {
     notFound();
   }
@@ -64,5 +71,15 @@ export default async function UserProfilePage({
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
     </div>
+  );
+}
+
+async function ProfileUnavailable() {
+  const t = await getTranslations('publicProfile');
+  return (
+    <NoticeMessage
+      title={t('unavailable.title')}
+      description={t('unavailable.description')}
+    />
   );
 }

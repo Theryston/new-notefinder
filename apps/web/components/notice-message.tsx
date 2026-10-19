@@ -1,8 +1,8 @@
 /**
- * The translated body of a 404 for one entity (an artist, a Profile): a
- * heading and an explanation, centered under the site header.
+ * A translated heading and explanation for one entity (an artist or a
+ * Profile) that is missing or cannot be loaded, centered under the header.
  */
-export function NotFoundNotice({
+export function NoticeMessage({
   title,
   description,
 }: {

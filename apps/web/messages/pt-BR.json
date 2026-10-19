@@ -781,6 +781,10 @@
     "notFound": {
       "title": "Perfil não encontrado",
       "description": "Não encontramos este perfil. Ele pode ter sido removido ou o link está errado."
+    },
+    "unavailable": {
+      "title": "Perfil indisponível",
+      "description": "Não foi possível carregar este perfil agora. Tente novamente em instantes."
     }
   }
 }
