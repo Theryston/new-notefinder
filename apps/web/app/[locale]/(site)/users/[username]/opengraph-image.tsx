@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { initials } from '@/features/auth/initials';
 import { loadProfileOgAvatar } from '@/features/users/og/profile-og-avatar';
 import { profileOgCard } from '@/features/users/og/profile-og-card';
+import { loadProfileOgFonts } from '@/features/users/og/profile-og-fonts';
 import {
   PROFILE_OG_HEIGHT,
   PROFILE_OG_WIDTH,
@@ -38,9 +39,10 @@ export default async function ProfileOgImage({
     return new Response('Not found', { status: 404 });
   }
 
-  const [{ messages }, avatar] = await Promise.all([
+  const [{ messages }, avatar, fonts] = await Promise.all([
     profileChipCopy(locale),
     loadProfileOgAvatar(source.image),
+    loadProfileOgFonts(),
   ]);
   const card = profileOgCard({
     source,
@@ -52,6 +54,7 @@ export default async function ProfileOgImage({
   return new ImageResponse(profileOgImage(card), {
     width: PROFILE_OG_WIDTH,
     height: PROFILE_OG_HEIGHT,
+    fonts,
     headers: {
       'Cache-Control':
         'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',

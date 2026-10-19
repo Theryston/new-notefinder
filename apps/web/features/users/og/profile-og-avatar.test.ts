@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 
 import { loadProfileOgAvatar } from './profile-og-avatar';
@@ -6,7 +7,10 @@ vi.mock('server-only', () => ({}));
 
 const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00];
 const JPEG = [0xff, 0xd8, 0xff, 0xe0, 0x00];
-const WEBP = [0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00];
+// A RIFF container that is not WebP (a WAV header): the form type is WAVE.
+const WAV = [
+  0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45,
+];
 
 const picture = (bytes: number[], init?: ResponseInit) =>
   new Response(new Uint8Array(bytes), init);
@@ -41,8 +45,37 @@ describe('loadProfileOgAvatar', () => {
     ).resolves.toMatch(/^data:image\/jpeg;base64,/);
   });
 
-  it('leaves formats the image cannot draw (WebP) to the initials', async () => {
-    const fetchFn = vi.fn<typeof fetch>().mockResolvedValueOnce(picture(WEBP));
+  it('re-encodes a WebP as a PNG, the format the image renderer draws', async () => {
+    const webp = await sharp({
+      create: { width: 8, height: 8, channels: 3, background: '#00ff00' },
+    })
+      .webp()
+      .toBuffer();
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(picture([...webp]));
+
+    await expect(
+      loadProfileOgAvatar('https://images.example.com/a', fetchFn),
+    ).resolves.toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('leaves a RIFF file that is not WebP to the initials', async () => {
+    const fetchFn = vi.fn<typeof fetch>().mockResolvedValueOnce(picture(WAV));
+
+    await expect(
+      loadProfileOgAvatar('https://images.example.com/a', fetchFn),
+    ).resolves.toBeUndefined();
+  });
+
+  it('leaves a WebP that cannot be decoded to the initials', async () => {
+    const broken = [
+      0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+      0x00,
+    ];
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(picture(broken));
 
     await expect(
       loadProfileOgAvatar('https://images.example.com/a', fetchFn),

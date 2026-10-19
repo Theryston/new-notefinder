@@ -1,5 +1,7 @@
 import 'server-only';
 
+import sharp from 'sharp';
+
 /**
  * How long the preview waits for the Avatar before drawing the initials
  * instead: a slow photo host must not hold up the crawler.
@@ -10,21 +12,60 @@ const AVATAR_TIMEOUT_MS = 3000;
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 /**
- * The magic numbers of the two formats the image renderer draws (PNG and
- * JPEG). WebP, the other Avatar format, is left to the initials: the renderer
- * does not read it.
+ * The magic numbers of the formats the Avatar can be in. The image renderer
+ * draws only PNG and JPEG, so an uploaded WebP (the stored format, see
+ * `apps/api` avatar-image.ts) is decoded and re-encoded as PNG first.
  */
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47];
 const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
+const WEBP_RIFF_SIGNATURE = [0x52, 0x49, 0x46, 0x46];
+const WEBP_FORM_SIGNATURE = [0x57, 0x45, 0x42, 0x50];
+const WEBP_FORM_OFFSET = 8;
 
-function mimeTypeOf(bytes: Uint8Array): 'image/png' | 'image/jpeg' | undefined {
+/**
+ * Same cap as the API's decoder: a small file can declare a huge canvas, and
+ * decoding takes memory in proportion to the pixels.
+ */
+const MAX_AVATAR_PIXELS = 50_000_000;
+
+type Format = 'image/png' | 'image/jpeg' | 'image/webp';
+
+function formatOf(bytes: Uint8Array): Format | undefined {
   if (startsWith(bytes, PNG_SIGNATURE)) return 'image/png';
   if (startsWith(bytes, JPEG_SIGNATURE)) return 'image/jpeg';
+  if (
+    startsWith(bytes, WEBP_RIFF_SIGNATURE) &&
+    startsWith(bytes, WEBP_FORM_SIGNATURE, WEBP_FORM_OFFSET)
+  ) {
+    return 'image/webp';
+  }
   return undefined;
 }
 
-function startsWith(bytes: Uint8Array, signature: number[]): boolean {
-  return signature.every((byte, index) => bytes[index] === byte);
+function startsWith(
+  bytes: Uint8Array,
+  signature: number[],
+  offset = 0,
+): boolean {
+  return signature.every((byte, index) => bytes[offset + index] === byte);
+}
+
+/**
+ * The picture in a format the renderer draws, as a PNG when it is WebP.
+ * `undefined` when it is neither (the initials are drawn instead).
+ */
+async function drawable(
+  bytes: Uint8Array,
+): Promise<{ mimeType: 'image/png' | 'image/jpeg'; data: Buffer } | undefined> {
+  const format = formatOf(bytes);
+  if (format === undefined) return undefined;
+  if (format === 'image/webp') {
+    const data = await sharp(bytes, { limitInputPixels: MAX_AVATAR_PIXELS })
+      .png()
+      .toBuffer();
+    return { mimeType: 'image/png', data };
+  }
+  return { mimeType: format, data: Buffer.from(bytes) };
 }
 
 /**
@@ -86,11 +127,11 @@ export async function loadProfileOgAvatar(
     if (bytes === undefined) {
       return undefined;
     }
-    const mimeType = mimeTypeOf(bytes);
-    if (mimeType === undefined) {
+    const picture = await drawable(bytes);
+    if (picture === undefined) {
       return undefined;
     }
-    return `data:${mimeType};base64,${Buffer.from(bytes).toString('base64')}`;
+    return `data:${picture.mimeType};base64,${picture.data.toString('base64')}`;
   } catch {
     return undefined;
   }

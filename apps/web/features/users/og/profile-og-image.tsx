@@ -14,8 +14,8 @@ export const PROFILE_OG_HEIGHT = 630;
  * written out here because the image renderer cannot read CSS variables, so a
  * change to the token has to be made here too.
  *
- * The typeface is the renderer's bundled Noto Sans, not the site's Figtree, on
- * purpose: shipping a font binary just for previews is not worth it.
+ * The typeface is the site's Figtree (`profile-og-fonts.ts`), so the card's
+ * weights match the page's.
  */
 const CARD_BACKGROUND = '#FA4900';
 const CARD_TEXT = '#FFFFFF';
