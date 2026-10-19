@@ -771,6 +771,28 @@
     "metaTitle": "Página não encontrada",
     "metaDescription": "A página que você procura não existe ou foi movida."
   },
+  "share": {
+    "profile": {
+      "open": "Compartilhar",
+      "close": "Fechar",
+      "title": "Compartilhar perfil",
+      "description": "Envie o perfil de {name} para quem canta.",
+      "link": "Link para compartilhar",
+      "copy": "Copiar link",
+      "copied": "Link copiado",
+      "copyFailed": "Não conseguimos copiar o link. Selecione-o e copie manualmente.",
+      "networks": "Compartilhar em",
+      "text": "Veja o perfil de {name} no NoteFinder",
+      "subject": "Perfil de {name} no NoteFinder",
+      "network": {
+        "whatsapp": "WhatsApp",
+        "telegram": "Telegram",
+        "x": "X",
+        "facebook": "Facebook",
+        "email": "E-mail"
+      }
+    }
+  },
   "publicProfile": {
     "metaTitle": "{name}",
     "metaDescription": "O perfil de {name} no NoteFinder.",
