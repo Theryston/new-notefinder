@@ -55,3 +55,12 @@ export const json = (
   });
   response.end(JSON.stringify(body));
 };
+
+/** Whether a route's path pattern (`*`, a path or a matcher) accepts `pathname`. */
+export const matchesPath = (
+  pattern: string | ((pathname: string) => boolean),
+  pathname: string,
+): boolean =>
+  typeof pattern === 'function'
+    ? pattern(pathname)
+    : pattern === '*' || pattern === pathname;

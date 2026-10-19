@@ -105,7 +105,7 @@ export function entityRedirectUrl(
   return url;
 }
 
-type EntityRouteVerdict =
+export type EntityRouteVerdict =
   /** A 200 or anything unexpected: let the page render (fail open). */
   | { kind: 'pass' }
   /** A legacy ID: permanent redirect to the new ID. */
@@ -148,7 +148,7 @@ type EntityCheckFetch = (
  * is a `pass`, so the page renders its own outcome instead of a wrong redirect
  * or 404. The fetch is injectable for tests.
  */
-async function verdictForPath(
+export async function verdictForPath(
   apiUrl: string,
   path: string,
   fetchFn: EntityCheckFetch,

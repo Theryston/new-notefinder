@@ -41,7 +41,7 @@ export const legacyRoutes: LegacyRoute[] = [
   },
   { path: '/artists/clx456def', implemented: true },
   { path: '/albums/clx789ghi', implemented: true },
-  { path: '/users/john.doe', implemented: false },
+  { path: '/users/ada_lovelace', implemented: true },
   { path: '/me/edit', implemented: true },
   { path: '/sign-in?redirectTo=/me/edit', implemented: true },
   { path: '/sign-up?redirectTo=/tracks/clx123abc', implemented: true },

@@ -8,6 +8,12 @@ import {
 import { getServerEnv } from '@/lib/env/server';
 import { detectLocale } from '@/lib/i18n/detect-locale';
 import { isLocale, localeCookieName } from '@/lib/i18n/routing';
+import {
+  fetchUserProfileVerdict,
+  needsLowercaseRedirect,
+  parseUserProfileRoute,
+  userProfileRedirectUrl,
+} from '@/lib/user-profile-route';
 
 /**
  * Guards `/<locale>/artists/<id>`, `/<locale>/albums/<id>` and
@@ -48,6 +54,35 @@ async function checkCatalogRoute(
 }
 
 /**
+ * Guards `/<locale>/users/<username>`: a mixed-case username permanently
+ * redirects (308) to its lowercase form, and an unknown username is a real
+ * 404, decided here for the same reason as the catalog routes above.
+ */
+async function checkUserProfileRoute(
+  request: NextRequest,
+): Promise<NextResponse | undefined> {
+  const route = parseUserProfileRoute(request.nextUrl.pathname);
+  if (!route) return undefined;
+  if (needsLowercaseRedirect(route.username)) {
+    return NextResponse.redirect(
+      userProfileRedirectUrl(request.nextUrl.href, route.username),
+      308,
+    );
+  }
+  let apiUrl: string;
+  try {
+    apiUrl = getServerEnv().API_URL;
+  } catch {
+    return undefined;
+  }
+  const verdict = await fetchUserProfileVerdict(apiUrl, route.username);
+  if (verdict.kind === 'missing') {
+    return NextResponse.rewrite(new URL('/_not-found', request.url));
+  }
+  return undefined;
+}
+
+/**
  * Redirects every path without a locale prefix (including legacy URLs like
  * `/tracks/abc?x=1`) to the visitor's locale, keeping path and query.
  *
@@ -63,7 +98,11 @@ export async function proxy(request: NextRequest) {
   // A URL that already has a locale is always respected.
   if (isLocale(firstSegment)) {
     // Catalog IDs need a verdict before anything streams (see above).
-    return (await checkCatalogRoute(request)) ?? NextResponse.next();
+    return (
+      (await checkCatalogRoute(request)) ??
+      (await checkUserProfileRoute(request)) ??
+      NextResponse.next()
+    );
   }
 
   const locale = detectLocale({

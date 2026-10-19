@@ -22,6 +22,8 @@ module.exports = {
         `http://localhost:${port}/pt-BR/terms`,
         `http://localhost:${port}/en/search?q=queen`,
         `http://localhost:${port}/pt-BR/search?q=queen`,
+        `http://localhost:${port}/en/users/ada_lovelace`,
+        `http://localhost:${port}/pt-BR/users/ada_lovelace`,
       ],
       // The median of 3 runs smooths out noise on shared CI runners.
       numberOfRuns: 3,
