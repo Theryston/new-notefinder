@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type {
   BestPracticeScores,
+  MostSungArtist,
   PracticeAttempt,
   PracticeAttemptPage,
   SubmitPracticeAttemptBody,
+  TrackVocalRange,
 } from '@notefinder/contracts';
 import { practiceSpeedSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
@@ -11,12 +13,18 @@ import { TracksService } from '../tracks/tracks.service.js';
 import type {
   NewPracticeAttempt,
   PracticeAttemptRow,
+  ProfileAttemptRow,
 } from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import {
   decodeOwnAttemptCursor,
   encodeOwnAttemptCursor,
 } from './own-attempt-cursor.js';
+import {
+  deriveMostSungArtist,
+  deriveVocalRange,
+  type ProfileAttempt,
+} from './profile-chips.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
@@ -43,6 +51,36 @@ const noScores: BestPracticeScores = {
   EASY: null,
   NORMAL: null,
   HARD: null,
+};
+
+/** One entry per attempt, with the artists its Track credits. */
+const groupProfileAttempts = (
+  rows: readonly ProfileAttemptRow[],
+): ProfileAttempt[] => {
+  const byAttempt = new Map<string, ProfileAttempt>();
+  for (const row of rows) {
+    const attempt = byAttempt.get(row.attemptId) ?? {
+      transposeSemitones: row.transposeSemitones,
+      accuracy: row.accuracy,
+      forwardSkip: row.forwardSkip,
+      bleedSuspected: row.bleedSuspected,
+      createdAt: row.createdAt,
+      trackVocalRange:
+        row.trackVocalRangeLowest === null ||
+        row.trackVocalRangeHighest === null
+          ? null
+          : {
+              lowest: row.trackVocalRangeLowest,
+              highest: row.trackVocalRangeHighest,
+            },
+      artists: [],
+    };
+    if (row.artistId !== null && row.artistName !== null) {
+      attempt.artists.push({ id: row.artistId, name: row.artistName });
+    }
+    byAttempt.set(row.attemptId, attempt);
+  }
+  return [...byAttempt.values()];
 };
 
 /**
@@ -110,6 +148,23 @@ export class AttemptsService {
       scores[row.difficulty] = row.accuracy;
     }
     return scores;
+  }
+
+  /**
+   * The two Profile chips a User's attempts decide, each `null` when no
+   * attempt qualifies (see `profile-chips.ts` for the rules).
+   */
+  async profileChips(userId: string): Promise<{
+    vocalRange: TrackVocalRange | null;
+    mostSungArtist: MostSungArtist | null;
+  }> {
+    const attempts = groupProfileAttempts(
+      await this.attempts.listProfileAttempts(userId),
+    );
+    return {
+      vocalRange: deriveVocalRange(attempts),
+      mostSungArtist: deriveMostSungArtist(attempts),
+    };
   }
 
   /** The signed-in User's own attempts, newest first. */

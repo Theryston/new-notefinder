@@ -31,6 +31,23 @@ The public page of a User, addressed by their Username, showing their Name
 and Avatar.
 _Avoid_: Account page, user page
 
+**Vocal range of a User**:
+The lowest and highest notes a User sings, across the Tracks they practiced
+with an accurate run (at least 85%, no forward skip, no suspected bleed), each
+run transposed by its semitones. Distinct from the Vocal range of a Track.
+_Avoid_: Tessitura of a User, voice type
+
+**Attempt**:
+A saved practice run of a User on a Track, scored by the Practice page: its
+accuracy, coverage, transposition and speed. A suspected bleed marks one the
+mic may have heard the music in.
+_Avoid_: Run, session, take
+
+**Most sung artist**:
+The Artist a User has the most valid Attempts on, over all time; ties go to the
+one whose latest Attempt is newer. Shown as a chip on the Profile banner.
+_Avoid_: Favorite artist, top artist
+
 ### Music catalog
 
 **Music catalog**:

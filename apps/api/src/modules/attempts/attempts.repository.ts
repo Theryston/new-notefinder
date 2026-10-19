@@ -2,16 +2,36 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
+import { artists, trackArtists } from '../../database/schema/artists.js';
 import {
   practiceAttempts,
   type practiceDifficulty,
 } from '../../database/schema/practice-attempts.js';
+import { tracks } from '../../database/schema/tracks.js';
 import type { OwnAttemptCursor } from './own-attempt-cursor.js';
 
 type Difficulty = (typeof practiceDifficulty.enumValues)[number];
 
 /** A saved practice run, as the database keeps it. */
 export type PracticeAttemptRow = typeof practiceAttempts.$inferSelect;
+
+/**
+ * One artist credited on the Track of an attempt. An attempt on a Track with
+ * several artists comes back once per artist, so the service regroups them.
+ * `artistId` is null for a Track no artist is linked to yet.
+ */
+export type ProfileAttemptRow = {
+  attemptId: string;
+  transposeSemitones: number;
+  accuracy: number;
+  forwardSkip: boolean;
+  bleedSuspected: boolean;
+  createdAt: Date;
+  trackVocalRangeLowest: number | null;
+  trackVocalRangeHighest: number | null;
+  artistId: string | null;
+  artistName: string | null;
+};
 
 /** The fields of a run the page scored, with its owner and Track. */
 export type NewPracticeAttempt = {
@@ -63,6 +83,31 @@ export class AttemptsRepository {
         ),
       )
       .groupBy(practiceAttempts.difficulty);
+  }
+
+  /**
+   * Every attempt of the User with its Track's vocal range and artists, for
+   * the Profile chips. Unordered: the rules are order-independent.
+   */
+  listProfileAttempts(userId: string): Promise<ProfileAttemptRow[]> {
+    return this.txHost.tx
+      .select({
+        attemptId: practiceAttempts.id,
+        transposeSemitones: practiceAttempts.transposeSemitones,
+        accuracy: practiceAttempts.accuracy,
+        forwardSkip: practiceAttempts.forwardSkip,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        createdAt: practiceAttempts.createdAt,
+        trackVocalRangeLowest: tracks.vocalRangeLowest,
+        trackVocalRangeHighest: tracks.vocalRangeHighest,
+        artistId: artists.id,
+        artistName: artists.name,
+      })
+      .from(practiceAttempts)
+      .innerJoin(tracks, eq(tracks.id, practiceAttempts.trackId))
+      .leftJoin(trackArtists, eq(trackArtists.trackId, tracks.id))
+      .leftJoin(artists, eq(artists.id, trackArtists.artistId))
+      .where(eq(practiceAttempts.userId, userId));
   }
 
   /** Up to `limit` attempts of the User after the cursor, newest first. */
