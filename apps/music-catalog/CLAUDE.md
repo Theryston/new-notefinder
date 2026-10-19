@@ -3,29 +3,27 @@
 Read the root `CLAUDE.md` first; this file only adds this app's rules.
 
 The **Music catalog** is a private, autonomous service that will hold every
-**Recording** in the world (kept in sync with MusicBrainz, plus open
-**Lyrics**), searchable in milliseconds. Internal clients (the API today,
-others later) talk to it over one long-lived, authenticated **WebSocket**.
-The full design is in the parent spec, issue #55; this file documents what
-exists.
+**Recording** in the world (kept in sync with MusicBrainz), searchable in
+milliseconds. It holds no Lyrics (ADR 0010). Internal clients (the API today,
+others later) talk to it over one long-lived, authenticated **WebSocket**. The
+full design is in the parent spec, issue #55; this file documents what exists.
 
 **What exists today**: the whole service. The authenticated WebSocket server
 answering `status`, `getRecording` and `search` (issues #57, #59 and #58), the
 protocol envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint, the recording outbox, the replication state, the reimport state
-and the kept Lyrics), read-only declarations of the MusicBrainz tables the
-queries read, **Meilisearch** as the search engine behind a small integration,
-the `server` and `worker` entrypoints (the worker indexes every Recording once
-the MusicBrainz data is laid down, then keeps the index in sync with it
-through the outbox), the **first import** (issue #60, datasets reworked in
+checkpoint, the recording outbox, the replication state, the reimport state),
+read-only declarations of the MusicBrainz tables the queries read,
+**Meilisearch** as the search engine behind a small integration, the `server`
+and `worker` entrypoints (the worker indexes every Recording once the
+MusicBrainz data is laid down, then keeps the index in sync with it through the
+outbox), the **first import** (issue #60, datasets reworked in
 #85: the mbslave container lays down `tiny` or `full` and records
 `restoring`/`restored`), **continuous replication** (issue #62: in `full` mode
 the same container keeps applying replication packets after the catalog is
-`ready`, records the sequence and reports it in `status`), the **Lyrics** from
-LRCLIB (issues #63 and #64: the import, the strict match, the refresh and the
-lookup for new Recordings), the **yearly schema-change reimport** (issue #69:
-a CI job proposes the mbslave bump, then the service rebuilds the catalog
-into a parallel copy with zero downtime), the **production deploy** (issue
+`ready`, records the sequence and reports it in `status`), the **yearly
+schema-change reimport** (issue #69: a CI job proposes the mbslave bump, then
+the service rebuilds the catalog into a parallel copy with zero downtime), the
+**production deploy** (issue
 #65: the two images CI publishes to GHCR and the single compose with Caddy in
 `deploy/`, operated as "Operations (production)" below) and the test and
 quality setup. `search` returns results in **Meilisearch's relevance order**,
@@ -94,15 +92,10 @@ src/
   errors/                 CatalogError: an expected failure with a protocol error code;
                           missing-entity-error.ts: the NOT_FOUND / MOVED pair of an MBID
   lib/                    small pure helpers shared by modules (text comparison, cover art URL,
-                          grouping) and the definition of the recordings index
-                          (`recordings-index.ts`) and of the lyrics index
-                          (`lyrics-index.ts`)
+                          grouping) and the definition of the recordings index (`recordings-index.ts`)
   integrations/
     meilisearch/          MeilisearchIndex: the only code that imports the Meilisearch SDK
     mbslave/              MbslaveClient: the only code that spawns the mbslave binary
-    lrclib/               the LRCLIB dump: download + stream-gunzip, open + schema
-                          check + track/Lyrics reads, the public API client and
-                          the fake-dump generator
   database/
     database.ts           pg pool + Drizzle client
     schema/               one file per table (music-catalog-schema.ts holds the pgSchema)
@@ -162,18 +155,6 @@ src/
       replication.service.ts      the mbslave container's loop: wait for ready, sync, record, sleep
       replication.repository.ts   our copy of the applied sequence + mbslave's cursor
       replication-token.ts        the full-mode token requirement (pure)
-    lyrics/
-      lyrics-import.service.ts  the worker's LRCLIB import: dump, two-pass match, copy
-      lyrics-refresh.service.ts the worker's LRCLIB refresh: newer dumps, changed Lyrics only
-      lyrics-refresh.repository.ts  the checked and imported dump keys
-      lyrics-lookup.service.ts  the worker's outbox lookup: Lyrics for new
-                                Recordings from LRCLIB's public API
-      match-batch.ts            pass one of the two-pass match, shared by the
-                                import and the refresh (pure)
-      lyrics.service.ts         the kept Lyrics' documents (for indexing); the
-                                only way other modules use Lyrics
-      lyrics.repository.ts      the Recordings for matching, the kept Lyrics
-      match-lyrics.ts           the strict match: normalization, ±2 s, album tie-break (pure)
     sync/
       sync.service.ts             the worker's continuous sync: triggers, outbox drain
       sync-plan.ts                outbox entries + current rows -> index writes (pure)
@@ -366,9 +347,7 @@ integer ids of MusicBrainz are internal and never leave the service.
   3. When no level has any tag, `tagsSource` is null and both lists are empty.
 
   The rule is in `genre-fallback.ts`.
-- The Recording carries **no Lyrics**: `getRecording` does not read them
-  (the Lyrics only feed the `lyrics` index, see "Lyrics (LRCLIB)"; the
-  `lyrics` field was removed from the protocol, issue #308).
+- The Recording carries no Lyrics: the catalog holds none (ADR 0010).
 - Loading: the service reads the parts in parallel (one query each, all in
   `RecordingRepository`) and
   `assembleRecording` builds the answer without any I/O; the rules above live
@@ -376,9 +355,9 @@ integer ids of MusicBrainz are internal and never leave the service.
 
 ## `search`
 
-Payload `{ query, limit?, offset? }`. Search finds Recordings by metadata
-only: the `recordings` index, never the Lyrics. A `scope` sent by an older
-client is ignored (the payload schema drops unknown fields).
+Payload `{ query, limit?, offset? }`. Search finds Recordings by metadata only,
+in the `recordings` index. A `scope` sent by an older client is ignored (the
+payload schema drops unknown fields).
 
 - `query`: text, trimmed, 1 to 256 characters (`SEARCH_MAX_QUERY_LENGTH`).
   Anything else, blanks included, is `VALIDATION_FAILED`.
@@ -506,27 +485,24 @@ network; `full` restores through `mbslave import <urls>`
 - `tiny`: the same mbslave schema scripts plus a small slice of the **real**
   MusicBrainz catalog, written with plain SQL (`tiny-seed.ts` +
   `TinySeedRepository`, no Drizzle tables, so a wrong column there fails the
-  suite instead of passing twice): ten albums (Queen, Adele, Coldplay,
-  Elis & Tom, Legião Urbana, Michael Jackson and a bootleg without art),
-  Ed Sheeran's single "Boat", their artists and aliases, about 110 Recordings
-  with ISRCs, release groups with
-  tags and genres, releases with their events, media and tracks. Every MBID is
-  the real one, so the Cover Art Archive URLs built from a release MBID load,
-  an MBID resolves on musicbrainz.org and the Lyrics LRCLIB knows match. The
-  data lives in `tiny-seed-data.json`, checked against a Zod schema on load;
-  it was collected once from the MusicBrainz web service (one release per
-  release group, the earliest official one with a front cover) and is
-  committed, so a restore never touches the network. It covers the cases the
-  UI needs: a Recording on two albums, a two-artist credit, a named second
-  disc, an album with no cover, type or genres. Development mode, seeded in
-  seconds, a few MB of database and index. The Lyrics import builds its dump
-  from exactly these Recordings (see `LRCLIB_TINY_SOURCE` under "Lyrics").
-  There is no replication in this mode: the seed writes no
+  suite instead of passing twice): ten albums (Queen, Adele, Coldplay, Elis &
+  Tom, Legião Urbana, Michael Jackson and a bootleg without art), Ed Sheeran's
+  single "Boat", their artists and aliases, about 110 Recordings with ISRCs,
+  release groups with tags and genres, releases with their events, media and
+  tracks. Every MBID is the real one, so the Cover Art Archive URLs built from a
+  release MBID load, an MBID resolves on musicbrainz.org. The data lives in
+  `tiny-seed-data.json`, checked against a Zod schema on load; it was collected
+  once from the MusicBrainz web service (one release per release group, the
+  earliest official one with a front cover) and is committed, so a restore never
+  touches the network. It covers the cases the UI needs: a Recording on two
+  albums, a two-artist credit, a named second disc, an album with no cover, type
+  or genres. Development mode, seeded in seconds, a few MB of database and
+  index. There is no replication in this mode: the seed writes no
   `replication_control` row, so the replication worker stays off.
-- `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2`
-  under `<base>/fullexport/`), no edit history. Production mode: about
-  150-220 GB steady state (see ADR 0002). Only `full` runs replication
-  (MetaBrainz token required) and only matched Lyrics are kept there.
+- `full`: core plus derived (`mbdump.tar.bz2` + `mbdump-derived.tar.bz2` under
+  `<base>/fullexport/`), no edit history. Production mode: about 150-220 GB
+  steady state (see ADR 0002). Only `full` runs replication (MetaBrainz token
+  required).
 
 The dev loop runs on `tiny` (`nub run infra:up`, then `dev`): every search,
 and `getRecording` work end to end against it. Verify
@@ -586,109 +562,26 @@ come from env; version pinned to a stable v1.x in the dev compose
   benchmark's recall came from them; do not tune them here), so a typo in a
   word of 5 letters or more, or a last word cut short while typing, still
   finds the Recording.
-- **`lyrics` index**, primary key `mbid` (the Recording's MBID). One document
-  per Recording with kept Lyrics (`LyricsDocument`, `src/lib/lyrics-index.ts`):
-  a single `lyrics` text, the plain Lyrics when known, else the synced lines
-  without their LRC timestamps. The worker keeps it up to date, but no search
-  queries it: search was made metadata-only (issue #307), and the index
-  is removed in a follow-up ticket.
-- **Indexing flow** (`IndexingService.run`, one worker tick): while the phase
-  is `restoring` or there is no bootstrap row, nothing happens. On `restored`
-  the worker records `indexing`, applies the settings **of both indexes**, and
-  walks the
+- **Indexing flow** (`IndexingService.run`, one worker tick): while the phase is
+  `restoring` or there is no bootstrap row, nothing happens. On `restored` the
+  worker records `indexing`, applies the index settings, and walks the
   Recordings by MusicBrainz's integer id, `INDEXING_BATCH_SIZE` at a time
   (default 2000): read the batch's documents (one query per kind of data per
   batch, not per Recording), send them, **wait for the Meilisearch task**, then
-  write the checkpoint (`music_catalog.indexing_checkpoint`, one row per
-  index). The kept Lyrics of the batch go to the `lyrics` index with it
-  (replacing documents by MBID is idempotent, so they need no checkpoint of
-  their own). When no Recording is left it records `ready`. A worker that dies or
-  is restarted in the middle resumes after the checkpoint (a batch that was
-  sent but not checkpointed is sent again, which replaces the same documents);
-  a task that fails throws, the loop logs it and the next tick resumes. Aborting
-  the worker's signal stops it after the batch in progress. Every tick drains
-  the outbox first (a no-op until `ready`), imports the Lyrics (below, a
-  no-op once `ready`), then runs the initial indexing (a no-op once `ready`).
+  write the checkpoint (`music_catalog.indexing_checkpoint`, one row per index).
+  When no Recording is left it records `ready`. A worker that dies or is
+  restarted in the middle resumes after the checkpoint (a batch that was sent
+  but not checkpointed is sent again, which replaces the same documents); a task
+  that fails throws, the loop logs it and the next tick resumes. Aborting the
+  worker's signal stops it after the batch in progress. Every tick drains the
+  outbox first (a no-op until `ready`), then runs the initial indexing (a no-op
+  once `ready`).
 
-## Lyrics (LRCLIB)
+## No Lyrics
 
-Lyrics come from the open **LRCLIB** dump (CC0): one `.sqlite3.gz` (about
-48 GB, about 260 GB unpacked) published by hand every few weeks to months,
-only the latest kept online, no checksum, no incremental form, listing at an
-undocumented endpoint (see the spike, `docs/research/music-catalog-spike.md`
-section 5). The worker imports it once per bootstrap, during the `indexing`
-phase (`LyricsImportService.importOnce`, between the outbox drain and the
-indexing run); refreshing it from a newer dump later is the refresh ticket's
-job, not this import's.
-
-- **Source per dataset.** In `full` the worker reads the latest key from
-  `LRCLIB_LISTING_URL`, downloads `${LRCLIB_BASE_URL}/${key}` and gunzips it
-  **as a stream** straight to its SQLite file: the `.gz` is never kept
-  (about 260 GB of temp disk, deleted after the import). In `tiny` nothing
-  is downloaded. `LRCLIB_TINY_SOURCE` picks the source: `api` (the dev
-  `.env.example`) asks LRCLIB's public API for the real Lyrics of each seeded
-  Recording (`api-lrclib-dump.ts`, a second apart, about two minutes the first
-  time, one row per answer carrying LRCLIB's own metadata, so the strict
-  match below decides for real); `fake` (the default, what the tests use)
-  is a deterministic, seeded generator
-  (`src/integrations/lrclib/fake-lrclib-dump.ts`) that writes an SQLite file
-  in the **real LRCLIB schema** from the seeded Recordings, with
-  placeholder plain and synced Lyrics. It deliberately includes near-misses
-  that must **not** match: a length just outside ±2 s, "(Live)" and remix
-  titles, and an album tie on other albums. The same generator builds the e2e
-  fixture served over HTTP, and the import and match code is identical for
-  fake and real dumps.
-- **Schema check.** The importer checks the dump right after opening it
-  (`assertLrclibSchema`) and fails with an `LrclibSchemaError` naming the
-  missing table or column when it drifted, so a stale fake cannot hide a real
-  schema change. A failed import is logged (`LRCLIB import failed, continuing
-  without Lyrics`) and the catalog still becomes `ready`: a bad dump must
-  never hold the catalog back.
-- **Two-pass import.** Pass one matches Recordings against the dump's
-  lightweight track metadata (`tracks`: title, artist, album, duration)
-  without reading Lyrics: it looks tracks up by both the raw-lowercase and
-  the normalized title/artist (the dump's `_lower` columns may hold either
-  spelling upstream), and the strict match below decides; pass two reads
-  `lyrics` only for the matched track ids and copies them into our
-  `music_catalog.recording_lyrics` (keyed by
-  MBID). Unmatched Lyrics never reach our schema. The temp file is deleted
-  afterwards.
-- **Strict matching** (`matchLrclibTrack`, unit-spec'd): the normalized title
-  **and** artist must be equal (normalization is lowercase without accents or
-  punctuation, `normalizeLyricsText`, so a "(Live)" or remix title never
-  matches), the length within **±2 s**, and when several tracks pass, exactly
-  one must sit on one of the Recording's release titles (the album
-  tie-breaker). No confident match means no Lyrics: a Recording without a
-  length, or with only an album tie on other albums, keeps null Lyrics.
-- **Reads.** Nothing reads the Lyrics over the protocol: `getRecording` and
-  `search` answer metadata only. The kept Lyrics feed the `lyrics` index.
-- **Refresh** (`LyricsRefreshService.refreshOnce`, one worker tick, `full`
-  only): once the catalog is `ready`, each tick polls `LRCLIB_LISTING_URL`
-  for a newer dump key (at most every `LRCLIB_REFRESH_CHECK_INTERVAL_MS`,
-  default hourly) and, at most once per `LRCLIB_REFRESH_MIN_INTERVAL_DAYS`
-  (default 30), imports it with the same two-pass strict match as the first
-  import (`matchRecordingsBatch`, shared with it). Dumps the first import or
-  an earlier refresh already brought in are skipped
-  (`music_catalog.lrclib_refresh_state` remembers the checked and imported
-  keys). Only Recordings whose Lyrics changed are written and reindexed in
-  the `lyrics` index (Lyrics a newer dump lost are forgotten from both); the
-  phase never moves, so `getRecording` and `search` keep answering
-  throughout. A failed check or download only logs: the catalog serves the
-  kept Lyrics until the next tick. In `tiny` the refresh never runs (it would
-  need the network; the fake dump is generated instead).
-- **Outbox lookup** (`LyricsLookupService`, one worker tick,
-  `full` only): Recordings the outbox reports that have no kept Lyrics get
-  them from LRCLIB's public API (`LRCLIB_API_BASE_URL`,
-  `/api/get?artist_name&track_name&album_name&duration`). The tick peeks the
-  candidates before the drain and fills them after it (`peekLyricless`, then
-  `fillLyricless`), so a slow or failing API never holds the drain back. The
-  one returned track goes through the same strict match; at most 10
-  Recordings are asked per tick, a second apart, every request with a
-  notefinder `User-Agent`. An API failure only logs: the Recording stays
-  without Lyrics until the next dump refresh.
-- **Disk and RAM.** About 260 GB of temp disk per `full` import (the steady
-  state stays about 150-220 GB, see ADR 0002). Local development and tests
-  use the generated fake dump and tiny fixtures, never the real one.
+The catalog holds no Lyrics: it never downloads or matches LRCLIB's data
+(ADR 0010). The words of a Track are its Timed lyrics, transcribed by the
+API's Processing, never read from the catalog.
 
 ## Sync (outbox)
 
@@ -739,19 +632,18 @@ After the first import, every change to the MusicBrainz tables reaches the
   list.
 - **Keys**: Meilisearch runs with a master key that neither process gets. The
   **server** has a search-only key (`MEILISEARCH_SEARCH_API_KEY`, action
-  `search` on `recordings` and `lyrics`); the **worker** has a key that can
-  write (`MEILISEARCH_WRITE_API_KEY`, actions `documents.*`, `indexes.*`,
-  `settings.*` and `tasks.get`). Each process validates only its own
-  variables (`parseServerEnv`, `parseWorkerEnv`). A key is derived from its
-  `uid` and the master key (HMAC-SHA256), so a key created with a fixed `uid`
-  is the same everywhere: the dev compose's `music-catalog-meilisearch-init`
-  job creates both with fixed uids and `.env.example` lists the resulting
-  values for the dev master key. The production compose has the same job
-  (`meilisearch-init`, the same uids); there the operator derives the two
-  values from the master key once, with `openssl`, and puts them in `.env`
-  (see "Meilisearch keys" under "Operations (production)"). The write key has
-  `"indexes":["*"]`, since a blue-green reimport builds indexes under other
-  names.
+  `search` on `recordings`); the **worker** has a key that can write
+  (`MEILISEARCH_WRITE_API_KEY`, actions `documents.*`, `indexes.*`, `settings.*`
+  and `tasks.get`). Each process validates only its own variables
+  (`parseServerEnv`, `parseWorkerEnv`). A key is derived from its `uid` and the
+  master key (HMAC-SHA256), so a key created with a fixed `uid` is the same
+  everywhere: the dev compose's `music-catalog-meilisearch-init` job creates
+  both with fixed uids and `.env.example` lists the resulting values for the dev
+  master key. The production compose has the same job (`meilisearch-init`, the
+  same uids); there the operator derives the two values from the master key
+  once, with `openssl`, and puts them in `.env` (see "Meilisearch keys" under
+  "Operations (production)"). The write key has `"indexes":["*"]`, since a
+  blue-green reimport builds indexes under other names.
 
 ## Continuous replication
 
@@ -830,21 +722,19 @@ downtime and with a single human step (issue #69):
    runbook below runs on the server (`docker compose pull && docker compose up
    -d` is its fourth step). In the dev compose the image rebuilds itself
    (`pull_policy: build`).
-3. **An automatic blue-green reimport follows.** The next `mbslave sync`
-   still fails, but the container now runs a newer mbslave major than the
-   stalled one (an older release, the stalled one or an unrelated same-major
-   patch keeps waiting), so instead of crash-looping it restores the new dump
-   into the **parallel database** (`REIMPORT_DATABASE_URL`, a fresh database
-   on the same server, migrated like the serving one) while the current copy
-   keeps serving. Then the worker reinstalls the change triggers there,
-   carries the kept Lyrics over (the strict match rerun from our own schema,
-   no new LRCLIB download), indexes into the `recordings_next`/`lyrics_next`
-   indexes and flips over: one atomic Meilisearch `swap-indexes` task for
-   both index pairs, and the reads for the database (every repository
-   resolves a reference the flip swaps, so in-flight requests finish on the
-   old copy). The retired copy's indexes are deleted; its database is dropped
-   unless `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection
-   until the runbook below drops it.
+3. **An automatic blue-green reimport follows.** The next `mbslave sync` still
+   fails, but the container now runs a newer mbslave major than the stalled one
+   (an older release, the stalled one or an unrelated same-major patch keeps
+   waiting), so instead of crash-looping it restores the new dump into the
+   **parallel database** (`REIMPORT_DATABASE_URL`, a fresh database on the same
+   server, migrated like the serving one) while the current copy keeps serving.
+   Then the worker reinstalls the change triggers there, indexes into the
+   `recordings_next` index and flips over: one atomic Meilisearch `swap-indexes`
+   task for the index pair, and the reads for the database (every repository
+   resolves a reference the flip swaps, so in-flight requests finish on the old
+   copy). The retired copy's indexes are deleted; its database is dropped unless
+   `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection until the
+   runbook below drops it.
 4. **Watch `status`.** The first import's `phase` stays `ready` throughout
    (so `search` and `getRecording` never answer `CATALOG_NOT_READY` for a
    reimport), with `replicationStalled: { reason: 'schema-change' }` until
@@ -858,8 +748,7 @@ downtime and with a single human step (issue #69):
 
 - **Disk.** About twice the steady state during a reimport (the parallel
   database plus the `*_next` indexes next to the serving ones), back to
-  steady after the old copy is deleted. The LRCLIB temp disk is not needed:
-  Lyrics are reused, never re-downloaded.
+  steady after the old copy is deleted. 
 - **Enabling it.** The reimport needs a **fresh, migrated parallel database**
   (`REIMPORT_DATABASE_URL`, read by the mbslave container, the worker and the
   server's boot fallback), one per reimport: the container refuses a parallel
@@ -939,8 +828,7 @@ downtime and with a single human step (issue #69):
 - **Greppable logs.** Until the bump, the container crash-loops on mbslave's
   own schema-mismatch message (`mbslave output`, then `Replication failed,
   the next start resumes it`) while `status` carries the stall. The reimport
-  logs `Starting the parallel restore for the schema change`, `Reimport
-  carried the kept Lyrics to the parallel copy` (with `carried`, `dropped`),
+  logs `Starting the parallel restore for the schema change`, 
   `Reimport switched to the parallel copy` and `Adopted the reimported
   copy` once per process.
 
@@ -994,8 +882,8 @@ internal network only. `docker compose ps` is the first thing to read:
   fail with `INTERNAL`; see Troubleshooting). The worker check reads
   `WORKER_HEARTBEAT_FILE`, which a timer in the process keeps fresh every
   15 s: it proves the event loop turns. It is a timer on purpose, not "once
-  per tick": a tick lasts hours during the first import (unpacking LRCLIB,
-  indexing tens of millions of Recordings), and a tick failure is only a log
+  per tick": a tick lasts hours during the first import (indexing tens of
+  millions of Recordings), and a tick failure is only a log
   line (`Worker tick failed`), so read the logs too. `mbslave` has no health
   check: it has no liveness signal and `tiny` exits by design, so watch
   `status` and its logs.
@@ -1011,8 +899,8 @@ were measured on the smoke run below.
 | | `full` | `tiny` |
 | --- | --- | --- |
 | Steady-state disk | about **150-220 GB**: Postgres about 64 GB (48-80), Meilisearch 79-149 GB, WAL up to `POSTGRES_MAX_WAL_SIZE` (8 GB by default), plus the dump archives kept in the `dumps` volume (about 8 GB) | 86 MB of Postgres volume, 1.2 MB of Meilisearch, images about 1.3 GB (Node 383 MB, mbslave 959 MB, plus the upstream ones) |
-| Temporary disk | about **260 GB** in the `lrclib-scratch` volume per LRCLIB import (the first import, then each refresh); about **2x the steady state** while a yearly reimport runs (the LRCLIB scratch is not needed then) | none |
-| One-disk total | **at least 500 GB of SSD** (220 + 260 + 8 stays under it, and so does 2x 220) | any |
+| Temporary disk | about **2x the steady state** while a yearly reimport runs (the parallel database and its indexes) | none |
+| One-disk total | about **460 GB of SSD** (2x the steady state of about 230 GB, for a yearly reimport) | any |
 | RAM | **at least 16 GB**, more for lower search latency (below) | about 370 MiB for the five long-running containers at rest |
 | First run | hours (below) | 56 s from `docker compose up -d` to `ready`, warm base images, on the smoke machine |
 
@@ -1028,18 +916,15 @@ were measured on the smoke run below.
   traffic. While indexing, Meilisearch uses up to two thirds of the RAM by
   default and competes with Postgres (`POSTGRES_SHARED_BUFFERS`, 2 GB by
   default); the Node processes need little (about 40 MiB each at rest).
-- **Network.** The first import downloads about 8.1 GB from MusicBrainz and
-  47.6 GB from LRCLIB; the spike measured 1.0-1.5 MB/s from MetaBrainz (1.5 to
-  2.2 hours) and about 16 MB/s from LRCLIB (about 50 minutes). Replication
+- **Network.** The first import downloads about 8.1 GB from MusicBrainz; the
+  spike measured 1.0-1.5 MB/s from MetaBrainz (1.5 to 2.2 hours). Replication
   packets afterwards are small and hourly.
 - **Other prerequisites.** A domain whose DNS record points at the server,
   ports 80 and 443 open to the internet (Caddy's certificate challenge and
   the clients), Docker with the Compose plugin, and a MetaBrainz token for
   `full`.
 - **Where the volumes live.** Named volumes under Docker's data root
-  (`/var/lib/docker/volumes`). To put the 260 GB `lrclib-scratch` volume on
-  another disk, declare it in a `compose.override.yaml` with a bind mount or
-  `driver_opts`; it only needs to be writable by uid 1000 (`node`).
+  (`/var/lib/docker/volumes`). 
 
 ### Before the first run
 
@@ -1073,13 +958,13 @@ were measured on the smoke run below.
 ### First run (`full`)
 
 Expect **hours**: the spike estimated the MusicBrainz part at 4 to 8 hours on
-its network (download 1.5-2.2 h, restore 1-2.5 h), and the LRCLIB import and
-the Meilisearch indexing of 40.4 M Recordings come on top (the benchmark
-indexed 2.95 M in about 14 minutes with per-slice time growing, so full scale
-is several hours at least; no end-to-end figure exists). The service answers
-from the first minute: `status` works, and `search` and `getRecording` answer
-`CATALOG_NOT_READY` until `ready`. Do not restart the worker or reset the
-volumes while it runs (see Troubleshooting for what a restart costs).
+its network (download 1.5-2.2 h, restore 1-2.5 h), and the Meilisearch indexing
+of 40.4 M Recordings comes on top (the benchmark indexed 2.95 M in about 14
+minutes with per-slice time growing, so full scale is several hours at least; no
+end-to-end figure exists). The service answers from the first minute: `status`
+works, and `search` and `getRecording` answer `CATALOG_NOT_READY` until `ready`.
+Do not restart the worker or reset the volumes while it runs (see
+Troubleshooting for what a restart costs).
 
 - **`status`** (works with no extra tooling, from the server):
 
@@ -1097,15 +982,12 @@ volumes while it runs (see Troubleshooting for what a restart costs).
   From anywhere, any WebSocket client does the same through Caddy:
   `wscat -c wss://<CATALOG_DOMAIN> -H "Authorization: Bearer <key>"`.
 - **Phases**: `restoring` (the `mbslave` container downloads and restores the
-  dump; `docker compose logs -f mbslave` shows `Restoring the MusicBrainz
-  dump`, then mbslave's own progress as `mbslave output`, then `Restore import
-  finished`), `restored`, `indexing` (the worker: **first the LRCLIB import**,
-  `Downloading the LRCLIB dump` then `LRCLIB import finished`, which can take
-  hours with no per-percent log; **then** `Indexed a batch of Recordings` with
-  `percent`) and `ready`. `Indexing finished: the catalog is ready` is the last
-  line.
-- **Disk**: watch `df -h` and `docker system df -v` (the `lrclib-scratch` volume
-  peaks near 260 GB during the import and is emptied by it).
+  dump; `docker compose logs -f mbslave` shows `Restoring the MusicBrainz dump`,
+  then mbslave's own progress as `mbslave output`, then `Restore import
+  finished`), `restored`, `indexing` (the worker: `Indexed a batch of
+  Recordings` with `percent`) and `ready`. `Indexing finished: the catalog is
+  ready` is the last line.
+- **Disk**: watch `df -h` and `docker system df -v`.
 - **When it is `ready`**, the steady state is `status` with a growing
   `replicationSequence` and `pendingOutbox` near zero (see "Continuous
   replication").
@@ -1206,12 +1088,12 @@ what they are for.)
 
 ### Backups and recovery
 
-Everything in the catalog is **rebuilt from public data** (MusicBrainz and
-LRCLIB), so the baseline is: back up the configuration, not the data, and
-accept hours of rebuild after a total loss. What is not rebuildable is the
-**`.env`** (the API keys, the Meilisearch master key and the MetaBrainz
-token: keep it in a password manager) and, politely, the `caddy-data` volume
-(certificates; re-issuing is rate limited). Beyond that:
+Everything in the catalog is **rebuilt from public data** (MusicBrainz), so the
+baseline is: back up the configuration, not the data, and accept hours of
+rebuild after a total loss. What is not rebuildable is the **`.env`** (the API
+keys, the Meilisearch master key and the MetaBrainz token: keep it in a password
+manager) and, politely, the `caddy-data` volume (certificates; re-issuing is
+rate limited). Beyond that:
 
 - **A consistent cold backup** (fastest recovery): `docker compose stop
   worker mbslave server`, then copy the `postgres-data` **and**
@@ -1237,12 +1119,9 @@ token: keep it in a password manager) and, politely, the `caddy-data` volume
     -c "DELETE FROM music_catalog.indexing_checkpoint"
   ```
 
-  The worker's next ticks reindex every Recording and the kept Lyrics from
-  Postgres and the catalog is `ready` again (`search` answers
-  `CATALOG_NOT_READY` meanwhile; `tiny` took 36 s). **In `full` that also
-  re-downloads LRCLIB's dump** (about 48 GB, 260 GB unpacked, hours): the
-  import runs whenever the phase is `indexing`, with no check for Lyrics
-  already kept. That is the price of not backing the two up together.
+  The worker's next ticks reindex every Recording from Postgres and the catalog
+  is `ready` again (`search` answers `CATALOG_NOT_READY` meanwhile; `tiny` took
+  36 s).
 - **Starting from nothing**: `docker compose down -v` deletes the volumes,
   and the next `up -d` is a first run. Never run it against a catalog worth
   keeping.
@@ -1260,8 +1139,7 @@ event; grep the quoted messages).
 | Caddy serves no certificate, TLS errors | `logs caddy`, DNS, ports 80/443 | the domain must resolve to this server and 80/443 must be open; certificates are rate limited, so fix DNS before retrying |
 | `server` or `worker` `unhealthy` | `logs server` / `logs worker` | read the error, then `docker compose restart <service>`; Compose will not restart it for you |
 | `status` stuck in `restoring` | `logs -f mbslave` | `Restore failed, the next start redoes it`: the container restarts by itself and redoes it from a clean state; check the disk (`df -h`), the MetaBrainz URL, and that the archives in the `dumps` volume are not stale (see above) |
-| `status` stuck in `indexing` for hours | `logs worker` | normal while the LRCLIB import runs (no per-percent log); `LRCLIB import failed, continuing without Lyrics` means a bad dump (the catalog still becomes `ready`); `Worker tick failed` repeating is a failing step (Meilisearch down, disk full): the error is in the line |
-| Disk full during the first import or a refresh | `docker system df -v`, `ls -la` of `lrclib-scratch` | the worker deletes its unpacked dump when an import ends, **not when it is killed or crashes**: `docker compose run --rm --no-deps --entrypoint ls worker -la /scratch`, then `... --entrypoint rm worker -f /scratch/lrclib-dump-<n>.sqlite3` for leftovers. A worker restart in the middle of `indexing` also restarts the whole LRCLIB download (there is no resume) |
+| `status` stuck in `indexing` for hours | `logs worker` | normal while a large index build runs (`Indexed a batch of Recordings` keeps coming); `Worker tick failed` repeating is a failing step (Meilisearch down, disk full): the error is in the line |
 | `search` answers `INTERNAL` while `status` is `ready` | `logs server` | "Index recordings not found": Meilisearch lost its data (see "Backups and recovery"); a connection error is Meilisearch down (`docker compose ps meilisearch`); `invalid_api_key` is a Meilisearch key that does not match the master key (derive them again) |
 | `replicationSequence` stops advancing | `logs mbslave` | 403 is a bad token; `Mismatched schema` / `Replication stalled on the yearly schema change` is the yearly schema change ("Yearly schema change"); see "Continuous replication" for the log lines |
 | Port 80 or 443 already in use | `docker compose up -d` error | another web server on the host: stop it, Caddy needs both |
@@ -1270,10 +1148,10 @@ event; grep the quoted messages).
 
 notefinder is **non-commercial**, which is what the free MetaBrainz token
 requires. The replication packets and the derived dump (tags and genres) are
-**CC BY-NC-SA 3.0**: attribution is owed wherever genres and tags are shown
-(web work, outside this service), and if notefinder ever becomes commercial
-the MetaBrainz tier and that data must be revisited first (ADR 0002). LRCLIB's
-dump is CC0. This is not legal advice.
+**CC BY-NC-SA 3.0**: attribution is owed wherever genres and tags are shown (web
+work, outside this service), and if notefinder ever becomes commercial the
+MetaBrainz tier and that data must be revisited first (ADR 0002). This is not
+legal advice.
 
 ### CI and images
 
@@ -1358,17 +1236,17 @@ rm /tmp/mcsmoke.env
 (The upstream images it pulled, `caddy:2.11-alpine` and the Postgres and
 Meilisearch ones, are shared cache: remove them only if nothing else on the
 machine uses them.) `status` shows `restored`, then `indexing` (the worker
-imports the fake LRCLIB dump, then indexes the real Recordings), then `ready`,
-and the search finds `Bohemian Rhapsody`.
+indexes the real Recordings), then `ready`, and the search finds `Bohemian
+Rhapsody`.
 
-Measured on the machine that wrote this ticket (15 GB RAM, Docker 29.7, base
-images already pulled), from the commands above on a clean project: **56 s
-from `docker compose up -d` to `ready`** (the migrations at +10 s, the `tiny`
-restore done at +23 s, then about 30 s of the worker generating and importing
-the fake LRCLIB dump and 2 s indexing), a cold build (no layer cache) of the
-Node image in **79 s** and of the mbslave image in **148 s**, **86 MB** of
-Postgres volume, **1.2 MB** of Meilisearch, an empty `dumps` and
-`lrclib-scratch`, and under 0.5 GB of RAM for the five long-running
+Measured on the machine that wrote this ticket, before ADR 0010 removed the
+LRCLIB import (15 GB RAM, Docker 29.7, base images already pulled), from the
+commands above on a clean project: **56 s from `docker compose up -d` to
+`ready`** (the migrations at +10 s, the `tiny` restore done at +23 s, then about
+30 s of the worker generating and importing the fake LRCLIB dump and 2 s
+indexing), a cold build (no layer cache) of the Node image in **79 s** and of
+the mbslave image in **148 s**, **86 MB** of Postgres volume, **1.2 MB** of
+Meilisearch, an empty `dumps`, and under 0.5 GB of RAM for the five long-running
 containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
 (mbslave).
 
@@ -1445,12 +1323,6 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   | `REIMPORT_CLEANUP_OLD_COPY` | Anything but `false` drops the retired database after the flip; `false` keeps it for inspection |
   | `MBSLAVE_MUSICBRAINZ_TOKEN` | The MetaBrainz access token itself; required in `full`, ignored in `tiny` (see "Continuous replication") |
   | `MBSLAVE_MUSICBRAINZ_TOKEN_FILE` | A file holding the token (Docker secrets); alternative to the above |
-  | `LRCLIB_BASE_URL` | The directory the LRCLIB dump files live under; the latest key is appended to it (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
-  | `LRCLIB_LISTING_URL` | The endpoint listing the published LRCLIB dumps, read for the latest key (default: LRCLIB's own); worker, `full` only |
-  | `LRCLIB_TINY_SOURCE` | `fake` (default) or `api`: where `tiny` gets its Lyrics; worker (see "Lyrics (LRCLIB)") |
-  | `LRCLIB_API_BASE_URL` | The public LRCLIB API new and changed Recordings get their Lyrics from (default: LRCLIB's own); worker, `full` only (see "Lyrics (LRCLIB)") |
-  | `LRCLIB_REFRESH_CHECK_INTERVAL_MS` | How often the worker polls the listing for a newer dump (default 3600000); worker, `full` only |
-  | `LRCLIB_REFRESH_MIN_INTERVAL_DAYS` | At most one dump refresh per this many days (default 30); worker, `full` only |
   | `WORKER_HEARTBEAT_FILE` | A file the worker keeps touching (every 15 s) for the production health check; unset, nothing is written (see "Operations (production)") |
 
   The production stack's own variables (the domain, the image tag, Postgres
@@ -1581,8 +1453,7 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   archives over real HTTP from the fake dump server like the first-import
   path does). They cover the stall in `status` while search and
   `getRecording` answer, serving from the current copy during the reimport,
-  the atomic switch with the old indexes deleted, Lyrics carried without any
-  download (the LRCLIB endpoints are closed ports), a worker and a container
+  the atomic switch with the old indexes deleted,  a worker and a container
   restarted mid-reimport, a flip lost after the swap and one lost before the
   flip record (both complete forward instead of swapping back), the retired
   database dropped by default (on scratch databases, never the shared one:
@@ -1592,31 +1463,6 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   database, and the next test must read the serving copy again. The parallel
   database is dropped in `afterAll`; each suite reuses one per file and
   resets it (tables plus sync triggers) per test.
-- **The Lyrics import in e2e** (`test/lyrics.e2e-spec.ts`): in `tiny` mode the
-  worker tick generates the fake dump, imports and indexes it, and the spec
-  asserts over the WebSocket that a matched Recording has plain and synced
-  Lyrics, that the tie and length-less Recordings have none, that a
-  search never matches a line of those Lyrics (search reads metadata only). In `full` mode a tiny dump built by the same generator is served
-  gzipped by a fake HTTP server (`test/utils/fake-lrclib-server.ts`, listing
-  plus files, like `fake-dump-server.ts`), and the spec covers the download
-  path the same way, plus a dump with an unexpected schema: the tick still
-  reaches `ready`, with null Lyrics. `useEmptyLyricsIndex()` (in
-  `test/utils/test-worker.ts`) deletes the `lyrics` index before each test,
-  next to `useEmptySearchIndex()`.
-- **The Lyrics refresh in e2e** (`test/lyrics-refresh.e2e-spec.ts`): in
-  `full` mode, with the dump listing and the public API behind fake HTTP
-  servers (`test/utils/fake-lrclib-server.ts` and
-  `test/utils/fake-lrclib-api-server.ts`). It covers the refresh from a newer
-  dump over a worker tick (the kept Lyrics read from the database, see
-  `test/utils/kept-lyrics.ts`),
-  the skip of an already-imported dump (no second download), the wait past
-  the minimum interval (still imported once it passes), the Lyrics of an
-  outbox Recording from the API (with the `User-Agent` the fake server
-  records), including one added after `ready`, and the failure paths: an API
-  failure leaves the Recording without Lyrics while the outbox still drains
-  (even while a lookup hangs), a non-matching API track is rejected, and a
-  listing failure leaves the catalog ready with null Lyrics.
-
 - **The production deploy** (`deploy/`, the two Dockerfiles) has no spec of
   its own: the "Music catalog images" workflow builds both images on every
   pull request that touches them and checks the compose (it renders against
@@ -1627,16 +1473,14 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   checks must repeat.
 - Unit (`*.spec.ts` next to the file): pure logic only (env parsing, API key
   check, envelope parsing and error mapping, handlers and their payload
-  validation, the dispatcher with its timeout, the WebSocket heartbeat with
-  fake timers, the worker loop and its heartbeat file, the abortable sleep, the logger, building the Meilisearch document and
-  the summary, re-sorting rows by Meilisearch's order, the sync plan and the
-  tracked trigger set, the replication loop and its token gate, the Lyrics
-  normalization and match, the shared match batch, the fake-dump generator,
-  the dump download, the public API client, the Lyrics import, refresh and
-  lookup). Services are tested
-  with a mocked repository, and `MeilisearchIndex` with a fake client. Not unit-tested, covered by
-  e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`, repositories
-  and the schema (the exclusions are in `vitest.config.ts`).
+  validation, the dispatcher with its timeout, the WebSocket heartbeat with fake
+  timers, the worker loop and its heartbeat file, the abortable sleep, the
+  logger, building the Meilisearch document and the summary, re-sorting rows by
+  Meilisearch's order, the sync plan and the tracked trigger set, the
+  replication loop and its token gate). Services are tested with a mocked
+  repository, and `MeilisearchIndex` with a fake client. Not unit-tested,
+  covered by e2e: the entrypoints, `create-server.ts`, `ws/ws-server.ts`,
+  repositories and the schema (the exclusions are in `vitest.config.ts`).
 - The e2e suite has its own coverage thresholds
   (`vitest.config.e2e.ts`, report in `coverage-e2e/`). Both threshold sets
   and the Stryker `break` mirror the API's values; the maintainer is the only

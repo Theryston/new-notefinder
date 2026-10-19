@@ -51,8 +51,8 @@ _Avoid_: Favorite artist, top artist
 ### Music catalog
 
 **Music catalog**:
-Every Recording in the world with its artists, releases, genres and Lyrics,
-kept in sync with MusicBrainz. It is where notefinder's own catalog (the
+Every Recording in the world with its artists, releases and genres, kept in
+sync with MusicBrainz. It is where notefinder's own catalog (the
 Tracks, Artists and Albums that have notes and public URLs) finds songs; a
 Recording is not a Track until a User asks notefinder to process it.
 _Avoid_: Catalog (alone, which means notefinder's own catalog)
@@ -65,8 +65,8 @@ _Avoid_: Song, music
 
 **Processing**:
 One run of the pipeline that turns a Track's Recording into vocal notes and
-Lyrics timed to the audio: it finds the Recording's video, gets its audio,
-separates the vocals, detects the notes and transcribes the words. It ends
+Timed lyrics: it finds the Recording's video, gets its audio, separates the
+vocals, detects the notes and transcribes the words. It ends
 completed or failed; a failed Processing can be retried, which starts a new
 Processing that picks up where the failed one stopped.
 _Avoid_: Import (used for the legacy and MusicBrainz imports), job
@@ -124,17 +124,12 @@ grouped, because a singer may want to practice a specific take (e.g. one
 sung in a different key).
 _Avoid_: Song, track (for this concept)
 
-**Lyrics**:
-The words sung in a Recording, plain or synced to time, matched to the
-Recording from an open lyrics source.
-_Avoid_: Letra, text
-
 **Timed lyrics**:
 The words of a Track, each timed to the audio the Track plays, grouped in
-lines. Transcribed from the Track's vocals during Processing (the Lyrics, when
-the Recording has them, only guide the transcription) and editable by
-Contributors afterwards. Users see both as "lyrics".
-_Avoid_: Lyrics (for this concept), transcript, subtitles
+lines. Transcribed from the Track's vocals during Processing and editable by
+Contributors afterwards. Users see them as "lyrics".
+_Avoid_: Lyrics (the words of a Recording, which the catalog no longer holds),
+transcript, subtitles
 
 **Album**:
 A notefinder catalog entity with its own public URL, backed by one MusicBrainz

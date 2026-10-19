@@ -91,3 +91,12 @@ the full data." line above (kept verbatim as history): local development
 and tests now use `tiny`, and `full` is verified explicitly before releases
 that touch the restore or sizing. The "2.95 M-Recording sample" recall
 figures stay as measurements of the dropped dump.
+
+## Update (#311)
+
+The LRCLIB parts of this decision are superseded by
+`docs/adr/0010-lyrics-only-from-elevenlabs.md`: the catalog holds no Lyrics
+from LRCLIB, so the Lyrics in the Decision, the LRCLIB dump in the Context,
+and the temporary disk of its import in the Consequences no longer apply. The
+MusicBrainz, Meilisearch, WebSocket and blue-green reimport decisions stand.
+The text above is kept as history.
