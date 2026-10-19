@@ -12,8 +12,8 @@ import type {
 
 /**
  * The parallel copy the worker builds while the serving copy answers: the
- * change triggers on it, the `*_next` search index, and the flip itself. Every step
- * only touches the parallel copy; the serving copy flips over atomically
+ * change triggers on it, the `*_next` search index, and the flip itself. Every
+ * step only touches the parallel copy; the serving copy flips over atomically
  * inside `switchToCopy`.
  */
 export type ReimportCopy = {
