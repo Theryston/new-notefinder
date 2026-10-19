@@ -1,19 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import type {
   BestPracticeScores,
+  MostSungArtist,
   PracticeAttempt,
   PracticeAttemptPage,
   SubmitPracticeAttemptBody,
+  TrackVocalRange,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import { toPracticeAttempt } from './attempt-view.js';
-import type { NewPracticeAttempt } from './attempts.repository.js';
+import type {
+  ArtistGroupRow,
+  NewPracticeAttempt,
+  VocalRangeGroupRow,
+} from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import {
   decodeOwnAttemptCursor,
   nextOwnAttemptCursor,
 } from './own-attempt-cursor.js';
+import {
+  type ArtistGroup,
+  deriveMostSungArtist,
+  deriveVocalRange,
+  type VocalRangeGroup,
+} from './profile-chips.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
@@ -23,6 +35,29 @@ const noScores: BestPracticeScores = {
   NORMAL: null,
   HARD: null,
 };
+
+/** The Vocal range input of the chip rules, from a grouped row. */
+const toVocalRangeGroup = (row: VocalRangeGroupRow): VocalRangeGroup => ({
+  trackVocalRange:
+    row.trackVocalRangeLowest === null || row.trackVocalRangeHighest === null
+      ? null
+      : {
+          lowest: row.trackVocalRangeLowest,
+          highest: row.trackVocalRangeHighest,
+        },
+  transposeSemitones: row.transposeSemitones,
+  forwardSkip: row.forwardSkip,
+  bleedSuspected: row.bleedSuspected,
+  bestAccuracy: row.bestAccuracy,
+});
+
+/** The Most sung artist input of the chip rules, from a grouped row. */
+const toArtistGroup = (row: ArtistGroupRow): ArtistGroup => ({
+  artist: { id: row.artistId, name: row.artistName },
+  bleedSuspected: row.bleedSuspected,
+  attempts: row.attempts,
+  lastAttemptAt: row.lastAttemptAt,
+});
 
 /**
  * A signed-in User's saved practice runs. Only valid runs are saved: the
@@ -77,6 +112,11 @@ export class AttemptsService {
     return toPracticeAttempt(await this.attempts.insert(attempt));
   }
 
+  /** How many saved runs of the User count as sung (not bleed-suspected). */
+  countSung(userId: string): Promise<number> {
+    return this.attempts.countSung(userId);
+  }
+
   /** The User's best accuracy per difficulty on a Track, for the title row. */
   async bestScores(
     userId: string,
@@ -89,6 +129,22 @@ export class AttemptsService {
       scores[row.difficulty] = row.accuracy;
     }
     return scores;
+  }
+
+  /**
+   * The two Profile chips a User's attempts decide, each `null` when no
+   * attempt qualifies (see `profile-chips.ts` for the rules).
+   */
+  async profileChips(userId: string): Promise<{
+    vocalRange: TrackVocalRange | null;
+    mostSungArtist: MostSungArtist | null;
+  }> {
+    const vocalGroups = await this.attempts.listVocalRangeGroups(userId);
+    const artistGroups = await this.attempts.listArtistGroups(userId);
+    return {
+      vocalRange: deriveVocalRange(vocalGroups.map(toVocalRangeGroup)),
+      mostSungArtist: deriveMostSungArtist(artistGroups.map(toArtistGroup)),
+    };
   }
 
   /** The signed-in User's own attempts, newest first. */

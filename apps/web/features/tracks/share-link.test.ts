@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHARE_NETWORKS, shareHref, shareLink } from './share-link';
+import { SHARE_NETWORKS, shareHref } from '@/components/share/share-networks';
+
+import { shareLink } from './share-link';
 
 const PAGE = 'https://notefinder.com.br/en/tracks/clx1';
 

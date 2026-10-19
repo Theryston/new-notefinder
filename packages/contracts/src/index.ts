@@ -19,6 +19,7 @@ export * from './pitch.js';
 export * from './practice-attempts.js';
 export * from './practice-preferences.js';
 export * from './public-profile.js';
+export * from './public-profile-summary.js';
 export * from './revalidation.js';
 export * from './search.js';
 export * from './sitemaps.js';

@@ -38,6 +38,9 @@ describe('GET /v1/users/:username (e2e)', () => {
       name: 'Ada Lovelace',
       image: user.image,
       createdAt: expect.any(String),
+      dailyPracticeTargetSeconds: null,
+      vocalRange: null,
+      mostSungArtist: null,
     });
     expect(response.body).not.toHaveProperty('email');
     expect(response.body).not.toHaveProperty('id');

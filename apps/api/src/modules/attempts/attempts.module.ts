@@ -4,6 +4,7 @@ import { UsersModule } from '../users/users.module.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import { AttemptsService } from './attempts.service.js';
 import { MyAttemptsController } from './my-attempts.controller.js';
+import { SubmitAttemptService } from './submit-attempt.service.js';
 import { TrackAttemptsController } from './track-attempts.controller.js';
 import { UserAttemptsController } from './user-attempts.controller.js';
 import { UserAttemptsService } from './user-attempts.service.js';
@@ -16,7 +17,12 @@ import { UserAttemptsService } from './user-attempts.service.js';
     MyAttemptsController,
     UserAttemptsController,
   ],
-  providers: [AttemptsService, AttemptsRepository, UserAttemptsService],
+  providers: [
+    AttemptsService,
+    AttemptsRepository,
+    SubmitAttemptService,
+    UserAttemptsService,
+  ],
   exports: [AttemptsService],
 })
 export class AttemptsModule {}

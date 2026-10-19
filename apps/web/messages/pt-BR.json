@@ -797,12 +797,41 @@
     "speed": "{speed, number}×",
     "transpose": "{semitones, plural, =0 {Tom original} one {{semitones, number, ::sign-except-zero} semitom} other {{semitones, number, ::sign-except-zero} semitons}}"
   },
+  "share": {
+    "profile": {
+      "open": "Compartilhar",
+      "close": "Fechar",
+      "title": "Compartilhar perfil",
+      "description": "Envie o perfil de {name} para quem canta.",
+      "link": "Link para compartilhar",
+      "copy": "Copiar link",
+      "copied": "Link copiado",
+      "copyFailed": "Não conseguimos copiar o link. Selecione-o e copie manualmente.",
+      "networks": "Compartilhar em",
+      "text": "Veja o perfil de {name} no NoteFinder",
+      "subject": "Perfil de {name} no NoteFinder",
+      "network": {
+        "whatsapp": "WhatsApp",
+        "telegram": "Telegram",
+        "x": "X",
+        "facebook": "Facebook",
+        "email": "E-mail"
+      }
+    }
+  },
   "publicProfile": {
     "metaTitle": "{name}",
     "metaDescription": "O perfil de {name} no NoteFinder.",
     "banner": {
       "memberSince": "Membro desde {date}",
       "loading": "Carregando perfil…"
+    },
+    "chips": {
+      "label": "Destaques do perfil",
+      "dailyTarget": "Meta diária",
+      "vocalRange": "Alcance vocal",
+      "mostSungArtist": "Artista mais cantado",
+      "vocalRangeValue": "{lowest} – {highest}"
     },
     "notFound": {
       "title": "Perfil não encontrado",
@@ -811,6 +840,15 @@
     "unavailable": {
       "title": "Perfil indisponível",
       "description": "Não foi possível carregar este perfil agora. Tente novamente em instantes."
+    },
+    "summary": {
+      "title": "Resumo",
+      "loading": "Carregando resumo…",
+      "streak": "Sequência",
+      "streakUnit": "{count, plural, one {dia} other {dias}}",
+      "sung": "Cantadas",
+      "favorites": "Favoritas",
+      "contributions": "Contribuições"
     }
   }
 }

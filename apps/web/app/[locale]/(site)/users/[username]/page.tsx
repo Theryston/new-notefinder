@@ -5,6 +5,8 @@ import { Suspense } from 'react';
 
 import { NoticeMessage } from '@/components/notice-message';
 import { ProfileBanner } from '@/features/users/components/profile-banner';
+import { ProfileSummary } from '@/features/users/components/profile-summary';
+import { ProfileSummarySkeleton } from '@/features/users/components/profile-summary-skeleton';
 import {
   PracticeHistorySection,
   PracticeHistorySkeleton,
@@ -75,6 +77,9 @@ export default async function UserProfilePage({
   return (
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
+      <Suspense fallback={<ProfileSummarySkeleton />}>
+        <ProfileSummary username={profile.username} />
+      </Suspense>
       <Suspense fallback={<PracticeHistorySkeleton />}>
         <PracticeHistorySection username={profile.username} />
       </Suspense>

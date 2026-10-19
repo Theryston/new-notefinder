@@ -164,6 +164,22 @@ export class UsersService {
   }
 
   /**
+   * The ID of the User behind a username, for the public reads that hang off a
+   * Profile. Usernames are stored lowercase, so the request is lowercased (any
+   * casing finds the same User). An unknown username is `NOT_FOUND`, as for
+   * the banner.
+   */
+  async findIdByUsername(username: string): Promise<string> {
+    const id = await this.usersRepository.findIdByUsername(
+      username.toLowerCase(),
+    );
+    if (id === undefined) {
+      throw new AppException('NOT_FOUND', 'User not found');
+    }
+    return id;
+  }
+
+  /**
    * The public fields of the Users given, keyed by ID. A User that no longer
    * exists is simply missing from the map.
    */
@@ -172,6 +188,24 @@ export class UsersService {
   ): Promise<Map<string, PublicUser>> {
     const rows = await this.usersRepository.findPublicUsers([...userIds]);
     return new Map(rows.map((row) => [row.id, row]));
+  }
+
+  /**
+   * Refreshes the cached public Profile of a User whose public chips changed
+   * without a change to the User row (a saved practice attempt). Best effort:
+   * the change is already saved, so a failed lookup or queue is only logged.
+   */
+  async revalidatePublicProfile(userId: string): Promise<void> {
+    try {
+      const user = await this.usersRepository.findCurrentUser(userId);
+      if (user?.username) {
+        await this.revalidateProfile(user.username);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not refresh the Profile of a User: ${reasonOf(error)}`,
+      );
+    }
   }
 
   /**
