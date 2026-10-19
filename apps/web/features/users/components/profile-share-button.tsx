@@ -37,7 +37,7 @@ export function ProfileShareButton({
       <Button
         type="button"
         aria-haspopup="dialog"
-        className="bg-foreground text-background hover:bg-foreground/90"
+        className="self-start bg-foreground text-background hover:bg-foreground/90"
         onClick={() => {
           setMountKey((value) => value + 1);
           setOpen(true);
