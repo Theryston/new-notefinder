@@ -13,15 +13,19 @@ function TermsList({ children }: { children: ReactNode }) {
 
 export function CopyrightItems() {
   const t = useTranslations('terms.sections.copyright.items');
+  const tArtists = useTranslations('terms.sections.copyright');
 
   return (
-    <TermsList>
-      <li>{t.rich('directPlayback', termsRichText)}</li>
-      <li>{t.rich('otherCases', termsRichText)}</li>
-      <li>{t('noModification')}</li>
-      <li>{t('noStorage')}</li>
-      <li>{t('analysisTool')}</li>
-    </TermsList>
+    <>
+      <TermsList>
+        <li>{t.rich('directPlayback', termsRichText)}</li>
+        <li>{t.rich('otherCases', termsRichText)}</li>
+        <li>{t('noModification')}</li>
+        <li>{t('noStorage')}</li>
+        <li>{t('analysisTool')}</li>
+      </TermsList>
+      <p>{tArtists.rich('artistRemoval', termsRichText)}</p>
+    </>
   );
 }
 

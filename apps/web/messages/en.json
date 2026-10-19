@@ -360,7 +360,7 @@
       },
       "service": {
         "title": "Description of the Service",
-        "body": "NoteFinder is a platform that helps users discover the vocal notes of songs. Our service provides music analysis and note visualization tools for educational and entertainment purposes."
+        "body": "NoteFinder is a platform that helps users discover the vocal notes of songs. Our service provides music analysis and note visualization tools for educational and entertainment purposes. The source code is open source, released under the MIT License, and is available at <repository>{repositoryUrl}</repository>. The license covers only the source code; it grants no rights over the music or other third-party content shown on the site."
       },
       "copyright": {
         "title": "Music Content and Copyright",
@@ -371,7 +371,8 @@
           "noModification": "We do not modify, redistribute or resell music content; all copyrights and related rights remain with their respective holders.",
           "noStorage": "We do not upload or store recordings on our servers, except where covered by a valid license that authorizes us to play them internally as described above.",
           "analysisTool": "NoteFinder is a tool for analyzing and visualizing music data and complies with applicable copyright law."
-        }
+        },
+        "artistRemoval": "If you are an artist whose music is on NoteFinder and you do not want it to be available here, just contact us at <email>{address}</email>."
       },
       "acceptableUse": {
         "title": "Acceptable Use",
@@ -419,7 +420,7 @@
       },
       "contact": {
         "title": "Contact",
-        "body": "If you have any questions about these Terms and Conditions, contact us by opening an issue on our GitHub: <link>{url}</link>."
+        "body": "If you have any questions about these Terms and Conditions, contact us by email at <email>{address}</email>."
       },
       "general": {
         "title": "General Provisions",
