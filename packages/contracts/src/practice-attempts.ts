@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cursorPageSchema, cursorPaginationQuerySchema } from './pagination.js';
+import { trackHeaderSchema } from './tracks.js';
 
 // A signed-in User's saved practice runs (`POST /v1/tracks/:trackId/attempts`)
 // and their own history (`GET /v1/me/attempts`).
@@ -72,3 +73,29 @@ export const practiceAttemptPageSchema = cursorPageSchema(
 );
 
 export type PracticeAttemptPage = z.infer<typeof practiceAttemptPageSchema>;
+
+/**
+ * A saved attempt in a User's public practice history, with the Track it was
+ * sung on (`GET /v1/users/:username/attempts`). The bleed flag stays on the
+ * attempt, so a visitor sees which runs were suspected of leaking the music.
+ */
+export const practiceAttemptHistoryItemSchema = practiceAttemptSchema.extend({
+  track: trackHeaderSchema,
+});
+
+export type PracticeAttemptHistoryItem = z.infer<
+  typeof practiceAttemptHistoryItemSchema
+>;
+
+/** `GET /v1/users/:username/attempts`: the User's history, newest first. */
+export const listUserAttemptsQuerySchema = cursorPaginationQuerySchema;
+
+export type ListUserAttemptsQuery = z.infer<typeof listUserAttemptsQuerySchema>;
+
+export const practiceAttemptHistoryPageSchema = cursorPageSchema(
+  practiceAttemptHistoryItemSchema,
+);
+
+export type PracticeAttemptHistoryPage = z.infer<
+  typeof practiceAttemptHistoryPageSchema
+>;

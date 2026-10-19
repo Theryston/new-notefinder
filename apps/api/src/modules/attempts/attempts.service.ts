@@ -5,39 +5,18 @@ import type {
   PracticeAttemptPage,
   SubmitPracticeAttemptBody,
 } from '@notefinder/contracts';
-import { practiceSpeedSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
-import type {
-  NewPracticeAttempt,
-  PracticeAttemptRow,
-} from './attempts.repository.js';
+import { toPracticeAttempt } from './attempt-view.js';
+import type { NewPracticeAttempt } from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import {
   decodeOwnAttemptCursor,
-  encodeOwnAttemptCursor,
+  nextOwnAttemptCursor,
 } from './own-attempt-cursor.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
-
-const toAttempt = (row: PracticeAttemptRow): PracticeAttempt => ({
-  id: row.id,
-  trackId: row.trackId,
-  difficulty: row.difficulty,
-  octaveMode: row.octaveMode,
-  transposeSemitones: row.transposeSemitones,
-  // The database keeps a float; only the dock's speeds ever get in (the
-  // request schema refused the rest), so this re-check cannot fail.
-  speed: practiceSpeedSchema.parse(row.speed),
-  accuracy: row.accuracy,
-  coverage: row.coverage,
-  forwardSkip: row.forwardSkip,
-  bleedSuspected: row.bleedSuspected,
-  startedAt: row.startedAt.toISOString(),
-  endedAt: row.endedAt.toISOString(),
-  createdAt: row.createdAt.toISOString(),
-});
 
 const noScores: BestPracticeScores = {
   EASY: null,
@@ -95,7 +74,7 @@ export class AttemptsService {
       startedAt: new Date(body.startedAt),
       endedAt: new Date(body.endedAt),
     };
-    return toAttempt(await this.attempts.insert(attempt));
+    return toPracticeAttempt(await this.attempts.insert(attempt));
   }
 
   /** The User's best accuracy per difficulty on a Track, for the title row. */
@@ -124,16 +103,9 @@ export class AttemptsService {
       limit: query.limit + 1,
     });
     const page = rows.slice(0, query.limit);
-    const last = page.at(-1);
     return {
-      items: page.map(toAttempt),
-      nextCursor:
-        rows.length > query.limit && last
-          ? encodeOwnAttemptCursor({
-              createdAt: last.createdAt.toISOString(),
-              attemptId: last.id,
-            })
-          : null,
+      items: page.map(toPracticeAttempt),
+      nextCursor: nextOwnAttemptCursor(page.at(-1), rows.length > query.limit),
     };
   }
 }

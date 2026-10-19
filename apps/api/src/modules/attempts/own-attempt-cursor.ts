@@ -49,3 +49,18 @@ export const decodeOwnAttemptCursor = (cursor: string): OwnAttemptCursor => {
   }
   return decoded;
 };
+
+/**
+ * The cursor that resumes after the page's last run, or null when no run
+ * follows the page. `hasMore` tells whether the query found one more row.
+ */
+export const nextOwnAttemptCursor = (
+  lastRun: { id: string; createdAt: Date } | undefined,
+  hasMore: boolean,
+): string | null =>
+  hasMore && lastRun
+    ? encodeOwnAttemptCursor({
+        createdAt: lastRun.createdAt.toISOString(),
+        attemptId: lastRun.id,
+      })
+    : null;

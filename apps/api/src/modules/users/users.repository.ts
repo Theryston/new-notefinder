@@ -220,6 +220,16 @@ export class UsersRepository {
       .where(inArray(users.id, ids));
   }
 
+  /** The ID of the User with this lowercase username, if any. */
+  async findIdByUsername(username: string): Promise<string | undefined> {
+    const [row] = await this.txHost.tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return row?.id;
+  }
+
   /**
    * The public banner fields of the User with this (lowercased) username, or
    * undefined when no User has it.

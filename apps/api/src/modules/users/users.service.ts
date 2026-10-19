@@ -158,6 +158,11 @@ export class UsersService {
     return new Map(rows.map((row) => [row.id, row]));
   }
 
+  /** The ID of the User with this username (any casing); undefined when none has it. */
+  findUserIdByUsername(username: string): Promise<string | undefined> {
+    return this.usersRepository.findIdByUsername(username.toLowerCase());
+  }
+
   /**
    * The public fields of the Users given, keyed by ID. A User that no longer
    * exists is simply missing from the map.
