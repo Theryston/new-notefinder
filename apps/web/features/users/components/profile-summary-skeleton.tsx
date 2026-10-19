@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { PROFILE_SUMMARY_STATS } from '@/features/users/profile-summary-stats';
 
 /**
  * Same-dimension stand-in for the Summary section while its numbers load: the
@@ -17,8 +18,8 @@ export async function ProfileSummarySkeleton() {
     >
       <Skeleton className="h-8 w-32 rounded-md" />
       <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
-        {['streak', 'sung', 'favorites', 'contributions'].map((key) => (
-          <div key={key} className="flex min-w-0 flex-col gap-2">
+        {PROFILE_SUMMARY_STATS.map((stat) => (
+          <div key={stat} className="flex min-w-0 flex-col gap-2">
             <Skeleton className="h-4 w-20 rounded-md" />
             <Skeleton className="h-10 w-24 rounded-md md:h-12" />
           </div>

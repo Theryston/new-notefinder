@@ -12,12 +12,29 @@ import {
   createPracticeAttempt,
 } from './utils/profile-summary-factories.js';
 
-const dayOffset = (days: number): string =>
-  new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+/** Today's calendar day (`YYYY-MM-DD`) in `timeZone`, or in UTC when none. */
+const todayIn = (timeZone = 'UTC'): string =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+/** The calendar day before `day`; pure arithmetic, no time zone involved. */
+const dayBefore = (day: string): string =>
+  new Date(Date.parse(`${day}T00:00:00Z`) - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
 // The Summary section of a public Profile over a real Postgres: the four
 // numbers a visitor sees, with the stat rules (bleed-suspected runs are not
 // sung, every kind of Contribution counts) and the same 404 as the banner.
+//
+// Streak days are seeded as runs that end today, so they do not depend on
+// the exact instant. A run of two days ending today reads as 2 even when the
+// server's clock crosses midnight before the request: the run then ends
+// yesterday, which still counts.
 describe('GET /v1/users/:username/summary (e2e)', () => {
   let testApp: TestApp;
 
@@ -52,9 +69,15 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
     const user = await createUser(testApp.db, { username: 'ada_lovelace' });
     const track = await createTrack(testApp.db);
     const otherTrack = await createTrack(testApp.db);
-    await createCompletedDay(testApp.db, user.id, dayOffset(0));
-    await createCompletedDay(testApp.db, user.id, dayOffset(-1));
-    await createCompletedDay(testApp.db, user.id, dayOffset(-3));
+    const today = todayIn();
+    await createCompletedDay(testApp.db, user.id, today);
+    await createCompletedDay(testApp.db, user.id, dayBefore(today));
+    // Three days back is not part of the run: a gap ends it.
+    await createCompletedDay(
+      testApp.db,
+      user.id,
+      dayBefore(dayBefore(dayBefore(today))),
+    );
     await createPracticeAttempt(testApp.db, user.id, track.id);
     await createPracticeAttempt(testApp.db, user.id, track.id, {
       difficulty: 'HARD',
@@ -86,6 +109,40 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
     });
   });
 
+  it("reads the streak in the owner's stored time zone, not in UTC", async () => {
+    // Kiritimati is UTC+14, so its calendar day is often a day ahead of UTC.
+    const zone = 'Pacific/Kiritimati';
+    const user = await createUser(testApp.db, {
+      username: 'kiri_singer',
+      timeZone: zone,
+    });
+    const today = todayIn(zone);
+    await createCompletedDay(testApp.db, user.id, today);
+    await createCompletedDay(testApp.db, user.id, dayBefore(today));
+
+    const response = await testApp.http
+      .get('/v1/users/kiri_singer/summary')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ streakDays: 2 });
+  });
+
+  it('falls back to UTC days for a User who never practiced in a zone', async () => {
+    const user = await createUser(testApp.db, {
+      username: 'utc_singer',
+      timeZone: null,
+    });
+    const today = todayIn();
+    await createCompletedDay(testApp.db, user.id, today);
+    await createCompletedDay(testApp.db, user.id, dayBefore(today));
+
+    const response = await testApp.http
+      .get('/v1/users/utc_singer/summary')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ streakDays: 2 });
+  });
+
   it('leaves bleed-suspected runs out of Sung', async () => {
     const user = await createUser(testApp.db, { username: 'bleed_check' });
     const track = await createTrack(testApp.db);
@@ -111,7 +168,7 @@ describe('GET /v1/users/:username/summary (e2e)', () => {
     await createPracticeAttempt(testApp.db, author.id, track.id);
     await createTrackFavorite(testApp.db, author.id, track.id);
     await createContributions(testApp.db, { user: author, track, count: 1 });
-    await createCompletedDay(testApp.db, author.id, dayOffset(0));
+    await createCompletedDay(testApp.db, author.id, todayIn());
 
     const response = await testApp.http
       .get('/v1/users/reader/summary')

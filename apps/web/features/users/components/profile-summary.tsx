@@ -1,16 +1,25 @@
 import type { PublicProfileSummary } from '@notefinder/contracts';
 import { getFormatter, getTranslations } from 'next-intl/server';
-
+import {
+  PROFILE_SUMMARY_FIELDS,
+  PROFILE_SUMMARY_STATS,
+} from '@/features/users/profile-summary-stats';
 import { getPublicProfileSummary } from '@/features/users/queries';
 
 /**
  * The Summary section of a Profile: the streak and the counters, as large
  * numbers without boxes (draft "A"). The numbers are read on each request
  * inside a Suspense boundary, so the banner above stays cached. When they
- * cannot be read the section is left out, as a section with no content is.
+ * cannot be read the section is left out, as a section with no content is;
+ * the failure is logged on the server, the page stays up.
  */
 export async function ProfileSummary({ username }: { username: string }) {
-  const summary = await getPublicProfileSummary(username).catch(() => null);
+  const summary = await getPublicProfileSummary(username).catch(
+    (error: unknown) => {
+      console.error('The Profile summary could not be read', error);
+      return null;
+    },
+  );
   if (summary === null) {
     return null;
   }
@@ -27,22 +36,6 @@ async function ProfileSummaryContent({
     getFormatter(),
   ]);
 
-  const stats = [
-    {
-      key: 'streak',
-      label: t('streak'),
-      value: summary.streakDays,
-      caption: t('streakUnit', { count: summary.streakDays }),
-    },
-    { key: 'sung', label: t('sung'), value: summary.sungCount },
-    { key: 'favorites', label: t('favorites'), value: summary.favoritesCount },
-    {
-      key: 'contributions',
-      label: t('contributions'),
-      value: summary.contributionsCount,
-    },
-  ];
-
   return (
     <section
       aria-labelledby="profile-summary-title"
@@ -55,19 +48,25 @@ async function ProfileSummaryContent({
         {t('title')}
       </h2>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.key} className="flex min-w-0 flex-col gap-1">
-            <dt className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-              {stat.label}
-            </dt>
-            <dd className="font-bold font-mono text-4xl text-foreground tabular-nums md:text-5xl">
-              {format.number(stat.value)}
-            </dd>
-            {stat.caption ? (
-              <dd className="text-muted-foreground text-xs">{stat.caption}</dd>
-            ) : null}
-          </div>
-        ))}
+        {PROFILE_SUMMARY_STATS.map((stat) => {
+          const value = summary[PROFILE_SUMMARY_FIELDS[stat]];
+          // The streak is counted in days: its unit is a plural.
+          const caption =
+            stat === 'streak' ? t('streakUnit', { count: value }) : undefined;
+          return (
+            <div key={stat} className="flex min-w-0 flex-col gap-1">
+              <dt className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+                {t(stat)}
+              </dt>
+              <dd className="font-bold font-mono text-4xl text-foreground tabular-nums md:text-5xl">
+                {format.number(value)}
+              </dd>
+              {caption ? (
+                <dd className="text-muted-foreground text-xs">{caption}</dd>
+              ) : null}
+            </div>
+          );
+        })}
       </dl>
     </section>
   );

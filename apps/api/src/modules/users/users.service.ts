@@ -159,6 +159,22 @@ export class UsersService {
   }
 
   /**
+   * The ID of the User behind a username, for the public reads that hang off a
+   * Profile. Usernames are stored lowercase, so the request is lowercased (any
+   * casing finds the same User). An unknown username is `NOT_FOUND`, as for
+   * the banner.
+   */
+  async findIdByUsername(username: string): Promise<string> {
+    const id = await this.usersRepository.findIdByUsername(
+      username.toLowerCase(),
+    );
+    if (id === undefined) {
+      throw new AppException('NOT_FOUND', 'User not found');
+    }
+    return id;
+  }
+
+  /**
    * The public fields of the Users given, keyed by ID. A User that no longer
    * exists is simply missing from the map.
    */

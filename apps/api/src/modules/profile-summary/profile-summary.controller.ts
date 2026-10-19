@@ -6,6 +6,7 @@ import {
 } from '@notefinder/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
+import { UsersService } from '../users/users.service.js';
 import { ProfileSummaryService } from './profile-summary.service.js';
 import { PublicProfileSummaryParamDto } from './profile-summary-param.dto.js';
 
@@ -14,7 +15,10 @@ import { PublicProfileSummaryParamDto } from './profile-summary-param.dto.js';
 @Public()
 @Controller('users')
 export class ProfileSummaryController {
-  constructor(private readonly profileSummary: ProfileSummaryService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly profileSummary: ProfileSummaryService,
+  ) {}
 
   @Get(':username/summary')
   @ZodSerializerDto(publicProfileSummarySchema)
@@ -22,9 +26,10 @@ export class ProfileSummaryController {
   @ApiNotFoundResponse({
     description: 'No User has this username (`NOT_FOUND`).',
   })
-  getSummary(
+  async getSummary(
     @Param() params: PublicProfileSummaryParamDto,
   ): Promise<PublicProfileSummary> {
-    return this.profileSummary.getSummary(params.username);
+    const userId = await this.users.findIdByUsername(params.username);
+    return this.profileSummary.getSummary(userId);
   }
 }

@@ -1,18 +1,14 @@
 import { Test } from '@nestjs/testing';
-import { AppException } from '../../common/errors/app-exception.js';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import { FavoritesService } from '../favorites/favorites.service.js';
 import { StreaksService } from '../streaks/streaks.service.js';
-import { ProfileSummaryRepository } from './profile-summary.repository.js';
+import { TrackContributionsService } from '../tracks/track-contributions.service.js';
 import { ProfileSummaryService } from './profile-summary.service.js';
 
 const streaks = { getStatus: vi.fn() };
 const attempts = { countSung: vi.fn() };
 const favorites = { countFavorites: vi.fn() };
-const repository = {
-  findUserIdByUsername: vi.fn(),
-  countContributions: vi.fn(),
-};
+const contributions = { countOf: vi.fn() };
 
 describe('ProfileSummaryService', () => {
   let service: ProfileSummaryService;
@@ -25,28 +21,24 @@ describe('ProfileSummaryService', () => {
         { provide: StreaksService, useValue: streaks },
         { provide: AttemptsService, useValue: attempts },
         { provide: FavoritesService, useValue: favorites },
-        { provide: ProfileSummaryRepository, useValue: repository },
+        { provide: TrackContributionsService, useValue: contributions },
       ],
     }).compile();
     service = moduleRef.get(ProfileSummaryService);
   });
 
-  it('reads each number from the module that owns it, for the looked-up User', async () => {
-    repository.findUserIdByUsername.mockResolvedValue('user-1');
+  it('reads each number from the module that owns it, for the User given', async () => {
     streaks.getStatus.mockResolvedValue({ currentStreakDays: 4 });
     attempts.countSung.mockResolvedValue(12);
     favorites.countFavorites.mockResolvedValue(3);
-    repository.countContributions.mockResolvedValue(7);
+    contributions.countOf.mockResolvedValue(7);
 
-    const summary = await service.getSummary('Ada_Lovelace');
+    const summary = await service.getSummary('user-1');
 
-    expect(repository.findUserIdByUsername).toHaveBeenCalledWith(
-      'ada_lovelace',
-    );
     expect(streaks.getStatus).toHaveBeenCalledWith('user-1', undefined);
     expect(attempts.countSung).toHaveBeenCalledWith('user-1');
     expect(favorites.countFavorites).toHaveBeenCalledWith('user-1');
-    expect(repository.countContributions).toHaveBeenCalledWith('user-1');
+    expect(contributions.countOf).toHaveBeenCalledWith('user-1');
     expect(summary).toEqual({
       streakDays: 4,
       sungCount: 12,
@@ -55,31 +47,31 @@ describe('ProfileSummaryService', () => {
     });
   });
 
-  it('answers zeros for a User with no data', async () => {
-    repository.findUserIdByUsername.mockResolvedValue('user-2');
+  it("leaves the time zone to the streak, so the owner's stored zone decides the day", async () => {
     streaks.getStatus.mockResolvedValue({ currentStreakDays: 0 });
     attempts.countSung.mockResolvedValue(0);
     favorites.countFavorites.mockResolvedValue(0);
-    repository.countContributions.mockResolvedValue(0);
+    contributions.countOf.mockResolvedValue(0);
 
-    await expect(service.getSummary('new_user')).resolves.toEqual({
+    await service.getSummary('user-3');
+
+    // A zone passed here would be the visitor's; the owner's clock is the one
+    // the streak must read.
+    expect(streaks.getStatus).toHaveBeenCalledTimes(1);
+    expect(streaks.getStatus).toHaveBeenCalledWith('user-3', undefined);
+  });
+
+  it('answers zeros for a User with no data', async () => {
+    streaks.getStatus.mockResolvedValue({ currentStreakDays: 0 });
+    attempts.countSung.mockResolvedValue(0);
+    favorites.countFavorites.mockResolvedValue(0);
+    contributions.countOf.mockResolvedValue(0);
+
+    await expect(service.getSummary('user-2')).resolves.toEqual({
       streakDays: 0,
       sungCount: 0,
       favoritesCount: 0,
       contributionsCount: 0,
     });
-  });
-
-  it('answers NOT_FOUND for a username no User has, without reading the numbers', async () => {
-    repository.findUserIdByUsername.mockResolvedValue(undefined);
-
-    const error = await service
-      .getSummary('nobody')
-      .catch((caught: unknown) => caught);
-
-    expect(error).toBeInstanceOf(AppException);
-    expect(error).toMatchObject({ code: 'NOT_FOUND' });
-    expect(streaks.getStatus).not.toHaveBeenCalled();
-    expect(attempts.countSung).not.toHaveBeenCalled();
   });
 });

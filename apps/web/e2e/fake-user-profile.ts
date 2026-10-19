@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import type { PublicProfileSummary } from '@notefinder/contracts';
+
 import { json } from './fake-api-http.ts';
 
 /** The banner fields the fake API serves for one Profile. */
@@ -17,6 +19,15 @@ const profiles = new Map<string, FakeProfile>([
       name: 'Ada Lovelace',
       image: null,
       createdAt: '2026-01-02T03:04:05.000Z',
+    },
+  ],
+  [
+    // One day and nothing else: the singular forms of the Summary section.
+    'grace_hopper',
+    {
+      name: 'Grace Hopper',
+      image: null,
+      createdAt: '2026-03-04T05:06:07.000Z',
     },
   ],
 ]);
@@ -59,16 +70,8 @@ async function serveUserProfile(
   json(response, 200, { username: normalized, ...profile }, request);
 }
 
-/** The Summary numbers the fake API serves for one Profile. */
-type FakeProfileSummary = {
-  streakDays: number;
-  sungCount: number;
-  favoritesCount: number;
-  contributionsCount: number;
-};
-
 /** Summaries by lowercased username, as the API stores them. */
-const summaries = new Map<string, FakeProfileSummary>([
+const summaries = new Map<string, PublicProfileSummary>([
   [
     'ada_lovelace',
     {
@@ -76,6 +79,15 @@ const summaries = new Map<string, FakeProfileSummary>([
       sungCount: 1250,
       favoritesCount: 7,
       contributionsCount: 1,
+    },
+  ],
+  [
+    'grace_hopper',
+    {
+      streakDays: 1,
+      sungCount: 0,
+      favoritesCount: 0,
+      contributionsCount: 0,
     },
   ],
 ]);
