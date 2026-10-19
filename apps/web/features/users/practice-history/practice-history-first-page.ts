@@ -7,7 +7,7 @@ import {
 
 import { serverApi } from '@/lib/api/server';
 
-import { PRACTICE_HISTORY_PAGE_SIZE } from './practice-history-keys';
+import { PRACTICE_HISTORY_PAGE_SIZE } from './practice-history-page-size';
 
 /**
  * The first page of a Profile's history, read on each request: runs change as

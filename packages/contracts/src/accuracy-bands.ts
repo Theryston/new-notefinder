@@ -4,7 +4,7 @@ import { z } from 'zod';
 // history today, the mobile app later). See CONTEXT.md, "Accuracy band".
 
 /** The band a run's accuracy falls in: hit, near or miss. */
-export const accuracyBandSchema = z.enum(['hit', 'near', 'miss']);
+const accuracyBandSchema = z.enum(['hit', 'near', 'miss']);
 
 export type AccuracyBand = z.infer<typeof accuracyBandSchema>;
 

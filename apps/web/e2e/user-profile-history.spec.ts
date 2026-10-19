@@ -2,9 +2,9 @@ import { expect, type Page, test } from '@playwright/test';
 
 // The practice history of a Profile against the fake API (`fake-user-attempts.ts`):
 // runs grouped by day in the viewer's time zone, "Show more" loading the next
-// page after the server's first page, the bleed marker, accuracy bands read as
-// a word in both themes, the transposition with its unit, the layout stability
-// of the grouping, and the small-screen smoke check.
+// page after the server's first page, the bleed marker, the accuracy bands
+// (dot, number and word, in both themes), the transposition with its unit, the
+// layout stability of the grouping, and the small-screen smoke check.
 
 const history = (page: Page) =>
   page.getByRole('region', { name: 'Practice history' });
@@ -68,12 +68,15 @@ test.describe('practice history in UTC', () => {
     await expect(history(page).getByText('Suspected bleed')).toHaveCount(1);
   });
 
-  test('shows the transposition with its unit, or as the original key', async ({
+  test('shows the transposition with its sign and unit, or as the original key', async ({
     page,
   }) => {
     await page.goto('/en/users/ada_lovelace');
 
     await expect(history(page).getByText('+2 semitones').first()).toBeVisible();
+    await expect(history(page).getByText('+1 semitone').first()).toBeVisible();
+    await expect(history(page).getByText('-1 semitone').first()).toBeVisible();
+    await expect(history(page).getByText('-3 semitones').first()).toBeVisible();
     await expect(history(page).getByText('Original key').first()).toBeVisible();
   });
 
@@ -83,6 +86,8 @@ test.describe('practice history in UTC', () => {
     const region = page.getByRole('region', { name: 'Histórico de treinos' });
     await expect(region.getByText('Possível vazamento do som')).toHaveCount(1);
     await expect(region.getByText('+2 semitons').first()).toBeVisible();
+    await expect(region.getByText('+1 semitom').first()).toBeVisible();
+    await expect(region.getByText('Tom original').first()).toBeVisible();
   });
 
   test('fits a 360px screen without horizontal scrolling', async ({ page }) => {
@@ -99,27 +104,45 @@ test.describe('practice history in UTC', () => {
   });
 
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`reads each accuracy band with its dot, number and word in the ${colorScheme} theme`, async ({
+    test(`shows each accuracy band with its dot, number and word in the ${colorScheme} theme`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
       await page.goto('/en/users/ada_lovelace');
 
-      const chips = history(page).getByTestId('accuracy-chip');
-      await expect(chips.first()).toContainText('92%');
-      await expect(chips.first()).toContainText('Hit');
-      await expect(chips.nth(1)).toContainText('70%');
-      await expect(chips.nth(1)).toContainText('Near');
-      await expect(chips.nth(2)).toContainText('40%');
-      await expect(chips.nth(2)).toContainText('Miss');
+      // The theme really applied: next-themes puts `dark` on <html> for dark only.
+      const isDark = await page.evaluate(() =>
+        document.documentElement.classList.contains('dark'),
+      );
+      expect(isDark).toBe(colorScheme === 'dark');
 
-      // The dot carries the band's color, so the word and the number stay the
-      // only text cue and the dot is never transparent.
-      const dotColor = await chips
-        .first()
-        .getByTestId('accuracy-dot')
-        .evaluate((dot) => getComputedStyle(dot).backgroundColor);
-      expect(dotColor).not.toBe('rgba(0, 0, 0, 0)');
+      // Fake runs 1, 2 and 3 are a hit (92%), near (70%) and a miss (40%).
+      const bands = [
+        { band: 'hit', number: '92%', word: 'Hit' },
+        { band: 'near', number: '70%', word: 'Near' },
+        { band: 'miss', number: '40%', word: 'Miss' },
+      ] as const;
+      const dotColors: string[] = [];
+      for (const [index, expected] of bands.entries()) {
+        const chip = history(page).getByTestId('accuracy-chip').nth(index);
+        await expect(chip).toHaveAttribute('data-band', expected.band);
+        await expect(chip).toContainText(expected.number);
+        await expect(chip).toContainText(expected.word);
+        const dot = chip.getByTestId('accuracy-dot');
+        await expect(dot).toBeVisible();
+        dotColors.push(
+          await dot.evaluate(
+            (element) => getComputedStyle(element).backgroundColor,
+          ),
+        );
+      }
+
+      // The word carries the band for a reader who cannot tell the colors apart,
+      // so the three dots must still be three different colors.
+      expect(dotColors.every((color) => color !== 'rgba(0, 0, 0, 0)')).toBe(
+        true,
+      );
+      expect(new Set(dotColors).size).toBe(3);
     });
   }
 });
@@ -146,30 +169,28 @@ test.describe('practice history in a time zone ahead of UTC', () => {
     await page.addInitScript(() => {
       Object.assign(window, { cumulativeLayoutShift: 0 });
       new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as PerformanceEntry[]) {
-          const shift = entry as PerformanceEntry & {
-            hadRecentInput?: boolean;
-            value?: number;
-          };
-          if (!shift.hadRecentInput && shift.value !== undefined) {
-            Object.assign(window, {
-              cumulativeLayoutShift:
-                (window as unknown as { cumulativeLayoutShift: number })
-                  .cumulativeLayoutShift + shift.value,
-            });
+        for (const entry of list.getEntries() as (PerformanceEntry & {
+          hadRecentInput?: boolean;
+          value?: number;
+        })[]) {
+          if (!entry.hadRecentInput && entry.value !== undefined) {
+            const state = window as unknown as {
+              cumulativeLayoutShift: number;
+            };
+            state.cumulativeLayoutShift += entry.value;
           }
         }
       }).observe({ type: 'layout-shift', buffered: true });
     });
     await page.goto('/en/users/ada_lovelace');
-    // Wait for the grouping (after hydration) and the rest of the page to settle.
+    // The grouped list and its "Show more" appear together, after hydration and
+    // after the last shift the grouping can cause.
     await expect(
       history(page).locator('[data-day="2026-10-19"]'),
     ).toBeVisible();
     await expect(
       history(page).getByRole('button', { name: 'Show more' }),
     ).toBeVisible();
-    await page.waitForLoadState('networkidle');
 
     const shift = await page.evaluate(
       () =>

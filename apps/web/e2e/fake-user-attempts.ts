@@ -23,7 +23,8 @@ const runs = Array.from({ length: RUN_COUNT }, (_, index) => {
     trackId: `track-${index + 1}`,
     difficulty: ['EASY', 'NORMAL', 'HARD'][index % 3],
     octaveMode: index % 2 === 0 ? 'ANY' : 'EXACT',
-    transposeSemitones: index % 4 === 0 ? 2 : 0,
+    // Song 1 is +2, Song 2 +1, Song 3 -1, Song 4 -3 and Song 5 the original key.
+    transposeSemitones: [2, 1, -1, -3, 0][index % 5] ?? 0,
     speed: 1,
     accuracy: accuracyOf(index),
     coverage: 0.95,

@@ -39,6 +39,16 @@ export async function PracticeHistorySection({
   );
 }
 
+/**
+ * Before the server has the first page, the section has no runs to size its
+ * stand-ins from, so it shows five plain rows. The first page's real height
+ * replaces them when it arrives; that is the one shift this section allows.
+ */
+const FALLBACK_ROWS = ['1', '2', '3', '4', '5'].map((id) => ({
+  id,
+  bleedSuspected: false,
+}));
+
 /** The section's stand-in while its first page loads: the title and the rows. */
 export async function PracticeHistorySkeleton() {
   const t = await getTranslations('profileHistory');
@@ -49,7 +59,7 @@ export async function PracticeHistorySkeleton() {
       className="flex flex-col gap-4"
     >
       <Skeleton className="h-7 w-48 rounded-md" />
-      <PracticeHistoryRowSkeletons />
+      <PracticeHistoryRowSkeletons rows={FALLBACK_ROWS} />
     </div>
   );
 }

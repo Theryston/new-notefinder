@@ -1,23 +1,36 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Keys only need to be distinct; the rows never reorder. */
-const SKELETON_ROWS = ['first', 'second', 'third', 'fourth', 'fifth'];
+/** What a stand-in needs from the run it stands for: its key, and whether the run shows the bleed marker. */
+export type StandInRow = { id: string; bleedSuspected: boolean };
 
 /**
- * Stand-in rows with the height of real runs: the cover and the three text
- * lines (title, artist, setup) at their line heights, so the list keeps its
- * size while it waits for the viewer's time zone.
+ * Stand-in rows at the height of the runs they stand for: the cover, the title,
+ * artist and setup lines at their line heights, and one more line where the run
+ * shows the bleed marker. The rows come from the server's first page, so the
+ * list keeps its height while it waits for the viewer's time zone.
+ *
+ * Residual shift this does not remove: the day headings and the gaps between
+ * day groups. Their number depends on the viewer's time zone, which only the
+ * browser knows, so they cannot be reserved. The profile page keeps the CLS
+ * below 0.1 with them (measured in the Playwright suite).
  */
-export function PracticeHistoryRowSkeletons() {
+export function PracticeHistoryRowSkeletons({
+  rows,
+}: {
+  rows: readonly StandInRow[];
+}) {
   return (
     <ul aria-hidden="true" className="flex flex-col gap-1">
-      {SKELETON_ROWS.map((row) => (
-        <li key={row} className="flex items-center gap-3 rounded-2xl p-2">
+      {rows.map((row) => (
+        <li key={row.id} className="flex items-center gap-3 rounded-2xl p-2">
           <Skeleton className="size-14 shrink-0 rounded-md" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <Skeleton className="h-6 w-2/3 rounded-md" />
             <Skeleton className="h-5 w-1/2 rounded-md" />
             <Skeleton className="h-4 w-3/4 rounded-md" />
+            {row.bleedSuspected ? (
+              <Skeleton className="h-4 w-24 rounded-md" />
+            ) : null}
           </div>
           <Skeleton className="h-7 w-24 shrink-0 rounded-full" />
         </li>

@@ -58,7 +58,8 @@ export function PracticeHistoryList({
   }
 
   if (timeZone === undefined) {
-    return <PracticeHistoryRowSkeletons />;
+    // The runs are known; only their grouping waits for the time zone.
+    return <PracticeHistoryRowSkeletons rows={attempts} />;
   }
 
   return (

@@ -10,7 +10,7 @@ import { browserApi } from '@/lib/api/browser';
 import { cursorPagesQueryOptions } from '@/lib/cursor-pages-query';
 
 import { practiceHistoryKey } from '../query-keys';
-import { PRACTICE_HISTORY_PAGE_SIZE } from './practice-history-keys';
+import { PRACTICE_HISTORY_PAGE_SIZE } from './practice-history-page-size';
 
 /**
  * The Profile's history as shared cursor paging: the server-rendered first
