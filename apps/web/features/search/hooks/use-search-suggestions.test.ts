@@ -3,8 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { searchKeys } from '../query-keys';
 import { SEARCH_DEBOUNCE_MS } from '../search-params';
+import { searchInfiniteQueryOptions } from './use-search-results';
+import {
+  searchSuggestionsQueryOptions,
+  useSearchSuggestions,
+} from './use-search-suggestions';
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -23,9 +28,6 @@ beforeEach(() => {
 describe('searchSuggestionsQueryOptions', () => {
   it('asks the public endpoint for a limit of 6', async () => {
     fetchMock.mockResolvedValue(Response.json({ results: [] }));
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
     const queryClient = new QueryClient();
 
     await queryClient.fetchQuery(
@@ -42,12 +44,6 @@ describe('searchSuggestionsQueryOptions', () => {
   });
 
   it('keys suggestions apart from the infinite results', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-    const { searchKeys } = await import('../query-keys');
-    const { searchInfiniteQueryOptions } = await import('./use-search-results');
-
     const options = searchSuggestionsQueryOptions({ query: 'queen' });
 
     expect(options.queryKey).toEqual([
@@ -65,10 +61,6 @@ describe('searchSuggestionsQueryOptions', () => {
   });
 
   it('stays disabled while the query is not searchable', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-
     expect(searchSuggestionsQueryOptions({ query: ' ' })).toMatchObject({
       enabled: false,
     });
@@ -81,10 +73,6 @@ describe('searchSuggestionsQueryOptions', () => {
   });
 
   it('keys every blank the same while disabled', async () => {
-    const { searchSuggestionsQueryOptions } = await import(
-      './use-search-suggestions'
-    );
-
     const blank = searchSuggestionsQueryOptions({ query: ' ' }).queryKey;
     const blanker = searchSuggestionsQueryOptions({ query: '   ' }).queryKey;
 
@@ -96,7 +84,6 @@ describe('searchSuggestionsQueryOptions', () => {
     vi.useFakeTimers();
     try {
       fetchMock.mockResolvedValue(Response.json({ results: [] }));
-      const { useSearchSuggestions } = await import('./use-search-suggestions');
       const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
