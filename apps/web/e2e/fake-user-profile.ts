@@ -2,11 +2,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { json } from './fake-api-http.ts';
 
-/** The banner fields the fake API serves for one Profile. */
+/**
+ * The banner fields the fake API serves for one Profile. The chips are absent
+ * (not null) when the User has nothing for them, as the API sends them.
+ */
 type FakeProfile = {
   name: string;
   image: string | null;
   createdAt: string;
+  dailyPracticeTargetSeconds?: number;
+  vocalRange?: { lowest: number; highest: number };
+  mostSungArtist?: { id: string; name: string };
 };
 
 /** Profiles by lowercased username, as the API stores them. */
@@ -17,6 +23,20 @@ const profiles = new Map<string, FakeProfile>([
       name: 'Ada Lovelace',
       image: null,
       createdAt: '2026-01-02T03:04:05.000Z',
+    },
+  ],
+  [
+    'grace_hopper',
+    {
+      name: 'Grace Hopper',
+      image: null,
+      createdAt: '2026-03-04T05:06:07.000Z',
+      dailyPracticeTargetSeconds: 900,
+      vocalRange: { lowest: 48, highest: 74 },
+      mostSungArtist: {
+        id: 'artist-orquestra',
+        name: 'Orquestra Sinfônica Brasileira de Câmara Antônio Carlos',
+      },
     },
   ],
 ]);

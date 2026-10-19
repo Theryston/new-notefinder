@@ -778,6 +778,13 @@
       "memberSince": "Membro desde {date}",
       "loading": "Carregando perfil…"
     },
+    "chips": {
+      "label": "Destaques do perfil",
+      "dailyTarget": "Meta diária",
+      "dailyTargetValue": "{minutes, number} min",
+      "vocalRange": "Alcance vocal",
+      "mostSungArtist": "Artista mais cantado"
+    },
     "notFound": {
       "title": "Perfil não encontrado",
       "description": "Não encontramos este perfil. Ele pode ter sido removido ou o link está errado."
