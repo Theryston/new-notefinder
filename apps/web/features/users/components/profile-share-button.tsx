@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/sonner';
 
 // Loaded on the first click, on the client only: the dialog's Base UI parts
 // stay out of the page's first-load JS until someone asks to share.
@@ -26,32 +27,36 @@ export function ProfileShareButton({
   url: string;
 }) {
   const t = useTranslations('share.profile');
-  const [opening, setOpening] = useState(0);
+  // Bumped on each open: a new key mounts the dialog afresh, so its copy
+  // state and the moment-less link start over every time it opens.
+  const [mountKey, setMountKey] = useState(0);
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button
         type="button"
-        variant="secondary"
         aria-haspopup="dialog"
+        className="bg-foreground text-background hover:bg-foreground/90"
         onClick={() => {
-          setOpening((value) => value + 1);
+          setMountKey((value) => value + 1);
           setOpen(true);
         }}
       >
         <Share2Icon aria-hidden="true" />
         {t('open')}
       </Button>
-      {opening > 0 ? (
+      {mountKey > 0 ? (
         <ProfileShareDialog
-          key={opening}
+          key={mountKey}
           name={name}
           url={url}
           open={open}
           onOpenChange={setOpen}
         />
       ) : null}
+      {/* Mounted with the button, outside the dialog: a failed copy toasts here. */}
+      <Toaster />
     </>
   );
 }

@@ -1,11 +1,3 @@
-// The networks are generic (components/share); the Track share tests still
-// import them from this module, so it keeps re-exporting them.
-// biome-ignore lint/performance/noBarrelFile: a re-export for the existing Track share tests, not a barrel of this module.
-export {
-  SHARE_NETWORKS,
-  shareHref,
-} from '@/components/share/share-networks';
-
 /**
  * The link to share: the Track page without its query string or fragment,
  * plus `?time=` (whole seconds) when a moment past the start is given, which

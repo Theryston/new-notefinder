@@ -1,8 +1,8 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
-import { profileShareUrl } from '@/features/users/profile-share';
 import { getSiteUrl } from '@/lib/env/client';
 
+import { profileShareUrl } from '../profile-share';
 import { ProfileShareButton } from './profile-share-button';
 
 /**
