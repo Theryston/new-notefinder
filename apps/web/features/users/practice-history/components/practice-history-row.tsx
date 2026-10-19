@@ -13,6 +13,10 @@ import { AccuracyChip } from './accuracy-chip';
  * One practice run: the Track's cover, its title and artist, the setup it was
  * sung with, the time of day in the viewer's zone, and the accuracy chip. A
  * run flagged as bleed-suspected says so.
+ *
+ * Nothing is truncated. The text column keeps at least `min-w-48` (12rem); when
+ * the row has no room for the chip beside it, the chip wraps below the text,
+ * so on a phone the title and the setup wrap instead of losing their end.
  */
 export function PracticeHistoryRow({
   attempt,
@@ -30,7 +34,7 @@ export function PracticeHistoryRow({
     t('transpose', { semitones: attempt.transposeSemitones }),
   ];
   return (
-    <li className="flex items-center gap-3 rounded-2xl p-2">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl p-2">
       <div className="relative size-14 shrink-0 overflow-hidden rounded-md bg-muted">
         <TrackCoverArt
           coverArtUrl={track.coverUrl}
@@ -38,17 +42,21 @@ export function PracticeHistoryRow({
           sizes="56px"
         />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-48 flex-1 flex-col gap-0.5">
         <Link
           href={`/tracks/${track.id}`}
-          className="truncate rounded-sm font-semibold outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+          data-testid="run-title"
+          className="break-words rounded-sm font-semibold outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           {track.title}
         </Link>
-        <p className="truncate text-muted-foreground text-sm">
+        <p className="break-words text-muted-foreground text-sm">
           {creditText(track.artistCredit)}
         </p>
-        <p className="truncate text-muted-foreground text-xs">
+        <p
+          data-testid="run-setup"
+          className="break-words text-muted-foreground text-xs"
+        >
           {`${setup.join(' · ')} · ${time}`}
         </p>
         {attempt.bleedSuspected ? (

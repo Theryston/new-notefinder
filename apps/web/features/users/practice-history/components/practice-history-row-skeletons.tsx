@@ -22,9 +22,12 @@ export function PracticeHistoryRowSkeletons({
   return (
     <ul aria-hidden="true" className="flex flex-col gap-1">
       {rows.map((row) => (
-        <li key={row.id} className="flex items-center gap-3 rounded-2xl p-2">
+        <li
+          key={row.id}
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl p-2"
+        >
           <Skeleton className="size-14 shrink-0 rounded-md" />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex min-w-48 flex-1 flex-col gap-0.5">
             <Skeleton className="h-6 w-2/3 rounded-md" />
             <Skeleton className="h-5 w-1/2 rounded-md" />
             <Skeleton className="h-4 w-3/4 rounded-md" />

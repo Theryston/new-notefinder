@@ -39,7 +39,7 @@ export function PracticeHistoryDays({
                 key={attempt.id}
                 attempt={attempt}
                 time={format.dateTime(new Date(attempt.createdAt), {
-                  hour: '2-digit',
+                  hour: 'numeric',
                   minute: '2-digit',
                   timeZone,
                 })}

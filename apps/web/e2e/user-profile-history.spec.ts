@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 // The practice history of a Profile against the fake API (`fake-user-attempts.ts`):
 // runs grouped by day in the viewer's time zone, "Show more" loading the next
@@ -147,6 +147,53 @@ test.describe('practice history in UTC', () => {
   }
 });
 
+/**
+ * For each element: whether its text is clipped (overflow hidden, or cut with an
+ * ellipsis), and where its box sits horizontally in the viewport.
+ */
+const boxes = (locator: Locator) =>
+  locator.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        clipped:
+          element.scrollWidth > element.clientWidth + 1 ||
+          style.textOverflow === 'ellipsis',
+        left: rect.left,
+        right: rect.right,
+      };
+    }),
+  );
+
+for (const width of [360, 390]) {
+  for (const locale of ['en', 'pt-BR'] as const) {
+    test(`keeps every run's title, setup and chip whole at ${width}px (${locale})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(`/${locale}/users/ada_lovelace`);
+
+      // The setup line of every run is what the issue asks to show on a phone:
+      // difficulty, octave, speed, transposition and time must not be cut off.
+      // Page-level locators: the region's name is translated, the test ids are not.
+      const setups = page.getByTestId('run-setup');
+      await expect(setups).toHaveCount(20);
+      for (const locator of [
+        setups,
+        page.getByTestId('run-title'),
+        page.getByTestId('accuracy-chip'),
+      ]) {
+        const all = await boxes(locator);
+        expect(all.filter((box) => box.clipped)).toEqual([]);
+        expect(all.filter((box) => box.left < 0 || box.right > width)).toEqual(
+          [],
+        );
+      }
+    });
+  }
+}
+
 test.describe('practice history in a time zone ahead of UTC', () => {
   test.use({ timezoneId: 'Pacific/Auckland' });
 
@@ -163,40 +210,43 @@ test.describe('practice history in a time zone ahead of UTC', () => {
     ).toHaveCount(0);
   });
 
-  test('keeps the layout still while the runs are grouped by day', async ({
-    page,
-  }) => {
-    await page.addInitScript(() => {
-      Object.assign(window, { cumulativeLayoutShift: 0 });
-      new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as (PerformanceEntry & {
-          hadRecentInput?: boolean;
-          value?: number;
-        })[]) {
-          if (!entry.hadRecentInput && entry.value !== undefined) {
-            const state = window as unknown as {
-              cumulativeLayoutShift: number;
-            };
-            state.cumulativeLayoutShift += entry.value;
+  for (const width of [1280, 360]) {
+    test(`keeps the layout still at ${width}px while the runs are grouped by day`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript(() => {
+        Object.assign(window, { cumulativeLayoutShift: 0 });
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries() as (PerformanceEntry & {
+            hadRecentInput?: boolean;
+            value?: number;
+          })[]) {
+            if (!entry.hadRecentInput && entry.value !== undefined) {
+              const state = window as unknown as {
+                cumulativeLayoutShift: number;
+              };
+              state.cumulativeLayoutShift += entry.value;
+            }
           }
-        }
-      }).observe({ type: 'layout-shift', buffered: true });
-    });
-    await page.goto('/en/users/ada_lovelace');
-    // The grouped list and its "Show more" appear together, after hydration and
-    // after the last shift the grouping can cause.
-    await expect(
-      history(page).locator('[data-day="2026-10-19"]'),
-    ).toBeVisible();
-    await expect(
-      history(page).getByRole('button', { name: 'Show more' }),
-    ).toBeVisible();
+        }).observe({ type: 'layout-shift', buffered: true });
+      });
+      await page.goto('/en/users/ada_lovelace');
+      // The grouped list and its "Show more" appear together, after hydration and
+      // after the last shift the grouping can cause.
+      await expect(
+        history(page).locator('[data-day="2026-10-19"]'),
+      ).toBeVisible();
+      await expect(
+        history(page).getByRole('button', { name: 'Show more' }),
+      ).toBeVisible();
 
-    const shift = await page.evaluate(
-      () =>
-        (window as unknown as { cumulativeLayoutShift: number })
-          .cumulativeLayoutShift,
-    );
-    expect(shift).toBeLessThan(0.1);
-  });
+      const shift = await page.evaluate(
+        () =>
+          (window as unknown as { cumulativeLayoutShift: number })
+            .cumulativeLayoutShift,
+      );
+      expect(shift).toBeLessThan(0.1);
+    });
+  }
 });
