@@ -117,7 +117,7 @@ export const startMeilisearch = async (): Promise<{
       uid: SEARCH_KEY_UID,
       name: 'music-catalog-search',
       actions: ['search'],
-      indexes: ['recordings', 'lyrics'],
+      indexes: ['recordings'],
     });
     const writeKey = await createKey(server, {
       uid: WRITE_KEY_UID,

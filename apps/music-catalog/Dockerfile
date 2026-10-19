@@ -60,9 +60,5 @@ COPY --from=app-build /app/apps/music-catalog/package.json ./package.json
 COPY --from=app-build /app/apps/music-catalog/dist ./dist
 # The migrations sit next to dist: dist/database/migrate.js resolves ../../drizzle.
 COPY --from=app-build /app/apps/music-catalog/drizzle ./drizzle
-# LRCLIB's dump is unpacked here (the worker's temp directory, pointed at it
-# by the compose file): a named volume mounted over it starts with this
-# owner, so the unprivileged user can write to it.
-RUN mkdir /scratch && chown node:node /scratch
 USER node
 CMD ["node", "dist/server.js"]

@@ -40,7 +40,6 @@ const setup = (
   };
   const copy: ReimportCopy = options.copy ?? {
     ensureTriggersCopy: vi.fn(async () => undefined),
-    rematchLyrics: vi.fn(async () => ({ carried: 9, dropped: 1 })),
     indexCopy: vi.fn(
       async (
         _signal: AbortSignal,
@@ -115,7 +114,6 @@ describe('ReimportService', () => {
     );
 
     expect(copy.ensureTriggersCopy).toHaveBeenCalledTimes(1);
-    expect(copy.rematchLyrics).toHaveBeenCalledTimes(1);
     expect(copy.indexCopy).toHaveBeenCalledTimes(1);
     expect(state.setProgress).toHaveBeenNthCalledWith(1, 0);
     expect(state.setProgress).toHaveBeenCalledWith(50);

@@ -25,7 +25,7 @@ const writeTime = (path: string): Promise<void> =>
  * tell a live worker from a wedged one (Compose cannot see inside it, and the
  * loop only logs a failing tick). It runs on its own timer instead of once
  * per tick on purpose: a tick legitimately lasts hours during the first
- * import (indexing tens of millions of Recordings, unpacking LRCLIB's dump),
+ * import (indexing tens of millions of Recordings),
  * and a heartbeat that waited for it would report that as unhealthy. It does
  * not prove a tick is making progress; failures of those are logged by the
  * loop. A write that fails never reaches the worker: it is logged once per

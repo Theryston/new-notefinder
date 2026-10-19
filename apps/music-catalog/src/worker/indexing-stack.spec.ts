@@ -25,7 +25,6 @@ describe('buildServingIndexing', () => {
 
     expect(typeof stack.documents.findBatch).toBe('function');
     expect(typeof stack.index.upsert).toBe('function');
-    expect(typeof stack.lyricsIndex.upsert).toBe('function');
     expect(typeof stack.indexing.run).toBe('function');
     expect(typeof stack.sync.drain).toBe('function');
   });

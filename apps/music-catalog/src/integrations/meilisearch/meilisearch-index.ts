@@ -110,10 +110,10 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
 
   /**
    * Swaps every pair in one `swap-indexes` task: Meilisearch applies the
-   * whole list atomically, so the blue-green reimport flips the recordings
-   * and the lyrics indexes together, never one without the other. Two
-   * separate `swapWith` calls leave a half-swapped catalog when the process
-   * dies between them; this call has no between.
+   * whole list atomically, so the blue-green reimport flips all its pairs
+   * together, never one without the others. Separate `swapWith` calls would
+   * leave a half-swapped catalog when the process dies between them; this
+   * call has no between.
    */
   async swapPairs(
     pairs: Array<{ servingUid: string; nextUid: string }>,

@@ -25,8 +25,6 @@ const setup = (
   });
   const servingIndex = switchIndex('recordings');
   const nextIndex = switchIndex('recordings_next');
-  const servingLyricsIndex = switchIndex('lyrics');
-  const nextLyricsIndex = switchIndex('lyrics_next');
   const deps: ReimportSwitchDeps = {
     servingOutbox: {
       clearAll: vi.fn(async () => {
@@ -54,8 +52,6 @@ const setup = (
     },
     servingIndex,
     nextIndex,
-    servingLyricsIndex,
-    nextLyricsIndex,
     nextUrl: 'postgres://host/next',
     oldDatabaseName: options.oldDatabaseName ?? 'serving',
     cleanupOldCopy: options.cleanupOldCopy ?? false,
@@ -74,12 +70,10 @@ describe('ReimportSwitchService', () => {
     expect(calls).toEqual([
       'outbox.clearAll',
       'recordings.swapWith(recordings_next)',
-      'lyrics.swapWith(lyrics_next)',
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
-      'lyrics_next.deleteIndex',
     ]);
   });
 

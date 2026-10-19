@@ -9,7 +9,6 @@ import {
 } from '../src/create-server.js';
 import type { Database } from '../src/database/database.js';
 import { createDatabase, createPool } from '../src/database/database.js';
-import { LyricsRepository } from '../src/modules/lyrics/lyrics.repository.js';
 import { readReimportStateOf } from '../src/modules/reimport/read-reimport-state.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import { resolveServingDatabaseUrl } from '../src/modules/reimport/resolve-serving-url.js';
@@ -117,9 +116,7 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     // here finish before anything the test enqueues.
     const meilisearch = inject('meilisearch');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings');
-    void meilisearchRequest(meilisearch, 'DELETE', '/indexes/lyrics');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings_next');
-    void meilisearchRequest(meilisearch, 'DELETE', '/indexes/lyrics_next');
   });
 
   // A server booted like `server.ts`: the flip record (or its absence)
@@ -199,8 +196,6 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
         CATALOG_DATASET: 'full',
         MEILISEARCH_URL: meilisearch.url,
         MEILISEARCH_WRITE_API_KEY: meilisearch.writeKey,
-        LRCLIB_BASE_URL: 'http://127.0.0.1:9/',
-        LRCLIB_LISTING_URL: 'http://127.0.0.1:9/',
         ...(next === undefined ? {} : { REIMPORT_DATABASE_URL: next.url }),
       }),
       db: createDatabase(pool),
@@ -272,9 +267,6 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     await setReplicationControl(serving, 199_999);
     const worker = await bootWorkerOn(serveUrl, next);
     await worker.tick();
-    await new LyricsRepository(serving).saveLyrics([
-      { mbid: mbid(901), plainLyrics: 'same take la', syncedLyrics: null },
-    ]);
     await stallReplication(serving);
 
     await restoreParallelInto({

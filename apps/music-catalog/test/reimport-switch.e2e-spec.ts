@@ -1,9 +1,7 @@
 import { inject } from 'vitest';
-import { LyricsRepository } from '../src/modules/lyrics/lyrics.repository.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import { requestRecording } from './utils/get-recording-client.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
-import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
@@ -13,10 +11,7 @@ import {
   useFakeDumps,
   useParallelDatabase,
 } from './utils/reimport-harness.js';
-import {
-  useEmptyLyricsIndex,
-  useEmptySearchIndex,
-} from './utils/test-worker.js';
+import { useEmptySearchIndex } from './utils/test-worker.js';
 
 // The yearly schema change: the flip to the parallel copy (see
 // test/utils/reimport-harness.ts for the shared setup and the faked
@@ -30,7 +25,6 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
   const { server, client } = useIsolatedServer();
 
   useEmptySearchIndex();
-  useEmptyLyricsIndex();
 
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
@@ -62,29 +56,12 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
       expect(recording.result.title).toBe('Brand New Next Song');
     }
 
-    // Lyrics were reused from our own schema, with the match rerun and no
-    // new download (the LRCLIB endpoints are closed ports in this suite):
-    // the unchanged take kept its Lyrics, the resized one lost them.
-    await expect(keptLyricsOf(parallel().db, mbid(901))).resolves.toEqual({
-      plain: 'same take la',
-      synced: null,
-    });
-    await expect(keptLyricsOf(parallel().db, mbid(902))).resolves.toEqual({
-      plain: null,
-      synced: null,
-    });
-
-    // The old copy is deleted: the `*_next` indexes are gone, the stale
+    // The old copy is deleted: the `*_next` index is gone, the stale
     // backlog is dropped, and the flip record names the new database on
     // both copies.
     const meilisearch = inject('meilisearch');
     await expect(
       meilisearchRequest(meilisearch, 'GET', '/indexes/recordings_next').then(
-        ({ status }) => status,
-      ),
-    ).resolves.toBe(404);
-    await expect(
-      meilisearchRequest(meilisearch, 'GET', '/indexes/lyrics_next').then(
         ({ status }) => status,
       ),
     ).resolves.toBe(404);
@@ -101,11 +78,5 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
       phase: 'switched',
       detail: parallel().url,
     });
-
-    // The retired database is untouched by the reimport (cleanup is off in
-    // this suite): the staged Lyrics are still there.
-    await expect(
-      new LyricsRepository(server().db).findByMbid(mbid(901)),
-    ).resolves.toEqual({ plain: 'same take la', synced: null });
   });
 });

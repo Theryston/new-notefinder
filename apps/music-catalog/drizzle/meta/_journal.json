@@ -57,6 +57,13 @@
       "when": 1791116876579,
       "tag": "0007_light_dust",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792434593535,
+      "tag": "0008_drop_lyrics",
+      "breakpoints": true
     }
   ]
 }

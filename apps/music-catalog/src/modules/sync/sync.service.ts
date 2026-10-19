@@ -38,10 +38,8 @@ export class SyncService {
   }
 
   /**
-   * The oldest outbox entries still waiting to reach the index. The Lyrics
-   * lookup reads them to give new and changed Recordings their Lyrics from
-   * the LRCLIB API; it never marks anything, so the drain below still owns
-   * every entry.
+   * The oldest outbox entries still waiting to reach the index. It never
+   * marks anything, so the drain below still owns every entry.
    */
   async peekPending(limit: number): Promise<OutboxEntry[]> {
     return this.deps.outbox.peekPending(limit);

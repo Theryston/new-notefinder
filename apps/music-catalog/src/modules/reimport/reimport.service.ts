@@ -12,18 +12,13 @@ import type {
 
 /**
  * The parallel copy the worker builds while the serving copy answers: the
- * change triggers on it, the carried Lyrics with the match rerun (no
- * download), the `*_next` search indexes, and the flip itself. Every step
+ * change triggers on it, the `*_next` search index, and the flip itself. Every step
  * only touches the parallel copy; the serving copy flips over atomically
  * inside `switchToCopy`.
  */
 export type ReimportCopy = {
   /** Installs the change triggers on the parallel copy. */
   ensureTriggersCopy: () => Promise<void>;
-  /** Carries the kept Lyrics over, rerunning the strict match. */
-  rematchLyrics: (
-    signal: AbortSignal,
-  ) => Promise<{ carried: number; dropped: number }>;
   /** Indexes the parallel copy into the `*_next` indexes. */
   indexCopy: (
     signal: AbortSignal,
@@ -100,14 +95,9 @@ export class ReimportService {
     signal: AbortSignal,
     copy: ReimportCopy,
   ): Promise<void> {
-    const { state, logger } = this.deps;
+    const { state } = this.deps;
     await state.setProgress(0);
     await copy.ensureTriggersCopy();
-    const { carried, dropped } = await copy.rematchLyrics(signal);
-    logger.info('Reimport carried the kept Lyrics to the parallel copy', {
-      carried,
-      dropped,
-    });
     await copy.indexCopy(signal, async (fraction) => {
       await state.setProgress(clampProgress(fraction));
     });

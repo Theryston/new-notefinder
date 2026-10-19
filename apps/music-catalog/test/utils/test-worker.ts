@@ -2,7 +2,6 @@ import { inject } from 'vitest';
 import { parseWorkerEnv } from '../../src/config/env.js';
 import { createMusicCatalogWorker } from '../../src/create-server.js';
 import type { Database } from '../../src/database/database.js';
-import { LYRICS_INDEX } from '../../src/lib/lyrics-index.js';
 import { RECORDINGS_INDEX } from '../../src/lib/recordings-index.js';
 import { type TestServer, testLogger } from './create-test-server.js';
 import { setBootstrapState } from './database.js';
@@ -107,22 +106,6 @@ export const useEmptySearchIndex = (): void => {
     const { status, json } = await master(
       'DELETE',
       `/indexes/${RECORDINGS_INDEX.uid}`,
-    );
-    if (status === 202) {
-      await waitForTask(json.taskUid);
-    }
-  });
-};
-
-/**
- * Before each test, removes the lyrics index, so a test starts with no
- * Lyrics indexed. Call it next to `useEmptySearchIndex`.
- */
-export const useEmptyLyricsIndex = (): void => {
-  beforeEach(async () => {
-    const { status, json } = await master(
-      'DELETE',
-      `/indexes/${LYRICS_INDEX.uid}`,
     );
     if (status === 202) {
       await waitForTask(json.taskUid);

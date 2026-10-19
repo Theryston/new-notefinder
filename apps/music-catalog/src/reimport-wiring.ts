@@ -5,11 +5,6 @@ import { databaseNameOf } from './database/database-ref.js';
 import type { MeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
 import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
 import {
-  LYRICS_INDEX,
-  LYRICS_NEXT_INDEX,
-  type LyricsDocument,
-} from './lib/lyrics-index.js';
-import {
   RECORDINGS_INDEX,
   RECORDINGS_NEXT_INDEX,
   type RecordingDocument,
@@ -19,9 +14,6 @@ import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { IndexingRepository } from './modules/indexing/indexing.repository.js';
 import { IndexingService } from './modules/indexing/indexing.service.js';
-import { LyricsRepository } from './modules/lyrics/lyrics.repository.js';
-import { LyricsService } from './modules/lyrics/lyrics.service.js';
-import { LyricsCarryoverService } from './modules/lyrics/lyrics-carryover.service.js';
 import { RecordingDocumentRepository } from './modules/recording/recording-document.repository.js';
 import { RecordingDocumentService } from './modules/recording/recording-document.service.js';
 import {
@@ -42,7 +34,6 @@ export type WorkerReimportOptions = {
   dbSource: () => Database;
   /** The serving copy's search indexes, swapped on the flip. */
   index: MeilisearchIndex<RecordingDocument>;
-  lyricsIndex: MeilisearchIndex<LyricsDocument>;
   env: WorkerEnv;
   /** The parallel database with its URL; absent, the worker never reimports. */
   nextCopy?: { db: Database; url: string };
@@ -63,7 +54,7 @@ export const assembleWorkerReimport = (
     return new ReimportService({ bootstrap, state, dataset, logger });
   }
   const { db: nextDb, url: nextUrl } = options.nextCopy;
-  const { env, index, lyricsIndex } = options;
+  const { env, index } = options;
   return new ReimportService({
     bootstrap: options.bootstrap,
     state: options.state,
@@ -74,7 +65,6 @@ export const assembleWorkerReimport = (
       nextDb,
       nextUrl,
       index,
-      lyricsIndex,
       logger: options.logger,
     }),
     logger: options.logger,
@@ -87,7 +77,6 @@ type NextCopyParts = {
   nextDb: Database;
   nextUrl: string;
   index: MeilisearchIndex<RecordingDocument>;
-  lyricsIndex: MeilisearchIndex<LyricsDocument>;
   logger: Logger;
 };
 
@@ -100,37 +89,24 @@ const REIMPORT_SWAP_PROBE_SIZE = 200;
 // The four steps against the parallel copy. Split from the assembly above
 // so each function stays small; covered by the same construction spec.
 const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
-  const { env, dbSource, nextDb, logger } = parts;
+  const { env, nextDb } = parts;
   const nextIndex = createMeilisearchIndex<RecordingDocument>({
     url: env.MEILISEARCH_URL,
     apiKey: env.MEILISEARCH_WRITE_API_KEY,
     ...RECORDINGS_NEXT_INDEX,
   });
-  const nextLyricsIndex = createMeilisearchIndex<LyricsDocument>({
-    url: env.MEILISEARCH_URL,
-    apiKey: env.MEILISEARCH_WRITE_API_KEY,
-    ...LYRICS_NEXT_INDEX,
-  });
   return {
     ensureTriggersCopy: async (): Promise<void> => {
       await new RecordingOutboxRepository(nextDb).ensureTriggers();
     },
-    rematchLyrics: (signal: AbortSignal) =>
-      new LyricsCarryoverService({
-        source: new LyricsRepository(dbSource),
-        target: new LyricsRepository(nextDb),
-        logger,
-      }).carryOver(signal),
     indexCopy: async (
       signal: AbortSignal,
       onProgress: (fraction: number) => Promise<void>,
     ): Promise<void> => {
-      await detachedIndexing(parts, nextIndex, nextLyricsIndex).runDetached(
-        signal,
-      );
+      await detachedIndexing(parts, nextIndex).runDetached(signal);
       await onProgress(1);
     },
-    switchToCopy: buildSwitchStep(parts, nextIndex, nextLyricsIndex),
+    switchToCopy: buildSwitchStep(parts, nextIndex),
   };
 };
 
@@ -139,9 +115,8 @@ const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
 const buildSwitchStep = (
   parts: NextCopyParts,
   nextIndex: MeilisearchIndex<RecordingDocument>,
-  nextLyricsIndex: MeilisearchIndex<LyricsDocument>,
 ): ReimportCopy['switchToCopy'] => {
-  const { env, dbSource, nextDb, nextUrl, index, lyricsIndex, logger } = parts;
+  const { env, dbSource, nextDb, nextUrl, index, logger } = parts;
   return () =>
     new ReimportSwitchService({
       servingOutbox: new RecordingOutboxRepository(dbSource),
@@ -150,20 +125,15 @@ const buildSwitchStep = (
       sequences: new ReplicationRepository(dbSource),
       servingIndex: index,
       nextIndex,
-      servingLyricsIndex: lyricsIndex,
-      nextLyricsIndex,
       nextUrl,
       oldDatabaseName: databaseNameOf(env.DATABASE_URL),
       cleanupOldCopy: env.REIMPORT_CLEANUP_OLD_COPY !== 'false',
-      // One Meilisearch task swaps both pairs: no half-swapped catalog
-      // when the process dies mid-flip (see ReimportSwitchService).
       swapBoth: () =>
         index.swapPairs([
           {
             servingUid: RECORDINGS_INDEX.uid,
             nextUid: RECORDINGS_NEXT_INDEX.uid,
           },
-          { servingUid: LYRICS_INDEX.uid, nextUid: LYRICS_NEXT_INDEX.uid },
         ]),
       // A rerun that finds the flip record completes the flip instead of
       // swapping back. Either copy's row proves it: the record is written
@@ -192,7 +162,6 @@ const buildSwitchStep = (
 const detachedIndexing = (
   parts: NextCopyParts,
   nextIndex: MeilisearchIndex<RecordingDocument>,
-  nextLyricsIndex: MeilisearchIndex<LyricsDocument>,
 ): IndexingService => {
   const { env, nextDb, logger } = parts;
   return new IndexingService({
@@ -205,10 +174,6 @@ const detachedIndexing = (
     ),
     repository: new IndexingRepository(nextDb),
     index: nextIndex,
-    lyrics: {
-      documents: new LyricsService(new LyricsRepository(nextDb)),
-      index: nextLyricsIndex,
-    },
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
   });

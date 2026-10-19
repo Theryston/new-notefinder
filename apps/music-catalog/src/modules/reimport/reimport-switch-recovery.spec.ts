@@ -34,12 +34,11 @@ const setup = (
     }),
   });
   const nextIndex = switchIndex('recordings_next');
-  const nextLyricsIndex = switchIndex('lyrics_next');
   const swapBoth =
     options.swapBothFails === true
       ? undefined
       : vi.fn(async () => {
-          calls.push('swapPairs(recordings,lyrics)');
+          calls.push('swapPairs(recordings)');
         });
   const deps: ReimportSwitchDeps = {
     servingOutbox: {
@@ -66,8 +65,6 @@ const setup = (
     },
     servingIndex: switchIndex('recordings'),
     nextIndex,
-    servingLyricsIndex: switchIndex('lyrics'),
-    nextLyricsIndex,
     nextUrl: 'postgres://host/next',
     oldDatabaseName: undefined,
     cleanupOldCopy: false,
@@ -81,7 +78,7 @@ const setup = (
 };
 
 describe('ReimportSwitchService recovery', () => {
-  it('swaps both pairs in one task on the first flip', async () => {
+  it('swaps the index pair in one task on the first flip', async () => {
     const { service, deps, calls, swapBoth } = setup();
 
     await service.switchToCopy();
@@ -90,12 +87,11 @@ describe('ReimportSwitchService recovery', () => {
     expect(deps.servingIndex.swapWith).not.toHaveBeenCalled();
     expect(calls).toEqual([
       'outbox.clearAll',
-      'swapPairs(recordings,lyrics)',
+      'swapPairs(recordings)',
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
-      'lyrics_next.deleteIndex',
     ]);
   });
 
@@ -113,7 +109,6 @@ describe('ReimportSwitchService recovery', () => {
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
-      'lyrics_next.deleteIndex',
     ]);
   });
 
@@ -153,7 +148,7 @@ describe('ReimportSwitchService recovery', () => {
     expect(swapBoth).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back to the two separate swaps without the single task', async () => {
+  it('falls back to the plain swap without the single task', async () => {
     const { service, deps, calls } = setup({ swapBothFails: true });
     delete deps.swapBoth;
 
@@ -162,12 +157,10 @@ describe('ReimportSwitchService recovery', () => {
     expect(calls).toEqual([
       'outbox.clearAll',
       'recordings.swapWith(recordings_next)',
-      'lyrics.swapWith(lyrics_next)',
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
-      'lyrics_next.deleteIndex',
     ]);
   });
 });

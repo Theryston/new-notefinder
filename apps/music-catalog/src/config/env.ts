@@ -63,43 +63,6 @@ const workerEnvSchema = envSchema.extend({
   // Recordings sent to Meilisearch per task: bigger batches index faster and
   // use more memory, smaller ones checkpoint more often.
   INDEXING_BATCH_SIZE: z.coerce.number().int().min(1).max(10_000).default(2000),
-  // The directory the LRCLIB dump files live under; the latest key read from
-  // the listing below is appended to it. Points at a fake HTTP server in
-  // tests, never at a mirror that does not publish the dumps.
-  LRCLIB_BASE_URL: z
-    .url({ protocol: /^https?$/ })
-    .default('https://db-dumps.lrclib.net'),
-  // The undocumented endpoint listing the published dumps, read for the
-  // latest key (only the latest is kept online).
-  LRCLIB_LISTING_URL: z
-    .url({ protocol: /^https?$/ })
-    .default('https://lrclib-db-dumps.bu3nnyut4y9jfkdg.workers.dev'),
-  // The public LRCLIB API new and changed Recordings get their Lyrics from
-  // between dump refreshes. Points at a fake HTTP server in tests.
-  LRCLIB_API_BASE_URL: z
-    .url({ protocol: /^https?$/ })
-    .default('https://lrclib.net'),
-  // Where `tiny` gets its Lyrics. `fake` (the default) writes placeholder
-  // text locally, deterministic and offline, which is what the tests use;
-  // `api` asks the public API above for the real Lyrics of the seeded
-  // Recordings, a second apart, so a dev catalog shows real songs.
-  LRCLIB_TINY_SOURCE: z.enum(['fake', 'api']).default('fake'),
-  // How often the worker polls the dump listing for a newer dump. The poll
-  // itself is cheap (one small JSON document); the download only follows
-  // when the minimum interval below has passed and the key is new.
-  LRCLIB_REFRESH_CHECK_INTERVAL_MS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(3_600_000),
-  // At most one dump refresh per this many days: dumps are published by hand
-  // every few weeks to months, so polling daily would only re-download the
-  // same file.
-  LRCLIB_REFRESH_MIN_INTERVAL_DAYS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(30),
   // The parallel database the blue-green reimport rebuilds the catalog in
   // after MusicBrainz's yearly schema change (same server, other database).
   // Absent, the worker never reimports (see apps/music-catalog/CLAUDE.md).

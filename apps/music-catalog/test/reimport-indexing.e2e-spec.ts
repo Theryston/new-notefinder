@@ -1,5 +1,4 @@
 import { useIsolatedServer } from './utils/isolated-server.js';
-import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
 import {
@@ -8,10 +7,7 @@ import {
   useFakeDumps,
   useParallelDatabase,
 } from './utils/reimport-harness.js';
-import {
-  useEmptyLyricsIndex,
-  useEmptySearchIndex,
-} from './utils/test-worker.js';
+import { useEmptySearchIndex } from './utils/test-worker.js';
 
 // The yearly schema change: the reimport rebuilds the parallel copy while
 // the serving copy answers (see test/utils/reimport-harness.ts for the
@@ -25,7 +21,6 @@ describe('yearly schema change: reimporting beside the serving copy (e2e)', {
   const { server, client } = useIsolatedServer();
 
   useEmptySearchIndex();
-  useEmptyLyricsIndex();
 
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
@@ -55,9 +50,5 @@ describe('yearly schema change: reimporting beside the serving copy (e2e)', {
     });
     await expect(searchMbids('Same Take Song')).resolves.toEqual([mbid(901)]);
     await expect(searchMbids('Brand New Next')).resolves.toEqual([]);
-    await expect(keptLyricsOf(server().db, mbid(901))).resolves.toEqual({
-      plain: 'same take la',
-      synced: null,
-    });
   });
 });

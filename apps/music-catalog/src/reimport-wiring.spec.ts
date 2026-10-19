@@ -1,7 +1,6 @@
 import type { WorkerEnv } from './config/env.js';
 import type { Database } from './database/database.js';
 import type { MeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
-import type { LyricsDocument } from './lib/lyrics-index.js';
 import type { RecordingDocument } from './lib/recordings-index.js';
 import type { Logger } from './logger.js';
 import type { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
@@ -26,7 +25,6 @@ describe('assembleWorkerReimport', () => {
       logger: silentLogger,
       dbSource: () => ({}) as Database,
       index: {} as MeilisearchIndex<RecordingDocument>,
-      lyricsIndex: {} as MeilisearchIndex<LyricsDocument>,
       env: {} as WorkerEnv,
     });
 
@@ -47,7 +45,6 @@ describe('assembleWorkerReimport', () => {
       logger: silentLogger,
       dbSource: () => ({}) as Database,
       index: {} as MeilisearchIndex<RecordingDocument>,
-      lyricsIndex: {} as MeilisearchIndex<LyricsDocument>,
       env: {
         MEILISEARCH_URL: 'http://meilisearch:7700',
         MEILISEARCH_WRITE_API_KEY: 'write-key',

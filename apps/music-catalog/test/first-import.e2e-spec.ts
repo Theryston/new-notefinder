@@ -22,19 +22,11 @@ import {
   type FakeDumpServer,
   startFakeDumpServer,
 } from './utils/fake-dump-server.js';
-import {
-  fakeLrclibDumpGz,
-  startFakeLrclibServer,
-} from './utils/fake-lrclib-server.js';
 import { requestRecording } from './utils/get-recording-client.js';
-import { keptLyricsOf } from './utils/kept-lyrics.js';
+import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { requestSearch } from './utils/search-client.js';
-import {
-  createTestWorker,
-  useEmptyLyricsIndex,
-  useEmptySearchIndex,
-} from './utils/test-worker.js';
+import { createTestWorker, useEmptySearchIndex } from './utils/test-worker.js';
 import { useTestClient } from './utils/use-test-client.js';
 
 // Recreating the 375-table MusicBrainz schema (the redo test) and
@@ -46,7 +38,6 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
   const client = useTestClient(server);
 
   useEmptySearchIndex();
-  useEmptyLyricsIndex();
 
   let dumps: FakeDumpServer;
   beforeAll(async () => {
@@ -168,34 +159,23 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       dataset: 'tiny',
     });
     // Seed order is id order, which is the order the fake dump is built in.
-    const [first, second, third] = tinySeed.recordings;
+    const [first] = tinySeed.recordings;
     const seededMbid = first?.mbid ?? '';
     await expect(searchMbids(first?.title ?? '')).resolves.toContain(
       seededMbid,
     );
-    // The tick generated the fake LRCLIB dump from the seeded Recordings
-    // and kept only the matched Lyrics: recording 1 has them, recording 2
-    // (an album tie) stays null.
+    // Search is metadata only: the worker builds no Lyrics index.
+    await expect(
+      meilisearchRequest(inject('meilisearch'), 'GET', '/indexes/lyrics').then(
+        ({ status }) => status,
+      ),
+    ).resolves.toBe(404);
     await expect(
       requestRecording(client(), { mbid: seededMbid }),
     ).resolves.toMatchObject({
       ok: true,
       result: { title: first?.title },
     });
-    await expect(keptLyricsOf(server().db, seededMbid)).resolves.toEqual({
-      plain: expect.stringContaining('fake-lrclib-0'),
-      synced: expect.stringContaining('[00:01.00]'),
-    });
-    await expect(
-      keptLyricsOf(server().db, second?.mbid ?? ''),
-    ).resolves.toEqual({ plain: null, synced: null });
-    await expect(
-      keptLyricsOf(server().db, third?.mbid ?? ''),
-    ).resolves.toMatchObject({
-      plain: expect.stringContaining('fake-lrclib-2'),
-    });
-    // Search never matches on Lyrics, only on metadata.
-    await expect(searchMbids('fake-lrclib-0 drifting')).resolves.toEqual([]);
   });
 
   it('restores the full dump to ready on the first run', async () => {
@@ -224,32 +204,15 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       dataset: 'full',
     });
 
-    // The worker's Lyrics import downloads the dump: serve it an empty one
-    // from a fake server, never the real LRCLIB.
-    const lrclib = await startFakeLrclibServer({
-      'lrclib-db-dump-20240102T000000Z.sqlite3.gz': fakeLrclibDumpGz([]),
-    });
-    try {
-      await createTestWorker(server(), {
-        env: {
-          CATALOG_DATASET: 'full',
-          LRCLIB_BASE_URL: lrclib.baseUrl,
-          LRCLIB_LISTING_URL: lrclib.listingUrl,
-        },
-      }).tick();
-    } finally {
-      await lrclib.close();
-    }
+    await createTestWorker(server(), {
+      env: { CATALOG_DATASET: 'full' },
+    }).tick();
 
     expect(await statusOf()).toMatchObject({
       phase: 'ready',
       dataset: 'full',
     });
     await expect(searchMbids('full song')).resolves.toContain(mbid(302));
-    await expect(keptLyricsOf(server().db, mbid(302))).resolves.toEqual({
-      plain: null,
-      synced: null,
-    });
   });
 
   it('skips the download and the restore on a second start', async () => {

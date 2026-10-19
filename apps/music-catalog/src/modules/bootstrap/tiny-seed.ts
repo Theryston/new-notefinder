@@ -8,8 +8,7 @@ import data from './tiny-seed-data.json' with { type: 'json' };
  * single, their artists, Recordings, release groups, releases, media, tracks,
  * release events and genres), stored in `tiny-seed-data.json` with its real MBIDs.
  * So a cover URL built from a release MBID loads from the Cover Art Archive,
- * an MBID resolves on musicbrainz.org, and the Lyrics LRCLIB knows for these
- * songs match. Every restore of `tiny` lays down the same rows, without
+ * an MBID resolves on musicbrainz.org. Every restore of `tiny` lays down the same rows, without
  * touching the network. The data is pure here; the SQL lives in
  * `TinySeedRepository`.
  */
