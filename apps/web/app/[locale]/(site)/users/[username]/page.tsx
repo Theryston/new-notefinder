@@ -94,9 +94,11 @@ export default async function UserProfilePage({
   return (
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
-      <Suspense fallback={null}>
-        <ProfileFavoritesSection username={profile.username} />
-      </Suspense>
+      {/* Not behind a Suspense boundary: the favorites have no height to
+          reserve before they load, so arriving later would push the sections
+          below them down on screen. In the first HTML they lay out with the
+          banner, and the summary and history stand-ins never move under them. */}
+      <ProfileFavoritesSection username={profile.username} />
       <Suspense fallback={shown.summary ? <ProfileSummarySkeleton /> : null}>
         <ProfileSummary username={profile.username} />
       </Suspense>
