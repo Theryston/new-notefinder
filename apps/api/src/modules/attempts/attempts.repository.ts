@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   practiceAttempts,
@@ -43,6 +43,23 @@ export class AttemptsRepository {
       throw new Error('Saving the practice attempt returned no row');
     }
     return row;
+  }
+
+  /**
+   * How many runs the User saved that were not flagged as bleed: the runs
+   * that count as sung.
+   */
+  async countSung(userId: string): Promise<number> {
+    const [row] = await this.txHost.tx
+      .select({ value: count() })
+      .from(practiceAttempts)
+      .where(
+        and(
+          eq(practiceAttempts.userId, userId),
+          eq(practiceAttempts.bleedSuspected, false),
+        ),
+      );
+    return row?.value ?? 0;
   }
 
   /** The best accuracy per difficulty of a User on a Track, if any. */

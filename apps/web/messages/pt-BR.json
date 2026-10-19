@@ -807,6 +807,15 @@
     "unavailable": {
       "title": "Perfil indisponível",
       "description": "Não foi possível carregar este perfil agora. Tente novamente em instantes."
+    },
+    "summary": {
+      "title": "Resumo",
+      "loading": "Carregando resumo…",
+      "streak": "Sequência",
+      "streakUnit": "{count, plural, one {dia} other {dias}}",
+      "sung": "Cantadas",
+      "favorites": "Favoritas",
+      "contributions": "Contribuições"
     }
   }
 }

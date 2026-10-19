@@ -807,6 +807,15 @@
     "unavailable": {
       "title": "Profile unavailable",
       "description": "We couldn't load this profile right now. Try again in a moment."
+    },
+    "summary": {
+      "title": "Summary",
+      "loading": "Loading summary…",
+      "streak": "Streak",
+      "streakUnit": "{count, plural, one {day} other {days}}",
+      "sung": "Sung",
+      "favorites": "Favorites",
+      "contributions": "Contributions"
     }
   }
 }

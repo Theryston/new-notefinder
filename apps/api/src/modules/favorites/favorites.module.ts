@@ -11,5 +11,6 @@ import { TrackStateService } from './track-state.service.js';
   imports: [TracksModule, AttemptsModule],
   controllers: [FavoritesController],
   providers: [FavoritesService, FavoritesRepository, TrackStateService],
+  exports: [FavoritesService],
 })
 export class FavoritesModule {}

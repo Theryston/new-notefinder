@@ -18,6 +18,7 @@ import { StreaksService } from './streaks.service.js';
     BullModule.registerQueue({ name: STREAK_REMINDER_QUEUE }),
   ],
   controllers: [StreaksController],
+  exports: [StreaksService],
   providers: [
     StreaksService,
     StreaksRepository,

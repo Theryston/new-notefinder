@@ -98,6 +98,11 @@ export class AttemptsService {
     return toAttempt(await this.attempts.insert(attempt));
   }
 
+  /** How many saved runs of the User count as sung (not bleed-suspected). */
+  countSung(userId: string): Promise<number> {
+    return this.attempts.countSung(userId);
+  }
+
   /** The User's best accuracy per difficulty on a Track, for the title row. */
   async bestScores(
     userId: string,
