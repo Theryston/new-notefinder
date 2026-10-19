@@ -49,14 +49,13 @@ for (const { locale, messages } of cases) {
       const { search, home, header } = await openWithHeader(page, `/${locale}`);
 
       // No Enter: typing alone never navigates, debounced or not. It asks
-      // only for the header suggestions (metadata scope, limit 6).
+      // only for the header suggestions (limit 6).
       await header.fill('queen');
       await page.waitForTimeout(500);
       await expect(page).toHaveURL(home);
       expect(search.calls).toHaveLength(1);
       expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
         query: 'queen',
-        scope: 'metadata',
         limit: '6',
       });
 
@@ -77,20 +76,11 @@ for (const { locale, messages } of cases) {
       // the last is not the header's six-suggestion request.
       expect(search.calls).toHaveLength(2);
       const pageRequest = searchParamsOf(lastRequest(search.calls));
-      expect(pageRequest).toMatchObject({
-        query: 'queen',
-        scope: 'metadata',
-      });
+      expect(pageRequest).toMatchObject({ query: 'queen' });
       expect(pageRequest.limit).not.toBe('6');
-      // The Lyrics toggle lives only on the search page, never in the header.
-      await expect(
-        page
-          .getByRole('banner')
-          .getByRole('button', { name: messages.search.scope.lyrics }),
-      ).toHaveCount(0);
     });
 
-    test('header typing on the search page keeps lyrics scope', async ({
+    test('header typing on a legacy lyrics link searches the metadata only', async ({
       page,
     }) => {
       await mockAuthApi(page);
@@ -102,13 +92,12 @@ for (const { locale, messages } of cases) {
       await header.fill('abba');
 
       await expect(page).toHaveURL(/q=abba/);
-      await expect(page).toHaveURL(/scope=lyrics/);
       await expect(header).toHaveValue('abba');
       const abba = [...search.calls]
         .reverse()
         .find((call) => searchParamsOf(call).query === 'abba');
       if (!abba) throw new Error('expected a search request for abba');
-      expect(searchParamsOf(abba).scope).toBe('lyrics');
+      expect(searchParamsOf(abba).scope).toBe('');
 
       // The existing shortcut still focuses the header search.
       await headerReady(page, messages.header.account.signIn);
@@ -121,10 +110,10 @@ for (const { locale, messages } of cases) {
     }) => {
       await mockAuthApi(page);
       const search = await mockSearchApi(page);
-      await page.goto(`/${locale}/search?q=q&scope=lyrics`);
+      await page.goto(`/${locale}/search?q=q`);
 
       // The query field lives in the header now; the page keeps only the
-      // title and the scope toggle. A single character already searches.
+      // title. A single character already searches.
       const header = headerField(page, messages.header.search.label);
       await expect(header).toHaveValue('q');
       await expect(
@@ -132,13 +121,11 @@ for (const { locale, messages } of cases) {
       ).toBeVisible();
       expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
         query: 'q',
-        scope: 'lyrics',
       });
 
       await header.fill('queen');
       await expect(header).toBeFocused();
       await expect(page).toHaveURL(/q=queen/);
-      await expect(page).toHaveURL(/scope=lyrics/);
       await expect(
         page.getByRole('main').getByText('Bohemian Rhapsody'),
       ).toBeVisible();
@@ -255,31 +242,19 @@ for (const { locale, messages } of cases) {
       await expect(main.getByText('Bohemian Rhapsody')).toBeVisible();
     });
 
-    test('scope toggle switches metadata and lyrics', async ({ page }) => {
+    test('a legacy scope=lyrics link renders a normal metadata search, with no toggle', async ({
+      page,
+    }) => {
       await mockAuthApi(page);
       const search = await mockSearchApi(page);
-      await page.goto(`/${locale}/search?q=queen`);
+      await page.goto(`/${locale}/search?q=queen&scope=lyrics`);
 
       const main = page.getByRole('main');
-      const lyrics = main.getByRole('button', {
-        name: messages.search.scope.lyrics,
+      await expect(main.getByText('Bohemian Rhapsody')).toBeVisible();
+      expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({
+        query: 'queen',
       });
-      const metadata = main.getByRole('button', {
-        name: messages.search.scope.metadata,
-      });
-      await expect(lyrics).toHaveAttribute('aria-pressed', 'false');
-
-      await lyrics.click();
-      await expect(page).toHaveURL(/scope=lyrics/);
-      await expect(lyrics).toHaveAttribute('aria-pressed', 'true');
-      const scoped = [...search.calls]
-        .reverse()
-        .find((call) => searchParamsOf(call).scope === 'lyrics');
-      if (!scoped) throw new Error('expected a lyrics search request');
-
-      await metadata.click();
-      await expect(page).not.toHaveURL(/scope=/);
-      await expect(metadata).toHaveAttribute('aria-pressed', 'true');
+      expect(searchParamsOf(lastRequest(search.calls)).scope).toBe('');
     });
 
     test('shows a skeleton while results load', async ({ page }) => {

@@ -15,8 +15,8 @@ import { useDebouncedQuery } from './use-debounced-query';
 import { fetchSearchPage } from './use-search-results';
 
 /**
- * Header autocomplete options: the public search with the `metadata` scope
- * and a short limit, in catalog rank order (the matches are used as the
+ * Header autocomplete options: the public search with a short limit, in
+ * catalog rank order (the matches are used as the
  * search engine ranked them). Its own key keeps the suggestions cache apart
  * from the search page's infinite one. Disabled while the query is not
  * searchable, so a blank field never hits the API; while a new query loads,
@@ -34,14 +34,12 @@ export function searchSuggestionsQueryOptions({ query }: { query: string }) {
           'suggestions',
           {
             query: normalizeSearchQuery(query),
-            scope: 'metadata',
             limit: SEARCH_SUGGESTIONS_LIMIT,
           },
         ] as const),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       fetchSearchPage({
         query,
-        scope: 'metadata',
         limit: SEARCH_SUGGESTIONS_LIMIT,
         offset: 0,
         signal,

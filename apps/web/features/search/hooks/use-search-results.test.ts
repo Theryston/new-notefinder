@@ -34,13 +34,12 @@ function resultItem(n: number, title: string, trackId: string | null = null) {
 }
 
 describe('fetchSearchPage', () => {
-  it('asks the public endpoint with query plus scope and paging', async () => {
+  it('asks the public endpoint with query and paging, never a scope', async () => {
     fetchMock.mockResolvedValue(searchBody([resultItem(1, 'Song')]));
     const { fetchSearchPage } = await import('./use-search-results');
 
     const page = await fetchSearchPage({
       query: 'queen',
-      scope: 'lyrics',
       limit: 20,
       offset: 20,
     });
@@ -49,7 +48,7 @@ describe('fetchSearchPage', () => {
     const url = new URL(String(input));
     expect(url.pathname).toBe('/v1/search');
     expect(url.searchParams.get('query')).toBe('queen');
-    expect(url.searchParams.get('scope')).toBe('lyrics');
+    expect(url.searchParams.has('scope')).toBe(false);
     expect(url.searchParams.get('limit')).toBe('20');
     expect(url.searchParams.get('offset')).toBe('20');
     expect(page.results).toHaveLength(1);
@@ -72,7 +71,6 @@ describe('fetchSearchPage', () => {
 
     const pending = fetchSearchPage({
       query: 'queen',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
       signal: controller.signal,
@@ -90,7 +88,7 @@ describe('searchInfiniteQueryOptions', () => {
     const queryClient = new QueryClient();
 
     const data = await queryClient.fetchInfiniteQuery(
-      searchInfiniteQueryOptions({ query: 'queen', scope: 'metadata' }),
+      searchInfiniteQueryOptions({ query: 'queen' }),
     );
 
     expect(data.pages).toHaveLength(1);
@@ -100,21 +98,19 @@ describe('searchInfiniteQueryOptions', () => {
   it('stays disabled below 2 non-blank characters', async () => {
     const { searchInfiniteQueryOptions } = await import('./use-search-results');
 
-    expect(
-      searchInfiniteQueryOptions({ query: ' ', scope: 'metadata' }),
-    ).toMatchObject({ enabled: false });
-    expect(
-      searchInfiniteQueryOptions({ query: 'queen', scope: 'metadata' }),
-    ).toMatchObject({ enabled: true });
+    expect(searchInfiniteQueryOptions({ query: ' ' })).toMatchObject({
+      enabled: false,
+    });
+    expect(searchInfiniteQueryOptions({ query: 'queen' })).toMatchObject({
+      enabled: true,
+    });
   });
 
   it('keys every blank the same while disabled', async () => {
     const { searchInfiniteQueryOptions } = await import('./use-search-results');
 
-    expect(
-      searchInfiniteQueryOptions({ query: ' ', scope: 'metadata' }).queryKey,
-    ).toEqual(
-      searchInfiniteQueryOptions({ query: '   ', scope: 'metadata' }).queryKey,
+    expect(searchInfiniteQueryOptions({ query: ' ' }).queryKey).toEqual(
+      searchInfiniteQueryOptions({ query: '   ' }).queryKey,
     );
   });
 
@@ -122,7 +118,6 @@ describe('searchInfiniteQueryOptions', () => {
     const { searchInfiniteQueryOptions } = await import('./use-search-results');
     const options = searchInfiniteQueryOptions({
       query: 'queen',
-      scope: 'metadata',
       limit: 2,
     });
 
@@ -136,15 +131,12 @@ describe('searchInfiniteQueryOptions', () => {
 
   it('uses the default page size', async () => {
     const { searchInfiniteQueryOptions } = await import('./use-search-results');
-    const options = searchInfiniteQueryOptions({
-      query: 'queen',
-      scope: 'metadata',
-    });
+    const options = searchInfiniteQueryOptions({ query: 'queen' });
 
     expect(options.queryKey).toEqual([
       'search',
       'infinite',
-      { query: 'queen', scope: 'metadata', limit: SEARCH_DEFAULT_LIMIT },
+      { query: 'queen', limit: SEARCH_DEFAULT_LIMIT },
     ]);
   });
 });

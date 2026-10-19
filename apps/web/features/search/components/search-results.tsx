@@ -1,6 +1,6 @@
 'use client';
 
-import type { SearchResultItem, SearchScope } from '@notefinder/contracts';
+import type { SearchResultItem } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
@@ -79,15 +79,13 @@ function SearchResultCards({
  */
 export function SearchResults({
   query,
-  scope,
   searchPath,
 }: {
   query: string;
-  scope: SearchScope;
   searchPath: string;
 }) {
   const t = useTranslations('search');
-  const results = useSearchResults({ query, scope });
+  const results = useSearchResults({ query });
   const {
     data,
     error,

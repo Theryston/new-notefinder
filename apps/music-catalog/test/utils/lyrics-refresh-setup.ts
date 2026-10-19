@@ -165,9 +165,8 @@ export const lyricsOf = async (
 export const searchMbids = async (
   client: TestClient,
   query: string,
-  scope: 'metadata' | 'lyrics',
 ): Promise<string[]> => {
-  const response = await requestSearch(client, { query, scope });
+  const response = await requestSearch(client, { query });
   if (!response.ok) {
     throw new Error(`search failed: ${response.error.code}`);
   }

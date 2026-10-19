@@ -7,8 +7,8 @@ import { testMbid } from '../../../test/utils/factories.js';
 import { recordingSummary } from '../../../test/utils/recording-summaries.js';
 
 // Locks the shared vocabulary: the public query mirrors the Music catalog
-// payload semantics (same scope, defaults and bounds), and each enriched hit
-// is the catalog's summary plus a nullable Track id.
+// payload semantics (same defaults and bounds), and each enriched hit is the
+// catalog's summary plus a nullable Track id.
 describe('search contracts', () => {
   it('parses the public query with the catalog defaults', () => {
     expect(searchQuerySchema.parse({ query: 'queen' })).toEqual(
@@ -16,7 +16,7 @@ describe('search contracts', () => {
     );
   });
 
-  it('accepts the lyrics scope with paging from query strings', () => {
+  it('reads paging from query strings and drops a scope an older client sends', () => {
     expect(
       searchQuerySchema.parse({
         query: 'queen',
@@ -24,7 +24,7 @@ describe('search contracts', () => {
         limit: '10',
         offset: '20',
       }),
-    ).toEqual({ query: 'queen', scope: 'lyrics', limit: 10, offset: 20 });
+    ).toEqual({ query: 'queen', limit: 10, offset: 20 });
   });
 
   it.each([{ query: '   ' }, { query: 'queen', limit: 101 }])(

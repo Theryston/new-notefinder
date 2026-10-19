@@ -11,7 +11,7 @@ import {
   createMeilisearchIndex,
   type MeilisearchIndex,
 } from './integrations/meilisearch/meilisearch-index.js';
-import { LYRICS_INDEX, type LyricsDocument } from './lib/lyrics-index.js';
+import type { LyricsDocument } from './lib/lyrics-index.js';
 import {
   RECORDINGS_INDEX,
   type RecordingDocument,
@@ -172,11 +172,6 @@ export const createMusicCatalogServer = (
       url: env.MEILISEARCH_URL,
       apiKey: env.MEILISEARCH_SEARCH_API_KEY,
       ...RECORDINGS_INDEX,
-    }),
-    lyricsIndex: createMeilisearchIndex<LyricsDocument>({
-      url: env.MEILISEARCH_URL,
-      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
-      ...LYRICS_INDEX,
     }),
     summaries: new RecordingSummaryService(
       new RecordingSummaryRepository(dbSource),

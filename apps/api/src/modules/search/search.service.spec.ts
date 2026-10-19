@@ -45,14 +45,12 @@ describe('SearchService', () => {
 
     const result = await service.search({
       query: 'song',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
     });
 
     expect(catalog.search).toHaveBeenCalledWith({
       query: 'song',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
     });
@@ -69,7 +67,6 @@ describe('SearchService', () => {
     await expect(
       service.search({
         query: 'nothing matches this',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -83,7 +80,6 @@ describe('SearchService', () => {
     await expect(
       service.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),

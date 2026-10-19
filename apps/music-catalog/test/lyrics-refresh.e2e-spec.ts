@@ -63,16 +63,6 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
           plain: expect.stringContaining('second-pressing'),
           synced: expect.stringContaining('[00:01.00]'),
         });
-        const found = await searchMbids(
-          client(),
-          'second-pressing still drifting',
-          'lyrics',
-        );
-        expect(found[0]).toBe(REC_A);
-        // The replaced document is gone: the old words find nothing.
-        await expect(
-          searchMbids(client(), 'fake-lrclib-0 drifting', 'lyrics'),
-        ).resolves.not.toContain(REC_A);
         // The refresh never takes the catalog offline.
         await expect(statusPhase(client())).resolves.toBe('ready');
       } finally {
@@ -154,12 +144,6 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await expect(lyricsOf(client(), REC_A)).resolves.toMatchObject({
           plain: expect.stringContaining('third-pressing'),
         });
-        const found = await searchMbids(
-          client(),
-          'third-pressing still drifting',
-          'lyrics',
-        );
-        expect(found[0]).toBe(REC_A);
       } finally {
         await third.close();
       }
@@ -202,12 +186,6 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await expect(lyricsOf(client(), REC_B)).resolves.toMatchObject({
           plain: expect.stringContaining('Harbor words'),
         });
-        const found = await searchMbids(
-          client(),
-          'Harbor words only the API knows',
-          'lyrics',
-        );
-        expect(found).toContain(REC_B);
         expect(withApi.api.userAgents.length).toBeGreaterThan(0);
         for (const userAgent of withApi.api.userAgents) {
           expect(userAgent).toBe(LRCLIB_API_USER_AGENT);
@@ -235,7 +213,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         synced: null,
       });
       // The outbox still drained: the metadata index answers.
-      const found = await searchMbids(client(), 'Glass Parade', 'metadata');
+      const found = await searchMbids(client(), 'Glass Parade');
       expect(found).toContain(REC_B);
       await expect(statusPhase(client())).resolves.toBe('ready');
     } finally {
@@ -277,18 +255,8 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
         await expect(lyricsOf(client(), late.mbid)).resolves.toMatchObject({
           plain: expect.stringContaining('Lantern words'),
         });
-        const found = await searchMbids(
-          client(),
-          'Lantern words only the API knows',
-          'lyrics',
-        );
-        expect(found).toContain(late.mbid);
         // The outbox drained behind the lookup: the metadata index answers.
-        const metadata = await searchMbids(
-          client(),
-          'Paper Lanterns',
-          'metadata',
-        );
+        const metadata = await searchMbids(client(), 'Paper Lanterns');
         expect(metadata).toContain(late.mbid);
       } finally {
         await withApi.close();
@@ -337,11 +305,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
           await waitForApiRequest(hanging);
           // The drain ran before the lookup even asked: the metadata index
           // answers while the API still holds every response.
-          const metadata = await searchMbids(
-            client(),
-            'Harbor Static',
-            'metadata',
-          );
+          const metadata = await searchMbids(client(), 'Harbor Static');
           expect(metadata).toContain(late.mbid);
         } finally {
           releaseApi();
@@ -400,10 +364,7 @@ describe('lyrics refresh: newer dumps and the outbox API lookup (e2e)', () => {
           synced: null,
         });
         // Rejected Lyrics never reach the index, while the outbox drains.
-        await expect(
-          searchMbids(client(), 'Words that are not this take', 'lyrics'),
-        ).resolves.not.toContain(late.mbid);
-        const metadata = await searchMbids(client(), 'Tin Echoes', 'metadata');
+        const metadata = await searchMbids(client(), 'Tin Echoes');
         expect(metadata).toContain(late.mbid);
       } finally {
         await strict.close();

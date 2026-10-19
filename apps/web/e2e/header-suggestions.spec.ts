@@ -83,7 +83,6 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(rowLink(page, /Radio Ga Ga/)).toBeVisible();
       expect(searchParamsOf(lastOf(calls))).toMatchObject({
         query: 'queen',
-        scope: 'metadata',
         limit: '6',
       });
       // Six Recordings plus the Search-for row, never a seventh hit.

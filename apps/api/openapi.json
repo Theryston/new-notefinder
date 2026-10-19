@@ -812,19 +812,6 @@
             }
           },
           {
-            "name": "scope",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "metadata",
-              "type": "string",
-              "enum": [
-                "metadata",
-                "lyrics"
-              ]
-            }
-          },
-          {
             "name": "limit",
             "required": false,
             "in": "query",
@@ -852,7 +839,7 @@
             "description": "Catalog matches, best first."
           },
           "400": {
-            "description": "The query, scope or paging is bad."
+            "description": "The query or paging is bad."
           },
           "429": {
             "description": "Per-IP search rate exceeded."

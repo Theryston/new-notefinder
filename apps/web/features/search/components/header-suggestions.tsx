@@ -304,8 +304,8 @@ function SuggestionOptions({
 /**
  * The header suggestions: up to six Recordings in catalog rank order, then
  * the trailing "Search for" option that goes to the full search. A settled
- * empty answer adds a "No songs found" line above it (the full search still
- * answers lyrics). The panel is anchored to the search bar, full width on
+ * empty answer adds a "No songs found" line above it (the full search answers
+ * the same query). The panel is anchored to the search bar, full width on
  * small screens.
  *
  * The rows form a listbox the field names with `aria-controls`; the highlight
@@ -335,7 +335,7 @@ export function HeaderSuggestions({
   const { items, noSongs } = suggestionPanelContent(results);
   const searchForHref = searchHref(query);
   // The sign-in round trip returns to this search, as the search page has it.
-  const searchPath = searchPathFrom(normalizeSearchQuery(query), null);
+  const searchPath = searchPathFrom(normalizeSearchQuery(query));
 
   // A new answer is a new set of rows: the list reports them so the highlight
   // starts over. The row count (Search-for included) is the layout's.

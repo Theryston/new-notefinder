@@ -18,7 +18,6 @@ const summary = (mbid: string) => ({
 
 const params = {
   query: 'hello',
-  scope: 'metadata',
   limit: 10,
   offset: 20,
 } as const;
@@ -60,50 +59,48 @@ const setup = (
 };
 
 describe('SearchService', () => {
-  describe('search in the metadata scope', () => {
-    it('asks the index for the page of the query, then reads the summaries of what it found', async () => {
-      const { service, index, summaries, callOrder } = setup({
-        hits: ['a', 'b'],
-        summaries: [summary('a'), summary('b')],
-      });
-
-      await service.search(params);
-
-      expect(index.search).toHaveBeenCalledExactlyOnceWith('hello', {
-        limit: 10,
-        offset: 20,
-      });
-      expect(summaries.findByMbids).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
-      expect(callOrder).toEqual(['assertReady', 'index', 'summaries']);
+  it('asks the index for the page of the query, then reads the summaries of what it found', async () => {
+    const { service, index, summaries, callOrder } = setup({
+      hits: ['a', 'b'],
+      summaries: [summary('a'), summary('b')],
     });
 
-    it('returns the summaries in the order the index ranked them, not the order they were read in', async () => {
-      const { service } = setup({
-        hits: ['c', 'a', 'b'],
-        summaries: [summary('a'), summary('b'), summary('c')],
-      });
+    await service.search(params);
 
-      const { results } = await service.search(params);
+    expect(index.search).toHaveBeenCalledExactlyOnceWith('hello', {
+      limit: 10,
+      offset: 20,
+    });
+    expect(summaries.findByMbids).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
+    expect(callOrder).toEqual(['assertReady', 'index', 'summaries']);
+  });
 
-      expect(results.map((r) => r.mbid)).toEqual(['c', 'a', 'b']);
+  it('returns the summaries in the order the index ranked them, not the order they were read in', async () => {
+    const { service } = setup({
+      hits: ['c', 'a', 'b'],
+      summaries: [summary('a'), summary('b'), summary('c')],
     });
 
-    it('drops the hits that are no longer in the database', async () => {
-      const { service } = setup({
-        hits: ['a', 'gone', 'b'],
-        summaries: [summary('b'), summary('a')],
-      });
+    const { results } = await service.search(params);
 
-      const { results } = await service.search(params);
+    expect(results.map((r) => r.mbid)).toEqual(['c', 'a', 'b']);
+  });
 
-      expect(results.map((r) => r.mbid)).toEqual(['a', 'b']);
+  it('drops the hits that are no longer in the database', async () => {
+    const { service } = setup({
+      hits: ['a', 'gone', 'b'],
+      summaries: [summary('b'), summary('a')],
     });
 
-    it('returns no results when the index finds nothing', async () => {
-      const { service } = setup();
+    const { results } = await service.search(params);
 
-      await expect(service.search(params)).resolves.toEqual({ results: [] });
-    });
+    expect(results.map((r) => r.mbid)).toEqual(['a', 'b']);
+  });
+
+  it('returns no results when the index finds nothing', async () => {
+    const { service } = setup();
+
+    await expect(service.search(params)).resolves.toEqual({ results: [] });
   });
 
   it('refuses the search, reaching neither the index nor the database, before the catalog is ready', async () => {
@@ -114,25 +111,5 @@ describe('SearchService', () => {
     });
     expect(index.search).not.toHaveBeenCalled();
     expect(summaries.findByMbids).not.toHaveBeenCalled();
-  });
-
-  describe('search in the lyrics scope', () => {
-    it('answers no results, without asking the metadata index, until Lyrics are imported', async () => {
-      const { service, index, summaries } = setup({ hits: ['a'] });
-
-      const result = await service.search({ ...params, scope: 'lyrics' });
-
-      expect(result).toEqual({ results: [] });
-      expect(index.search).not.toHaveBeenCalled();
-      expect(summaries.findByMbids).not.toHaveBeenCalled();
-    });
-
-    it('still waits for the catalog to be ready', async () => {
-      const { service } = setup({ notReady: true });
-
-      await expect(
-        service.search({ ...params, scope: 'lyrics' }),
-      ).rejects.toMatchObject({ code: 'CATALOG_NOT_READY' });
-    });
   });
 });

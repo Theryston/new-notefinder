@@ -73,7 +73,6 @@ describe('MusicCatalogClient', () => {
 
     const result = await created.client.search({
       query: 'song',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
     });
@@ -107,13 +106,11 @@ describe('MusicCatalogClient', () => {
     const [first, second] = await Promise.all([
       created.client.search({
         query: 'first',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
       created.client.search({
         query: 'second',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -134,7 +131,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'slow',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -154,7 +150,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -174,7 +169,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -191,7 +185,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -234,7 +227,6 @@ describe('MusicCatalogClient', () => {
 
     const result = await created.client.search({
       query: 'song',
-      scope: 'metadata',
       limit: 20,
       offset: 0,
     });
@@ -270,7 +262,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),
@@ -284,7 +275,6 @@ describe('MusicCatalogClient', () => {
     await expect(
       created.client.search({
         query: 'song',
-        scope: 'metadata',
         limit: 20,
         offset: 0,
       }),

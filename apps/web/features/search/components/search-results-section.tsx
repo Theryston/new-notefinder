@@ -5,11 +5,7 @@ import { useQueryState } from 'nuqs';
 
 import { Toaster } from '@/components/ui/sonner';
 import { PROCESS_PARAM, searchPathFrom } from '../request-sign-in';
-import {
-  isSearchableQuery,
-  normalizeSearchQuery,
-  parseSearchScope,
-} from '../search-params';
+import { isSearchableQuery, normalizeSearchQuery } from '../search-params';
 import { SearchPrompt } from './search-prompt';
 import { SearchSkeleton } from './search-skeleton';
 
@@ -42,10 +38,8 @@ const RequestOnArrival = dynamic(() =>
  */
 export function SearchResultsSection() {
   const [urlQuery] = useQueryState('q');
-  const [urlScope] = useQueryState('scope');
   const [processMbid, setProcessMbid] = useQueryState(PROCESS_PARAM);
   const query = normalizeSearchQuery(urlQuery);
-  const scope = parseSearchScope(urlScope);
 
   return (
     <>
@@ -57,11 +51,7 @@ export function SearchResultsSection() {
         />
       )}
       {isSearchableQuery(query) ? (
-        <SearchResults
-          query={query}
-          scope={scope}
-          searchPath={searchPathFrom(urlQuery, urlScope)}
-        />
+        <SearchResults query={query} searchPath={searchPathFrom(urlQuery)} />
       ) : (
         <SearchPrompt />
       )}
