@@ -28,6 +28,14 @@ const profiles = new Map<string, FakeProfile>([
     },
   ],
   [
+    'katherine_johnson',
+    {
+      name: 'Katherine Johnson',
+      image: null,
+      createdAt: '2026-01-02T03:04:05.000Z',
+    },
+  ],
+  [
     'target_only',
     {
       name: 'Target Only',

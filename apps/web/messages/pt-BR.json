@@ -826,6 +826,21 @@
       "memberSince": "Membro desde {date}",
       "loading": "Carregando perfil…"
     },
+    "favorites": {
+      "title": "Músicas favoritas",
+      "loading": "Carregando músicas…",
+      "loadingMore": "Carregando mais músicas…",
+      "loadMore": "Carregar mais",
+      "empty": {
+        "title": "Nenhuma música favorita ainda",
+        "description": "As músicas favoritas aparecerão aqui."
+      },
+      "error": {
+        "title": "Músicas favoritas indisponíveis",
+        "description": "Algo deu errado. Verifique sua conexão e tente novamente.",
+        "retry": "Tentar novamente"
+      }
+    },
     "chips": {
       "label": "Destaques do perfil",
       "dailyTarget": "Meta diária",
