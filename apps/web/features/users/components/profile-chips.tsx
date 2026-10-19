@@ -7,15 +7,15 @@ import { cn } from '@/lib/utils';
 /**
  * The public chips under a Profile banner's info lines: the Daily target, the
  * Vocal range (mono, like every note) and the Most sung artist. A chip the
- * User has nothing for is absent from the response, so it is left out here,
+ * User has nothing for is `null` in the response, so it is left out here,
  * and with none of them the list is not rendered at all.
  */
 export async function ProfileChips({ profile }: { profile: PublicProfile }) {
   const { dailyPracticeTargetSeconds, vocalRange, mostSungArtist } = profile;
   if (
-    dailyPracticeTargetSeconds === undefined &&
-    vocalRange === undefined &&
-    mostSungArtist === undefined
+    dailyPracticeTargetSeconds === null &&
+    vocalRange === null &&
+    mostSungArtist === null
   ) {
     return null;
   }
@@ -27,7 +27,7 @@ export async function ProfileChips({ profile }: { profile: PublicProfile }) {
 
   return (
     <ul aria-label={t('label')} className="flex flex-wrap gap-2">
-      {dailyPracticeTargetSeconds === undefined ? null : (
+      {dailyPracticeTargetSeconds === null ? null : (
         <ChipPill
           label={t('dailyTarget')}
           value={targetT('minutes', {
@@ -35,7 +35,7 @@ export async function ProfileChips({ profile }: { profile: PublicProfile }) {
           })}
         />
       )}
-      {vocalRange === undefined ? null : (
+      {vocalRange === null ? null : (
         <ChipPill
           label={t('vocalRange')}
           value={t('vocalRangeValue', {
@@ -45,7 +45,7 @@ export async function ProfileChips({ profile }: { profile: PublicProfile }) {
           mono
         />
       )}
-      {mostSungArtist === undefined ? null : (
+      {mostSungArtist === null ? null : (
         <ChipPill label={t('mostSungArtist')} value={mostSungArtist.name} />
       )}
     </ul>

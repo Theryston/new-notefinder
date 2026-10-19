@@ -101,6 +101,30 @@ test.describe('public profile chips', () => {
     await expect(page.getByText('Most sung artist')).toHaveCount(0);
   });
 
+  // Each chip is null on its own: the others must still render from the
+  // same response, and a null one never shows an empty pill.
+  test('a Daily target alone shows only the Daily target', async ({ page }) => {
+    await page.goto('/en/users/target_only');
+
+    const chips = chipsOf(page);
+    await expect(chips.getByRole('listitem')).toHaveCount(1);
+    await expect(chips.getByText('Daily target')).toBeVisible();
+    await expect(chips.getByText('5 minutes')).toBeVisible();
+    await expect(page.getByText('Vocal range')).toHaveCount(0);
+    await expect(page.getByText('Most sung artist')).toHaveCount(0);
+  });
+
+  test('a Most sung artist alone shows only the artist', async ({ page }) => {
+    await page.goto('/en/users/artist_only');
+
+    const chips = chipsOf(page);
+    await expect(chips.getByRole('listitem')).toHaveCount(1);
+    await expect(chips.getByText('Most sung artist')).toBeVisible();
+    await expect(chips.getByText('Solo Artist')).toBeVisible();
+    await expect(page.getByText('Daily target')).toHaveCount(0);
+    await expect(page.getByText('Vocal range')).toHaveCount(0);
+  });
+
   test('wraps the chips on a 360px screen without horizontal scrolling', async ({
     page,
   }) => {

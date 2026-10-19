@@ -3,16 +3,16 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { json } from './fake-api-http.ts';
 
 /**
- * The banner fields the fake API serves for one Profile. The chips are absent
- * (not null) when the User has nothing for them, as the API sends them.
+ * The banner fields the fake API serves for one Profile. A chip the User has
+ * nothing for is `null`, as the API sends it; unset ones default to `null`.
  */
 type FakeProfile = {
   name: string;
   image: string | null;
   createdAt: string;
-  dailyPracticeTargetSeconds?: number;
-  vocalRange?: { lowest: number; highest: number };
-  mostSungArtist?: { id: string; name: string };
+  dailyPracticeTargetSeconds?: number | null;
+  vocalRange?: { lowest: number; highest: number } | null;
+  mostSungArtist?: { id: string; name: string } | null;
 };
 
 /** Profiles by lowercased username, as the API stores them. */
@@ -23,6 +23,24 @@ const profiles = new Map<string, FakeProfile>([
       name: 'Ada Lovelace',
       image: null,
       createdAt: '2026-01-02T03:04:05.000Z',
+    },
+  ],
+  [
+    'target_only',
+    {
+      name: 'Target Only',
+      image: null,
+      createdAt: '2026-05-06T07:08:09.000Z',
+      dailyPracticeTargetSeconds: 300,
+    },
+  ],
+  [
+    'artist_only',
+    {
+      name: 'Artist Only',
+      image: null,
+      createdAt: '2026-05-06T07:08:09.000Z',
+      mostSungArtist: { id: 'artist-solo', name: 'Solo Artist' },
     },
   ],
   [
@@ -85,7 +103,18 @@ async function serveUserProfile(
     );
     return;
   }
-  json(response, 200, { username: normalized, ...profile }, request);
+  json(
+    response,
+    200,
+    {
+      username: normalized,
+      dailyPracticeTargetSeconds: null,
+      vocalRange: null,
+      mostSungArtist: null,
+      ...profile,
+    },
+    request,
+  );
 }
 
 /** The route of `GET /v1/users/:username` in the fake API's table. */
