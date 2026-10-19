@@ -95,11 +95,6 @@ export default async function UserProfilePage({
   return (
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
-      {/* Not behind a Suspense boundary: the favorites have no height to
-          reserve before they load, so arriving later would push the sections
-          below them down on screen. In the first HTML they lay out with the
-          banner, and the summary and history stand-ins never move under them. */}
-      <ProfileFavoritesSection username={profile.username} />
       <Suspense fallback={shown.summary ? <ProfileSummarySkeleton /> : null}>
         <ProfileSummary username={profile.username} />
       </Suspense>
@@ -108,6 +103,10 @@ export default async function UserProfilePage({
       >
         <PracticeHistorySection username={profile.username} />
       </Suspense>
+      {/* Not behind a Suspense boundary: the favorites have no height to
+          reserve before they load. Last in the column, nothing sits below
+          them that a late arrival could push down on screen. */}
+      <ProfileFavoritesSection username={profile.username} />
       <Suspense fallback={null}>
         <ProfileOwnerInvitations username={profile.username} />
       </Suspense>
