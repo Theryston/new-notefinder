@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
 import { connection } from 'next/server';
-import { getTranslations } from 'next-intl/server';
 
 import { initials } from '@/features/auth/initials';
 import { loadProfileOgAvatar } from '@/features/users/og/profile-og-avatar';
@@ -11,7 +10,7 @@ import {
   profileOgImage,
 } from '@/features/users/og/profile-og-image';
 import { getProfileOgSource } from '@/features/users/og/profile-og-source';
-import type { ProfileChipKey } from '@/features/users/profile-chips';
+import { profileChipCopy } from '@/features/users/profile-chip-copy';
 import type { Locale } from '@/lib/i18n/routing';
 
 type UserRouteParams = { locale: Locale; username: string };
@@ -39,19 +38,13 @@ export default async function ProfileOgImage({
     return new Response('Not found', { status: 404 });
   }
 
-  const [t, targetT, avatar] = await Promise.all([
-    getTranslations({ locale, namespace: 'publicProfile.chips' }),
-    getTranslations({ locale, namespace: 'profile.edit.dailyTarget' }),
+  const [{ messages }, avatar] = await Promise.all([
+    profileChipCopy(locale),
     loadProfileOgAvatar(source.image),
   ]);
   const card = profileOgCard({
     source,
-    messages: {
-      label: (key: ProfileChipKey) => t(key),
-      dailyTargetValue: (minutes) => targetT('minutes', { minutes }),
-      vocalRangeValue: (lowest, highest) =>
-        t('vocalRangeValue', { lowest, highest }),
-    },
+    messages,
     avatar,
     initials: initials(source.name, source.username),
   });

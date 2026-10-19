@@ -70,6 +70,46 @@ describe('loadProfileOgAvatar', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('stops reading a picture that passes the cap when it sends no Content-Length', async () => {
+    const chunkSize = 64 * 1024;
+    const cap = 2 * 1024 * 1024;
+    let bytesPulled = 0;
+    // A picture that never ends: without the cap this read would not finish.
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        const chunk = new Uint8Array(chunkSize);
+        if (bytesPulled === 0) chunk.set(PNG);
+        bytesPulled += chunkSize;
+        controller.enqueue(chunk);
+      },
+    });
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(endless));
+
+    await expect(
+      loadProfileOgAvatar('https://images.example.com/a', fetchFn),
+    ).resolves.toBeUndefined();
+    // The reader gives up once past the cap; a few chunks may already be queued.
+    expect(bytesPulled).toBeLessThanOrEqual(cap + 4 * chunkSize);
+  });
+
+  it('leaves a picture whose Content-Length lies about its size to the initials', async () => {
+    const body = new Uint8Array([
+      ...PNG,
+      ...new Array<number>(3 * 1024 * 1024).fill(0),
+    ]);
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(body, { headers: { 'content-length': '100' } }),
+      );
+
+    await expect(
+      loadProfileOgAvatar('https://images.example.com/a', fetchFn),
+    ).resolves.toBeUndefined();
+  });
+
   it('never throws: a network failure leaves the initials', async () => {
     const fetchFn = vi
       .fn<typeof fetch>()

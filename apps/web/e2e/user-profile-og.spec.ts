@@ -21,27 +21,36 @@ async function previewUrlOf(
 }
 
 test.describe('public profile preview image', () => {
-  test('the page points its Open Graph and Twitter tags at the image, per locale', async ({
-    page,
-  }) => {
-    await page.goto('/pt-BR/users/ada_lovelace');
+  for (const locale of ['en', 'pt-BR']) {
+    test(`the ${locale} page points its Open Graph and Twitter tags at the ${locale} image`, async ({
+      page,
+    }) => {
+      await page.goto(`/${locale}/users/ada_lovelace`);
 
-    const ogImage = page.locator('meta[property="og:image"]');
-    await expect(ogImage).toHaveAttribute(
-      'content',
-      /\/pt-BR\/users\/ada_lovelace\/opengraph-image/,
-    );
-    const imageUrl = await ogImage.getAttribute('content');
+      const ogImage = await page
+        .locator('meta[property="og:image"]')
+        .getAttribute('content');
+      const twitterImage = await page
+        .locator('meta[name="twitter:image"]')
+        .getAttribute('content');
 
-    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
-      'content',
-      'summary_large_image',
-    );
-    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
-      'content',
-      imageUrl ?? '',
-    );
-  });
+      // Absolute URLs on the site's origin, under this page's locale.
+      for (const url of [ogImage, twitterImage]) {
+        expect(url).toBeTruthy();
+        const parsed = new URL(url ?? '');
+        expect(parsed.protocol).toMatch(/^https?:$/);
+        expect(parsed.pathname).toMatch(
+          new RegExp(`^/${locale}/users/ada_lovelace/opengraph-image`),
+        );
+      }
+      expect(twitterImage).toBe(ogImage);
+
+      await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+        'content',
+        'summary_large_image',
+      );
+    });
+  }
 
   test('serves the card as a 1200x630 PNG', async ({ request }) => {
     const imageUrl = await previewUrlOf(request, '/en/users/ada_lovelace');

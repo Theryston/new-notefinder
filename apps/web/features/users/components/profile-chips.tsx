@@ -1,8 +1,8 @@
 import type { PublicProfile } from '@notefinder/contracts';
-import { getTranslations } from 'next-intl/server';
 
 import { cn } from '@/lib/utils';
 
+import { profileChipCopy } from '../profile-chip-copy';
 import { type ProfileChip, profileChips } from '../profile-chips';
 
 /**
@@ -11,23 +11,14 @@ import { type ProfileChip, profileChips } from '../profile-chips';
  * them the list is not rendered at all.
  */
 export async function ProfileChips({ profile }: { profile: PublicProfile }) {
-  const [t, targetT] = await Promise.all([
-    getTranslations('publicProfile.chips'),
-    // The same minutes wording the Daily target picker shows.
-    getTranslations('profile.edit.dailyTarget'),
-  ]);
-  const chips = profileChips(profile, {
-    label: (key) => t(key),
-    dailyTargetValue: (minutes) => targetT('minutes', { minutes }),
-    vocalRangeValue: (lowest, highest) =>
-      t('vocalRangeValue', { lowest, highest }),
-  });
+  const { highlightsLabel, messages } = await profileChipCopy();
+  const chips = profileChips(profile, messages);
   if (chips.length === 0) {
     return null;
   }
 
   return (
-    <ul aria-label={t('label')} className="flex flex-wrap gap-2">
+    <ul aria-label={highlightsLabel} className="flex flex-wrap gap-2">
       {chips.map((chip) => (
         <ChipPill key={chip.key} chip={chip} />
       ))}

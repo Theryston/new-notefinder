@@ -3,7 +3,7 @@ import type { PublicProfile } from '@notefinder/contracts';
 import { noteName } from '@/lib/music-notes';
 
 /** The three public chips of a Profile banner, in display order. */
-export type ProfileChipKey = 'dailyTarget' | 'vocalRange' | 'mostSungArtist';
+type ProfileChipKey = 'dailyTarget' | 'vocalRange' | 'mostSungArtist';
 
 export type ProfileChip = {
   key: ProfileChipKey;

@@ -8,11 +8,17 @@ export const PROFILE_OG_WIDTH = 1200;
 export const PROFILE_OG_HEIGHT = 630;
 
 /**
- * The orange of DESIGN.md's `primary` token (`#FA4900`). The image renderer
- * reads plain colors only, so the token's value is written out here.
+ * The card's colors. They must match the tokens they stand for: the card's
+ * orange is `primary` in DESIGN.md and `apps/web/app/globals.css`
+ * (`#FA4900`), and the text on it is `primary-foreground` (white). They are
+ * written out here because the image renderer cannot read CSS variables, so a
+ * change to the token has to be made here too.
+ *
+ * The typeface is the renderer's bundled Noto Sans, not the site's Figtree, on
+ * purpose: shipping a font binary just for previews is not worth it.
  */
-const ORANGE = '#FA4900';
-const WHITE = '#FFFFFF';
+const CARD_BACKGROUND = '#FA4900';
+const CARD_TEXT = '#FFFFFF';
 
 const AVATAR_SIZE = 300;
 
@@ -31,8 +37,8 @@ export function profileOgImage(card: ProfileOgCard): ReactElement {
         width: '100%',
         height: '100%',
         overflow: 'hidden',
-        background: ORANGE,
-        color: WHITE,
+        background: CARD_BACKGROUND,
+        color: CARD_TEXT,
         padding: '72px',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -169,8 +175,8 @@ function avatarElement(card: ProfileOgCard): ReactElement {
         alignItems: 'center',
         justifyContent: 'center',
         ...size,
-        background: WHITE,
-        color: ORANGE,
+        background: CARD_TEXT,
+        color: CARD_BACKGROUND,
         fontSize: '120px',
         fontWeight: 800,
       }}
