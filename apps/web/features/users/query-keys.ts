@@ -9,6 +9,8 @@ export const profileKeys = {
     [...profileKeys.all, username, 'favorites'] as const,
   infiniteFavorites: (username: string, limit: number) =>
     [...profileKeys.favorites(username), 'infinite', { limit }] as const,
+  /** The signed-in owner's section flags (`GET /v1/me/profile-visibility`). */
+  visibility: () => [...profileKeys.all, 'me', 'profile-visibility'] as const,
 };
 
 /** The cache key of a Profile's practice history; the cursor travels as the page param. */

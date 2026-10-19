@@ -12,7 +12,10 @@ import {
   PracticeHistorySection,
   PracticeHistorySkeleton,
 } from '@/features/users/practice-history/components/practice-history-section';
-import { getPublicProfile } from '@/features/users/queries';
+import {
+  getPublicProfile,
+  getPublicSectionVisibility,
+} from '@/features/users/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
 import { queryStringOf } from '@/lib/query-string';
@@ -21,6 +24,13 @@ import { needsLowercaseRedirect } from '@/lib/user-profile-route';
 type UserRouteParams = { locale: Locale; username: string };
 
 type UserRouteSearchParams = Record<string, string | string[] | undefined>;
+
+/** Every section shown, for when the flags cannot be read. */
+const SHOWN_EVERYWHERE = {
+  summary: true,
+  practiceHistory: true,
+  favorites: true,
+};
 
 // The 308 and the 404 depend on the requested username, so this route never
 // prerenders statically. The proxy decides both before anything streams (a
@@ -75,14 +85,26 @@ export default async function UserProfilePage({
   if (!profile) {
     notFound();
   }
+  // A hidden section gets no placeholder, so a visitor never sees a skeleton
+  // that then disappears. If the flags cannot be read, every section is laid
+  // out as shown.
+  const shown =
+    (await getPublicSectionVisibility(profile.username).catch(() => null)) ??
+    SHOWN_EVERYWHERE;
   return (
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
+      {/* Not behind a Suspense boundary: the favorites have no height to
+          reserve before they load, so arriving later would push the sections
+          below them down on screen. In the first HTML they lay out with the
+          banner, and the summary and history stand-ins never move under them. */}
       <ProfileFavoritesSection username={profile.username} />
-      <Suspense fallback={<ProfileSummarySkeleton />}>
+      <Suspense fallback={shown.summary ? <ProfileSummarySkeleton /> : null}>
         <ProfileSummary username={profile.username} />
       </Suspense>
-      <Suspense fallback={<PracticeHistorySkeleton />}>
+      <Suspense
+        fallback={shown.practiceHistory ? <PracticeHistorySkeleton /> : null}
+      >
         <PracticeHistorySection username={profile.username} />
       </Suspense>
     </div>

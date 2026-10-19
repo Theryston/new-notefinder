@@ -4,9 +4,11 @@ import {
   type PublicProfileSummary,
   publicProfileSummarySchema,
 } from '@notefinder/contracts';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
-import { UsersService } from '../users/users.service.js';
+import type { AuthUser } from '../auth/auth.js';
+import { ProfileVisibilityService } from '../users/profile-visibility.service.js';
 import { ProfileSummaryService } from './profile-summary.service.js';
 import { PublicProfileSummaryParamDto } from './profile-summary-param.dto.js';
 
@@ -16,7 +18,7 @@ import { PublicProfileSummaryParamDto } from './profile-summary-param.dto.js';
 @Controller('users')
 export class ProfileSummaryController {
   constructor(
-    private readonly users: UsersService,
+    private readonly profileVisibility: ProfileVisibilityService,
     private readonly profileSummary: ProfileSummaryService,
   ) {}
 
@@ -24,12 +26,18 @@ export class ProfileSummaryController {
   @ZodSerializerDto(publicProfileSummarySchema)
   @ApiOkResponse({ description: 'The numbers of the Profile Summary section.' })
   @ApiNotFoundResponse({
-    description: 'No User has this username (`NOT_FOUND`).',
+    description:
+      'No User has this username, or the owner hid this section (`NOT_FOUND`).',
   })
   async getSummary(
     @Param() params: PublicProfileSummaryParamDto,
+    @CurrentUser() viewer: AuthUser | undefined,
   ): Promise<PublicProfileSummary> {
-    const userId = await this.users.findIdByUsername(params.username);
-    return this.profileSummary.getSummary(userId);
+    const view = await this.profileVisibility.readSection(
+      params.username,
+      'summary',
+      viewer?.id,
+    );
+    return this.profileSummary.getSummary(view.userId, view.shown);
   }
 }

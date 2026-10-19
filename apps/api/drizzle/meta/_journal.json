@@ -141,6 +141,13 @@
       "when": 1792185937497,
       "tag": "0019_talented_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792424968163,
+      "tag": "0020_fancy_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

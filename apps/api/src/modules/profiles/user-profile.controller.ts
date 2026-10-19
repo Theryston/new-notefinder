@@ -1,9 +1,13 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import type { PublicProfile } from '@notefinder/contracts';
-import { publicProfileSchema } from '@notefinder/contracts';
+import type { ProfileVisibility, PublicProfile } from '@notefinder/contracts';
+import {
+  profileVisibilitySchema,
+  publicProfileSchema,
+} from '@notefinder/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
+import { ProfileVisibilityService } from '../users/profile-visibility.service.js';
 import { PublicProfileService } from './public-profile.service.js';
 import { PublicProfileParamDto } from './public-profile-param.dto.js';
 
@@ -12,7 +16,10 @@ import { PublicProfileParamDto } from './public-profile-param.dto.js';
 @Public()
 @Controller('users')
 export class UserProfileController {
-  constructor(private readonly publicProfileService: PublicProfileService) {}
+  constructor(
+    private readonly publicProfileService: PublicProfileService,
+    private readonly profileVisibility: ProfileVisibilityService,
+  ) {}
 
   @Get(':username')
   @ZodSerializerDto(publicProfileSchema)
@@ -24,5 +31,22 @@ export class UserProfileController {
     @Param() params: PublicProfileParamDto,
   ): Promise<PublicProfile> {
     return this.publicProfileService.getPublicProfile(params.username);
+  }
+
+  // Which sections visitors see, so the cached Profile page leaves a hidden
+  // section out of its first paint. A visitor can already tell the same from
+  // the sections' own `NOT_FOUND`; this answers it once, without their data.
+  @Get(':username/sections')
+  @ZodSerializerDto(profileVisibilitySchema)
+  @ApiOkResponse({
+    description: 'Whether each section of the Profile is shown to visitors.',
+  })
+  @ApiNotFoundResponse({
+    description: 'No User has this username (`NOT_FOUND`).',
+  })
+  getShownSections(
+    @Param() params: PublicProfileParamDto,
+  ): Promise<ProfileVisibility> {
+    return this.profileVisibility.getShownSections(params.username);
   }
 }

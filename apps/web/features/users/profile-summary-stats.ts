@@ -14,6 +14,18 @@ export const PROFILE_SUMMARY_STATS = [
 
 export type ProfileSummaryStat = (typeof PROFILE_SUMMARY_STATS)[number];
 
+/**
+ * The stats to show, in display order. A counter the API withheld (`null`:
+ * its section is hidden from this visitor) is left out, not shown as a zero.
+ */
+export function shownSummaryStats(
+  summary: PublicProfileSummary,
+): ProfileSummaryStat[] {
+  return PROFILE_SUMMARY_STATS.filter(
+    (stat) => summary[PROFILE_SUMMARY_FIELDS[stat]] !== null,
+  );
+}
+
 /** Which field of the contract each stat shows. */
 export const PROFILE_SUMMARY_FIELDS: Record<
   ProfileSummaryStat,
