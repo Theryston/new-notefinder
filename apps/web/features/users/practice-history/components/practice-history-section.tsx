@@ -30,6 +30,11 @@ export async function PracticeHistorySection({
   username: string;
 }) {
   const visitorPage = await getPracticeHistoryFirstPage(username);
+  // An empty history is absent, as an empty favorites grid is: the owner is
+  // invited to fill it below the sections instead.
+  if (visitorPage?.items.length === 0) {
+    return null;
+  }
   if (visitorPage === null && !(await viewerOwnsProfile(username))) {
     return null;
   }

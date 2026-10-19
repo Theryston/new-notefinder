@@ -867,5 +867,20 @@
       "failed": "Não foi possível salvar a visibilidade. Tente de novo.",
       "ownerUnavailable": "Não foi possível carregar esta seção. Recarregue a página para tentar de novo."
     }
+  },
+  "profileOwner": {
+    "editProfile": "Editar perfil",
+    "invitations": {
+      "favorites": {
+        "title": "Músicas favoritas",
+        "description": "Favorite as músicas que você ama e elas aparecerão aqui.",
+        "cta": "Buscar uma música"
+      },
+      "practiceHistory": {
+        "title": "Histórico de treinos",
+        "description": "Treine uma música e cada treino salvo aparecerá aqui.",
+        "cta": "Buscar uma música"
+      }
+    }
   }
 }

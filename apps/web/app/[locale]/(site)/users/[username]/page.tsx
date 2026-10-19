@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { NoticeMessage } from '@/components/notice-message';
 import { ProfileBanner } from '@/features/users/components/profile-banner';
 import { ProfileFavoritesSection } from '@/features/users/components/profile-favorites-section';
+import { ProfileOwnerInvitations } from '@/features/users/components/profile-owner-invitations';
 import { ProfileSummary } from '@/features/users/components/profile-summary';
 import { ProfileSummarySkeleton } from '@/features/users/components/profile-summary-skeleton';
 import {
@@ -106,6 +107,9 @@ export default async function UserProfilePage({
         fallback={shown.practiceHistory ? <PracticeHistorySkeleton /> : null}
       >
         <PracticeHistorySection username={profile.username} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ProfileOwnerInvitations username={profile.username} />
       </Suspense>
     </div>
   );
