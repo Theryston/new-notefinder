@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
+import { creditText } from '@/lib/track-credit';
 import { getTrackRecommendations } from '../recommendations-queries';
-import { creditText } from '../track-credit';
 import { TrackCard } from './track-card';
 import { TrackCardGrid } from './track-card-grid';
 

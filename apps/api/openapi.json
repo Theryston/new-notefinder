@@ -680,34 +680,6 @@
         ]
       }
     },
-    "/v1/users/{username}": {
-      "get": {
-        "operationId": "UserProfileController_getPublicProfile_v1",
-        "parameters": [
-          {
-            "name": "username",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "minLength": 1,
-              "maxLength": 128,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The public banner of the Profile."
-          },
-          "404": {
-            "description": "No User has this username (`NOT_FOUND`)."
-          }
-        },
-        "tags": [
-          "users"
-        ]
-      }
-    },
     "/v1/artists/{id}": {
       "get": {
         "operationId": "ArtistsController_getArtist_v1",
@@ -1127,6 +1099,57 @@
         ]
       }
     },
+    "/v1/users/{username}/attempts": {
+      "get": {
+        "operationId": "UserAttemptsController_listHistory_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The User's practice history, newest first."
+          },
+          "400": {
+            "description": "The cursor is not one this API issued."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
     "/v1/me/streak": {
       "get": {
         "operationId": "StreaksController_getStatus_v1",
@@ -1230,6 +1253,62 @@
         },
         "tags": [
           "practice-preferences"
+        ]
+      }
+    },
+    "/v1/users/{username}/summary": {
+      "get": {
+        "operationId": "ProfileSummaryController_getSummary_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The numbers of the Profile Summary section."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/{username}": {
+      "get": {
+        "operationId": "UserProfileController_getPublicProfile_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The public banner of the Profile."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
         ]
       }
     }

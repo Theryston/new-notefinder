@@ -17,7 +17,7 @@ import { PracticePreferencesSync } from '@/features/practice/components/practice
 import { ScoringPreferences } from '@/features/practice/components/scoring-preferences';
 import { SingTimeline } from '@/features/practice/components/sing-timeline';
 import { SingingAids } from '@/features/practice/components/singing-aids';
-
+import { creditText } from '@/lib/track-credit';
 import { useDirectAudio } from '../hooks/use-direct-audio';
 import { usePlayback } from '../hooks/use-playback';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
@@ -32,7 +32,6 @@ import type { PlaybackController } from '../playback/playback-controller';
 import { reportAttempt } from '../report-attempt';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
-import { creditText } from '../track-credit';
 import { sessionStorageOrUndefined } from '../track-view-session';
 import { transposeNotes } from '../transpose/transpose';
 import { ListeningActions } from './listening-actions';

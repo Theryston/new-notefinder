@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackFavorites } from '../../database/schema/track-favorites.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
@@ -89,6 +89,15 @@ export class FavoritesRepository {
           eq(trackFavorites.trackId, trackId),
         ),
       );
+  }
+
+  /** How many Tracks the User marked as favorites. */
+  async countOf(userId: string): Promise<number> {
+    const [row] = await this.txHost.tx
+      .select({ value: count() })
+      .from(trackFavorites)
+      .where(eq(trackFavorites.userId, userId));
+    return row?.value ?? 0;
   }
 
   async isFavorite(userId: string, trackId: string): Promise<boolean> {

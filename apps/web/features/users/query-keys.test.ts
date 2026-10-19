@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { profileKeys } from './query-keys';
+import { practiceHistoryKey, profileKeys } from './query-keys';
 
 describe('profileKeys', () => {
   it('builds stable keys per Profile', () => {
@@ -21,6 +21,22 @@ describe('profileKeys', () => {
     ]);
     expect(profileKeys.infiniteFavorites('ada_lovelace', 20)).not.toEqual(
       profileKeys.infiniteFavorites('grace', 20),
+    );
+  });
+});
+
+describe('practiceHistoryKey', () => {
+  it('builds a stable key per Profile', () => {
+    expect(practiceHistoryKey('ada_lovelace')).toEqual([
+      'users',
+      'ada_lovelace',
+      'practice-history',
+    ]);
+  });
+
+  it('keeps two Profiles apart', () => {
+    expect(practiceHistoryKey('ada_lovelace')).not.toEqual(
+      practiceHistoryKey('grace'),
     );
   });
 });

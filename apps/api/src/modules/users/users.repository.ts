@@ -26,9 +26,12 @@ export type PublicUserRow = {
 
 /** The banner fields of a Profile, read by username. */
 export type PublicProfileRow = {
+  id: string;
   name: string;
   image: string | null;
   createdAt: Date;
+  // As stored, like `CurrentUserRow`: narrowed to a preset by the service.
+  dailyPracticeTargetSeconds?: number | null;
 };
 
 /** The fields a notification email needs about a User: where it goes and in what language. */
@@ -76,6 +79,16 @@ type SetUsernameResult =
 @Injectable()
 export class UsersRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+
+  /** The ID of the User with this lowercase username, if any. */
+  async findIdByUsername(username: string): Promise<string | undefined> {
+    const [row] = await this.txHost.tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return row?.id;
+  }
 
   async findCurrentUser(id: string): Promise<CurrentUserRow | undefined> {
     const [row] = await this.txHost.tx
@@ -229,9 +242,11 @@ export class UsersRepository {
   ): Promise<PublicProfileRow | undefined> {
     const [row] = await this.txHost.tx
       .select({
+        id: users.id,
         name: users.name,
         image: users.image,
         createdAt: users.createdAt,
+        dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
       })
       .from(users)
       .where(eq(users.username, username))

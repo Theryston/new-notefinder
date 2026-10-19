@@ -1,3 +1,4 @@
+export * from './accuracy-bands.js';
 export * from './albums.js';
 export * from './artists.js';
 export * from './auth.js';
@@ -18,6 +19,7 @@ export * from './pitch.js';
 export * from './practice-attempts.js';
 export * from './practice-preferences.js';
 export * from './public-profile.js';
+export * from './public-profile-summary.js';
 export * from './revalidation.js';
 export * from './search.js';
 export * from './sitemaps.js';

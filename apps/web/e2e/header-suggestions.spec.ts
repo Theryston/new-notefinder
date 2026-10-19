@@ -105,6 +105,18 @@ for (const { locale, messages } of localeCatalogs) {
       await expect(art).toHaveJSProperty('naturalWidth', 1);
       await expect(rows.nth(1).locator('img')).toHaveCount(0);
 
+      // The list opens with a 200ms zoom, which scales the covers too: measure
+      // once that animation has finished, or the box can be a fraction off.
+      await expect
+        .poll(() =>
+          list(page).evaluate(
+            (element) =>
+              element.closest('[data-slot="popover-content"]')?.getAnimations()
+                .length ?? 0,
+          ),
+        )
+        .toBe(0);
+
       // 48px covers, rows at least 56px tall, the 150ms colour transition.
       const cover = await art.boundingBox();
       expect(cover?.width).toBe(48);

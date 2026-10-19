@@ -14,6 +14,7 @@ import { TRACK_METADATA_QUEUE } from '../../queue/track-metadata.job.js';
 import { UsersModule } from '../users/users.module.js';
 import { TrackAlbumCoverService } from './track-album-cover.service.js';
 import { TrackAudioService } from './track-audio.service.js';
+import { TrackContributionsService } from './track-contributions.service.js';
 import { TrackContributorRepository } from './track-contributor.repository.js';
 import { TrackContributorEmailsService } from './track-contributor-emails.service.js';
 import { TrackCoverService } from './track-cover.service.js';
@@ -108,6 +109,7 @@ import { TracksService } from './tracks.service.js';
     TracksRepository,
     TrackProcessingRepository,
     TrackContributorRepository,
+    TrackContributionsService,
     TrackRequestLimitRepository,
     TrackRequestService,
     TrackRequestLauncherService,
@@ -147,6 +149,6 @@ import { TracksService } from './tracks.service.js';
     TrackSitemapRepository,
     TrackSitemapService,
   ],
-  exports: [TracksService, TrackAlbumCoverService],
+  exports: [TracksService, TrackAlbumCoverService, TrackContributionsService],
 })
 export class TracksModule {}

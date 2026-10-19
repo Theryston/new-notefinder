@@ -10,3 +10,7 @@ export const profileKeys = {
   infiniteFavorites: (username: string, limit: number) =>
     [...profileKeys.favorites(username), 'infinite', { limit }] as const,
 };
+
+/** The cache key of a Profile's practice history; the cursor travels as the page param. */
+export const practiceHistoryKey = (username: string) =>
+  ['users', username, 'practice-history'] as const;

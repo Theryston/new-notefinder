@@ -9,6 +9,9 @@ import {
   entityVisualClass,
 } from '@/components/entity-header';
 import { UserAvatar } from '@/features/auth/components/user-avatar';
+import { ProfileChips } from '@/features/users/components/profile-chips';
+
+import { ProfileShare } from './profile-share';
 
 /**
  * The Profile banner, a featured block (DESIGN.md "Featured blocks"): the
@@ -44,6 +47,8 @@ export async function ProfileBanner({ profile }: { profile: PublicProfile }) {
           <p className={entityInfoClass}>
             {t('banner.memberSince', { date: memberSince })}
           </p>
+          <ProfileShare name={profile.name} username={profile.username} />
+          <ProfileChips profile={profile} />
         </div>
       </div>
     </section>

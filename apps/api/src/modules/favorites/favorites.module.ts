@@ -22,5 +22,6 @@ import { UserFavoritesService } from './user-favorites.service.js';
     TrackStateService,
     UserFavoritesService,
   ],
+  exports: [FavoritesService],
 })
 export class FavoritesModule {}

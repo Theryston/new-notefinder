@@ -1,49 +1,63 @@
 import { Injectable } from '@nestjs/common';
 import type {
   BestPracticeScores,
+  MostSungArtist,
   PracticeAttempt,
   PracticeAttemptPage,
   SubmitPracticeAttemptBody,
+  TrackVocalRange,
 } from '@notefinder/contracts';
-import { practiceSpeedSchema } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
+import { toPracticeAttempt } from './attempt-view.js';
 import type {
+  ArtistGroupRow,
   NewPracticeAttempt,
-  PracticeAttemptRow,
+  VocalRangeGroupRow,
 } from './attempts.repository.js';
 import { AttemptsRepository } from './attempts.repository.js';
 import {
   decodeOwnAttemptCursor,
-  encodeOwnAttemptCursor,
+  nextOwnAttemptCursor,
 } from './own-attempt-cursor.js';
+import {
+  type ArtistGroup,
+  deriveMostSungArtist,
+  deriveVocalRange,
+  type VocalRangeGroup,
+} from './profile-chips.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
-
-const toAttempt = (row: PracticeAttemptRow): PracticeAttempt => ({
-  id: row.id,
-  trackId: row.trackId,
-  difficulty: row.difficulty,
-  octaveMode: row.octaveMode,
-  transposeSemitones: row.transposeSemitones,
-  // The database keeps a float; only the dock's speeds ever get in (the
-  // request schema refused the rest), so this re-check cannot fail.
-  speed: practiceSpeedSchema.parse(row.speed),
-  accuracy: row.accuracy,
-  coverage: row.coverage,
-  forwardSkip: row.forwardSkip,
-  bleedSuspected: row.bleedSuspected,
-  startedAt: row.startedAt.toISOString(),
-  endedAt: row.endedAt.toISOString(),
-  createdAt: row.createdAt.toISOString(),
-});
 
 const noScores: BestPracticeScores = {
   EASY: null,
   NORMAL: null,
   HARD: null,
 };
+
+/** The Vocal range input of the chip rules, from a grouped row. */
+const toVocalRangeGroup = (row: VocalRangeGroupRow): VocalRangeGroup => ({
+  trackVocalRange:
+    row.trackVocalRangeLowest === null || row.trackVocalRangeHighest === null
+      ? null
+      : {
+          lowest: row.trackVocalRangeLowest,
+          highest: row.trackVocalRangeHighest,
+        },
+  transposeSemitones: row.transposeSemitones,
+  forwardSkip: row.forwardSkip,
+  bleedSuspected: row.bleedSuspected,
+  bestAccuracy: row.bestAccuracy,
+});
+
+/** The Most sung artist input of the chip rules, from a grouped row. */
+const toArtistGroup = (row: ArtistGroupRow): ArtistGroup => ({
+  artist: { id: row.artistId, name: row.artistName },
+  bleedSuspected: row.bleedSuspected,
+  attempts: row.attempts,
+  lastAttemptAt: row.lastAttemptAt,
+});
 
 /**
  * A signed-in User's saved practice runs. Only valid runs are saved: the
@@ -95,7 +109,12 @@ export class AttemptsService {
       startedAt: new Date(body.startedAt),
       endedAt: new Date(body.endedAt),
     };
-    return toAttempt(await this.attempts.insert(attempt));
+    return toPracticeAttempt(await this.attempts.insert(attempt));
+  }
+
+  /** How many saved runs of the User count as sung (not bleed-suspected). */
+  countSung(userId: string): Promise<number> {
+    return this.attempts.countSung(userId);
   }
 
   /** The User's best accuracy per difficulty on a Track, for the title row. */
@@ -112,6 +131,22 @@ export class AttemptsService {
     return scores;
   }
 
+  /**
+   * The two Profile chips a User's attempts decide, each `null` when no
+   * attempt qualifies (see `profile-chips.ts` for the rules).
+   */
+  async profileChips(userId: string): Promise<{
+    vocalRange: TrackVocalRange | null;
+    mostSungArtist: MostSungArtist | null;
+  }> {
+    const vocalGroups = await this.attempts.listVocalRangeGroups(userId);
+    const artistGroups = await this.attempts.listArtistGroups(userId);
+    return {
+      vocalRange: deriveVocalRange(vocalGroups.map(toVocalRangeGroup)),
+      mostSungArtist: deriveMostSungArtist(artistGroups.map(toArtistGroup)),
+    };
+  }
+
   /** The signed-in User's own attempts, newest first. */
   async listOwn(
     userId: string,
@@ -124,16 +159,9 @@ export class AttemptsService {
       limit: query.limit + 1,
     });
     const page = rows.slice(0, query.limit);
-    const last = page.at(-1);
     return {
-      items: page.map(toAttempt),
-      nextCursor:
-        rows.length > query.limit && last
-          ? encodeOwnAttemptCursor({
-              createdAt: last.createdAt.toISOString(),
-              attemptId: last.id,
-            })
-          : null,
+      items: page.map(toPracticeAttempt),
+      nextCursor: nextOwnAttemptCursor(page.at(-1), rows.length > query.limit),
     };
   }
 }

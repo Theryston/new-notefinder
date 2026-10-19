@@ -31,6 +31,23 @@ The public page of a User, addressed by their Username, showing their Name
 and Avatar.
 _Avoid_: Account page, user page
 
+**Vocal range of a User**:
+The lowest and highest notes a User sings, across the Tracks they practiced
+with an accurate run (at least 85%, no forward skip, no suspected bleed), each
+run transposed by its semitones. Distinct from the Vocal range of a Track.
+_Avoid_: Tessitura of a User, voice type
+
+**Attempt**:
+A saved practice run of a User on a Track, scored by the Practice page: its
+accuracy, coverage, transposition and speed. A suspected bleed marks one the
+mic may have heard the music in.
+_Avoid_: Run, session, take
+
+**Most sung artist**:
+The Artist a User has the most valid Attempts on, over all time; ties go to the
+one whose latest Attempt is newer. Shown as a chip on the Profile banner.
+_Avoid_: Favorite artist, top artist
+
 ### Music catalog
 
 **Music catalog**:
@@ -150,6 +167,18 @@ _Avoid_: Goal, quota
 The run of consecutive completed Practice days ending today, or yesterday while
 today is still open.
 _Avoid_: Series, chain
+
+**Accuracy band**:
+The band a Practice attempt's accuracy reads as: Hit at 85% or more, Near from
+60% up to 85%, Miss below 60%. Shown as a word next to the number, never by
+color alone.
+_Avoid_: Grade, score level
+
+**Suspected bleed**:
+An attempt flagged because a steady voiced pitch was heard while its Track had
+no vocal notes, so the music probably leaked into the mic. The flag stays on the
+attempt and shows as suspected in the Profile's practice history.
+_Avoid_: Bleed (alone), leak, bleed flag
 
 ### Legacy
 
