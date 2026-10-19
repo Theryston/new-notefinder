@@ -6,6 +6,8 @@ import {
   type PublicProfileSummary,
   publicProfileSchema,
   publicProfileSummarySchema,
+  type UserFavoritesPage,
+  userFavoritesPageSchema,
 } from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
@@ -34,6 +36,23 @@ export async function getPublicProfile(
     }
     throw error;
   }
+}
+
+/**
+ * The first page of a Profile's favorite Tracks, cached under its own favorites
+ * tag (the API revalidates it when a favorite changes), so banner edits and
+ * favorite changes do not evict each other. Later pages are read by the grid.
+ */
+export async function getPublicFavoritesPage(
+  username: string,
+): Promise<UserFavoritesPage> {
+  'use cache';
+  cacheTag(cacheTags.userFavorites(username));
+  cacheLife('max');
+
+  return serverApi(`/users/${encodeURIComponent(username)}/favorites`, {
+    schema: userFavoritesPageSchema,
+  });
 }
 
 /**

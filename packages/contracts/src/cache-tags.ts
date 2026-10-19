@@ -29,4 +29,7 @@ export const cacheTags = {
   user: (userId: string) => `user:${userId}`,
   /** Public profile page, addressed by username in the URL. */
   userProfile: (username: string) => `user-profile:${username.toLowerCase()}`,
+  /** The favorite songs of a Profile, cached apart from the banner. */
+  userFavorites: (username: string) =>
+    `user-favorites:${username.toLowerCase()}`,
 } as const;
