@@ -22,7 +22,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
 import { FavoriteTrackParamDto } from './favorite-track-param.dto.js';
-import { FavoritesService } from './favorites.service.js';
+import { FavoriteWritesService } from './favorite-writes.service.js';
 import { TrackStateService } from './track-state.service.js';
 
 const NOT_FOUND =
@@ -33,7 +33,7 @@ const NOT_FOUND =
 @Controller('me')
 export class FavoritesController {
   constructor(
-    private readonly favorites: FavoritesService,
+    private readonly favorites: FavoriteWritesService,
     private readonly state: TrackStateService,
   ) {}
 
