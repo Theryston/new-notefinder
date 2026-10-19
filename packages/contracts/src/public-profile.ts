@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { trackVocalRangeSchema } from './tracks.js';
+import { dailyPracticeTargetSecondsSchema } from './users.js';
+
 /**
  * Route param for `GET /v1/users/:username`. Any case is accepted: the lookup
  * is case-insensitive, and the web redirects mixed-case paths to lowercase.
@@ -13,15 +16,34 @@ export const publicProfileParamSchema = z.object({
 export type PublicProfileParam = z.infer<typeof publicProfileParamSchema>;
 
 /**
+ * The Artist a User sings most (the chip of the banner): its public ID, the
+ * one its page is addressed by, and its display name.
+ */
+export const mostSungArtistSchema = z.object({
+  id: z.string().min(1).max(128),
+  name: z.string().min(1),
+});
+
+export type MostSungArtist = z.infer<typeof mostSungArtistSchema>;
+
+/**
  * The public banner of a Profile (`GET /v1/users/:username`): only what any
  * visitor may see. Sections are added by later slices and are never sent to
  * visitors when hidden by their owner.
+ *
+ * The three chips are optional and absent (not null) when they have nothing
+ * to show: no Daily target set, no qualifying Attempt for the Vocal range,
+ * no valid Attempt for the Most sung artist.
  */
 export const publicProfileSchema = z.object({
   username: z.string().min(1),
   name: z.string().min(1),
   image: z.string().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
+  dailyPracticeTargetSeconds: dailyPracticeTargetSecondsSchema.optional(),
+  /** The lowest and highest notes the User sings, as MIDI numbers. */
+  vocalRange: trackVocalRangeSchema.optional(),
+  mostSungArtist: mostSungArtistSchema.optional(),
 });
 
 export type PublicProfile = z.infer<typeof publicProfileSchema>;
