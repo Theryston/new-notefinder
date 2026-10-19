@@ -6,10 +6,21 @@ import {
 import { AppException } from '../../common/errors/app-exception.js';
 import { UsersRepository } from './users.repository.js';
 
+/**
+ * The banner fields a User's own row provides. The Daily target is absent
+ * when unset (the banner has no chips of its own: the chips are added by the
+ * profiles module, which owns the response shape).
+ */
+export type PublicProfileBanner = Pick<
+  PublicProfile,
+  'username' | 'name' | 'image' | 'createdAt'
+> &
+  Partial<Pick<PublicProfile, 'dailyPracticeTargetSeconds'>>;
+
 /** A Profile's banner, with the internal ID its chips are computed from. */
 export type PublicProfileLookup = {
   userId: string;
-  profile: PublicProfile;
+  profile: PublicProfileBanner;
 };
 
 /**
@@ -24,7 +35,7 @@ export class UserProfileService {
    * Usernames are stored lowercase, so the lookup lowercases the request
    * (any casing finds the same Profile). An unknown username is `NOT_FOUND`.
    */
-  async getPublicProfile(username: string): Promise<PublicProfile> {
+  async getPublicProfile(username: string): Promise<PublicProfileBanner> {
     return (await this.findPublicProfile(username)).profile;
   }
 

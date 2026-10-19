@@ -48,7 +48,7 @@ describe('PublicProfileService', () => {
     expect(attempts.profileChips).toHaveBeenCalledWith('user-1');
   });
 
-  it('leaves out the chips with nothing to show, rather than sending null', async () => {
+  it('sends the chips with nothing to show as null, never omitted', async () => {
     userProfiles.findPublicProfile.mockResolvedValue({
       userId: 'user-1',
       profile: banner,
@@ -60,10 +60,12 @@ describe('PublicProfileService', () => {
 
     const profile = await service.getPublicProfile('ada_lovelace');
 
-    expect(profile).toEqual(banner);
-    expect(profile).not.toHaveProperty('vocalRange');
-    expect(profile).not.toHaveProperty('mostSungArtist');
-    expect(profile).not.toHaveProperty('dailyPracticeTargetSeconds');
+    expect(profile).toEqual({
+      ...banner,
+      dailyPracticeTargetSeconds: null,
+      vocalRange: null,
+      mostSungArtist: null,
+    });
   });
 
   it('propagates NOT_FOUND from the banner lookup without reading attempts', async () => {

@@ -4,10 +4,9 @@ import { AttemptsService } from '../attempts/attempts.service.js';
 import { UserProfileService } from '../users/user-profile.service.js';
 
 /**
- * The public banner a visitor sees: the Profile fields plus the three chips
- * the User's own practice decides (Vocal range, Most sung artist and, from
- * the profile, the Daily target). A chip with nothing to show is left out
- * of the response rather than sent as null.
+ * The public banner a visitor sees: the Profile fields plus the three chips,
+ * always present and `null` when the User has nothing to show for one (no
+ * Daily target, no qualifying Vocal range, no valid Most sung artist).
  */
 @Injectable()
 export class PublicProfileService {
@@ -24,8 +23,9 @@ export class PublicProfileService {
       await this.attempts.profileChips(userId);
     return {
       ...profile,
-      ...(vocalRange === null ? {} : { vocalRange }),
-      ...(mostSungArtist === null ? {} : { mostSungArtist }),
+      dailyPracticeTargetSeconds: profile.dailyPracticeTargetSeconds ?? null,
+      vocalRange,
+      mostSungArtist,
     };
   }
 }

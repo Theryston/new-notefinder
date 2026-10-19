@@ -31,19 +31,19 @@ export type MostSungArtist = z.infer<typeof mostSungArtistSchema>;
  * visitor may see. Sections are added by later slices and are never sent to
  * visitors when hidden by their owner.
  *
- * The three chips are optional and absent (not null) when they have nothing
- * to show: no Daily target set, no qualifying Attempt for the Vocal range,
- * no valid Attempt for the Most sung artist.
+ * The three chips are always present and `null` when they have nothing to
+ * show: no Daily target set, no qualifying Attempt for the Vocal range, no
+ * valid Attempt for the Most sung artist.
  */
 export const publicProfileSchema = z.object({
   username: z.string().min(1),
   name: z.string().min(1),
   image: z.string().nullable(),
   createdAt: z.iso.datetime({ offset: true }),
-  dailyPracticeTargetSeconds: dailyPracticeTargetSecondsSchema.optional(),
+  dailyPracticeTargetSeconds: dailyPracticeTargetSecondsSchema.nullable(),
   /** The lowest and highest notes the User sings, as MIDI numbers. */
-  vocalRange: trackVocalRangeSchema.optional(),
-  mostSungArtist: mostSungArtistSchema.optional(),
+  vocalRange: trackVocalRangeSchema.nullable(),
+  mostSungArtist: mostSungArtistSchema.nullable(),
 });
 
 export type PublicProfile = z.infer<typeof publicProfileSchema>;

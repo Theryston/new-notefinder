@@ -84,7 +84,7 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('dailyPracticeTargetSeconds');
+      expect(body.dailyPracticeTargetSeconds).toBeNull();
     });
 
     it('is absent when the stored value is not a preset', async () => {
@@ -95,7 +95,7 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('dailyPracticeTargetSeconds');
+      expect(body.dailyPracticeTargetSeconds).toBeNull();
     });
   });
 
@@ -105,8 +105,8 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('vocalRange');
-      expect(body).not.toHaveProperty('mostSungArtist');
+      expect(body.vocalRange).toBeNull();
+      expect(body.mostSungArtist).toBeNull();
     });
 
     it('spans the Tracks of the accurate runs, transposed by each run', async () => {
@@ -158,7 +158,7 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('vocalRange');
+      expect(body.vocalRange).toBeNull();
     });
 
     it('shifts the range down for a negative transposition', async () => {
@@ -186,7 +186,7 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('vocalRange');
+      expect(body.vocalRange).toBeNull();
     });
   });
 
@@ -288,7 +288,7 @@ describe('GET /v1/users/:username chips (e2e)', () => {
 
       const body = await profileOf('ada');
 
-      expect(body).not.toHaveProperty('mostSungArtist');
+      expect(body.mostSungArtist).toBeNull();
     });
   });
 
