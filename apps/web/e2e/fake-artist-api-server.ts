@@ -21,7 +21,7 @@ import {
   serveTrackRequest,
 } from './fake-track-api.ts';
 import { serveSitemap, sitemapTracks } from './fake-track-sitemap.ts';
-import { userProfileRoute } from './fake-user-profile.ts';
+import { userProfileRoutes } from './fake-user-profile.ts';
 import { serveUserSitemap } from './fake-user-sitemap.ts';
 
 /**
@@ -259,7 +259,7 @@ const routes: Route[] = [
     pathname: '/v1/sitemaps/users',
     serve: serveUserSitemap,
   },
-  userProfileRoute,
+  ...userProfileRoutes,
 ];
 
 const serveRequest = async (

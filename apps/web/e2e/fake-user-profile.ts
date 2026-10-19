@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { json } from './fake-api-http.ts';
+import { userFavoritesRoute } from './fake-user-favorites.ts';
 
 /** The banner fields the fake API serves for one Profile. */
 type FakeProfile = {
@@ -15,6 +16,14 @@ const profiles = new Map<string, FakeProfile>([
     'ada_lovelace',
     {
       name: 'Ada Lovelace',
+      image: null,
+      createdAt: '2026-01-02T03:04:05.000Z',
+    },
+  ],
+  [
+    'katherine_johnson',
+    {
+      name: 'Katherine Johnson',
       image: null,
       createdAt: '2026-01-02T03:04:05.000Z',
     },
@@ -60,8 +69,11 @@ async function serveUserProfile(
 }
 
 /** The route of `GET /v1/users/:username` in the fake API's table. */
-export const userProfileRoute = {
+const userProfileRoute = {
   method: 'GET',
   pathname: isUserProfilePath,
   serve: serveUserProfile,
 };
+
+/** Every route of the Profile page: the banner and its favorite songs. */
+export const userProfileRoutes = [userProfileRoute, userFavoritesRoute];

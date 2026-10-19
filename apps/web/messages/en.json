@@ -778,6 +778,21 @@
       "memberSince": "Member since {date}",
       "loading": "Loading profile…"
     },
+    "favorites": {
+      "title": "Favorite songs",
+      "loading": "Loading songs…",
+      "loadingMore": "Loading more songs…",
+      "loadMore": "Load more",
+      "empty": {
+        "title": "No favorite songs yet",
+        "description": "Favorite songs will appear here."
+      },
+      "error": {
+        "title": "Favorite songs are unavailable",
+        "description": "Something went wrong. Check your connection and try again.",
+        "retry": "Try again"
+      }
+    },
     "notFound": {
       "title": "Profile not found",
       "description": "We couldn't find this profile. It may have been removed or the link is wrong."
