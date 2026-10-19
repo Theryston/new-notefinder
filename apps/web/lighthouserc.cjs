@@ -30,6 +30,13 @@ module.exports = {
       settings: {
         preset: 'desktop',
         chromeFlags: '--no-sandbox --headless=new',
+        // Next streams metadata into <body> for browsers and sends it in
+        // <head> to HTML-limited bots, whose user agents include
+        // `Chrome-Lighthouse`. Lighthouse's desktop preset sends a plain
+        // Chrome user agent, so its SEO audit read the streamed copy. Sending
+        // the token gives it the head copy, as crawlers get.
+        emulatedUserAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Chrome-Lighthouse',
       },
     },
     assert: {
