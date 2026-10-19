@@ -7,6 +7,10 @@ import { NoticeMessage } from '@/components/notice-message';
 import { ProfileBanner } from '@/features/users/components/profile-banner';
 import { ProfileSummary } from '@/features/users/components/profile-summary';
 import { ProfileSummarySkeleton } from '@/features/users/components/profile-summary-skeleton';
+import {
+  PracticeHistorySection,
+  PracticeHistorySkeleton,
+} from '@/features/users/practice-history/components/practice-history-section';
 import { getPublicProfile } from '@/features/users/queries';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
@@ -75,6 +79,9 @@ export default async function UserProfilePage({
       <ProfileBanner profile={profile} />
       <Suspense fallback={<ProfileSummarySkeleton />}>
         <ProfileSummary username={profile.username} />
+      </Suspense>
+      <Suspense fallback={<PracticeHistorySkeleton />}>
+        <PracticeHistorySection username={profile.username} />
       </Suspense>
     </div>
   );

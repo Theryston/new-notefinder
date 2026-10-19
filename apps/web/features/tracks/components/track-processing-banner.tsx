@@ -6,9 +6,8 @@ import {
   entityBannerSurfaceClass,
   entityInfoClass,
 } from '@/components/entity-header';
-
+import { creditText } from '@/lib/track-credit';
 import { stepPosition } from '../processing-steps';
-import { creditText } from '../track-credit';
 import { TrackProcessingRing } from './track-processing-ring';
 import { TrackProcessingSteps } from './track-processing-steps';
 

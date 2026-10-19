@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { creditText } from './track-credit';
+import { creditText } from '@/lib/track-credit';
 
 describe('creditText', () => {
   it('reads a single artist as its name', () => {

@@ -6,10 +6,9 @@ import { getTranslations } from 'next-intl/server';
 import { getSiteUrl } from '@/lib/env/client';
 import { localeAlternates } from '@/lib/i18n/metadata';
 import type { Locale } from '@/lib/i18n/routing';
-
+import { creditText } from '@/lib/track-credit';
 import { distinctNoteNames } from './note-summary';
 import type { InitialPractice } from './practice-queries';
-import { creditText } from './track-credit';
 
 /** How many notes the description lists: enough to tell songs apart. */
 const DESCRIBED_NOTES = 12;

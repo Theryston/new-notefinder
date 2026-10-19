@@ -5,11 +5,11 @@ import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 
 import { ShareDialog } from '@/components/share/share-dialog';
+import { creditText } from '@/lib/track-credit';
 
 import { formatClock } from '../playback/clock-message';
 import { shareLink } from '../share-link';
 import { playbackStore } from '../stores/playback-store';
-import { creditText } from '../track-credit';
 
 /** The page the visitor is on; `shareLink` drops its query string. */
 const currentPageUrl = () => window.location.href;

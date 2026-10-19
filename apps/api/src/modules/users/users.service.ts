@@ -158,6 +158,11 @@ export class UsersService {
     return new Map(rows.map((row) => [row.id, row]));
   }
 
+  /** The ID of the User with this username (any casing); undefined when none has it. */
+  findUserIdByUsername(username: string): Promise<string | undefined> {
+    return this.usersRepository.findIdByUsername(username.toLowerCase());
+  }
+
   /**
    * The ID of the User behind a username, for the public reads that hang off a
    * Profile. Usernames are stored lowercase, so the request is lowercased (any

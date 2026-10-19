@@ -771,6 +771,32 @@
     "metaTitle": "Página não encontrada",
     "metaDescription": "A página que você procura não existe ou foi movida."
   },
+  "profileHistory": {
+    "title": "Histórico de treinos",
+    "empty": "Nenhum treino salvo ainda.",
+    "loading": "Carregando o histórico de treinos…",
+    "error": "Não foi possível carregar o histórico de treinos.",
+    "retry": "Tentar novamente",
+    "showMore": "Mostrar mais",
+    "suspected": "Possível vazamento do som",
+    "percent": "{percent}%",
+    "accuracy": {
+      "hit": "Acerto",
+      "near": "Quase",
+      "miss": "Erro"
+    },
+    "difficulty": {
+      "EASY": "Fácil",
+      "NORMAL": "Normal",
+      "HARD": "Difícil"
+    },
+    "octave": {
+      "ANY": "Qualquer oitava",
+      "EXACT": "Oitava exata"
+    },
+    "speed": "{speed, number}×",
+    "transpose": "{semitones, plural, =0 {Tom original} one {{semitones, number, ::sign-except-zero} semitom} other {{semitones, number, ::sign-except-zero} semitons}}"
+  },
   "share": {
     "profile": {
       "open": "Compartilhar",

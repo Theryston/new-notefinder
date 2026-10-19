@@ -15,6 +15,15 @@ type Difficulty = (typeof practiceDifficulty.enumValues)[number];
 /** A saved practice run, as the database keeps it. */
 export type PracticeAttemptRow = typeof practiceAttempts.$inferSelect;
 
+/** A saved run with the header of the Track it was sung on. */
+export type PracticeAttemptHistoryRow = {
+  attempt: PracticeAttemptRow;
+  track: Pick<
+    typeof tracks.$inferSelect,
+    'id' | 'title' | 'coverUrl' | 'artistCredit'
+  >;
+};
+
 /**
  * The runs of a User that share a Track, a transposition and their flags, with
  * the best accuracy among them. Enough for the Vocal range: a group holds an
@@ -172,23 +181,98 @@ export class AttemptsRepository {
     limit: number;
   }): Promise<PracticeAttemptRow[]> {
     const { userId, after, limit } = options;
-    const owned = eq(practiceAttempts.userId, userId);
-    // Newest first, so the page after holds the older rows; the ID breaks
-    // ties between attempts saved in the same instant.
-    const afterCursor =
-      after &&
-      or(
-        lt(practiceAttempts.createdAt, new Date(after.createdAt)),
-        and(
-          eq(practiceAttempts.createdAt, new Date(after.createdAt)),
-          lt(practiceAttempts.id, after.attemptId),
-        ),
-      );
     return this.txHost.tx
       .select()
       .from(practiceAttempts)
-      .where(afterCursor ? and(owned, afterCursor) : owned)
-      .orderBy(desc(practiceAttempts.createdAt), desc(practiceAttempts.id))
+      .where(ownedAfter(userId, after))
+      .orderBy(...NEWEST_FIRST)
+      .limit(limit);
+  }
+
+  /**
+   * Up to `limit` attempts of the User after the cursor, newest first, each
+   * with the header of the Track it was sung on. The Track is joined in the
+   * same query so a page costs one round trip; artists.repository reads the
+   * tracks table the same way. The join is inner: a run always has its Track
+   * (the foreign key cascades).
+   */
+  listHistory(options: {
+    userId: string;
+    after: OwnAttemptCursor | undefined;
+    limit: number;
+  }): Promise<PracticeAttemptHistoryRow[]> {
+    const { userId, after, limit } = options;
+    return this.txHost.tx
+      .select({
+        attempt: practiceAttempts,
+        track: {
+          id: tracks.id,
+          title: tracks.title,
+          coverUrl: tracks.coverUrl,
+          artistCredit: tracks.artistCredit,
+        },
+      })
+      .from(practiceAttempts)
+      .innerJoin(tracks, eq(practiceAttempts.trackId, tracks.id))
+      .where(historyAfter(userId, after))
+      .orderBy(...HISTORY_NEWEST_FIRST)
       .limit(limit);
   }
 }
+
+/**
+ * The save time cut to the millisecond, which is what a cursor carries. The
+ * column keeps microseconds, so comparing the raw column would skip or repeat
+ * runs saved in the same millisecond: the cursor cannot tell them apart.
+ */
+const savedAtMs = sql<Date>`date_trunc('milliseconds', ${practiceAttempts.createdAt})`;
+
+/** Newest first by the millisecond; the ID breaks ties within one. */
+const HISTORY_NEWEST_FIRST = [
+  desc(savedAtMs),
+  desc(practiceAttempts.id),
+] as const;
+
+/** The User's runs strictly after the cursor in the history order. */
+const historyAfter = (userId: string, after: OwnAttemptCursor | undefined) => {
+  const owned = eq(practiceAttempts.userId, userId);
+  if (!after) {
+    return owned;
+  }
+  const createdAt = new Date(after.createdAt);
+  return and(
+    owned,
+    or(
+      lt(savedAtMs, createdAt),
+      and(
+        sql`${savedAtMs} = ${createdAt}`,
+        lt(practiceAttempts.id, after.attemptId),
+      ),
+    ),
+  );
+};
+
+/** Newest first; the ID breaks ties between attempts saved in the same instant. */
+const NEWEST_FIRST = [
+  desc(practiceAttempts.createdAt),
+  desc(practiceAttempts.id),
+] as const;
+
+/** The User's attempts strictly after the cursor in the newest-first order. */
+const ownedAfter = (userId: string, after: OwnAttemptCursor | undefined) => {
+  const owned = eq(practiceAttempts.userId, userId);
+  if (!after) {
+    return owned;
+  }
+  const createdAt = new Date(after.createdAt);
+  return and(
+    owned,
+    or(
+      lt(practiceAttempts.createdAt, createdAt),
+      and(
+        eq(practiceAttempts.createdAt, createdAt),
+        lt(practiceAttempts.id, after.attemptId),
+      ),
+    ),
+  );
+};

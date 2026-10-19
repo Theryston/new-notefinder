@@ -6,12 +6,23 @@ import { AttemptsService } from './attempts.service.js';
 import { MyAttemptsController } from './my-attempts.controller.js';
 import { SubmitAttemptService } from './submit-attempt.service.js';
 import { TrackAttemptsController } from './track-attempts.controller.js';
+import { UserAttemptsController } from './user-attempts.controller.js';
+import { UserAttemptsService } from './user-attempts.service.js';
 
 /** A signed-in User's saved practice runs and their own history. */
 @Module({
   imports: [TracksModule, UsersModule],
-  controllers: [TrackAttemptsController, MyAttemptsController],
-  providers: [AttemptsService, AttemptsRepository, SubmitAttemptService],
+  controllers: [
+    TrackAttemptsController,
+    MyAttemptsController,
+    UserAttemptsController,
+  ],
+  providers: [
+    AttemptsService,
+    AttemptsRepository,
+    SubmitAttemptService,
+    UserAttemptsService,
+  ],
   exports: [AttemptsService],
 })
 export class AttemptsModule {}
