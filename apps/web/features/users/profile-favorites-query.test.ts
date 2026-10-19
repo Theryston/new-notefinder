@@ -6,8 +6,8 @@ import { browserApi } from '@/lib/api/browser';
 import {
   fetchProfileFavoritesPage,
   profileFavoritesInfiniteQueryOptions,
-  profileFavoritesKeys,
 } from './profile-favorites-query';
+import { profileKeys } from './query-keys';
 
 vi.mock('@/lib/api/browser', () => ({ browserApi: vi.fn() }));
 
@@ -17,18 +17,14 @@ const page = { items: [], nextCursor: 'cursor-2' };
 
 const lastPage = { items: [], nextCursor: null };
 
-describe('profileFavoritesKeys', () => {
-  it('separates infinite keys by Profile and page size', () => {
-    expect(profileFavoritesKeys.infinite('ada_lovelace', 20)).toEqual([
-      'users',
-      'ada_lovelace',
-      'favorites',
-      'infinite',
-      { limit: 20 },
-    ]);
-    expect(profileFavoritesKeys.infinite('ada_lovelace', 20)).not.toEqual(
-      profileFavoritesKeys.infinite('grace', 20),
-    );
+describe('profileFavoritesInfiniteQueryOptions keys', () => {
+  it('keys the grid with the shared Profile favorites keys', () => {
+    expect(
+      profileFavoritesInfiniteQueryOptions({
+        username: 'ada_lovelace',
+        limit: 20,
+      }).queryKey,
+    ).toEqual(profileKeys.infiniteFavorites('ada_lovelace', 20));
   });
 });
 

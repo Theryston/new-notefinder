@@ -8,16 +8,9 @@ import {
 import { browserApi } from '@/lib/api/browser';
 import { cursorPagesQueryOptions } from '@/lib/cursor-pages-query';
 
-const PROFILE_FAVORITES_DEFAULT_LIMIT = 20;
+import { profileKeys } from './query-keys';
 
-/**
- * TanStack Query keys for a Profile's favorites grid. The username is
- * lowercase in the URL, so one Profile keeps one set of pages.
- */
-export const profileFavoritesKeys = {
-  infinite: (username: string, limit: number) =>
-    ['users', username, 'favorites', 'infinite', { limit }] as const,
-};
+const PROFILE_FAVORITES_DEFAULT_LIMIT = 20;
 
 type ProfileFavoritesPageParams = {
   username: string;
@@ -61,7 +54,7 @@ export function profileFavoritesInfiniteQueryOptions({
   initialPage,
 }: ProfileFavoritesInfiniteInput) {
   return cursorPagesQueryOptions<CatalogTrack>({
-    queryKey: profileFavoritesKeys.infinite(username, limit),
+    queryKey: profileKeys.infiniteFavorites(username, limit),
     fetchPage: ({ cursor, signal }) =>
       fetchProfileFavoritesPage({ username, cursor, limit, signal }),
     initialPage,

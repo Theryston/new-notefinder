@@ -37,14 +37,15 @@ export async function getPublicProfile(
 }
 
 /**
- * The first page of a Profile's favorite Tracks, cached under the same Profile
- * tag as the banner. Later pages are read in the browser by the grid.
+ * The first page of a Profile's favorite Tracks, cached under its own favorites
+ * tag (the API revalidates it when a favorite changes), so banner edits and
+ * favorite changes do not evict each other. Later pages are read by the grid.
  */
 export async function getPublicFavoritesPage(
   username: string,
 ): Promise<UserFavoritesPage> {
   'use cache';
-  cacheTag(cacheTags.userProfile(username));
+  cacheTag(cacheTags.userFavorites(username));
   cacheLife('max');
 
   return serverApi(`/users/${encodeURIComponent(username)}/favorites`, {

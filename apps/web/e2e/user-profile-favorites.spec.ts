@@ -14,9 +14,25 @@ test.describe('public profile favorite songs', () => {
       page.getByRole('heading', { level: 2, name: 'Favorite songs' }),
     ).toBeVisible();
     await expect(page.getByText('Favorite Song 21')).toBeVisible();
-    const card = page.locator('a[href$="/en/tracks/fav-track-21"]');
+    const card = page.locator('a[href="/en/tracks/fav-track-21"]');
     await expect(card).toBeVisible();
     await expect(card).toContainText('Queen');
+  });
+
+  test('shows the geometric placeholder for a favorite without cover art', async ({
+    page,
+  }) => {
+    await page.goto('/en/users/ada_lovelace');
+
+    // Odd favorites have no cover in the fake API, so their card is the
+    // placeholder: no image, just the decorative shapes on a solid colour.
+    const card = page.locator('a[href="/en/tracks/fav-track-21"]');
+    await expect(card).toBeVisible();
+    await expect(card.locator('img')).toHaveCount(0);
+    // The placeholder's root is the only decorative span that clips its shapes.
+    await expect(
+      card.locator('span[aria-hidden="true"][class*="overflow-hidden"]'),
+    ).toHaveCount(1);
   });
 
   test('loads the next page from the button without a full-page reload', async ({
@@ -63,11 +79,29 @@ test.describe('public profile favorite songs', () => {
     ).toBeVisible();
   });
 
-  test('fits a 360px screen without horizontal scrolling', async ({ page }) => {
+  test('lays the cover grid out in columns inside a 360px screen', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('/en/users/ada_lovelace');
 
-    await expect(page.getByText('Favorite Song 21')).toBeVisible();
+    const first = page.locator('a[href="/en/tracks/fav-track-21"]');
+    const second = page.locator('a[href="/en/tracks/fav-track-20"]');
+    await expect(first).toBeVisible();
+    const [a, b] = await Promise.all([
+      first.boundingBox(),
+      second.boundingBox(),
+    ]);
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    if (!a || !b) return;
+    // Two cards side by side on the first row, both inside the viewport.
+    expect(b.x).toBeGreaterThan(a.x);
+    expect(Math.abs(b.y - a.y)).toBeLessThan(1);
+    for (const box of [a, b]) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(360);
+    }
     const overflow = await page.evaluate(
       () =>
         document.documentElement.scrollWidth -

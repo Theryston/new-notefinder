@@ -9,7 +9,8 @@ import { ProfileFavoritesGrid } from './profile-favorites-grid';
 /**
  * The favorite songs section of a Profile. A Profile with no favorites, or
  * whose favorites could not be read, shows no section at all: the banner
- * already says who the Profile belongs to, so an empty grid adds nothing.
+ * already says who the Profile belongs to, so an empty grid adds nothing. A
+ * failed read still keeps the page up, but is logged so an outage is visible.
  */
 export async function ProfileFavoritesSection({
   username,
@@ -17,7 +18,12 @@ export async function ProfileFavoritesSection({
   username: string;
 }) {
   const initialPage = await getPublicFavoritesPage(username).catch(
-    () => undefined,
+    (error: unknown) => {
+      console.error(
+        `Favorite songs of ${username} could not be read: ${messageOf(error)}`,
+      );
+      return undefined;
+    },
   );
   if (!initialPage || initialPage.items.length === 0) {
     return null;
@@ -37,4 +43,8 @@ export async function ProfileFavoritesSection({
       />
     </NextIntlClientProvider>
   );
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
