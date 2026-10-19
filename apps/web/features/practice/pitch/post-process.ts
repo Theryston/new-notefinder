@@ -19,7 +19,7 @@ const OCTAVE_TOLERANCE = 2;
 const OCTAVE_ACCEPT_RUN = 3;
 
 /** Unvoiced readings in a row before the smoothing forgets the last note. */
-const FORGET_AFTER = 3;
+export const FORGET_AFTER = 3;
 
 function median(values: readonly number[]): number {
   const sorted = [...values].sort((a, b) => a - b);

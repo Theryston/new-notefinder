@@ -12,15 +12,16 @@ import { streakKeys } from '../query-keys';
 import { browserTimeZone, sendHeartbeat } from '../streak-queries';
 
 /**
- * Reports practice time while `playing`, writes each answer into the streak
- * status the ring shows, and calls `onCompleted` once on the heartbeat that
- * reached the daily target. The heartbeat is a mutation (its answer updates
- * the status query); the pending seconds leave through a beacon when the page
- * is hidden or closed, which a mutation cannot do. The timing is in
+ * Reports practice time while the User is `singing` (the mic is on and a voice
+ * is heard), writes each answer into the streak status the ring shows, and
+ * calls `onCompleted` once on the heartbeat that reached the daily target.
+ * Playback alone reports nothing. The heartbeat is a mutation (its answer
+ * updates the status query); the pending seconds leave through a beacon when
+ * the page is hidden or closed, which a mutation cannot do. The timing is in
  * `heartbeat-loop.ts`.
  */
 export function useStreakHeartbeat(
-  playing: boolean,
+  singing: boolean,
   onCompleted: (status: StreakStatus) => void,
   account?: string,
 ) {
@@ -38,8 +39,8 @@ export function useStreakHeartbeat(
   send.current = heartbeat.mutateAsync;
   const completed = useRef(onCompleted);
   completed.current = onCompleted;
-  const playingRef = useRef(playing);
-  playingRef.current = playing;
+  const singingRef = useRef(singing);
+  singingRef.current = singing;
   const loop = useRef<HeartbeatLoop | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export function useStreakHeartbeat(
         if (active && result.justCompleted) completed.current(result.status);
       },
     });
-    started.setPlaying(playingRef.current);
+    started.setPlaying(singingRef.current);
     loop.current = started;
 
     const flushWhenHidden = () => {
@@ -80,6 +81,6 @@ export function useStreakHeartbeat(
   }, []);
 
   useEffect(() => {
-    loop.current?.setPlaying(playing);
-  }, [playing]);
+    loop.current?.setPlaying(singing);
+  }, [singing]);
 }

@@ -3,12 +3,17 @@ import { expect, test } from '@playwright/test';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { setTrackMock } from './fake-track-api';
 import { messages } from './messages';
+import { turnMicOn } from './sing-with-fake-mic';
 import { mockStreakApi } from './streak-api-mock';
 
 for (const width of [360, 1440]) {
   for (const theme of ['light', 'dark'] as const) {
     test.describe(`streak celebration clearance (${width}px, ${theme})`, () => {
-      test.use({ viewport: { width, height: 1000 }, colorScheme: theme });
+      test.use({
+        viewport: { width, height: 1000 },
+        colorScheme: theme,
+        permissions: ['microphone'],
+      });
 
       test('keeps the entire milestone toast above the practice dock', async ({
         page,
@@ -36,6 +41,7 @@ for (const width of [360, 1440]) {
         });
         await page.goto(`/en/tracks/${id}`);
         await expect(page.getByRole('button', { name: /%/ })).toBeVisible();
+        await turnMicOn(page, messages.en.practice.mic);
         await page
           .getByRole('button', { name: messages.en.tracks.practice.dock.play })
           .click();

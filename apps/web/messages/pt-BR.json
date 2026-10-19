@@ -301,7 +301,7 @@
     "remaining": "{minutes, plural, =0 {Faltam {seconds, number} s hoje} other {Faltam {minutes, number} min {seconds, number} s hoje}}",
     "reached": "Você atingiu a meta de hoje. Volte amanhã para manter a sequência.",
     "goal": "Meta diária: {minutes, plural, one {# minuto} other {# minutos}}",
-    "countsWhilePlaying": "A prática conta enquanto a música toca.",
+    "countsWhilePlaying": "A prática conta enquanto você canta com o microfone ligado.",
     "inviteTitle": "Crie uma sequência de prática diária",
     "inviteDescription": "Crie uma conta gratuita para contar o tempo que você pratica a cada dia e manter sua sequência.",
     "inviteCreate": "Criar conta",

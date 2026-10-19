@@ -135,7 +135,8 @@ days and are imported as they are.
 _Avoid_: Day (alone), UTC day
 
 **Heartbeat**:
-A report from the web that a User listened to a Track for some seconds. The API
+A report from the web that a User was singing along to a Track for some seconds
+(the mic is on and a voice is heard; playback alone sends none). The API
 credits it to the Practice day, at most 20 seconds per Heartbeat and never more
 than its own clock saw pass since the User's previous Heartbeat.
 _Avoid_: Ping, tick

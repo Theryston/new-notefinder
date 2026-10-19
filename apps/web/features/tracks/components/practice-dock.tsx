@@ -9,6 +9,7 @@ import { type RefObject, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { DockMicButton } from '@/features/practice/components/dock-mic-button';
 import { DockMicNotice } from '@/features/practice/components/dock-mic-notice';
+import { useSinging } from '@/features/practice/components/use-singing';
 import { StreakRingSkeleton } from '@/features/streaks/components/streak-ring-skeleton';
 
 import type { PlaybackController } from '../playback/playback-controller';
@@ -115,6 +116,7 @@ export function PracticeDock({
 }) {
   const t = useTranslations('tracks.practice.dock');
   const status = usePlaybackState((state) => state.status);
+  const singing = useSinging();
   const dock = useRef<HTMLDivElement>(null);
   usePublishDockHeight(dock);
   // The layout follows expected audio before its URLs land, but the
@@ -154,7 +156,7 @@ export function PracticeDock({
       <div className="flex min-w-0 items-center justify-between gap-1 [grid-area:actions] md:gap-3">
         <DockMicButton playback={playbackStore} />
         {audioLayout && <VocalsToggle controller={controller} />}
-        <StreakRing playing={status === 'playing'} />
+        <StreakRing singing={singing} />
         <DockSettings controller={controller} videoId={videoId} />
         <TrackKeyContext value={trackKey}>
           <TransposePopover directAudio={audioLayout} />

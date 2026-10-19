@@ -301,7 +301,7 @@
     "remaining": "{minutes, plural, =0 {{seconds, number} s left today} other {{minutes, number} min {seconds, number} s left today}}",
     "reached": "You reached today's goal. Come back tomorrow to keep your streak.",
     "goal": "Daily goal: {minutes, plural, one {# minute} other {# minutes}}",
-    "countsWhilePlaying": "Practice counts while the music plays.",
+    "countsWhilePlaying": "Practice counts while you sing with the mic on.",
     "inviteTitle": "Build a daily practice streak",
     "inviteDescription": "Create a free account to count the time you practice each day and keep your streak going.",
     "inviteCreate": "Create an account",

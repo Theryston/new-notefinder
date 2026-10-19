@@ -26,7 +26,7 @@ const validTarget = (seconds: number | null): number =>
   asDailyPracticeTargetSeconds(seconds) ?? DEFAULT_TARGET_SECONDS;
 
 /**
- * The daily practice streak. A heartbeat credits listening time to the User's
+ * The daily practice streak. A heartbeat credits singing time to the User's
  * current day, which is the calendar day in their time zone, so it rolls over
  * at their midnight. A day is completed when it reaches the User's daily
  * target, and the streak is the run of completed days.
