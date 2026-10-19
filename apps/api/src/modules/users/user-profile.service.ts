@@ -13,7 +13,13 @@ import { UsersRepository } from './users.repository.js';
  */
 export type PublicProfileBanner = Pick<
   PublicProfile,
-  'username' | 'name' | 'image' | 'createdAt'
+  | 'username'
+  | 'name'
+  | 'image'
+  | 'createdAt'
+  | 'followersCount'
+  | 'followingCount'
+  | 'friendsCount'
 > &
   Partial<Pick<PublicProfile, 'dailyPracticeTargetSeconds'>>;
 
@@ -58,6 +64,9 @@ export class UserProfileService {
         name: row.name,
         image: row.image,
         createdAt: row.createdAt.toISOString(),
+        followersCount: row.followersCount,
+        followingCount: row.followingCount,
+        friendsCount: row.friendsCount,
         ...(dailyTarget === null
           ? {}
           : { dailyPracticeTargetSeconds: dailyTarget }),

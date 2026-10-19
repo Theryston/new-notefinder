@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { ProfileFollow } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { UsersService } from '../users/users.service.js';
-import { type FollowCounts, FollowsRepository } from './follows.repository.js';
+import { FollowsRepository } from './follows.repository.js';
 
 /**
  * Who follows whom. Every call that names another User checks that the User
@@ -40,11 +40,6 @@ export class FollowsService {
       userId,
       isFollowing: await this.follows.isFollowing(viewerId, userId),
     };
-  }
-
-  /** The followers, following and friends of a User. */
-  countsOf(userId: string): Promise<FollowCounts> {
-    return this.follows.countsOf(userId);
   }
 
   private async assertUserExists(userId: string): Promise<void> {

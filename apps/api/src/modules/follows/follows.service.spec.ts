@@ -7,7 +7,6 @@ const follows = {
   add: vi.fn(),
   remove: vi.fn(),
   isFollowing: vi.fn(),
-  countsOf: vi.fn(),
 };
 const users = {
   findPublicUsers: vi.fn(),
@@ -95,12 +94,5 @@ describe('FollowsService', () => {
       expect(users.findIdByUsername).toHaveBeenCalledWith('grace');
       expect(follows.isFollowing).toHaveBeenCalledWith('ada', 'grace-id');
     });
-  });
-
-  it('reads the counts of a User from the repository', async () => {
-    const counts = { followers: 3, following: 2, friends: 1 };
-    follows.countsOf.mockResolvedValue(counts);
-
-    await expect(service.countsOf('grace-id')).resolves.toEqual(counts);
   });
 });
