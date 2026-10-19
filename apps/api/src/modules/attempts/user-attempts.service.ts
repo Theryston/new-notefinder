@@ -25,7 +25,9 @@ export class UserAttemptsService {
   ) {}
 
   /**
-   * One page of the User's runs, newest first. Usernames are stored lowercase,
+   * One page of the User's runs, newest first. It is read on every request,
+   * not cached under the profile tag: a run saved a moment ago must show on the
+   * next visit, and saving a run does not revalidate the profile. Usernames are stored lowercase,
    * so any casing finds the History. An unknown username is `NOT_FOUND`; a
    * User with no runs gets an empty page.
    */

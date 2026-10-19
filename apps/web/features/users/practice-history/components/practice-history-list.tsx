@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { practiceHistoryQueryOptions } from '../practice-history-query';
 import { useBrowserTimeZone } from '../use-browser-time-zone';
 import { PracticeHistoryDays } from './practice-history-days';
+import { PracticeHistoryRowSkeletons } from './practice-history-row-skeletons';
 
 type PracticeHistoryListProps = {
   username: string;
@@ -18,7 +19,10 @@ type PracticeHistoryListProps = {
 /**
  * The Profile's practice history: runs grouped by day in the viewer's time
  * zone, newest first, with "Show more" for each next page. The server's first
- * page is shown at once; a page that failed to render there is fetched here.
+ * page is known at once, but the grouping needs the viewer's time zone, which
+ * only the browser has. Until then the list shows stand-in rows of the same
+ * height, so the grouped list does not push the page around, and "Show more"
+ * waits for the same moment, so a click is never lost before hydration.
  */
 export function PracticeHistoryList({
   username,
@@ -53,11 +57,14 @@ export function PracticeHistoryList({
     return <p className="text-muted-foreground text-sm">{t('empty')}</p>;
   }
 
+  if (timeZone === undefined) {
+    return <PracticeHistoryRowSkeletons />;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PracticeHistoryDays attempts={attempts} timeZone={timeZone} />
-      {/* Offered once hydrated: a click before that would be lost. */}
-      {query.hasNextPage && timeZone !== undefined ? (
+      {query.hasNextPage ? (
         <div className="flex justify-center">
           <Button
             variant="outline"

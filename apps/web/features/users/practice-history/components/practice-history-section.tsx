@@ -2,8 +2,10 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { Skeleton } from '@/components/ui/skeleton';
+
 import { getPracticeHistoryFirstPage } from '../practice-history-first-page';
 import { PracticeHistoryList } from './practice-history-list';
+import { PracticeHistoryRowSkeletons } from './practice-history-row-skeletons';
 
 /**
  * The practice history section of a Profile. Its first page is read on each
@@ -37,10 +39,7 @@ export async function PracticeHistorySection({
   );
 }
 
-/** Stand-in rows while the first page loads; the keys only need to be distinct. */
-const SKELETON_ROWS = ['first', 'second', 'third', 'fourth', 'fifth'];
-
-/** The section's stand-in while its first page loads: the title and five rows. */
+/** The section's stand-in while its first page loads: the title and the rows. */
 export async function PracticeHistorySkeleton() {
   const t = await getTranslations('profileHistory');
   return (
@@ -50,16 +49,7 @@ export async function PracticeHistorySkeleton() {
       className="flex flex-col gap-4"
     >
       <Skeleton className="h-7 w-48 rounded-md" />
-      {SKELETON_ROWS.map((row) => (
-        <div key={row} className="flex items-center gap-3 p-2">
-          <Skeleton className="size-14 shrink-0 rounded-md" />
-          <div className="flex flex-1 flex-col gap-2">
-            <Skeleton className="h-4 w-2/3 rounded-md" />
-            <Skeleton className="h-3 w-1/2 rounded-md" />
-          </div>
-          <Skeleton className="h-7 w-24 rounded-full" />
-        </div>
-      ))}
+      <PracticeHistoryRowSkeletons />
     </div>
   );
 }

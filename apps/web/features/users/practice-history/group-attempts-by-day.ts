@@ -2,6 +2,8 @@
 export type AttemptDayGroup<TAttempt> = {
   /** The calendar day as `YYYY-MM-DD` in the time zone the groups were cut in. */
   day: string;
+  /** When the group's first (newest) run was saved, as ISO 8601. */
+  startedAt: string;
   attempts: TAttempt[];
 };
 
@@ -28,7 +30,7 @@ export function groupAttemptsByDay<TAttempt extends { createdAt: string }>(
     if (last?.day === day) {
       last.attempts.push(attempt);
     } else {
-      groups.push({ day, attempts: [attempt] });
+      groups.push({ day, startedAt: attempt.createdAt, attempts: [attempt] });
     }
   }
   return groups;

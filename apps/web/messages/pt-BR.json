@@ -795,7 +795,7 @@
       "EXACT": "Oitava exata"
     },
     "speed": "{speed, number}×",
-    "transpose": "{semitones, select, 0 {Tom original} other {Tom {semitones, number, ::sign-except-zero}}}"
+    "transpose": "{semitones, select, 0 {Tom original} other {{semitones, number, ::sign-except-zero} semitons}}"
   },
   "publicProfile": {
     "metaTitle": "{name}",

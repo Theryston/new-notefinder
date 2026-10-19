@@ -151,6 +151,18 @@ The run of consecutive completed Practice days ending today, or yesterday while
 today is still open.
 _Avoid_: Series, chain
 
+**Accuracy band**:
+The band a Practice attempt's accuracy reads as: Hit at 85% or more, Near from
+60% up to 85%, Miss below 60%. Shown as a word next to the number, never by
+color alone.
+_Avoid_: Grade, score level
+
+**Suspected bleed**:
+An attempt flagged because a steady voiced pitch was heard while its Track had
+no vocal notes, so the music probably leaked into the mic. The flag stays on the
+attempt and shows as suspected in the Profile's practice history.
+_Avoid_: Bleed (alone), leak, bleed flag
+
 ### Legacy
 
 **Legacy ID**:

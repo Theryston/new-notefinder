@@ -5,25 +5,21 @@ import { useTranslations } from 'next-intl';
 
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
+import { creditText } from '@/lib/track-credit';
 
 import { AccuracyChip } from './accuracy-chip';
 
-/** The artist credit as one line, joining each name to its join phrase. */
-const creditLine = (
-  credit: PracticeAttemptHistoryItem['track']['artistCredit'],
-) => credit.map((entry) => `${entry.name}${entry.joinPhrase}`).join('');
-
 /**
  * One practice run: the Track's cover, its title and artist, the setup it was
- * sung with, the time of day (once the viewer's time zone is known, `null`
- * before), and the accuracy chip. A run flagged as bleed-suspected says so.
+ * sung with, the time of day in the viewer's zone, and the accuracy chip. A
+ * run flagged as bleed-suspected says so.
  */
 export function PracticeHistoryRow({
   attempt,
   time,
 }: {
   attempt: PracticeAttemptHistoryItem;
-  time: string | null;
+  time: string;
 }) {
   const t = useTranslations('profileHistory');
   const { track } = attempt;
@@ -50,11 +46,10 @@ export function PracticeHistoryRow({
           {track.title}
         </Link>
         <p className="truncate text-muted-foreground text-sm">
-          {creditLine(track.artistCredit)}
+          {creditText(track.artistCredit)}
         </p>
         <p className="truncate text-muted-foreground text-xs">
-          {setup.join(' · ')}
-          {time === null ? '' : ` · ${time}`}
+          {`${setup.join(' · ')} · ${time}`}
         </p>
         {attempt.bleedSuspected ? (
           <p className="font-semibold text-muted-foreground text-xs">

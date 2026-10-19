@@ -2,7 +2,9 @@ import {
   type PracticeAttemptHistoryPage,
   practiceAttemptHistoryPageSchema,
 } from '@notefinder/contracts';
+import { sql } from 'drizzle-orm';
 import request from 'supertest';
+import { practiceAttempts } from '../src/database/schema/practice-attempts.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
 import {
@@ -149,6 +151,40 @@ describe('Public practice history (e2e)', () => {
     await createUser(spec.testApp.db, { username: 'ada' });
 
     expect(await history('ada')).toEqual({ items: [], nextCursor: null });
+  });
+
+  it('pages runs saved in the same millisecond without skipping or repeating any', async () => {
+    // The column keeps microseconds: these three runs share one millisecond
+    // and differ only in their microseconds, which the cursor cannot carry.
+    const track = await createTrack(spec.testApp.db);
+    for (const [id, micros] of [
+      ['run-a', '000100'],
+      ['run-b', '000200'],
+      ['run-c', '000300'],
+    ] as const) {
+      await spec.testApp.db.insert(practiceAttempts).values({
+        id,
+        userId: owner.id,
+        trackId: track.id,
+        difficulty: 'NORMAL',
+        octaveMode: 'ANY',
+        transposeSemitones: 0,
+        speed: 1,
+        accuracy: 0.8,
+        coverage: 0.95,
+        startedAt: new Date('2026-10-16T10:00:00.000Z'),
+        endedAt: new Date('2026-10-16T10:04:00.000Z'),
+        createdAt: sql`'2026-10-16 10:00:00.${sql.raw(micros)}+00'::timestamptz`,
+        updatedAt: sql`'2026-10-16 10:00:00.${sql.raw(micros)}+00'::timestamptz`,
+      });
+    }
+
+    const first = await history('grace', '?limit=2');
+    const rest = await history('grace', `?limit=2&cursor=${first.nextCursor}`);
+
+    const seen = [...first.items, ...rest.items].map((item) => item.id);
+    expect(seen.sort()).toEqual(['run-a', 'run-b', 'run-c']);
+    expect(rest.nextCursor).toBeNull();
   });
 
   it('answers 400 for a cursor this API did not issue', async () => {

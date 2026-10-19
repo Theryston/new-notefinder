@@ -92,8 +92,10 @@ export class AttemptsRepository {
 
   /**
    * Up to `limit` attempts of the User after the cursor, newest first, each
-   * with the header of the Track it was sung on. The join is inner: a run
-   * always has its Track (the foreign key cascades).
+   * with the header of the Track it was sung on. The Track is joined in the
+   * same query so a page costs one round trip; artists.repository reads the
+   * tracks table the same way. The join is inner: a run always has its Track
+   * (the foreign key cascades).
    */
   listHistory(options: {
     userId: string;
@@ -113,11 +115,43 @@ export class AttemptsRepository {
       })
       .from(practiceAttempts)
       .innerJoin(tracks, eq(practiceAttempts.trackId, tracks.id))
-      .where(ownedAfter(userId, after))
-      .orderBy(...NEWEST_FIRST)
+      .where(historyAfter(userId, after))
+      .orderBy(...HISTORY_NEWEST_FIRST)
       .limit(limit);
   }
 }
+
+/**
+ * The save time cut to the millisecond, which is what a cursor carries. The
+ * column keeps microseconds, so comparing the raw column would skip or repeat
+ * runs saved in the same millisecond: the cursor cannot tell them apart.
+ */
+const savedAtMs = sql<Date>`date_trunc('milliseconds', ${practiceAttempts.createdAt})`;
+
+/** Newest first by the millisecond; the ID breaks ties within one. */
+const HISTORY_NEWEST_FIRST = [
+  desc(savedAtMs),
+  desc(practiceAttempts.id),
+] as const;
+
+/** The User's runs strictly after the cursor in the history order. */
+const historyAfter = (userId: string, after: OwnAttemptCursor | undefined) => {
+  const owned = eq(practiceAttempts.userId, userId);
+  if (!after) {
+    return owned;
+  }
+  const createdAt = new Date(after.createdAt);
+  return and(
+    owned,
+    or(
+      lt(savedAtMs, createdAt),
+      and(
+        sql`${savedAtMs} = ${createdAt}`,
+        lt(practiceAttempts.id, after.attemptId),
+      ),
+    ),
+  );
+};
 
 /** Newest first; the ID breaks ties between attempts saved in the same instant. */
 const NEWEST_FIRST = [

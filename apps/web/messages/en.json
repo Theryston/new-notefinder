@@ -795,7 +795,7 @@
       "EXACT": "Exact octave"
     },
     "speed": "{speed, number}×",
-    "transpose": "{semitones, select, 0 {Original key} other {Key {semitones, number, ::sign-except-zero}}}"
+    "transpose": "{semitones, select, 0 {Original key} other {{semitones, number, ::sign-except-zero} semitones}}"
   },
   "publicProfile": {
     "metaTitle": "{name}",

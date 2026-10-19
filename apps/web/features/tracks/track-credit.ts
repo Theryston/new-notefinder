@@ -1,10 +1,4 @@
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
-
-/**
- * The credit as the Recording prints it: each name followed by the join phrase
- * to the next one ("Queen feat. David Bowie"). The phrases are catalog data, not
- * translated text, so they are joined as they are.
- */
-export function creditText(credit: readonly TrackArtistCreditEntry[]): string {
-  return credit.map((entry) => `${entry.name}${entry.joinPhrase}`).join('');
-}
+// The credit text moved to lib/ so features outside tracks can share it. This
+// path stays so the tracks imports and their existing test keep working.
+// biome-ignore lint/performance/noBarrelFile: a one-name re-export that keeps the old path alive, the rest lives in lib/track-credit.ts.
+export { creditText } from '@/lib/track-credit';
