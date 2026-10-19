@@ -30,4 +30,5 @@ export {
   type TrackRecommendations,
   trackRecommendationsSchema,
 } from './tracks.js';
+export * from './user-favorites.js';
 export * from './users.js';

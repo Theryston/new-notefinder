@@ -20,6 +20,6 @@ import { UsersService } from './users.service.js';
     UserSitemapRepository,
     UserProfileService,
   ],
-  exports: [UsersService],
+  exports: [UsersService, UserProfileService],
 })
 export class UsersModule {}
