@@ -25,6 +25,11 @@ export class FavoritesService {
     await this.favorites.remove(userId, trackId);
   }
 
+  /** How many Tracks the User marked as favorites. */
+  countFavorites(userId: string): Promise<number> {
+    return this.favorites.countOf(userId);
+  }
+
   async getTrackState(
     userId: string,
     trackId: string,
