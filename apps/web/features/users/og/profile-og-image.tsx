@@ -1,0 +1,181 @@
+import type { ReactElement } from 'react';
+
+import type { ProfileChip } from '../profile-chips';
+import type { ProfileOgCard } from './profile-og-card';
+
+/** The preview's size, the Open Graph and Twitter card standard. */
+export const PROFILE_OG_WIDTH = 1200;
+export const PROFILE_OG_HEIGHT = 630;
+
+/**
+ * The orange of DESIGN.md's `primary` token (`#FA4900`). The image renderer
+ * reads plain colors only, so the token's value is written out here.
+ */
+const ORANGE = '#FA4900';
+const WHITE = '#FFFFFF';
+
+const AVATAR_SIZE = 300;
+
+/**
+ * The preview card (DESIGN.md "Featured blocks"): an orange block with the
+ * Name and `@username` on the left, the chips under them, and the Avatar, or
+ * the initials on white, on the right. Built by plain functions rather than
+ * components because the image renderer takes the element tree as it is.
+ */
+export function profileOgImage(card: ProfileOgCard): ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        background: ORANGE,
+        color: WHITE,
+        padding: '72px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}
+    >
+      {decorationRing()}
+      {textColumn(card)}
+      {avatarElement(card)}
+      {brandMark()}
+    </div>
+  );
+}
+
+/** The one oversized shape, white at 10% (DESIGN.md: the only decoration). */
+function decorationRing(): ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        position: 'absolute',
+        right: '-140px',
+        top: '-140px',
+        width: '600px',
+        height: '600px',
+        borderRadius: '300px',
+        border: '90px solid rgba(255, 255, 255, 0.1)',
+      }}
+    />
+  );
+}
+
+function textColumn(card: ProfileOgCard): ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '18px',
+        maxWidth: '700px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          fontSize: '76px',
+          fontWeight: 800,
+          lineHeight: 1.05,
+        }}
+      >
+        {card.name}
+      </div>
+      <div style={{ display: 'flex', fontSize: '34px', fontWeight: 600 }}>
+        {`@${card.username}`}
+      </div>
+      {chipRow(card.chips)}
+    </div>
+  );
+}
+
+function chipRow(chips: ProfileChip[]): ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '12px',
+        marginTop: '12px',
+      }}
+    >
+      {chips.map((chip) => (
+        <div
+          key={chip.key}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: '2px solid rgba(255, 255, 255, 0.45)',
+            borderRadius: '999px',
+            padding: '8px 22px',
+            fontSize: '24px',
+          }}
+        >
+          <div style={{ display: 'flex', fontWeight: 700 }}>{chip.label}</div>
+          <div style={{ display: 'flex', fontWeight: 700 }}>{chip.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function brandMark(): ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        position: 'absolute',
+        left: '72px',
+        bottom: '40px',
+        fontSize: '26px',
+        fontWeight: 800,
+      }}
+    >
+      NoteFinder
+    </div>
+  );
+}
+
+/**
+ * The picture, decorative: the name sits next to it in the card. Without one,
+ * the initials on white, as the banner draws them.
+ */
+function avatarElement(card: ProfileOgCard): ReactElement {
+  const size = {
+    width: `${AVATAR_SIZE}px`,
+    height: `${AVATAR_SIZE}px`,
+    borderRadius: `${AVATAR_SIZE / 2}px`,
+  };
+  if (card.avatar !== undefined) {
+    return (
+      // biome-ignore lint/performance/noImgElement: this tree is drawn to a PNG by the image renderer, where next/image does not run
+      <img
+        src={card.avatar}
+        alt=""
+        width={AVATAR_SIZE}
+        height={AVATAR_SIZE}
+        style={{ ...size, objectFit: 'cover' }}
+      />
+    );
+  }
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...size,
+        background: WHITE,
+        color: ORANGE,
+        fontSize: '120px',
+        fontWeight: 800,
+      }}
+    >
+      {card.initials}
+    </div>
+  );
+}
