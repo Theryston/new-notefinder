@@ -7,7 +7,7 @@ import {
   schemaMismatchDumpGz,
   startFakeLrclibServer,
 } from './utils/fake-lrclib-server.js';
-import { requestRecording } from './utils/get-recording-client.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { addArtist, addRecording, mbid } from './utils/musicbrainz.js';
 import { addRelease, addTrack } from './utils/musicbrainz-relations.js';
 import { requestSearch } from './utils/search-client.js';
@@ -91,17 +91,6 @@ const arrangeSongbook = async (db: Database): Promise<Songbook> => {
   return { recordings } satisfies Songbook;
 };
 
-const lyricsOf = async (
-  client: TestClient,
-  song: string,
-): Promise<{ plain: string | null; synced: string | null }> => {
-  const response = await requestRecording(client, { mbid: song });
-  if (!response.ok) {
-    throw new Error(`getRecording failed: ${response.error.code}`);
-  }
-  return response.result.lyrics;
-};
-
 const searchMbids = async (
   client: TestClient,
   query: string,
@@ -125,18 +114,20 @@ describe('lyrics: the LRCLIB import and getRecording (e2e)', () => {
       await arrangeSongbook(server().db);
       await indexCatalog(server());
 
-      await expect(lyricsOf(client(), SONG_ONE)).resolves.toMatchObject({
+      await expect(keptLyricsOf(server().db, SONG_ONE)).resolves.toMatchObject({
         plain: expect.stringContaining('fake-lrclib-0'),
         synced: expect.stringContaining('[00:01.00]'),
       });
-      await expect(lyricsOf(client(), SONG_TWO)).resolves.toEqual({
+      await expect(keptLyricsOf(server().db, SONG_TWO)).resolves.toEqual({
         plain: null,
         synced: null,
       });
-      await expect(lyricsOf(client(), SONG_THREE)).resolves.toMatchObject({
+      await expect(
+        keptLyricsOf(server().db, SONG_THREE),
+      ).resolves.toMatchObject({
         plain: expect.stringContaining('fake-lrclib-2'),
       });
-      await expect(lyricsOf(client(), SONG_FOUR)).resolves.toEqual({
+      await expect(keptLyricsOf(server().db, SONG_FOUR)).resolves.toEqual({
         plain: null,
         synced: null,
       });
@@ -173,15 +164,19 @@ describe('lyrics: the LRCLIB import and getRecording (e2e)', () => {
         });
         await worker.tick();
 
-        await expect(lyricsOf(client(), SONG_ONE)).resolves.toMatchObject({
+        await expect(
+          keptLyricsOf(server().db, SONG_ONE),
+        ).resolves.toMatchObject({
           plain: expect.stringContaining('fake-lrclib-0'),
           synced: expect.stringContaining('[00:01.00]'),
         });
-        await expect(lyricsOf(client(), SONG_TWO)).resolves.toEqual({
+        await expect(keptLyricsOf(server().db, SONG_TWO)).resolves.toEqual({
           plain: null,
           synced: null,
         });
-        await expect(lyricsOf(client(), SONG_THREE)).resolves.toMatchObject({
+        await expect(
+          keptLyricsOf(server().db, SONG_THREE),
+        ).resolves.toMatchObject({
           plain: expect.stringContaining('fake-lrclib-2'),
         });
         expect(lrclib.requested).toEqual([
@@ -213,7 +208,7 @@ describe('lyrics: the LRCLIB import and getRecording (e2e)', () => {
         await worker.tick();
 
         // The catalog answers: the failed Lyrics import never blocks it.
-        await expect(lyricsOf(client(), SONG_ONE)).resolves.toEqual({
+        await expect(keptLyricsOf(server().db, SONG_ONE)).resolves.toEqual({
           plain: null,
           synced: null,
         });

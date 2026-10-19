@@ -22,6 +22,5 @@ export const recordingFixture = (
     tags: [{ name: 'classic rock', count: 4 }],
     tagsSource: 'recording',
     externalUrls: [],
-    lyrics: { plain: null, synced: null },
     ...overrides,
   });

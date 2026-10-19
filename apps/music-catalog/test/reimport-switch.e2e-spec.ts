@@ -3,6 +3,7 @@ import { LyricsRepository } from '../src/modules/lyrics/lyrics.repository.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import { requestRecording } from './utils/get-recording-client.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
@@ -34,13 +35,8 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
   const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
   const dumps = useFakeDumps();
-  const {
-    statusResult,
-    searchMbids,
-    recordingLyrics,
-    serveCatalog,
-    restoreParallel,
-  } = useReimportFlow({ server, client, parallel, dumps });
+  const { statusResult, searchMbids, serveCatalog, restoreParallel } =
+    useReimportFlow({ server, client, parallel, dumps });
 
   it('switches atomically, deletes the old copy and cuts the reads over', async () => {
     const worker = await serveCatalog();
@@ -69,11 +65,11 @@ describe('yearly schema change: switching to the parallel copy (e2e)', {
     // Lyrics were reused from our own schema, with the match rerun and no
     // new download (the LRCLIB endpoints are closed ports in this suite):
     // the unchanged take kept its Lyrics, the resized one lost them.
-    await expect(recordingLyrics(mbid(901))).resolves.toEqual({
+    await expect(keptLyricsOf(parallel().db, mbid(901))).resolves.toEqual({
       plain: 'same take la',
       synced: null,
     });
-    await expect(recordingLyrics(mbid(902))).resolves.toEqual({
+    await expect(keptLyricsOf(parallel().db, mbid(902))).resolves.toEqual({
       plain: null,
       synced: null,
     });

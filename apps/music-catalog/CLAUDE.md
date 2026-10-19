@@ -170,9 +170,8 @@ src/
                                 Recordings from LRCLIB's public API
       match-batch.ts            pass one of the two-pass match, shared by the
                                 import and the refresh (pure)
-      lyrics.service.ts         the kept Lyrics (for `getRecording`) and their
-                                documents (for indexing); the only way other
-                                modules use Lyrics
+      lyrics.service.ts         the kept Lyrics' documents (for indexing); the
+                                only way other modules use Lyrics
       lyrics.repository.ts      the Recordings for matching, the kept Lyrics
       match-lyrics.ts           the strict match: normalization, ±2 s, album tie-break (pure)
     sync/
@@ -367,12 +366,11 @@ integer ids of MusicBrainz are internal and never leave the service.
   3. When no level has any tag, `tagsSource` is null and both lists are empty.
 
   The rule is in `genre-fallback.ts`.
-- `lyrics` is `{ plain, synced }` (LRC text in `synced`) when a strict LRCLIB
-  match exists (see "Lyrics (LRCLIB)"), `{ plain: null, synced: null }`
-  otherwise. The service reads them through `LyricsService`, in parallel with
-  the other parts.
+- The Recording carries **no Lyrics**: `getRecording` does not read them
+  (the Lyrics only feed the `lyrics` index, see "Lyrics (LRCLIB)"; the
+  `lyrics` field was removed from the protocol, issue #308).
 - Loading: the service reads the parts in parallel (one query each, all in
-  `RecordingRepository`, plus the Lyrics through `LyricsService`) and
+  `RecordingRepository`) and
   `assembleRecording` builds the answer without any I/O; the rules above live
   in those pure functions.
 
@@ -662,8 +660,8 @@ job, not this import's.
   one must sit on one of the Recording's release titles (the album
   tie-breaker). No confident match means no Lyrics: a Recording without a
   length, or with only an album tie on other albums, keeps null Lyrics.
-- **Reads.** `getRecording` returns the kept plain and synced (LRC) Lyrics,
-  null otherwise. `search` never reads Lyrics.
+- **Reads.** Nothing reads the Lyrics over the protocol: `getRecording` and
+  `search` answer metadata only. The kept Lyrics feed the `lyrics` index.
 - **Refresh** (`LyricsRefreshService.refreshOnce`, one worker tick, `full`
   only): once the catalog is `ready`, each tick polls `LRCLIB_LISTING_URL`
   for a newer dump key (at most every `LRCLIB_REFRESH_CHECK_INTERVAL_MS`,
@@ -1609,7 +1607,8 @@ containers (about 370 MiB at rest). The images are 383 MB (Node) and 959 MB
   `full` mode, with the dump listing and the public API behind fake HTTP
   servers (`test/utils/fake-lrclib-server.ts` and
   `test/utils/fake-lrclib-api-server.ts`). It covers the refresh from a newer
-  dump over a worker tick (`getRecording` returns the new Lyrics),
+  dump over a worker tick (the kept Lyrics read from the database, see
+  `test/utils/kept-lyrics.ts`),
   the skip of an already-imported dump (no second download), the wait past
   the minimum interval (still imported once it passes), the Lyrics of an
   outbox Recording from the API (with the `User-Agent` the fake server

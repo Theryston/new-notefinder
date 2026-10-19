@@ -214,10 +214,7 @@ describe('Track Processing lyrics (e2e)', () => {
   });
 
   it('transcribes the vocals alone, with no Lyrics guidance sent', async () => {
-    app.recordings.set(
-      testMbid(1),
-      bohemian({ lyrics: { plain: 'Is this the real life?', synced: null } }),
-    );
+    app.recordings.set(testMbid(1), bohemian());
     const trackId = await requestTrack(app);
     await runUntilLyricsStep(testApp);
     await workerUploadsVocals(app, trackId);

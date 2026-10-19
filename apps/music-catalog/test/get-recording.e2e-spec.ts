@@ -65,6 +65,15 @@ describe('getRecording: the Recording (e2e)', () => {
     });
   });
 
+  it('answers a Recording without a lyrics field', async () => {
+    await addRecording(server().db, { mbid: mbid(100), name: 'Untitled' });
+
+    const response = await requestRecording(client(), { mbid: mbid(100) });
+
+    expect(response.ok).toBe(true);
+    expect(response.ok && response.result).not.toHaveProperty('lyrics');
+  });
+
   it('keeps every field when the catalog knows nothing more about the Recording', async () => {
     const artist = await addArtist(server().db, {
       name: 'Nobody',
@@ -105,7 +114,6 @@ describe('getRecording: the Recording (e2e)', () => {
         tags: [],
         tagsSource: null,
         externalUrls: [],
-        lyrics: { plain: null, synced: null },
       },
     });
   });
@@ -188,7 +196,6 @@ describe('getRecording: the Recording (e2e)', () => {
           linkType: 'free streaming',
         },
       ],
-      lyrics: { plain: null, synced: null },
     });
   });
 

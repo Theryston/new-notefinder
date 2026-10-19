@@ -1,4 +1,3 @@
-import type { RecordingLyrics } from '@notefinder/contracts';
 import {
   type LyricsDocument,
   lyricsSearchText,
@@ -6,18 +5,11 @@ import {
 import type { LyricsRepository } from './lyrics.repository.js';
 
 /**
- * The kept Lyrics of a Recording, for `getRecording`, and the documents the
- * indexing sends to the `lyrics` search index. Other modules (recording,
- * indexing) use the Lyrics only through this service.
+ * The kept Lyrics, as the documents the indexing sends to the `lyrics` search
+ * index. Other modules (indexing) use the Lyrics only through this service.
  */
 export class LyricsService {
   constructor(private readonly repository: LyricsRepository) {}
-
-  /** Plain and synced Lyrics, both null when no Lyrics matched. */
-  async getLyrics(mbid: string): Promise<RecordingLyrics> {
-    const row = await this.repository.findByMbid(mbid);
-    return { plain: row?.plain ?? null, synced: row?.synced ?? null };
-  }
 
   /**
    * The index documents of the kept Lyrics of the next `limit` Recordings

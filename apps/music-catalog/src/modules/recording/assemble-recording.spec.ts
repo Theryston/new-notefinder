@@ -87,13 +87,6 @@ describe('assembleRecording', () => {
     });
   });
 
-  it('has no Lyrics yet, but keeps both fields', () => {
-    expect(assembleRecording(row, details()).lyrics).toEqual({
-      plain: null,
-      synced: null,
-    });
-  });
-
   it('gives each release its own earliest event, its cover art and its positions', () => {
     const recording = assembleRecording(
       row,

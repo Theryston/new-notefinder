@@ -27,6 +27,7 @@ import {
   startFakeLrclibServer,
 } from './utils/fake-lrclib-server.js';
 import { requestRecording } from './utils/get-recording-client.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { requestSearch } from './utils/search-client.js';
 import {
@@ -179,25 +180,19 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       requestRecording(client(), { mbid: seededMbid }),
     ).resolves.toMatchObject({
       ok: true,
-      result: {
-        title: first?.title,
-        lyrics: {
-          plain: expect.stringContaining('fake-lrclib-0'),
-          synced: expect.stringContaining('[00:01.00]'),
-        },
-      },
+      result: { title: first?.title },
+    });
+    await expect(keptLyricsOf(server().db, seededMbid)).resolves.toEqual({
+      plain: expect.stringContaining('fake-lrclib-0'),
+      synced: expect.stringContaining('[00:01.00]'),
     });
     await expect(
-      requestRecording(client(), { mbid: second?.mbid ?? '' }),
-    ).resolves.toMatchObject({
-      ok: true,
-      result: { lyrics: { plain: null, synced: null } },
-    });
+      keptLyricsOf(server().db, second?.mbid ?? ''),
+    ).resolves.toEqual({ plain: null, synced: null });
     await expect(
-      requestRecording(client(), { mbid: third?.mbid ?? '' }),
+      keptLyricsOf(server().db, third?.mbid ?? ''),
     ).resolves.toMatchObject({
-      ok: true,
-      result: { lyrics: { plain: expect.stringContaining('fake-lrclib-2') } },
+      plain: expect.stringContaining('fake-lrclib-2'),
     });
     // Search never matches on Lyrics, only on metadata.
     await expect(searchMbids('fake-lrclib-0 drifting')).resolves.toEqual([]);
@@ -251,11 +246,9 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
       dataset: 'full',
     });
     await expect(searchMbids('full song')).resolves.toContain(mbid(302));
-    await expect(
-      requestRecording(client(), { mbid: mbid(302) }),
-    ).resolves.toMatchObject({
-      ok: true,
-      result: { lyrics: { plain: null, synced: null } },
+    await expect(keptLyricsOf(server().db, mbid(302))).resolves.toEqual({
+      plain: null,
+      synced: null,
     });
   });
 

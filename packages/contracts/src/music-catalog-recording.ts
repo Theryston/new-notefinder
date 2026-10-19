@@ -124,14 +124,6 @@ export const recordingExternalUrlSchema = z.object({
 
 export type RecordingExternalUrl = z.infer<typeof recordingExternalUrlSchema>;
 
-/** Plain and synced (LRC) Lyrics; both null when no Lyrics matched. */
-export const recordingLyricsSchema = z.object({
-  plain: z.string().nullable(),
-  synced: z.string().nullable(),
-});
-
-export type RecordingLyrics = z.infer<typeof recordingLyricsSchema>;
-
 export const recordingSchema = z.object({
   mbid: mbidSchema,
   title: z.string(),
@@ -150,7 +142,6 @@ export const recordingSchema = z.object({
   /** null, with no genre or tag, when no level has a tag at all. */
   tagsSource: recordingTagsSourceSchema.nullable(),
   externalUrls: z.array(recordingExternalUrlSchema),
-  lyrics: recordingLyricsSchema,
 });
 
 export type Recording = z.infer<typeof recordingSchema>;

@@ -1,5 +1,6 @@
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
 import { useIsolatedServer } from './utils/isolated-server.js';
+import { keptLyricsOf } from './utils/kept-lyrics.js';
 import { addRecording, mbid } from './utils/musicbrainz.js';
 import { useReimportFlow } from './utils/reimport-flows.js';
 import { stallReplication } from './utils/reimport-harness.js';
@@ -23,7 +24,7 @@ describe('yearly schema change: the schema-change stall (e2e)', {
   useEmptySearchIndex();
   useEmptyLyricsIndex();
 
-  const { statusResult, searchMbids, recordingLyrics } = useReimportFlow({
+  const { statusResult, searchMbids } = useReimportFlow({
     server,
     client,
   });
@@ -59,7 +60,7 @@ describe('yearly schema change: the schema-change stall (e2e)', {
       replicationStalled: { reason: 'schema-change' },
     });
     await expect(searchMbids('Stall Witness')).resolves.toEqual([mbid(911)]);
-    await expect(recordingLyrics(mbid(911))).resolves.toEqual({
+    await expect(keptLyricsOf(db, mbid(911))).resolves.toEqual({
       plain: null,
       synced: null,
     });

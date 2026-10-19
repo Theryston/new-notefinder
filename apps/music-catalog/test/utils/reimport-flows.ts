@@ -13,7 +13,6 @@ import { applyMusicBrainzSchema } from '../setup/musicbrainz-schema.js';
 import { type TestServer, testLogger } from './create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './database.js';
 import type { FakeDumpServer } from './fake-dump-server.js';
-import { requestRecording } from './get-recording-client.js';
 import { addRecording, mbid } from './musicbrainz.js';
 import {
   type ParallelCopy,
@@ -58,19 +57,6 @@ export const searchForMbids = async (
     throw new Error(`search failed: ${response.error.code}`);
   }
   return response.result.results.map((result) => result.mbid);
-};
-
-const readRecordingLyrics = async (
-  client: TestClient,
-  recordingMbid: string,
-) => {
-  const response = await requestRecording(client, { mbid: recordingMbid });
-  if (!response.ok) {
-    throw new Error(
-      `getRecording failed: ${response.error.code} for ${recordingMbid}`,
-    );
-  }
-  return response.result.lyrics;
 };
 
 export type ParallelRestoreOptions = {
@@ -203,9 +189,6 @@ const serveCatalogFlow = async (
 export type ReimportFlow = {
   statusResult: () => ReturnType<typeof readStatus>;
   searchMbids: (query: string) => Promise<string[]>;
-  recordingLyrics: (
-    recordingMbid: string,
-  ) => ReturnType<typeof readRecordingLyrics>;
   serveCatalog: () => Promise<TestWorker>;
   restoreParallel: (
     seed?: (db: Database) => Promise<void>,
@@ -236,8 +219,6 @@ export const useReimportFlow = (options: {
   return {
     statusResult: () => readStatus(client()),
     searchMbids: (query: string) => searchForMbids(client(), query),
-    recordingLyrics: (recordingMbid: string) =>
-      readRecordingLyrics(client(), recordingMbid),
     serveCatalog: () => serveCatalogFlow(server(), needParallel()),
     restoreParallel: (seed?: (db: Database) => Promise<void>) =>
       restoreParallelInto({
