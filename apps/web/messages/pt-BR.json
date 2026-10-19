@@ -821,6 +821,14 @@
       "memberSince": "Membro desde {date}",
       "loading": "Carregando perfil…"
     },
+    "follow": {
+      "label": "Seguidores e seguindo",
+      "follow": "Seguir",
+      "unfollow": "Deixar de seguir",
+      "followers": "{count, plural, one {# seguidor} other {# seguidores}}",
+      "following": "{count, number} seguindo",
+      "friends": "{count, plural, one {# amigo} other {# amigos}}"
+    },
     "favorites": {
       "title": "Músicas favoritas",
       "loading": "Carregando músicas…",

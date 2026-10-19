@@ -21,6 +21,9 @@ type FakeProfile = {
   dailyPracticeTargetSeconds?: number | null;
   vocalRange?: { lowest: number; highest: number } | null;
   mostSungArtist?: { id: string; name: string } | null;
+  followersCount?: number;
+  followingCount?: number;
+  friendsCount?: number;
 };
 
 /** Profiles by lowercased username, as the API stores them. */
@@ -66,6 +69,15 @@ const profiles = new Map<string, FakeProfile>([
       image: null,
       createdAt: '2026-05-06T07:08:09.000Z',
       vocalRange: { lowest: 40, highest: 64 },
+    },
+  ],
+  [
+    'follow_target',
+    {
+      name: 'Follow Target',
+      image: null,
+      createdAt: '2026-06-07T08:09:10.000Z',
+      followersCount: 2,
     },
   ],
   [
@@ -135,6 +147,9 @@ async function serveUserProfile(
       dailyPracticeTargetSeconds: null,
       vocalRange: null,
       mostSungArtist: null,
+      followersCount: 0,
+      followingCount: 0,
+      friendsCount: 0,
       ...profile,
     },
     request,
