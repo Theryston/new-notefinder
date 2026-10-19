@@ -154,16 +154,18 @@ describe('Public practice history (e2e)', () => {
   });
 
   it('pages runs saved in the same millisecond without skipping or repeating any', async () => {
-    // The column keeps microseconds: these three runs share one millisecond
-    // and differ only in their microseconds, which the cursor cannot carry.
+    // The column keeps microseconds, so these three runs share the millisecond
+    // 10:00:00.000 and differ only in their microseconds. The page size of 2
+    // puts the boundary inside that group.
     const track = await createTrack(spec.testApp.db);
-    for (const [id, micros] of [
-      ['run-a', '000100'],
-      ['run-b', '000200'],
-      ['run-c', '000300'],
-    ] as const) {
+    const savedAt = [
+      '2026-10-16 10:00:00.000100+00',
+      '2026-10-16 10:00:00.000200+00',
+      '2026-10-16 10:00:00.000300+00',
+    ];
+    for (const [index, instant] of savedAt.entries()) {
       await spec.testApp.db.insert(practiceAttempts).values({
-        id,
+        id: `run-${index}`,
         userId: owner.id,
         trackId: track.id,
         difficulty: 'NORMAL',
@@ -174,16 +176,17 @@ describe('Public practice history (e2e)', () => {
         coverage: 0.95,
         startedAt: new Date('2026-10-16T10:00:00.000Z'),
         endedAt: new Date('2026-10-16T10:04:00.000Z'),
-        createdAt: sql`'2026-10-16 10:00:00.${sql.raw(micros)}+00'::timestamptz`,
-        updatedAt: sql`'2026-10-16 10:00:00.${sql.raw(micros)}+00'::timestamptz`,
+        createdAt: sql`${instant}::timestamptz`,
+        updatedAt: sql`${instant}::timestamptz`,
       });
     }
 
+    // Same millisecond, so the ID decides: run-2, run-1, then run-0 on the next page.
     const first = await history('grace', '?limit=2');
     const rest = await history('grace', `?limit=2&cursor=${first.nextCursor}`);
 
-    const seen = [...first.items, ...rest.items].map((item) => item.id);
-    expect(seen.sort()).toEqual(['run-a', 'run-b', 'run-c']);
+    expect(first.items.map((item) => item.id)).toEqual(['run-2', 'run-1']);
+    expect(rest.items.map((item) => item.id)).toEqual(['run-0']);
     expect(rest.nextCursor).toBeNull();
   });
 

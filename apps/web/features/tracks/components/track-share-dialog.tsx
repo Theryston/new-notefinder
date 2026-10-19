@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
+import { creditText } from '@/lib/track-credit';
 import { formatClock } from '../playback/clock-message';
 import {
   SHARE_NETWORKS,
@@ -23,7 +23,6 @@ import {
   shareLink,
 } from '../share-link';
 import { playbackStore } from '../stores/playback-store';
-import { creditText } from '../track-credit';
 
 /** The page the visitor is on; `shareLink` drops its query string. */
 const currentPageUrl = () => window.location.href;
