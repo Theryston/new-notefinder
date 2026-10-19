@@ -80,7 +80,9 @@ async function serveUserAttempts(
     return;
   }
   await sectionDelay();
-  if (username.toLowerCase() === 'visibility_owner') {
+  if (
+    ['visibility_owner', 'katherine_johnson'].includes(username.toLowerCase())
+  ) {
     json(response, 200, { items: [], nextCursor: null }, request);
     return;
   }

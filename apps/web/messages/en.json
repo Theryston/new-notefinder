@@ -867,5 +867,20 @@
       "failed": "Could not save the visibility. Try again.",
       "ownerUnavailable": "Could not load this section. Reload the page to try again."
     }
+  },
+  "profileOwner": {
+    "editProfile": "Edit profile",
+    "invitations": {
+      "favorites": {
+        "title": "Favorite songs",
+        "description": "Favorite the songs you love and they will show up here.",
+        "cta": "Search for a song"
+      },
+      "practiceHistory": {
+        "title": "Practice history",
+        "description": "Practice a song and every run you save will show up here.",
+        "cta": "Search for a song"
+      }
+    }
   }
 }

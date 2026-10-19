@@ -11,6 +11,7 @@ import {
 import { UserAvatar } from '@/features/auth/components/user-avatar';
 import { ProfileChips } from '@/features/users/components/profile-chips';
 
+import { ProfileOwnerActions } from './profile-owner-actions';
 import { ProfileShare } from './profile-share';
 
 /**
@@ -47,7 +48,10 @@ export async function ProfileBanner({ profile }: { profile: PublicProfile }) {
           <p className={entityInfoClass}>
             {t('banner.memberSince', { date: memberSince })}
           </p>
-          <ProfileShare name={profile.name} username={profile.username} />
+          <div className="flex flex-wrap items-center gap-3">
+            <ProfileShare name={profile.name} username={profile.username} />
+            <ProfileOwnerActions username={profile.username} />
+          </div>
           <ProfileChips profile={profile} />
         </div>
       </div>
