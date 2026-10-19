@@ -1,7 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { json } from './fake-api-http.ts';
-import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
+import {
+  canReadSection,
+  hiddenSectionReply,
+  ownerReadFails,
+  sectionDelay,
+} from './fake-user-visibility.ts';
 
 /** The page size the API answers with by default (`limit` is 20 in the page). */
 const PAGE_SIZE = 20;
@@ -63,6 +68,20 @@ async function serveUserAttempts(
   );
   if (!canReadSection(request, username.toLowerCase(), 'practiceHistory')) {
     hiddenSectionReply(request, response);
+    return;
+  }
+  if (ownerReadFails(request, username.toLowerCase(), 'practiceHistory')) {
+    json(
+      response,
+      500,
+      { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Broken on purpose' },
+      request,
+    );
+    return;
+  }
+  await sectionDelay();
+  if (username.toLowerCase() === 'visibility_owner') {
+    json(response, 200, { items: [], nextCursor: null }, request);
     return;
   }
   if (username.toLowerCase() !== 'ada_lovelace') {

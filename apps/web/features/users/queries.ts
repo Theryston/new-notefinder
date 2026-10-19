@@ -2,8 +2,10 @@ import 'server-only';
 
 import {
   cacheTags,
+  type ProfileVisibility,
   type PublicProfile,
   type PublicProfileSummary,
+  profileVisibilitySchema,
   publicProfileSchema,
   publicProfileSummarySchema,
   type UserFavoritesPage,
@@ -39,6 +41,26 @@ export async function getPublicProfile(
 }
 
 /**
+ * Which sections of a Profile visitors see, read to lay out the first paint:
+ * a hidden section gets no skeleton. Cached under the Profile tag, which the
+ * API revalidates when the owner changes a section. Only the flags come back,
+ * no data. `null` for an unknown username.
+ */
+export async function getPublicSectionVisibility(
+  username: string,
+): Promise<ProfileVisibility | null> {
+  'use cache';
+  cacheTag(cacheTags.userProfile(username));
+  cacheLife('max');
+
+  return nullWhenNotFound(
+    serverApi(`/users/${encodeURIComponent(username)}/sections`, {
+      schema: profileVisibilitySchema,
+    }),
+  );
+}
+
+/**
  * The first page of a Profile's favorite Tracks, cached under its own favorites
  * tag (the API revalidates it when a favorite changes), so banner edits and
  * favorite changes do not evict each other. Later pages are read by the grid.
@@ -51,7 +73,7 @@ export async function getPublicFavoritesPage(
   cacheTag(cacheTags.userFavorites(username));
   cacheLife('max');
 
-  return orNullWhenHidden(
+  return nullWhenNotFound(
     serverApi(`/users/${encodeURIComponent(username)}/favorites`, {
       schema: userFavoritesPageSchema,
     }),
@@ -66,7 +88,7 @@ export async function getPublicFavoritesPage(
 export function getOwnFavoritesPage(
   username: string,
 ): Promise<UserFavoritesPage | null> {
-  return orNullWhenHidden(
+  return nullWhenNotFound(
     serverApi(`/users/${encodeURIComponent(username)}/favorites`, {
       schema: userFavoritesPageSchema,
       forwardCookies: true,
@@ -83,7 +105,7 @@ export function getOwnFavoritesPage(
 export async function getPublicProfileSummary(
   username: string,
 ): Promise<PublicProfileSummary | null> {
-  return orNullWhenHidden(
+  return nullWhenNotFound(
     serverApi(`/users/${encodeURIComponent(username)}/summary`, {
       schema: publicProfileSummarySchema,
     }),
@@ -94,7 +116,7 @@ export async function getPublicProfileSummary(
 export function getOwnPublicProfileSummary(
   username: string,
 ): Promise<PublicProfileSummary | null> {
-  return orNullWhenHidden(
+  return nullWhenNotFound(
     serverApi(`/users/${encodeURIComponent(username)}/summary`, {
       schema: publicProfileSummarySchema,
       forwardCookies: true,
@@ -103,10 +125,10 @@ export function getOwnPublicProfileSummary(
 }
 
 /**
- * The API's `NOT_FOUND` as `null`: an unknown username, or a section the
- * owner hid from visitors. Any other failure is the caller's to handle.
+ * The API's `NOT_FOUND` as `null`: an unknown username, or a section hidden
+ * from the caller. Any other failure is the caller's to handle.
  */
-async function orNullWhenHidden<T>(read: Promise<T>): Promise<T | null> {
+async function nullWhenNotFound<T>(read: Promise<T>): Promise<T | null> {
   try {
     return await read;
   } catch (error) {

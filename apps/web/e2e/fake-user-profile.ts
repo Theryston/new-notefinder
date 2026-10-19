@@ -3,7 +3,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PublicProfileSummary } from '@notefinder/contracts';
 
 import { json } from './fake-api-http.ts';
-import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
+import {
+  canReadSection,
+  hiddenSectionReply,
+  ownerReadFails,
+  sectionDelay,
+} from './fake-user-visibility.ts';
 
 /**
  * The banner fields the fake API serves for one Profile. A chip the User has
@@ -61,6 +66,14 @@ const profiles = new Map<string, FakeProfile>([
       image: null,
       createdAt: '2026-05-06T07:08:09.000Z',
       vocalRange: { lowest: 40, highest: 64 },
+    },
+  ],
+  [
+    'visibility_owner',
+    {
+      name: 'Visibility Owner',
+      image: null,
+      createdAt: '2026-06-07T08:09:10.000Z',
     },
   ],
   [
@@ -140,6 +153,15 @@ const summaries = new Map<string, PublicProfileSummary>([
     },
   ],
   [
+    'visibility_owner',
+    {
+      streakDays: 2,
+      sungCount: 5,
+      favoritesCount: 3,
+      contributionsCount: 1,
+    },
+  ],
+  [
     'grace_hopper',
     {
       streakDays: 1,
@@ -167,11 +189,12 @@ async function serveUserProfileSummary(
   const username = decodeURIComponent(
     pathname.slice('/v1/users/'.length, -'/summary'.length),
   );
-  if (!canReadSection(request, username.toLowerCase(), 'summary')) {
+  const normalized = username.toLowerCase();
+  if (!canReadSection(request, normalized, 'summary')) {
     hiddenSectionReply(request, response);
     return;
   }
-  const summary = summaries.get(username.toLowerCase());
+  const summary = summaries.get(normalized);
   if (!summary) {
     json(
       response,
@@ -181,7 +204,32 @@ async function serveUserProfileSummary(
     );
     return;
   }
-  json(response, 200, summary, request);
+  if (ownerReadFails(request, normalized, 'summary')) {
+    json(
+      response,
+      500,
+      { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Broken on purpose' },
+      request,
+    );
+    return;
+  }
+  // A counter belongs to the section it counts: a visitor is never sent one
+  // whose section is hidden, and the owner always is.
+  await sectionDelay();
+  json(
+    response,
+    200,
+    {
+      ...summary,
+      sungCount: canReadSection(request, normalized, 'practiceHistory')
+        ? summary.sungCount
+        : null,
+      favoritesCount: canReadSection(request, normalized, 'favorites')
+        ? summary.favoritesCount
+        : null,
+    },
+    request,
+  );
 }
 
 /**

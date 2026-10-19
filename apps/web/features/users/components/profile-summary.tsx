@@ -2,7 +2,8 @@ import type { PublicProfileSummary } from '@notefinder/contracts';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import {
   PROFILE_SUMMARY_FIELDS,
-  PROFILE_SUMMARY_STATS,
+  type ProfileSummaryStat,
+  shownSummaryStats,
 } from '@/features/users/profile-summary-stats';
 import {
   getOwnPublicProfileSummary,
@@ -10,6 +11,7 @@ import {
 } from '@/features/users/queries';
 import { getSectionVisibilityLabels } from '@/features/users/section-visibility-labels';
 import { viewerOwnsProfile } from '@/features/users/viewer-owns-profile';
+import { OwnerSectionUnavailable } from './owner-section-unavailable';
 import {
   ProfileSectionScope,
   SectionVisibilityToggle,
@@ -19,9 +21,10 @@ import {
  * The Summary section of a Profile: the streak and the counters, as large
  * numbers without boxes (draft "A"). The numbers are read on each request
  * inside a Suspense boundary, so the banner above stays cached. A section the
- * owner hid is left out for visitors and shown dimmed to the owner. When the
- * numbers cannot be read the section is left out, as a section with no content
- * is; the failure is logged on the server, the page stays up.
+ * owner hid is left out for visitors and shown dimmed to the owner; a read
+ * the owner cannot get is said so, never left as a gap. A counter the API
+ * withheld is left out of the list. The failure is logged on the server, the
+ * page stays up.
  */
 export async function ProfileSummary({ username }: { username: string }) {
   const visitorSummary = await getPublicProfileSummary(username).catch(
@@ -30,21 +33,25 @@ export async function ProfileSummary({ username }: { username: string }) {
       return undefined;
     },
   );
-  if (visitorSummary === undefined) {
-    return null;
-  }
-  if (visitorSummary !== null) {
+  if (visitorSummary) {
     return (
       <ProfileSummaryContent username={username} summary={visitorSummary} />
     );
   }
-  // Hidden for visitors, or no such User: only the owner still sees it.
+  // Hidden for visitors, no such User, or unreadable: only the owner can still
+  // see it, and only the owner's answer decides what they are shown.
   if (!(await viewerOwnsProfile(username))) {
     return null;
   }
   const ownSummary = await getOwnPublicProfileSummary(username).catch(
-    () => null,
+    (error: unknown) => {
+      console.error('The owner’s Profile summary could not be read', error);
+      return undefined;
+    },
   );
+  if (ownSummary === undefined) {
+    return <SummaryUnavailable username={username} />;
+  }
   if (ownSummary === null) {
     return null;
   }
@@ -52,7 +59,18 @@ export async function ProfileSummary({ username }: { username: string }) {
     <ProfileSummaryContent
       username={username}
       summary={ownSummary}
-      hiddenOnServer
+      hiddenForVisitors={visitorSummary === null}
+    />
+  );
+}
+
+async function SummaryUnavailable({ username }: { username: string }) {
+  const t = await getTranslations('publicProfile.summary');
+  return (
+    <OwnerSectionUnavailable
+      username={username}
+      section="summary"
+      title={t('title')}
     />
   );
 }
@@ -60,15 +78,14 @@ export async function ProfileSummary({ username }: { username: string }) {
 async function ProfileSummaryContent({
   username,
   summary,
-  hiddenOnServer = false,
+  hiddenForVisitors = false,
 }: {
   username: string;
   summary: PublicProfileSummary;
-  hiddenOnServer?: boolean;
+  hiddenForVisitors?: boolean;
 }) {
-  const [t, format, labels] = await Promise.all([
+  const [t, labels] = await Promise.all([
     getTranslations('publicProfile.summary'),
-    getFormatter(),
     getSectionVisibilityLabels(),
   ]);
 
@@ -76,7 +93,7 @@ async function ProfileSummaryContent({
     <ProfileSectionScope
       username={username}
       section="summary"
-      hiddenOnServer={hiddenOnServer}
+      hiddenForVisitors={hiddenForVisitors}
       labels={labels}
     >
       <section
@@ -92,28 +109,68 @@ async function ProfileSummaryContent({
           </h2>
           <SectionVisibilityToggle />
         </header>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
-          {PROFILE_SUMMARY_STATS.map((stat) => {
-            const value = summary[PROFILE_SUMMARY_FIELDS[stat]];
-            // The streak is counted in days: its unit is a plural.
-            const caption =
-              stat === 'streak' ? t('streakUnit', { count: value }) : undefined;
-            return (
-              <div key={stat} className="flex min-w-0 flex-col gap-1">
-                <dt className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                  {t(stat)}
-                </dt>
-                <dd className="font-bold font-mono text-4xl text-foreground tabular-nums md:text-5xl">
-                  {format.number(value)}
-                </dd>
-                {caption ? (
-                  <dd className="text-muted-foreground text-xs">{caption}</dd>
-                ) : null}
-              </div>
-            );
-          })}
-        </dl>
+        <SummaryStats summary={summary} />
       </section>
     </ProfileSectionScope>
+  );
+}
+
+/** The numbers, as large figures. A counter the API withheld is not drawn. */
+async function SummaryStats({ summary }: { summary: PublicProfileSummary }) {
+  const [t, format] = await Promise.all([
+    getTranslations('publicProfile.summary'),
+    getFormatter(),
+  ]);
+  return (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
+      {shownSummaryStats(summary).map((stat) => (
+        <SummaryStat
+          key={stat}
+          stat={stat}
+          summary={summary}
+          label={t(stat)}
+          // The streak is counted in days: its unit is a plural.
+          caption={
+            stat === 'streak'
+              ? t('streakUnit', { count: summary.streakDays })
+              : undefined
+          }
+          format={format}
+        />
+      ))}
+    </dl>
+  );
+}
+
+/** One stat: its label, its number and, for the streak, its unit. */
+function SummaryStat({
+  stat,
+  summary,
+  label,
+  caption,
+  format,
+}: {
+  stat: ProfileSummaryStat;
+  summary: PublicProfileSummary;
+  label: string;
+  caption: string | undefined;
+  format: Awaited<ReturnType<typeof getFormatter>>;
+}) {
+  const value = summary[PROFILE_SUMMARY_FIELDS[stat]];
+  if (value === null) {
+    return null;
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <dt className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+        {label}
+      </dt>
+      <dd className="font-bold font-mono text-4xl text-foreground tabular-nums md:text-5xl">
+        {format.number(value)}
+      </dd>
+      {caption ? (
+        <dd className="text-muted-foreground text-xs">{caption}</dd>
+      ) : null}
+    </div>
   );
 }

@@ -33,11 +33,11 @@ export class ProfileSummaryController {
     @Param() params: PublicProfileSummaryParamDto,
     @CurrentUser() viewer: AuthUser | undefined,
   ): Promise<PublicProfileSummary> {
-    const userId = await this.profileVisibility.assertSectionVisible(
+    const view = await this.profileVisibility.readSection(
       params.username,
       'summary',
       viewer?.id,
     );
-    return this.profileSummary.getSummary(userId);
+    return this.profileSummary.getSummary(view.userId, view.shown);
   }
 }

@@ -218,4 +218,60 @@ describe('Profile sections visibility (e2e)', () => {
       }
     });
   });
+
+  describe('which sections a visitor sees', () => {
+    it('answers the flags a visitor sees, to anyone and without any data', async () => {
+      await hide({ practiceHistory: false }).expect(200);
+
+      const response = await visitorRead('/v1/users/grace/sections').expect(
+        200,
+      );
+
+      expect(response.body).toEqual({
+        summary: true,
+        practiceHistory: false,
+        favorites: true,
+      });
+    });
+
+    it('answers NOT_FOUND for an unknown username', async () => {
+      await visitorRead('/v1/users/nobody/sections').expect(404);
+    });
+  });
+
+  // The Summary section stays shown while one of its counters belongs to a
+  // hidden section: that counter must not reach a visitor, even though the
+  // rest of the Summary does.
+  describe('counters of a hidden section inside a shown Summary', () => {
+    it('hides the Favorites counter when Favorites is hidden', async () => {
+      await hide({ favorites: false }).expect(200);
+
+      const response = await visitorRead('/v1/users/grace/summary').expect(200);
+
+      expect(response.body).toMatchObject({ favoritesCount: null });
+      expect(response.body).toMatchObject({ sungCount: 0 });
+    });
+
+    it('hides the Sung counter when Practice history is hidden', async () => {
+      await hide({ practiceHistory: false }).expect(200);
+
+      const response = await visitorRead('/v1/users/grace/summary').expect(200);
+
+      expect(response.body).toMatchObject({ sungCount: null });
+      expect(response.body).toMatchObject({ favoritesCount: 0 });
+    });
+
+    it('keeps every counter for the owner', async () => {
+      await hide({ favorites: false, practiceHistory: false }).expect(200);
+
+      const response = await spec.client
+        .get('/v1/users/grace/summary')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        sungCount: 0,
+        favoritesCount: 0,
+      });
+    });
+  });
 });

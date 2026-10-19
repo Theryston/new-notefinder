@@ -1359,6 +1359,34 @@
           "users"
         ]
       }
+    },
+    "/v1/users/{username}/sections": {
+      "get": {
+        "operationId": "UserProfileController_getShownSections_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether each section of the Profile is shown to visitors."
+          },
+          "404": {
+            "description": "No User has this username (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
     }
   },
   "info": {

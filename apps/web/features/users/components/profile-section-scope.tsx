@@ -1,28 +1,20 @@
 'use client';
 
-import type { ProfileSection, ProfileVisibility } from '@notefinder/contracts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ProfileSection } from '@notefinder/contracts';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { createContext, type ReactNode, useContext } from 'react';
-import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { cn } from '@/lib/utils';
 
 import {
-  profileVisibilityQueryOptions,
-  saveSectionVisibility,
-} from '../profile-visibility-query';
-import { profileKeys } from '../query-keys';
+  type SectionControl,
+  type SectionVisibilityLabels,
+  useSectionVisibility,
+} from '../hooks/use-section-visibility';
 
-export type SectionVisibilityLabels = {
-  visible: string;
-  hidden: string;
-  saved: string;
-  failed: string;
-};
-
-type SectionControl = { visible: boolean; save: (visible: boolean) => void };
+export type { SectionVisibilityLabels } from '../hooks/use-section-visibility';
 
 type SectionScope = {
   labels: SectionVisibilityLabels;
@@ -35,20 +27,20 @@ const SectionScopeContext = createContext<SectionScope | null>(null);
 /**
  * Wraps one section of a Profile. For the owner it holds the section's flag,
  * read in the browser, and dims the section while it is hidden; visitors see
- * the section as the server rendered it. `hiddenOnServer` is what the server
- * knew when it rendered a section only the owner can see, so the owner sees
- * the dimmed state before the flags load.
+ * the section as the server rendered it. `hiddenForVisitors` is set when the
+ * server rendered a section only its owner can see, so the owner sees the
+ * dimmed state before the flags load.
  */
 export function ProfileSectionScope({
   username,
   section,
-  hiddenOnServer = false,
+  hiddenForVisitors = false,
   labels,
   children,
 }: {
   username: string;
   section: ProfileSection;
-  hiddenOnServer?: boolean;
+  hiddenForVisitors?: boolean;
   labels: SectionVisibilityLabels;
   children: ReactNode;
 }) {
@@ -58,7 +50,7 @@ export function ProfileSectionScope({
         <SectionScopeProvider
           owner={user?.username === username}
           section={section}
-          hiddenOnServer={hiddenOnServer}
+          hiddenForVisitors={hiddenForVisitors}
           labels={labels}
         >
           {children}
@@ -71,54 +63,22 @@ export function ProfileSectionScope({
 function SectionScopeProvider({
   owner,
   section,
-  hiddenOnServer,
+  hiddenForVisitors,
   labels,
   children,
 }: {
   owner: boolean;
   section: ProfileSection;
-  hiddenOnServer: boolean;
+  hiddenForVisitors: boolean;
   labels: SectionVisibilityLabels;
   children: ReactNode;
 }) {
-  const queryClient = useQueryClient();
-  const flags = useQuery({
-    ...profileVisibilityQueryOptions(),
-    enabled: owner,
+  const { visible, control } = useSectionVisibility({
+    section,
+    owner,
+    hiddenForVisitors,
+    labels,
   });
-  const save = useMutation({
-    mutationFn: (visible: boolean) => saveSectionVisibility(section, visible),
-    // The change shows at once; a failed save puts the stored flags back.
-    onMutate: async (visible) => {
-      await queryClient.cancelQueries({ queryKey: profileKeys.visibility() });
-      const previous = queryClient.getQueryData<ProfileVisibility>(
-        profileKeys.visibility(),
-      );
-      if (previous) {
-        queryClient.setQueryData<ProfileVisibility>(profileKeys.visibility(), {
-          ...previous,
-          [section]: visible,
-        });
-      }
-      return { previous };
-    },
-    onError: (_error, _visible, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(profileKeys.visibility(), context.previous);
-      }
-      toast.error(labels.failed);
-    },
-    onSuccess: (flagsNow) => {
-      queryClient.setQueryData(profileKeys.visibility(), flagsNow);
-      toast.success(labels.saved);
-    },
-  });
-
-  const visible = owner && flags.data ? flags.data[section] : !hiddenOnServer;
-  const control =
-    owner && flags.data
-      ? { visible, save: (next: boolean) => save.mutate(next) }
-      : null;
 
   return (
     <SectionScopeContext value={{ labels, control }}>

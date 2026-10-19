@@ -33,8 +33,8 @@ export async function PracticeHistorySection({
   if (visitorPage === null && !(await viewerOwnsProfile(username))) {
     return null;
   }
-  const hiddenOnServer = visitorPage === null;
-  const initialPage = hiddenOnServer
+  const hiddenForVisitors = visitorPage === null;
+  const initialPage = hiddenForVisitors
     ? await getOwnPracticeHistoryFirstPage(username)
     : visitorPage;
   if (initialPage === null) {
@@ -45,7 +45,7 @@ export async function PracticeHistorySection({
     <PracticeHistoryBody
       username={username}
       initialPage={initialPage}
-      hiddenOnServer={hiddenOnServer}
+      hiddenForVisitors={hiddenForVisitors}
     />
   );
 }
@@ -53,12 +53,12 @@ export async function PracticeHistorySection({
 async function PracticeHistoryBody({
   username,
   initialPage,
-  hiddenOnServer,
+  hiddenForVisitors,
 }: {
   username: string;
   // `undefined` when the API could not answer: the list then reads in the browser.
   initialPage: PracticeAttemptHistoryPage | undefined;
-  hiddenOnServer: boolean;
+  hiddenForVisitors: boolean;
 }) {
   const [t, { profileHistory }, labels] = await Promise.all([
     getTranslations('profileHistory'),
@@ -70,7 +70,7 @@ async function PracticeHistoryBody({
     <ProfileSectionScope
       username={username}
       section="practiceHistory"
-      hiddenOnServer={hiddenOnServer}
+      hiddenForVisitors={hiddenForVisitors}
       labels={labels}
     >
       <section

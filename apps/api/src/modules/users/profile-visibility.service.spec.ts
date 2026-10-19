@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { cacheTags } from '@notefinder/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { ProfileVisibilityRepository } from './profile-visibility.repository.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';
-import { UsersRepository } from './users.repository.js';
 
 const row = {
   id: 'user-1',
@@ -13,9 +13,9 @@ const row = {
 };
 
 const repository = {
-  findProfileVisibility: vi.fn(),
-  findProfileVisibilityByUsername: vi.fn(),
-  updateProfileVisibility: vi.fn(),
+  findById: vi.fn(),
+  findByUsername: vi.fn(),
+  update: vi.fn(),
 };
 const webRevalidation = { revalidate: vi.fn() };
 
@@ -27,7 +27,7 @@ describe('ProfileVisibilityService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         ProfileVisibilityService,
-        { provide: UsersRepository, useValue: repository },
+        { provide: ProfileVisibilityRepository, useValue: repository },
         { provide: WebRevalidationService, useValue: webRevalidation },
       ],
     }).compile();
@@ -36,7 +36,7 @@ describe('ProfileVisibilityService', () => {
 
   describe('getVisibility', () => {
     it('returns the flags of every section', async () => {
-      repository.findProfileVisibility.mockResolvedValue({
+      repository.findById.mockResolvedValue({
         ...row,
         showFavoritesSection: false,
       });
@@ -49,7 +49,7 @@ describe('ProfileVisibilityService', () => {
     });
 
     it('refuses a session whose User is gone', async () => {
-      repository.findProfileVisibility.mockResolvedValue(undefined);
+      repository.findById.mockResolvedValue(undefined);
 
       await expect(service.getVisibility('user-1')).rejects.toMatchObject({
         code: 'UNAUTHORIZED',
@@ -59,7 +59,7 @@ describe('ProfileVisibilityService', () => {
 
   describe('updateVisibility', () => {
     it('saves only the flags given and refreshes the Profile tags', async () => {
-      repository.updateProfileVisibility.mockResolvedValue({
+      repository.update.mockResolvedValue({
         ...row,
         showPracticeHistorySection: false,
       });
@@ -68,10 +68,9 @@ describe('ProfileVisibilityService', () => {
         practiceHistory: false,
       });
 
-      expect(repository.updateProfileVisibility).toHaveBeenCalledWith(
-        'user-1',
-        { showPracticeHistorySection: false },
-      );
+      expect(repository.update).toHaveBeenCalledWith('user-1', {
+        showPracticeHistorySection: false,
+      });
       expect(flags).toEqual({
         summary: true,
         practiceHistory: false,
@@ -84,11 +83,11 @@ describe('ProfileVisibilityService', () => {
     });
 
     it('writes nothing for an empty change and returns the stored flags', async () => {
-      repository.findProfileVisibility.mockResolvedValue(row);
+      repository.findById.mockResolvedValue(row);
 
       const flags = await service.updateVisibility('user-1', {});
 
-      expect(repository.updateProfileVisibility).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
       expect(webRevalidation.revalidate).not.toHaveBeenCalled();
       expect(flags).toEqual({
         summary: true,
@@ -98,7 +97,7 @@ describe('ProfileVisibilityService', () => {
     });
 
     it('keeps the save when the revalidation cannot be enqueued', async () => {
-      repository.updateProfileVisibility.mockResolvedValue(row);
+      repository.update.mockResolvedValue(row);
       webRevalidation.revalidate.mockRejectedValue(new Error('Queue is down'));
 
       await expect(
@@ -107,10 +106,7 @@ describe('ProfileVisibilityService', () => {
     });
 
     it('revalidates nothing for a User without a username', async () => {
-      repository.updateProfileVisibility.mockResolvedValue({
-        ...row,
-        username: null,
-      });
+      repository.update.mockResolvedValue({ ...row, username: null });
 
       await service.updateVisibility('user-1', { favorites: false });
 
@@ -118,7 +114,7 @@ describe('ProfileVisibilityService', () => {
     });
 
     it('refuses a change for a User who is gone', async () => {
-      repository.updateProfileVisibility.mockResolvedValue(undefined);
+      repository.update.mockResolvedValue(undefined);
 
       await expect(
         service.updateVisibility('user-1', { summary: false }),
@@ -126,45 +122,73 @@ describe('ProfileVisibilityService', () => {
     });
   });
 
-  describe('assertSectionVisible', () => {
-    it('lets a visitor read a shown section and returns the User ID', async () => {
-      repository.findProfileVisibilityByUsername.mockResolvedValue(row);
-
-      await expect(
-        service.assertSectionVisible('Ada', 'summary', undefined),
-      ).resolves.toBe('user-1');
-      expect(repository.findProfileVisibilityByUsername).toHaveBeenCalledWith(
-        'ada',
-      );
-    });
-
-    it('refuses a visitor a hidden section as NOT_FOUND', async () => {
-      repository.findProfileVisibilityByUsername.mockResolvedValue({
+  describe('getShownSections', () => {
+    it('answers the stored flags for a visitor', async () => {
+      repository.findByUsername.mockResolvedValue({
         ...row,
         showFavoritesSection: false,
       });
 
-      await expect(
-        service.assertSectionVisible('ada', 'favorites', 'someone-else'),
-      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    });
-
-    it('lets the owner read a hidden section', async () => {
-      repository.findProfileVisibilityByUsername.mockResolvedValue({
-        ...row,
-        showFavoritesSection: false,
+      await expect(service.getShownSections('Ada')).resolves.toEqual({
+        summary: true,
+        practiceHistory: true,
+        favorites: false,
       });
-
-      await expect(
-        service.assertSectionVisible('ada', 'favorites', 'user-1'),
-      ).resolves.toBe('user-1');
+      expect(repository.findByUsername).toHaveBeenCalledWith('ada');
     });
 
     it('answers NOT_FOUND for an unknown username', async () => {
-      repository.findProfileVisibilityByUsername.mockResolvedValue(undefined);
+      repository.findByUsername.mockResolvedValue(undefined);
+
+      await expect(service.getShownSections('nobody')).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+  });
+
+  describe('readSection', () => {
+    it('lets a visitor read a shown section, with the User ID and the shown sections', async () => {
+      repository.findByUsername.mockResolvedValue(row);
 
       await expect(
-        service.assertSectionVisible('nobody', 'summary', 'user-1'),
+        service.readSection('Ada', 'summary', undefined),
+      ).resolves.toEqual({
+        userId: 'user-1',
+        shown: { summary: true, practiceHistory: true, favorites: true },
+      });
+      expect(repository.findByUsername).toHaveBeenCalledWith('ada');
+    });
+
+    it('refuses a visitor a hidden section as NOT_FOUND', async () => {
+      repository.findByUsername.mockResolvedValue({
+        ...row,
+        showFavoritesSection: false,
+      });
+
+      await expect(
+        service.readSection('ada', 'favorites', 'someone-else'),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('lets the owner read a hidden section, and shows the owner every section', async () => {
+      repository.findByUsername.mockResolvedValue({
+        ...row,
+        showFavoritesSection: false,
+      });
+
+      await expect(
+        service.readSection('ada', 'favorites', 'user-1'),
+      ).resolves.toEqual({
+        userId: 'user-1',
+        shown: { summary: true, practiceHistory: true, favorites: true },
+      });
+    });
+
+    it('answers NOT_FOUND for an unknown username', async () => {
+      repository.findByUsername.mockResolvedValue(undefined);
+
+      await expect(
+        service.readSection('nobody', 'summary', 'user-1'),
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     });
   });

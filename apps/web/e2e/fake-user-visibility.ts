@@ -24,8 +24,14 @@ const SHOWN: ProfileVisibility = {
   favorites: true,
 };
 
-/** Hidden flags by lowercased username; a Profile not listed shows every section. */
-const visibilityByUsername = new Map<string, ProfileVisibility>();
+/** The mock's state: hidden flags, a reply delay, and owner reads that fail. */
+type VisibilityMock = {
+  visibility: Record<string, ProfileVisibility>;
+  delayMs?: number;
+  ownerFailing?: ProfileSection[];
+};
+
+let state: VisibilityMock = { visibility: {} };
 
 /** The username the request is signed in as the owner of, if any. */
 const ownerOf = (request: IncomingMessage): string | undefined =>
@@ -33,15 +39,30 @@ const ownerOf = (request: IncomingMessage): string | undefined =>
     request.headers.cookie ?? '',
   )?.[1];
 
+const flagsOf = (username: string): ProfileVisibility =>
+  state.visibility[username] ?? SHOWN;
+
 /** Whether the request may read a section: the owner always, a visitor when it is shown. */
 export const canReadSection = (
   request: IncomingMessage,
   username: string,
   section: ProfileSection,
-): boolean => {
-  if (ownerOf(request) === username) return true;
-  return (visibilityByUsername.get(username) ?? SHOWN)[section];
-};
+): boolean => ownerOf(request) === username || flagsOf(username)[section];
+
+/**
+ * Waits as the mock's reply delay asks. The real API is not instant, and a
+ * delayed reply is what makes a Suspense fallback show up in the first paint.
+ */
+export const sectionDelay = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, state.delayMs ?? 0));
+
+/** Whether the mock fails the owner's read of this section (a 500 to the owner). */
+export const ownerReadFails = (
+  request: IncomingMessage,
+  username: string,
+  section: ProfileSection,
+): boolean =>
+  ownerOf(request) === username && !!state.ownerFailing?.includes(section);
 
 /** The API's answer to a visitor who asks for a hidden section. */
 export const hiddenSectionReply = (
@@ -86,32 +107,53 @@ const serveMe = (request: IncomingMessage, response: ServerResponse): void => {
   );
 };
 
+/** `GET /v1/users/:username/sections`: the flags a visitor sees, no data. */
+const serveSections = async (
+  request: IncomingMessage,
+  response: ServerResponse,
+  pathname: string,
+): Promise<void> => {
+  const username = decodeURIComponent(
+    pathname.slice('/v1/users/'.length, -'/sections'.length),
+  ).toLowerCase();
+  await sectionDelay();
+  json(response, 200, flagsOf(username), request);
+};
+
 /**
- * `POST /__visibility-mock/set`: replaces the hidden flags with the ones
- * given, keyed by username. Specs call {@link setProfileVisibilityMock}.
+ * `POST /__visibility-mock/set`: replaces the mock's state with the one given.
+ * Specs call {@link setProfileVisibilityMock}.
  */
 const serveVisibilityMockSet = async (
   request: IncomingMessage,
   response: ServerResponse,
 ): Promise<void> => {
-  const body = (await readBody(request)) as
-    | { visibility?: Record<string, ProfileVisibility> }
-    | undefined;
-  visibilityByUsername.clear();
+  const body = (await readBody(request)) as VisibilityMock | undefined;
+  const visibility: Record<string, ProfileVisibility> = {};
   for (const [username, flags] of Object.entries(body?.visibility ?? {})) {
-    visibilityByUsername.set(username.toLowerCase(), flags);
+    visibility[username.toLowerCase()] = flags;
   }
+  state = {
+    visibility,
+    delayMs: body?.delayMs,
+    ownerFailing: body?.ownerFailing,
+  };
   json(response, 200, { ok: true }, request);
 };
 
-/** Sets the visibility of the Profiles named, and shows every other one. */
+/**
+ * Sets the hidden flags of the Profiles named (every other Profile shows
+ * everything), a delay on the section reads, and sections the owner's reads
+ * fail on.
+ */
 export const setProfileVisibilityMock = async (
   visibility: Record<string, ProfileVisibility>,
+  options: { delayMs?: number; ownerFailing?: ProfileSection[] } = {},
 ): Promise<void> => {
   const response = await fetch(`${FAKE_API}/__visibility-mock/set`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ visibility }),
+    body: JSON.stringify({ visibility, ...options }),
   });
   if (!response.ok) {
     throw new Error(`Visibility mock refused (${response.status})`);
@@ -127,6 +169,16 @@ export const userVisibilityRoutes = [
       serveMe(request, response);
       return Promise.resolve();
     },
+  },
+  {
+    method: 'GET',
+    pathname: (pathname: string): boolean =>
+      /^\/v1\/users\/[^/]+\/sections$/.test(pathname),
+    serve: (
+      request: IncomingMessage,
+      response: ServerResponse,
+      pathname: string,
+    ) => serveSections(request, response, pathname),
   },
   {
     method: 'POST',

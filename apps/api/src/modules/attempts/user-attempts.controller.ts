@@ -43,7 +43,7 @@ export class UserAttemptsController {
     @Query() query: ListUserAttemptsQueryDto,
     @CurrentUser() viewer: AuthUser | undefined,
   ): Promise<PracticeAttemptHistoryPage> {
-    await this.profileVisibility.assertSectionVisible(
+    await this.profileVisibility.readSection(
       params.username,
       'practiceHistory',
       viewer?.id,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StorageModule } from '../../integrations/storage/storage.module.js';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
+import { ProfileVisibilityRepository } from './profile-visibility.repository.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';
 import { UserProfileService } from './user-profile.service.js';
 import { UserSitemapController } from './user-sitemap.controller.js';
@@ -21,6 +22,7 @@ import { UsersService } from './users.service.js';
     UserSitemapService,
     UserSitemapRepository,
     UserProfileService,
+    ProfileVisibilityRepository,
     ProfileVisibilityService,
   ],
   exports: [UsersService, UserProfileService, ProfileVisibilityService],

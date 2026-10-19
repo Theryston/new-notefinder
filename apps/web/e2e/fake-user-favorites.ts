@@ -1,7 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { json } from './fake-api-http.ts';
 import type { FakeTrack } from './fake-artist-tracks.ts';
-import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
+import {
+  canReadSection,
+  hiddenSectionReply,
+  ownerReadFails,
+  sectionDelay,
+} from './fake-user-visibility.ts';
 
 const DEFAULT_LIMIT = 20;
 
@@ -44,6 +49,10 @@ const favoritesByUsername = new Map<string, FakeTrack[]>([
     Array.from({ length: 22 }, (_, index) => favoriteTrack(index)).reverse(),
   ],
   ['katherine_johnson', []],
+  [
+    'visibility_owner',
+    Array.from({ length: 3 }, (_, index) => favoriteTrack(index)).reverse(),
+  ],
 ]);
 
 /** The cursor is the offset of the next page, opaque to the grid. */
@@ -78,6 +87,16 @@ async function serveUserFavorites(
     hiddenSectionReply(request, response);
     return;
   }
+  if (ownerReadFails(request, username, 'favorites')) {
+    json(
+      response,
+      500,
+      { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Broken on purpose' },
+      request,
+    );
+    return;
+  }
+  await sectionDelay();
   const favorites = favoritesByUsername.get(username);
   if (!favorites) {
     json(

@@ -869,7 +869,8 @@
       "visible": "Visível para todos",
       "hidden": "Só você pode ver",
       "saved": "Visibilidade salva",
-      "failed": "Não foi possível salvar a visibilidade. Tente de novo."
+      "failed": "Não foi possível salvar a visibilidade. Tente de novo.",
+      "ownerUnavailable": "Não foi possível carregar esta seção. Recarregue a página para tentar de novo."
     }
   }
 }

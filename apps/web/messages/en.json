@@ -869,7 +869,8 @@
       "visible": "Visible to everyone",
       "hidden": "Only you can see this",
       "saved": "Visibility saved",
-      "failed": "Could not save the visibility. Try again."
+      "failed": "Could not save the visibility. Try again.",
+      "ownerUnavailable": "Could not load this section. Reload the page to try again."
     }
   }
 }

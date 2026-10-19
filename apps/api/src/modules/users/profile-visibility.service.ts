@@ -3,15 +3,16 @@ import {
   cacheTags,
   type ProfileSection,
   type ProfileVisibility,
+  profileSectionSchema,
   type UpdateProfileVisibilityBody,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import {
+  ProfileVisibilityRepository,
   type ProfileVisibilityRow,
   type ProfileVisibilityValues,
-  UsersRepository,
-} from './users.repository.js';
+} from './profile-visibility.repository.js';
 
 /** The stored flag of each section of a Profile. */
 const SECTION_FLAG = {
@@ -19,6 +20,16 @@ const SECTION_FLAG = {
   practiceHistory: 'showPracticeHistorySection',
   favorites: 'showFavoritesSection',
 } as const satisfies Record<ProfileSection, keyof ProfileVisibilityRow>;
+
+/** What the owner sees: every section, whatever its flag. */
+const EVERY_SECTION: ProfileVisibility = {
+  summary: true,
+  practiceHistory: true,
+  favorites: true,
+};
+
+/** A Profile as one viewer may read it: its User, and the sections shown to them. */
+export type ProfileView = { userId: string; shown: ProfileVisibility };
 
 const toVisibility = (row: ProfileVisibilityRow): ProfileVisibility => ({
   summary: row.showSummarySection,
@@ -31,7 +42,7 @@ const toValues = (
   changes: UpdateProfileVisibilityBody,
 ): ProfileVisibilityValues => {
   const values: ProfileVisibilityValues = {};
-  for (const section of Object.keys(SECTION_FLAG) as ProfileSection[]) {
+  for (const section of profileSectionSchema.options) {
     const visible = changes[section];
     if (visible !== undefined) {
       values[SECTION_FLAG[section]] = visible;
@@ -58,23 +69,22 @@ const reasonOf = (error: unknown): string => {
 
 /**
  * Which sections of a Profile visitors see. The owner always sees every
- * section; a visitor asking for a hidden one gets `NOT_FOUND`, so its data
- * never leaves the API for them.
+ * section; a visitor asking for a hidden one gets `NOT_FOUND`, and a counter
+ * that belongs to a hidden section is withheld from the visitor's view of
+ * another section.
  */
 @Injectable()
 export class ProfileVisibilityService {
   private readonly logger = new Logger(ProfileVisibilityService.name);
 
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly repository: ProfileVisibilityRepository,
     private readonly webRevalidation: WebRevalidationService,
   ) {}
 
   /** The owner's flags. */
   async getVisibility(userId: string): Promise<ProfileVisibility> {
-    return toVisibility(
-      requireRow(await this.usersRepository.findProfileVisibility(userId)),
-    );
+    return toVisibility(requireRow(await this.repository.findById(userId)));
   }
 
   /**
@@ -91,35 +101,48 @@ export class ProfileVisibilityService {
     if (Object.keys(values).length === 0) {
       return this.getVisibility(userId);
     }
-    const row = requireRow(
-      await this.usersRepository.updateProfileVisibility(userId, values),
-    );
+    const row = requireRow(await this.repository.update(userId, values));
     if (row.username !== null) {
       await this.revalidateSections(row.username);
     }
     return toVisibility(row);
   }
 
+  /** The sections a visitor sees of the Profile (the same answer for everyone else). */
+  async getShownSections(username: string): Promise<ProfileVisibility> {
+    return (await this.viewOf(username, undefined)).shown;
+  }
+
   /**
-   * Lets a section's read through for its owner, and for a visitor when the
-   * section is shown. Returns the User's ID, which the owner's reads need.
-   * An unknown username and a hidden section are both `NOT_FOUND`.
+   * The Profile as the viewer may read one section of it. Returns the User's
+   * ID, which the section's reads need. An unknown username and a hidden
+   * section are both `NOT_FOUND`.
    */
-  async assertSectionVisible(
+  async readSection(
     username: string,
     section: ProfileSection,
     viewerId: string | undefined,
-  ): Promise<string> {
-    const row = await this.usersRepository.findProfileVisibilityByUsername(
-      username.toLowerCase(),
-    );
+  ): Promise<ProfileView> {
+    const view = await this.viewOf(username, viewerId);
+    if (!view.shown[section]) {
+      throw new AppException('NOT_FOUND', 'Section not found');
+    }
+    return view;
+  }
+
+  /** The Profile's User and the sections shown to this viewer. */
+  private async viewOf(
+    username: string,
+    viewerId: string | undefined,
+  ): Promise<ProfileView> {
+    const row = await this.repository.findByUsername(username.toLowerCase());
     if (!row) {
       throw new AppException('NOT_FOUND', 'User not found');
     }
-    if (viewerId !== row.id && !row[SECTION_FLAG[section]]) {
-      throw new AppException('NOT_FOUND', 'Section not found');
-    }
-    return row.id;
+    return {
+      userId: row.id,
+      shown: viewerId === row.id ? EVERY_SECTION : toVisibility(row),
+    };
   }
 
   /** Best effort: the change is already saved, so a failed enqueue is only logged. */

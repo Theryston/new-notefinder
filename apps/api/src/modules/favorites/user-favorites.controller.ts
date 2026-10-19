@@ -44,7 +44,7 @@ export class UserFavoritesController {
     @Query() query: UserFavoritesQueryDto,
     @CurrentUser() viewer: AuthUser | undefined,
   ): Promise<UserFavoritesPage> {
-    await this.profileVisibility.assertSectionVisible(
+    await this.profileVisibility.readSection(
       params.username,
       'favorites',
       viewer?.id,
