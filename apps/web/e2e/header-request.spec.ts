@@ -129,6 +129,10 @@ for (const { locale, messages } of localeCatalogs) {
       name: suggestions.signInLabel.replace('{title}', UNLINKED_TITLE),
       exact: true,
     });
+  const accountMenu = (page: Page) =>
+    page
+      .getByRole('banner')
+      .getByRole('button', { name: messages.header.account.accountMenu });
   const unlinkedRow = (page: Page) =>
     list(page).getByRole('option').filter({ hasText: UNLINKED_TITLE });
   const requestKey = `${UNLINKED_MBID}:${locale}`;
@@ -360,6 +364,9 @@ for (const { locale, messages } of localeCatalogs) {
     await setTrackMock({ tracks: [trackFixture(pageTrackId)] });
     await refuseTrackRequests(page);
     await page.goto(`/${locale}/tracks/${pageTrackId}`);
+    // The header ignores typing until React hydrates, and a fill before that
+    // is lost. The avatar menu renders only in the browser, so wait for it.
+    await expect(accountMenu(page)).toBeVisible();
 
     await header(page).fill(QUERY);
     await generateButton(page).click();
