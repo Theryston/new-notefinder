@@ -75,10 +75,14 @@ export default async function UserProfilePage({
   if (!profile) {
     notFound();
   }
+  // The page's Toaster is the one the share button mounts (`ProfileShareButton`);
+  // a second one would show every toast twice.
   return (
     <div className="flex flex-col gap-8">
       <ProfileBanner profile={profile} />
-      <ProfileFavoritesSection username={profile.username} />
+      <Suspense fallback={null}>
+        <ProfileFavoritesSection username={profile.username} />
+      </Suspense>
       <Suspense fallback={<ProfileSummarySkeleton />}>
         <ProfileSummary username={profile.username} />
       </Suspense>

@@ -864,6 +864,12 @@
       "sung": "Cantadas",
       "favorites": "Favoritas",
       "contributions": "Contribuições"
+    },
+    "visibility": {
+      "visible": "Visível para todos",
+      "hidden": "Só você pode ver",
+      "saved": "Visibilidade salva",
+      "failed": "Não foi possível salvar a visibilidade. Tente de novo."
     }
   }
 }

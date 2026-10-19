@@ -53,5 +53,11 @@ export const users = pgTable('users', {
   // switching zones cannot start a second clock. Null until they practice (and
   // for imported users).
   lastPracticeHeartbeatAt: timestamp({ withTimezone: true }),
+  // Which sections of the public Profile visitors see (the owner always sees
+  // them). Visible by default: legacy users have no choice to carry over, so
+  // the import keeps these defaults and every imported Profile shows all three.
+  showSummarySection: boolean().notNull().default(true),
+  showPracticeHistorySection: boolean().notNull().default(true),
+  showFavoritesSection: boolean().notNull().default(true),
   ...timestamps,
 });

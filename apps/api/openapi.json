@@ -642,6 +642,54 @@
         ]
       }
     },
+    "/v1/me/profile-visibility": {
+      "get": {
+        "operationId": "UsersController_getProfileVisibility_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Whether each Profile section is visible."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateProfileVisibility_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileVisibilityBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The flags of every section, updated."
+          },
+          "400": {
+            "description": "A flag is not a boolean."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The user has no username yet."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/sitemaps/users": {
       "get": {
         "operationId": "UserSitemapController_listUsers_v1",
@@ -1003,7 +1051,7 @@
             "description": "The cursor or limit is bad."
           },
           "404": {
-            "description": "No User has this username (`NOT_FOUND`)."
+            "description": "No User has this username, or the owner hid this section (`NOT_FOUND`)."
           }
         },
         "tags": [
@@ -1142,7 +1190,7 @@
             "description": "The cursor is not one this API issued."
           },
           "404": {
-            "description": "No User has this username (`NOT_FOUND`)."
+            "description": "No User has this username, or the owner hid this section (`NOT_FOUND`)."
           }
         },
         "tags": [
@@ -1276,7 +1324,7 @@
             "description": "The numbers of the Profile Summary section."
           },
           "404": {
-            "description": "No User has this username (`NOT_FOUND`)."
+            "description": "No User has this username, or the owner hid this section (`NOT_FOUND`)."
           }
         },
         "tags": [
@@ -1429,6 +1477,20 @@
         "required": [
           "username"
         ]
+      },
+      "UpdateProfileVisibilityBodyDto": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "boolean"
+          },
+          "practiceHistory": {
+            "type": "boolean"
+          },
+          "favorites": {
+            "type": "boolean"
+          }
+        }
       },
       "SubmitAttemptBodyDto": {
         "type": "object",

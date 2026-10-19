@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PublicProfileSummary } from '@notefinder/contracts';
 
 import { json } from './fake-api-http.ts';
+import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
 
 /**
  * The banner fields the fake API serves for one Profile. A chip the User has
@@ -166,6 +167,10 @@ async function serveUserProfileSummary(
   const username = decodeURIComponent(
     pathname.slice('/v1/users/'.length, -'/summary'.length),
   );
+  if (!canReadSection(request, username.toLowerCase(), 'summary')) {
+    hiddenSectionReply(request, response);
+    return;
+  }
   const summary = summaries.get(username.toLowerCase());
   if (!summary) {
     json(

@@ -38,6 +38,8 @@ type PaginatedTrackGridProps<TItem extends GridItem> =
   TrackGridBodyProps<TItem> & {
     /** Id of the section heading, which the section is labelled by. */
     headingId: string;
+    /** Shown on the heading's row, after the title (e.g. a section toggle). */
+    headerAction?: ReactNode;
   };
 
 /**
@@ -50,10 +52,15 @@ type PaginatedTrackGridProps<TItem extends GridItem> =
  */
 export function PaginatedTrackGrid<TItem extends GridItem>({
   headingId,
+  headerAction,
   ...body
 }: PaginatedTrackGridProps<TItem>) {
   return (
-    <TracksSection headingId={headingId} title={body.messages.title}>
+    <TracksSection
+      headingId={headingId}
+      title={body.messages.title}
+      headerAction={headerAction}
+    >
       <TrackGridBody {...body} />
     </TracksSection>
   );
@@ -67,17 +74,28 @@ export function PaginatedTrackGrid<TItem extends GridItem>({
 function TracksSection({
   headingId,
   title,
+  headerAction,
   children,
 }: {
   headingId: string;
   title: string;
+  headerAction?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className="font-bold text-xl">
-        {title}
-      </h2>
+      {headerAction ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id={headingId} className="font-bold text-xl">
+            {title}
+          </h2>
+          {headerAction}
+        </div>
+      ) : (
+        <h2 id={headingId} className="font-bold text-xl">
+          {title}
+        </h2>
+      )}
       {children}
     </section>
   );

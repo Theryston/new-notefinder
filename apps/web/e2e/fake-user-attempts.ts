@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { json } from './fake-api-http.ts';
+import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
 
 /** The page size the API answers with by default (`limit` is 20 in the page). */
 const PAGE_SIZE = 20;
@@ -60,6 +61,10 @@ async function serveUserAttempts(
   const username = decodeURIComponent(
     pathname.split('/').slice(3, -1).join('/'),
   );
+  if (!canReadSection(request, username.toLowerCase(), 'practiceHistory')) {
+    hiddenSectionReply(request, response);
+    return;
+  }
   if (username.toLowerCase() !== 'ada_lovelace') {
     json(
       response,

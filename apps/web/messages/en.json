@@ -864,6 +864,12 @@
       "sung": "Sung",
       "favorites": "Favorites",
       "contributions": "Contributions"
+    },
+    "visibility": {
+      "visible": "Visible to everyone",
+      "hidden": "Only you can see this",
+      "saved": "Visibility saved",
+      "failed": "Could not save the visibility. Try again."
     }
   }
 }

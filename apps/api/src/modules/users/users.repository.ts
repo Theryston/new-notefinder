@@ -34,6 +34,23 @@ export type PublicProfileRow = {
   dailyPracticeTargetSeconds?: number | null;
 };
 
+/** The section visibility flags of a User, with the username that addresses it. */
+export type ProfileVisibilityRow = {
+  id: string;
+  username: string | null;
+  showSummarySection: boolean;
+  showPracticeHistorySection: boolean;
+  showFavoritesSection: boolean;
+};
+
+/** The columns of the section flags, to set them in one statement. */
+export type ProfileVisibilityValues = Partial<
+  Pick<
+    ProfileVisibilityRow,
+    'showSummarySection' | 'showPracticeHistorySection' | 'showFavoritesSection'
+  >
+>;
+
 /** The fields a notification email needs about a User: where it goes and in what language. */
 export type EmailRecipientRow = {
   id: string;
@@ -48,6 +65,14 @@ const practiceSettingsColumns = {
   dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
   timeZone: users.timeZone,
   lastPracticeHeartbeatAt: users.lastPracticeHeartbeatAt,
+};
+
+const profileVisibilityColumns = {
+  id: users.id,
+  username: users.username,
+  showSummarySection: users.showSummarySection,
+  showPracticeHistorySection: users.showPracticeHistorySection,
+  showFavoritesSection: users.showFavoritesSection,
 };
 
 const currentUserColumns = {
@@ -231,6 +256,43 @@ export class UsersRepository {
       })
       .from(users)
       .where(inArray(users.id, ids));
+  }
+
+  /** The section flags of the User with this ID, or nothing when gone. */
+  async findProfileVisibility(
+    id: string,
+  ): Promise<ProfileVisibilityRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select(profileVisibilityColumns)
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return row;
+  }
+
+  /** The section flags of the User with this (lowercased) username, if any. */
+  async findProfileVisibilityByUsername(
+    username: string,
+  ): Promise<ProfileVisibilityRow | undefined> {
+    const [row] = await this.txHost.tx
+      .select(profileVisibilityColumns)
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return row;
+  }
+
+  /** Sets the section flags given and returns the User's flags, or nothing when gone. */
+  async updateProfileVisibility(
+    id: string,
+    values: ProfileVisibilityValues,
+  ): Promise<ProfileVisibilityRow | undefined> {
+    const [row] = await this.txHost.tx
+      .update(users)
+      .set(values)
+      .where(eq(users.id, id))
+      .returning(profileVisibilityColumns);
+    return row;
   }
 
   /**

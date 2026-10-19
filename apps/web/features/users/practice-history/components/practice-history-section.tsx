@@ -1,9 +1,19 @@
+import type { PracticeAttemptHistoryPage } from '@notefinder/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { getSectionVisibilityLabels } from '@/features/users/section-visibility-labels';
+import { viewerOwnsProfile } from '@/features/users/viewer-owns-profile';
 
-import { getPracticeHistoryFirstPage } from '../practice-history-first-page';
+import {
+  ProfileSectionScope,
+  SectionVisibilityToggle,
+} from '../../components/profile-section-scope';
+import {
+  getOwnPracticeHistoryFirstPage,
+  getPracticeHistoryFirstPage,
+} from '../practice-history-first-page';
 import { PracticeHistoryList } from './practice-history-list';
 import { PracticeHistoryRowSkeletons } from './practice-history-row-skeletons';
 
@@ -11,31 +21,73 @@ import { PracticeHistoryRowSkeletons } from './practice-history-row-skeletons';
  * The practice history section of a Profile. Its first page is read on each
  * request (inside a Suspense boundary in the page), and the list it hydrates
  * into reads the rest in the browser. The list's strings come from the
- * `profileHistory` block, the only namespace this client tree receives.
+ * `profileHistory` block, the only namespace this client tree receives. A
+ * section the owner hid is left out for visitors and shown dimmed to the owner.
  */
 export async function PracticeHistorySection({
   username,
 }: {
   username: string;
 }) {
-  const [t, { profileHistory }, initialPage] = await Promise.all([
+  const visitorPage = await getPracticeHistoryFirstPage(username);
+  if (visitorPage === null && !(await viewerOwnsProfile(username))) {
+    return null;
+  }
+  const hiddenOnServer = visitorPage === null;
+  const initialPage = hiddenOnServer
+    ? await getOwnPracticeHistoryFirstPage(username)
+    : visitorPage;
+  if (initialPage === null) {
+    return null;
+  }
+
+  return (
+    <PracticeHistoryBody
+      username={username}
+      initialPage={initialPage}
+      hiddenOnServer={hiddenOnServer}
+    />
+  );
+}
+
+async function PracticeHistoryBody({
+  username,
+  initialPage,
+  hiddenOnServer,
+}: {
+  username: string;
+  // `undefined` when the API could not answer: the list then reads in the browser.
+  initialPage: PracticeAttemptHistoryPage | undefined;
+  hiddenOnServer: boolean;
+}) {
+  const [t, { profileHistory }, labels] = await Promise.all([
     getTranslations('profileHistory'),
     getMessages(),
-    getPracticeHistoryFirstPage(username),
+    getSectionVisibilityLabels(),
   ]);
 
   return (
-    <section
-      aria-labelledby="profile-history-title"
-      className="flex flex-col gap-4"
+    <ProfileSectionScope
+      username={username}
+      section="practiceHistory"
+      hiddenOnServer={hiddenOnServer}
+      labels={labels}
     >
-      <h2 id="profile-history-title" className="font-bold text-xl">
-        {t('title')}
-      </h2>
-      <NextIntlClientProvider messages={{ profileHistory }}>
-        <PracticeHistoryList username={username} initialPage={initialPage} />
-      </NextIntlClientProvider>
-    </section>
+      <section
+        aria-labelledby="profile-history-title"
+        className="flex flex-col gap-4"
+      >
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="profile-history-title" className="font-bold text-xl">
+            {t('title')}
+          </h2>
+          <SectionVisibilityToggle />
+        </header>
+        <NextIntlClientProvider messages={{ profileHistory }}>
+          <PracticeHistoryList username={username} initialPage={initialPage} />
+        </NextIntlClientProvider>
+      </section>
+    </ProfileSectionScope>
   );
 }
 

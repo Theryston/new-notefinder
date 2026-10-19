@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { json } from './fake-api-http.ts';
 import type { FakeTrack } from './fake-artist-tracks.ts';
+import { canReadSection, hiddenSectionReply } from './fake-user-visibility.ts';
 
 const DEFAULT_LIMIT = 20;
 
@@ -71,6 +72,10 @@ async function serveUserFavorites(
       { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Broken on purpose' },
       request,
     );
+    return;
+  }
+  if (!canReadSection(request, username, 'favorites')) {
+    hiddenSectionReply(request, response);
     return;
   }
   const favorites = favoritesByUsername.get(username);

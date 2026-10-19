@@ -18,6 +18,7 @@ export * from './pagination.js';
 export * from './pitch.js';
 export * from './practice-attempts.js';
 export * from './practice-preferences.js';
+export * from './profile-visibility.js';
 export * from './public-profile.js';
 export * from './public-profile-summary.js';
 export * from './revalidation.js';
