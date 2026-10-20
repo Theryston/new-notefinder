@@ -149,6 +149,41 @@ for (const { locale, messages } of cases) {
       expect(api.current().followers).toEqual(['fan-a', 'fan-b', 'idol-a']);
     });
 
+    test('the row action sits inside the row hover area, outside the link', async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: OWNER });
+      await mockFollowListActions(page, {
+        username: PROFILE,
+        userId: PROFILE_ID,
+        lists: LISTS,
+      });
+      await gotoProfile(page, profilePath);
+      await countButton(page, 0).click();
+
+      const row = rows(page).first();
+      const action = rowButton(page, list.removeFollower).first();
+      await expect(dialogOf(page).locator('ul li a button')).toHaveCount(0);
+
+      await row.hover();
+      await expect
+        .poll(() => row.evaluate((el) => el.matches(':hover')))
+        .toBe(true);
+      const rowBox = await row.boundingBox();
+      const actionBox = await action.boundingBox();
+      expect(rowBox).not.toBeNull();
+      expect(actionBox).not.toBeNull();
+      if (rowBox === null || actionBox === null) return;
+      expect(actionBox.x).toBeGreaterThanOrEqual(rowBox.x);
+      expect(actionBox.y).toBeGreaterThanOrEqual(rowBox.y);
+      expect(actionBox.x + actionBox.width).toBeLessThanOrEqual(
+        rowBox.x + rowBox.width,
+      );
+      expect(actionBox.y + actionBox.height).toBeLessThanOrEqual(
+        rowBox.y + rowBox.height,
+      );
+    });
+
     test('a signed-in visitor who is not the owner sees no action on any list', async ({
       page,
     }) => {
