@@ -19,26 +19,37 @@ const views = (
 });
 
 describe('MIN_LOCALE_VIEWS_FOR_TRENDING', () => {
-  it('is 100 views in the month', () => {
-    expect(MIN_LOCALE_VIEWS_FOR_TRENDING).toBe(100);
+  it('is 0, so any view this month ranks the locale', () => {
+    expect(MIN_LOCALE_VIEWS_FOR_TRENDING).toBe(0);
   });
 });
 
 describe('rankLocaleTrending', () => {
-  it('answers nothing below the minimum, so the global figures apply', () => {
-    const rows = [views('a', { hour: 1, month: 99, allTime: 99 })];
-
-    expect(rankLocaleTrending(rows)).toBeUndefined();
-  });
-
-  it('answers nothing for a locale with no views this month', () => {
+  it('answers nothing for a locale with no views this month, so the global figures apply', () => {
     expect(rankLocaleTrending([])).toBeUndefined();
+    expect(
+      rankLocaleTrending([views('a', { month: 0, allTime: 40 })]),
+    ).toBeUndefined();
   });
 
-  it('ranks once the locale reaches the minimum exactly', () => {
-    const rows = [views('a', { hour: 1, month: 100, allTime: 100 })];
+  it('ranks a locale with one view this month under the default minimum', () => {
+    const rows = [views('a', { hour: 1, month: 1, allTime: 1 })];
 
     expect(rankLocaleTrending(rows)).toEqual([
+      { trackId: 'a', score: expect.any(Number) },
+    ]);
+  });
+
+  it('answers nothing below an explicit minimum, so the global figures apply', () => {
+    const rows = [views('a', { hour: 1, month: 99, allTime: 99 })];
+
+    expect(rankLocaleTrending(rows, 100)).toBeUndefined();
+  });
+
+  it('ranks once the locale reaches an explicit minimum exactly', () => {
+    const rows = [views('a', { hour: 1, month: 100, allTime: 100 })];
+
+    expect(rankLocaleTrending(rows, 100)).toEqual([
       { trackId: 'a', score: expect.any(Number) },
     ]);
   });

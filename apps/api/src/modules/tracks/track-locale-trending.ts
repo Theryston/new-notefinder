@@ -6,11 +6,11 @@ import {
 
 /**
  * The fewest views a locale needs this calendar month before its own trending
- * order is used. Below it the global trending figures are used, so a locale
- * with a handful of views is not ranked by them. See
- * docs/adr/0009-trending-score-jobs.md.
+ * order is used. A locale with no view this month always falls back to the
+ * global figures, whatever this minimum says; the minimum only raises the bar
+ * above one view. See docs/adr/0009-trending-score-jobs.md.
  */
-export const MIN_LOCALE_VIEWS_FOR_TRENDING = 100;
+export const MIN_LOCALE_VIEWS_FOR_TRENDING = 0;
 
 /** One Track's views in one locale, per trending window. */
 export type LocaleTrackViews = TrackViewCounts & { trackId: string };
@@ -37,14 +37,16 @@ const localePlatformAverages = (rows: LocaleTrackViews[]) => ({
 
 /**
  * Ranks one locale's Tracks by the trending score, computed from that locale's
- * views and averages only. Returns undefined when the locale has fewer than
- * `MIN_LOCALE_VIEWS_FOR_TRENDING` views this month, so the caller falls back to
- * the global figures. Tracks scoring 0 are left out; ties keep Track id order.
+ * views and averages only. Returns undefined, so the caller falls back to the
+ * global figures, when the locale has no view this month or fewer than
+ * `minViews`. Tracks scoring 0 are left out; ties keep Track id order.
  */
 export const rankLocaleTrending = (
   rows: LocaleTrackViews[],
+  minViews: number = MIN_LOCALE_VIEWS_FOR_TRENDING,
 ): LocaleTrendingEntry[] | undefined => {
-  if (sumOf(rows, 'month') < MIN_LOCALE_VIEWS_FOR_TRENDING) {
+  const monthViews = sumOf(rows, 'month');
+  if (monthViews === 0 || monthViews < minViews) {
     return undefined;
   }
   const platform = localePlatformAverages(rows);

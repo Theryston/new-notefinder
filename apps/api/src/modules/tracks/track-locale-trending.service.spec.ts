@@ -42,9 +42,9 @@ describe('TrackLocaleTrendingService', () => {
     ]);
   });
 
-  it('answers nothing when the locale has too few views', async () => {
+  it('answers nothing when the locale has no view this month', async () => {
     views.localeViewCounts.mockResolvedValue([
-      { trackId: 'a', hour: 1, day: 1, week: 1, month: 3, allTime: 3 },
+      { trackId: 'a', hour: 0, day: 0, week: 0, month: 0, allTime: 3 },
     ]);
 
     await expect(service.rank('en')).resolves.toBeUndefined();

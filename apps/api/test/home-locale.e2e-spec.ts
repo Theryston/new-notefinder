@@ -3,7 +3,6 @@ import request from 'supertest';
 import { trackViews } from '../src/database/schema/track-views.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { HomeFeedService } from '../src/modules/home/home-feed.service.js';
-import { MIN_LOCALE_VIEWS_FOR_TRENDING } from '../src/modules/tracks/track-locale-trending.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import { createCompletedTrack } from './utils/track-processing-factories.js';
@@ -19,18 +18,22 @@ const heroTitleOf = (body: { rows: unknown }): string | undefined => {
   return hero?.layout === 'hero' ? hero.track.title : undefined;
 };
 
-/** Views of one Track in one locale, recorded now. */
+/** Views a Track gets in one locale in these tests. */
+const VIEWS = 3;
+
+/** Views of one Track in one locale, recorded now unless a date is given. */
 const recordViews = async (
   testApp: TestApp,
-  trackId: string,
-  locale: Locale,
-  count: number,
+  views: { trackId: string; locale: Locale; count: number; createdAt?: Date },
 ): Promise<void> => {
-  await testApp.db
-    .insert(trackViews)
-    .values(
-      Array.from({ length: count }, () => ({ trackId, locale, userId: null })),
-    );
+  await testApp.db.insert(trackViews).values(
+    Array.from({ length: views.count }, () => ({
+      trackId: views.trackId,
+      locale: views.locale,
+      userId: null,
+      createdAt: views.createdAt ?? new Date(),
+    })),
+  );
 };
 
 describe('Home feed by locale (e2e)', () => {
@@ -57,13 +60,16 @@ describe('Home feed by locale (e2e)', () => {
       title: 'Favorita brasileira',
       coverUrl: 'https://cdn.example/portuguese.webp',
     });
-    await recordViews(testApp, english.id, 'en', MIN_LOCALE_VIEWS_FOR_TRENDING);
-    await recordViews(
-      testApp,
-      portuguese.id,
-      'pt-BR',
-      MIN_LOCALE_VIEWS_FOR_TRENDING,
-    );
+    await recordViews(testApp, {
+      trackId: english.id,
+      locale: 'en',
+      count: VIEWS,
+    });
+    await recordViews(testApp, {
+      trackId: portuguese.id,
+      locale: 'pt-BR',
+      count: VIEWS,
+    });
 
     const en = await getHome(testApp, 'en').expect(200);
     const ptBr = await getHome(testApp, 'pt-BR').expect(200);
@@ -77,14 +83,18 @@ describe('Home feed by locale (e2e)', () => {
       title: 'English favorite',
       coverUrl: 'https://cdn.example/english.webp',
     });
-    await recordViews(testApp, english.id, 'en', MIN_LOCALE_VIEWS_FOR_TRENDING);
+    await recordViews(testApp, {
+      trackId: english.id,
+      locale: 'en',
+      count: VIEWS,
+    });
 
     const response = await getHome(testApp).expect(200);
 
     expect(heroTitleOf(response.body)).toBe('English favorite');
   });
 
-  it('falls back to the global figures when a locale has too few views', async () => {
+  it('falls back to the global figures when a locale has no view this month', async () => {
     const global = await createCompletedTrack(testApp.db, {
       title: 'Global hot',
       coverUrl: 'https://cdn.example/global.webp',
@@ -94,13 +104,18 @@ describe('Home feed by locale (e2e)', () => {
       title: 'English favorite',
       coverUrl: 'https://cdn.example/english.webp',
     });
-    await recordViews(testApp, english.id, 'en', MIN_LOCALE_VIEWS_FOR_TRENDING);
-    await recordViews(
-      testApp,
-      global.id,
-      'pt-BR',
-      MIN_LOCALE_VIEWS_FOR_TRENDING - 1,
-    );
+    await recordViews(testApp, {
+      trackId: english.id,
+      locale: 'en',
+      count: VIEWS,
+    });
+    // Pt-BR views from last year are outside this month's window.
+    await recordViews(testApp, {
+      trackId: global.id,
+      locale: 'pt-BR',
+      count: VIEWS,
+      createdAt: new Date('2000-01-15T12:00:00Z'),
+    });
 
     const ptBr = await getHome(testApp, 'pt-BR').expect(200);
 
