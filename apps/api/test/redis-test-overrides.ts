@@ -5,6 +5,8 @@ import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
 import { EmailProcessor } from '../src/integrations/email/email.processor.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
+import { HOME_FEED_QUEUE } from '../src/modules/home/home-feed.job.js';
+import { HomeFeedProcessor } from '../src/modules/home/home-feed.processor.js';
 import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
 import { StreakReminderProcessor } from '../src/modules/streaks/streak-reminder.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
@@ -26,6 +28,7 @@ const QUEUES = [
   TRACK_METADATA_QUEUE,
   TRACK_MP3_QUEUE,
   TRACK_TRENDING_QUEUE,
+  HOME_FEED_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -36,6 +39,7 @@ const PROCESSORS = [
   TrackMetadataProcessor,
   TrackMp3Processor,
   TrackTrendingProcessor,
+  HomeFeedProcessor,
 ] as const;
 
 export type FakeQueue = {

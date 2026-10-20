@@ -32,6 +32,37 @@
         ]
       }
     },
+    "/v1/home": {
+      "get": {
+        "operationId": "HomeController_getHome_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 512,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the home feed (at most six rows)."
+          },
+          "400": {
+            "description": "The cursor is malformed."
+          },
+          "404": {
+            "description": "The cursor names a feed version that is no longer served (`NOT_FOUND`, `details.reason` = `FEED_VERSION_EXPIRED`): start again from the first page."
+          }
+        },
+        "tags": [
+          "home"
+        ]
+      }
+    },
     "/v1/albums/{id}": {
       "get": {
         "operationId": "AlbumsController_getAlbum_v1",

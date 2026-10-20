@@ -72,6 +72,31 @@ export class CacheService {
     }
   }
 
+  /**
+   * Takes a lock: true when this caller set the key (it was absent), false when
+   * another caller holds it. The key expires after `ttlSeconds`, so a crashed
+   * holder never blocks for good. Fails open like the other calls: when Redis
+   * can't answer, the caller proceeds as if it held the lock.
+   */
+  async acquire(key: string, ttlSeconds: number): Promise<boolean> {
+    if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+      throw new RangeError(`ttlSeconds must be a positive integer (${key})`);
+    }
+    try {
+      const result = await this.redis.set(
+        cacheKey(key),
+        '1',
+        'EX',
+        ttlSeconds,
+        'NX',
+      );
+      return result === 'OK';
+    } catch (error) {
+      this.logger.warn(`Lock failed for ${key}: ${errorMessage(error)}`);
+      return true;
+    }
+  }
+
   /** Returns the cached value, or computes it with `fn` and caches it. */
   async wrap<T>(
     key: string,
