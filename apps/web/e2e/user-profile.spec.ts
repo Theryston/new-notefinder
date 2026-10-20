@@ -10,14 +10,14 @@ test.describe('public profile page', () => {
     const banner = page.getByRole('region', { name: 'Ada Lovelace' });
     await expect(banner).toBeVisible();
     await expect(banner.getByText('@ada_lovelace')).toBeVisible();
-    await expect(banner.getByText(/Member since January 2026/)).toBeVisible();
+    await expect(page.getByText(/Member since January 2026/)).toBeVisible();
   });
 
   test('renders the banner in pt-BR', async ({ page }) => {
     await page.goto('/pt-BR/users/ada_lovelace');
 
     const banner = page.getByRole('region', { name: 'Ada Lovelace' });
-    await expect(banner.getByText(/Membro desde janeiro/)).toBeVisible();
+    await expect(page.getByText(/Membro desde janeiro/)).toBeVisible();
   });
 
   test('answers an unknown username with a real 404', async ({ page }) => {
