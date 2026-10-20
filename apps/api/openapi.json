@@ -1719,6 +1719,13 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 128
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
           }
         }
       },

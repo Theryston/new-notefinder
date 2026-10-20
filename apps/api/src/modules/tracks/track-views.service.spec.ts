@@ -43,6 +43,42 @@ describe('TrackViewsService', () => {
     expect(trending.schedule).toHaveBeenCalledWith('track-1');
   });
 
+  it('records the locale the page was displayed in with the view', async () => {
+    await service.record({
+      trackId: 'track-1',
+      userId: undefined,
+      viewId: undefined,
+      locale: 'pt-BR',
+    });
+
+    expect(views.create).toHaveBeenCalledWith('track-1', null, 'pt-BR');
+  });
+
+  it('records no locale when the client sent none', async () => {
+    await service.record({
+      trackId: 'track-1',
+      userId: undefined,
+      viewId: undefined,
+      locale: undefined,
+    });
+
+    expect(views.create).toHaveBeenCalledWith('track-1', null, undefined);
+  });
+
+  it('keeps the stored locale when it attaches the User to a view', async () => {
+    views.findView.mockResolvedValue({ id: 'view-1', userId: null });
+
+    await service.record({
+      trackId: 'track-1',
+      userId: 'user-1',
+      viewId: 'view-1',
+      locale: 'pt-BR',
+    });
+
+    expect(views.attachUser).toHaveBeenCalledWith('view-1', 'user-1');
+    expect(views.create).not.toHaveBeenCalled();
+  });
+
   it('records the signed-in User with the view', async () => {
     await service.record({
       trackId: 'track-1',
