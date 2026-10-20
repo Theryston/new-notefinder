@@ -179,4 +179,32 @@ describe('CacheService', () => {
       await expect(cache.del('k')).resolves.toBeUndefined();
     });
   });
+
+  describe('acquire', () => {
+    it('takes the key only when it is absent, for the given TTL', async () => {
+      redis.set.mockResolvedValue('OK');
+      await expect(cache.acquire('lock', 30)).resolves.toBe(true);
+      expect(redis.set).toHaveBeenCalledWith(
+        'notefinder:cache:lock',
+        '1',
+        'EX',
+        30,
+        'NX',
+      );
+    });
+
+    it('answers false when another caller holds the key', async () => {
+      redis.set.mockResolvedValue(null);
+      await expect(cache.acquire('lock', 30)).resolves.toBe(false);
+    });
+
+    it('proceeds as if it held the lock when Redis is down', async () => {
+      redis.set.mockRejectedValue(new Error('down'));
+      await expect(cache.acquire('lock', 30)).resolves.toBe(true);
+    });
+
+    it('rejects a TTL that is not a positive integer', async () => {
+      await expect(cache.acquire('lock', 0)).rejects.toThrow(RangeError);
+    });
+  });
 });
