@@ -10,7 +10,7 @@ import {
   profileCountsQueryOptions,
   profileFollowQueryOptions,
 } from '../follow-query';
-import type { FollowCounts } from '../follow-state';
+import { type FollowCounts, followButtonClasses } from '../follow-state';
 import { useProfileFollow } from '../hooks/use-profile-follow';
 
 /**
@@ -63,6 +63,7 @@ function FollowButton({ username }: { username: string }) {
     <Button
       type="button"
       variant={following ? 'outline' : 'default'}
+      className={followButtonClasses(following)}
       disabled={state === undefined || change.isPending}
       onClick={() => {
         if (state) {

@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { mockFollowApi } from './follow-api-mock';
@@ -11,6 +11,31 @@ const PROFILE = 'follow_target';
 const PROFILE_ID = 'follow-target-id';
 const VIEWER = { ...ADA, username: 'ada_lovelace' };
 const OWNER = { ...ADA, username: PROFILE };
+
+// The button must read on the orange banner in either state: its label differs
+// from its own fill, and the pill differs from the banner, by fill or by edge.
+// Before the fix, Unfollow was white text on a white fill, and Follow an orange
+// pill on the orange banner with no edge.
+const expectReadable = async (button: Locator) => {
+  const style = await button.evaluate((el) => {
+    const computed = getComputedStyle(el);
+    const banner = document.querySelector(
+      'section[aria-labelledby="profile-name"]',
+    );
+    return {
+      label: computed.color,
+      fill: computed.backgroundColor,
+      edge: computed.borderTopColor,
+      edgeWidth: computed.borderTopWidth,
+      bannerFill: banner ? getComputedStyle(banner).backgroundColor : '',
+    };
+  });
+  expect(style.label).not.toBe(style.fill);
+  expect(
+    style.fill !== style.bannerFill ||
+      (style.edgeWidth !== '0px' && style.edge !== style.bannerFill),
+  ).toBe(true);
+};
 
 const cases = [
   { locale: 'en', messages: catalogs.en },
@@ -72,9 +97,11 @@ for (const { locale, messages } of cases) {
       await page.goto(profilePath);
 
       await expect(followButton(page)).toBeEnabled();
+      await expectReadable(followButton(page));
       await followButton(page).click();
 
       await expect(unfollowButton(page)).toBeVisible();
+      await expectReadable(unfollowButton(page));
       await expect(counts(page)).toContainText(
         new Intl.NumberFormat(locale).format(3),
       );
