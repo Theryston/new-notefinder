@@ -15,10 +15,13 @@ export function TrackCoverArt({
   coverArtUrl,
   placeholderSeed,
   sizes,
+  priority,
 }: {
   coverArtUrl?: string | null;
   placeholderSeed: string;
   sizes: string;
+  /** Loads the art eagerly; only for covers visible on first paint. */
+  priority?: boolean;
 }) {
   const [artFailed, setArtFailed] = useState(false);
   if (!coverArtUrl || artFailed) {
@@ -29,6 +32,7 @@ export function TrackCoverArt({
       src={coverArtUrl}
       alt=""
       fill
+      priority={priority}
       sizes={sizes}
       className="object-cover"
       onError={() => setArtFailed(true)}

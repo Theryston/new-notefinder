@@ -86,6 +86,10 @@ export type TrackCardProps = {
   subtitle: string;
   coverArtUrl?: string | null;
   placeholderSeed: string;
+  /** Overrides the grid's cover `sizes` (e.g. a carousel's fixed widths). */
+  coverSizes?: string;
+  /** Loads the cover eagerly; only for cards visible on first paint. */
+  coverPriority?: boolean;
   /** Makes a card without a Track an action; without it the card stays static. */
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
@@ -96,21 +100,29 @@ export type TrackCardProps = {
  * The square cover: the art, or the geometric placeholder when there is none
  * or it fails to load, with the card's badge over its bottom-right corner.
  */
+const GRID_COVER_SIZES =
+  '(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw';
+
 function TrackCardCover({
   coverArtUrl,
   placeholderSeed,
   badge,
+  coverSizes,
+  coverPriority,
 }: {
   coverArtUrl?: string | null;
   placeholderSeed: string;
   badge: ReactNode;
+  coverSizes?: string;
+  coverPriority?: boolean;
 }) {
   return (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
       <TrackCoverArt
         coverArtUrl={coverArtUrl}
         placeholderSeed={placeholderSeed}
-        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 16vw, 12vw"
+        sizes={coverSizes ?? GRID_COVER_SIZES}
+        priority={coverPriority}
       />
       {badge}
     </span>
@@ -151,6 +163,8 @@ export function TrackCard(props: TrackCardProps) {
     <TrackCardCover
       coverArtUrl={props.coverArtUrl}
       placeholderSeed={props.placeholderSeed}
+      coverSizes={props.coverSizes}
+      coverPriority={props.coverPriority}
       badge={badge}
     />
   );

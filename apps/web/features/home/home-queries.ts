@@ -1,0 +1,37 @@
+import 'server-only';
+
+import type { Locale } from '@notefinder/contracts';
+import { cacheLife, cacheTag } from 'next/cache';
+
+import { serverApi } from '@/lib/api/server';
+
+import { type HomeFeedPage, homeFeedPageSchema } from './feed-page';
+import {
+  acceptPublicFeed,
+  publicHomeCacheTag,
+  publicHomeRequest,
+} from './public-feed';
+
+/**
+ * The first page of the public feed of one locale, shared by every visitor
+ * without a session. Cached under the locale's tag, which the API revalidates
+ * only when that feed's content changed, so the lifetime is a backstop.
+ */
+export async function getPublicHomePage(locale: Locale): Promise<HomeFeedPage> {
+  'use cache';
+  cacheTag(publicHomeCacheTag(locale));
+  cacheLife('hours');
+  return acceptPublicFeed(await serverApi('/home', publicHomeRequest(locale)));
+}
+
+/**
+ * The first page for a signed-in visitor: the request's cookies are forwarded
+ * and the answer is never cached on the web. Call it inside `<Suspense>`.
+ */
+export function getSessionHomePage(locale: Locale): Promise<HomeFeedPage> {
+  return serverApi('/home', {
+    query: { locale },
+    schema: homeFeedPageSchema,
+    forwardCookies: true,
+  });
+}

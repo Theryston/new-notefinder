@@ -138,6 +138,25 @@ album shares one URL. It exists once its Recordings are reprocessed (see
 `docs/adr/0003-album-is-a-release-group.md`).
 _Avoid_: Release (an edition of an album), record, LP
 
+### Home
+
+**Home feed**:
+The ordered list of rows the home page shows. Visitors without a session get
+the shared feed of their locale; the API decides what a signed-in User gets.
+A row whose layout the web doesn't know is skipped.
+_Avoid_: Home page sections, dashboard, timeline (which is the note timeline)
+
+**Row**:
+One block of the Home feed, with its own layout (the hero, a carousel, and so
+on) and a title that is a translation key.
+_Avoid_: Section, shelf, rail
+
+**Sponsored content**:
+A Row or hero that a paid placement put on the home. It shows a discreet notice
+that links to the advertising section of the terms of use. Algorithmic rows are
+never sponsored.
+_Avoid_: Ad (for the notice), promoted, advertisement
+
 ### Practice
 
 **Practice day**:

@@ -1,0 +1,42 @@
+import { cookies } from 'next/headers';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+
+import { isLocale, type Locale } from '@/lib/i18n/routing';
+
+import type { HomeFeedPage } from '../feed-page';
+import { getPublicHomePage, getSessionHomePage } from '../home-queries';
+import { isSessionCookieName } from '../session-cookie';
+import { HomeRows } from './home-rows';
+
+/**
+ * The home's rows, server-rendered. A visitor without a session gets the
+ * locale's shared, cached feed; a signed-in one gets a request-time answer.
+ * A failed API read shows no rows rather than failing the page, since the
+ * home is a bonus over the page's own content.
+ */
+export async function HomeFeed() {
+  const locale = await getLocale();
+  if (!isLocale(locale)) return null;
+  const page = await loadFirstPage(locale).catch(() => undefined);
+  if (!page) return null;
+  return (
+    // The rows' client components need the home and track-card strings only;
+    // the rest of the messages stay on the server.
+    <NextIntlClientProvider messages={await rowMessages()}>
+      <HomeRows locale={locale} initialPage={page} />
+    </NextIntlClientProvider>
+  );
+}
+
+async function loadFirstPage(locale: Locale): Promise<HomeFeedPage> {
+  const signedIn = (await cookies())
+    .getAll()
+    .some(({ name }) => isSessionCookieName(name));
+  return signedIn ? getSessionHomePage(locale) : getPublicHomePage(locale);
+}
+
+async function rowMessages() {
+  const { home, tracks } = await getMessages();
+  return { home, tracks: { card: tracks.card } };
+}
