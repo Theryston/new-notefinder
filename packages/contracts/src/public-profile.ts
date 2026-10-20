@@ -44,6 +44,12 @@ export const publicProfileSchema = z.object({
   /** The lowest and highest notes the User sings, as MIDI numbers. */
   vocalRange: trackVocalRangeSchema.nullable(),
   mostSungArtist: mostSungArtistSchema.nullable(),
+  /** Users who follow this User. */
+  followersCount: z.number().int().nonnegative(),
+  /** Users this User follows. */
+  followingCount: z.number().int().nonnegative(),
+  /** Mutual follows: Users this User follows who follow them back. */
+  friendsCount: z.number().int().nonnegative(),
 });
 
 export type PublicProfile = z.infer<typeof publicProfileSchema>;

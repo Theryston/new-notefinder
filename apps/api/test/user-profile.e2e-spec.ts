@@ -41,6 +41,9 @@ describe('GET /v1/users/:username (e2e)', () => {
       dailyPracticeTargetSeconds: null,
       vocalRange: null,
       mostSungArtist: null,
+      followersCount: 0,
+      followingCount: 0,
+      friendsCount: 0,
     });
     expect(response.body).not.toHaveProperty('email');
     expect(response.body).not.toHaveProperty('id');

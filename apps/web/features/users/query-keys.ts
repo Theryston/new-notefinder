@@ -11,6 +11,12 @@ export const profileKeys = {
     [...profileKeys.favorites(username), 'infinite', { limit }] as const,
   /** The signed-in owner's section flags (`GET /v1/me/profile-visibility`). */
   visibility: () => [...profileKeys.all, 'me', 'profile-visibility'] as const,
+  /** What the signed-in viewer has with the Profile's User (`isFollowing`). */
+  follow: (username: string) =>
+    [...profileKeys.all, username, 'follow'] as const,
+  /** The follow counts shown under the banner, kept fresh after a follow. */
+  counts: (username: string) =>
+    [...profileKeys.all, username, 'counts'] as const,
 };
 
 /** The cache key of a Profile's practice history; the cursor travels as the page param. */

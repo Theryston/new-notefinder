@@ -1,10 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import type { CurrentUser, Locale } from '@notefinder/contracts';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
+import { userFollows } from '../../database/schema/user-follows.js';
 import { users } from '../../database/schema/users.js';
 import { isUniqueViolation } from '../../database/unique-violation.js';
+
+// The follow counts of a Profile, as correlated subqueries of its User row, so
+// the banner is read in one query. Friends are the follows answered by a
+// follow back (the subquery's `f` is the User's follow, `b` the answer).
+// The User's own ID is qualified by table: a bare `id` would resolve to the
+// follows table inside the subquery.
+const ownUserId = sql`${sql.identifier('users')}.${sql.identifier('id')}`;
+const followCountColumns = {
+  followersCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followingId} = ${ownUserId})`,
+  followingCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followerId} = ${ownUserId})`,
+  friendsCount: sql<number>`(select count(*)::int from ${userFollows} as f where f.follower_id = ${ownUserId} and exists (select 1 from ${userFollows} as b where b.follower_id = f.following_id and b.following_id = ${ownUserId}))`,
+};
 
 export type CurrentUserRow = Omit<
   CurrentUser,
@@ -32,6 +45,9 @@ export type PublicProfileRow = {
   createdAt: Date;
   // As stored, like `CurrentUserRow`: narrowed to a preset by the service.
   dailyPracticeTargetSeconds?: number | null;
+  followersCount: number;
+  followingCount: number;
+  friendsCount: number;
 };
 
 /** The fields a notification email needs about a User: where it goes and in what language. */
@@ -247,6 +263,7 @@ export class UsersRepository {
         image: users.image,
         createdAt: users.createdAt,
         dailyPracticeTargetSeconds: users.dailyPracticeTargetSeconds,
+        ...followCountColumns,
       })
       .from(users)
       .where(eq(users.username, username))

@@ -11,13 +11,16 @@ import {
 import { UserAvatar } from '@/features/auth/components/user-avatar';
 import { ProfileChips } from '@/features/users/components/profile-chips';
 
+import { followCountsOf } from '../follow-state';
+import { ProfileFollow } from './profile-follow';
 import { ProfileOwnerActions } from './profile-owner-actions';
 import { ProfileShare } from './profile-share';
 
 /**
  * The Profile banner, a featured block (DESIGN.md "Featured blocks"): the
  * Avatar, or the initials on the orange surface, sits on the right; the Name
- * in display type with the `@username` and "member since" lines on the left.
+ * in display type with the `@username`, "member since" and the follow counts
+ * (with the follow button) on the left.
  */
 export async function ProfileBanner({ profile }: { profile: PublicProfile }) {
   const [t, format] = await Promise.all([
@@ -48,6 +51,10 @@ export async function ProfileBanner({ profile }: { profile: PublicProfile }) {
           <p className={entityInfoClass}>
             {t('banner.memberSince', { date: memberSince })}
           </p>
+          <ProfileFollow
+            username={profile.username}
+            counts={followCountsOf(profile)}
+          />
           <div className="flex flex-wrap items-center gap-3">
             <ProfileShare name={profile.name} username={profile.username} />
             <ProfileOwnerActions username={profile.username} />

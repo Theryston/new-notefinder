@@ -19,6 +19,7 @@ import {
   trackTags,
   trackWorks,
 } from '../../src/database/schema/tracks.js';
+import { userFollows } from '../../src/database/schema/user-follows.js';
 import { users } from '../../src/database/schema/users.js';
 import { hashPassword } from '../../src/modules/auth/password.js';
 
@@ -337,5 +338,16 @@ export const createTrackFavorite = async (
 ): Promise<void> => {
   await insertOne(
     db.insert(trackFavorites).values({ userId, trackId }).returning(),
+  );
+};
+
+/** A User following another User. */
+export const createUserFollow = async (
+  db: Database,
+  followerId: string,
+  followingId: string,
+): Promise<void> => {
+  await insertOne(
+    db.insert(userFollows).values({ followerId, followingId }).returning(),
   );
 };

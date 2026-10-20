@@ -34,4 +34,5 @@ export {
   trackRecommendationsSchema,
 } from './tracks.js';
 export * from './user-favorites.js';
+export * from './user-follows.js';
 export * from './users.js';
