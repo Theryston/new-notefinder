@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type en from '@/messages/en.json';
 
+import { AdvertisingItems } from './terms-advertising';
 import { AcceptableUseItems, CopyrightItems } from './terms-lists';
 import { termsRichText } from './terms-rich-text';
 
@@ -24,7 +25,7 @@ const SECTIONS: { id: SectionId; list?: ReactNode }[] = [
   { id: 'accuracy' },
   { id: 'serviceChanges' },
   { id: 'termsChanges' },
-  { id: 'thirdParties' },
+  { id: 'thirdParties', list: <AdvertisingItems /> },
   { id: 'governingLaw' },
   { id: 'contact' },
   { id: 'general' },

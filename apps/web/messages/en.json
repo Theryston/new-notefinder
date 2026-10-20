@@ -358,6 +358,15 @@
     "title": "Terms and Conditions of Use",
     "lastUpdated": "Last updated: <time>{date}</time>",
     "sectionHeading": "{number}. {title}",
+    "advertising": {
+      "title": "Advertising and sponsored content",
+      "body": "The site may show advertising and sponsored content in these ways:",
+      "items": {
+        "externalAds": "Ads from external tools, such as Google Ads.",
+        "internalAds": "Our own ads, or sponsored content from people or companies that want to sponsor the site. Sponsored rows on the home page are marked as sponsored.",
+        "sponsorship": "If you want to sponsor the site, send an email to <email>{address}</email>."
+      }
+    },
     "sections": {
       "acceptance": {
         "title": "Acceptance of Terms",

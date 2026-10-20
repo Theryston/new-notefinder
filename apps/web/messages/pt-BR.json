@@ -358,6 +358,15 @@
     "title": "Termos e Condições de Uso",
     "lastUpdated": "Última atualização: <time>{date}</time>",
     "sectionHeading": "{number}. {title}",
+    "advertising": {
+      "title": "Publicidade e conteúdo patrocinado",
+      "body": "O site pode exibir publicidade e conteúdo patrocinado destas formas:",
+      "items": {
+        "externalAds": "Anúncios de ferramentas externas, como o Google Ads.",
+        "internalAds": "Anúncios nossos ou conteúdo patrocinado de pessoas ou empresas que queiram patrocinar o site. As seções patrocinadas da página inicial são marcadas como patrocinadas.",
+        "sponsorship": "Se você quiser patrocinar o site, envie um e-mail para <email>{address}</email>."
+      }
+    },
     "sections": {
       "acceptance": {
         "title": "Aceitação dos Termos",
