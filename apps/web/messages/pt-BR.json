@@ -830,6 +830,19 @@
       "following": "{count, number} seguindo",
       "friends": "{count, plural, one {# amigo} other {# amigos}}"
     },
+    "followList": {
+      "followers": "Seguidores",
+      "following": "Seguindo",
+      "friends": "Amigos",
+      "close": "Fechar",
+      "loading": "Carregando pessoas…",
+      "loadingMore": "Carregando mais pessoas…",
+      "loadError": "Não foi possível carregar esta lista. Tente de novo.",
+      "retry": "Tentar de novo",
+      "emptyFollowers": "Ainda não há seguidores.",
+      "emptyFollowing": "Ainda não segue ninguém.",
+      "emptyFriends": "Ainda não há amigos."
+    },
     "favorites": {
       "title": "Músicas favoritas",
       "loading": "Carregando músicas…",
