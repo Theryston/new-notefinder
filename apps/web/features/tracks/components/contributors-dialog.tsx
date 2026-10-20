@@ -120,16 +120,22 @@ function ContributorRow({
     </>
   );
   const className =
-    'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50';
+    'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl pl-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
   return (
-    <li className="flex items-center gap-2">
+    // The hover sits on the row so it wraps the follow button too; the button
+    // stays a sibling of the link, never inside it, so its click can't navigate.
+    <li
+      className={`flex items-center gap-2 rounded-2xl pr-2 transition-colors ${
+        contributor.username === null ? '' : 'hover:bg-accent'
+      }`}
+    >
       {contributor.username === null ? (
         <div className={className}>{body}</div>
       ) : (
         <Link
           href={`/users/${contributor.username}`}
           aria-label={tp('contributorLink', { name: contributor.name })}
-          className={`${className} hover:bg-accent`}
+          className={className}
         >
           {body}
         </Link>
