@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
 import { useEffect, useRef } from 'react';
 
 import { synchronizeTrackView } from '../track-view-sync';
@@ -15,8 +16,9 @@ import { synchronizeTrackView } from '../track-view-sync';
 export function useTrackView(trackId: string, signedIn: boolean) {
   // Strict Mode runs effects twice; a ref survives that remount.
   const sent = useRef<string | null>(null);
+  const locale = useLocale();
   const { mutate } = useMutation({
-    mutationFn: () => synchronizeTrackView(trackId, signedIn),
+    mutationFn: () => synchronizeTrackView(trackId, signedIn, locale),
   });
 
   useEffect(() => {

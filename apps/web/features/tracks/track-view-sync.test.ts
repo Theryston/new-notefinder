@@ -60,3 +60,29 @@ it('releases a failed request so a later visit can retry', async () => {
   await synchronizeTrackView('retry-track', false);
   expect(postTrackView).toHaveBeenCalledTimes(2);
 });
+
+it('sends the displayed locale when it records the view, not when it attaches', async () => {
+  const values = new Map<string, string>();
+  vi.stubGlobal('window', {
+    sessionStorage: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    },
+  });
+  vi.mocked(postTrackView).mockResolvedValue('locale-view');
+
+  await synchronizeTrackView('locale-track', false, 'pt-BR');
+  await synchronizeTrackView('locale-track', true, 'en');
+
+  expect(postTrackView).toHaveBeenNthCalledWith(
+    1,
+    'locale-track',
+    undefined,
+    'pt-BR',
+  );
+  expect(postTrackView).toHaveBeenNthCalledWith(
+    2,
+    'locale-track',
+    'locale-view',
+  );
+});
