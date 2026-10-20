@@ -129,6 +129,7 @@ export class TracksController {
 
   // Public: the Track's Contributors in first-contribution order,
   // cursor-paginated, with the total for the counter. Same 404s as the header.
+  // A signed-in viewer also gets whether they follow each Contributor.
   @Public()
   @Get(':trackId/contributors')
   @ZodSerializerDto(trackContributorsPageSchema)
@@ -142,10 +143,15 @@ export class TracksController {
       '(`RESOURCE_MOVED`).',
   })
   getContributors(
+    @CurrentUser() viewer: AuthUser | undefined,
     @Param() params: TrackIdParamDto,
     @Query() query: TrackContributorsQueryDto,
   ): Promise<TrackContributorsPage> {
-    return this.trackProcessing.listContributors(params.trackId, query);
+    return this.trackProcessing.listContributors(
+      params.trackId,
+      query,
+      viewer?.id,
+    );
   }
 
   // Public: the page is shared while the Track processes. A legacy ID answers

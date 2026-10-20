@@ -7,6 +7,7 @@ import {
   trackContributions,
   trackContributors,
 } from '../../database/schema/track-contributors.js';
+import { userFollows } from '../../database/schema/user-follows.js';
 import { users } from '../../database/schema/users.js';
 import type { TrackContributorCursor } from './track-contributor-cursor.js';
 
@@ -91,6 +92,17 @@ export class TrackContributorRepository {
       .orderBy(asc(trackContributors.createdAt), asc(trackContributors.id));
   }
 
+  /**
+   * Whether the viewer follows each row's User, as a correlated subquery so
+   * the page stays one query. Without a viewer nothing is followed.
+   */
+  private static followingColumn(viewerId: string | undefined) {
+    if (viewerId === undefined) {
+      return sql<boolean>`false`;
+    }
+    return sql<boolean>`exists (select 1 from ${userFollows} where ${userFollows.followerId} = ${viewerId} and ${userFollows.followingId} = ${trackContributors.userId})`;
+  }
+
   /** Wildcards never reach the pattern: the match stays a plain substring. */
   private static searchPattern(query: string): string {
     return `%${query.replace(/[\\%_]/g, '\\$&')}%`;
@@ -121,7 +133,8 @@ export class TrackContributorRepository {
   /**
    * One page of the Track's Contributors with their User's public fields, in
    * first-contribution order, plus how many match in total. `limit + 1` rows
-   * decide whether a next page exists.
+   * decide whether a next page exists. `viewerId` adds whether the viewer
+   * follows each row's User.
    */
   async findContributorsPage(
     trackId: string,
@@ -129,27 +142,32 @@ export class TrackContributorRepository {
       cursor?: TrackContributorCursor;
       limit: number;
       query?: string;
+      viewerId?: string;
     },
   ): Promise<{
     rows: {
       id: string;
+      userId: string;
       username: string | null;
       name: string;
       image: string | null;
+      isFollowing: boolean;
       contributedAt: Date;
       cursorTimestamp?: string;
     }[];
     total: number;
   }> {
-    const { cursor, limit, query } = options;
+    const { cursor, limit, query, viewerId } = options;
     const where = this.contributorFilters(trackId, cursor, query);
     const [rows, [countRow]] = await Promise.all([
       this.txHost.tx
         .select({
           id: trackContributors.id,
+          userId: trackContributors.userId,
           username: users.username,
           name: users.name,
           image: users.image,
+          isFollowing: TrackContributorRepository.followingColumn(viewerId),
           contributedAt: trackContributors.createdAt,
           cursorTimestamp: sql<string>`to_char(${trackContributors.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
         })

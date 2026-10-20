@@ -90,6 +90,19 @@ export const trackContributorSchema = z.object({
 export type TrackContributor = z.infer<typeof trackContributorSchema>;
 
 /**
+ * A Contributor as the Contributors endpoint lists it. `userId` is the User
+ * the follow endpoints take. `isFollowing` tells whether the signed-in viewer
+ * follows that User; it is absent for an anonymous viewer. Both are optional
+ * so clients built before them keep parsing; the API always sends `userId`.
+ */
+export const trackContributorEntrySchema = trackContributorSchema.extend({
+  userId: z.string().min(1).max(128).optional(),
+  isFollowing: z.boolean().optional(),
+});
+
+export type TrackContributorEntry = z.infer<typeof trackContributorEntrySchema>;
+
+/**
  * `GET /v1/tracks/:trackId/contributors`: one page of the Track's
  * Contributors in the order they first contributed, with the total for the
  * counter. `q` matches a username or display name, case-insensitively.
@@ -104,7 +117,7 @@ export type ListTrackContributorsQuery = z.infer<
 >;
 
 export const trackContributorsPageSchema = cursorPageSchema(
-  trackContributorSchema,
+  trackContributorEntrySchema,
 ).extend({
   total: z.number().int().nonnegative(),
 });

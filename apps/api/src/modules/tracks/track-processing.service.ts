@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type {
   ListTrackContributorsQuery,
-  TrackContributor,
+  TrackContributorEntry,
   TrackContributorsPage,
   TrackProcessingState,
 } from '@notefinder/contracts';
@@ -53,12 +53,15 @@ export class TrackProcessingService {
 
   /**
    * One page of the Track's Contributors in first-contribution order, with the
-   * total for the counter. Unknown and legacy IDs answer as every Track read
-   * does (`NOT_FOUND`, or `RESOURCE_MOVED` with the new ID).
+   * total for the counter. `viewerId` (a signed-in viewer) adds whether they
+   * follow each Contributor; without it the flag is left out. Unknown and
+   * legacy IDs answer as every Track read does (`NOT_FOUND`, or
+   * `RESOURCE_MOVED` with the new ID).
    */
   async listContributors(
     trackId: string,
     query: ListTrackContributorsQuery,
+    viewerId?: string,
   ): Promise<TrackContributorsPage> {
     await this.assertTrackExists(trackId);
     const { rows, total } = await this.contributors.findContributorsPage(
@@ -70,15 +73,18 @@ export class TrackProcessingService {
             : decodeTrackContributorCursor(query.cursor),
         limit: query.limit,
         query: query.q,
+        viewerId,
       },
     );
     const hasMore = rows.length > query.limit;
     const items = rows.slice(0, query.limit).map(
-      (row): TrackContributor => ({
+      (row): TrackContributorEntry => ({
         id: row.id,
+        userId: row.userId,
         username: row.username,
         name: row.name,
         image: row.image,
+        ...(viewerId === undefined ? {} : { isFollowing: row.isFollowing }),
       }),
     );
     const anchor = hasMore ? rows[query.limit - 1] : undefined;

@@ -141,6 +141,11 @@
         "loadError": "Contributors could not be loaded. Try again.",
         "retry": "Try again",
         "empty": "No contributors match “{query}”.",
+        "follow": "Follow",
+        "unfollow": "Unfollow",
+        "followLabel": "Follow {name}",
+        "unfollowLabel": "Unfollow {name}",
+        "followError": "The change could not be saved. Try again.",
         "close": "Close"
       },
       "timeline": {
