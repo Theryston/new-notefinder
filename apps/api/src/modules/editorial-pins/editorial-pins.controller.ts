@@ -38,7 +38,7 @@ import {
 } from './editorial-pin-dtos.js';
 import { EditorialPinsService } from './editorial-pins.service.js';
 
-const actorOf = (user: AuthUser): EditorialPinActor => ({
+const adminActor = (user: AuthUser): EditorialPinActor => ({
   id: user.id,
   name: user.name,
 });
@@ -70,7 +70,7 @@ export class EditorialPinsController {
     @CurrentUser() user: AuthUser,
     @Body() body: CreateEditorialPinBodyDto,
   ): Promise<EditorialPin> {
-    return this.pins.create(body, actorOf(user));
+    return this.pins.create(body, adminActor(user));
   }
 
   @Get(':pinId')
@@ -94,7 +94,7 @@ export class EditorialPinsController {
     @Param() params: EditorialPinIdParamDto,
     @Body() body: UpdateEditorialPinBodyDto,
   ): Promise<EditorialPin> {
-    return this.pins.update(params.pinId, body, actorOf(user));
+    return this.pins.update(params.pinId, body, adminActor(user));
   }
 
   @Delete(':pinId')
@@ -105,7 +105,7 @@ export class EditorialPinsController {
     @CurrentUser() user: AuthUser,
     @Param() params: EditorialPinIdParamDto,
   ): Promise<void> {
-    await this.pins.remove(params.pinId, actorOf(user));
+    await this.pins.remove(params.pinId, adminActor(user));
   }
 
   @Get(':pinId/history')

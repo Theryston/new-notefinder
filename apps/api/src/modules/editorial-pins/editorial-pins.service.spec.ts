@@ -249,6 +249,16 @@ describe('EditorialPinsService', () => {
       expect(repository.findPage).not.toHaveBeenCalled();
     });
 
+    it('answers NOT_FOUND for the history of a pin that never existed', async () => {
+      repository.findHistoryPage.mockResolvedValue([]);
+
+      const error = await service
+        .history('nope', { limit: 20 })
+        .catch((e: unknown) => e);
+
+      expect(error).toMatchObject({ code: 'NOT_FOUND' });
+    });
+
     it('pages the history of a pin, with the admin who made each change', async () => {
       repository.findHistoryPage.mockResolvedValue([
         {
@@ -349,16 +359,22 @@ describe('EditorialPinsService', () => {
     it('refuses a merged pin whose window ends before it starts', async () => {
       repository.findById.mockResolvedValue(storedPin());
 
-      await expect(
-        service.update(
+      const error = await service
+        .update(
           'pin-1',
           {
             startsAt: '2026-10-10T00:00:00.000Z',
             endsAt: '2026-10-09T00:00:00.000Z',
           },
           ADMIN,
-        ),
-      ).rejects.toThrow();
+        )
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(AppException);
+      expect(error).toMatchObject({
+        code: 'VALIDATION_FAILED',
+        details: { location: 'body' },
+      });
       expect(repository.updatePin).not.toHaveBeenCalled();
     });
 

@@ -13,26 +13,16 @@ import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js
 import type { AuthUser } from '../auth/auth.js';
 import { HomeService } from './home.service.js';
 import { HomeFeedQueryDto } from './home-feed-query.dto.js';
-import { HomePinOverlayService } from './home-pin-overlay.service.js';
-import {
-  DEFAULT_HOME_LOCALE,
-  PUBLIC_HOME_CACHE_CONTROL,
-  UNCACHED_HOME_CACHE_CONTROL,
-} from './home-rules.js';
 
 @ApiTags('home')
 @Controller('home')
 export class HomeController {
-  constructor(
-    private readonly home: HomeService,
-    private readonly pinOverlay: HomePinOverlayService,
-  ) {}
+  constructor(private readonly home: HomeService) {}
 
-  // Public, and the same feed for a signed-in visitor for now: nothing personal
-  // is in it, so shared caches may store it. A cursor names the feed version it
-  // was issued for; the fallback home, served while another request builds the
-  // feed, is never stored. The editorial pins live for the viewer are applied
-  // per request, so a signed-in visitor gets the "everyone" pins only.
+  // Public: a signed-in visitor gets the same route, with the pins for Users.
+  // Its response is private, since it differs from the anonymous one. A cursor
+  // names the feed version it was issued for; the fallback home, served while
+  // another request builds the feed, is never stored.
   @Public()
   @Get()
   @ZodSerializerDto(homeFeedSchema)
@@ -49,17 +39,12 @@ export class HomeController {
     @CurrentUser() user: AuthUser | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<HomeFeed> {
-    const locale = query.locale ?? DEFAULT_HOME_LOCALE;
-    const { page, cacheable } = await this.home.getPage(
+    const { page, cacheControl } = await this.home.getPage(
       query.cursor,
-      locale,
-      (rows) =>
-        this.pinOverlay.apply(rows, { locale, signedIn: user !== undefined }),
+      query.locale,
+      user !== undefined,
     );
-    response.setHeader(
-      'Cache-Control',
-      cacheable ? PUBLIC_HOME_CACHE_CONTROL : UNCACHED_HOME_CACHE_CONTROL,
-    );
+    response.setHeader('Cache-Control', cacheControl);
     return page;
   }
 }

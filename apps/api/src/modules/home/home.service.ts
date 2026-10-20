@@ -1,29 +1,25 @@
-import { Injectable } from '@nestjs/common';
-import type { HomeFeed, HomeRow, Locale } from '@notefinder/contracts';
+import { Injectable, Optional } from '@nestjs/common';
+import type { HomeFeed, Locale } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import { type StoredHomeFeed } from './home-feed.js';
 import { HomeFeedService } from './home-feed.service.js';
-import { DEFAULT_HOME_LOCALE, HOME_PAGE_SIZE } from './home-rules.js';
+import { HomePinOverlayService } from './home-pin-overlay.service.js';
+import {
+  DEFAULT_HOME_LOCALE,
+  HOME_PAGE_SIZE,
+  PRIVATE_HOME_CACHE_CONTROL,
+  PUBLIC_HOME_CACHE_CONTROL,
+  UNCACHED_HOME_CACHE_CONTROL,
+} from './home-rules.js';
 
 export type HomePage = {
   page: HomeFeed;
   /** False when the response must not be stored by any cache. */
   cacheable: boolean;
+  /** The `Cache-Control` header the response is sent with. */
+  cacheControl: string;
 };
-
-/**
- * Applies the rows that are live at request time (the editorial pins) over the
- * stored rows, before the page is cut. Stored feeds never hold them.
- */
-export type RowsOverlay = (rows: HomeRow[]) => Promise<HomeRow[]>;
-
-const keepRows: RowsOverlay = async (rows) => rows;
-
-const withOverlay = async (
-  feed: StoredHomeFeed,
-  overlay: RowsOverlay,
-): Promise<StoredHomeFeed> => ({ ...feed, rows: await overlay(feed.rows) });
 
 /** One page of a feed: its rows from `position`, and where the next one starts. */
 const pageOf = (feed: StoredHomeFeed, position: number): HomeFeed => {
@@ -40,29 +36,44 @@ const pageOf = (feed: StoredHomeFeed, position: number): HomeFeed => {
   };
 };
 
+const cacheControlOf = (cacheable: boolean, signedIn: boolean): string => {
+  if (!cacheable) {
+    return UNCACHED_HOME_CACHE_CONTROL;
+  }
+  return signedIn ? PRIVATE_HOME_CACHE_CONTROL : PUBLIC_HOME_CACHE_CONTROL;
+};
+
 /**
  * Serves the home feed a request asks for. The first page comes from the
- * current feed; a cursor resumes the version it was issued for, so a feed
- * regenerated in between never shifts the rows of the visit.
+ * locale's current feed; a cursor resumes the version it was issued for, so a
+ * feed regenerated in between never shifts the rows of the visit. The live
+ * editorial pins are overlaid on the stored rows per request.
  */
 @Injectable()
 export class HomeService {
-  constructor(private readonly feeds: HomeFeedService) {}
+  constructor(
+    private readonly feeds: HomeFeedService,
+    // Optional only so the feed can be served without the pin overlay (the feed
+    // specs provide the feed service alone). HomeModule always provides it.
+    @Optional() private readonly pinOverlay?: HomePinOverlayService,
+  ) {}
 
   /**
-   * The first page is the locale's current feed; a cursor names its own feed
-   * version, so the locale is ignored for it. The overlay applies to a stored
-   * feed only: the minimal home stays empty.
+   * The first page is the locale's current feed. A cursor names its own feed
+   * version, and the locale is the one that feed was built for, so the `locale`
+   * argument is ignored for it. The minimal home is never overlaid.
    */
   async getPage(
     cursor: string | undefined,
     locale: Locale = DEFAULT_HOME_LOCALE,
-    overlay: RowsOverlay = keepRows,
+    signedIn = false,
   ): Promise<HomePage> {
     if (cursor === undefined) {
       const { feed, cacheable } = await this.feeds.currentPublic(locale);
-      const shown = cacheable ? await withOverlay(feed, overlay) : feed;
-      return { page: pageOf(shown, 0), cacheable };
+      const shown = cacheable
+        ? await this.withPins(feed, locale, signedIn)
+        : feed;
+      return this.answer(shown, 0, cacheable, signedIn);
     }
     const { version, position } = decodeHomeCursor(cursor);
     const feed = await this.feeds.publicVersion(version);
@@ -75,9 +86,33 @@ export class HomeService {
         { reason: 'FEED_VERSION_EXPIRED' },
       );
     }
+    const feedLocale = feed.locale ?? DEFAULT_HOME_LOCALE;
+    const shown = await this.withPins(feed, feedLocale, signedIn);
+    return this.answer(shown, position, true, signedIn);
+  }
+
+  private async withPins(
+    feed: StoredHomeFeed,
+    locale: Locale,
+    signedIn: boolean,
+  ): Promise<StoredHomeFeed> {
+    if (!this.pinOverlay) {
+      return feed;
+    }
+    const rows = await this.pinOverlay.apply(feed.rows, { locale, signedIn });
+    return { ...feed, rows };
+  }
+
+  private answer(
+    feed: StoredHomeFeed,
+    position: number,
+    cacheable: boolean,
+    signedIn: boolean,
+  ): HomePage {
     return {
-      page: pageOf(await withOverlay(feed, overlay), position),
-      cacheable: true,
+      page: pageOf(feed, position),
+      cacheable,
+      cacheControl: cacheControlOf(cacheable, signedIn),
     };
   }
 }

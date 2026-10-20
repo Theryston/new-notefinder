@@ -1,4 +1,4 @@
-import { homeRowSchema } from '@notefinder/contracts';
+import { homeRowSchema, localeSchema } from '@notefinder/contracts';
 import { z } from 'zod';
 import { HOME_ALGORITHM_VERSION } from './home-rules.js';
 
@@ -9,6 +9,10 @@ import { HOME_ALGORITHM_VERSION } from './home-rules.js';
  */
 export const storedHomeFeedSchema = z.object({
   audience: z.literal('public'),
+  // The locale the feed was built for. A cursor resumes its feed, so the pins
+  // it is overlaid with are that locale's. Optional: feeds stored before the
+  // field existed read as the default locale.
+  locale: localeSchema.optional(),
   version: z.string().min(1).max(64),
   algorithmVersion: z.number().int().positive(),
   rows: z.array(homeRowSchema),

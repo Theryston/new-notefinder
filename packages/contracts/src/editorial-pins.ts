@@ -34,6 +34,9 @@ export type EditorialPinHistoryAction = z.infer<
   typeof editorialPinHistoryActionSchema
 >;
 
+/** The position of the hero slot: row 0 of the feed. */
+export const HERO_POSITION = 0;
+
 export const EDITORIAL_PIN_MAX_TRACKS = 24;
 /** The last row position: a feed holds at most 24 rows (0 is the hero slot). */
 export const EDITORIAL_PIN_MAX_POSITION = 23;
@@ -120,6 +123,7 @@ const pinInputShape = {
 const checkPinRules = (
   body: {
     kind: EditorialPinKind;
+    position: number;
     layout: EditorialPinLayout;
     locale?: Locale | null | undefined;
     startsAt?: string | null | undefined;
@@ -133,6 +137,14 @@ const checkPinRules = (
       code: 'custom',
       path: ['layout'],
       message: 'A hero pin uses the hero layout, and a row pin a row layout',
+    });
+  }
+  // The hero slot is row 0, so a hero pin's position is fixed to it.
+  if (body.kind === 'hero' && body.position !== HERO_POSITION) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['position'],
+      message: `A hero pin takes the hero slot (position ${HERO_POSITION})`,
     });
   }
   if (

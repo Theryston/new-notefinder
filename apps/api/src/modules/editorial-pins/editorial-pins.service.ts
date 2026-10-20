@@ -36,7 +36,7 @@ import {
 type PageQuery = { cursor?: string | undefined; limit: number };
 
 /** The page of `rows` that `limit` asks for, and the cursor of the next one. */
-const pageOf = <TRecord extends { createdAt: Date; id: string }, TItem>(
+const cursorPageOf = <TRecord extends { createdAt: Date; id: string }, TItem>(
   rows: TRecord[],
   limit: number,
   toItem: (record: TRecord) => TItem,
@@ -125,7 +125,7 @@ export class EditorialPinsService {
       after: decodeCursor(query.cursor),
       limit: query.limit,
     });
-    return pageOf(rows, query.limit, toEditorialPin);
+    return cursorPageOf(rows, query.limit, toEditorialPin);
   }
 
   async get(pinId: string): Promise<EditorialPin> {
@@ -142,7 +142,12 @@ export class EditorialPinsService {
       after: decodeCursor(query.cursor),
       limit: query.limit,
     });
-    return pageOf(rows, query.limit, toHistoryEntry);
+    // Every pin has a CREATED entry, and a removed pin keeps its entries, so an
+    // empty first page means no pin ever had this ID.
+    if (rows.length === 0 && query.cursor === undefined) {
+      throw new AppException('NOT_FOUND', 'Home pin not found');
+    }
+    return cursorPageOf(rows, query.limit, toHistoryEntry);
   }
 
   async create(
@@ -165,11 +170,17 @@ export class EditorialPinsService {
   ): Promise<EditorialPin> {
     const current = await this.require(pinId);
     const currentState = toEditorialPin(current);
-    const body = createEditorialPinBodySchema.parse({
+    const merged = createEditorialPinBodySchema.safeParse({
       ...currentState,
       ...patch,
     });
-    const next = writeOf(body);
+    if (!merged.success) {
+      throw new AppException('VALIDATION_FAILED', 'The pin is invalid', {
+        location: 'body',
+        issues: merged.error.issues,
+      });
+    }
+    const next = writeOf(merged.data);
     const changed = changedFieldsOf(currentState, stateOf(next));
     if (changed.length === 0) {
       return currentState;

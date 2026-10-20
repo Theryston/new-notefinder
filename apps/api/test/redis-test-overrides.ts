@@ -47,8 +47,9 @@ const PROCESSORS = [
 ] as const;
 
 export type FakeQueue = {
-  added: { name: string; data: unknown }[];
-  add: (name: string, data: unknown) => Promise<{ id: string }>;
+  /** Every job added, with the options it was added with (delay, job ID…). */
+  added: { name: string; data: unknown; opts?: unknown }[];
+  add: (name: string, data: unknown, opts?: unknown) => Promise<{ id: string }>;
   upsertJobScheduler: () => Promise<void>;
 };
 
@@ -56,8 +57,8 @@ const createFakeQueue = (): FakeQueue => {
   const added: FakeQueue['added'] = [];
   return {
     added,
-    add: async (name, data) => {
-      added.push({ name, data });
+    add: async (name, data, opts) => {
+      added.push({ name, data, opts });
       return { id: String(added.length) };
     },
     // Repeatable jobs are registered on boot; nothing runs them here.

@@ -8,8 +8,8 @@ import type { EditorialPinWrite, PageCursor } from './editorial-pin-state.js';
 export const createdAtMs = (column: AnyPgColumn): SQL<Date> =>
   sql`date_trunc('milliseconds', ${column})`;
 
-/** Rows after the cursor, newest first (the ID breaks a tie in creation time). */
-export const createdAfter = (
+/** Rows older than the cursor: the rows after it in newest-first order (the ID breaks a tie in creation time). */
+export const olderThanCursor = (
   column: SQL<Date>,
   idColumn: AnyPgColumn,
   cursor: PageCursor | undefined,
@@ -33,15 +33,7 @@ export const actorOf = (
   id !== null && name !== null ? { id, name } : null;
 
 /** The columns an insert or an update writes for a pin's own fields. */
-export const pinColumns = (write: EditorialPinWrite) => ({
-  kind: write.kind,
-  layout: write.layout,
-  position: write.position,
-  priority: write.priority,
-  audience: write.audience,
-  locale: write.locale,
-  startsAt: write.startsAt,
-  endsAt: write.endsAt,
-  titles: write.titles,
-  sponsored: write.sponsored,
-});
+export const pinColumns = ({
+  trackIds: _trackIds,
+  ...columns
+}: EditorialPinWrite) => columns;

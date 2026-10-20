@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
+import { EditorialPinsRepository } from '../src/modules/editorial-pins/editorial-pins.repository.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
 import {
@@ -20,6 +21,10 @@ import {
 } from './utils/track-processing-factories.js';
 
 const PINS = '/v1/admin/home-pins';
+
+/** The delay (in ms) a scheduled job was added with. */
+const delayOf = (job: { opts?: unknown } | undefined): number =>
+  (job?.opts as { delay?: number } | undefined)?.delay ?? Number.NaN;
 
 /** A Track whose Processing is still queued: it cannot appear in a pin. */
 const queuedTrack = async (db: Parameters<typeof createTrack>[0]) => {
@@ -77,6 +82,9 @@ describe('Editorial pins (e2e)', () => {
         .send(rowPinBody(['t']))
         .expect(403);
       await spec.client.get(`${PINS}/x/history`).expect(403);
+      await spec.client.get(`${PINS}/x`).expect(403);
+      await spec.client.patch(`${PINS}/x`).send({ priority: 1 }).expect(403);
+      await spec.client.delete(`${PINS}/x`).expect(403);
     });
   });
 
@@ -257,6 +265,66 @@ describe('Editorial pins (e2e)', () => {
         'invalidate-home-for-pin',
         'invalidate-home-for-pin',
       ]);
+      // Each job fires at the edge's own time: the delay is the time left at
+      // scheduling (a few seconds before the check reads it).
+      expect(jobs.map((job) => job.opts)).toEqual([
+        expect.objectContaining({
+          jobId: expect.stringContaining(`-start-${Date.parse(startsAt)}`),
+        }),
+        expect.objectContaining({
+          jobId: expect.stringContaining(`-end-${Date.parse(endsAt)}`),
+        }),
+      ]);
+      expect(delayOf(jobs[0])).toBeGreaterThan(3_600_000 - 10_000);
+      expect(delayOf(jobs[0])).toBeLessThanOrEqual(3_600_000);
+      expect(delayOf(jobs[1])).toBeGreaterThan(7_200_000 - 10_000);
+      expect(delayOf(jobs[1])).toBeLessThanOrEqual(7_200_000);
+    });
+
+    it('shows a pin from its start (inclusive) until its end (exclusive)', async () => {
+      const track = await createCompletedTrack(spec.testApp.db, {
+        title: 'Boundaries',
+      });
+      const startsAt = new Date(Date.now() + 3_600_000);
+      const endsAt = new Date(startsAt.getTime() + 3_600_000);
+      const pin = await createPin(
+        rowPinBody([track.id], {
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString(),
+        }),
+      );
+      const repository = spec.testApp.app.get(EditorialPinsRepository);
+      const liveAt = async (now: Date) =>
+        (await repository.findLive({ locale: 'en', signedIn: false, now })).map(
+          (live) => live.id,
+        );
+
+      expect(await liveAt(new Date(startsAt.getTime() - 1))).not.toContain(
+        pin.id,
+      );
+      expect(await liveAt(startsAt)).toContain(pin.id);
+      expect(await liveAt(new Date(endsAt.getTime() - 1))).toContain(pin.id);
+      expect(await liveAt(endsAt)).not.toContain(pin.id);
+    });
+
+    it('refuses an update that leaves the window ending before it starts', async () => {
+      const track = await createCompletedTrack(spec.testApp.db, {
+        title: 'Merged window',
+      });
+      const pin = await createPin(rowPinBody([track.id]));
+
+      const response = await spec.client
+        .patch(`${PINS}/${pin.id}`)
+        .send({
+          startsAt: '2026-10-10T00:00:00.000Z',
+          endsAt: '2026-10-09T00:00:00.000Z',
+        })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        code: 'VALIDATION_FAILED',
+        details: { location: 'body' },
+      });
     });
 
     it('removes a pin, answers NOT_FOUND afterwards and keeps its history', async () => {
@@ -280,6 +348,28 @@ describe('Editorial pins (e2e)', () => {
       const response = await spec.client.get(`${PINS}/missing`).expect(404);
 
       expect(response.body).toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('answers NOT_FOUND for the history of an unknown pin', async () => {
+      const response = await spec.client
+        .get(`${PINS}/missing/history`)
+        .expect(404);
+
+      expect(response.body).toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('refuses a hero pin that is not at the hero slot', async () => {
+      const track = await createCompletedTrack(spec.testApp.db, {
+        title: 'Hero slot',
+        coverUrl: 'https://cdn.example/hero-slot.webp',
+      });
+
+      const response = await spec.client
+        .post(PINS)
+        .send(heroPinBody(track.id, { position: 3 }))
+        .expect(400);
+
+      expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
     });
 
     it('lists pins newest first, a page at a time', async () => {

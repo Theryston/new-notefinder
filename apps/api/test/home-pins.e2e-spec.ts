@@ -1,11 +1,17 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
-import { useAuthSpec } from './utils/auth-spec.js';
+import { type AuthClient, createAuthClient } from './utils/auth.js';
+import { createTestApp, type TestApp } from './utils/create-test-app.js';
+import { resetDatabase } from './utils/database.js';
 import {
   rowPinBody,
   signInPinsAdmin,
 } from './utils/editorial-pin-factories.js';
+import {
+  sharedInMemoryCache,
+  withInMemoryCache,
+} from './utils/in-memory-cache.js';
 import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 const PINS = '/v1/admin/home-pins';
@@ -40,12 +46,23 @@ type Row = {
 };
 
 describe('Home feed with editorial pins (e2e)', () => {
-  const spec = useAuthSpec();
+  // An in-memory cache keeps the stored feed between requests, so the cursors
+  // of a visit resolve to the feed they were issued for.
+  let testApp: TestApp;
+  let client: AuthClient;
+
+  beforeAll(async () => {
+    testApp = await createTestApp({ override: withInMemoryCache });
+  });
+
+  afterAll(async () => {
+    await testApp.close();
+  });
   let ids: string[] = [];
 
   /** The public feed as a visitor who is not signed in gets it. */
   const visitorRows = async (locale = 'en'): Promise<Row[]> => {
-    const response = await request(spec.testApp.app.getHttpServer())
+    const response = await request(testApp.app.getHttpServer())
       .get(`/v1/home?locale=${locale}`)
       .expect(200);
     return response.body.rows as Row[];
@@ -53,12 +70,12 @@ describe('Home feed with editorial pins (e2e)', () => {
 
   /** The same feed as the signed-in admin (a signed-in User) gets it. */
   const signedInRows = async (): Promise<Row[]> => {
-    const response = await spec.client.get('/v1/home').expect(200);
+    const response = await client.get('/v1/home').expect(200);
     return response.body.rows as Row[];
   };
 
   const createPin = async (body: Record<string, unknown>): Promise<string> => {
-    const response = await spec.client.post(PINS).send(body).expect(201);
+    const response = await client.post(PINS).send(body).expect(201);
     return response.body.id as string;
   };
 
@@ -66,8 +83,11 @@ describe('Home feed with editorial pins (e2e)', () => {
     (row?.items ?? []).map((item) => item.id);
 
   beforeEach(async () => {
-    ids = await seedTracks(spec.testApp.db);
-    await signInPinsAdmin(spec.testApp.db, spec.client);
+    await resetDatabase(testApp.db);
+    sharedInMemoryCache.clear();
+    client = createAuthClient(testApp);
+    ids = await seedTracks(testApp.db);
+    await signInPinsAdmin(testApp.db, client);
   });
 
   it('shows the algorithmic feed when no pin is live', async () => {
@@ -201,6 +221,7 @@ describe('Home feed with editorial pins (e2e)', () => {
       rowPinBody([ids[5] ?? ''], {
         kind: 'hero',
         layout: 'hero',
+        position: 0,
         sponsored: true,
       }),
     );
@@ -217,7 +238,7 @@ describe('Home feed with editorial pins (e2e)', () => {
 
   it('skips a pinned Track that is no longer completed, at read time', async () => {
     const pinId = await createPin(rowPinBody([ids[16] ?? '', ids[17] ?? '']));
-    const db = spec.testApp.db;
+    const db = testApp.db;
     await db
       .update(trackProcessings)
       .set({ status: 'QUEUED' })
@@ -230,10 +251,38 @@ describe('Home feed with editorial pins (e2e)', () => {
     ]);
   });
 
+  it('overlays a cursor page with the pins of the locale its feed was built for, without a locale parameter', async () => {
+    for (let position = 1; position <= 7; position += 1) {
+      await createPin(
+        rowPinBody([ids[position + 10] ?? ''], {
+          position,
+          titles: {
+            en: `English ${position}`,
+            'pt-BR': `Portugues ${position}`,
+          },
+        }),
+      );
+    }
+    const server = request(testApp.app.getHttpServer());
+    const first = await server.get('/v1/home?locale=pt-BR').expect(200);
+    expect(first.body.nextCursor).not.toBeNull();
+
+    // The second page is served with no locale parameter: it must still carry
+    // the Portuguese pins its feed was built with, not the English ones.
+    const second = await server
+      .get(`/v1/home?cursor=${first.body.nextCursor}`)
+      .expect(200);
+
+    const pinnedTitles = (second.body.rows as Row[])
+      .filter((row) => row.title?.key === 'home.rows.pinned')
+      .map((row) => row.title?.params.title);
+    expect(pinnedTitles).toEqual(['Portugues 6', 'Portugues 7']);
+  });
+
   it('brings the algorithm back once the pin is removed', async () => {
     const pinId = await createPin(rowPinBody([ids[3] ?? '']));
 
-    await spec.client.delete(`${PINS}/${pinId}`).expect(204);
+    await client.delete(`${PINS}/${pinId}`).expect(204);
     const rows = await visitorRows();
 
     expect(rows.map((row) => row.id)).not.toContain(`pin-${pinId}`);

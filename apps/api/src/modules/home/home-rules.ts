@@ -17,7 +17,10 @@ export const DEFAULT_HOME_LOCALE: Locale = 'en';
 /** Rows per page: the first page and every later one. */
 export const HOME_PAGE_SIZE = 6;
 
-/** The most rows a feed page can hold, the contract's limit on a feed. */
+/**
+ * The most rows a feed holds. Matches the `rows` limit of `homeFeedSchema` in
+ * @notefinder/contracts, which hard-codes the same 24.
+ */
 export const HOME_MAX_ROWS = 24;
 
 /** Most Tracks of one artist in one row, so a hot artist can't fill it. */
@@ -45,6 +48,12 @@ export const HOME_FEED_RETAINED_TTL_SECONDS = 30 * 60;
 
 /** The lock one request holds while it builds a missing feed. */
 export const HOME_FEED_LOCK_TTL_SECONDS = 30;
+
+/**
+ * A signed-in response differs from the public one: it omits the visitors-only
+ * pins. No shared cache may keep it, or serve it to a visitor who is not signed in.
+ */
+export const PRIVATE_HOME_CACHE_CONTROL = 'private, no-store';
 
 /** Shared caches keep a public feed for a few minutes and serve it stale after. */
 export const PUBLIC_HOME_CACHE_CONTROL =

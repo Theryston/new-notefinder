@@ -95,6 +95,7 @@ export class HomeFeedBuilder {
       .filter((row): row is HomeRow => row !== undefined);
     return {
       audience: 'public',
+      locale,
       version: feedVersion(locale, rows),
       algorithmVersion: HOME_ALGORITHM_VERSION,
       rows,

@@ -192,17 +192,12 @@ describe('applyEditorialPins', () => {
     });
   });
 
-  it('demotes a hero pin without a cover to a row at its position', () => {
+  it('skips a hero pin whose Tracks have no cover, without showing it as a row', () => {
     const rows = applyEditorialPins(feed(), [
       heroPin('no-cover', sixTracks('nc', false), 2),
     ]);
 
-    expect(rows[0]).toMatchObject({ id: 'hero', layout: 'hero' });
-    expect(rowIds(rows)).toEqual(['hero', 'a', 'pin-no-cover', 'b', 'c']);
-    expect(rows[2]).toMatchObject({
-      layout: 'standard',
-      title: { key: 'home.rows.pinned', params: { title: 'Pin no-cover' } },
-    });
+    expect(rowIds(rows)).toEqual(['hero', 'a', 'b', 'c']);
   });
 
   it('demotes a losing hero pin to a row at the next free position', () => {
@@ -270,7 +265,7 @@ describe('applyEditorialPins', () => {
     expect(rowIds(rows)).toEqual(['pin-top']);
   });
 
-  it('fills the slots after the last algorithmic row with the pins that follow', () => {
+  it('places a pin past the end of the algorithmic rows right after the last one (explicit rule)', () => {
     const rows = applyEditorialPins(
       [heroRow('hero', track('h')), standardRow('a', sixTracks('a'))],
       [pin('late', { position: 5 })],

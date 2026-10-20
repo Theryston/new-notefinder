@@ -22,9 +22,6 @@ export type OverlayPin = {
   tracks: HomeTrack[];
 };
 
-/** A pin that takes a row slot, with the Tracks it has left to show. */
-type RowPin = OverlayPin & { tracks: HomeTrack[] };
-
 /** Most recent first among equal priorities, then a stable order by ID. */
 const byPrecedence = (a: OverlayPin, b: OverlayPin): number =>
   b.priority - a.priority ||
@@ -46,7 +43,7 @@ const pinnedHero = (pin: OverlayPin, track: HomeTrack): HomeHero => ({
   ...sponsoredFlag(pin),
 });
 
-const pinnedRow = (pin: RowPin): HomeRow => ({
+const pinnedRow = (pin: OverlayPin): HomeRow => ({
   id: rowIdOf(pin),
   layout: 'standard',
   title: pin.title,
@@ -94,7 +91,7 @@ const algorithmicRows = (
 const rowPinsFor = (
   pins: readonly OverlayPin[],
   heroTrack: HomeTrack | undefined,
-): RowPin[] => {
+): OverlayPin[] => {
   const shown = new Set<string>(heroTrack ? [heroTrack.id] : []);
   return pins.flatMap((pin) => {
     const tracks = pin.tracks.filter((track) => !shown.has(track.id));
@@ -110,10 +107,14 @@ const rowPinsFor = (
  * to the pinned hero, or stays with the algorithmic hero. A pin takes its
  * position; when that slot is taken by a higher-precedence pin, it takes the
  * next free one. Algorithmic rows fill the other slots in order.
+ *
+ * The one place a position cannot be kept: when the algorithmic rows run out
+ * before a pin's position, the pin follows the last row. A feed has no empty
+ * slots, so a gap is never rendered; this is the explicit rule for it.
  */
 const placeRows = (
   hero: HomeRow | undefined,
-  pinned: readonly RowPin[],
+  pinned: readonly OverlayPin[],
   algorithmic: readonly HomeRow[],
 ): HomeRow[] => {
   const taken = new Set<number>(hero ? [0] : []);
@@ -155,8 +156,11 @@ export const applyEditorialPins = (
   rows: readonly HomeRow[],
   pins: readonly OverlayPin[],
 ): HomeRow[] => {
+  // A pin with no Track left is skipped. So is a hero pin with no Track that
+  // has a cover: a hero cannot show it, and it is not shown as a row either.
   const ordered = [...pins]
     .filter((pin) => pin.tracks.length > 0)
+    .filter((pin) => pin.kind !== 'hero' || pin.tracks.some(hasCover))
     .sort(byPrecedence);
   const pinnedIds = new Set(
     ordered.flatMap((pin) => pin.tracks.map((t) => t.id)),

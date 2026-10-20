@@ -25,7 +25,7 @@ export type EditorialPinWrite = {
 };
 
 /**
- * The last row of a page: its creation time (in milliseconds) and its ID. The
+ * The last row of a page: its creation time and its ID. The
  * cursor of the next page encodes it.
  */
 export type PageCursor = { createdAt: Date; id: string };

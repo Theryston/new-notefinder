@@ -20,9 +20,9 @@ import type { EditorialPinWrite, PageCursor } from './editorial-pin-state.js';
 import {
   actorOf,
   actorUser,
-  createdAfter,
   createdAtMs,
   createdByUser,
+  olderThanCursor,
   pinColumns,
   updatedByUser,
 } from './editorial-pins-query.repository.js';
@@ -76,7 +76,7 @@ export class EditorialPinsRepository {
   }): Promise<EditorialPinRecord[]> {
     const rows = await this.selectPins()
       .where(
-        createdAfter(
+        olderThanCursor(
           createdAtMs(editorialPins.createdAt),
           editorialPins.id,
           options.after,
@@ -212,7 +212,7 @@ export class EditorialPinsRepository {
       .where(
         and(
           eq(editorialPinHistory.pinId, options.pinId),
-          createdAfter(createdAt, editorialPinHistory.id, options.after),
+          olderThanCursor(createdAt, editorialPinHistory.id, options.after),
         ),
       )
       .orderBy(desc(createdAt), desc(editorialPinHistory.id))

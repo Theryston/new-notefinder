@@ -39,4 +39,10 @@ export const rowPinBody = (
 export const heroPinBody = (
   trackId: string,
   overrides: Record<string, unknown> = {},
-) => rowPinBody([trackId], { kind: 'hero', layout: 'hero', ...overrides });
+) =>
+  rowPinBody([trackId], {
+    kind: 'hero',
+    layout: 'hero',
+    position: 0,
+    ...overrides,
+  });
