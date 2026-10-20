@@ -40,7 +40,10 @@ export class HomeController {
     @Query() query: HomeFeedQueryDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<HomeFeed> {
-    const { page, cacheable } = await this.home.getPage(query.cursor);
+    const { page, cacheable } = await this.home.getPage(
+      query.cursor,
+      query.locale,
+    );
     response.setHeader(
       'Cache-Control',
       cacheable ? PUBLIC_HOME_CACHE_CONTROL : UNCACHED_HOME_CACHE_CONTROL,

@@ -385,16 +385,16 @@ describe('Home feed (e2e)', () => {
         const revalidations = () =>
           testApp.queues[WEB_REVALIDATION_QUEUE]?.added ?? [];
 
-        await feeds.refreshPublic();
+        await feeds.refreshPublic('en');
         expect(revalidations()).toEqual([
-          { name: 'revalidate', data: { tags: [cacheTags.home] } },
+          { name: 'revalidate', data: { tags: [cacheTags.home('en')] } },
         ]);
 
-        await feeds.refreshPublic();
+        await feeds.refreshPublic('en');
         expect(revalidations()).toHaveLength(1);
 
         state.rows = 9;
-        await feeds.refreshPublic();
+        await feeds.refreshPublic('en');
         expect(revalidations()).toHaveLength(2);
       } finally {
         await testApp.close();

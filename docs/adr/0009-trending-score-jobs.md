@@ -46,3 +46,23 @@ keeps a high score until something recomputes it.
   jobs.
 - Windows are UTC, so every instance agrees; the legacy app used its server's
   local calendar.
+
+## Locale trending
+
+Track views carry the locale they were displayed in (`track_views.locale`, null
+for legacy views). The home feed of a locale ranks its trending row by the same
+score, computed from that locale's views only: the locale's own views per window,
+its own all-time views, and the platform averages of its own Tracks. The
+calculation is the pure `rankLocaleTrending`, which reuses `trendingScore`.
+
+A locale is ranked on its own only when it has at least one view this calendar
+month and at least `MIN_LOCALE_VIEWS_FOR_TRENDING` of them (currently 0, one
+constant in `track-locale-trending.ts`, so the minimum adds nothing today). A
+locale with no view this month always falls back to the global
+`tracks.trendingScore`, so the rule holds whatever the minimum is set to. Above
+zero, the minimum keeps a locale with a handful of views from being decided by
+them.
+
+The global score stays the one the Track pages, the sitemap and the daily run
+use: this ranking reads the views on demand for the home and does not store a
+second score.

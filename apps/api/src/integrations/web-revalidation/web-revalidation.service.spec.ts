@@ -33,11 +33,11 @@ describe('WebRevalidationService', () => {
   it('deduplicates tags', async () => {
     await service.revalidate([
       cacheTags.track('t1'),
-      cacheTags.home,
+      cacheTags.home('en'),
       cacheTags.track('t1'),
     ]);
     expect(queue.add).toHaveBeenCalledWith(WEB_REVALIDATION_JOB, {
-      tags: ['track:t1', 'home'],
+      tags: ['track:t1', 'home:en'],
     });
   });
 

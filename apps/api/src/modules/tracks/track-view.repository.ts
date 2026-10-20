@@ -4,6 +4,7 @@ import type { Locale } from '@notefinder/contracts';
 import { and, eq, gte, isNull, type SQL, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackViews } from '../../database/schema/track-views.js';
+import type { LocaleTrackViews } from './track-locale-trending.js';
 import {
   averageViewsPerTrack,
   type PlatformViewAverages,
@@ -22,6 +23,15 @@ const tracksViewedSince = (start: Date): SQL<number> =>
   sql<number>`count(distinct ${trackViews.trackId}) filter (where ${trackViews.createdAt} >= ${start.toISOString()}::timestamptz)`.mapWith(
     Number,
   );
+
+/** The views per trending window, and over all time. */
+const windowCounts = (starts: ViewWindowStarts) => ({
+  hour: viewsSince(starts.hour),
+  day: viewsSince(starts.day),
+  week: viewsSince(starts.week),
+  month: viewsSince(starts.month),
+  allTime: sql<number>`count(*)`.mapWith(Number),
+});
 
 /** A recorded view, as far as attaching a User to it needs. */
 export type StoredView = { id: string; userId: string | null };
@@ -73,16 +83,26 @@ export class TrackViewRepository {
     starts: ViewWindowStarts,
   ): Promise<TrackViewCounts> {
     const [row] = await this.txHost.tx
-      .select({
-        hour: viewsSince(starts.hour),
-        day: viewsSince(starts.day),
-        week: viewsSince(starts.week),
-        month: viewsSince(starts.month),
-        allTime: sql<number>`count(*)`.mapWith(Number),
-      })
+      .select(windowCounts(starts))
       .from(trackViews)
       .where(eq(trackViews.trackId, trackId));
     return row ?? { hour: 0, day: 0, week: 0, month: 0, allTime: 0 };
+  }
+
+  /**
+   * Each Track's views in one locale, per window and over all time, for the
+   * Tracks viewed this month (the others score 0 and are not needed).
+   */
+  localeViewCounts(
+    locale: Locale,
+    starts: ViewWindowStarts,
+  ): Promise<LocaleTrackViews[]> {
+    return this.txHost.tx
+      .select({ trackId: trackViews.trackId, ...windowCounts(starts) })
+      .from(trackViews)
+      .where(eq(trackViews.locale, locale))
+      .groupBy(trackViews.trackId)
+      .having(sql`${viewsSince(starts.month)} > 0`);
   }
 
   /** Views per viewed Track on the platform, this hour and today. */

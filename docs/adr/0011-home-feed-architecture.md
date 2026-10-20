@@ -93,9 +93,15 @@ configured at the CDN, not in the API.
   list as its row, so the hero and the trending row never share a Track.
 - Adding a row source or a layout is a change to the sources and the layout
   rules, not to the endpoint.
-- Locales are not part of this slice: the feed's content does not depend on the
-  locale yet (titles are keys), and trending by locale waits for locale on track
-  views. Per-locale feeds and a locale-scoped cache tag come with that work.
+- There is one public feed per locale (`en`, `pt-BR`). Each has its own version,
+  Redis entries, build lock, hourly refresh and web cache tag (`home:<locale>`),
+  so regenerating one locale never drops the other's cache. A feed's version
+  hashes its locale, so a cursor names one locale's feed by its version alone.
+- `GET /v1/home` takes an optional `locale`: omitted, it is `en`; an unsupported
+  value is refused with `VALIDATION_FAILED`. A cursor ignores it, since the
+  version it carries already names the feed.
+- The trending row ranks by each locale's own views once that locale has enough
+  of them this month; see ADR 0009, "Locale trending".
 - The "trending today" row ranks by the existing trending score, which already
   weighs the calendar windows of the day, the week and the month. It is not a
   pure day count.

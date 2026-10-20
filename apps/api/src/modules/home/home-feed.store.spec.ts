@@ -32,20 +32,20 @@ describe('HomeFeedStore', () => {
     store = moduleRef.get(HomeFeedStore);
   });
 
-  it('keeps the current feed for the current TTL', async () => {
-    await store.writeCurrent(feed);
+  it('keeps the current feed of its locale for the current TTL', async () => {
+    await store.writeCurrent('en', feed);
     expect(cache.set).toHaveBeenCalledWith(
-      'home:public:current',
+      'home:public:en:current',
       feed,
       HOME_FEED_CURRENT_TTL_SECONDS,
     );
   });
 
-  it('reads the current feed with the stored-feed schema', async () => {
+  it('reads the current feed of its locale with the stored-feed schema', async () => {
     cache.get.mockResolvedValue(feed);
-    await expect(store.readCurrent()).resolves.toEqual(feed);
+    await expect(store.readCurrent('pt-BR')).resolves.toEqual(feed);
     expect(cache.get).toHaveBeenCalledWith(
-      'home:public:current',
+      'home:public:pt-BR:current',
       expect.anything(),
     );
   });
@@ -68,14 +68,14 @@ describe('HomeFeedStore', () => {
     );
   });
 
-  it('takes and releases the build lock', async () => {
+  it('takes and releases the build lock of its locale', async () => {
     cache.acquire.mockResolvedValue(true);
-    await expect(store.acquireLock()).resolves.toBe(true);
+    await expect(store.acquireLock('en')).resolves.toBe(true);
     expect(cache.acquire).toHaveBeenCalledWith(
-      'home:public:lock',
+      'home:public:en:lock',
       HOME_FEED_LOCK_TTL_SECONDS,
     );
-    await store.releaseLock();
-    expect(cache.del).toHaveBeenCalledWith('home:public:lock');
+    await store.releaseLock('en');
+    expect(cache.del).toHaveBeenCalledWith('home:public:en:lock');
   });
 });

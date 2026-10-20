@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { HomeFeed } from '@notefinder/contracts';
+import type { HomeFeed, Locale } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import { type StoredHomeFeed } from './home-feed.js';
 import { HomeFeedService } from './home-feed.service.js';
-import { HOME_PAGE_SIZE } from './home-rules.js';
+import { DEFAULT_HOME_LOCALE, HOME_PAGE_SIZE } from './home-rules.js';
 
 export type HomePage = {
   page: HomeFeed;
@@ -36,9 +36,16 @@ const pageOf = (feed: StoredHomeFeed, position: number): HomeFeed => {
 export class HomeService {
   constructor(private readonly feeds: HomeFeedService) {}
 
-  async getPage(cursor: string | undefined): Promise<HomePage> {
+  /**
+   * The first page is the locale's current feed; a cursor names its own feed
+   * version, so the locale is ignored for it.
+   */
+  async getPage(
+    cursor: string | undefined,
+    locale: Locale = DEFAULT_HOME_LOCALE,
+  ): Promise<HomePage> {
     if (cursor === undefined) {
-      const { feed, cacheable } = await this.feeds.currentPublic();
+      const { feed, cacheable } = await this.feeds.currentPublic(locale);
       return { page: pageOf(feed, 0), cacheable };
     }
     const { version, position } = decodeHomeCursor(cursor);
