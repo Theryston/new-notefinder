@@ -63,6 +63,15 @@ async function networkUrl(page: Page, list: string, name: string) {
   return new URL(href ?? '');
 }
 
+/**
+ * Opens a Profile and waits for its requests to settle: a click before the
+ * page hydrates is lost, since the Share button's handler is not attached yet.
+ */
+async function gotoProfile(page: Page, path = PROFILE) {
+  await page.goto(path);
+  await page.waitForLoadState('networkidle');
+}
+
 /** Whether `element` contains the element that has focus right now. */
 async function hasFocusInside(element: Locator): Promise<boolean> {
   return element.evaluate((node) => node.contains(document.activeElement));
@@ -76,7 +85,7 @@ test.describe('share a Profile', () => {
   test('copies the canonical link and closes with Esc to the button', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     const dialog = await openShareDialog(page);
     // Nothing of the Track dialog's moment option is offered here.
     await expect(dialog.getByRole('checkbox')).toHaveCount(0);
@@ -95,7 +104,7 @@ test.describe('share a Profile', () => {
   test('closes with the Close button and returns focus to the button', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -105,7 +114,7 @@ test.describe('share a Profile', () => {
   });
 
   test('closes with Esc before anything was copied', async ({ page }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     await expect(dialogOf(page)).toBeVisible();
@@ -117,7 +126,7 @@ test.describe('share a Profile', () => {
   test('moves focus into the dialog and keeps it there while tabbing', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -141,7 +150,7 @@ test.describe('share a Profile', () => {
         value: () => Promise.reject(new Error('clipboard refused')),
       });
     });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -167,7 +176,7 @@ test.describe('share a Profile', () => {
   });
 
   test('links all five networks with the translated text', async ({ page }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const list = 'Share on';
@@ -202,7 +211,7 @@ test.describe('share a Profile', () => {
   }) => {
     const link = `${SITE_ORIGIN}/pt-BR/users/ada_lovelace`;
     const text = 'Veja o perfil de Ada Lovelace no NoteFinder';
-    await page.goto('/pt-BR/users/ada_lovelace');
+    await gotoProfile(page, '/pt-BR/users/ada_lovelace');
     await page
       .getByRole('button', { name: 'Compartilhar', exact: true })
       .click();
@@ -231,7 +240,7 @@ test.describe('share a Profile', () => {
       { ...SIGNED_IN_COOKIE, domain: 'localhost', path: '/' },
     ]);
     await mockAuthApi(page, { user: { ...ADA, username: 'ada_lovelace' } });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
 
     await openShareDialog(page);
   });
@@ -240,7 +249,7 @@ test.describe('share a Profile', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
 
     const button = shareButton(page);
     await expect(button).toBeVisible();
@@ -272,7 +281,7 @@ test.describe('share a Profile', () => {
       }) => {
         await page.setViewportSize({ width, height: 800 });
         await page.emulateMedia({ colorScheme });
-        await page.goto(PROFILE);
+        await gotoProfile(page);
 
         await expectBannerButtonSized(page);
       });
