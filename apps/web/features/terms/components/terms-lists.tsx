@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import { termsRichText } from './terms-rich-text';
 
-function TermsList({ children }: { children: ReactNode }) {
+export function TermsList({ children }: { children: ReactNode }) {
   return (
     <ul className="flex list-disc flex-col gap-2 pl-5 marker:text-muted-foreground">
       {children}
