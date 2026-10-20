@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { HomeRow, HomeRowTitle, HomeTrack } from '@notefinder/contracts';
+import type {
+  HomeRow,
+  HomeRowTitle,
+  HomeTrack,
+  Locale,
+} from '@notefinder/contracts';
 import { type StoredHomeFeed } from './home-feed.js';
 import { composeHomeRows } from './home-feed-composer.js';
 import {
@@ -8,7 +13,11 @@ import {
   type HomeCandidate,
   type HomeRowSource,
 } from './home-row-sources.js';
-import { HOME_ALGORITHM_VERSION, type HomeLayout } from './home-rules.js';
+import {
+  DEFAULT_HOME_LOCALE,
+  HOME_ALGORITHM_VERSION,
+  type HomeLayout,
+} from './home-rules.js';
 
 type ComposedRow = {
   id: string;
@@ -48,30 +57,37 @@ const toHomeRow = (row: ComposedRow): HomeRow | undefined => {
 };
 
 /**
- * The version of a feed is a hash of its content and of the algorithm that
- * made it: an unchanged feed keeps its version, so its cursors stay valid and
- * the web is not revalidated for nothing.
+ * The version of a feed is a hash of its locale, its content and the algorithm
+ * that made it: an unchanged feed keeps its version, so its cursors stay valid
+ * and the web is not revalidated for nothing. The locale is in the hash, so
+ * the version alone names one locale's feed.
  */
-const feedVersion = (rows: HomeRow[]): string =>
+const feedVersion = (locale: Locale, rows: HomeRow[]): string =>
   createHash('sha256')
-    .update(JSON.stringify({ algorithmVersion: HOME_ALGORITHM_VERSION, rows }))
+    .update(
+      JSON.stringify({
+        algorithmVersion: HOME_ALGORITHM_VERSION,
+        locale,
+        rows,
+      }),
+    )
     .digest('hex')
     .slice(0, 16);
 
-/** Loads the candidate rows, composes them and returns the public feed. */
+/** Loads one locale's candidate rows, composes them and returns its public feed. */
 @Injectable()
 export class HomeFeedBuilder {
   constructor(
     @Inject(HOME_ROW_SOURCES) private readonly sources: HomeRowSource[],
   ) {}
 
-  async build(): Promise<StoredHomeFeed> {
+  async build(locale: Locale = DEFAULT_HOME_LOCALE): Promise<StoredHomeFeed> {
     const candidates = await Promise.all(
       this.sources.map(async (source) => ({
         id: source.id,
         layout: source.layout,
         title: source.title,
-        items: await source.load(),
+        items: await source.load(locale),
       })),
     );
     const rows = composeHomeRows(candidates)
@@ -79,7 +95,7 @@ export class HomeFeedBuilder {
       .filter((row): row is HomeRow => row !== undefined);
     return {
       audience: 'public',
-      version: feedVersion(rows),
+      version: feedVersion(locale, rows),
       algorithmVersion: HOME_ALGORITHM_VERSION,
       rows,
     };

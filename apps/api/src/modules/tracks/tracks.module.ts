@@ -22,6 +22,7 @@ import { TrackDirectAudioController } from './track-direct-audio.controller.js';
 import { TrackDirectAudioRepository } from './track-direct-audio.repository.js';
 import { TrackDirectAudioService } from './track-direct-audio.service.js';
 import { TrackJobRunnerService } from './track-job-runner.service.js';
+import { TrackLocaleTrendingService } from './track-locale-trending.service.js';
 import { TrackLyricsController } from './track-lyrics.controller.js';
 import { TrackLyricsRepository } from './track-lyrics.repository.js';
 import { TrackLyricsService } from './track-lyrics.service.js';
@@ -143,12 +144,18 @@ import { TracksService } from './tracks.service.js';
     TrackProcessingProcessor,
     TrackViewRepository,
     TrackViewsService,
+    TrackLocaleTrendingService,
     TrackTrendingQueueService,
     TrackTrendingService,
     TrackTrendingProcessor,
     TrackSitemapRepository,
     TrackSitemapService,
   ],
-  exports: [TracksService, TrackAlbumCoverService, TrackContributionsService],
+  exports: [
+    TracksService,
+    TrackAlbumCoverService,
+    TrackContributionsService,
+    TrackLocaleTrendingService,
+  ],
 })
 export class TracksModule {}

@@ -4,7 +4,15 @@
  * changes the feed version even when the rows look the same.
  */
 
+import type { Locale } from '@notefinder/contracts';
+
 export const HOME_ALGORITHM_VERSION = 1;
+
+/**
+ * The feed a request gets when it names no locale. An unsupported locale is
+ * refused by the query schema, so only the feed locales ever reach the feed.
+ */
+export const DEFAULT_HOME_LOCALE: Locale = 'en';
 
 /** Rows per page: the first page and every later one. */
 export const HOME_PAGE_SIZE = 6;

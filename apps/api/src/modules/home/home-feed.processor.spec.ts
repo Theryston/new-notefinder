@@ -47,10 +47,12 @@ describe('HomeFeedProcessor', () => {
     );
   });
 
-  it('warms the public feed on boot, before the app is ready', async () => {
+  it('warms the public feed of every locale on boot, before the app is ready', async () => {
     await processor.onModuleInit();
 
-    expect(feeds.refreshPublic).toHaveBeenCalledOnce();
+    expect(feeds.refreshPublic).toHaveBeenCalledTimes(2);
+    expect(feeds.refreshPublic).toHaveBeenCalledWith('en');
+    expect(feeds.refreshPublic).toHaveBeenCalledWith('pt-BR');
   });
 
   it('keeps booting when the warm-up fails: the first request builds it', async () => {
@@ -60,10 +62,12 @@ describe('HomeFeedProcessor', () => {
     expect(Logger.prototype.error).toHaveBeenCalled();
   });
 
-  it('regenerates the public feed for the refresh job', async () => {
+  it('regenerates the public feed of every locale for the refresh job', async () => {
     await processor.process(createJob(REFRESH_PUBLIC_HOME_FEED_JOB));
 
-    expect(feeds.refreshPublic).toHaveBeenCalledOnce();
+    expect(feeds.refreshPublic).toHaveBeenCalledTimes(2);
+    expect(feeds.refreshPublic).toHaveBeenCalledWith('en');
+    expect(feeds.refreshPublic).toHaveBeenCalledWith('pt-BR');
   });
 
   it('fails a job it does not know without retrying', async () => {

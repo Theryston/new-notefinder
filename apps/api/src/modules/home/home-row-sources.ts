@@ -1,7 +1,8 @@
-import type { HomeRowTitle, HomeTrack } from '@notefinder/contracts';
+import type { HomeRowTitle, HomeTrack, Locale } from '@notefinder/contracts';
+import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
 import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
 import type { ComposableTrack } from './home-feed-composer.js';
-import type { HomeLayout } from './home-rules.js';
+import { DEFAULT_HOME_LOCALE, type HomeLayout } from './home-rules.js';
 
 /** Injection token of the row sources the builder composes, in feed order. */
 export const HOME_ROW_SOURCES = Symbol('HOME_ROW_SOURCES');
@@ -26,7 +27,11 @@ export type HomeRowSource = {
   layout: HomeLayout;
   /** Standard rows show it; a hero has no title. */
   title?: HomeRowTitle;
-  load: () => Promise<HomeCandidate[]>;
+  /**
+   * Loads the candidates of one feed locale, best first. Without a locale, the
+   * default one.
+   */
+  load: (locale?: Locale) => Promise<HomeCandidate[]>;
 };
 
 const toHomeCandidate = (record: HomeTrackRecord): HomeCandidate => {
@@ -51,16 +56,60 @@ const toHomeCandidate = (record: HomeTrackRecord): HomeCandidate => {
 
 const title = (key: string): HomeRowTitle => ({ key, params: {} });
 
+/** The repository reads the row sources need; narrowed so tests can fake them. */
+type HomeRecords = Pick<
+  HomeRepository,
+  'findTrendingTracks' | 'findNewestTracks' | 'findCompletedTracksByIds'
+>;
+type TrendingRecords = Pick<
+  HomeRepository,
+  'findTrendingTracks' | 'findCompletedTracksByIds'
+>;
+type TrendingRanking = Pick<TrackLocaleTrendingService, 'rank'>;
+
+/**
+ * Orders the records as the ranked `ids` name them; an id with no record (a
+ * Track that is no longer completed) is skipped.
+ */
+export const inRankOrder = (
+  records: HomeTrackRecord[],
+  ids: readonly string[],
+): HomeTrackRecord[] => {
+  const byId = new Map(records.map((record) => [record.id, record]));
+  return ids.flatMap((id) => {
+    const record = byId.get(id);
+    return record ? [record] : [];
+  });
+};
+
+/**
+ * The trending candidates of one locale. A locale with enough views this month
+ * is ranked by its own views; otherwise the global trending score applies.
+ */
+const localeTrending = async (
+  repository: TrendingRecords,
+  ranking: TrendingRanking,
+  locale: Locale,
+): Promise<HomeTrackRecord[]> => {
+  const entries = await ranking.rank(locale);
+  if (entries === undefined) {
+    return repository.findTrendingTracks(CANDIDATE_LIMIT);
+  }
+  const ids = entries.slice(0, CANDIDATE_LIMIT).map((entry) => entry.trackId);
+  return inRankOrder(await repository.findCompletedTracksByIds(ids), ids);
+};
+
 /**
  * The feed's rows, in order: the hero, then trending today and newly added
  * Tracks. The hero is the hottest Track with a cover, so it draws from the
  * same trending list as its row.
  */
 export const createHomeRowSources = (
-  repository: HomeRepository,
+  repository: HomeRecords,
+  ranking: TrendingRanking,
 ): HomeRowSource[] => {
-  const trending = async () =>
-    (await repository.findTrendingTracks(CANDIDATE_LIMIT)).map(toHomeCandidate);
+  const trending = async (locale: Locale = DEFAULT_HOME_LOCALE) =>
+    (await localeTrending(repository, ranking, locale)).map(toHomeCandidate);
   const newest = async () =>
     (await repository.findNewestTracks(CANDIDATE_LIMIT)).map(toHomeCandidate);
   return [

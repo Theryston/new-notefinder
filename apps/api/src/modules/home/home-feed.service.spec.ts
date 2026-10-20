@@ -55,20 +55,22 @@ describe('HomeFeedService', () => {
       store.readCurrent.mockResolvedValue(undefined);
       builder.build.mockResolvedValue(feedOf('v1'));
 
-      await expect(service.refreshPublic()).resolves.toEqual(feedOf('v1'));
+      await expect(service.refreshPublic('en')).resolves.toEqual(feedOf('v1'));
 
-      expect(store.writeCurrent).toHaveBeenCalledWith(feedOf('v1'));
+      expect(store.writeCurrent).toHaveBeenCalledWith('en', feedOf('v1'));
       expect(store.retire).not.toHaveBeenCalled();
-      expect(revalidation.revalidate).toHaveBeenCalledWith([cacheTags.home]);
+      expect(revalidation.revalidate).toHaveBeenCalledWith([
+        cacheTags.home('en'),
+      ]);
     });
 
     it('does not revalidate when the content did not change', async () => {
       store.readCurrent.mockResolvedValue(feedOf('v1'));
       builder.build.mockResolvedValue(feedOf('v1'));
 
-      await service.refreshPublic();
+      await service.refreshPublic('en');
 
-      expect(store.writeCurrent).toHaveBeenCalledWith(feedOf('v1'));
+      expect(store.writeCurrent).toHaveBeenCalledWith('en', feedOf('v1'));
       expect(store.retire).not.toHaveBeenCalled();
       expect(revalidation.revalidate).not.toHaveBeenCalled();
     });
@@ -77,11 +79,13 @@ describe('HomeFeedService', () => {
       store.readCurrent.mockResolvedValue(feedOf('v1'));
       builder.build.mockResolvedValue(feedOf('v2'));
 
-      await service.refreshPublic();
+      await service.refreshPublic('en');
 
       expect(store.retire).toHaveBeenCalledWith(feedOf('v1'));
-      expect(store.writeCurrent).toHaveBeenCalledWith(feedOf('v2'));
-      expect(revalidation.revalidate).toHaveBeenCalledWith([cacheTags.home]);
+      expect(store.writeCurrent).toHaveBeenCalledWith('en', feedOf('v2'));
+      expect(revalidation.revalidate).toHaveBeenCalledWith([
+        cacheTags.home('en'),
+      ]);
     });
 
     it('fails when the revalidation cannot be queued, so the job retries', async () => {
@@ -89,7 +93,7 @@ describe('HomeFeedService', () => {
       builder.build.mockResolvedValue(feedOf('v2'));
       revalidation.revalidate.mockRejectedValue(new Error('queue down'));
 
-      await expect(service.refreshPublic()).rejects.toThrow('queue down');
+      await expect(service.refreshPublic('en')).rejects.toThrow('queue down');
     });
 
     it('revalidates on the retry when the first revalidation failed', async () => {
@@ -103,12 +107,12 @@ describe('HomeFeedService', () => {
         .mockRejectedValueOnce(new Error('queue down'))
         .mockResolvedValue(undefined);
 
-      await expect(service.refreshPublic()).rejects.toThrow('queue down');
-      await expect(service.refreshPublic()).resolves.toEqual(feedOf('v1'));
+      await expect(service.refreshPublic('en')).rejects.toThrow('queue down');
+      await expect(service.refreshPublic('en')).resolves.toEqual(feedOf('v1'));
 
       expect(revalidation.revalidate).toHaveBeenCalledTimes(2);
       expect(revalidation.revalidate).toHaveBeenLastCalledWith([
-        cacheTags.home,
+        cacheTags.home('en'),
       ]);
     });
   });
@@ -117,7 +121,7 @@ describe('HomeFeedService', () => {
     it('serves the stored feed without building one', async () => {
       store.readCurrent.mockResolvedValue(feedOf('v1'));
 
-      await expect(service.currentPublic()).resolves.toEqual({
+      await expect(service.currentPublic('en')).resolves.toEqual({
         feed: feedOf('v1'),
         cacheable: true,
       });
@@ -130,7 +134,7 @@ describe('HomeFeedService', () => {
       store.acquireLock.mockResolvedValue(true);
       builder.build.mockResolvedValue(feedOf('v1'));
 
-      await expect(service.currentPublic()).resolves.toEqual({
+      await expect(service.currentPublic('en')).resolves.toEqual({
         feed: feedOf('v1'),
         cacheable: true,
       });
@@ -142,7 +146,7 @@ describe('HomeFeedService', () => {
       store.readCurrent.mockResolvedValue(undefined);
       store.acquireLock.mockResolvedValue(false);
 
-      await expect(service.currentPublic()).resolves.toEqual({
+      await expect(service.currentPublic('en')).resolves.toEqual({
         feed: minimalHomeFeed(),
         cacheable: false,
       });
@@ -156,7 +160,7 @@ describe('HomeFeedService', () => {
       builder.build.mockResolvedValue(feedOf('v1'));
       revalidation.revalidate.mockRejectedValue(new Error('queue down'));
 
-      await expect(service.currentPublic()).resolves.toEqual({
+      await expect(service.currentPublic('en')).resolves.toEqual({
         feed: feedOf('v1'),
         cacheable: true,
       });

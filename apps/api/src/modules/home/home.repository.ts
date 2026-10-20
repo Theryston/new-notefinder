@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, asc, desc, gt } from 'drizzle-orm';
+import { and, asc, desc, gt, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import { tracks } from '../../database/schema/tracks.js';
@@ -45,6 +45,17 @@ export class HomeRepository {
       )
       .orderBy(desc(tracks.trendingScore), asc(tracks.id))
       .limit(limit);
+  }
+
+  /** The completed Tracks among `ids`, in no particular order. */
+  findCompletedTracksByIds(ids: string[]): Promise<HomeTrackRecord[]> {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.txHost.tx
+      .select(candidateColumns)
+      .from(tracks)
+      .where(and(hasCompletedProcessing(tracks.id), inArray(tracks.id, ids)));
   }
 
   /** Completed Tracks, newest first. */

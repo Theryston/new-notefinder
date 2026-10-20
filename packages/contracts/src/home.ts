@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { localeSchema } from './locales.js';
 import { trackHeaderSchema, trackVocalRangeSchema } from './tracks.js';
 
 /**
@@ -78,7 +79,12 @@ export const homeFeedSchema = z.object({
 
 export type HomeFeed = z.infer<typeof homeFeedSchema>;
 
+/**
+ * `locale` picks the feed: omitted, the feed is `en`; an unsupported locale is
+ * refused. A cursor names its own feed version, so it ignores the locale.
+ */
 export const homeFeedQuerySchema = z.object({
+  locale: localeSchema.optional(),
   cursor: z.string().min(1).max(512).optional(),
 });
 

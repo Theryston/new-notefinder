@@ -1,3 +1,5 @@
+import type { Locale } from './locales.js';
+
 /**
  * Cache tags shared by the web (`cacheTag()`) and the API (which asks the web
  * to revalidate them after a mutation), so both sides agree on every name.
@@ -8,8 +10,11 @@
  * deterministic and at most 256 characters long (Next.js limit).
  */
 export const cacheTags = {
-  /** Home page sections (recent, most viewed, …). */
-  home: 'home',
+  /**
+   * The public home feed of one locale (`GET /v1/home`). Scoped by locale so a
+   * regeneration of one feed never drops the cache of the other.
+   */
+  home: (locale: Locale) => `home:${locale}`,
   /** Any list of tracks (search results, trending, latest). */
   tracks: 'tracks',
   /**

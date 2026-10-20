@@ -1,6 +1,8 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
+import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
+import { TracksModule } from '../tracks/tracks.module.js';
 import { HomeController } from './home.controller.js';
 import { HomeRepository } from './home.repository.js';
 import { HomeService } from './home.service.js';
@@ -14,6 +16,7 @@ import { createHomeRowSources, HOME_ROW_SOURCES } from './home-row-sources.js';
 @Module({
   imports: [
     BullModule.registerQueue({ name: HOME_FEED_QUEUE }),
+    TracksModule,
     WebRevalidationModule,
   ],
   controllers: [HomeController],
@@ -21,7 +24,7 @@ import { createHomeRowSources, HOME_ROW_SOURCES } from './home-row-sources.js';
     HomeRepository,
     {
       provide: HOME_ROW_SOURCES,
-      inject: [HomeRepository],
+      inject: [HomeRepository, TrackLocaleTrendingService],
       useFactory: createHomeRowSources,
     },
     HomeFeedBuilder,
