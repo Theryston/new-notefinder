@@ -70,6 +70,17 @@ const storedPin = (
 const coveredTracks = (...ids: string[]) =>
   ids.map((id) => ({ id, coverUrl: `https://cdn.example/${id}.webp` }));
 
+/** A history row, as the repository returns it. */
+const historyEntry = (id: string, createdAt: Date) => ({
+  id,
+  pinId: 'pin-1',
+  action: 'UPDATED' as const,
+  changedFields: ['sponsored'],
+  actor: ADMIN,
+  state: storedPin(),
+  createdAt,
+});
+
 describe('EditorialPinsService', () => {
   let service: EditorialPinsService;
   let moduleRef: TestingModule;
@@ -389,6 +400,89 @@ describe('EditorialPinsService', () => {
 
       expect(error).toMatchObject({ code: 'NOT_FOUND' });
       expect(repository.deletePin).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('paging, eligibility and locales in detail', () => {
+    it('answers the cursor of the last shown history entry when more follow', async () => {
+      const older = new Date('2026-09-30T10:00:00.000Z');
+      repository.findHistoryPage.mockResolvedValue([
+        historyEntry('h-1', CREATED_AT),
+        historyEntry('h-2', older),
+      ]);
+
+      const page = await service.history('pin-1', { limit: 1 });
+
+      expect(page.items.map((item) => item.id)).toEqual(['h-1']);
+      expect(page.nextCursor).toBe(
+        encodeTupleCursor([CREATED_AT.toISOString(), 'h-1']),
+      );
+    });
+
+    it('passes the decoded cursor of the page to the repository', async () => {
+      repository.findPage.mockResolvedValue([]);
+      const cursor = encodeTupleCursor([CREATED_AT.toISOString(), 'pin-9']);
+
+      await service.list({ cursor, limit: 20 });
+
+      expect(repository.findPage).toHaveBeenCalledWith({
+        after: { createdAt: CREATED_AT, id: 'pin-9' },
+        limit: 20,
+      });
+    });
+
+    it('refuses a cursor whose time is not a date', async () => {
+      const cursor = encodeTupleCursor(['not-a-date', 'pin-9']);
+
+      const error = await service
+        .list({ cursor, limit: 20 })
+        .catch((e: unknown) => e);
+
+      expect(error).toMatchObject({ code: 'VALIDATION_FAILED' });
+      expect(repository.findPage).not.toHaveBeenCalled();
+    });
+
+    it('names the Track that cannot appear, with the reason', async () => {
+      repository.findCompletedTracks.mockResolvedValue(coveredTracks('t1'));
+
+      const error = await service
+        .create(createBody(), ADMIN)
+        .catch((e: unknown) => e);
+
+      expect(error).toMatchObject({
+        code: 'VALIDATION_FAILED',
+        details: {
+          location: 'custom',
+          issues: [
+            {
+              trackId: 't2',
+              message:
+                'The Track has not completed its Processing or does not exist',
+            },
+          ],
+        },
+      });
+    });
+
+    it('revalidates both locales when a pin moves from every locale to one', async () => {
+      repository.findById
+        .mockResolvedValueOnce(storedPin())
+        .mockResolvedValueOnce(storedPin({ locale: 'pt-BR' }));
+
+      await service.update('pin-1', { locale: 'pt-BR' }, ADMIN);
+
+      expect(schedule.invalidateNow).toHaveBeenCalledWith(['en', 'pt-BR']);
+      expect(repository.findCompletedTracks).not.toHaveBeenCalled();
+    });
+
+    it('reads the live pins at the current time when none is given', async () => {
+      repository.findLive.mockResolvedValue([]);
+      const before = Date.now();
+
+      await service.findLivePins({ locale: 'en', signedIn: false });
+
+      const [args] = repository.findLive.mock.calls[0] as [{ now: Date }];
+      expect(args.now.getTime()).toBeGreaterThanOrEqual(before);
     });
   });
 

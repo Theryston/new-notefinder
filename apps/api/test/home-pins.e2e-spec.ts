@@ -1,14 +1,11 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
-import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
-import { rowPinBody } from './utils/editorial-pin-factories.js';
 import {
-  createCredentialAccount,
-  createUser,
-  DEFAULT_PASSWORD,
-} from './utils/factories.js';
+  rowPinBody,
+  signInPinsAdmin,
+} from './utils/editorial-pin-factories.js';
 import { createCompletedTrack } from './utils/track-processing-factories.js';
 
 const PINS = '/v1/admin/home-pins';
@@ -70,17 +67,7 @@ describe('Home feed with editorial pins (e2e)', () => {
 
   beforeEach(async () => {
     ids = await seedTracks(spec.testApp.db);
-    const admin = await createUser(spec.testApp.db, {
-      role: 'ADMIN',
-      name: 'Ada Admin',
-      username: 'pins-admin',
-      email: 'pins-admin@example.com',
-    });
-    await createCredentialAccount(spec.testApp.db, admin);
-    await signIn(spec.client, {
-      email: admin.email,
-      password: DEFAULT_PASSWORD,
-    }).expect(200);
+    await signInPinsAdmin(spec.testApp.db, spec.client);
   });
 
   it('shows the algorithmic feed when no pin is live', async () => {

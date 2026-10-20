@@ -3,7 +3,11 @@ import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web
 import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
-import { heroPinBody, rowPinBody } from './utils/editorial-pin-factories.js';
+import {
+  heroPinBody,
+  rowPinBody,
+  signInPinsAdmin,
+} from './utils/editorial-pin-factories.js';
 import {
   createCredentialAccount,
   createTrack,
@@ -29,20 +33,7 @@ describe('Editorial pins (e2e)', () => {
   const anonymous = () => request(spec.testApp.app.getHttpServer());
 
   /** A signed-in admin; the spec's client carries the session. */
-  const signInAdmin = async () => {
-    const admin = await createUser(spec.testApp.db, {
-      role: 'ADMIN',
-      name: 'Ada Admin',
-      username: 'pins-admin',
-      email: 'pins-admin@example.com',
-    });
-    await createCredentialAccount(spec.testApp.db, admin);
-    await signIn(spec.client, {
-      email: admin.email,
-      password: DEFAULT_PASSWORD,
-    }).expect(200);
-    return admin;
-  };
+  const signInAdmin = () => signInPinsAdmin(spec.testApp.db, spec.client);
 
   const createPin = async (body: Record<string, unknown>) => {
     const response = await spec.client.post(PINS).send(body).expect(201);
