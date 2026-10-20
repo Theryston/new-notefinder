@@ -20,7 +20,10 @@ export async function ProfileFollow({
   return (
     <NextIntlClientProvider
       messages={{
-        publicProfile: { follow: publicProfile.follow },
+        publicProfile: {
+          follow: publicProfile.follow,
+          followList: publicProfile.followList,
+        },
         errors,
       }}
     >

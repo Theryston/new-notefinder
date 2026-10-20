@@ -830,6 +830,19 @@
       "following": "{count, number} following",
       "friends": "{count, plural, one {# friend} other {# friends}}"
     },
+    "followList": {
+      "followers": "Followers",
+      "following": "Following",
+      "friends": "Friends",
+      "close": "Close",
+      "loading": "Loading people…",
+      "loadingMore": "Loading more people…",
+      "loadError": "This list could not be loaded. Try again.",
+      "retry": "Try again",
+      "emptyFollowers": "No followers yet.",
+      "emptyFollowing": "Not following anyone yet.",
+      "emptyFriends": "No friends yet."
+    },
     "favorites": {
       "title": "Favorite songs",
       "loading": "Loading songs…",

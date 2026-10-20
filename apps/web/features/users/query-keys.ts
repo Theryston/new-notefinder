@@ -17,6 +17,9 @@ export const profileKeys = {
   /** The follow counts shown under the banner, kept fresh after a follow. */
   counts: (username: string) =>
     [...profileKeys.all, username, 'counts'] as const,
+  /** One infinite follow list (followers, following or friends) of a Profile. */
+  followList: (username: string, side: 'followers' | 'following' | 'friends') =>
+    [...profileKeys.all, username, 'follow-list', side] as const,
 };
 
 /** The cache key of a Profile's practice history; the cursor travels as the page param. */
