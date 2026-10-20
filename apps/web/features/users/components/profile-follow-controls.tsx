@@ -56,11 +56,18 @@ export function ProfileFollowControls({
           </CountButton>
         </li>
       </ul>
-      <FollowListDialog
-        username={username}
-        side={list}
-        open={listOpen}
-        onOpenChange={setListOpen}
+      <SessionUserBoundary
+        render={(user, loading) => (
+          <FollowListDialog
+            username={username}
+            side={list}
+            open={listOpen}
+            // The lists' actions are the owner's alone; a visitor or a loading
+            // session gets none.
+            viewerIsOwner={!loading && user?.username === username}
+            onOpenChange={setListOpen}
+          />
+        )}
       />
       <SessionUserBoundary
         render={(user, loading) => {
