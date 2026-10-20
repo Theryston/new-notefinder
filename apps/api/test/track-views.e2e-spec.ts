@@ -53,6 +53,14 @@ describe('Track views and trending (e2e)', () => {
     return row?.score;
   };
 
+  const localeOf = async (trackId: string) =>
+    (
+      await spec.testApp.db
+        .select({ locale: trackViews.locale })
+        .from(trackViews)
+        .where(eq(trackViews.trackId, trackId))
+    ).map((row) => row.locale);
+
   const trendingJobs = () => spec.testApp.queues[TRACK_TRENDING_QUEUE]?.added;
 
   describe('POST /v1/tracks/:trackId/views', () => {
@@ -168,6 +176,66 @@ describe('Track views and trending (e2e)', () => {
         code: 'VALIDATION_FAILED',
         details: { location: 'body' },
       });
+    });
+
+    it('stores the locale the page was displayed in with the view', async () => {
+      const track = await createTrack(spec.testApp.db);
+
+      await anonymous()
+        .post(`/v1/tracks/${track.id}/views`)
+        .send({ locale: 'pt-BR' })
+        .expect(201);
+
+      expect(await localeOf(track.id)).toEqual(['pt-BR']);
+    });
+
+    it('stores no locale when the client sends none', async () => {
+      const track = await createTrack(spec.testApp.db);
+
+      await anonymous()
+        .post(`/v1/tracks/${track.id}/views`)
+        .send({})
+        .expect(201);
+
+      expect(await localeOf(track.id)).toEqual([null]);
+    });
+
+    it('answers 400 VALIDATION_FAILED for a locale the app does not speak', async () => {
+      const track = await createTrack(spec.testApp.db);
+
+      const response = await anonymous()
+        .post(`/v1/tracks/${track.id}/views`)
+        .send({ locale: 'fr' })
+        .expect(400);
+
+      expect(response.body).toMatchObject({
+        code: 'VALIDATION_FAILED',
+        details: { location: 'body' },
+      });
+      expect(await viewsOf(track.id)).toEqual([]);
+    });
+
+    it('keeps the stored locale when a signed-in User is attached later', async () => {
+      const track = await createTrack(spec.testApp.db);
+      const first = await anonymous()
+        .post(`/v1/tracks/${track.id}/views`)
+        .send({ locale: 'en' })
+        .expect(201);
+      const { viewId } = trackViewSchema.parse(first.body);
+      const user = await createUser(spec.testApp.db, { username: 'grace' });
+      await createCredentialAccount(spec.testApp.db, user);
+      await signIn(spec.client, {
+        email: user.email,
+        password: DEFAULT_PASSWORD,
+      }).expect(200);
+
+      await spec.client
+        .post(`/v1/tracks/${track.id}/views`)
+        .send({ viewId, locale: 'pt-BR' })
+        .expect(200);
+
+      expect(await viewsOf(track.id)).toMatchObject([{ userId: user.id }]);
+      expect(await localeOf(track.id)).toEqual(['en']);
     });
 
     it('answers 404 NOT_FOUND for an unknown Track', async () => {

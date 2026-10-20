@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
+import type { Locale } from '@notefinder/contracts';
 import { and, eq, gte, isNull, type SQL, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackViews } from '../../database/schema/track-views.js';
@@ -30,10 +31,14 @@ export type StoredView = { id: string; userId: string | null };
 export class TrackViewRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
-  async create(trackId: string, userId: string | null): Promise<string> {
+  async create(
+    trackId: string,
+    userId: string | null,
+    locale: Locale | undefined,
+  ): Promise<string> {
     const [row] = await this.txHost.tx
       .insert(trackViews)
-      .values({ trackId, userId })
+      .values({ trackId, userId, locale })
       .returning({ id: trackViews.id });
     if (row === undefined) {
       throw new Error('Insert returned no row');

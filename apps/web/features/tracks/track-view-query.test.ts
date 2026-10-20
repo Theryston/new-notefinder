@@ -21,6 +21,18 @@ describe('postTrackView', () => {
     });
   });
 
+  it('sends the locale the page is displayed in with a new view', async () => {
+    mockBrowserApi.mockResolvedValue({ viewId: 'view-1' });
+
+    await postTrackView('track-1', undefined, 'pt-BR');
+
+    expect(mockBrowserApi).toHaveBeenCalledWith('/tracks/track-1/views', {
+      method: 'POST',
+      body: { locale: 'pt-BR' },
+      schema: expect.anything(),
+    });
+  });
+
   it('sends the stored view ID to attach the signed-in User', async () => {
     mockBrowserApi.mockResolvedValue({ viewId: 'view-1' });
 

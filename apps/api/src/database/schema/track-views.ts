@@ -1,4 +1,5 @@
-import { index, pgTable, text } from 'drizzle-orm/pg-core';
+import { LOCALES } from '@notefinder/contracts';
+import { index, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
 import { users } from './users.js';
@@ -20,7 +21,14 @@ import { users } from './users.js';
  * legacy rows, which still point at existing Users. The trending score is not
  * imported: it is derived from these rows, so the import ends by running the
  * score refresh once per Track that has views.
+ *
+ * `locale` is the language the page was displayed in when the view was
+ * recorded, so popularity can be computed per language. Legacy views have no
+ * locale (the legacy app did not record one), so the import leaves it null,
+ * as does a client that omits it.
  */
+export const trackViewLocale = pgEnum('track_view_locale', LOCALES);
+
 export const trackViews = pgTable(
   'track_views',
   {
@@ -29,6 +37,7 @@ export const trackViews = pgTable(
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
     userId: text().references(() => users.id, { onDelete: 'set null' }),
+    locale: trackViewLocale(),
     ...timestamps,
   },
   (table) => [

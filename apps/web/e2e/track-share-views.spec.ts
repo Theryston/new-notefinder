@@ -172,7 +172,7 @@ test.describe('Track views', () => {
 
     await page.goto(`/en/tracks/${trackId}`);
     await expect.poll(() => api.posts.length).toBe(1);
-    expect(api.posts[0]).toEqual({ trackId, body: {} });
+    expect(api.posts[0]).toEqual({ trackId, body: { locale: 'en' } });
 
     await page.reload();
     await expect(

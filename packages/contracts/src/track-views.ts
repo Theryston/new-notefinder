@@ -1,5 +1,5 @@
 import { z } from 'zod';
-
+import { localeSchema } from './locales.js';
 import { cursorPageSchema } from './pagination.js';
 import {
   SITEMAP_PAGE_SIZE,
@@ -16,9 +16,12 @@ import { trackCoverUrlSchema } from './tracks.js';
  * `POST /v1/tracks/:trackId/views`. Without `viewId` a view is recorded; with
  * the ID a previous call returned, the signed-in User is attached to that
  * view instead (a visitor who signs in later in the same browser session).
+ * `locale` is the language the page was displayed in; it is stored with a new
+ * view and left alone when attaching. Omitted, the view has no locale.
  */
 export const recordTrackViewBodySchema = z.object({
   viewId: z.string().min(1).max(128).optional(),
+  locale: localeSchema.optional(),
 });
 
 export type RecordTrackViewBody = z.infer<typeof recordTrackViewBodySchema>;

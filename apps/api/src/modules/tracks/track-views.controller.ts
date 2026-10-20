@@ -48,6 +48,7 @@ export class TrackViewsController {
       trackId: params.trackId,
       userId: user?.id,
       viewId: body.viewId,
+      locale: body.locale,
     });
     response.status(recorded.created ? HttpStatus.CREATED : HttpStatus.OK);
     return { viewId: recorded.viewId };
