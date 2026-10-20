@@ -9,6 +9,7 @@ import { FollowsController } from './follows.controller.js';
 import { FollowsRepository } from './follows.repository.js';
 import { FollowsService } from './follows.service.js';
 import { ProfileFollowController } from './profile-follow.controller.js';
+import { ProfileFollowerController } from './profile-follower.controller.js';
 
 /** Who follows whom: the follow writes, the counts and lists of a Profile. */
 @Module({
@@ -17,6 +18,7 @@ import { ProfileFollowController } from './profile-follow.controller.js';
     FollowsController,
     ProfileFollowController,
     FollowListsController,
+    ProfileFollowerController,
   ],
   providers: [
     FollowsService,

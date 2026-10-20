@@ -30,6 +30,16 @@ export class FollowWritesService {
     await this.revalidateProfiles(followerId, followedId);
   }
 
+  /** Removes a follower of the Profile `username`; the caller is its User. */
+  async removeFollower(
+    viewerId: string,
+    username: string,
+    followerId: string,
+  ): Promise<void> {
+    await this.follows.removeFollower(viewerId, username, followerId);
+    await this.revalidateProfiles(viewerId, followerId);
+  }
+
   private async revalidateProfiles(
     followerId: string,
     followedId: string,

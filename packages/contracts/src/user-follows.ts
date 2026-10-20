@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cursorPageSchema } from './pagination.js';
+import { publicProfileParamSchema } from './public-profile.js';
 
 /**
  * Route param of `PUT` and `DELETE /v1/me/following/:userId`: the User the
@@ -11,6 +12,17 @@ export const followedUserParamSchema = z.object({
 });
 
 export type FollowedUserParam = z.infer<typeof followedUserParamSchema>;
+
+/**
+ * Route params of `DELETE /v1/users/:username/followers/:followerId`: the
+ * Profile whose follower is removed, and that follower's User ID. Only the
+ * Profile's own User may call it.
+ */
+export const removeFollowerParamSchema = publicProfileParamSchema.extend({
+  followerId: z.string().min(1).max(128),
+});
+
+export type RemoveFollowerParam = z.infer<typeof removeFollowerParamSchema>;
 
 /**
  * `GET /v1/users/:username/follow`: what the signed-in viewer has with the
