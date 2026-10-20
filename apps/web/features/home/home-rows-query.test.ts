@@ -1,6 +1,5 @@
+import type { HomeFeedPage } from '@notefinder/contracts';
 import { describe, expect, it, vi } from 'vitest';
-
-import type { HomeFeedPage } from './feed-page';
 import { fetchHomeRowsPage, homeRowsQueryOptions } from './home-rows-query';
 
 const fetchHomePageInBrowser = vi.fn();

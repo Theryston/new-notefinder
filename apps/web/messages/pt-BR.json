@@ -12,7 +12,8 @@
     },
     "rows": {
       "trendingToday": "Em alta hoje",
-      "newTracks": "Músicas novas"
+      "newTracks": "Músicas novas",
+      "pinned": "{title}"
     },
     "sponsored": {
       "hero": "conteúdo patrocinado",
@@ -20,8 +21,7 @@
     },
     "feed": {
       "loadMoreError": "Não foi possível carregar mais fileiras.",
-      "retry": "Tentar de novo",
-      "loadingMore": "Carregando mais fileiras"
+      "retry": "Tentar de novo"
     }
   },
   "search": {

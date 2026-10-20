@@ -1,24 +1,18 @@
-import type { Locale } from '@notefinder/contracts';
+import type { HomeFeedPage, Locale } from '@notefinder/contracts';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
-import type { HomeFeedPage } from './feed-page';
+import type { HomePageRequest } from './home-feed-client';
 import { homeQueryKeys } from './query-keys';
 
 /**
  * Fetches one page of rows in the browser. The client module is loaded on
  * the first request, so the schema's Zod stays out of the first-load JS.
  */
-export async function fetchHomeRowsPage({
-  locale,
-  cursor,
-  signal,
-}: {
-  locale: Locale;
-  cursor: string | undefined;
-  signal: AbortSignal;
-}): Promise<HomeFeedPage> {
+export async function fetchHomeRowsPage(
+  request: HomePageRequest,
+): Promise<HomeFeedPage> {
   const { fetchHomePageInBrowser } = await import('./home-feed-client');
-  return fetchHomePageInBrowser({ locale, cursor, signal });
+  return fetchHomePageInBrowser(request);
 }
 
 /**

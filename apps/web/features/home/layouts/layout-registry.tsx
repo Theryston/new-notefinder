@@ -47,7 +47,7 @@ function registerLayout<TLayout extends HomeRow['layout']>(
 
 /**
  * Every layout the web can render, keyed by the feed's `layout` field. A new
- * layout is registered here and nowhere else; `layout-registry.test.tsx`
+ * layout is registered here and nowhere else; `layout-registry.test.ts`
  * renders each entry with `sponsored` on, so none can forget the notice.
  */
 export const homeLayoutRegistry = {

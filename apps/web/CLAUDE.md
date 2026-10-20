@@ -260,9 +260,10 @@ leaf possible and pass server-fetched data down as props.
   with `localeAlternates(locale, path)` from `lib/i18n/metadata.ts` (a layout
   doesn't know the current path).
 - Only the message namespaces client components need are passed to
-  `NextIntlClientProvider` (currently `errors`, plus `header` in the
-  `(site)` layout); add namespaces deliberately to keep the RSC payload
-  small.
+  `NextIntlClientProvider`: `errors` (root layout), `header` (the `(site)`
+  layout), and `home` plus `tracks.card` (the home feed's rows, in
+  `features/home/components/home-feed.tsx`). Add namespaces deliberately to
+  keep the RSC payload small.
 
 ## UI and styling
 

@@ -11,16 +11,25 @@ import { cn } from '@/lib/utils';
  */
 export type SponsoredPlacement = 'caption' | 'line';
 
-// Negative margins with matching padding: the hit area reaches 40px tall
-// (the touch target) while the text keeps its discreet size and spacing.
+// The link is the touch target: its padding makes it 40px tall or more, and
+// the negative margins keep the line's layout exactly as the text alone.
+// Padding is 12px top and bottom, so the caption (20px line) reaches 44px and
+// the line (16px line) reaches 40px.
 const HIT_AREA_CLASS =
-  '-my-2 inline-flex items-center rounded-md px-1 py-2 outline-none transition-colors duration-150 ease-out focus-visible:ring-3';
+  '-my-3 inline-block self-start rounded-md px-1 py-3 outline-none transition-colors duration-150 ease-out focus-visible:ring-3';
 
-const PLACEMENT_CLASS: Record<SponsoredPlacement, string> = {
-  // White on the orange hero needs a darker backing to reach 4.5:1 at this size.
+const HIT_AREA_FOCUS: Record<SponsoredPlacement, string> = {
+  // White on the orange hero: 3.5:1 against the orange.
+  caption: 'focus-visible:ring-primary-foreground',
+  // Orange on the page background: 3.5:1 on white, more on dark.
+  line: 'focus-visible:ring-ring',
+};
+
+const TEXT_CLASS: Record<SponsoredPlacement, string> = {
+  // The darker scrim lifts white text on the orange to about 5.7:1.
   caption:
-    'self-start rounded-md bg-black/25 px-2 font-medium text-sm text-primary-foreground underline-offset-4 hover:underline focus-visible:ring-primary-foreground/70',
-  line: 'self-start font-medium text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-ring/50',
+    'rounded-md bg-hero-scrim px-2 font-medium text-primary-foreground text-sm group-hover:underline',
+  line: 'font-medium text-muted-foreground text-xs group-hover:text-foreground group-hover:underline',
 };
 
 /**
@@ -38,9 +47,9 @@ export function SponsoredNotice({
   return (
     <Link
       href={`/terms#${TERMS_ADVERTISING_FRAGMENT}`}
-      className={cn(HIT_AREA_CLASS, PLACEMENT_CLASS[placement])}
+      className={cn('group', HIT_AREA_CLASS, HIT_AREA_FOCUS[placement])}
     >
-      {text}
+      <span className={TEXT_CLASS[placement]}>{text}</span>
     </Link>
   );
 }

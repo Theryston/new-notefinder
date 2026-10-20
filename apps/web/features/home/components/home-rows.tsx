@@ -1,29 +1,25 @@
 'use client';
 
-import type { Locale } from '@notefinder/contracts';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import type { HomeFeedPage, Locale } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { Fragment, useCallback, useEffect, useRef } from 'react';
+
 import { Button } from '@/components/ui/button';
-import type { HomeFeedPage } from '../feed-page';
-import { homeRowsQueryOptions } from '../home-rows-query';
+
+import { useHomeRows } from '../hooks/use-home-rows';
 import {
   homeLayoutRegistry,
   isRegisteredLayout,
 } from '../layouts/layout-registry';
+import { visibleRows } from '../visible-rows';
 import { CarouselRowSkeleton } from './home-feed-skeleton';
 
 const SENTINEL_MARGIN = '600px';
 
-/** Keeps the first occurrence of each row id, so React keys stay unique. */
-const uniqueRows = (rows: HomeFeedPage['rows']) => [
-  ...new Map(rows.map((row) => [row.id, row])).values(),
-];
-
 /**
  * The rows of the home, in feed order, with the next pages loaded as the
  * visitor scrolls. Each row renders through the layout registry; the first
- * row is the only one whose images load eagerly.
+ * visible row is the only one whose images load eagerly.
  */
 export function HomeRows({
   locale,
@@ -38,9 +34,10 @@ export function HomeRows({
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = useInfiniteQuery(homeRowsQueryOptions(locale, initialPage));
-  const rows = uniqueRows(data.pages.flatMap((page) => page.rows)).filter(
-    (row) => isRegisteredLayout(row.layout),
+  } = useHomeRows(locale, initialPage);
+  const rows = visibleRows(
+    data.pages.flatMap((page) => page.rows),
+    isRegisteredLayout,
   );
   const loadMore = useCallback(() => {
     void fetchNextPage();

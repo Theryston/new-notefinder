@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { TERMS_ADVERTISING_FRAGMENT } from '../../../lib/terms-fragments';
 import messages from '../../../messages/en.json';
+import type { SponsoredPlacement } from '../components/sponsored-notice';
 import { homeLayoutRegistry, isRegisteredLayout } from './layout-registry';
 
 // The locale-aware Link needs the Next router, which this markup-only test
@@ -25,11 +26,21 @@ vi.mock('@/lib/i18n/navigation', async () => {
 });
 
 /**
- * Renders every registered layout, sponsored or not. A layout added to the
- * registry is covered here automatically: it must show the notice (and its
- * link to the advertising terms) whenever its row is sponsored, and nothing
- * when it is not.
+ * Renders every registered layout, sponsored or not. The placement each layout
+ * must use is written out here, so a registry entry that moves its notice
+ * fails. A layout added to the registry must be listed below as well.
  */
+
+const expectedPlacement: Record<HomeRow['layout'], SponsoredPlacement> = {
+  hero: 'caption',
+  standard: 'line',
+};
+
+// The text each placement shows, from the locale file (hero caption vs row line).
+const noticeTextOf: Record<SponsoredPlacement, string> = {
+  caption: messages.home.sponsored.hero,
+  line: messages.home.sponsored.row,
+};
 
 const track = {
   id: 'track-queen-1',
@@ -66,11 +77,11 @@ function renderLayout(node: ReactNode): string {
   );
 }
 
-const layouts = Object.keys(homeLayoutRegistry) as HomeRow['layout'][];
+const layouts = Object.keys(expectedPlacement) as HomeRow['layout'][];
 
 describe('home layout registry', () => {
-  it('registers at least one layout', () => {
-    expect(layouts.length).toBeGreaterThan(0);
+  it('registers exactly the layouts this test lists', () => {
+    expect(Object.keys(homeLayoutRegistry).sort()).toEqual([...layouts].sort());
   });
 
   it('recognizes the layouts it renders and skips any other', () => {
@@ -94,25 +105,39 @@ describe('home layout registry', () => {
   });
 
   for (const layout of layouts) {
-    const { placement, render } = homeLayoutRegistry[layout];
-    const noticeText =
-      placement === 'caption'
-        ? messages.home.sponsored.hero
-        : messages.home.sponsored.row;
+    const placement = expectedPlacement[layout];
+    const noticeText = noticeTextOf[placement];
 
-    it(`${layout} shows the sponsored notice as a link to the advertising terms`, () => {
-      const markup = renderLayout(render(sponsoredRows[layout], false));
+    it(`${layout} places its notice as a ${placement}`, () => {
+      expect(homeLayoutRegistry[layout].placement).toBe(placement);
+    });
 
-      expect(markup).toContain(noticeText);
+    it(`${layout} shows the sponsored notice as an exact link to the advertising terms`, () => {
+      const markup = renderLayout(
+        homeLayoutRegistry[layout].render(sponsoredRows[layout], false),
+      );
+
+      expect(markup).toContain(`>${noticeText}</span>`);
       expect(markup).toContain(
         `href="/en/terms#${TERMS_ADVERTISING_FRAGMENT}"`,
       );
     });
 
-    it(`${layout} shows no notice when the row is not sponsored`, () => {
-      const markup = renderLayout(render(plainRows[layout], false));
+    it(`${layout} draws the ${placement} notice with its own style`, () => {
+      const markup = renderLayout(
+        homeLayoutRegistry[layout].render(sponsoredRows[layout], false),
+      );
 
-      expect(markup).not.toContain(noticeText);
+      // The caption is the only placement on the orange backing.
+      expect(markup.includes('bg-hero-scrim')).toBe(placement === 'caption');
+    });
+
+    it(`${layout} shows no notice when the row is not sponsored`, () => {
+      const markup = renderLayout(
+        homeLayoutRegistry[layout].render(plainRows[layout], false),
+      );
+
+      expect(markup).not.toContain(`>${noticeText}</span>`);
       expect(markup).not.toContain(`/terms#${TERMS_ADVERTISING_FRAGMENT}`);
     });
   }

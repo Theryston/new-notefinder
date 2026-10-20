@@ -1,10 +1,8 @@
+import type { HomeFeedPage } from '@notefinder/contracts';
 import { cookies } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
-
 import { isLocale, type Locale } from '@/lib/i18n/routing';
-
-import type { HomeFeedPage } from '../feed-page';
 import { getPublicHomePage, getSessionHomePage } from '../home-queries';
 import { isSessionCookieName } from '../session-cookie';
 import { HomeRows } from './home-rows';

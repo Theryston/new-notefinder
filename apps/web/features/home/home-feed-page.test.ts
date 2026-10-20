@@ -1,6 +1,5 @@
+import { homeFeedPageSchema } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
-
-import { homeFeedPageSchema } from './feed-page';
 
 const track = {
   id: 'track-1',

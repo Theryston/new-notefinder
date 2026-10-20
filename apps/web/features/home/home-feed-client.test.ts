@@ -1,5 +1,5 @@
+import { homeFeedPageSchema } from '@notefinder/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { homeFeedPageSchema } from './feed-page';
 import { fetchHomePageInBrowser } from './home-feed-client';
 
 const browserApi = vi.fn();

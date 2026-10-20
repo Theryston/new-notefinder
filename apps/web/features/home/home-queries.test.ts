@@ -32,7 +32,7 @@ describe('getPublicHomePage', () => {
     await getPublicHomePage('pt-BR');
 
     expect(cacheTag).toHaveBeenCalledWith('home:pt-BR');
-    expect(cacheLife).toHaveBeenCalledWith('hours');
+    expect(cacheLife).toHaveBeenCalledWith('max');
     expect(serverApi).toHaveBeenCalledWith(
       '/home',
       expect.objectContaining({

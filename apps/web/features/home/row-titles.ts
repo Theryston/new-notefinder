@@ -7,6 +7,7 @@
 export const HOME_ROW_TITLE_KEYS = [
   'home.rows.trendingToday',
   'home.rows.newTracks',
+  'home.rows.pinned',
 ] as const;
 
 export type HomeRowTitleKey = (typeof HOME_ROW_TITLE_KEYS)[number];

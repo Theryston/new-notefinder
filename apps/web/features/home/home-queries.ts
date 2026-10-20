@@ -1,16 +1,15 @@
 import 'server-only';
 
-import type { Locale } from '@notefinder/contracts';
+import {
+  cacheTags,
+  type HomeFeedPage,
+  type Locale,
+} from '@notefinder/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';
 
-import { type HomeFeedPage, homeFeedPageSchema } from './feed-page';
-import {
-  acceptPublicFeed,
-  publicHomeCacheTag,
-  publicHomeRequest,
-} from './public-feed';
+import { acceptPublicFeed, publicHomeRequest } from './public-feed';
 
 /**
  * The first page of the public feed of one locale, shared by every visitor
@@ -19,8 +18,8 @@ import {
  */
 export async function getPublicHomePage(locale: Locale): Promise<HomeFeedPage> {
   'use cache';
-  cacheTag(publicHomeCacheTag(locale));
-  cacheLife('hours');
+  cacheTag(cacheTags.home(locale));
+  cacheLife('max');
   return acceptPublicFeed(await serverApi('/home', publicHomeRequest(locale)));
 }
 
@@ -30,8 +29,7 @@ export async function getPublicHomePage(locale: Locale): Promise<HomeFeedPage> {
  */
 export function getSessionHomePage(locale: Locale): Promise<HomeFeedPage> {
   return serverApi('/home', {
-    query: { locale },
-    schema: homeFeedPageSchema,
+    ...publicHomeRequest(locale),
     forwardCookies: true,
   });
 }

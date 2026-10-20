@@ -9,6 +9,9 @@ export const CAROUSEL_HEADER_CLASS = 'flex min-h-14 flex-col justify-end';
 
 export const CAROUSEL_TITLE_CLASS = 'font-bold text-xl tracking-tight';
 
+/** The title's skeleton: one text-xl line (28px, `h-7`) of a typical title width. */
+export const CAROUSEL_TITLE_SKELETON_CLASS = 'h-7 w-56 rounded-md';
+
 /** One carousel card: the same width as a `TrackCard` in a snap track. */
 export const CAROUSEL_ITEM_CLASS = 'w-40 shrink-0 snap-start sm:w-44 md:w-48';
 

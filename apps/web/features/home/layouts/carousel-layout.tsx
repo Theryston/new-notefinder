@@ -11,6 +11,7 @@ import {
   CAROUSEL_TITLE_CLASS,
   CAROUSEL_TRACK_CLASS,
 } from '../layout-dimensions';
+import { rowHeadingId } from '../row-heading-id';
 import { isHomeRowTitleKey } from '../row-titles';
 
 /** Covers of the first row that load eagerly: the ones on the first screen. */
@@ -32,7 +33,7 @@ export function CarouselLayout({
   const t = useTranslations();
   const { key, params } = row.title;
   if (!isHomeRowTitleKey(key)) return null;
-  const headingId = `home-${row.id}-title`;
+  const headingId = rowHeadingId(row.id);
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
       <div className={CAROUSEL_HEADER_CLASS}>

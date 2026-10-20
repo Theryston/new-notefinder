@@ -12,7 +12,8 @@
     },
     "rows": {
       "trendingToday": "Trending today",
-      "newTracks": "New Tracks"
+      "newTracks": "New Tracks",
+      "pinned": "{title}"
     },
     "sponsored": {
       "hero": "sponsored content",
@@ -20,8 +21,7 @@
     },
     "feed": {
       "loadMoreError": "Could not load more rows.",
-      "retry": "Try again",
-      "loadingMore": "Loading more rows"
+      "retry": "Try again"
     }
   },
   "search": {

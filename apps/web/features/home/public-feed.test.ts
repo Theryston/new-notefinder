@@ -1,11 +1,6 @@
+import type { HomeFeedPage } from '@notefinder/contracts';
 import { describe, expect, it } from 'vitest';
-
-import type { HomeFeedPage } from './feed-page';
-import {
-  acceptPublicFeed,
-  publicHomeCacheTag,
-  publicHomeRequest,
-} from './public-feed';
+import { acceptPublicFeed, publicHomeRequest } from './public-feed';
 
 const feed = (audience: string): HomeFeedPage => ({
   audience,
@@ -23,14 +18,6 @@ describe("public home request (the shared cache's API call)", () => {
 
   it('asks for the locale it was given', () => {
     expect(publicHomeRequest('pt-BR').query).toEqual({ locale: 'pt-BR' });
-  });
-});
-
-describe('publicHomeCacheTag', () => {
-  it('scopes the tag to the locale, so one feed never drops the other', () => {
-    expect(publicHomeCacheTag('en')).toBe('home:en');
-    expect(publicHomeCacheTag('pt-BR')).toBe('home:pt-BR');
-    expect(publicHomeCacheTag('en')).not.toBe(publicHomeCacheTag('pt-BR'));
   });
 });
 

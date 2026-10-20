@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   CAROUSEL_HEADER_CLASS,
   CAROUSEL_ITEM_CLASS,
+  CAROUSEL_TITLE_SKELETON_CLASS,
   CAROUSEL_TRACK_CLASS,
   HERO_BLOCK_CLASS,
 } from '../layout-dimensions';
@@ -17,7 +18,7 @@ export function CarouselRowSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <div className={CAROUSEL_HEADER_CLASS}>
-        <Skeleton className="h-7 w-56 rounded-md" />
+        <Skeleton className={CAROUSEL_TITLE_SKELETON_CLASS} />
       </div>
       <div className={CAROUSEL_TRACK_CLASS}>
         {CARD_KEYS.map((key) => (

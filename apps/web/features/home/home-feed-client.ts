@@ -1,23 +1,24 @@
-import type { Locale } from '@notefinder/contracts';
+import { homeFeedPageSchema, type Locale } from '@notefinder/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 
-import { homeFeedPageSchema } from './feed-page';
+/** One request for a page of rows: the locale and the cursor to resume from. */
+export type HomePageRequest = {
+  locale: Locale;
+  cursor: string | undefined;
+  signal: AbortSignal;
+};
 
 /**
- * Fetches the next page of rows straight from the API. Loaded on the first
- * scroll (`import()` in the query), so the schema's Zod stays out of the
- * page's first-load JavaScript.
+ * Fetches a page of rows straight from the API. Loaded on the first scroll
+ * (`import()` in the query), so the schema's Zod stays out of the page's
+ * first-load JavaScript.
  */
 export function fetchHomePageInBrowser({
   locale,
   cursor,
   signal,
-}: {
-  locale: Locale;
-  cursor: string | undefined;
-  signal: AbortSignal;
-}) {
+}: HomePageRequest) {
   return browserApi('/home', {
     schema: homeFeedPageSchema,
     query: { locale, cursor },

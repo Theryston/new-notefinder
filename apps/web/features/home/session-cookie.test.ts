@@ -6,15 +6,18 @@ describe('isSessionCookieName', () => {
   it.each([
     'notefinder.session_token',
     '__Secure-notefinder.session_token',
-    'notefinder-e2e-session',
-  ])('recognizes the session cookie %s', (name) => {
+    'notefinder.session_data',
+  ])('recognizes the Better Auth session cookie %s', (name) => {
     expect(isSessionCookieName(name)).toBe(true);
   });
 
-  it.each(['NEXT_LOCALE', 'notefinderTheme', 'notefinder', 'theme'])(
-    'ignores the unrelated cookie %s',
-    (name) => {
-      expect(isSessionCookieName(name)).toBe(false);
-    },
-  );
+  it.each([
+    'NEXT_LOCALE',
+    'notefinderTheme',
+    'notefinder',
+    'notefinder-e2e-session',
+    'theme',
+  ])('ignores the unrelated cookie %s', (name) => {
+    expect(isSessionCookieName(name)).toBe(false);
+  });
 });

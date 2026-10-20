@@ -335,6 +335,17 @@ section heading); rows are spaced `gap-12`.
 - Themes: the hero keeps its orange in both themes; cards, titles and
   surfaces use the theme tokens, so the carousel reads in light and dark.
 
+**Home tokens.** The hero and carousel patterns add one token, and reuse the
+rest:
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `hero-scrim` | `oklch(0 0 0 / 25%)`, both themes | The darkened backing behind the hero's sponsored caption, so white text reaches about 5.7:1 on the orange. Defined in `globals.css` `:root` and `.dark`, mapped to `bg-hero-scrim`. |
+
+Everything else uses existing tokens: `bg-primary` (hero), `text-primary-foreground`
+(hero text), `bg-background` / `text-foreground` (the CTA), `text-muted-foreground`
+(the row line), `ring-ring` and `ring-primary-foreground` (focus).
+
 ### Sponsored content notice
 
 A sponsored hero or row shows one discreet notice. It is plain text that
@@ -346,15 +357,20 @@ banner, and it never changes the layout around it.
   text). The text comes from the locale files.
 - **Placement** follows the layout, decided once in the layout registry:
   - on the hero, a **caption** above the title inside the text block: small
-    (`text-sm font-medium`), `text-primary-foreground` on a `bg-black/25`
-    backing. The bare orange gives 3.5:1 for white, the backing about 5.7:1;
+    (`text-sm font-medium`), `text-primary-foreground` on the `hero-scrim`
+    token (below). White on the bare orange is 3.5:1; on the scrim it is
+    about 5.7:1;
   - on a row, a **line** under the row title: `text-xs font-medium
     text-muted-foreground` (4.5:1 on the background in both themes), hover
     to `text-foreground`.
-- **Target size**: the link's hit area is 40px tall (`-my-2 py-2`), so it
-  meets the touch target without making the text bigger.
-- **Focus**: visible `focus-visible:ring-3` (`ring-ring/50` on rows,
-  `ring-primary-foreground/70` on the orange caption).
+- **Target size**: the link is the hit area. Its padding (`py-3`, with
+  `-my-3` so the layout doesn't move) makes it 44px tall on the caption and
+  40px on the line. The visible backing is the text's own span, never the
+  padding.
+- **Focus**: a solid `ring-3`, never a faded one, so it clears the 3:1
+  non-text contrast: `ring-ring` (orange, 3.5:1 on white, more on dark) on
+  rows, and `ring-primary-foreground` (white, 3.5:1 on the orange) on the
+  caption and the hero's CTA.
 - A layout added to the registry must render the notice; the registry test
   fails otherwise.
 

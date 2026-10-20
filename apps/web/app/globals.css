@@ -56,6 +56,7 @@
   --color-pitch-hit: var(--success);
   --color-pitch-near: var(--warning);
   --color-pitch-miss: var(--destructive);
+  --color-hero-scrim: var(--hero-scrim);
 
   /* Fixed steps instead of multiples of --radius: controls are pills
      (rounded-full), so only surfaces use this scale. */
@@ -92,6 +93,8 @@
   /* Brand: #FA4900 in both themes. Never tint or replace it. */
   --primary: oklch(0.655 0.222 36.5);
   --primary-foreground: oklch(1 0 0);
+  /* Darkens the orange hero behind its sponsored caption (DESIGN.md). */
+  --hero-scrim: oklch(0 0 0 / 25%);
 
   /* Zinc neutrals (cool, hue ~286). */
   --background: oklch(1 0 0);
@@ -161,6 +164,7 @@
 .dark {
   --primary: oklch(0.655 0.222 36.5);
   --primary-foreground: oklch(1 0 0);
+  --hero-scrim: oklch(0 0 0 / 25%);
 
   --background: oklch(0.141 0.004 285.8);
   --foreground: oklch(0.985 0 0);

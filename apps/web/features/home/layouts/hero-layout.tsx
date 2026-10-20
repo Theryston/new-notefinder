@@ -7,12 +7,13 @@ import { creditText } from '@/lib/track-credit';
 import { cn } from '@/lib/utils';
 import { SponsoredNotice } from '../components/sponsored-notice';
 import { HERO_BLOCK_CLASS, HERO_COVER_SIZES } from '../layout-dimensions';
+import { rowHeadingId } from '../row-heading-id';
 
 const COVER_CLASS =
   'absolute top-6 right-6 aspect-square w-32 overflow-hidden rounded-2xl shadow-xl md:top-1/2 md:right-10 md:w-56 md:-translate-y-1/2 lg:w-64';
 
 const CTA_CLASS =
-  'inline-flex items-center rounded-full bg-background px-5 py-2.5 font-semibold text-foreground text-sm shadow-xs transition-transform duration-200 ease-spring active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-primary-foreground/70 outline-none';
+  'inline-flex items-center rounded-full bg-background px-5 py-2.5 font-semibold text-foreground text-sm shadow-xs transition-transform duration-200 ease-spring active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-primary-foreground outline-none';
 
 /**
  * The feed's featured Track: one solid orange block with the cover at its
@@ -28,7 +29,7 @@ export function HeroLayout({
 }) {
   const t = useTranslations('home.hero');
   const { track } = row;
-  const headingId = `home-${row.id}-title`;
+  const headingId = rowHeadingId(row.id);
   return (
     <section
       aria-labelledby={headingId}

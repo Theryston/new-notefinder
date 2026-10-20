@@ -69,15 +69,38 @@ export type HomeRow = z.infer<typeof homeRowSchema>;
  * rows come from, and `nextCursor` (null on the last page) resumes the same
  * version, so paging never repeats or skips rows across a regeneration.
  */
+export const HOME_FEED_MAX_ROWS = 24;
+
 export const homeFeedSchema = z.object({
   audience: z.literal('public'),
   version: z.string().min(1).max(64),
   algorithmVersion: z.number().int().positive(),
-  rows: z.array(homeRowSchema).max(24),
+  rows: z.array(homeRowSchema).max(HOME_FEED_MAX_ROWS),
   nextCursor: z.string().min(1).max(512).nullable(),
 });
 
 export type HomeFeed = z.infer<typeof homeFeedSchema>;
+
+/**
+ * A feed page as clients read it: the same envelope, but each row is kept
+ * only when its layout and shape are known. A row this client doesn't know
+ * is dropped alone, so a newer API never breaks an older app. The audience is
+ * kept as a string so a caller can refuse a non-public one itself.
+ */
+export const homeFeedPageSchema = homeFeedSchema.extend({
+  audience: z.string(),
+  rows: z
+    .array(z.unknown())
+    .max(HOME_FEED_MAX_ROWS)
+    .transform((rows) =>
+      rows.flatMap((row) => {
+        const parsed = homeRowSchema.safeParse(row);
+        return parsed.success ? [parsed.data] : [];
+      }),
+    ),
+});
+
+export type HomeFeedPage = z.output<typeof homeFeedPageSchema>;
 
 /**
  * `locale` picks the feed: omitted, the feed is `en`; an unsupported locale is
