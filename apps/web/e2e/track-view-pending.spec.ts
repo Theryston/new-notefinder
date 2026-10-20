@@ -77,5 +77,5 @@ test('waits for an anonymous view across sign-in before attaching its ID', async
   ).toBeVisible();
   release();
   await expect.poll(() => posts.length).toBe(2);
-  expect(posts).toEqual([{}, { viewId: 'pending-view' }]);
+  expect(posts).toEqual([{ locale: 'en' }, { viewId: 'pending-view' }]);
 });
