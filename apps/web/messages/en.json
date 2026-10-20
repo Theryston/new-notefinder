@@ -846,7 +846,9 @@
       "retry": "Try again",
       "emptyFollowers": "No followers yet.",
       "emptyFollowing": "Not following anyone yet.",
-      "emptyFriends": "No friends yet."
+      "emptyFriends": "No friends yet.",
+      "removeFollower": "Remove follower",
+      "unfollow": "Unfollow"
     },
     "favorites": {
       "title": "Favorite songs",

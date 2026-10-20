@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import type { FollowListSide } from '../follow-list-query';
 import { profileCountsQueryOptions } from '../follow-query';
 import type { FollowCounts } from '../follow-state';
@@ -45,11 +46,18 @@ export function ProfileFollowControls({
           </CountButton>
         </li>
       </ul>
-      <FollowListDialog
-        username={username}
-        side={list}
-        open={listOpen}
-        onOpenChange={setListOpen}
+      <SessionUserBoundary
+        render={(user, loading) => (
+          <FollowListDialog
+            username={username}
+            side={list}
+            open={listOpen}
+            // The lists' actions are the owner's alone; a visitor or a loading
+            // session gets none.
+            viewerIsOwner={!loading && user?.username === username}
+            onOpenChange={setListOpen}
+          />
+        )}
       />
     </>
   );

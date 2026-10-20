@@ -4,7 +4,11 @@ import { UsersService } from '../users/users.service.js';
 import { FollowWritesService } from './follow-writes.service.js';
 import { FollowsService } from './follows.service.js';
 
-const follows = { follow: vi.fn(), unfollow: vi.fn() };
+const follows = {
+  follow: vi.fn(),
+  unfollow: vi.fn(),
+  removeFollower: vi.fn(),
+};
 const users = { findPublicUsers: vi.fn() };
 const webRevalidation = { revalidate: vi.fn() };
 
@@ -45,6 +49,17 @@ describe('FollowWritesService', () => {
     await service.unfollow('ada', 'grace');
 
     expect(follows.unfollow).toHaveBeenCalledWith('ada', 'grace');
+    expect(webRevalidation.revalidate).toHaveBeenCalledWith([
+      'user-profile:ada_lovelace',
+      'user-profile:grace',
+    ]);
+  });
+
+  it('removes a follower, then refreshes the Profiles of both Users', async () => {
+    await service.removeFollower('ada', 'grace');
+
+    expect(follows.removeFollower).toHaveBeenCalledWith('ada', 'grace');
+    expect(users.findPublicUsers).toHaveBeenCalledWith(['ada', 'grace']);
     expect(webRevalidation.revalidate).toHaveBeenCalledWith([
       'user-profile:ada_lovelace',
       'user-profile:grace',

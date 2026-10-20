@@ -1254,6 +1254,40 @@
         ]
       }
     },
+    "/v1/me/followers/{userId}": {
+      "delete": {
+        "operationId": "FollowsController_removeFollower_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The follower is removed."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The signed-in User has no username yet (`USERNAME_REQUIRED`)."
+          },
+          "404": {
+            "description": "No User has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/users/{username}/follow": {
       "get": {
         "operationId": "ProfileFollowController_getProfileFollow_v1",

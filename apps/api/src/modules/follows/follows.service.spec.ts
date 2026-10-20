@@ -81,6 +81,27 @@ describe('FollowsService', () => {
     });
   });
 
+  describe('removeFollower', () => {
+    it('removes the follow of an existing follower of the signed-in User', async () => {
+      users.findPublicUsers.mockResolvedValue(known('grace'));
+
+      await service.removeFollower('ada', 'grace');
+
+      expect(users.findPublicUsers).toHaveBeenCalledWith(['grace']);
+      expect(follows.remove).toHaveBeenCalledWith('grace', 'ada');
+    });
+
+    it('answers NOT_FOUND for an unknown follower and removes nothing', async () => {
+      users.findPublicUsers.mockResolvedValue(new Map());
+
+      await expect(
+        service.removeFollower('ada', 'nobody'),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+      expect(follows.remove).not.toHaveBeenCalled();
+    });
+  });
+
   describe('profileFollow', () => {
     it('answers the ID of the Profile User and whether the viewer follows it', async () => {
       users.findIdByUsername.mockResolvedValue('grace-id');

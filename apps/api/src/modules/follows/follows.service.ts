@@ -30,6 +30,16 @@ export class FollowsService {
     await this.follows.remove(followerId, followedId);
   }
 
+  /**
+   * Removes a follower of the signed-in User. A follow that is not there
+   * changes nothing. The removed User may follow again later: a removal is not
+   * a block.
+   */
+  async removeFollower(viewerId: string, followerId: string): Promise<void> {
+    await this.assertUserExists(followerId);
+    await this.follows.remove(followerId, viewerId);
+  }
+
   /** What the viewer has with the User of the Profile (`username`). */
   async profileFollow(
     viewerId: string,

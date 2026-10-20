@@ -63,6 +63,14 @@ export function profileCountsQueryOptions(
   });
 }
 
+/** Removes one of the signed-in User's followers (`DELETE /me/followers/:id`). */
+export function removeFollowerRequest(followerId: string): Promise<undefined> {
+  return browserApi(`/me/followers/${encodeURIComponent(followerId)}`, {
+    method: 'DELETE',
+    schema: z.undefined(),
+  });
+}
+
 /** Follows a User by ID, or stops following them (both idempotent). */
 export function setFollow(userId: string, follow: boolean): Promise<undefined> {
   return browserApi(`/me/following/${encodeURIComponent(userId)}`, {
