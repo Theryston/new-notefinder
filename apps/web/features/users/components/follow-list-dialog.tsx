@@ -30,7 +30,7 @@ const EMPTY_KEY = {
 
 const AVATAR_CLASS = 'size-12';
 const ROW_CLASS =
-  'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50';
+  'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl pl-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
 
 /**
  * A Profile's followers, following or friends in a dialog: rows that link to
@@ -255,14 +255,17 @@ function FollowListRow({
     </>
   );
   return (
-    <li className="flex items-center gap-2">
+    // The hover sits on the row so it wraps the action button too; the button
+    // stays a sibling of the link, never inside it, so its click can't navigate.
+    <li
+      className={`flex items-center gap-2 rounded-2xl pr-2 transition-colors ${
+        user.username === null ? '' : 'hover:bg-accent'
+      }`}
+    >
       {user.username === null ? (
         <div className={ROW_CLASS}>{body}</div>
       ) : (
-        <Link
-          href={`/users/${user.username}`}
-          className={`${ROW_CLASS} hover:bg-accent`}
-        >
+        <Link href={`/users/${user.username}`} className={ROW_CLASS}>
           {body}
         </Link>
       )}

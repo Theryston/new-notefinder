@@ -16,7 +16,7 @@ test.describe('public profile page', () => {
   test('renders the banner in pt-BR', async ({ page }) => {
     await page.goto('/pt-BR/users/ada_lovelace');
 
-    const banner = page.getByRole('region', { name: 'Ada Lovelace' });
+    page.getByRole('region', { name: 'Ada Lovelace' });
     await expect(page.getByText(/Membro desde janeiro/)).toBeVisible();
   });
 
