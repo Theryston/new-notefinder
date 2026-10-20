@@ -1,0 +1,231 @@
+import { z } from 'zod';
+import { LOCALES, type Locale, localeSchema } from './locales.js';
+import { cursorPageSchema } from './pagination.js';
+
+/**
+ * Editorial pins: an admin's hero or row on the home feed, applied over the
+ * algorithmic feed at read time (docs/adr/0012-editorial-pins-read-time-overlay.md).
+ * Admin-only: these schemas never appear in a public response.
+ */
+
+export const EDITORIAL_PIN_KINDS = ['hero', 'row'] as const;
+export const editorialPinKindSchema = z.enum(EDITORIAL_PIN_KINDS);
+export type EditorialPinKind = z.infer<typeof editorialPinKindSchema>;
+
+/** The layouts an admin can pin with: the hero, or a row layout. */
+export const EDITORIAL_PIN_LAYOUTS = ['hero', 'standard'] as const;
+export const editorialPinLayoutSchema = z.enum(EDITORIAL_PIN_LAYOUTS);
+export type EditorialPinLayout = z.infer<typeof editorialPinLayoutSchema>;
+
+/** Who sees a pin: everyone, or only visitors who are not signed in. */
+export const EDITORIAL_PIN_AUDIENCES = ['everyone', 'visitors'] as const;
+export const editorialPinAudienceSchema = z.enum(EDITORIAL_PIN_AUDIENCES);
+export type EditorialPinAudience = z.infer<typeof editorialPinAudienceSchema>;
+
+export const EDITORIAL_PIN_HISTORY_ACTIONS = [
+  'CREATED',
+  'UPDATED',
+  'DELETED',
+] as const;
+export const editorialPinHistoryActionSchema = z.enum(
+  EDITORIAL_PIN_HISTORY_ACTIONS,
+);
+export type EditorialPinHistoryAction = z.infer<
+  typeof editorialPinHistoryActionSchema
+>;
+
+export const EDITORIAL_PIN_MAX_TRACKS = 24;
+/** The last row position: a feed holds at most 24 rows (0 is the hero slot). */
+export const EDITORIAL_PIN_MAX_POSITION = 23;
+export const EDITORIAL_PIN_MAX_PRIORITY = 1000;
+export const EDITORIAL_PIN_TITLE_MAX_LENGTH = 120;
+
+/**
+ * Where a pin's Tracks come from: specific Tracks, in the order the admin set
+ * them. Genre, artist and album sources join it as a discriminated union; it
+ * stays a plain object until then, because a one-member union is documented
+ * as `oneOf`, which the OpenAPI generator cannot expand.
+ */
+export const editorialPinSourceSchema = z.object({
+  type: z.literal('tracks'),
+  trackIds: z
+    .array(z.string().min(1).max(128))
+    .min(1)
+    .max(EDITORIAL_PIN_MAX_TRACKS)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: 'A Track appears once in a pin',
+    }),
+});
+
+export type EditorialPinSource = z.infer<typeof editorialPinSourceSchema>;
+
+/** The title a row shows in one locale. A hero keeps it for when it is demoted. */
+export const editorialPinTitleSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(EDITORIAL_PIN_TITLE_MAX_LENGTH);
+
+export const editorialPinTitlesSchema = z.partialRecord(
+  localeSchema,
+  editorialPinTitleSchema,
+);
+
+export type EditorialPinTitles = z.infer<typeof editorialPinTitlesSchema>;
+
+const isoDateSchema = z.iso.datetime({ offset: true });
+
+const positionSchema = z.number().int().min(0).max(EDITORIAL_PIN_MAX_POSITION);
+const prioritySchema = z.number().int().min(0).max(EDITORIAL_PIN_MAX_PRIORITY);
+
+/** The state of a pin: every field an admin sets, as the API returns it. */
+export const editorialPinStateSchema = z.object({
+  kind: editorialPinKindSchema,
+  layout: editorialPinLayoutSchema,
+  source: editorialPinSourceSchema,
+  position: positionSchema,
+  priority: prioritySchema,
+  audience: editorialPinAudienceSchema,
+  /** `null` pins the hero or row in every locale. */
+  locale: localeSchema.nullable(),
+  /** `null` means the pin is live from the moment it is saved. */
+  startsAt: isoDateSchema.nullable(),
+  /** `null` means the pin stays until it is removed. */
+  endsAt: isoDateSchema.nullable(),
+  titles: editorialPinTitlesSchema,
+  /** Marks the hero or row it produces as sponsored, for every audience. */
+  sponsored: z.boolean(),
+});
+
+export type EditorialPinState = z.infer<typeof editorialPinStateSchema>;
+
+const pinInputShape = {
+  kind: editorialPinKindSchema,
+  layout: editorialPinLayoutSchema,
+  source: editorialPinSourceSchema,
+  position: positionSchema,
+  priority: prioritySchema.optional(),
+  audience: editorialPinAudienceSchema.optional(),
+  locale: localeSchema.nullable().optional(),
+  startsAt: isoDateSchema.nullable().optional(),
+  endsAt: isoDateSchema.nullable().optional(),
+  titles: editorialPinTitlesSchema,
+  sponsored: z.boolean().optional(),
+};
+
+/**
+ * The rules a pin must satisfy as a whole: the kind and the layout agree, the
+ * window ends after it starts, and every locale the pin serves has a title.
+ */
+const checkPinRules = (
+  body: {
+    kind: EditorialPinKind;
+    layout: EditorialPinLayout;
+    locale?: Locale | null | undefined;
+    startsAt?: string | null | undefined;
+    endsAt?: string | null | undefined;
+    titles: EditorialPinTitles;
+  },
+  ctx: z.RefinementCtx,
+): void => {
+  if ((body.kind === 'hero') !== (body.layout === 'hero')) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['layout'],
+      message: 'A hero pin uses the hero layout, and a row pin a row layout',
+    });
+  }
+  if (
+    body.startsAt &&
+    body.endsAt &&
+    Date.parse(body.endsAt) <= Date.parse(body.startsAt)
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['endsAt'],
+      message: 'The pin must end after it starts',
+    });
+  }
+  const served: readonly Locale[] = body.locale ? [body.locale] : LOCALES;
+  for (const locale of served) {
+    if (!body.titles[locale]) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['titles', locale],
+        message: `A title is required for ${locale}`,
+      });
+    }
+  }
+};
+
+/** `POST /v1/admin/home-pins`: a whole pin, checked as a whole. */
+export const createEditorialPinBodySchema = z
+  .object(pinInputShape)
+  .superRefine(checkPinRules);
+
+export type CreateEditorialPinBody = z.infer<
+  typeof createEditorialPinBodySchema
+>;
+
+/**
+ * `PATCH /v1/admin/home-pins/:pinId`: any subset of the fields. The API checks
+ * the merged result against `createEditorialPinBodySchema`.
+ */
+export const updateEditorialPinBodySchema = z.object(pinInputShape).partial();
+
+export type UpdateEditorialPinBody = z.infer<
+  typeof updateEditorialPinBodySchema
+>;
+
+/** Who created or changed a pin, as the admin panel names them. */
+export const editorialPinActorSchema = z.object({
+  id: z.string().min(1).max(128),
+  name: z.string().min(1).max(200),
+});
+
+export type EditorialPinActor = z.infer<typeof editorialPinActorSchema>;
+
+export const editorialPinSchema = editorialPinStateSchema.extend({
+  id: z.string().min(1).max(128),
+  createdBy: editorialPinActorSchema.nullable(),
+  updatedBy: editorialPinActorSchema.nullable(),
+  createdAt: isoDateSchema,
+  updatedAt: isoDateSchema,
+});
+
+export type EditorialPin = z.infer<typeof editorialPinSchema>;
+
+export const editorialPinPageSchema = cursorPageSchema(editorialPinSchema);
+
+export type EditorialPinPage = z.infer<typeof editorialPinPageSchema>;
+
+/** One entry of a pin's history: what changed, who changed it, the state after. */
+export const editorialPinHistoryEntrySchema = z.object({
+  id: z.string().min(1).max(128),
+  pinId: z.string().min(1).max(128),
+  action: editorialPinHistoryActionSchema,
+  changedFields: z.array(z.string().min(1).max(64)),
+  actor: editorialPinActorSchema.nullable(),
+  /** The pin's state after the change (its last state for a deletion). */
+  state: editorialPinStateSchema,
+  createdAt: isoDateSchema,
+});
+
+export type EditorialPinHistoryEntry = z.infer<
+  typeof editorialPinHistoryEntrySchema
+>;
+
+export const editorialPinHistoryPageSchema = cursorPageSchema(
+  editorialPinHistoryEntrySchema,
+);
+
+export type EditorialPinHistoryPage = z.infer<
+  typeof editorialPinHistoryPageSchema
+>;
+
+/** Route param of every `/v1/admin/home-pins/:pinId` route. */
+export const editorialPinIdParamSchema = z.object({
+  pinId: z.string().min(1).max(128),
+});
+
+export type EditorialPinIdParam = z.infer<typeof editorialPinIdParamSchema>;

@@ -26,7 +26,7 @@ type ComposedRow = {
   items: HomeCandidate[];
 };
 
-const toHomeTrack = (candidate: HomeCandidate): HomeTrack => ({
+export const toHomeTrack = (candidate: HomeCandidate): HomeTrack => ({
   id: candidate.id,
   title: candidate.title,
   coverUrl: candidate.coverUrl,

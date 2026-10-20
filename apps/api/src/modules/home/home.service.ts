@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { HomeFeed, Locale } from '@notefinder/contracts';
+import type { HomeFeed, HomeRow, Locale } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import { type StoredHomeFeed } from './home-feed.js';
@@ -11,6 +11,19 @@ export type HomePage = {
   /** False when the response must not be stored by any cache. */
   cacheable: boolean;
 };
+
+/**
+ * Applies the rows that are live at request time (the editorial pins) over the
+ * stored rows, before the page is cut. Stored feeds never hold them.
+ */
+export type RowsOverlay = (rows: HomeRow[]) => Promise<HomeRow[]>;
+
+const keepRows: RowsOverlay = async (rows) => rows;
+
+const withOverlay = async (
+  feed: StoredHomeFeed,
+  overlay: RowsOverlay,
+): Promise<StoredHomeFeed> => ({ ...feed, rows: await overlay(feed.rows) });
 
 /** One page of a feed: its rows from `position`, and where the next one starts. */
 const pageOf = (feed: StoredHomeFeed, position: number): HomeFeed => {
@@ -38,15 +51,18 @@ export class HomeService {
 
   /**
    * The first page is the locale's current feed; a cursor names its own feed
-   * version, so the locale is ignored for it.
+   * version, so the locale is ignored for it. The overlay applies to a stored
+   * feed only: the minimal home stays empty.
    */
   async getPage(
     cursor: string | undefined,
     locale: Locale = DEFAULT_HOME_LOCALE,
+    overlay: RowsOverlay = keepRows,
   ): Promise<HomePage> {
     if (cursor === undefined) {
       const { feed, cacheable } = await this.feeds.currentPublic(locale);
-      return { page: pageOf(feed, 0), cacheable };
+      const shown = cacheable ? await withOverlay(feed, overlay) : feed;
+      return { page: pageOf(shown, 0), cacheable };
     }
     const { version, position } = decodeHomeCursor(cursor);
     const feed = await this.feeds.publicVersion(version);
@@ -59,6 +75,9 @@ export class HomeService {
         { reason: 'FEED_VERSION_EXPIRED' },
       );
     }
-    return { page: pageOf(feed, position), cacheable: true };
+    return {
+      page: pageOf(await withOverlay(feed, overlay), position),
+      cacheable: true,
+    };
   }
 }

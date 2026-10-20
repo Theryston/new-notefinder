@@ -17,6 +17,9 @@ export const DEFAULT_HOME_LOCALE: Locale = 'en';
 /** Rows per page: the first page and every later one. */
 export const HOME_PAGE_SIZE = 6;
 
+/** The most rows a feed page can hold, the contract's limit on a feed. */
+export const HOME_MAX_ROWS = 24;
+
 /** Most Tracks of one artist in one row, so a hot artist can't fill it. */
 export const MAX_TRACKS_PER_ARTIST_PER_ROW = 2;
 

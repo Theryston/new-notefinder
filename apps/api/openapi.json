@@ -654,6 +654,243 @@
         ]
       }
     },
+    "/v1/admin/home-pins": {
+      "get": {
+        "operationId": "EditorialPinsController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pins, newest first, paginated."
+          },
+          "400": {
+            "description": "The cursor or limit is bad."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "EditorialPinsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEditorialPinBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "The pin is invalid, or it references a Track that cannot appear in it (`VALIDATION_FAILED`)."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/home-pins/{pinId}": {
+      "get": {
+        "operationId": "EditorialPinsController_get_v1",
+        "parameters": [
+          {
+            "name": "pinId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pin."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          },
+          "404": {
+            "description": "No pin has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "EditorialPinsController_update_v1",
+        "parameters": [
+          {
+            "name": "pinId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEditorialPinBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The pin after the change."
+          },
+          "400": {
+            "description": "The change is invalid, or it references a Track that cannot appear in the pin (`VALIDATION_FAILED`)."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          },
+          "404": {
+            "description": "No pin has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "delete": {
+        "operationId": "EditorialPinsController_remove_v1",
+        "parameters": [
+          {
+            "name": "pinId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The pin is removed."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          },
+          "404": {
+            "description": "No pin has this ID (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/home-pins/{pinId}/history": {
+      "get": {
+        "operationId": "EditorialPinsController_history_v1",
+        "parameters": [
+          {
+            "name": "pinId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every change of the pin, newest first, with who made it. Kept after the pin is removed."
+          },
+          "400": {
+            "description": "The cursor or limit is bad."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/albums/{id}": {
       "get": {
         "operationId": "AlbumsController_getAlbum_v1",
@@ -1843,6 +2080,197 @@
             "type": "boolean"
           },
           "favorites": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateEditorialPinBodyDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "row"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "standard"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tracks"
+                ]
+              },
+              "trackIds": {
+                "minItems": 1,
+                "maxItems": 24,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              }
+            },
+            "required": [
+              "type",
+              "trackIds"
+            ]
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "visitors"
+            ]
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "startsAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "endsAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "titles": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "sponsored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "layout",
+          "source",
+          "position",
+          "titles"
+        ]
+      },
+      "UpdateEditorialPinBodyDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "row"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "standard"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tracks"
+                ]
+              },
+              "trackIds": {
+                "minItems": 1,
+                "maxItems": 24,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              }
+            },
+            "required": [
+              "type",
+              "trackIds"
+            ]
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "visitors"
+            ]
+          },
+          "locale": {
+            "nullable": true,
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "startsAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "endsAt": {
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "titles": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "sponsored": {
             "type": "boolean"
           }
         }
