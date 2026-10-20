@@ -68,8 +68,10 @@ never fan out to the database. When Redis cannot answer, the lock fails open
 database load, never an error.
 
 **The web is revalidated only on change.** `refreshPublic` compares the new
-version with the current one. When they differ it retires the old feed and
-enqueues one revalidation of `cacheTags.home` through `WebRevalidationService`.
+version with the current one. When they differ it enqueues one revalidation of
+`cacheTags.home` through `WebRevalidationService` and only then commits the new
+feed (retiring the old one). If the enqueue fails, nothing is committed, so the
+job's retry still sees a change and revalidates.
 The request path also revalidates after it builds a missing feed, but a failure
 there is logged and the request still answers, since the next change revalidates
 anyway.

@@ -91,6 +91,26 @@ describe('HomeFeedService', () => {
 
       await expect(service.refreshPublic()).rejects.toThrow('queue down');
     });
+
+    it('revalidates on the retry when the first revalidation failed', async () => {
+      let stored: StoredHomeFeed | undefined;
+      store.readCurrent.mockImplementation(async () => stored);
+      store.writeCurrent.mockImplementation(async (feed: StoredHomeFeed) => {
+        stored = feed;
+      });
+      builder.build.mockResolvedValue(feedOf('v1'));
+      revalidation.revalidate
+        .mockRejectedValueOnce(new Error('queue down'))
+        .mockResolvedValue(undefined);
+
+      await expect(service.refreshPublic()).rejects.toThrow('queue down');
+      await expect(service.refreshPublic()).resolves.toEqual(feedOf('v1'));
+
+      expect(revalidation.revalidate).toHaveBeenCalledTimes(2);
+      expect(revalidation.revalidate).toHaveBeenLastCalledWith([
+        cacheTags.home,
+      ]);
+    });
   });
 
   describe('currentPublic', () => {

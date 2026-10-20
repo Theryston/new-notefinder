@@ -31,14 +31,22 @@ export class HomeFeedService {
   ) {}
 
   /**
-   * Builds the public feed and stores it. A failed revalidation fails the call,
-   * so the job retries it: the next run would see no change and never send it.
+   * Builds the public feed and commits it. A changed feed is revalidated before
+   * it is stored: if the revalidation cannot be queued the call fails with
+   * nothing stored, so the retry still sees a change and revalidates. Storing
+   * first would make the retry see an unchanged feed, and the web would never
+   * be revalidated. The revalidation is only queued here; the web fetches the
+   * feed when the job runs, a moment after the commit below.
    */
   async refreshPublic(): Promise<StoredHomeFeed> {
     const next = await this.builder.build();
-    if (await this.storeIfChanged(next)) {
-      await this.revalidation.revalidate([cacheTags.home]);
+    const current = await this.store.readCurrent();
+    if (current?.version === next.version) {
+      await this.store.writeCurrent(next);
+      return next;
     }
+    await this.revalidation.revalidate([cacheTags.home]);
+    await this.commit(current, next);
     return next;
   }
 
@@ -71,13 +79,17 @@ export class HomeFeedService {
   }
 
   /**
-   * A request that builds the missing feed still answers when the web can't
-   * be revalidated right now: the feed is stored, and the web catches up on the
-   * next change or when its own cache expires.
+   * Best effort on purpose: a request that builds the missing feed still
+   * answers when the web can't be revalidated right now. The feed is stored
+   * and the error is logged; the web catches up on the next content change or
+   * when its own cache entry expires. Only the hourly job retries, and it
+   * revalidates only on change, so this path does not feed that retry.
    */
   private async buildUnderLock(): Promise<StoredHomeFeed> {
     const next = await this.builder.build();
-    if (await this.storeIfChanged(next)) {
+    const current = await this.store.readCurrent();
+    await this.commit(current, next);
+    if (current?.version !== next.version) {
       await this.revalidation
         .revalidate([cacheTags.home])
         .catch((error: unknown) =>
@@ -87,14 +99,17 @@ export class HomeFeedService {
     return next;
   }
 
-  /** Stores `next` as the current feed. True when its version is new. */
-  private async storeIfChanged(next: StoredHomeFeed): Promise<boolean> {
-    const current = await this.store.readCurrent();
-    const changed = current?.version !== next.version;
-    if (current && changed) {
+  /**
+   * Stores `next` as the current feed. A replaced feed stays reachable for the
+   * cursors still in flight.
+   */
+  private async commit(
+    current: StoredHomeFeed | undefined,
+    next: StoredHomeFeed,
+  ): Promise<void> {
+    if (current && current.version !== next.version) {
       await this.store.retire(current);
     }
     await this.store.writeCurrent(next);
-    return changed;
   }
 }
