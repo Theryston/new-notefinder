@@ -39,12 +39,12 @@ export function withoutListUser(
 }
 
 /** The request of one row: a removed follower, or an unfollow. */
-export function sendFollowListAction(
-  username: string,
-  { userId, action }: FollowListChange,
-): Promise<undefined> {
+export function sendFollowListAction({
+  userId,
+  action,
+}: FollowListChange): Promise<undefined> {
   return action === 'removeFollower'
-    ? removeFollowerRequest(username, userId)
+    ? removeFollowerRequest(userId)
     : setFollow(userId, false);
 }
 
@@ -122,8 +122,7 @@ export function followListActionMutation({
   notify,
 }: FollowListActionOptions) {
   return {
-    mutationFn: (change: FollowListChange) =>
-      sendFollowListAction(username, change),
+    mutationFn: (change: FollowListChange) => sendFollowListAction(change),
     onMutate: async ({ userId }: FollowListChange) => ({
       previous: await removeFromFollowList(queryClient, username, side, userId),
     }),

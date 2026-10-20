@@ -52,7 +52,7 @@ const forbidden = (route: Route) =>
   fulfill(route, 403, {
     statusCode: 403,
     code: 'FORBIDDEN',
-    message: 'Only the User of a Profile can remove its followers',
+    message: 'The write was refused',
   });
 
 const without = (users: FollowListUserFixture[], id: string) =>
@@ -97,14 +97,9 @@ async function routeProfileLists(
         isFollowing: options.viewerFollows ?? false,
       });
     }
-    const [side, followerId] = rest.split('/');
+    const [side] = rest.split('/');
     if (side !== 'followers' && side !== 'following' && side !== 'friends') {
       return route.fallback();
-    }
-    if (request.method() === 'DELETE' && followerId !== undefined) {
-      if (options.forbidWrites) return forbidden(route);
-      lists.removeFollower(decodeURIComponent(followerId));
-      return fulfill(route, 204, null);
     }
     return fulfill(route, 200, { items: lists.state[side], nextCursor: null });
   });
@@ -129,6 +124,23 @@ async function routeProfileCounts(
       followingCount: lists.state.following.length,
       friendsCount: lists.state.friends.length,
     });
+  });
+}
+
+/** `DELETE /v1/me/followers/:userId`: the owner removes a follower. */
+async function routeOwnRemoveFollower(
+  page: Page,
+  options: FollowListActionsOptions,
+  lists: ReturnType<typeof createLists>,
+): Promise<void> {
+  await page.route('**/v1/me/followers/**', async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      return fulfill(route, 204, null);
+    }
+    if (options.forbidWrites) return forbidden(route);
+    const path = new URL(route.request().url()).pathname;
+    lists.removeFollower(decodeURIComponent(path.split('/').pop() ?? ''));
+    return fulfill(route, 204, null);
   });
 }
 
@@ -159,6 +171,7 @@ export async function mockFollowListActions(
   const profilePath = `/v1/users/${options.username}`;
   await routeProfileLists(page, profilePath, options, lists);
   await routeProfileCounts(page, profilePath, lists);
+  await routeOwnRemoveFollower(page, options, lists);
   await routeOwnUnfollow(page, options, lists);
   return {
     writes,

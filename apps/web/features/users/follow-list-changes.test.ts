@@ -71,20 +71,20 @@ describe('sendFollowListAction', () => {
     mockBrowserApi.mockResolvedValue(undefined);
   });
 
-  it('removes a follower with DELETE on the Profile, encoding the ID', async () => {
-    await sendFollowListAction('ada_lovelace', {
+  it('removes a follower with DELETE on the viewer followers, encoding the ID', async () => {
+    await sendFollowListAction({
       userId: 'fan 1/x',
       action: 'removeFollower',
     });
 
-    expect(mockBrowserApi).toHaveBeenCalledWith(
-      '/users/ada_lovelace/followers/fan%201%2Fx',
-      { method: 'DELETE', schema: expect.anything() },
-    );
+    expect(mockBrowserApi).toHaveBeenCalledWith('/me/followers/fan%201%2Fx', {
+      method: 'DELETE',
+      schema: expect.anything(),
+    });
   });
 
   it('unfollows a User from a list with DELETE on the viewer follows', async () => {
-    await sendFollowListAction('ada_lovelace', {
+    await sendFollowListAction({
       userId: 'idol-1',
       action: 'unfollow',
     });
@@ -196,10 +196,10 @@ describe('followListActionMutation', () => {
 
     await mutation.mutationFn(change);
 
-    expect(mockBrowserApi).toHaveBeenCalledWith(
-      '/users/ada_lovelace/followers/a',
-      { method: 'DELETE', schema: expect.anything() },
-    );
+    expect(mockBrowserApi).toHaveBeenCalledWith('/me/followers/a', {
+      method: 'DELETE',
+      schema: expect.anything(),
+    });
   });
 
   it('takes the row out of the list at once, and keeps what it held', async () => {

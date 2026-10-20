@@ -63,18 +63,12 @@ export function profileCountsQueryOptions(
   });
 }
 
-/**
- * Removes one follower of the Profile (`username`). Only the Profile's own
- * User may send it; the API answers FORBIDDEN to anyone else.
- */
-export function removeFollowerRequest(
-  username: string,
-  followerId: string,
-): Promise<undefined> {
-  return browserApi(
-    `${profilePath(username)}/followers/${encodeURIComponent(followerId)}`,
-    { method: 'DELETE', schema: z.undefined() },
-  );
+/** Removes one of the signed-in User's followers (`DELETE /me/followers/:id`). */
+export function removeFollowerRequest(followerId: string): Promise<undefined> {
+  return browserApi(`/me/followers/${encodeURIComponent(followerId)}`, {
+    method: 'DELETE',
+    schema: z.undefined(),
+  });
 }
 
 /** Follows a User by ID, or stops following them (both idempotent). */
