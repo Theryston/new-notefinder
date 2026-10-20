@@ -82,32 +82,20 @@ describe('FollowsService', () => {
   });
 
   describe('removeFollower', () => {
-    it('removes the follow of an existing follower of the Profile User', async () => {
-      users.findIdByUsername.mockResolvedValue('ada');
+    it('removes the follow of an existing follower of the signed-in User', async () => {
       users.findPublicUsers.mockResolvedValue(known('grace'));
 
-      await service.removeFollower('ada', 'ada_lovelace', 'grace');
+      await service.removeFollower('ada', 'grace');
 
-      expect(users.findIdByUsername).toHaveBeenCalledWith('ada_lovelace');
+      expect(users.findPublicUsers).toHaveBeenCalledWith(['grace']);
       expect(follows.remove).toHaveBeenCalledWith('grace', 'ada');
     });
 
-    it('answers FORBIDDEN to anyone but the Profile User and removes nothing', async () => {
-      users.findIdByUsername.mockResolvedValue('ada');
-
-      await expect(
-        service.removeFollower('grace', 'ada_lovelace', 'someone'),
-      ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-
-      expect(follows.remove).not.toHaveBeenCalled();
-    });
-
     it('answers NOT_FOUND for an unknown follower and removes nothing', async () => {
-      users.findIdByUsername.mockResolvedValue('ada');
       users.findPublicUsers.mockResolvedValue(new Map());
 
       await expect(
-        service.removeFollower('ada', 'ada_lovelace', 'nobody'),
+        service.removeFollower('ada', 'nobody'),
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
       expect(follows.remove).not.toHaveBeenCalled();

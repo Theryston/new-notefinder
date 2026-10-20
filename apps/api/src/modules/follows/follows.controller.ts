@@ -61,4 +61,21 @@ export class FollowsController {
   ): Promise<void> {
     await this.followWrites.unfollow(user.id, params.userId);
   }
+
+  // Idempotent: removing a follower who is not following changes nothing.
+  @Delete('followers/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'The follower is removed.' })
+  @ApiUnauthorizedResponse({ description: 'No valid session.' })
+  @ApiForbiddenResponse({
+    description:
+      'The signed-in User has no username yet (`USERNAME_REQUIRED`).',
+  })
+  @ApiNotFoundResponse({ description: 'No User has this ID (`NOT_FOUND`).' })
+  async removeFollower(
+    @CurrentUser() user: AuthUser,
+    @Param() params: FollowedUserParamDto,
+  ): Promise<void> {
+    await this.followWrites.removeFollower(user.id, params.userId);
+  }
 }

@@ -56,13 +56,9 @@ describe('FollowWritesService', () => {
   });
 
   it('removes a follower, then refreshes the Profiles of both Users', async () => {
-    await service.removeFollower('ada', 'ada_lovelace', 'grace');
+    await service.removeFollower('ada', 'grace');
 
-    expect(follows.removeFollower).toHaveBeenCalledWith(
-      'ada',
-      'ada_lovelace',
-      'grace',
-    );
+    expect(follows.removeFollower).toHaveBeenCalledWith('ada', 'grace');
     expect(users.findPublicUsers).toHaveBeenCalledWith(['ada', 'grace']);
     expect(webRevalidation.revalidate).toHaveBeenCalledWith([
       'user-profile:ada_lovelace',

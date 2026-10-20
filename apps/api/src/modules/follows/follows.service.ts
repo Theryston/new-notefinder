@@ -31,23 +31,13 @@ export class FollowsService {
   }
 
   /**
-   * Removes a follower of the Profile's User (`username`). Only that User may
-   * do it. The removed User may follow again later: a removal is not a block.
+   * Removes a follower of the signed-in User. A follow that is not there
+   * changes nothing. The removed User may follow again later: a removal is not
+   * a block.
    */
-  async removeFollower(
-    viewerId: string,
-    username: string,
-    followerId: string,
-  ): Promise<void> {
-    const ownerId = await this.users.findIdByUsername(username);
-    if (ownerId !== viewerId) {
-      throw new AppException(
-        'FORBIDDEN',
-        'Only the User of a Profile can remove its followers',
-      );
-    }
+  async removeFollower(viewerId: string, followerId: string): Promise<void> {
     await this.assertUserExists(followerId);
-    await this.follows.remove(followerId, ownerId);
+    await this.follows.remove(followerId, viewerId);
   }
 
   /** What the viewer has with the User of the Profile (`username`). */
