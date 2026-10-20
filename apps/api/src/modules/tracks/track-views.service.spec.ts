@@ -39,7 +39,7 @@ describe('TrackViewsService', () => {
       }),
     ).resolves.toEqual({ viewId: 'view-new', created: true });
 
-    expect(views.create).toHaveBeenCalledWith('track-1', null);
+    expect(views.create).toHaveBeenCalledWith('track-1', null, undefined);
     expect(trending.schedule).toHaveBeenCalledWith('track-1');
   });
 
@@ -86,7 +86,7 @@ describe('TrackViewsService', () => {
       viewId: undefined,
     });
 
-    expect(views.create).toHaveBeenCalledWith('track-1', 'user-1');
+    expect(views.create).toHaveBeenCalledWith('track-1', 'user-1', undefined);
   });
 
   it('attaches the User to the stored view instead of recording another', async () => {
@@ -143,7 +143,7 @@ describe('TrackViewsService', () => {
       }),
     ).resolves.toEqual({ viewId: 'view-new', created: true });
 
-    expect(views.create).toHaveBeenCalledWith('track-1', 'user-1');
+    expect(views.create).toHaveBeenCalledWith('track-1', 'user-1', undefined);
   });
 
   it('records nothing for an unknown Track', async () => {
