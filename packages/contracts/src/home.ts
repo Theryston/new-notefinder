@@ -64,13 +64,13 @@ export const homeRowSchema = z.discriminatedUnion('layout', [
 
 export type HomeRow = z.infer<typeof homeRowSchema>;
 
+export const HOME_FEED_MAX_ROWS = 24;
+
 /**
  * One page of the home feed. `version` identifies the content of the feed the
  * rows come from, and `nextCursor` (null on the last page) resumes the same
  * version, so paging never repeats or skips rows across a regeneration.
  */
-export const HOME_FEED_MAX_ROWS = 24;
-
 export const homeFeedSchema = z.object({
   audience: z.literal('public'),
   version: z.string().min(1).max(64),
