@@ -45,6 +45,11 @@ for (const { locale, messages } of cases) {
       .nth(index)
       .getByRole('button');
   const dialogOf = (page: Page) => page.getByRole('dialog');
+  // A click before hydration is lost, so wait for the Profile to settle first.
+  const gotoProfile = async (page: Page, path: string) => {
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+  };
   const rowButton = (page: Page, label: string) =>
     dialogOf(page).getByRole('button', { name: label, exact: true });
   const rows = (page: Page) => dialogOf(page).locator('ul li');
@@ -64,7 +69,7 @@ for (const { locale, messages } of cases) {
         userId: PROFILE_ID,
         lists: LISTS,
       });
-      await page.goto(profilePath);
+      await gotoProfile(page, profilePath);
       await countButton(page, 0).click();
 
       await expect(rows(page)).toHaveCount(3);
@@ -87,7 +92,7 @@ for (const { locale, messages } of cases) {
         userId: PROFILE_ID,
         lists: LISTS,
       });
-      await page.goto(profilePath);
+      await gotoProfile(page, profilePath);
       await countButton(page, 1).click();
 
       await expect(
@@ -112,7 +117,7 @@ for (const { locale, messages } of cases) {
         userId: PROFILE_ID,
         lists: LISTS,
       });
-      await page.goto(profilePath);
+      await gotoProfile(page, profilePath);
       await countButton(page, 2).click();
 
       await rowButton(page, list.unfollow).first().click();
@@ -132,7 +137,7 @@ for (const { locale, messages } of cases) {
         lists: LISTS,
         forbidWrites: true,
       });
-      await page.goto(profilePath);
+      await gotoProfile(page, profilePath);
       await countButton(page, 0).click();
       await rowButton(page, list.removeFollower).first().click();
 
@@ -153,7 +158,7 @@ for (const { locale, messages } of cases) {
         userId: PROFILE_ID,
         lists: LISTS,
       });
-      await page.goto(profilePath);
+      await gotoProfile(page, profilePath);
 
       for (const index of [0, 1, 2]) {
         await countButton(page, index).click();

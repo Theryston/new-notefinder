@@ -4,6 +4,7 @@ import type { FollowListUser } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -266,14 +267,15 @@ function FollowListRow({
         </Link>
       )}
       {action === null ? null : (
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
           disabled={pending}
           onClick={() => onAction(action)}
-          className="h-9 shrink-0 rounded-full bg-secondary px-3 font-semibold text-sm outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
         >
           {t(action)}
-        </button>
+        </Button>
       )}
     </li>
   );

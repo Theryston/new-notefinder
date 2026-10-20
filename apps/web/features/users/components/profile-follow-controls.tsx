@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import type { FollowListSide } from '../follow-list-query';
 import { profileCountsQueryOptions } from '../follow-query';
 import type { FollowCounts } from '../follow-state';
