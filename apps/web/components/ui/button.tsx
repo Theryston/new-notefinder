@@ -2,14 +2,14 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
 
-const buttonVariants = cva(
+const variants = cva(
   "group/button inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-full border border-transparent bg-clip-padding font-semibold text-sm outline-none transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-spring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
         outline:
-          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+          'border-foreground/10 bg-foreground/3 hover:bg-foreground/6 aria-expanded:bg-foreground/6 dark:border-input dark:bg-input/30 dark:aria-expanded:bg-input/50 dark:hover:bg-input/50',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
         ghost:
@@ -36,6 +36,15 @@ const buttonVariants = cva(
     },
   },
 );
+
+/**
+ * The variants merged with tailwind-merge: used on a link (`buttonVariants()`
+ * as a `className`) the base `border-transparent` would otherwise beat the
+ * variant's border color and the edge would vanish.
+ */
+function buttonVariants(props?: Parameters<typeof variants>[0]) {
+  return cn(variants(props));
+}
 
 function Button({
   className,

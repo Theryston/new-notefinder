@@ -16,16 +16,13 @@ export function followCountsOf(profile: PublicProfile): FollowCounts {
 }
 
 /**
- * The button's classes per state. The banner is a solid orange block, so the
- * button brings its own contrast: a white pill with orange text to follow, and
- * an outlined white pill with white text once following (DESIGN.md "Featured
- * blocks"). A label without its own color would inherit the banner's white on
- * a white fill.
+ * The button's classes, the same whether the viewer follows or not. The banner
+ * is a solid orange block, so the button brings its own contrast: a white pill
+ * with orange text (DESIGN.md "Featured blocks"). A label without its own color
+ * would inherit the banner's white on a white fill.
  */
-export function followButtonClasses(following: boolean): string {
-  return following
-    ? 'border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10'
-    : 'bg-background text-primary hover:bg-background/90';
+export function followButtonClasses(): string {
+  return 'bg-primary-foreground text-primary hover:bg-primary-foreground/90';
 }
 
 /**

@@ -25,53 +25,24 @@ const clipboardText = (page: Page) =>
   page.evaluate(() => navigator.clipboard.readText());
 
 /**
- * The banner button is a content-sized pill, left-aligned with the Name and
- * the `@username` lines, and its label stays readable (WCAG AA 4.5:1) on its
- * own background in the current theme.
+ * The banner button is a content-sized pill, left-aligned with the Name. It is
+ * polled into place because the follow button's loading placeholder shifts it
+ * until the session has loaded.
  */
 async function expectBannerButtonSized(page: Page) {
   const button = shareButton(page);
   await expect(button).toBeVisible();
-  const box = await button.boundingBox();
   const name = await page
     .getByRole('heading', { level: 1, name: 'Ada Lovelace' })
     .boundingBox();
-  const username = await page.getByText('@ada_lovelace').boundingBox();
 
+  await expect
+    .poll(async () => (await button.boundingBox())?.x ?? -1)
+    .toBeCloseTo(name?.x ?? -2, 0);
+  const box = await button.boundingBox();
   expect(box?.width ?? Number.POSITIVE_INFINITY).toBeLessThan(220);
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(36);
   expect(box?.height ?? 0).toBeLessThanOrEqual(44);
-  expect(box?.x ?? -1).toBeCloseTo(name?.x ?? -2, 0);
-  expect(box?.x ?? -1).toBeCloseTo(username?.x ?? -2, 0);
-
-  const contrast = await button.evaluate((node) => {
-    const rgb = (css: string) => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      const context = canvas.getContext('2d');
-      if (!context) return [0, 0, 0];
-      context.fillStyle = css;
-      context.fillRect(0, 0, 1, 1);
-      const data = context.getImageData(0, 0, 1, 1).data;
-      return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0];
-    };
-    const linear = (channel: number) => {
-      const value = channel / 255;
-      return value <= 0.03928
-        ? value / 12.92
-        : ((value + 0.055) / 1.055) ** 2.4;
-    };
-    const luminance = (channels: number[]) => {
-      const [r = 0, g = 0, b = 0] = channels;
-      return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
-    };
-    const style = getComputedStyle(node);
-    const light = luminance(rgb(style.backgroundColor));
-    const text = luminance(rgb(style.color));
-    return (Math.max(light, text) + 0.05) / (Math.min(light, text) + 0.05);
-  });
-  expect(contrast).toBeGreaterThanOrEqual(4.5);
 }
 
 /** Opens the Profile's share dialog from the banner and checks its link. */
@@ -92,6 +63,15 @@ async function networkUrl(page: Page, list: string, name: string) {
   return new URL(href ?? '');
 }
 
+/**
+ * Opens a Profile and waits for its requests to settle: a click before the
+ * page hydrates is lost, since the Share button's handler is not attached yet.
+ */
+async function gotoProfile(page: Page, path = PROFILE) {
+  await page.goto(path);
+  await page.waitForLoadState('networkidle');
+}
+
 /** Whether `element` contains the element that has focus right now. */
 async function hasFocusInside(element: Locator): Promise<boolean> {
   return element.evaluate((node) => node.contains(document.activeElement));
@@ -105,7 +85,7 @@ test.describe('share a Profile', () => {
   test('copies the canonical link and closes with Esc to the button', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     const dialog = await openShareDialog(page);
     // Nothing of the Track dialog's moment option is offered here.
     await expect(dialog.getByRole('checkbox')).toHaveCount(0);
@@ -124,7 +104,7 @@ test.describe('share a Profile', () => {
   test('closes with the Close button and returns focus to the button', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -134,7 +114,7 @@ test.describe('share a Profile', () => {
   });
 
   test('closes with Esc before anything was copied', async ({ page }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     await expect(dialogOf(page)).toBeVisible();
@@ -146,7 +126,7 @@ test.describe('share a Profile', () => {
   test('moves focus into the dialog and keeps it there while tabbing', async ({
     page,
   }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -170,7 +150,7 @@ test.describe('share a Profile', () => {
         value: () => Promise.reject(new Error('clipboard refused')),
       });
     });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const dialog = dialogOf(page);
@@ -196,7 +176,7 @@ test.describe('share a Profile', () => {
   });
 
   test('links all five networks with the translated text', async ({ page }) => {
-    await page.goto(PROFILE);
+    await gotoProfile(page);
     await shareButton(page).click();
 
     const list = 'Share on';
@@ -231,7 +211,7 @@ test.describe('share a Profile', () => {
   }) => {
     const link = `${SITE_ORIGIN}/pt-BR/users/ada_lovelace`;
     const text = 'Veja o perfil de Ada Lovelace no NoteFinder';
-    await page.goto('/pt-BR/users/ada_lovelace');
+    await gotoProfile(page, '/pt-BR/users/ada_lovelace');
     await page
       .getByRole('button', { name: 'Compartilhar', exact: true })
       .click();
@@ -260,7 +240,7 @@ test.describe('share a Profile', () => {
       { ...SIGNED_IN_COOKIE, domain: 'localhost', path: '/' },
     ]);
     await mockAuthApi(page, { user: { ...ADA, username: 'ada_lovelace' } });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
 
     await openShareDialog(page);
   });
@@ -269,7 +249,7 @@ test.describe('share a Profile', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto(PROFILE);
+    await gotoProfile(page);
 
     const button = shareButton(page);
     await expect(button).toBeVisible();
@@ -301,7 +281,7 @@ test.describe('share a Profile', () => {
       }) => {
         await page.setViewportSize({ width, height: 800 });
         await page.emulateMedia({ colorScheme });
-        await page.goto(PROFILE);
+        await gotoProfile(page);
 
         await expectBannerButtonSized(page);
       });

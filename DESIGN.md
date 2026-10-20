@@ -207,7 +207,10 @@ phone, so targets are large and lists breathe.
   One primary button per view region.
 - `secondary`: `bg-secondary`, for the second action (Favorite, Share).
 - `ghost`: toolbars and tertiary actions. `outline` only on busy
-  backgrounds.
+  backgrounds. `outline` is the one soft-edged look everywhere: a faint
+  `foreground/10` border and `foreground/3` fill in light (`input` tokens in
+  dark), a slightly stronger fill on hover. Never override its border or
+  fill per call site; change the variant instead.
 - The round **play button** is a `size="icon-lg"` `default` button with a
   filled play icon.
 - No gradients, glows or inner shadows on buttons.
