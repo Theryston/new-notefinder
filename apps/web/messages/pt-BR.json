@@ -141,6 +141,11 @@
         "loadError": "Não foi possível carregar os colaboradores. Tente de novo.",
         "retry": "Tentar de novo",
         "empty": "Nenhum colaborador combina com “{query}”.",
+        "follow": "Seguir",
+        "unfollow": "Deixar de seguir",
+        "followLabel": "Seguir {name}",
+        "unfollowLabel": "Deixar de seguir {name}",
+        "followError": "Não foi possível salvar a alteração. Tente de novo.",
         "close": "Fechar"
       },
       "timeline": {

@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackContributor } from '@notefinder/contracts';
+import type { TrackContributorEntry } from '@notefinder/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef, useState } from 'react';
@@ -15,12 +15,14 @@ import { Link } from '@/lib/i18n/navigation';
 
 import { useContributors } from '../hooks/use-contributors';
 import { ContributorAvatar } from './contributor-avatar';
+import { ContributorFollowButton } from './contributor-follow-button';
 
 type ContributorsQuery = ReturnType<typeof useContributors>;
 
 type ContributorResultBodyProps = {
+  trackId: string;
   query: string;
-  items: TrackContributor[];
+  items: TrackContributorEntry[];
   total: number;
   isPending: boolean;
   isFetchingNextPage: boolean;
@@ -30,6 +32,7 @@ type ContributorResultBodyProps = {
 };
 
 function ContributorResultBody({
+  trackId,
   query,
   items,
   total,
@@ -66,7 +69,11 @@ function ContributorResultBody({
           className="no-scrollbar flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto"
         >
           {items.map((item) => (
-            <ContributorRow key={item.id} contributor={item} />
+            <ContributorRow
+              key={item.id}
+              trackId={trackId}
+              contributor={item}
+            />
           ))}
           {hasNextPage ? (
             <li ref={sentinel} aria-hidden="true" className="h-px shrink-0" />
@@ -85,8 +92,17 @@ function ContributorResultBody({
 const SEARCH_DEBOUNCE_MS = 300;
 const AVATAR_CLASS = 'size-12';
 
-/** One Contributor: Avatar, name and handle, linking to their Profile. */
-function ContributorRow({ contributor }: { contributor: TrackContributor }) {
+/**
+ * One Contributor: Avatar, name and handle, linking to their Profile, and the
+ * follow button for a signed-in viewer.
+ */
+function ContributorRow({
+  trackId,
+  contributor,
+}: {
+  trackId: string;
+  contributor: TrackContributorEntry;
+}) {
   const tp = useTranslations('tracks.practice');
   const body = (
     <>
@@ -104,9 +120,9 @@ function ContributorRow({ contributor }: { contributor: TrackContributor }) {
     </>
   );
   const className =
-    'flex min-h-14 items-center gap-3 rounded-2xl px-2 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50';
+    'flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50';
   return (
-    <li>
+    <li className="flex items-center gap-2">
       {contributor.username === null ? (
         <div className={className}>{body}</div>
       ) : (
@@ -118,6 +134,7 @@ function ContributorRow({ contributor }: { contributor: TrackContributor }) {
           {body}
         </Link>
       )}
+      <ContributorFollowButton trackId={trackId} contributor={contributor} />
     </li>
   );
 }
@@ -151,9 +168,11 @@ function ContributorsSearch({
 
 /** Query result, rows and loading states for the dialog. */
 function ContributorsResults({
+  trackId,
   query,
   result,
 }: {
+  trackId: string;
   query: string;
   result: ContributorsQuery;
 }) {
@@ -208,6 +227,7 @@ function ContributorsResults({
 
   return (
     <ContributorResultBody
+      trackId={trackId}
       query={query}
       items={items}
       total={total}
@@ -233,7 +253,7 @@ function ContributorsList({ trackId }: { trackId: string }) {
   return (
     <>
       <ContributorsSearch value={input} onChange={setInput} />
-      <ContributorsResults query={query} result={result} />
+      <ContributorsResults trackId={trackId} query={query} result={result} />
     </>
   );
 }
