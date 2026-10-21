@@ -26,7 +26,7 @@ export const HOME_MAX_ROWS = 24;
 /** Most Tracks of one artist in one row, so a hot artist can't fill it. */
 export const MAX_TRACKS_PER_ARTIST_PER_ROW = 2;
 
-export type HomeLayout = 'hero' | 'standard' | 'vocal-range';
+export type HomeLayout = 'hero' | 'standard' | 'vocal-range' | 'ranked';
 
 export type HomeRowRule = {
   minItems: number;
@@ -55,6 +55,15 @@ export const HOME_ROW_RULES = {
     maxItems: 12,
     requiresCover: false,
     requiresVocalRange: true,
+  },
+  // A ranked Top 10 shows at most ten Tracks; below six it disappears like
+  // every other row. Covers are shown but not required, so a hot Track without
+  // one still makes the chart.
+  ranked: {
+    minItems: 6,
+    maxItems: 10,
+    requiresCover: false,
+    requiresVocalRange: false,
   },
 } as const satisfies Record<HomeLayout, HomeRowRule>;
 

@@ -7,6 +7,9 @@
 export const HOME_ROW_TITLE_KEYS = [
   'home.rows.trendingToday',
   'home.rows.newTracks',
+  'home.rows.mostSung',
+  'home.rows.mostFavorited',
+  'home.rows.top10Week',
   'home.rows.pinned',
   'home.rows.easyToStart',
   'home.rows.higherVoices',

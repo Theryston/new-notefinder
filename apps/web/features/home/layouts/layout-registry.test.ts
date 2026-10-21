@@ -36,6 +36,7 @@ const expectedPlacement: Record<HomeRow['layout'], SponsoredPlacement> = {
   standard: 'line',
   'vocal-range': 'line',
   'daily-target': 'line',
+  ranked: 'line',
 };
 
 // The text each placement shows, from the locale file (hero caption vs row line).
@@ -76,6 +77,12 @@ const plainRows = {
     streakDays: 4,
     completedToday: false,
   },
+  ranked: {
+    id: 'top-10-week',
+    layout: 'ranked',
+    title: { key: 'home.rows.top10Week', params: {} },
+    items: [track],
+  },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 const sponsoredRows = {
@@ -83,6 +90,7 @@ const sponsoredRows = {
   standard: { ...plainRows.standard, sponsored: true },
   'vocal-range': { ...plainRows['vocal-range'], sponsored: true },
   'daily-target': { ...plainRows['daily-target'], sponsored: true },
+  ranked: { ...plainRows.ranked, sponsored: true },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 function renderLayout(node: ReactNode): string {
@@ -108,6 +116,7 @@ describe('home layout registry', () => {
     expect(isRegisteredLayout('standard')).toBe(true);
     expect(isRegisteredLayout('vocal-range')).toBe(true);
     expect(isRegisteredLayout('daily-target')).toBe(true);
+    expect(isRegisteredLayout('ranked')).toBe(true);
     expect(isRegisteredLayout('ranked-top-10')).toBe(false);
   });
 

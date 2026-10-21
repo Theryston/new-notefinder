@@ -328,6 +328,17 @@ section heading); rows are spaced `gap-12`.
   bleeds to the screen edge, and a scrollbar hidden on the track only. Each
   card is the Track card above at a fixed width (`w-40 sm:w-44 md:w-48`), so
   the touch target is large and the cards keep their own square cover.
+- **Ranked** (Top 10 row): an ordered list (`<ol>`, the ranking) in a
+  `rounded-2xl bg-card shadow-sm` block divided by `divide-border`. Each row
+  is one link (`min-h-16`, `px-4 py-2`, `hover:bg-accent`, inset focus ring)
+  with three parts: a big quiet rank number (`font-mono text-2xl
+  font-extrabold tabular-nums text-muted-foreground`, `w-8`, silent to screen
+  readers since the list already announces the position), a 48px cover
+  (`size-12 rounded-md`), and the title (`truncate text-sm font-semibold`)
+  over the artist and vocal range (`truncate text-xs text-muted-foreground`,
+  range in mono like every note name). At most ten rows; below six the row
+  does not render. The sponsored notice sits under the row title like on a
+  carousel (`line` placement in the layout registry).
 - **Skeletons** reserve exactly the final sizes: the hero's block height and
   a carousel's title line and card widths (`layout-dimensions.ts` is the one
   source of both). No row may change height when its content lands.

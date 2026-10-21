@@ -34,6 +34,10 @@ describe('the trending row sources', () => {
     findTrendingTracks: vi.fn(),
     findNewestTracks: vi.fn(),
     findCompletedTracksByIds: vi.fn(),
+    findMostSungTrackIds: vi.fn(),
+    findMostFavoritedTrackIds: vi.fn(),
+    countRecentAttempts: vi.fn(),
+    countRecentFavorites: vi.fn(),
   };
   const ranking = { rank: vi.fn() };
 
@@ -48,6 +52,10 @@ describe('the trending row sources', () => {
     vi.resetAllMocks();
     repository.findTrendingTracks.mockResolvedValue([record('global')]);
     repository.findNewestTracks.mockResolvedValue([]);
+    repository.findMostSungTrackIds.mockResolvedValue([]);
+    repository.findMostFavoritedTrackIds.mockResolvedValue([]);
+    repository.countRecentAttempts.mockResolvedValue([]);
+    repository.countRecentFavorites.mockResolvedValue([]);
   });
 
   it('falls back to the global trending figures when the locale has no ranking', async () => {
@@ -79,5 +87,147 @@ describe('the trending row sources', () => {
     ]);
     expect(repository.findTrendingTracks).not.toHaveBeenCalled();
     expect(items?.map((item) => item.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('the singing row sources', () => {
+  const repository = {
+    findTrendingTracks: vi.fn(),
+    findNewestTracks: vi.fn(),
+    findCompletedTracksByIds: vi.fn(),
+    findMostSungTrackIds: vi.fn(),
+    findMostFavoritedTrackIds: vi.fn(),
+    countRecentAttempts: vi.fn(),
+    countRecentFavorites: vi.fn(),
+  };
+  const ranking = { rank: vi.fn() };
+
+  const sourceLoad = async (id: string, locale: 'en' | 'pt-BR' = 'en') => {
+    const source = createHomeRowSources(repository, ranking).find(
+      (row) => row.id === id,
+    );
+    return source?.load(locale);
+  };
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    repository.findTrendingTracks.mockResolvedValue([]);
+    repository.findCompletedTracksByIds.mockImplementation(
+      async (ids: string[]) => ids.map((id) => record(id)),
+    );
+    repository.findMostSungTrackIds.mockResolvedValue([]);
+    repository.findMostFavoritedTrackIds.mockResolvedValue([]);
+    repository.countRecentAttempts.mockResolvedValue([]);
+    repository.countRecentFavorites.mockResolvedValue([]);
+  });
+
+  it('orders "Most sung" by valid Attempts, best first', async () => {
+    repository.findMostSungTrackIds.mockResolvedValue([
+      { trackId: 'sung-a', count: 25 },
+      { trackId: 'sung-b', count: 4 },
+      { trackId: 'viewed-only', count: 0 },
+    ]);
+
+    const items = await sourceLoad('most-sung');
+
+    expect(items?.map((item) => item.id)).toEqual([
+      'sung-a',
+      'sung-b',
+      'viewed-only',
+    ]);
+  });
+
+  it('skips a most-sung Track that is no longer completed', async () => {
+    repository.findMostSungTrackIds.mockResolvedValue([
+      { trackId: 'gone', count: 30 },
+      { trackId: 'kept', count: 2 },
+    ]);
+    repository.findCompletedTracksByIds.mockResolvedValue([record('kept')]);
+
+    const items = await sourceLoad('most-sung');
+
+    expect(items?.map((item) => item.id)).toEqual(['kept']);
+  });
+
+  it('orders "Most favorited" by recent favorites, best first', async () => {
+    repository.findMostFavoritedTrackIds.mockResolvedValue([
+      { trackId: 'loved', count: 9 },
+      { trackId: 'liked', count: 2 },
+    ]);
+
+    const items = await sourceLoad('most-favorited');
+
+    expect(items?.map((item) => item.id)).toEqual(['loved', 'liked']);
+  });
+
+  it('blends the weekly Top 10 from the trending score and the singing signal', async () => {
+    ranking.rank.mockResolvedValue(undefined);
+    repository.findTrendingTracks.mockResolvedValue([
+      { ...record('viewed'), trendingScore: 120 },
+      { ...record('quiet'), trendingScore: 0 },
+      { ...record('sung'), trendingScore: 10 },
+    ]);
+    repository.findMostSungTrackIds.mockResolvedValue([
+      { trackId: 'sung', count: 10 },
+    ]);
+    repository.findMostFavoritedTrackIds.mockResolvedValue([
+      { trackId: 'viewed', count: 1 },
+    ]);
+    repository.findCompletedTracksByIds.mockImplementation(async () => [
+      { ...record('viewed'), trendingScore: 120 },
+      { ...record('quiet'), trendingScore: 0 },
+      { ...record('sung'), trendingScore: 10 },
+    ]);
+    repository.countRecentAttempts.mockResolvedValue([
+      { trackId: 'sung', count: 10 },
+    ]);
+    repository.countRecentFavorites.mockResolvedValue([
+      { trackId: 'viewed', count: 1 },
+    ]);
+
+    const items = await sourceLoad('top-10-week');
+
+    // 10 + 10 × 12 = 130 beats the viewed-only 120 + 6 = 126; the signal-less
+    // Track stays out of the chart.
+    expect(items?.map((item) => item.id)).toEqual(['sung', 'viewed']);
+  });
+
+  it('leaves Tracks with no signal at all out of the weekly Top 10', async () => {
+    ranking.rank.mockResolvedValue(undefined);
+    repository.findTrendingTracks.mockResolvedValue([
+      { ...record('silent'), trendingScore: 0 },
+    ]);
+    repository.findCompletedTracksByIds.mockImplementation(async () => [
+      { ...record('silent'), trendingScore: 0 },
+    ]);
+
+    const items = await sourceLoad('top-10-week');
+
+    expect(items).toEqual([]);
+  });
+
+  it('leaves a viewed-only Track out of the weekly Top 10', async () => {
+    ranking.rank.mockResolvedValue(undefined);
+    repository.findTrendingTracks.mockResolvedValue([
+      { ...record('viewed'), trendingScore: 120 },
+      { ...record('sung'), trendingScore: 10 },
+    ]);
+    repository.findCompletedTracksByIds.mockImplementation(async () => [
+      { ...record('viewed'), trendingScore: 120 },
+      { ...record('sung'), trendingScore: 10 },
+    ]);
+    repository.findMostSungTrackIds.mockResolvedValue([
+      { trackId: 'sung', count: 1 },
+    ]);
+    repository.countRecentAttempts.mockResolvedValue([
+      { trackId: 'sung', count: 1 },
+    ]);
+    repository.countRecentFavorites.mockResolvedValue([]);
+
+    const items = await sourceLoad('top-10-week');
+
+    // The viewed-only Track would outscore the sung one (120 against 22),
+    // but the chart only ranks Tracks the community sang or favorited.
+    expect(items?.map((item) => item.id)).toEqual(['sung']);
   });
 });

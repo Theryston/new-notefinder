@@ -58,6 +58,16 @@ const toHomeRow = (row: ComposedRow): HomeRow | undefined => {
       ? { id: row.id, layout: 'vocal-range', title: row.title, items }
       : undefined;
   }
+  if (row.layout === 'ranked') {
+    return row.title
+      ? {
+          id: row.id,
+          layout: 'ranked',
+          title: row.title,
+          items: row.items.map(toHomeTrack),
+        }
+      : undefined;
+  }
   return row.title
     ? {
         id: row.id,

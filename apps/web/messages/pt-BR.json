@@ -19,7 +19,10 @@
       "lowerVoices": "Para vozes graves",
       "continueSinging": "Continue cantando",
       "singAgain": "Cante de novo",
-      "dailyTarget": "Meta diária"
+      "dailyTarget": "Meta diária",
+      "mostSung": "Mais cantadas",
+      "mostFavorited": "Mais favoritadas",
+      "top10Week": "Top 10 da semana"
     },
     "sponsored": {
       "hero": "conteúdo patrocinado",
