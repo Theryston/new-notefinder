@@ -10,19 +10,100 @@ import { toast } from 'sonner';
 
 import { isApiError } from '@/lib/api/api-error';
 
+import {
+  pinFormErrorKey,
+  pinFormFieldLabelKey,
+  serverValidationBackendReason,
+  serverValidationFieldErrors,
+} from '../admin-pin-server-error';
 import { adminPinKeys } from '../admin-pins-query';
+import type { PinFormCatalog } from '../pin-form';
+
+type PinMutationCatalog = Pick<PinFormCatalog, 'maxTitleLength' | 'maxTracks'>;
+
+type ErrorTranslator = ReturnType<typeof useTranslations<'errors'>>;
+type FormTranslator = ReturnType<typeof useTranslations<'adminHomePins.form'>>;
+
+function detailOf(
+  field: { field: Parameters<typeof pinFormErrorKey>[0]; type: string },
+  tForm: FormTranslator,
+  tErrors: ErrorTranslator,
+  catalog?: PinMutationCatalog,
+): string {
+  const key = pinFormErrorKey(field.field, field.type);
+  try {
+    if (key === 'errors.tooLong' && catalog) {
+      return tForm(key, { max: catalog.maxTitleLength });
+    }
+    if (key === 'errors.tooMany' && catalog) {
+      return tForm(key, { max: catalog.maxTracks });
+    }
+    return tForm(key);
+  } catch {
+    return tErrors('VALIDATION_FAILED');
+  }
+}
+
+function toastFieldFailure(
+  error: unknown,
+  tErrors: ErrorTranslator,
+  tForm: FormTranslator,
+  catalog?: PinMutationCatalog,
+): void {
+  const first = serverValidationFieldErrors(error)[0];
+  if (!first) return;
+  const detail = detailOf(first, tForm, tErrors, catalog);
+  try {
+    toast.error(`${tForm(pinFormFieldLabelKey(first.field))}: ${detail}`);
+  } catch {
+    toast.error(detail);
+  }
+  const reason = serverValidationBackendReason(error);
+  if (reason && !reason.includes(detail)) {
+    // The backend's English reason names what the translated message
+    // cannot (IDs, a refused source); admins read it as the detail.
+    toast.error(reason);
+  }
+}
+
+function toastReasonFailure(error: unknown, tErrors: ErrorTranslator): boolean {
+  const reason = serverValidationBackendReason(error);
+  if (!reason) return false;
+  try {
+    toast.error(`${tErrors('VALIDATION_FAILED')}: ${reason}`);
+  } catch {
+    toast.error(reason);
+  }
+  return true;
+}
+
+function toastCodeFailure(error: unknown, tErrors: ErrorTranslator): void {
+  try {
+    toast.error(tErrors(isApiError(error) ? error.code : 'INTERNAL_ERROR'));
+  } catch {
+    toast.error(tErrors('INTERNAL_ERROR'));
+  }
+}
 
 /**
  * Creates, changes and removes pins. The fetcher (and its contracts
  * schemas) loads on the first save, so Zod stays out of the page's
- * first-load JavaScript. A failure toasts the API error code translated;
- * the list refreshes after every change.
+ * first-load JavaScript. A failure toasts the translated API error; a
+ * `VALIDATION_FAILED` with the backend's issues toasts the specific
+ * field (`Label: reason`) and carries the backend's own reason when the
+ * translated message cannot express it (an ineligible Track, a refused
+ * dynamic source). The list refreshes after every change.
  */
-export function useAdminPinMutations() {
+export function useAdminPinMutations(catalog?: PinMutationCatalog) {
   const queryClient = useQueryClient();
-  const terror = useTranslations('errors');
+  const tErrors = useTranslations('errors');
+  const tForm = useTranslations('adminHomePins.form');
   const fail = (error: unknown) => {
-    toast.error(terror(isApiError(error) ? error.code : 'INTERNAL_ERROR'));
+    if (serverValidationFieldErrors(error).length > 0) {
+      toastFieldFailure(error, tErrors, tForm, catalog);
+      return;
+    }
+    if (!toastReasonFailure(error, tErrors)) toastCodeFailure(error, tErrors);
   };
   const settle = () => {
     void queryClient.invalidateQueries({ queryKey: adminPinKeys.all });

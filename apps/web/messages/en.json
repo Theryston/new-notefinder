@@ -5,10 +5,12 @@
     "description": "See the exact vocal notes a singer hits in any song on a timeline synced with playback, and get real-time pitch feedback from your mic."
   },
   "home": {
-    "title": "Find the notes of any song",
-    "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback.",
     "hero": {
       "sing": "Sing this song"
+    },
+    "carousel": {
+      "scrollLeft": "Scroll row left",
+      "scrollRight": "Scroll row right"
     },
     "rows": {
       "trendingToday": "Trending today",
@@ -37,6 +39,7 @@
     },
     "dailyTarget": {
       "remaining": "{minutesLeft, plural, one {# minute left of your {minutesTotal}-minute goal} other {# minutes left of your {minutesTotal}-minute goal}}",
+      "fresh": "Just {minutes, plural, one {# minute} other {# minutes}} of daily practice can change your singing",
       "completeToday": "Today's goal is complete",
       "streak": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}"
     }

@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
+import { serverValidationFieldErrors } from '../admin-pin-server-error';
 import { useAdminPinMutations } from '../hooks/use-admin-pin-mutations';
 import {
   emptyPinForm,
@@ -199,7 +199,7 @@ function usePinSubmit({
   onClose: () => void;
 }) {
   const t = useTranslations('adminHomePins');
-  const { createPin, updatePin } = useAdminPinMutations();
+  const { createPin, updatePin } = useAdminPinMutations(catalog);
   const sourceEditable = !pin || pin.source.type === 'tracks';
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -207,19 +207,28 @@ function usePinSubmit({
       values.kind === 'hero'
         ? { ...values, layout: 'hero', position: catalog.heroPosition }
         : values;
-    if (mode === 'create') {
-      await createPin.mutateAsync(formValuesToBody(fixed));
-      toast.success(t('form.created'));
-    } else if (pin) {
-      const body = formValuesToBody(fixed);
-      // A source from a newer admin (genre, artist, album) is left alone:
-      // only the settings change.
-      const { source: _kept, ...settings } = body;
-      await updatePin.mutateAsync({
-        pinId: pin.id,
-        body: sourceEditable ? body : settings,
-      });
-      toast.success(t('form.updated'));
+    try {
+      if (mode === 'create') {
+        await createPin.mutateAsync(formValuesToBody(fixed));
+        toast.success(t('form.created'));
+      } else if (pin) {
+        const body = formValuesToBody(fixed);
+        // A source from a newer admin (genre, artist, album) is left alone:
+        // only the settings change.
+        const { source: _kept, ...settings } = body;
+        await updatePin.mutateAsync({
+          pinId: pin.id,
+          body: sourceEditable ? body : settings,
+        });
+        toast.success(t('form.updated'));
+      }
+    } catch (error) {
+      // The mutation already toasted the specific reason; mirror the
+      // backend's field errors inline so the form names the field too.
+      for (const { field, type } of serverValidationFieldErrors(error)) {
+        form.setError(field, { type });
+      }
+      return;
     }
     onClose();
   });

@@ -5,10 +5,12 @@
     "description": "Veja as notas vocais exatas que o cantor canta em qualquer música, numa linha do tempo sincronizada com a reprodução, e receba feedback de afinação em tempo real pelo seu microfone."
   },
   "home": {
-    "title": "Descubra as notas de qualquer música",
-    "description": "Veja cada nota vocal numa linha do tempo sincronizada com a música e cante junto com feedback de afinação em tempo real.",
     "hero": {
       "sing": "Cante esta música"
+    },
+    "carousel": {
+      "scrollLeft": "Rolar a fileira para a esquerda",
+      "scrollRight": "Rolar a fileira para a direita"
     },
     "rows": {
       "trendingToday": "Em alta hoje",
@@ -37,6 +39,7 @@
     },
     "dailyTarget": {
       "remaining": "{minutesLeft, plural, one {Falta # minuto da sua meta de {minutesTotal} minutos} other {Faltam # minutos da sua meta de {minutesTotal} minutos}}",
+      "fresh": "Só {minutes, plural, one {# minuto} other {# minutos}} de treino diário pode mudar seu canto",
       "completeToday": "Meta de hoje concluída",
       "streak": "{days, plural, =0 {Nenhuma sequência ainda} one {# dia de sequência} other {# dias de sequência}}"
     }

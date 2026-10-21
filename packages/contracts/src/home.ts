@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { localeSchema } from './locales.js';
-import { trackHeaderSchema, trackVocalRangeSchema } from './tracks.js';
+import {
+  trackArtistCreditEntrySchema,
+  trackHeaderSchema,
+  trackVocalRangeSchema,
+} from './tracks.js';
 
 /**
  * The home feed (`GET /v1/home`): an ordered list of rows. Clients render the
@@ -17,10 +21,23 @@ export const homeAudienceSchema = z.enum(['public', 'personal']);
 export type HomeAudience = z.infer<typeof homeAudienceSchema>;
 
 /**
+ * One credited artist of a home card. `artistId` is the Artist page the name
+ * links to, null while the credit has no Artist in our catalog. It is
+ * `nullish` because the web may deploy before the API that sends it, so a
+ * card without the field still parses; the API always sends it.
+ */
+export const homeArtistCreditEntrySchema = trackArtistCreditEntrySchema.extend({
+  artistId: z.string().min(1).max(128).nullish(),
+});
+
+export type HomeArtistCreditEntry = z.infer<typeof homeArtistCreditEntrySchema>;
+
+/**
  * A Track as a home card: its header (id, title, cover, artist credit) plus
  * what a card adds: the length and the vocal range, which show its difficulty.
  */
 export const homeTrackSchema = trackHeaderSchema.extend({
+  artistCredit: z.array(homeArtistCreditEntrySchema).max(30),
   durationMs: z.number().int().nonnegative().nullable(),
   vocalRange: trackVocalRangeSchema.nullable(),
 });

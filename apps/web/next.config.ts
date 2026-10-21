@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
         hostname: 'coverartarchive.org',
         pathname: '/release-group/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'notefinder-data.s3.us-east-005.backblazeb2.com',
+      },
     ],
   },
   // One handler instance backs both `'use cache'` and `'use cache: remote'`:

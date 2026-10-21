@@ -1,6 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { cacheTags, LOCALES, type Locale } from '@notefinder/contracts';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  cacheTags,
+  type HomeRow,
+  type HomeTrack,
+  LOCALES,
+  type Locale,
+} from '@notefinder/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import type { HomeTrackRecord } from './home.repository.js';
+import { HomeRepository } from './home.repository.js';
 import { minimalHomeFeed, type StoredHomeFeed } from './home-feed.js';
 import { HomeFeedStore } from './home-feed.store.js';
 import { HomeFeedBuilder } from './home-feed-builder.service.js';
@@ -14,6 +22,77 @@ export type CurrentPublicFeed = {
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+/** Every Track a row shows, whatever its layout. */
+const homeTrackIds = (rows: HomeRow[]): string[] => [
+  ...new Set(
+    rows.flatMap((row) => {
+      if (row.layout === 'hero') return [row.track.id];
+      if (
+        row.layout === 'standard' ||
+        row.layout === 'vocal-range' ||
+        row.layout === 'ranked'
+      ) {
+        return row.items.map((item) => item.id);
+      }
+      return [];
+    }),
+  ),
+];
+
+/** The MBIDs the records credit, for the artist lookup. */
+const creditedMbids = (records: HomeTrackRecord[]): string[] => [
+  ...new Set(
+    records.flatMap((record) =>
+      record.artistCredit.flatMap((entry) =>
+        entry.mbid === undefined ? [] : [entry.mbid],
+      ),
+    ),
+  ),
+];
+
+/** One row with every credited name linked to its Artist page when known. */
+const linkRow =
+  (
+    creditById: ReadonlyMap<string, HomeTrackRecord['artistCredit']>,
+    idByMbid: ReadonlyMap<string, string>,
+  ) =>
+  <T extends HomeTrack>(track: T): T => {
+    const credit = creditById.get(track.id);
+    if (credit === undefined) {
+      return {
+        ...track,
+        artistCredit: track.artistCredit.map((entry) => ({
+          ...entry,
+          artistId: null,
+        })),
+      };
+    }
+    return {
+      ...track,
+      artistCredit: credit.map((entry) => ({
+        name: entry.name,
+        joinPhrase: entry.joinPhrase,
+        artistId:
+          entry.mbid === undefined ? null : (idByMbid.get(entry.mbid) ?? null),
+      })),
+    };
+  };
+
+const linkRows = (
+  rows: HomeRow[],
+  link: <T extends HomeTrack>(track: T) => T,
+): HomeRow[] =>
+  rows.map((row): HomeRow => {
+    if (row.layout === 'hero') return { ...row, track: link(row.track) };
+    if (row.layout === 'vocal-range') {
+      return { ...row, items: row.items.map(link) };
+    }
+    if (row.layout === 'standard' || row.layout === 'ranked') {
+      return { ...row, items: row.items.map(link) };
+    }
+    return row;
+  });
 
 /**
  * Owns the public feeds' lifecycle, one per locale. The request path only
@@ -30,7 +109,41 @@ export class HomeFeedService {
     private readonly store: HomeFeedStore,
     private readonly builder: HomeFeedBuilder,
     private readonly revalidation: WebRevalidationService,
+    // Optional so the feed specs keep providing the service alone (only
+    // HomeModule wires the repository). Without it rows keep their credit.
+    @Optional() private readonly homeRepository?: HomeRepository,
   ) {}
+
+  /**
+   * Links every name a row credits to its Artist page. A name links by the
+   * MBID the Track stored for it; credits stored without one, or whose
+   * Artist is not in the catalog yet, keep a null ID and render unlinked.
+   * Rows are enriched at serve time, so stored feeds need no migration.
+   */
+  async withArtistLinks(rows: HomeRow[]): Promise<HomeRow[]> {
+    if (!this.homeRepository) {
+      return rows;
+    }
+    const trackIds = homeTrackIds(rows);
+    if (trackIds.length === 0) {
+      return rows;
+    }
+    const records =
+      await this.homeRepository.findCompletedTracksByIds(trackIds);
+    const creditById = new Map(
+      records.map((record) => [record.id, record.artistCredit]),
+    );
+    const artists = await this.homeRepository.findArtistIdsByMbids(
+      creditedMbids(records),
+    );
+    return linkRows(
+      rows,
+      linkRow(
+        creditById,
+        new Map(artists.map((artist) => [artist.mbid, artist.id])),
+      ),
+    );
+  }
 
   /**
    * Builds one locale's public feed and commits it. A changed feed is

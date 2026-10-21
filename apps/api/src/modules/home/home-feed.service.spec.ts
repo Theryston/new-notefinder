@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags, type HomeRow } from '@notefinder/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
 import { minimalHomeFeed, type StoredHomeFeed } from './home-feed.js';
 import { HomeFeedService } from './home-feed.service.js';
 import { HomeFeedStore } from './home-feed.store.js';
@@ -188,6 +189,169 @@ describe('HomeFeedService', () => {
       store.readRetired.mockResolvedValue(undefined);
 
       await expect(service.publicVersion('v0')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('withArtistLinks', () => {
+    const recordOf = (
+      id: string,
+      artistCredit: HomeTrackRecord['artistCredit'],
+    ): HomeTrackRecord => ({
+      id,
+      title: `Track ${id}`,
+      coverUrl: null,
+      artistCredit,
+      lengthMs: null,
+      vocalRangeLowest: null,
+      vocalRangeHighest: null,
+    });
+
+    const linkedService = async (
+      records: HomeTrackRecord[],
+      artists: { mbid: string; id: string }[],
+    ) => {
+      const repository = {
+        findCompletedTracksByIds: vi.fn().mockResolvedValue(records),
+        findArtistIdsByMbids: vi.fn().mockResolvedValue(artists),
+      };
+      const moduleRef = await Test.createTestingModule({
+        providers: [
+          HomeFeedService,
+          { provide: HomeFeedStore, useValue: store },
+          { provide: HomeFeedBuilder, useValue: builder },
+          { provide: WebRevalidationService, useValue: revalidation },
+          { provide: HomeRepository, useValue: repository },
+        ],
+      }).compile();
+      return {
+        service: moduleRef.get(HomeFeedService),
+        repository,
+      };
+    };
+
+    it('keeps rows unchanged when the repository is not wired', async () => {
+      const rows: HomeRow[] = [
+        {
+          id: 'hero',
+          layout: 'hero',
+          track: {
+            id: 't1',
+            title: 'Hit',
+            coverUrl: null,
+            artistCredit: [{ name: 'Known', joinPhrase: '' }],
+            durationMs: null,
+            vocalRange: null,
+          },
+        },
+      ];
+
+      await expect(service.withArtistLinks(rows)).resolves.toBe(rows);
+    });
+
+    it('links names by their stored MBID, null otherwise', async () => {
+      const { service: linked, repository } = await linkedService(
+        [
+          recordOf('t1', [{ name: 'Known', joinPhrase: '', mbid: 'mbid-1' }]),
+          recordOf('t2', [{ name: 'Ghost', joinPhrase: '' }]),
+          recordOf('t3', [{ name: 'Missing', joinPhrase: '', mbid: 'mbid-9' }]),
+        ],
+        [{ mbid: 'mbid-1', id: 'artist-1' }],
+      );
+      const rows: HomeRow[] = [
+        {
+          id: 'hero',
+          layout: 'hero',
+          track: {
+            id: 't1',
+            title: 'Hit',
+            coverUrl: null,
+            artistCredit: [{ name: 'Known', joinPhrase: '' }],
+            durationMs: null,
+            vocalRange: null,
+          },
+        },
+        {
+          id: 'trending-today',
+          layout: 'standard',
+          title: { key: 'home.rows.trendingToday', params: {} },
+          items: [
+            {
+              id: 't2',
+              title: 'Ghost song',
+              coverUrl: null,
+              artistCredit: [{ name: 'Ghost', joinPhrase: '' }],
+              durationMs: null,
+              vocalRange: null,
+            },
+            {
+              id: 't3',
+              title: 'Missing song',
+              coverUrl: null,
+              artistCredit: [{ name: 'Missing', joinPhrase: '' }],
+              durationMs: null,
+              vocalRange: null,
+            },
+            {
+              id: 't9',
+              title: 'Gone song',
+              coverUrl: null,
+              artistCredit: [{ name: 'Gone', joinPhrase: '' }],
+              durationMs: null,
+              vocalRange: null,
+            },
+          ],
+        },
+        {
+          id: 'daily-target',
+          layout: 'daily-target',
+          title: { key: 'home.rows.dailyTarget', params: {} },
+          secondsLeft: 300,
+          targetSeconds: 900,
+          streakDays: 2,
+          completedToday: false,
+        },
+      ];
+
+      const linkedRows = await linked.withArtistLinks(rows);
+
+      const [hero, trending] = linkedRows;
+      expect(hero).toMatchObject({
+        layout: 'hero',
+        track: {
+          id: 't1',
+          artistCredit: [
+            { name: 'Known', joinPhrase: '', artistId: 'artist-1' },
+          ],
+        },
+      });
+      expect(trending).toMatchObject({
+        layout: 'standard',
+        items: [
+          {
+            id: 't2',
+            artistCredit: [{ name: 'Ghost', joinPhrase: '', artistId: null }],
+          },
+          {
+            id: 't3',
+            artistCredit: [{ name: 'Missing', joinPhrase: '', artistId: null }],
+          },
+          {
+            id: 't9',
+            artistCredit: [{ name: 'Gone', joinPhrase: '', artistId: null }],
+          },
+        ],
+      });
+      expect(linkedRows[2]).toEqual(rows[2]);
+      expect(repository.findCompletedTracksByIds).toHaveBeenCalledWith([
+        't1',
+        't2',
+        't3',
+        't9',
+      ]);
+      expect(repository.findArtistIdsByMbids).toHaveBeenCalledWith([
+        'mbid-1',
+        'mbid-9',
+      ]);
     });
   });
 });

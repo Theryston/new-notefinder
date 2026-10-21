@@ -34,7 +34,10 @@ function Providers({ children }: { children: ReactNode }) {
   });
   return createElement(NextIntlClientProvider, {
     locale: 'en',
-    messages: { errors: messages.errors },
+    messages: {
+      errors: messages.errors,
+      adminHomePins: messages.adminHomePins,
+    },
     // biome-ignore lint/correctness/noChildrenProp: this file builds elements without JSX, so the provider's children can only be a prop here
     children: createElement(QueryClientProvider, { client }, children),
   });

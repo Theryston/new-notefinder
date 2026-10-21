@@ -4,13 +4,13 @@ import type { ReactNode } from 'react';
 
 import { TrackCard } from '@/features/tracks/components/track-card';
 import { creditText } from '@/lib/track-credit';
+import { CarouselScroller } from '../components/carousel-scroller';
 import { SponsoredNotice } from '../components/sponsored-notice';
 import {
   CAROUSEL_COVER_SIZES,
   CAROUSEL_HEADER_CLASS,
   CAROUSEL_ITEM_CLASS,
   CAROUSEL_TITLE_CLASS,
-  CAROUSEL_TRACK_CLASS,
 } from '../layout-dimensions';
 import { rowHeadingId } from '../row-heading-id';
 import { isHomeRowTitleKey } from '../row-titles';
@@ -38,14 +38,19 @@ export function RowCarouselShell({
   if (!isHomeRowTitleKey(title.key)) return null;
   const headingId = rowHeadingId(rowId);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <div className={CAROUSEL_HEADER_CLASS}>
-        <h2 id={headingId} className={CAROUSEL_TITLE_CLASS}>
-          {t(title.key, title.params)}
-        </h2>
-        {sponsored ? <SponsoredNotice placement="line" /> : null}
-      </div>
-      <ul className={CAROUSEL_TRACK_CLASS}>{children}</ul>
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <CarouselScroller
+        header={
+          <div className={CAROUSEL_HEADER_CLASS}>
+            <h2 id={headingId} className={CAROUSEL_TITLE_CLASS}>
+              {t(title.key, title.params)}
+            </h2>
+            {sponsored ? <SponsoredNotice placement="line" /> : null}
+          </div>
+        }
+      >
+        {children}
+      </CarouselScroller>
     </section>
   );
 }

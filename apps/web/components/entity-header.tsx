@@ -13,7 +13,11 @@
 export const entityBannerSurfaceClass =
   'relative isolate overflow-hidden rounded-2xl bg-primary px-4 py-6 text-primary-foreground sm:px-6 sm:py-8 md:px-8 md:py-10';
 
-export const entityBannerClass = `${entityBannerSurfaceClass} before:pointer-events-none before:absolute before:-top-40 before:-right-40 before:-z-10 before:size-[30rem] before:rounded-full before:border-[4.5rem] before:border-black/15`;
+/** The decorative ring behind a featured orange block. */
+export const entityRingClass =
+  'before:pointer-events-none before:absolute before:-top-40 before:-right-40 before:-z-10 before:size-[30rem] before:rounded-full before:border-[4.5rem] before:border-black/15';
+
+export const entityBannerClass = `${entityBannerSurfaceClass} ${entityRingClass}`;
 
 export const entityBannerRowClass =
   'flex min-w-0 flex-col gap-4 sm:flex-row-reverse sm:items-center sm:justify-between sm:gap-6';

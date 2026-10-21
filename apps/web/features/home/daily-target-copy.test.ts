@@ -36,6 +36,19 @@ describe('dailyTargetCopy', () => {
     ).toEqual({ key: 'home.dailyTarget.completeToday', params: {} });
   });
 
+  it('nudges to start when nothing was sung yet', () => {
+    expect(
+      dailyTargetCopy({
+        secondsLeft: 900,
+        targetSeconds: 900,
+        completedToday: false,
+      }),
+    ).toEqual({
+      key: 'home.dailyTarget.fresh',
+      params: { minutes: 15 },
+    });
+  });
+
   it('reads no seconds left as complete', () => {
     expect(
       dailyTargetCopy({

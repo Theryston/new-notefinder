@@ -1,19 +1,47 @@
-import type { HomeHero } from '@notefinder/contracts';
+import type { HomeHero, HomeTrack } from '@notefinder/contracts';
 import { useTranslations } from 'next-intl';
-
+import { Fragment } from 'react';
+import { entityRingClass } from '@/components/entity-header';
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
 import { Link } from '@/lib/i18n/navigation';
-import { creditText } from '@/lib/track-credit';
 import { cn } from '@/lib/utils';
 import { SponsoredNotice } from '../components/sponsored-notice';
 import { HERO_BLOCK_CLASS, HERO_COVER_SIZES } from '../layout-dimensions';
 import { rowHeadingId } from '../row-heading-id';
 
 const COVER_CLASS =
-  'absolute top-6 right-6 aspect-square w-32 overflow-hidden rounded-2xl shadow-xl md:top-1/2 md:right-10 md:w-56 md:-translate-y-1/2 lg:w-64';
+  'absolute top-6 right-6 aspect-square w-32 overflow-hidden rounded-2xl shadow-sm sm:rotate-3 md:top-1/2 md:right-10 md:w-56 md:-translate-y-1/2 lg:w-64';
 
 const CTA_CLASS =
   'inline-flex items-center rounded-full bg-background px-5 py-2.5 font-semibold text-foreground text-sm shadow-xs transition-transform duration-200 ease-spring active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-primary-foreground outline-none';
+
+const ARTIST_LINK_CLASS =
+  'rounded-sm outline-none underline-offset-2 hover:underline focus-visible:ring-3 focus-visible:ring-primary-foreground';
+
+/** The credit, each name linked to its Artist page when it has one. */
+function HeroArtistCredit({ credit }: { credit: HomeTrack['artistCredit'] }) {
+  return (
+    <>
+      {credit.map((entry, index) => (
+        // A credit is a fixed ordered list, and one name can appear twice.
+        // biome-ignore lint/suspicious/noArrayIndexKey: position is the identity.
+        <Fragment key={index}>
+          {entry.artistId == null ? (
+            entry.name
+          ) : (
+            <Link
+              href={`/artists/${entry.artistId}`}
+              className={ARTIST_LINK_CLASS}
+            >
+              {entry.name}
+            </Link>
+          )}
+          {entry.joinPhrase}
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 /**
  * The feed's featured Track: one solid orange block with the cover at its
@@ -36,6 +64,7 @@ export function HeroLayout({
       className={cn(
         'relative isolate flex items-end overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground md:p-10',
         HERO_BLOCK_CLASS,
+        entityRingClass,
       )}
     >
       <div aria-hidden="true" className={COVER_CLASS}>
@@ -55,7 +84,7 @@ export function HeroLayout({
           {track.title}
         </h2>
         <p className="font-semibold text-sm">
-          {creditText(track.artistCredit)}
+          <HeroArtistCredit credit={track.artistCredit} />
         </p>
         <Link
           href={`/tracks/${track.id}`}

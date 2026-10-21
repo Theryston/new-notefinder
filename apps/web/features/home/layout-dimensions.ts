@@ -5,7 +5,7 @@
 
 export const HERO_BLOCK_CLASS = 'min-h-72 md:min-h-80';
 
-export const CAROUSEL_HEADER_CLASS = 'flex min-h-14 flex-col justify-end';
+export const CAROUSEL_HEADER_CLASS = 'flex flex-col';
 
 export const CAROUSEL_TITLE_CLASS = 'font-bold text-xl tracking-tight';
 
@@ -33,7 +33,7 @@ export const DAILY_TARGET_STRIP_CLASS =
   'flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3';
 
 /** A ranked Top 10: the title line, then the numbered rows. */
-export const RANKED_HEADER_CLASS = 'flex min-h-14 flex-col justify-end';
+export const RANKED_HEADER_CLASS = 'flex flex-col';
 
 export const RANKED_TITLE_CLASS = 'font-bold text-xl tracking-tight';
 

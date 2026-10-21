@@ -312,11 +312,13 @@ terms live here instead of in a menu.
 
 The home is a feed of **rows**, each with its own layout. A row's title is
 a translated key (`text-xl font-bold tracking-tight`, the same as every
-section heading); rows are spaced `gap-12`.
+section heading) with its items `gap-2` below it; rows are spaced `gap-8`.
 
 - **Hero** (one per feed, first): a solid `bg-primary` block with
-  `rounded-2xl`, `p-6` (`md:p-10`), `min-h-72 md:min-h-80`. The cover is a
-  `rounded-2xl shadow-xl` square at the top right on phones and centered on
+  `rounded-2xl`, `p-6` (`md:p-10`), `min-h-72 md:min-h-80`. Like the entity
+  banners it carries the decorative ring behind its content, and the cover
+  tilts `sm:rotate-3` like the album cover. The cover is a
+  `rounded-2xl shadow-sm` square at the top right on phones and centered on
   the right from `md`. The title is display type (`text-4xl font-extrabold
   tracking-tighter`, `md:text-5xl`), the artist credit `font-semibold`, and
   one pill CTA (`bg-background text-foreground`, `rounded-full`,
@@ -327,7 +329,11 @@ section heading); rows are spaced `gap-12`.
   snapping (`snap-x snap-mandatory`, `scroll-px-4`), a 16px side gutter that
   bleeds to the screen edge, and a scrollbar hidden on the track only. Each
   card is the Track card above at a fixed width (`w-40 sm:w-44 md:w-48`), so
-  the touch target is large and the cards keep their own square cover.
+  the touch target is large and the cards keep their own square cover. On
+  devices with a fine pointer, a pair of arrows sits top-right, justified
+  against the title; clicking one pages the row by its own width, like the TV
+  rails. Each arrow disables when its side has nothing left to scroll to.
+  Touch devices never see the arrows, and rows that fit show none.
 - **Ranked** (Top 10 row): an ordered list (`<ol>`, the ranking) in a
   `rounded-2xl bg-card shadow-sm` block divided by `divide-border`. Each row
   is one link (`min-h-16`, `px-4 py-2`, `hover:bg-accent`, inset focus ring)
@@ -402,15 +408,18 @@ as text in a chip.
 
 The signed-in home leads its personal rows with a **daily target strip**: one
 thin bar with the practice time left today and the User's streak. It keeps the
-row chrome (a section with an `h2` in `CAROUSEL_TITLE_CLASS`, rows spaced
-`gap-12`), but its body is a single bar instead of cards.
+row chrome (a section labelled by a visually hidden `h2`, rows spaced
+`gap-8`), but it shows no visible title and its body is a single bar instead
+of cards.
 
 - **Bar**: `flex min-h-16 items-center justify-between gap-3 rounded-2xl
   bg-muted px-4 py-3` (`DAILY_TARGET_STRIP_CLASS`, shared with the skeleton so
   the strip lands without a shift). No new token: `bg-muted` in both themes.
-- **Left**: a `Target` icon (`size-4`, 1.75 stroke) and the remaining time in
-  `font-medium text-sm`, truncated on narrow screens ("12 minutes left of
-  your 15-minute goal"; "Today's goal is complete" once reached).
+- **Left**: a `Target` icon (`size-4`, 1.75 stroke) and one line in
+  `font-medium text-sm`, truncated on narrow screens: a nudge to start ("Just
+  5 minutes of daily practice can change your singing") while nothing was sung
+  yet, what is left of the goal once sung a little ("12 minutes left of your
+  15-minute goal"), and "Today's goal is complete" once reached.
 - **Right**: the streak as a pill (`inline-flex rounded-full bg-background
   px-3 py-1 text-xs font-semibold`) with a `Flame` icon (`size-3.5`, 1.75
   stroke): "5 day streak". It mirrors the streak wording of the practice
