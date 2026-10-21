@@ -1,6 +1,36 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/v1/events": {
+      "post": {
+        "operationId": "EventsController_record_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordEventsBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The batch was queued for storing."
+          },
+          "400": {
+            "description": "The batch is oversized or an event is invalid."
+          },
+          "429": {
+            "description": "Per-IP or per-visitor events rate exceeded."
+          }
+        },
+        "tags": [
+          "events"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "operationId": "HealthController_check_v1",
@@ -1956,6 +1986,131 @@
   "servers": [],
   "components": {
     "schemas": {
+      "RecordEventsBodyDto": {
+        "type": "object",
+        "properties": {
+          "visitorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "events": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "home.row_impression"
+                      ]
+                    },
+                    "rowId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "feedVersion": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "algorithmVersion": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991
+                    },
+                    "items": {
+                      "minItems": 1,
+                      "maxItems": 24,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "rowId",
+                    "feedVersion",
+                    "algorithmVersion",
+                    "items"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "home.item_click"
+                      ]
+                    },
+                    "rowId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "feedVersion": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "algorithmVersion": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991
+                    },
+                    "itemId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "rowId",
+                    "feedVersion",
+                    "algorithmVersion",
+                    "itemId"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "visitorId",
+          "events"
+        ]
+      },
       "CreateTrackBodyDto": {
         "type": "object",
         "properties": {

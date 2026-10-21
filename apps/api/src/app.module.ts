@@ -9,6 +9,7 @@ import { AlbumsModule } from './modules/albums/albums.module.js';
 import { ArtistsModule } from './modules/artists/artists.module.js';
 import { AttemptsModule } from './modules/attempts/attempts.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { EventsModule } from './modules/events/events.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { FollowsModule } from './modules/follows/follows.module.js';
 import { HealthModule } from './modules/health/health.module.js';
@@ -34,6 +35,7 @@ import { RedisModule } from './redis/redis.module.js';
     // After RateLimitModule: global guards run in registration order, so
     // the throttler rejects floods before any session lookup.
     AuthModule,
+    EventsModule,
     WebRevalidationModule,
     StorageModule,
     MusicCatalogModule,

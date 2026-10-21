@@ -7,6 +7,8 @@ import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
 import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
 import { EditorialPinsProcessor } from '../src/modules/editorial-pins/editorial-pins.processor.js';
+import { EVENTS_QUEUE } from '../src/modules/events/events.job.js';
+import { EventsProcessor } from '../src/modules/events/events.processor.js';
 import { HOME_FEED_QUEUE } from '../src/modules/home/home-feed.job.js';
 import { HomeFeedProcessor } from '../src/modules/home/home-feed.processor.js';
 import { PERSONAL_HOME_FEED_QUEUE } from '../src/modules/home/home-personal.job.js';
@@ -35,6 +37,7 @@ const QUEUES = [
   HOME_FEED_QUEUE,
   PERSONAL_HOME_FEED_QUEUE,
   EDITORIAL_PIN_QUEUE,
+  EVENTS_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -48,6 +51,7 @@ const PROCESSORS = [
   HomeFeedProcessor,
   PersonalHomeProcessor,
   EditorialPinsProcessor,
+  EventsProcessor,
 ] as const;
 
 export type FakeQueue = {

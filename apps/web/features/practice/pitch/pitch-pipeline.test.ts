@@ -37,13 +37,17 @@ describe('PitchPipeline', () => {
     );
   });
 
-  it('reads the note being sung through block boundaries', () => {
+  // YIN detection exceeds vitest's 5s default under Stryker instrumentation on CI.
+  it('reads the note being sung through block boundaries', {
+    timeout: 30_000,
+  }, () => {
     const pipeline = new PitchPipeline(SAMPLE_RATE);
     const readings = sing(pipeline, 440, 0.3);
     expect(readings.at(-1)).toBeCloseTo(69, 1);
   });
 
-  it('follows the singer to a new note', () => {
+  // YIN detection exceeds vitest's 5s default under Stryker instrumentation on CI.
+  it('follows the singer to a new note', { timeout: 30_000 }, () => {
     const pipeline = new PitchPipeline(SAMPLE_RATE);
     sing(pipeline, 220, 0.3);
     const readings = sing(pipeline, 261.63, 0.3, 0.3 * SAMPLE_RATE);
