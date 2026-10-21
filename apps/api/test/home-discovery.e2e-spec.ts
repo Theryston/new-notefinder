@@ -1,5 +1,9 @@
 import type { HomeRow } from '@notefinder/contracts';
 import request from 'supertest';
+import {
+  createAlbumDisc,
+  placeAlbumTrack,
+} from './utils/album-track-factories.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {
@@ -9,10 +13,6 @@ import {
   linkTrackArtist,
 } from './utils/factories.js';
 import { createCompletedTrack } from './utils/track-processing-factories.js';
-import {
-  createAlbumDisc,
-  placeAlbumTrack,
-} from './utils/album-track-factories.js';
 
 const getHome = (testApp: TestApp) =>
   request(testApp.app.getHttpServer()).get('/v1/home');
@@ -21,7 +21,16 @@ const rowOf = (body: { rows: HomeRow[] }, id: string): HomeRow | undefined =>
   body.rows.find((row) => row.id === id);
 
 /** Six serviced genres: each tile's genre names three completed Tracks. */
-const GENRES = ['blues', 'country', 'disco', 'funk', 'jazz', 'pop', 'rock', 'soul'];
+const GENRES = [
+  'blues',
+  'country',
+  'disco',
+  'funk',
+  'jazz',
+  'pop',
+  'rock',
+  'soul',
+];
 
 /**
  * A catalog rich enough for every discovery row: 24 completed Tracks (three
@@ -42,7 +51,9 @@ const seedDiscoveryCatalog = async (testApp: TestApp) => {
   }
   const artists = [];
   for (let j = 0; j < 6; j += 1) {
-    const artist = await createArtist(testApp.db, { name: `Discovery artist ${j}` });
+    const artist = await createArtist(testApp.db, {
+      name: `Discovery artist ${j}`,
+    });
     const first = tracks[j];
     const second = tracks[j + 6];
     if (first) await linkTrackArtist(testApp.db, first.id, artist.id);
