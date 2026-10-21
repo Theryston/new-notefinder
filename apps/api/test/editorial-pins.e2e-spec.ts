@@ -2,6 +2,7 @@ import request from 'supertest';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
 import { EditorialPinsRepository } from '../src/modules/editorial-pins/editorial-pins.repository.js';
+import type { FakeQueue } from './redis-test-overrides.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
 import {
@@ -22,9 +23,10 @@ import {
 
 const PINS = '/v1/admin/home-pins';
 
-/** The delay (in ms) a scheduled job was added with. */
-const delayOf = (job: { opts?: unknown } | undefined): number =>
-  (job?.opts as { delay?: number } | undefined)?.delay ?? Number.NaN;
+/** The delay (in ms) of the scheduled job at `index` of a fake queue. */
+const delayOf = (queue: FakeQueue | undefined, index: number): number =>
+  (queue?.options[index] as { delay?: number } | undefined)?.delay ??
+  Number.NaN;
 
 /** A Track whose Processing is still queued: it cannot appear in a pin. */
 const queuedTrack = async (db: Parameters<typeof createTrack>[0]) => {
@@ -260,14 +262,15 @@ describe('Editorial pins (e2e)', () => {
 
       await createPin(rowPinBody([track.id], { startsAt, endsAt }));
 
-      const jobs = spec.testApp.queues[EDITORIAL_PIN_QUEUE]?.added ?? [];
+      const queue = spec.testApp.queues[EDITORIAL_PIN_QUEUE];
+      const jobs = queue?.added ?? [];
       expect(jobs.map((job) => job.name)).toEqual([
         'invalidate-home-for-pin',
         'invalidate-home-for-pin',
       ]);
-      // Each job fires at the edge's own time: the delay is the time left at
-      // scheduling (a few seconds before the check reads it).
-      expect(jobs.map((job) => job.opts)).toEqual([
+      // Each job is keyed by its edge and time, and fires after the time left
+      // when the pin was saved (a few seconds before the check reads it).
+      expect(queue?.options).toEqual([
         expect.objectContaining({
           jobId: expect.stringContaining(`-start-${Date.parse(startsAt)}`),
         }),
@@ -275,10 +278,10 @@ describe('Editorial pins (e2e)', () => {
           jobId: expect.stringContaining(`-end-${Date.parse(endsAt)}`),
         }),
       ]);
-      expect(delayOf(jobs[0])).toBeGreaterThan(3_600_000 - 10_000);
-      expect(delayOf(jobs[0])).toBeLessThanOrEqual(3_600_000);
-      expect(delayOf(jobs[1])).toBeGreaterThan(7_200_000 - 10_000);
-      expect(delayOf(jobs[1])).toBeLessThanOrEqual(7_200_000);
+      expect(delayOf(queue, 0)).toBeGreaterThan(3_600_000 - 10_000);
+      expect(delayOf(queue, 0)).toBeLessThanOrEqual(3_600_000);
+      expect(delayOf(queue, 1)).toBeGreaterThan(7_200_000 - 10_000);
+      expect(delayOf(queue, 1)).toBeLessThanOrEqual(7_200_000);
     });
 
     it('shows a pin from its start (inclusive) until its end (exclusive)', async () => {
