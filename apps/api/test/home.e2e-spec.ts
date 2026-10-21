@@ -271,7 +271,7 @@ describe('Home feed (e2e)', () => {
   describe('signed in', () => {
     const spec = useAuthSpec();
 
-    it('gets the same public feed, with no personal data in it', async () => {
+    it('gets the personal feed, with no personal data in it', async () => {
       const viewer = await createUser(spec.testApp.db, {
         username: 'home-viewer',
         email: 'home-viewer@example.com',
@@ -289,7 +289,9 @@ describe('Home feed (e2e)', () => {
 
       const response = await spec.client.get('/v1/home').expect(200);
 
-      expect(response.body.audience).toBe('public');
+      // A User with no snapshot gets the public rows at once, as the personal
+      // answer, while the snapshot rebuilds (#340).
+      expect(response.body.audience).toBe('personal');
       // Private, not public: the signed-in body omits the visitors-only pins,
       // so no shared cache may keep it (the PR's "signed-in private" decision).
       expect(response.headers['cache-control']).toBe(

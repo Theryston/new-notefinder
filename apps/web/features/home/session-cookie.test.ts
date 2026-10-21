@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSessionCookieName } from './session-cookie';
+import { hasSessionCookie, isSessionCookieName } from './session-cookie';
 
 describe('isSessionCookieName', () => {
   it.each([
@@ -19,5 +19,18 @@ describe('isSessionCookieName', () => {
     'theme',
   ])('ignores the unrelated cookie %s', (name) => {
     expect(isSessionCookieName(name)).toBe(false);
+  });
+});
+
+describe('hasSessionCookie', () => {
+  it('is true when any cookie is a session cookie', () => {
+    expect(
+      hasSessionCookie(['NEXT_LOCALE', '__Secure-notefinder.session_token']),
+    ).toBe(true);
+  });
+
+  it('is false without cookies or without a session cookie', () => {
+    expect(hasSessionCookie([])).toBe(false);
+    expect(hasSessionCookie(['NEXT_LOCALE', 'theme'])).toBe(false);
   });
 });

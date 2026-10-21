@@ -3,8 +3,17 @@ import type { HomeRow } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { HomeService } from './home.service.js';
 import { encodeHomeCursor } from './home-cursor.js';
-import { type StoredHomeFeed } from './home-feed.js';
+import {
+  type StoredHomeFeed,
+  type StoredPersonalHomeFeed,
+} from './home-feed.js';
 import { HomeFeedService } from './home-feed.service.js';
+import { PersonalHomeStore } from './home-personal.store.js';
+import { PersonalHomeQueueService } from './home-personal-queue.service.js';
+import {
+  PERSONAL_SNAPSHOT_STALE_AFTER_SECONDS,
+  PRIVATE_HOME_CACHE_CONTROL,
+} from './home-rules.js';
 
 const VERSION = 'a1b2c3d4e5f60718';
 
@@ -36,7 +45,6 @@ describe('HomeService', () => {
     }).compile();
     service = moduleRef.get(HomeService);
   });
-
   it('answers the first six rows of the current feed with a cursor while rows remain', async () => {
     feeds.currentPublic.mockResolvedValue({
       feed: feedOf(VERSION, 8),
@@ -129,6 +137,158 @@ describe('HomeService', () => {
 
     await expect(service.getPage(undefined)).resolves.toMatchObject({
       cacheable: false,
+    });
+  });
+});
+
+describe('HomeService for a signed-in visitor', () => {
+  let service: HomeService;
+  const feeds = { currentPublic: vi.fn(), publicVersion: vi.fn() };
+  const snapshots = { readCurrent: vi.fn(), readRetired: vi.fn() };
+  const refresh = { requestRefresh: vi.fn() };
+
+  const personalOf = (
+    version: string,
+    generatedAt: string,
+  ): StoredPersonalHomeFeed => ({
+    audience: 'personal',
+    locale: 'en',
+    version,
+    algorithmVersion: 1,
+    rows: rows(4).map((row, index) => ({ ...row, id: `mine-${index}` })),
+    generatedAt,
+  });
+
+  const freshAt = () => new Date().toISOString();
+  const staleAt = () =>
+    new Date(
+      Date.now() - (PERSONAL_SNAPSHOT_STALE_AFTER_SECONDS + 60) * 1000,
+    ).toISOString();
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        HomeService,
+        { provide: HomeFeedService, useValue: feeds },
+        { provide: PersonalHomeStore, useValue: snapshots },
+        { provide: PersonalHomeQueueService, useValue: refresh },
+      ],
+    }).compile();
+    service = moduleRef.get(HomeService);
+  });
+
+  it('serves the fresh snapshot as personal with private headers', async () => {
+    snapshots.readCurrent.mockResolvedValue(
+      personalOf('b2c3d4e5f6a70819', freshAt()),
+    );
+
+    const { page, cacheControl } = await service.getPage(
+      undefined,
+      'en',
+      'user-1',
+    );
+
+    expect(page).toMatchObject({
+      audience: 'personal',
+      version: 'b2c3d4e5f6a70819',
+    });
+    expect(rowIds(page)).toEqual(['mine-0', 'mine-1', 'mine-2', 'mine-3']);
+    expect(page.nextCursor).toBeNull();
+    expect(cacheControl).toBe(PRIVATE_HOME_CACHE_CONTROL);
+    expect(refresh.requestRefresh).not.toHaveBeenCalled();
+  });
+
+  it('serves a stale snapshot and queues its rebuild', async () => {
+    snapshots.readCurrent.mockResolvedValue(
+      personalOf('b2c3d4e5f6a70819', staleAt()),
+    );
+
+    const { page } = await service.getPage(undefined, 'en', 'user-1');
+
+    expect(page.audience).toBe('personal');
+    expect(refresh.requestRefresh).toHaveBeenCalledWith('user-1', 'en');
+  });
+
+  it('serves the public rows as personal while the rebuild runs', async () => {
+    snapshots.readCurrent.mockResolvedValue(undefined);
+    feeds.currentPublic.mockResolvedValue({
+      feed: feedOf(VERSION, 8),
+      cacheable: true,
+    });
+
+    const { page, cacheControl } = await service.getPage(
+      undefined,
+      'en',
+      'user-1',
+    );
+
+    expect(page).toMatchObject({ audience: 'personal', version: VERSION });
+    expect(rowIds(page)).toEqual([
+      'row-0',
+      'row-1',
+      'row-2',
+      'row-3',
+      'row-4',
+      'row-5',
+    ]);
+    expect(cacheControl).toBe(PRIVATE_HOME_CACHE_CONTROL);
+    expect(refresh.requestRefresh).toHaveBeenCalledWith('user-1', 'en');
+  });
+
+  it('resumes the snapshot version with a personal page', async () => {
+    snapshots.readCurrent.mockResolvedValue(
+      personalOf('b2c3d4e5f6a70819', freshAt()),
+    );
+    const cursor = encodeHomeCursor({
+      version: 'b2c3d4e5f6a70819',
+      position: 0,
+    });
+
+    const { page } = await service.getPage(cursor, 'en', 'user-1');
+
+    expect(page.audience).toBe('personal');
+    expect(snapshots.readRetired).not.toHaveBeenCalled();
+    expect(feeds.publicVersion).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the public version for a cursor it no longer serves', async () => {
+    snapshots.readCurrent.mockResolvedValue(
+      personalOf('b2c3d4e5f6a70819', freshAt()),
+    );
+    snapshots.readRetired.mockResolvedValue(undefined);
+    feeds.publicVersion.mockResolvedValue(feedOf(VERSION, 8));
+    const cursor = encodeHomeCursor({ version: VERSION, position: 6 });
+
+    const { page, cacheControl } = await service.getPage(
+      cursor,
+      'en',
+      'user-1',
+    );
+
+    expect(page).toMatchObject({ audience: 'personal', version: VERSION });
+    expect(rowIds(page)).toEqual(['row-6', 'row-7']);
+    expect(cacheControl).toBe(PRIVATE_HOME_CACHE_CONTROL);
+  });
+
+  it('answers 404 when no feed serves the cursor version', async () => {
+    snapshots.readCurrent.mockResolvedValue(
+      personalOf('b2c3d4e5f6a70819', freshAt()),
+    );
+    snapshots.readRetired.mockResolvedValue(undefined);
+    feeds.publicVersion.mockResolvedValue(undefined);
+    const cursor = encodeHomeCursor({
+      version: '0000000000000000',
+      position: 6,
+    });
+
+    const error = await service
+      .getPage(cursor, 'en', 'user-1')
+      .catch((e: unknown) => e);
+
+    expect(error).toMatchObject({
+      code: 'NOT_FOUND',
+      details: { reason: 'FEED_VERSION_EXPIRED' },
     });
   });
 });

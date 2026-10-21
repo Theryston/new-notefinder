@@ -9,6 +9,8 @@ import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pin
 import { EditorialPinsProcessor } from '../src/modules/editorial-pins/editorial-pins.processor.js';
 import { HOME_FEED_QUEUE } from '../src/modules/home/home-feed.job.js';
 import { HomeFeedProcessor } from '../src/modules/home/home-feed.processor.js';
+import { PERSONAL_HOME_FEED_QUEUE } from '../src/modules/home/home-personal.job.js';
+import { PersonalHomeProcessor } from '../src/modules/home/home-personal.processor.js';
 import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
 import { StreakReminderProcessor } from '../src/modules/streaks/streak-reminder.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
@@ -31,6 +33,7 @@ const QUEUES = [
   TRACK_MP3_QUEUE,
   TRACK_TRENDING_QUEUE,
   HOME_FEED_QUEUE,
+  PERSONAL_HOME_FEED_QUEUE,
   EDITORIAL_PIN_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
@@ -43,6 +46,7 @@ const PROCESSORS = [
   TrackMp3Processor,
   TrackTrendingProcessor,
   HomeFeedProcessor,
+  PersonalHomeProcessor,
   EditorialPinsProcessor,
 ] as const;
 

@@ -14,9 +14,12 @@
       "trendingToday": "Em alta hoje",
       "newTracks": "Músicas novas",
       "pinned": "{title}",
-      "easyToStart": "Fáceis de começar",
+"easyToStart": "Fáceis de começar",
       "higherVoices": "Para vozes agudas",
-      "lowerVoices": "Para vozes graves"
+      "lowerVoices": "Para vozes graves",
+      "continueSinging": "Continue cantando",
+      "singAgain": "Cante de novo",
+      "dailyTarget": "Meta diária"
     },
     "sponsored": {
       "hero": "conteúdo patrocinado",
@@ -25,6 +28,11 @@
     "feed": {
       "loadMoreError": "Não foi possível carregar mais fileiras.",
       "retry": "Tentar de novo"
+    },
+    "dailyTarget": {
+      "remaining": "{minutesLeft, plural, one {Falta # minuto da sua meta de {minutesTotal} minutos} other {Faltam # minutos da sua meta de {minutesTotal} minutos}}",
+      "completeToday": "Meta de hoje concluída",
+      "streak": "{days, plural, =0 {Nenhuma sequência ainda} one {# dia de sequência} other {# dias de sequência}}"
     }
   },
   "search": {

@@ -30,3 +30,22 @@ export const minimalHomeFeed = (): StoredHomeFeed => ({
   algorithmVersion: HOME_ALGORITHM_VERSION,
   rows: [],
 });
+
+/**
+ * A personal snapshot as it is stored in Redis: the response minus the
+ * cursor, plus when it was built. Its `version` hashes the User with the rows,
+ * so it never collides with a public version and its cursors stay valid while
+ * the snapshot is served. Pins are overlaid at read time, never stored here
+ * (see docs/adr/0012-editorial-pins-read-time-overlay.md).
+ */
+export const storedPersonalHomeFeedSchema = storedHomeFeedSchema.extend({
+  audience: z.literal('personal'),
+  // The locale the snapshot was built for: snapshots are per locale, like the
+  // public feeds.
+  locale: localeSchema,
+  generatedAt: z.string().datetime(),
+});
+
+export type StoredPersonalHomeFeed = z.infer<
+  typeof storedPersonalHomeFeedSchema
+>;

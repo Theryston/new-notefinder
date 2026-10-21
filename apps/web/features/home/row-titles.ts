@@ -8,9 +8,12 @@ export const HOME_ROW_TITLE_KEYS = [
   'home.rows.trendingToday',
   'home.rows.newTracks',
   'home.rows.pinned',
-  'home.rows.easyToStart',
+'home.rows.easyToStart',
   'home.rows.higherVoices',
   'home.rows.lowerVoices',
+  'home.rows.continueSinging',
+  'home.rows.singAgain',
+  'home.rows.dailyTarget',
 ] as const;
 
 export type HomeRowTitleKey = (typeof HOME_ROW_TITLE_KEYS)[number];

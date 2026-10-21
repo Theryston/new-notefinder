@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
 import { AttemptsModule } from '../attempts/attempts.module.js';
+import { HomeModule } from '../home/home.module.js';
 import { TracksModule } from '../tracks/tracks.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { FavoriteWritesService } from './favorite-writes.service.js';
@@ -13,7 +14,13 @@ import { UserFavoritesService } from './user-favorites.service.js';
 
 /** The Tracks a User favorited, and the per-User state of a Track. */
 @Module({
-  imports: [TracksModule, AttemptsModule, UsersModule, WebRevalidationModule],
+  imports: [
+    TracksModule,
+    AttemptsModule,
+    UsersModule,
+    WebRevalidationModule,
+    HomeModule,
+  ],
   controllers: [FavoritesController, UserFavoritesController],
   providers: [
     FavoritesService,

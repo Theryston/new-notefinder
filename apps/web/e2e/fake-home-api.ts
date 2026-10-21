@@ -6,10 +6,15 @@ import { json, readBody } from './fake-api-http.ts';
  * `GET /v1/home` of the fake API: one feed per locale, paged six rows at a
  * time like the real endpoint. Specs install a feed with
  * {@link setHomeMock}, which also bumps the feed's version, so a cursor from
- * an earlier fixture is refused the way an expired one is.
+ * an earlier fixture is refused the way an expired one is. A request carrying
+ * a session cookie gets the personal feed when one is installed (falling back
+ * to the public rows with a personal audience), mirroring the real API.
  */
 
 const PAGE_SIZE = 6;
+
+/** The session cookie the web forwards, like the real Better Auth one. */
+const SESSION_COOKIE = 'notefinder.session_token=';
 
 type FakeHomeLocale = 'en' | 'pt-BR';
 
@@ -18,17 +23,29 @@ export type FakeHomeRow = Record<string, unknown> & { id: string };
 
 type HomeMockState = {
   feeds?: Partial<Record<FakeHomeLocale, FakeHomeRow[]>>;
+  /** The signed-in feed of each locale given; the rest fall back to `feeds`. */
+  personal?: Partial<Record<FakeHomeLocale, FakeHomeRow[]>>;
 };
 
 const feeds = new Map<
   FakeHomeLocale,
   { version: string; rows: FakeHomeRow[] }
 >();
+
+const personalFeeds = new Map<
+  FakeHomeLocale,
+  { version: string; rows: FakeHomeRow[] }
+>();
+
 let versionCounter = 0;
 
-const installFeed = (locale: FakeHomeLocale, rows: FakeHomeRow[]): void => {
+const installFeed = (
+  store: Map<FakeHomeLocale, { version: string; rows: FakeHomeRow[] }>,
+  locale: FakeHomeLocale,
+  rows: FakeHomeRow[],
+): void => {
   versionCounter += 1;
-  feeds.set(locale, { version: `fixture-${versionCounter}`, rows });
+  store.set(locale, { version: `fixture-${versionCounter}`, rows });
 };
 
 const fixtureTrack = (id: string, title: string) => ({
@@ -68,8 +85,8 @@ export const defaultHomeRows = (locale: FakeHomeLocale): FakeHomeRow[] => {
   return [hero, ...carousels];
 };
 
-installFeed('en', defaultHomeRows('en'));
-installFeed('pt-BR', defaultHomeRows('pt-BR'));
+installFeed(feeds, 'en', defaultHomeRows('en'));
+installFeed(feeds, 'pt-BR', defaultHomeRows('pt-BR'));
 
 const isLocale = (value: string): value is FakeHomeLocale =>
   value === 'en' || value === 'pt-BR';
@@ -87,7 +104,12 @@ const serveHome = (request: IncomingMessage, response: ServerResponse) => {
   const search = new URL(request.url ?? '/', 'http://fake.local').searchParams;
   const requested = search.get('locale') ?? 'en';
   const locale: FakeHomeLocale = isLocale(requested) ? requested : 'en';
-  const feed = feeds.get(locale);
+  const signedIn = (request.headers.cookie ?? '').includes(SESSION_COOKIE);
+  const audience = signedIn ? 'personal' : 'public';
+  // Without its own fixture, the personal feed is the public rows with the
+  // personal audience, like the real API serves a missing snapshot.
+  const feed =
+    (signedIn ? personalFeeds.get(locale) : undefined) ?? feeds.get(locale);
   const cursor = search.get('cursor');
   let offset = 0;
   if (cursor) {
@@ -118,7 +140,7 @@ const serveHome = (request: IncomingMessage, response: ServerResponse) => {
     response,
     200,
     {
-      audience: 'public',
+      audience,
       version: feed.version,
       algorithmVersion: 1,
       rows: feed.rows.slice(offset, next),
@@ -136,7 +158,9 @@ const serveHomeMockSet = async (
   const state = (await readBody(request)) as HomeMockState;
   for (const locale of ['en', 'pt-BR'] as const) {
     const rows = state.feeds?.[locale];
-    if (rows) installFeed(locale, rows);
+    if (rows) installFeed(feeds, locale, rows);
+    const personal = state.personal?.[locale];
+    if (personal) installFeed(personalFeeds, locale, personal);
   }
   json(response, 200, { ok: true }, request);
 };

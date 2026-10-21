@@ -24,3 +24,10 @@ export const CAROUSEL_COVER_SIZES =
 
 /** Sizes hint for the hero's cover, which takes the block's right half. */
 export const HERO_COVER_SIZES = '(max-width: 768px) 50vw, 40vw';
+
+/**
+ * The daily target strip: one thin bar with the time left and the streak, so
+ * the skeleton reserves exactly its height (no shift when it lands).
+ */
+export const DAILY_TARGET_STRIP_CLASS =
+  'flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3';

@@ -42,7 +42,7 @@ export class HomeController {
     const { page, cacheControl } = await this.home.getPage(
       query.cursor,
       query.locale,
-      user !== undefined,
+      user?.id,
     );
     response.setHeader('Cache-Control', cacheControl);
     return page;

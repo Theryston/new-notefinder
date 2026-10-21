@@ -14,9 +14,12 @@
       "trendingToday": "Trending today",
       "newTracks": "New Tracks",
       "pinned": "{title}",
-      "easyToStart": "Easy to start",
+"easyToStart": "Easy to start",
       "higherVoices": "For higher voices",
-      "lowerVoices": "For lower voices"
+      "lowerVoices": "For lower voices",
+      "continueSinging": "Continue singing",
+      "singAgain": "Sing again",
+      "dailyTarget": "Daily target"
     },
     "sponsored": {
       "hero": "sponsored content",
@@ -25,6 +28,11 @@
     "feed": {
       "loadMoreError": "Could not load more rows.",
       "retry": "Try again"
+    },
+    "dailyTarget": {
+      "remaining": "{minutesLeft, plural, one {# minute left of your {minutesTotal}-minute goal} other {# minutes left of your {minutesTotal}-minute goal}}",
+      "completeToday": "Today's goal is complete",
+      "streak": "{days, plural, =0 {No streak yet} one {# day streak} other {# day streak}}"
     }
   },
   "search": {
