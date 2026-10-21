@@ -1,11 +1,10 @@
 'use client';
 
 import type { HomeFeedPage, Locale } from '@notefinder/contracts';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { Fragment, useCallback, useEffect, useRef } from 'react';
-
 import { Button } from '@/components/ui/button';
-import { HomeEventsTracker } from '../events/home-events-tracker';
 import { useHomeRows } from '../hooks/use-home-rows';
 import {
   homeLayoutRegistry,
@@ -15,6 +14,17 @@ import { visibleRows } from '../visible-rows';
 import { CarouselRowSkeleton } from './home-feed-skeleton';
 
 const SENTINEL_MARGIN = '600px';
+
+// The tracker only observes row visibility and posts event batches: it
+// renders nothing and runs on the client only, so it loads after the page
+// to keep the home inside the bundle budget.
+const HomeEventsTracker = dynamic(
+  () =>
+    import('../events/home-events-tracker').then(
+      (module) => module.HomeEventsTracker,
+    ),
+  { ssr: false },
+);
 
 /**
  * The rows of the home, in feed order, with the next pages loaded as the
