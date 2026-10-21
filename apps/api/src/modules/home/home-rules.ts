@@ -79,9 +79,24 @@ export const HOME_ROW_RULES = {
     requiresCover: false,
     requiresVocalRange: false,
   },
-  genres: { minItems: 6, maxItems: 12, requiresCover: false, requiresVocalRange: false },
-  artists: { minItems: 6, maxItems: 12, requiresCover: false, requiresVocalRange: false },
-  albums: { minItems: 6, maxItems: 12, requiresCover: false, requiresVocalRange: false },
+  genres: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  artists: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  albums: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
 } as const satisfies Record<HomeLayout, HomeRowRule>;
 
 /** The current feed lives this long, so a stalled regeneration still serves it. */
