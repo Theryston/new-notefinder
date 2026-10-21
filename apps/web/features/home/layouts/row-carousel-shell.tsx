@@ -54,6 +54,8 @@ export function RowCarouselShell({
  * The cards of a carousel row: each a real link, with its Vocal-range chip
  * when the feed carries one, and the range bar on the by-voice rows. Every
  * card shares the carousel's fixed widths, so one skeleton fits all rows.
+ * Each item also carries the tracking attributes the home events tracker
+ * reads.
  */
 export function RowTrackCards({
   items,
@@ -67,7 +69,12 @@ export function RowTrackCards({
   return (
     <>
       {items.map((track, index) => (
-        <li key={track.id} className={CAROUSEL_ITEM_CLASS}>
+        <li
+          key={track.id}
+          className={CAROUSEL_ITEM_CLASS}
+          data-home-item-id={track.id}
+          data-home-item-position={index}
+        >
           <TrackCard
             trackId={track.id}
             title={track.title}
