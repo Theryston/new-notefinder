@@ -1,6 +1,7 @@
 import type {
   EditorialPinDynamicSource,
   EditorialPinKind,
+  PinTrackIssueReason,
 } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import {
@@ -17,12 +18,18 @@ import type { EditorialPinsRepository } from './editorial-pins.repository.js';
 const refusalOf = (
   kind: EditorialPinWrite['kind'],
   track: { coverUrl: string | null } | undefined,
-): string | undefined => {
+): { message: string; reason: PinTrackIssueReason } | undefined => {
   if (!track) {
-    return 'The Track has not completed its Processing or does not exist';
+    return {
+      message: 'The Track has not completed its Processing or does not exist',
+      reason: 'TRACK_NOT_COMPLETED',
+    };
   }
   if (kind === 'hero' && track.coverUrl === null) {
-    return 'A hero needs a Track with a cover';
+    return {
+      message: 'A hero needs a Track with a cover',
+      reason: 'TRACK_NO_COVER',
+    };
   }
   return undefined;
 };
@@ -50,10 +57,18 @@ const assertTracksEligible = async (
     ),
   );
   const issues = write.trackIds.flatMap((trackId) => {
-    const message = refusalOf(write.kind, found.get(trackId));
-    return message === undefined
+    const refusal = refusalOf(write.kind, found.get(trackId));
+    return refusal === undefined
       ? []
-      : [{ code: 'custom', path: ['source', 'trackIds'], message, trackId }];
+      : [
+          {
+            code: 'custom',
+            path: ['source', 'trackIds'],
+            message: refusal.message,
+            reason: refusal.reason,
+            trackId,
+          },
+        ];
   });
   if (issues.length > 0) {
     throw new AppException(
@@ -84,6 +99,7 @@ const assertDynamicSourceEligible = async (
             code: 'custom',
             path: ['source'],
             message: `The ${source.type} does not exist`,
+            reason: 'SOURCE_NOT_FOUND' satisfies PinTrackIssueReason,
           },
         ],
       },
@@ -105,6 +121,7 @@ const assertDynamicSourceEligible = async (
             code: 'custom',
             path: ['source'],
             message: `The ${source.type} has fewer than ${required} eligible Tracks`,
+            reason: 'SOURCE_INSUFFICIENT' satisfies PinTrackIssueReason,
           },
         ],
       },

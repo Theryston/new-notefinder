@@ -296,6 +296,20 @@ export type PinTrackSearchResult = z.infer<typeof pinTrackSearchResultSchema>;
 export const PIN_TRACK_SEARCH_MAX_LIMIT = 20;
 
 /**
+ * Why a pin write refused a Track or a dynamic source, carried by each
+ * `VALIDATION_FAILED` issue so clients translate it instead of showing the
+ * English developer message.
+ */
+export const pinTrackIssueReasonSchema = z.enum([
+  'TRACK_NOT_COMPLETED',
+  'TRACK_NO_COVER',
+  'SOURCE_NOT_FOUND',
+  'SOURCE_INSUFFICIENT',
+]);
+
+export type PinTrackIssueReason = z.infer<typeof pinTrackIssueReasonSchema>;
+
+/**
  * `GET /v1/admin/tracks/search`: either a text query (matches against the
  * title and the credited artist names) or the summaries of explicit IDs (for
  * the Tracks an edited pin already holds). `kind` keeps only the Tracks that

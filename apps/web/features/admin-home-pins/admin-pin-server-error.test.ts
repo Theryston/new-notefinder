@@ -4,7 +4,7 @@ import { ApiError } from '@/lib/api/api-error';
 
 import {
   pinFormFieldLabelKey,
-  serverValidationBackendReason,
+  serverEligibilityErrors,
   serverValidationFieldErrors,
 } from './admin-pin-server-error';
 
@@ -29,7 +29,7 @@ describe('serverValidationFieldErrors', () => {
     ]);
   });
 
-  it('skips eligibility refusals, which need the backend reason instead', () => {
+  it('skips eligibility refusals, which the toast translates by reason', () => {
     const error = validationError({
       location: 'custom',
       issues: [
@@ -37,12 +37,33 @@ describe('serverValidationFieldErrors', () => {
           code: 'custom',
           path: ['source', 'trackIds'],
           message: 'The Track has not completed its Processing',
+          reason: 'TRACK_NOT_COMPLETED',
           trackId: 'trk_a',
         },
       ],
     });
 
     expect(serverValidationFieldErrors(error)).toEqual([]);
+  });
+
+  it('ignores unknown reasons, which fall back to the generic message', () => {
+    const error = validationError({
+      location: 'custom',
+      issues: [
+        {
+          code: 'custom',
+          path: ['source', 'trackIds'],
+          message: 'Something else',
+          reason: 'SOMETHING_ELSE',
+          trackId: 'trk_a',
+        },
+      ],
+    });
+
+    expect(serverValidationFieldErrors(error)).toEqual([
+      { field: 'trackIdsText', type: 'custom' },
+    ]);
+    expect(serverEligibilityErrors(error)).toEqual([]);
   });
 
   it('returns nothing without validation issues', () => {
@@ -55,8 +76,8 @@ describe('serverValidationFieldErrors', () => {
   });
 });
 
-describe('serverValidationBackendReason', () => {
-  it('names ineligible tracks with the backend message', () => {
+describe('serverEligibilityErrors', () => {
+  it('groups refusing tracks by reason with their ids', () => {
     const error = validationError({
       location: 'custom',
       issues: [
@@ -64,23 +85,33 @@ describe('serverValidationBackendReason', () => {
           code: 'custom',
           path: ['source', 'trackIds'],
           message: 'The Track has not completed its Processing',
+          reason: 'TRACK_NOT_COMPLETED',
           trackId: 'trk_a',
         },
         {
           code: 'custom',
           path: ['source', 'trackIds'],
           message: 'The Track has not completed its Processing',
+          reason: 'TRACK_NOT_COMPLETED',
           trackId: 'trk_b',
+        },
+        {
+          code: 'custom',
+          path: ['source', 'trackIds'],
+          message: 'A hero needs a Track with a cover',
+          reason: 'TRACK_NO_COVER',
+          trackId: 'trk_c',
         },
       ],
     });
 
-    expect(serverValidationBackendReason(error)).toBe(
-      'The Track has not completed its Processing: trk_a, trk_b',
-    );
+    expect(serverEligibilityErrors(error)).toEqual([
+      { kind: 'tracks-not-ready', trackIds: ['trk_a', 'trk_b'] },
+      { kind: 'hero-needs-cover', trackIds: ['trk_c'] },
+    ]);
   });
 
-  it('carries a refused dynamic source message', () => {
+  it('reports a refused dynamic source without ids', () => {
     const error = validationError({
       location: 'custom',
       issues: [
@@ -88,21 +119,23 @@ describe('serverValidationBackendReason', () => {
           code: 'custom',
           path: ['source'],
           message: 'The genre has fewer than 6 eligible Tracks',
+          reason: 'SOURCE_INSUFFICIENT',
         },
       ],
     });
 
-    expect(serverValidationBackendReason(error)).toBe(
-      'The genre has fewer than 6 eligible Tracks',
-    );
+    expect(serverEligibilityErrors(error)).toEqual([
+      { kind: 'source', trackIds: [] },
+    ]);
   });
 
-  it('returns null without a usable backend message', () => {
+  it('returns nothing without validation issues', () => {
     expect(
-      serverValidationBackendReason(
+      serverEligibilityErrors(
         new ApiError({ statusCode: 403, code: 'FORBIDDEN', message: 'No' }),
       ),
-    ).toBeNull();
+    ).toEqual([]);
+    expect(serverEligibilityErrors(new Error('boom'))).toEqual([]);
   });
 });
 

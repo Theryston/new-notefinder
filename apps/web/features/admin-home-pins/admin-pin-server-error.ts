@@ -1,3 +1,5 @@
+import type { PinTrackIssueReason } from '@notefinder/contracts';
+
 import { isApiError } from '@/lib/api/api-error';
 
 import {
@@ -15,8 +17,8 @@ export type ServerFieldError = {
 type ServerIssue = {
   code?: unknown;
   path?: unknown;
-  message?: unknown;
   trackId?: unknown;
+  reason?: unknown;
 };
 
 function isServerIssue(issue: unknown): issue is ServerIssue {
@@ -32,34 +34,44 @@ function issuePathOf(raw: ServerIssue): (string | number)[] {
     : [];
 }
 
+const ELIGIBILITY_REASONS: readonly string[] = [
+  'TRACK_NOT_COMPLETED',
+  'TRACK_NO_COVER',
+  'SOURCE_NOT_FOUND',
+  'SOURCE_INSUFFICIENT',
+] satisfies readonly PinTrackIssueReason[];
+
 /**
- * Whether a `trackIdsText` custom issue is a source-eligibility refusal
- * (a Track that cannot appear) rather than the duplicate-Tracks rule the
- * form's `custom` message describes. Eligibility issues carry the refusing
- * `trackId`; the duplicate check does not.
+ * Whether the issue is a source-eligibility refusal (a Track or source that
+ * cannot appear) rather than a shape violation. Eligibility issues carry a
+ * machine-readable `reason`; the duplicate-Tracks check does not.
  */
 function isEligibilityIssue(raw: ServerIssue): boolean {
-  return typeof raw.trackId === 'string' && raw.trackId.length > 0;
+  return (
+    typeof raw.reason === 'string' && ELIGIBILITY_REASONS.includes(raw.reason)
+  );
+}
+
+function validationIssuesOf(error: unknown): ServerIssue[] {
+  if (!isApiError(error) || error.code !== 'VALIDATION_FAILED') return [];
+  const details = error.details as { issues?: unknown } | undefined;
+  return Array.isArray(details?.issues)
+    ? details.issues.filter(isServerIssue)
+    : [];
 }
 
 /**
  * The backend's `VALIDATION_FAILED` details as field errors the pin form
  * shows inline. The API answers `{ details: { issues } }` with Zod issues,
  * so the same path → field and code → message maps the client validation
- * uses apply here; unmapped issues are skipped. Eligibility refusals (a
- * Track that cannot appear) are skipped: the form's `custom` message for
- * the Tracks field describes duplicates, so showing it would mislead and
- * the toast carries the backend's reason instead.
+ * uses apply here; unmapped issues are skipped. Eligibility refusals are
+ * skipped: they name Tracks, not fields, so the toast carries them instead.
  */
 export function serverValidationFieldErrors(
   error: unknown,
 ): ServerFieldError[] {
-  if (!isApiError(error) || error.code !== 'VALIDATION_FAILED') return [];
-  const details = error.details as { issues?: unknown } | undefined;
-  const issues = Array.isArray(details?.issues) ? details.issues : [];
   const mapped: ServerFieldError[] = [];
-  for (const raw of issues) {
-    if (!isServerIssue(raw)) continue;
+  for (const raw of validationIssuesOf(error)) {
     if (isEligibilityIssue(raw)) continue;
     const field = pinFormFieldForPath(issuePathOf(raw));
     if (!field || mapped.some((entry) => entry.field === field)) continue;
@@ -71,46 +83,49 @@ export function serverValidationFieldErrors(
   return mapped;
 }
 
+/** One translated eligibility refusal: what cannot be pinned, and which Tracks. */
+export type ServerEligibilityError = {
+  kind: 'tracks-not-ready' | 'hero-needs-cover' | 'source';
+  trackIds: string[];
+};
+
+function trackIdOf(raw: ServerIssue): string | undefined {
+  return typeof raw.trackId === 'string' && raw.trackId.length > 0
+    ? raw.trackId
+    : undefined;
+}
+
 /**
- * The backend's own reason for a `VALIDATION_FAILED`, when it carries one
- * the translated field message cannot express: an ineligible Track (with
- * its ID) or a dynamic source the panel cannot edit. Shown in the toast
- * alongside the translated message, so an admin sees what the backend
- * refused instead of a generic "some fields are invalid".
+ * The eligibility refusals of a `VALIDATION_FAILED`, grouped by kind with
+ * the refusing Track IDs. The toast translates these instead of showing the
+ * backend's English developer message, so the toast is never half-translated.
  */
-export function serverValidationBackendReason(error: unknown): string | null {
-  if (!isApiError(error) || error.code !== 'VALIDATION_FAILED') return null;
-  const details = error.details as { issues?: unknown } | undefined;
-  const issues = Array.isArray(details?.issues)
-    ? details.issues.filter(isServerIssue)
-    : [];
-  const trackIds = issues
-    .map((issue) => issue.trackId)
-    .filter(
-      (trackId): trackId is string =>
-        typeof trackId === 'string' && trackId.length > 0,
-    );
-  const messages = issues
-    .map((issue) => issue.message)
-    .filter(
-      (message): message is string =>
-        typeof message === 'string' && message.length > 0,
-    );
-  if (trackIds.length > 0) {
-    const reason = messages[0] ?? 'Some Tracks cannot appear in this pin';
-    const unique = [...new Set(trackIds)];
-    return `${reason}: ${unique.join(', ')}`;
+export function serverEligibilityErrors(
+  error: unknown,
+): ServerEligibilityError[] {
+  const kinds = new Map<ServerEligibilityError['kind'], string[]>();
+  const push = (
+    kind: ServerEligibilityError['kind'],
+    trackId: string | undefined,
+  ) => {
+    const ids = kinds.get(kind) ?? [];
+    if (trackId && !ids.includes(trackId)) ids.push(trackId);
+    kinds.set(kind, ids);
+  };
+  for (const raw of validationIssuesOf(error)) {
+    const reason = raw.reason;
+    if (reason === 'TRACK_NOT_COMPLETED')
+      push('tracks-not-ready', trackIdOf(raw));
+    else if (reason === 'TRACK_NO_COVER')
+      push('hero-needs-cover', trackIdOf(raw));
+    else if (
+      reason === 'SOURCE_NOT_FOUND' ||
+      reason === 'SOURCE_INSUFFICIENT'
+    ) {
+      push('source', undefined);
+    }
   }
-  const sourceIssue = issues.find((issue) => {
-    const path = issuePathOf(issue);
-    return path[0] === 'source' && typeof issue.message === 'string';
-  });
-  if (sourceIssue && typeof sourceIssue.message === 'string') {
-    return sourceIssue.message;
-  }
-  return typeof error.message === 'string' && error.message.length > 0
-    ? error.message
-    : null;
+  return [...kinds].map(([kind, trackIds]) => ({ kind, trackIds }));
 }
 
 /** The label under `adminHomePins.form` naming `field` in a toast. */

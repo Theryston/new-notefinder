@@ -1099,7 +1099,10 @@
         "outOfRange": "Este número está fora do intervalo.",
         "kindLayoutMismatch": "Um destaque hero usa o layout hero; uma fileira usa um layout de fileira.",
         "heroPositionFixed": "Um destaque hero sempre ocupa o espaço do hero.",
-        "endsBeforeStart": "O fim precisa ser depois do início."
+        "endsBeforeStart": "O fim precisa ser depois do início.",
+        "tracksNotReady": "Estas músicas ainda não podem ser fixadas (sem processamento concluído): {ids}",
+        "heroNeedsCover": "O hero precisa de músicas com capa: {ids}",
+        "sourceNotEligible": "Esta fonte não tem músicas elegíveis no momento."
       }
     },
     "historyDialog": {

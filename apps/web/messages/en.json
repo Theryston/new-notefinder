@@ -1099,7 +1099,10 @@
         "outOfRange": "This number is out of range.",
         "kindLayoutMismatch": "A hero pin uses the hero layout; a row pin uses a row layout.",
         "heroPositionFixed": "A hero pin always takes the hero slot.",
-        "endsBeforeStart": "The end must be after the start."
+        "endsBeforeStart": "The end must be after the start.",
+        "tracksNotReady": "These Tracks cannot be pinned yet (no completed Processing): {ids}",
+        "heroNeedsCover": "A hero needs Tracks with a cover: {ids}",
+        "sourceNotEligible": "This source has no eligible Tracks right now."
       }
     },
     "historyDialog": {

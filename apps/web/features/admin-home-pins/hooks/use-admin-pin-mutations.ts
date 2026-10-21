@@ -13,7 +13,8 @@ import { isApiError } from '@/lib/api/api-error';
 import {
   pinFormErrorKey,
   pinFormFieldLabelKey,
-  serverValidationBackendReason,
+  type ServerEligibilityError,
+  serverEligibilityErrors,
   serverValidationFieldErrors,
 } from '../admin-pin-server-error';
 import { adminPinKeys } from '../admin-pins-query';
@@ -58,23 +59,30 @@ function toastFieldFailure(
   } catch {
     toast.error(detail);
   }
-  const reason = serverValidationBackendReason(error);
-  if (reason && !reason.includes(detail)) {
-    // The backend's English reason names what the translated message
-    // cannot (IDs, a refused source); admins read it as the detail.
-    toast.error(reason);
-  }
 }
 
-function toastReasonFailure(error: unknown, tErrors: ErrorTranslator): boolean {
-  const reason = serverValidationBackendReason(error);
-  if (!reason) return false;
-  try {
-    toast.error(`${tErrors('VALIDATION_FAILED')}: ${reason}`);
-  } catch {
-    toast.error(reason);
+/** Every toast is translated: eligibility names the refusing Tracks by ID. */
+function toastEligibilityFailure(
+  error: unknown,
+  tForm: FormTranslator,
+): boolean {
+  const refusals = serverEligibilityErrors(error);
+  if (refusals.length === 0) return false;
+  for (const refusal of refusals) {
+    toast.error(eligibilityMessage(refusal, tForm));
   }
   return true;
+}
+
+function eligibilityMessage(
+  { kind, trackIds }: ServerEligibilityError,
+  tForm: FormTranslator,
+): string {
+  if (kind === 'source') return tForm('errors.sourceNotEligible');
+  const ids = trackIds.join(', ');
+  return kind === 'hero-needs-cover'
+    ? tForm('errors.heroNeedsCover', { ids })
+    : tForm('errors.tracksNotReady', { ids });
 }
 
 function toastCodeFailure(error: unknown, tErrors: ErrorTranslator): void {
@@ -90,20 +98,21 @@ function toastCodeFailure(error: unknown, tErrors: ErrorTranslator): void {
  * schemas) loads on the first save, so Zod stays out of the page's
  * first-load JavaScript. A failure toasts the translated API error; a
  * `VALIDATION_FAILED` with the backend's issues toasts the specific
- * field (`Label: reason`) and carries the backend's own reason when the
- * translated message cannot express it (an ineligible Track, a refused
- * dynamic source). The list refreshes after every change.
+ * field (`Label: reason`), while refused Tracks and sources toast their
+ * translated reason with the refusing IDs. The list refreshes after every
+ * change.
  */
 export function useAdminPinMutations(catalog?: PinMutationCatalog) {
   const queryClient = useQueryClient();
   const tErrors = useTranslations('errors');
   const tForm = useTranslations('adminHomePins.form');
   const fail = (error: unknown) => {
+    if (toastEligibilityFailure(error, tForm)) return;
     if (serverValidationFieldErrors(error).length > 0) {
       toastFieldFailure(error, tErrors, tForm, catalog);
       return;
     }
-    if (!toastReasonFailure(error, tErrors)) toastCodeFailure(error, tErrors);
+    toastCodeFailure(error, tErrors);
   };
   const settle = () => {
     void queryClient.invalidateQueries({ queryKey: adminPinKeys.all });
