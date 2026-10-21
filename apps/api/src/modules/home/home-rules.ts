@@ -79,3 +79,27 @@ export const PUBLIC_HOME_CACHE_CONTROL =
 
 /** A fallback feed is never stored by a cache, so it can't outlive the outage. */
 export const UNCACHED_HOME_CACHE_CONTROL = 'no-store';
+
+/**
+ * How long a personal snapshot trigger waits, so one practice session costs
+ * one rebuild. See docs/adr/0013-personal-home-feed.md.
+ */
+export const PERSONAL_REFRESH_DEBOUNCE_MS = 5 * 60 * 1000;
+
+/** A personal snapshot older than this is served stale while it rebuilds. */
+export const PERSONAL_SNAPSHOT_STALE_AFTER_SECONDS = 6 * 60 * 60;
+
+/** How long a personal snapshot lives before it is rebuilt from scratch. */
+export const PERSONAL_SNAPSHOT_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/** A snapshot whose lock is held is built by another caller, at most this long. */
+export const PERSONAL_SNAPSHOT_LOCK_TTL_SECONDS = 30;
+
+/**
+ * How far back the nightly batch looks for practice: only Users with an
+ * Attempt or a heartbeat since then get their snapshot rebuilt.
+ */
+export const PERSONAL_NIGHTLY_ACTIVE_WITHIN_DAYS = 14;
+
+/** Most Users one nightly batch rebuilds, so a huge backlog can't flood the queue. */
+export const PERSONAL_NIGHTLY_MAX_USERS = 5_000;

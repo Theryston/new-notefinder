@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { isLocale, type Locale } from '@/lib/i18n/routing';
 import { getPublicHomePage, getSessionHomePage } from '../home-queries';
-import { isSessionCookieName } from '../session-cookie';
+import { hasSessionCookie } from '../session-cookie';
 import { HomeRows } from './home-rows';
 
 /**
@@ -28,10 +28,10 @@ export async function HomeFeed() {
 }
 
 async function loadFirstPage(locale: Locale): Promise<HomeFeedPage> {
-  const signedIn = (await cookies())
-    .getAll()
-    .some(({ name }) => isSessionCookieName(name));
-  return signedIn ? getSessionHomePage(locale) : getPublicHomePage(locale);
+  const names = (await cookies()).getAll().map(({ name }) => name);
+  return hasSessionCookie(names)
+    ? getSessionHomePage(locale)
+    : getPublicHomePage(locale);
 }
 
 async function rowMessages() {

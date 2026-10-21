@@ -1,10 +1,13 @@
 import { Test } from '@nestjs/testing';
+import { LOCALES } from '@notefinder/contracts';
+import { PersonalHomeQueueService } from '../home/home-personal-queue.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AttemptsService } from './attempts.service.js';
 import { SubmitAttemptService } from './submit-attempt.service.js';
 
 const attempts = { submitAttempt: vi.fn() };
 const users = { revalidatePublicProfile: vi.fn() };
+const personalRefresh = { scheduleRefresh: vi.fn() };
 
 const body = {
   difficulty: 'NORMAL',
@@ -29,6 +32,7 @@ describe('SubmitAttemptService', () => {
         SubmitAttemptService,
         { provide: AttemptsService, useValue: attempts },
         { provide: UsersService, useValue: users },
+        { provide: PersonalHomeQueueService, useValue: personalRefresh },
       ],
     }).compile();
     service = moduleRef.get(SubmitAttemptService);
@@ -52,6 +56,24 @@ describe('SubmitAttemptService', () => {
     expect(users.revalidatePublicProfile).toHaveBeenCalledWith('user-1');
   });
 
+  // A saved run changes the User's taste, so the personal snapshot is rebuilt
+  // after the debounce delay, in every locale the User may read.
+  it('schedules a debounced personal snapshot rebuild after the run is saved', async () => {
+    attempts.submitAttempt.mockResolvedValue({ id: 'attempt-1' });
+
+    await service.submit('user-1', 'track-1', body);
+
+    expect(personalRefresh.scheduleRefresh).toHaveBeenCalledTimes(
+      LOCALES.length,
+    );
+    for (const locale of LOCALES) {
+      expect(personalRefresh.scheduleRefresh).toHaveBeenCalledWith(
+        'user-1',
+        locale,
+      );
+    }
+  });
+
   it('refreshes nothing when the run is refused', async () => {
     const refusal = new Error('ATTEMPT_REJECTED');
     attempts.submitAttempt.mockRejectedValue(refusal);
@@ -60,5 +82,6 @@ describe('SubmitAttemptService', () => {
       refusal,
     );
     expect(users.revalidatePublicProfile).not.toHaveBeenCalled();
+    expect(personalRefresh.scheduleRefresh).not.toHaveBeenCalled();
   });
 });

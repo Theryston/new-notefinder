@@ -9,6 +9,14 @@ import { trackHeaderSchema, trackVocalRangeSchema } from './tracks.js';
  */
 
 /**
+ * Who the feed was built for. The public feed is shared by every visitor;
+ * the personal feed blends it with the signed-in User's own signals.
+ */
+export const homeAudienceSchema = z.enum(['public', 'personal']);
+
+export type HomeAudience = z.infer<typeof homeAudienceSchema>;
+
+/**
  * A Track as a home card: its header (id, title, cover, artist credit) plus
  * what a card adds: the length and the vocal range, which show its difficulty.
  */
@@ -74,10 +82,34 @@ export const homeVocalRangeRowSchema = homeCarouselRowSchema.extend({
 
 export type HomeVocalRangeRow = z.infer<typeof homeVocalRangeRowSchema>;
 
+/**
+ * The daily target strip: how much practice time is left in the User's
+ * Practice day and where their Streak stands. Algorithmic like every other
+ * row, so `sponsored` is never set; the flag exists only so the layout shows
+ * the sponsored notice if one ever arrives (see the layout registry test).
+ */
+export const homeDailyTargetRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('daily-target'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  /** Practice seconds still missing to complete the day, never negative. */
+  secondsLeft: z.number().int().min(0),
+  /** The User's daily target in seconds. */
+  targetSeconds: z.number().int().positive(),
+  /** Consecutive completed Practice days, as `GET /v1/me/streak` reports. */
+  streakDays: z.number().int().min(0),
+  /** Whether the day already reached the target. */
+  completedToday: z.boolean(),
+});
+
+export type HomeDailyTargetRow = z.infer<typeof homeDailyTargetRowSchema>;
+
 export const homeRowSchema = z.discriminatedUnion('layout', [
   homeHeroSchema,
   homeCarouselRowSchema,
   homeVocalRangeRowSchema,
+  homeDailyTargetRowSchema,
 ]);
 
 export type HomeRow = z.infer<typeof homeRowSchema>;
@@ -87,10 +119,12 @@ export const HOME_FEED_MAX_ROWS = 24;
 /**
  * One page of the home feed. `version` identifies the content of the feed the
  * rows come from, and `nextCursor` (null on the last page) resumes the same
- * version, so paging never repeats or skips rows across a regeneration.
+ * version, so paging never repeats or skips rows across a regeneration. The
+ * audience tells whose feed it is: the shared public one, or the signed-in
+ * User's personal blend.
  */
 export const homeFeedSchema = z.object({
-  audience: z.literal('public'),
+  audience: homeAudienceSchema,
   version: z.string().min(1).max(64),
   algorithmVersion: z.number().int().positive(),
   rows: z.array(homeRowSchema).max(HOME_FEED_MAX_ROWS),

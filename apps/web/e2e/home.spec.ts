@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 
 import { TERMS_ADVERTISING_FRAGMENT } from '../lib/terms-fragments';
 import {
@@ -343,5 +343,191 @@ test.describe('home feed', () => {
         exact: true,
       }),
     ).toHaveCount(0);
+  });
+});
+
+/** The session cookie the web reads, like the real Better Auth one. */
+const SESSION_COOKIE = {
+  name: 'notefinder.session_token',
+  value: 'signed-in',
+};
+
+/**
+ * Signs the browser in for the home: the session cookie drives the
+ * server-rendered feed. Later pages resolve through the cursor, which names
+ * its own feed version. (The browser can't carry a cookie to the API's
+ * `127.0.0.1` hostname in this Chromium, and production uses one cookie
+ * domain for web and API anyway.)
+ */
+async function signIn(context: BrowserContext) {
+  await context.addCookies([
+    { ...SESSION_COOKIE, url: 'http://localhost:3000' },
+  ]);
+}
+
+const continueKey = 'home.rows.continueSinging';
+const singAgainKey = 'home.rows.singAgain';
+const dailyTargetKey = 'home.rows.dailyTarget';
+
+const dailyTargetStrip = (
+  id: string,
+  secondsLeft = 720,
+  completedToday = false,
+): FakeHomeRow => ({
+  id,
+  layout: 'daily-target',
+  title: { key: dailyTargetKey, params: {} },
+  secondsLeft,
+  targetSeconds: 900,
+  streakDays: 5,
+  completedToday,
+});
+
+/**
+ * Installs the public feed and the signed-in one, waiting until the web
+ * serves each. The personal poll sends the session cookie, like the signed-in
+ * page does when it forwards it to the API.
+ */
+async function installPersonalFeed(
+  prefix: string,
+  personal: FakeHomeRow[],
+  waitFor?: string,
+): Promise<void> {
+  await installFeed({ en: [hero(`${prefix}-public-hero`)] });
+  await setHomeMock({ personal: { en: personal } });
+  await revalidateHome();
+  const lead = waitFor ?? `/en/tracks/${leadTrackId(personal)}`;
+  await expect
+    .poll(
+      async () => {
+        const response = await fetch(`${baseURL}/en`, {
+          headers: { cookie: `${SESSION_COOKIE.name}=${SESSION_COOKIE.value}` },
+        });
+        // React escapes apostrophes in server HTML; the message files (and
+        // getByText below) use the plain character.
+        return (await response.text()).replaceAll('&#x27;', "'");
+      },
+      { timeout: 15000 },
+    )
+    .toContain(lead);
+}
+
+test.describe('signed-in home feed', () => {
+  test('a signed-in visitor gets their personal feed, not the public one', async ({
+    page,
+    context,
+  }) => {
+    await installPersonalFeed('personal', [
+      carousel('continue-singing', continueKey, [
+        card('en-resume-1', 'Fixture resume song'),
+        card('en-resume-2', 'Fixture resume two'),
+        card('en-resume-3', 'Fixture resume three'),
+        card('en-resume-4', 'Fixture resume four'),
+        card('en-resume-5', 'Fixture resume five'),
+        card('en-resume-6', 'Fixture resume six'),
+      ]),
+      carousel('sing-again', singAgainKey, [
+        card('en-encore-1', 'Fixture encore song'),
+        card('en-encore-2', 'Fixture encore two'),
+        card('en-encore-3', 'Fixture encore three'),
+        card('en-encore-4', 'Fixture encore four'),
+        card('en-encore-5', 'Fixture encore five'),
+        card('en-encore-6', 'Fixture encore six'),
+      ]),
+      dailyTargetStrip('daily-target'),
+    ]);
+    await signIn(context);
+
+    await page.goto('/en');
+
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: messages.en.home.rows.continueSinging,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: messages.en.home.rows.singAgain,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: messages.en.home.rows.dailyTarget,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('12 minutes left of your 15-minute goal'),
+    ).toBeVisible();
+    await expect(page.getByText('5 day streak')).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /Fixture resume song/ }),
+    ).toBeVisible();
+    // The public hero never flashes: the first paint is already personal.
+    await expect(page.getByText('Fixture lead song')).toHaveCount(0);
+  });
+
+  test('scrolling loads the next personal rows from the API', async ({
+    page,
+    context,
+  }) => {
+    const rows: FakeHomeRow[] = [
+      carousel('continue-singing', continueKey, [
+        card('en-scroll-resume', 'Fixture scroll resume'),
+        card('en-scroll-r2', 'Fixture scroll resume two'),
+        card('en-scroll-r3', 'Fixture scroll resume three'),
+        card('en-scroll-r4', 'Fixture scroll resume four'),
+        card('en-scroll-r5', 'Fixture scroll resume five'),
+        card('en-scroll-r6', 'Fixture scroll resume six'),
+      ]),
+      dailyTargetStrip('daily-target'),
+    ];
+    for (let index = 1; index <= 7; index += 1) {
+      rows.push(
+        carousel(`row-${index}`, index % 2 ? trendingKey : newKey, [
+          card(`en-scroll-${index}`, `Fixture scroll song ${index}`),
+        ]),
+      );
+    }
+    rows.push(
+      carousel('row-8', trendingKey, [
+        card('en-scroll-late', 'Fixture scroll late song'),
+      ]),
+    );
+    await installPersonalFeed('scroll-personal', rows);
+    await signIn(context);
+
+    await page.goto('/en');
+    await expect(
+      page.getByRole('link', { name: /Fixture scroll late song/ }),
+    ).toHaveCount(0);
+
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight),
+    );
+
+    await expect(
+      page.getByRole('link', { name: /Fixture scroll late song/ }),
+    ).toBeVisible();
+  });
+
+  test('a completed day reads as complete on the strip', async ({
+    page,
+    context,
+  }) => {
+    await installPersonalFeed(
+      'done-personal',
+      [dailyTargetStrip('daily-target', 0, true)],
+      messages.en.home.dailyTarget.completeToday,
+    );
+    await signIn(context);
+
+    await page.goto('/en');
+
+    await expect(
+      page.getByText(messages.en.home.dailyTarget.completeToday),
+    ).toBeVisible();
   });
 });

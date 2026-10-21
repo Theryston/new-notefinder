@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { SponsoredPlacement } from '../components/sponsored-notice';
 import { CarouselLayout } from './carousel-layout';
+import { DailyTargetLayout } from './daily-target-layout';
 import { HeroLayout } from './hero-layout';
 import { VocalRangeLayout } from './vocal-range-layout';
 
@@ -55,6 +56,7 @@ export const homeLayoutRegistry = {
   hero: registerLayout('hero', 'caption', HeroLayout),
   standard: registerLayout('standard', 'line', CarouselLayout),
   'vocal-range': registerLayout('vocal-range', 'line', VocalRangeLayout),
+  'daily-target': registerLayout('daily-target', 'line', DailyTargetLayout),
 } satisfies Record<HomeRow['layout'], HomeLayoutEntry>;
 
 /** Whether the web renders this layout; any other one is skipped. */

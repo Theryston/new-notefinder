@@ -370,6 +370,27 @@ as text in a chip.
   reserves exactly the rows' space: both overlays sit on the cover without
   changing the card's height in either theme.
 
+### Daily target strip
+
+The signed-in home leads its personal rows with a **daily target strip**: one
+thin bar with the practice time left today and the User's streak. It keeps the
+row chrome (a section with an `h2` in `CAROUSEL_TITLE_CLASS`, rows spaced
+`gap-12`), but its body is a single bar instead of cards.
+
+- **Bar**: `flex min-h-16 items-center justify-between gap-3 rounded-2xl
+  bg-muted px-4 py-3` (`DAILY_TARGET_STRIP_CLASS`, shared with the skeleton so
+  the strip lands without a shift). No new token: `bg-muted` in both themes.
+- **Left**: a `Target` icon (`size-4`, 1.75 stroke) and the remaining time in
+  `font-medium text-sm`, truncated on narrow screens ("12 minutes left of
+  your 15-minute goal"; "Today's goal is complete" once reached).
+- **Right**: the streak as a pill (`inline-flex rounded-full bg-background
+  px-3 py-1 text-xs font-semibold`) with a `Flame` icon (`size-3.5`, 1.75
+  stroke): "5 day streak". It mirrors the streak wording of the practice
+  pages, not a new term.
+- **Sponsored notice**: the strip is algorithmic, so the flag is never set;
+  like every layout it still renders the notice (a `line` under the bar) if
+  one ever arrives, and the registry test covers it.
+
 ### Sponsored content notice
 
 A sponsored hero or row shows one discreet notice. It is plain text that
