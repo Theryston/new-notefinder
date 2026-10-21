@@ -1,7 +1,11 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { TERMS_ADVERTISING_FRAGMENT } from '../lib/terms-fragments';
-import { type FakeHomeRow, setHomeMock } from './fake-home-api';
+import {
+  defaultHomeRows,
+  type FakeHomeRow,
+  setHomeMock,
+} from './fake-home-api';
 import { messages } from './messages';
 import { webServerEnv } from './web-server-env';
 
@@ -133,9 +137,11 @@ function carouselSections(page: Page) {
 test.describe.configure({ mode: 'serial' });
 
 // The fake API keeps the last feed installed, and every suite shares the
-// web's home. Clear it once this file is done so other suites see no rows.
+// web's home. Put the default feed back once this file is done.
 test.afterAll(async () => {
-  await setHomeMock({ feeds: { en: [], 'pt-BR': [] } });
+  await setHomeMock({
+    feeds: { en: defaultHomeRows('en'), 'pt-BR': defaultHomeRows('pt-BR') },
+  });
   await revalidateHome();
 });
 

@@ -31,8 +31,45 @@ const installFeed = (locale: FakeHomeLocale, rows: FakeHomeRow[]): void => {
   feeds.set(locale, { version: `fixture-${versionCounter}`, rows });
 };
 
-installFeed('en', []);
-installFeed('pt-BR', []);
+const fixtureTrack = (id: string, title: string) => ({
+  id,
+  title,
+  coverUrl: null,
+  artistCredit: [{ name: 'NoteFinder', joinPhrase: '' }],
+  durationMs: 180000,
+  vocalRange: { lowest: 45, highest: 64 },
+});
+
+/**
+ * The feed a locale serves until a spec installs its own. Like production, it
+ * is never empty: a hero and five carousels, tall enough that the page scrolls
+ * (the header's hide-on-scroll behaviour depends on that).
+ */
+export const defaultHomeRows = (locale: FakeHomeLocale): FakeHomeRow[] => {
+  const hero = {
+    id: 'hero',
+    layout: 'hero',
+    track: fixtureTrack(`default-${locale}-hero`, 'Default hero song'),
+  };
+  const carousels = Array.from({ length: 5 }, (_, row) => ({
+    id: `default-row-${row}`,
+    layout: 'standard',
+    title: {
+      key: row % 2 ? 'home.rows.newTracks' : 'home.rows.trendingToday',
+      params: {},
+    },
+    items: Array.from({ length: 6 }, (_, item) =>
+      fixtureTrack(
+        `default-${locale}-${row}-${item}`,
+        `Default song ${row}-${item}`,
+      ),
+    ),
+  }));
+  return [hero, ...carousels];
+};
+
+installFeed('en', defaultHomeRows('en'));
+installFeed('pt-BR', defaultHomeRows('pt-BR'));
 
 const isLocale = (value: string): value is FakeHomeLocale =>
   value === 'en' || value === 'pt-BR';
