@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useCallback, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
-
+import { HomeEventsTracker } from '../events/home-events-tracker';
 import { useHomeRows } from '../hooks/use-home-rows';
 import {
   homeLayoutRegistry,
@@ -45,6 +45,7 @@ export function HomeRows({
 
   return (
     <div className="flex flex-col gap-12">
+      <HomeEventsTracker pages={data.pages} />
       {rows.map((row, index) => (
         <Fragment key={row.id}>
           {homeLayoutRegistry[row.layout].render(row, index === 0)}
