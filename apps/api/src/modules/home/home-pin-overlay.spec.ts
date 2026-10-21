@@ -292,4 +292,67 @@ describe('applyEditorialPins', () => {
 
     expect(rowIds(rows)).toEqual(['pin-solo']);
   });
+
+  describe('the by-voice rows', () => {
+    const ranged = (id: string): HomeTrack => ({
+      ...track(id),
+      vocalRange: { lowest: 55, highest: 60 },
+    });
+
+    const voiceRow = (id: string, items: HomeTrack[]): HomeRow => ({
+      id,
+      layout: 'vocal-range',
+      title: { key: `home.rows.${id}`, params: {} },
+      items: items.map((item) => ({
+        ...item,
+        vocalRange: { lowest: 55, highest: 60 },
+      })),
+    });
+
+    it('keeps a vocal-range row with its ranges once pinned Tracks are out', () => {
+      const rows = applyEditorialPins(
+        [
+          voiceRow(
+            'easy',
+            Array.from({ length: 7 }, (_, i) => ranged(`e-${i}`)),
+          ),
+        ],
+        [pin('takes-one', { position: 9, tracks: [ranged('e-0')] })],
+      );
+
+      expect(rowIds(rows)).toEqual(['easy', 'pin-takes-one']);
+      const [row] = rows;
+      expect(row).not.toHaveProperty('sponsored');
+      if (row?.layout !== 'vocal-range') {
+        throw new Error('expected a vocal-range row');
+      }
+      expect(row.items.map((item) => item.id)).toEqual([
+        'e-1',
+        'e-2',
+        'e-3',
+        'e-4',
+        'e-5',
+        'e-6',
+      ]);
+    });
+
+    it('drops a vocal-range row that falls below six Tracks after the pins take some', () => {
+      const rows = applyEditorialPins(
+        [
+          voiceRow(
+            'easy',
+            Array.from({ length: 7 }, (_, i) => ranged(`e-${i}`)),
+          ),
+        ],
+        [
+          pin('takes-two', {
+            position: 9,
+            tracks: [ranged('e-0'), ranged('e-1')],
+          }),
+        ],
+      );
+
+      expect(rowIds(rows)).toEqual(['pin-takes-two']);
+    });
+  });
 });

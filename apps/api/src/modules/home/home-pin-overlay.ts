@@ -3,6 +3,7 @@ import type {
   HomeRow,
   HomeRowTitle,
   HomeTrack,
+  HomeVocalRangeTrack,
 } from '@notefinder/contracts';
 import { HOME_MAX_ROWS, HOME_ROW_RULES } from './home-rules.js';
 
@@ -67,16 +68,27 @@ const algorithmicHero = (
 };
 
 /**
- * The algorithmic standard rows without the pinned Tracks. A row that falls
- * below its minimum size is dropped, as the composer drops it.
+ * The algorithmic carousel rows without the pinned Tracks. A row that falls
+ * below its own layout's minimum size is dropped, as the composer drops it.
  */
 const algorithmicRows = (
   rows: readonly HomeRow[],
   pinnedIds: ReadonlySet<string>,
 ): HomeRow[] =>
-  rows.flatMap((row) => {
+  rows.flatMap((row): HomeRow[] => {
     if (row.layout === 'hero') {
       return [];
+    }
+    if (row.layout === 'vocal-range') {
+      // The contract requires a range on every item, so the narrowing below
+      // only restates what the feed already guarantees.
+      const ranged = row.items.filter(
+        (item): item is HomeVocalRangeTrack =>
+          item.vocalRange !== null && !pinnedIds.has(item.id),
+      );
+      return ranged.length >= HOME_ROW_RULES['vocal-range'].minItems
+        ? [{ ...row, items: ranged }]
+        : [];
     }
     const items = row.items.filter((item) => !pinnedIds.has(item.id));
     return items.length >= HOME_ROW_RULES.standard.minItems

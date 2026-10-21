@@ -14,6 +14,7 @@ import { HomeFeedStore } from './home-feed.store.js';
 import { HomeFeedBuilder } from './home-feed-builder.service.js';
 import { HomePinOverlayService } from './home-pin-overlay.service.js';
 import { createHomeRowSources, HOME_ROW_SOURCES } from './home-row-sources.js';
+import { createVoiceRowSources } from './home-voice-row-sources.js';
 
 @Module({
   imports: [
@@ -28,7 +29,13 @@ import { createHomeRowSources, HOME_ROW_SOURCES } from './home-row-sources.js';
     {
       provide: HOME_ROW_SOURCES,
       inject: [HomeRepository, TrackLocaleTrendingService],
-      useFactory: createHomeRowSources,
+      useFactory: (
+        repository: HomeRepository,
+        ranking: TrackLocaleTrendingService,
+      ) => [
+        ...createHomeRowSources(repository, ranking),
+        ...createVoiceRowSources(repository),
+      ],
     },
     HomeFeedBuilder,
     HomeFeedStore,

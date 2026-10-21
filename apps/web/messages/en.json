@@ -13,7 +13,10 @@
     "rows": {
       "trendingToday": "Trending today",
       "newTracks": "New Tracks",
-      "pinned": "{title}"
+      "pinned": "{title}",
+      "easyToStart": "Easy to start",
+      "higherVoices": "For higher voices",
+      "lowerVoices": "For lower voices"
     },
     "sponsored": {
       "hero": "sponsored content",

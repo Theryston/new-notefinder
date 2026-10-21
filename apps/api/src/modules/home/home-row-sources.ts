@@ -51,6 +51,8 @@ export const toHomeCandidate = (record: HomeTrackRecord): HomeCandidate => {
     hasCover: record.coverUrl !== null,
     // The repository only reads Tracks whose Processing completed.
     isCompleted: true,
+    // Absent means no stored Vocal range, from a Track without notes.
+    hasVocalRange: vocalRangeLowest !== null && vocalRangeHighest !== null,
   };
 };
 

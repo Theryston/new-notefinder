@@ -26,18 +26,36 @@ export const HOME_MAX_ROWS = 24;
 /** Most Tracks of one artist in one row, so a hot artist can't fill it. */
 export const MAX_TRACKS_PER_ARTIST_PER_ROW = 2;
 
-export type HomeLayout = 'hero' | 'standard';
+export type HomeLayout = 'hero' | 'standard' | 'vocal-range';
 
 export type HomeRowRule = {
   minItems: number;
   maxItems: number;
   /** Heroes show a cover, so only Tracks that have one qualify. */
   requiresCover: boolean;
+  /** The by-voice rows show each Track's Vocal range, so only Tracks with one qualify. */
+  requiresVocalRange: boolean;
 };
 
 export const HOME_ROW_RULES = {
-  hero: { minItems: 1, maxItems: 1, requiresCover: true },
-  standard: { minItems: 6, maxItems: 12, requiresCover: false },
+  hero: {
+    minItems: 1,
+    maxItems: 1,
+    requiresCover: true,
+    requiresVocalRange: false,
+  },
+  standard: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  'vocal-range': {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: true,
+  },
 } as const satisfies Record<HomeLayout, HomeRowRule>;
 
 /** The current feed lives this long, so a stalled regeneration still serves it. */

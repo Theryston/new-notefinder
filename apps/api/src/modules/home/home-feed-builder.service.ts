@@ -46,6 +46,18 @@ const toHomeRow = (row: ComposedRow): HomeRow | undefined => {
       ? { id: row.id, layout: 'hero', track: toHomeTrack(track) }
       : undefined;
   }
+  if (row.layout === 'vocal-range') {
+    // The composer kept only Tracks with a stored range; the filter below
+    // only narrows the type for the contract, which requires a range.
+    const items = row.items.flatMap((candidate) =>
+      candidate.vocalRange === null
+        ? []
+        : [{ ...toHomeTrack(candidate), vocalRange: candidate.vocalRange }],
+    );
+    return row.title
+      ? { id: row.id, layout: 'vocal-range', title: row.title, items }
+      : undefined;
+  }
   return row.title
     ? {
         id: row.id,

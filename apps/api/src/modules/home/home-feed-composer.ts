@@ -13,6 +13,8 @@ export type ComposableTrack = {
   hasCover: boolean;
   /** Only Tracks whose Processing completed may appear in the feed. */
   isCompleted: boolean;
+  /** Absent means no stored Vocal range: only the by-voice rows ask for one. */
+  hasVocalRange?: boolean;
 };
 
 type RowCandidate<T extends ComposableTrack> = {
@@ -24,7 +26,10 @@ type RowCandidate<T extends ComposableTrack> = {
 const isEligible = <T extends ComposableTrack>(
   track: T,
   rule: HomeRowRule,
-): boolean => track.isCompleted && (!rule.requiresCover || track.hasCover);
+): boolean =>
+  track.isCompleted &&
+  (!rule.requiresCover || track.hasCover) &&
+  (!rule.requiresVocalRange || track.hasVocalRange === true);
 
 const pickRowItems = <T extends ComposableTrack>(
   candidates: readonly T[],
