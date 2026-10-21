@@ -69,7 +69,6 @@ export const homeCarouselRowSchema = z.object({
 export type HomeCarouselRow = z.infer<typeof homeCarouselRowSchema>;
 
 /**
-/**
  * A carousel of by-voice Tracks: each card also shows the Track's Vocal range
  * as a bar. Every item carries a range, since the row exists to show it.
  */
@@ -123,12 +122,76 @@ export const homeRankedRowSchema = z.object({
 
 export type HomeRankedRow = z.infer<typeof homeRankedRowSchema>;
 
+/** Most tiles, artists or albums in one of the grid-style rows below. */
+export const HOME_SHELF_MAX_ITEMS = 12;
+
+/** A genre tile: the genre's display name, which the tile links to a search for. */
+export const homeGenreTileSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+export type HomeGenreTile = z.infer<typeof homeGenreTileSchema>;
+
+export const homeGenresRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('genres'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  items: z.array(homeGenreTileSchema).min(1).max(HOME_SHELF_MAX_ITEMS),
+});
+
+export type HomeGenresRow = z.infer<typeof homeGenresRowSchema>;
+
+/** An Artist as a featured artist: its ID (for its page) and its name. */
+export const homeArtistSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(200),
+});
+
+export type HomeArtist = z.infer<typeof homeArtistSchema>;
+
+export const homeArtistsRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('artists'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  items: z.array(homeArtistSchema).min(1).max(HOME_SHELF_MAX_ITEMS),
+});
+
+export type HomeArtistsRow = z.infer<typeof homeArtistsRowSchema>;
+
+/**
+ * An Album as a featured album: its ID (for its page), title, cover and year
+ * (null when unknown).
+ */
+export const homeAlbumSchema = z.object({
+  id: z.string().min(1).max(64),
+  title: z.string().min(1).max(300),
+  coverArtUrl: z.string().min(1).max(2000).nullable(),
+  year: z.number().int().nullable(),
+});
+
+export type HomeAlbum = z.infer<typeof homeAlbumSchema>;
+
+export const homeAlbumsRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('albums'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  items: z.array(homeAlbumSchema).min(1).max(HOME_SHELF_MAX_ITEMS),
+});
+
+export type HomeAlbumsRow = z.infer<typeof homeAlbumsRowSchema>;
+
 export const homeRowSchema = z.discriminatedUnion('layout', [
   homeHeroSchema,
   homeCarouselRowSchema,
   homeVocalRangeRowSchema,
   homeDailyTargetRowSchema,
   homeRankedRowSchema,
+  homeGenresRowSchema,
+  homeArtistsRowSchema,
+  homeAlbumsRowSchema,
 ]);
 
 export type HomeRow = z.infer<typeof homeRowSchema>;

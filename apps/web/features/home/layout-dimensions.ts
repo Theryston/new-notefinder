@@ -64,3 +64,16 @@ export const RANKED_META_SKELETON_CLASS = 'h-4 w-2/3 rounded-md';
 
 /** Sizes hint for a ranked cover: its fixed 48px width. */
 export const RANKED_COVER_SIZES = '48px';
+
+/** One genre tile: the same width as a carousel card, shorter than a cover. */
+export const GENRE_TILE_ITEM_CLASS = 'w-40 shrink-0 snap-start sm:w-44 md:w-48';
+
+/** One genre tile's block: a fixed height, so the row never shifts. */
+export const GENRE_TILE_BLOCK_CLASS =
+  'relative block h-24 overflow-hidden rounded-2xl md:h-28';
+
+/** One artist in the row: a circle with the name under it. */
+export const ARTIST_ROW_ITEM_CLASS = 'w-24 shrink-0 snap-start md:w-28';
+
+/** One album card: the cover's width, like a carousel card. */
+export const ALBUM_ROW_ITEM_CLASS = 'w-40 shrink-0 snap-start sm:w-44 md:w-48';

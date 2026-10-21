@@ -15,10 +15,14 @@ const trackedPages = (pages: HomeFeedPage[]): TrackedHomePage[] =>
         items:
           row.layout === 'hero'
             ? [{ id: row.track.id }]
-            : // The daily-target strip carries no track items, so there is
-              // nothing to track: recordRowImpression returns early on an
-              // empty items list, making this a no-op for that layout.
-              row.layout === 'daily-target'
+            : // The daily-target strip and the entity rows (genres, artists,
+              // albums) carry no Tracks, so there is nothing to track:
+              // recordRowImpression returns early on an empty items list,
+              // making this a no-op for those layouts.
+              row.layout === 'daily-target' ||
+                row.layout === 'genres' ||
+                row.layout === 'artists' ||
+                row.layout === 'albums'
               ? []
               : row.items.map((item) => ({ id: item.id })),
       }),

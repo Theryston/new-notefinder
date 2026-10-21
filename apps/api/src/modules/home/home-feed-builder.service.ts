@@ -1,16 +1,24 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type {
+  HomeAlbum,
+  HomeArtist,
+  HomeGenreTile,
   HomeRow,
   HomeRowTitle,
   HomeTrack,
   Locale,
 } from '@notefinder/contracts';
 import { type StoredHomeFeed } from './home-feed.js';
-import { composeHomeRows } from './home-feed-composer.js';
+import { composeEntityRows, composeHomeRows } from './home-feed-composer.js';
 import {
+  HOME_ENTITY_ROW_SOURCES,
   HOME_ROW_SOURCES,
+  type HomeAlbumCandidate,
+  type HomeArtistCandidate,
   type HomeCandidate,
+  type HomeEntityRowSource,
+  type HomeGenreCandidate,
   type HomeRowSource,
 } from './home-row-sources.js';
 import {
@@ -25,6 +33,26 @@ type ComposedRow = {
   title: HomeRowTitle | undefined;
   items: HomeCandidate[];
 };
+
+type ComposedEntityRow =
+  | {
+      id: string;
+      layout: 'genres';
+      title: HomeRowTitle;
+      items: HomeGenreCandidate[];
+    }
+  | {
+      id: string;
+      layout: 'artists';
+      title: HomeRowTitle;
+      items: HomeArtistCandidate[];
+    }
+  | {
+      id: string;
+      layout: 'albums';
+      title: HomeRowTitle;
+      items: HomeAlbumCandidate[];
+    };
 
 export const toHomeTrack = (candidate: HomeCandidate): HomeTrack => ({
   id: candidate.id,
@@ -68,6 +96,9 @@ const toHomeRow = (row: ComposedRow): HomeRow | undefined => {
         }
       : undefined;
   }
+  if (row.layout !== 'standard') {
+    return undefined;
+  }
   return row.title
     ? {
         id: row.id,
@@ -76,6 +107,52 @@ const toHomeRow = (row: ComposedRow): HomeRow | undefined => {
         items: row.items.map(toHomeTrack),
       }
     : undefined;
+};
+
+const toHomeGenreTile = (candidate: HomeGenreCandidate): HomeGenreTile => ({
+  name: candidate.name,
+});
+
+const toHomeArtist = (candidate: HomeArtistCandidate): HomeArtist => ({
+  id: candidate.id,
+  name: candidate.name,
+});
+
+const toHomeAlbum = (candidate: HomeAlbumCandidate): HomeAlbum => ({
+  id: candidate.id,
+  title: candidate.title,
+  coverArtUrl: candidate.coverArtUrl,
+  year: candidate.year,
+});
+
+/**
+ * An entity row as the contract reads it. The `sponsored` flag is absent:
+ * only editorial pins (a later slice) set it, never the algorithm.
+ */
+const toHomeEntityRow = (row: ComposedEntityRow): HomeRow => {
+  switch (row.layout) {
+    case 'genres':
+      return {
+        id: row.id,
+        layout: 'genres',
+        title: row.title,
+        items: row.items.map(toHomeGenreTile),
+      };
+    case 'artists':
+      return {
+        id: row.id,
+        layout: 'artists',
+        title: row.title,
+        items: row.items.map(toHomeArtist),
+      };
+    case 'albums':
+      return {
+        id: row.id,
+        layout: 'albums',
+        title: row.title,
+        items: row.items.map(toHomeAlbum),
+      };
+  }
 };
 
 /**
@@ -101,6 +178,12 @@ const feedVersion = (locale: Locale, rows: HomeRow[]): string =>
 export class HomeFeedBuilder {
   constructor(
     @Inject(HOME_ROW_SOURCES) private readonly sources: HomeRowSource[],
+    // Optional only so the feed can be built without the entity sources (the
+    // builder specs provide the Track sources alone). HomeModule always
+    // provides them.
+    @Optional()
+    @Inject(HOME_ENTITY_ROW_SOURCES)
+    private readonly entitySources?: HomeEntityRowSource[],
   ) {}
 
   async build(locale: Locale = DEFAULT_HOME_LOCALE): Promise<StoredHomeFeed> {
@@ -115,12 +198,40 @@ export class HomeFeedBuilder {
     const rows = composeHomeRows(candidates)
       .map(toHomeRow)
       .filter((row): row is HomeRow => row !== undefined);
+    const entityCandidates = await Promise.all(
+      (this.entitySources ?? []).map(async (source) => {
+        switch (source.layout) {
+          case 'genres':
+            return {
+              id: source.id,
+              layout: source.layout,
+              title: source.title,
+              items: await source.load(locale),
+            };
+          case 'artists':
+            return {
+              id: source.id,
+              layout: source.layout,
+              title: source.title,
+              items: await source.load(locale),
+            };
+          case 'albums':
+            return {
+              id: source.id,
+              layout: source.layout,
+              title: source.title,
+              items: await source.load(locale),
+            };
+        }
+      }),
+    );
+    const entityRows = composeEntityRows(entityCandidates).map(toHomeEntityRow);
     return {
       audience: 'public',
       locale,
-      version: feedVersion(locale, rows),
+      version: feedVersion(locale, [...rows, ...entityRows]),
       algorithmVersion: HOME_ALGORITHM_VERSION,
-      rows,
+      rows: [...rows, ...entityRows],
     };
   }
 }

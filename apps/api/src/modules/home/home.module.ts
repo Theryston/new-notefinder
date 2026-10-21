@@ -21,7 +21,12 @@ import { PersonalHomeStore } from './home-personal.store.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
 import { PersonalHomeQueueService } from './home-personal-queue.service.js';
 import { HomePinOverlayService } from './home-pin-overlay.service.js';
-import { createHomeRowSources, HOME_ROW_SOURCES } from './home-row-sources.js';
+import {
+  createHomeEntityRowSources,
+  createHomeRowSources,
+  HOME_ENTITY_ROW_SOURCES,
+  HOME_ROW_SOURCES,
+} from './home-row-sources.js';
 import { createVoiceRowSources } from './home-voice-row-sources.js';
 
 @Module({
@@ -47,6 +52,11 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
         ...createHomeRowSources(repository, ranking),
         ...createVoiceRowSources(repository),
       ],
+    },
+    {
+      provide: HOME_ENTITY_ROW_SOURCES,
+      inject: [HomeRepository],
+      useFactory: createHomeEntityRowSources,
     },
     HomeFeedBuilder,
     HomeFeedStore,

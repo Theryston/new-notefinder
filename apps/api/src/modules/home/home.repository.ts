@@ -12,6 +12,8 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
+import { albums, albumTracks } from '../../database/schema/albums.js';
+import { artists, trackArtists } from '../../database/schema/artists.js';
 import { practiceAttempts } from '../../database/schema/practice-attempts.js';
 import { trackFavorites } from '../../database/schema/track-favorites.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
@@ -33,6 +35,20 @@ export type HomeTrackRecord = {
    * it out, so it is optional and defaults to 0 where it is read.
    */
   trendingScore?: number;
+};
+
+/** A genre and how many completed Tracks carry it. */
+export type HomeGenreRecord = { genre: string; trackCount: number };
+
+/** An Artist with at least one completed Track. */
+export type HomeArtistRecord = { id: string; name: string };
+
+/** An Album with at least one completed Track, and its header fields. */
+export type HomeAlbumRecord = {
+  id: string;
+  title: string;
+  coverArtUrl: string | null;
+  year: number | null;
 };
 
 const candidateColumns = {
@@ -134,6 +150,22 @@ export class HomeRepository {
   }
 
   /**
+   * The genres of the completed Tracks, with how many Tracks carry each one,
+   * most Tracks first. A Track that lists a genre twice counts once.
+   */
+  findGenreTrackCounts(limit: number): Promise<HomeGenreRecord[]> {
+    const genre = sql<string>`unnest(${tracks.genres})`;
+    const trackCount = sql`count(distinct ${tracks.id})`;
+    return this.txHost.tx
+      .select({ genre, trackCount: sql<number>`${trackCount}::int` })
+      .from(tracks)
+      .where(hasCompletedProcessing(tracks.id))
+      .groupBy(genre)
+      .orderBy(desc(trackCount), asc(genre))
+      .limit(limit);
+  }
+
+  /**
    * Completed Tracks by favorites since `since`, most favorited first. Ties
    * keep Track id order, like the sung row.
    */
@@ -205,5 +237,42 @@ export class HomeRepository {
         ),
       )
       .groupBy(trackFavorites.trackId);
+  }
+
+  /**
+   * The Artists with a completed Track, most popular first: the sum of their
+   * completed Tracks' trending scores, then the ID.
+   */
+  findPopularArtists(limit: number): Promise<HomeArtistRecord[]> {
+    return this.txHost.tx
+      .select({ id: artists.id, name: artists.name })
+      .from(artists)
+      .innerJoin(trackArtists, eq(trackArtists.artistId, artists.id))
+      .innerJoin(tracks, eq(tracks.id, trackArtists.trackId))
+      .where(hasCompletedProcessing(tracks.id))
+      .groupBy(artists.id, artists.name)
+      .orderBy(desc(sql`sum(${tracks.trendingScore})`), asc(artists.id))
+      .limit(limit);
+  }
+
+  /**
+   * The Albums with a completed Track, most popular first: the sum of their
+   * completed Tracks' trending scores, then the ID.
+   */
+  findPopularAlbums(limit: number): Promise<HomeAlbumRecord[]> {
+    return this.txHost.tx
+      .select({
+        id: albums.id,
+        title: albums.title,
+        coverArtUrl: albums.coverArtUrl,
+        year: albums.year,
+      })
+      .from(albums)
+      .innerJoin(albumTracks, eq(albumTracks.albumId, albums.id))
+      .innerJoin(tracks, eq(tracks.id, albumTracks.trackId))
+      .where(hasCompletedProcessing(tracks.id))
+      .groupBy(albums.id)
+      .orderBy(desc(sql`sum(${tracks.trendingScore})`), asc(albums.id))
+      .limit(limit);
   }
 }

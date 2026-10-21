@@ -13,6 +13,9 @@
     "rows": {
       "trendingToday": "Trending today",
       "newTracks": "New Tracks",
+      "genres": "Browse by genre",
+      "featuredArtists": "Featured artists",
+      "featuredAlbums": "Featured albums",
       "pinned": "{title}",
       "easyToStart": "Easy to start",
       "higherVoices": "For higher voices",

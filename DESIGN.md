@@ -339,6 +339,23 @@ section heading); rows are spaced `gap-12`.
   range in mono like every note name). At most ten rows; below six the row
   does not render. The sponsored notice sits under the row title like on a
   carousel (`line` placement in the layout registry).
+- **Genre tiles**: the same snap track, but each item is a colored tile at
+  card width (`w-40 sm:w-44 md:w-48`) and a fixed height (`h-24`, `md:h-28`,
+  `rounded-2xl`). The tile's color is the geometric artwork placeholder keyed
+  by the genre name, so tiles reuse the cover language instead of photos or
+  new tokens; the genre name sits on a bottom scrim (`from-black/60`), white
+  semibold, truncated. Each tile is a real link to the search for that genre.
+- **Artist row**: the same snap track; each item a real link to the artist
+  page. The visual is a circle (`size-20 md:size-24`, `rounded-full`,
+  `bg-muted`) with the artist's initials (`font-bold`,
+  `text-muted-foreground`), the name under it (`text-sm font-medium`,
+  centered, truncated).
+- **Album row**: the same snap track of cards at carousel width. Each cover
+  (`aspect-square`, `rounded-xl`, lazy below the fold) sits stacked over two
+  sheets (`bg-muted` and `bg-accent`, offset 4px and 8px down-right); the title
+  (`text-sm font-semibold`, truncated) and the release year (`text-xs
+  tabular-nums text-muted-foreground`) sit under it. Each album is a real link
+  to its page.
 - **Skeletons** reserve exactly the final sizes: the hero's block height and
   a carousel's title line and card widths (`layout-dimensions.ts` is the one
   source of both). No row may change height when its content lands.

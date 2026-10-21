@@ -1,5 +1,6 @@
 import {
   HOME_ROW_RULES,
+  type HomeEntityLayout,
   type HomeLayout,
   type HomeRowRule,
   MAX_TRACKS_PER_ARTIST_PER_ROW,
@@ -75,6 +76,48 @@ export const composeHomeRows = <
   for (const candidate of candidates) {
     const rule = HOME_ROW_RULES[candidate.layout];
     const items = pickRowItems(candidate.items, rule, used);
+    if (items.length < rule.minItems) {
+      continue;
+    }
+    for (const item of items) {
+      used.add(item.id);
+    }
+    rows.push({ ...candidate, items });
+  }
+  return rows;
+};
+
+/** What the composer needs to place an entity (a genre, artist or album). */
+export type ComposableEntity = {
+  /** Stable across rows, so an entity appears once per feed. */
+  id: string;
+};
+
+type EntityRowCandidate<T extends ComposableEntity> = {
+  layout: HomeEntityLayout;
+  items: readonly T[];
+};
+
+/**
+ * Turns candidate entity rows, in feed order, into the rows of the feed. An
+ * entity appears once per feed (the earlier row keeps it), a row below its
+ * minimum size is dropped (and its entities stay free for the rows after
+ * it), and a row keeps at most its maximum. Pure: the caller loads the
+ * candidates and maps the rows it gets back.
+ */
+export const composeEntityRows = <
+  T extends ComposableEntity,
+  R extends EntityRowCandidate<T>,
+>(
+  candidates: readonly R[],
+): (R & { items: T[] })[] => {
+  const used = new Set<string>();
+  const rows: (R & { items: T[] })[] = [];
+  for (const candidate of candidates) {
+    const rule = HOME_ROW_RULES[candidate.layout];
+    const items = candidate.items
+      .filter((item) => !used.has(item.id))
+      .slice(0, rule.maxItems);
     if (items.length < rule.minItems) {
       continue;
     }
