@@ -31,3 +31,36 @@ export const HERO_COVER_SIZES = '(max-width: 768px) 50vw, 40vw';
  */
 export const DAILY_TARGET_STRIP_CLASS =
   'flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3';
+
+/** A ranked Top 10: the title line, then the numbered rows. */
+export const RANKED_HEADER_CLASS = 'flex min-h-14 flex-col justify-end';
+
+export const RANKED_TITLE_CLASS = 'font-bold text-xl tracking-tight';
+
+/** The title's skeleton: one text-xl line (28px, `h-7`) of a typical title width. */
+export const RANKED_TITLE_SKELETON_CLASS = 'h-7 w-56 rounded-md';
+
+/** The ranked list: rows of number, cover and text, dividers between them. */
+export const RANKED_LIST_CLASS =
+  'flex flex-col divide-y divide-border overflow-hidden rounded-2xl bg-card shadow-sm';
+
+/** One ranked row: a large touch target that navigates as one link. */
+export const RANKED_ITEM_CLASS =
+  'flex min-h-16 items-center gap-3 px-4 py-2 outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset';
+
+/** The rank number: big, tabular, quiet. The list order carries the meaning. */
+export const RANKED_RANK_CLASS =
+  'w-8 shrink-0 text-center font-mono text-2xl font-extrabold tabular-nums text-muted-foreground';
+
+/** One ranked title: one line, truncated, like a card title. */
+export const RANKED_ITEM_TITLE_CLASS = 'truncate font-semibold text-sm';
+
+/** The artist and vocal range under it, like a card's metadata line. */
+export const RANKED_ITEM_SUBTITLE_CLASS =
+  'truncate font-medium text-muted-foreground text-xs';
+
+/** A skeleton text line inside a ranked row, at the subtitle's size. */
+export const RANKED_META_SKELETON_CLASS = 'h-4 w-2/3 rounded-md';
+
+/** Sizes hint for a ranked cover: its fixed 48px width. */
+export const RANKED_COVER_SIZES = '48px';

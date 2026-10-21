@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, asc, desc, eq, gt, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  sql,
+} from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { practiceAttempts } from '../../database/schema/practice-attempts.js';
 import { trackFavorites } from '../../database/schema/track-favorites.js';

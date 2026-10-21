@@ -19,7 +19,10 @@
       "lowerVoices": "For lower voices",
       "continueSinging": "Continue singing",
       "singAgain": "Sing again",
-      "dailyTarget": "Daily target"
+      "dailyTarget": "Daily target",
+      "mostSung": "Most sung",
+      "mostFavorited": "Most favorited",
+      "top10Week": "Top 10 of the week"
     },
     "sponsored": {
       "hero": "sponsored content",
