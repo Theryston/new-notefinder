@@ -55,6 +55,9 @@ export type HomeHero = z.infer<typeof homeHeroSchema>;
 
 export const HOME_CAROUSEL_MAX_ITEMS = 24;
 
+/** A weekly Top 10: at most ten Tracks, shown with big rank numbers. */
+export const HOME_RANKED_MAX_ITEMS = 10;
+
 export const homeCarouselRowSchema = z.object({
   id: homeRowIdSchema,
   layout: z.literal('standard'),
@@ -65,6 +68,7 @@ export const homeCarouselRowSchema = z.object({
 
 export type HomeCarouselRow = z.infer<typeof homeCarouselRowSchema>;
 
+/**
 /**
  * A carousel of by-voice Tracks: each card also shows the Track's Vocal range
  * as a bar. Every item carries a range, since the row exists to show it.
@@ -105,11 +109,26 @@ export const homeDailyTargetRowSchema = z.object({
 
 export type HomeDailyTargetRow = z.infer<typeof homeDailyTargetRowSchema>;
 
+/**
+ * A ranked row (the weekly Top 10). Its items are best first, and the client
+ * numbers them 1 to N in that order.
+ */
+export const homeRankedRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('ranked'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  items: z.array(homeTrackSchema).min(1).max(HOME_RANKED_MAX_ITEMS),
+});
+
+export type HomeRankedRow = z.infer<typeof homeRankedRowSchema>;
+
 export const homeRowSchema = z.discriminatedUnion('layout', [
   homeHeroSchema,
   homeCarouselRowSchema,
   homeVocalRangeRowSchema,
   homeDailyTargetRowSchema,
+  homeRankedRowSchema,
 ]);
 
 export type HomeRow = z.infer<typeof homeRowSchema>;
