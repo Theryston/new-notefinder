@@ -3,18 +3,28 @@ import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web
 import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
 import { EditorialPinsRepository } from '../src/modules/editorial-pins/editorial-pins.repository.js';
 import type { FakeQueue } from './redis-test-overrides.js';
+import {
+  createAlbumDisc,
+  placeAlbumTrack,
+} from './utils/album-track-factories.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
 import {
+  albumPinBody,
+  artistPinBody,
+  genrePinBody,
   heroPinBody,
   rowPinBody,
   signInPinsAdmin,
 } from './utils/editorial-pin-factories.js';
 import {
+  createAlbum,
+  createArtist,
   createCredentialAccount,
   createTrack,
   createUser,
   DEFAULT_PASSWORD,
+  linkTrackArtist,
 } from './utils/factories.js';
 import {
   createCompletedTrack,
@@ -403,6 +413,149 @@ describe('Editorial pins (e2e)', () => {
         .expect(400);
 
       expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+    });
+
+    describe('dynamic sources', () => {
+      it('creates a genre pin when the genre has enough completed Tracks', async () => {
+        for (let i = 0; i < 6; i += 1) {
+          await createCompletedTrack(spec.testApp.db, {
+            title: `Rock ${i}`,
+            genres: ['rock'],
+          });
+        }
+
+        const response = await spec.client
+          .post(PINS)
+          .send(genrePinBody('rock'))
+          .expect(201);
+
+        expect(response.body).toMatchObject({
+          source: { type: 'genre', genre: 'rock' },
+        });
+      });
+
+      it('refuses a genre with fewer completed Tracks than a row needs', async () => {
+        await createCompletedTrack(spec.testApp.db, {
+          title: 'Only jazz',
+          genres: ['jazz'],
+        });
+
+        const response = await spec.client
+          .post(PINS)
+          .send(genrePinBody('jazz'))
+          .expect(400);
+
+        expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+        expect(response.body.details.issues).toEqual([
+          expect.objectContaining({ path: ['source'] }),
+        ]);
+      });
+
+      it('creates an artist pin when the Artist has enough completed Tracks', async () => {
+        const artist = await createArtist(spec.testApp.db, {
+          name: 'Featured',
+        });
+        for (let i = 0; i < 6; i += 1) {
+          const track = await createCompletedTrack(spec.testApp.db, {
+            title: `Hit ${i}`,
+          });
+          await linkTrackArtist(spec.testApp.db, track.id, artist.id);
+        }
+
+        const response = await spec.client
+          .post(PINS)
+          .send(artistPinBody(artist.id))
+          .expect(201);
+
+        expect(response.body).toMatchObject({
+          source: { type: 'artist', artistId: artist.id },
+        });
+      });
+
+      it('refuses an artist that does not exist', async () => {
+        const response = await spec.client
+          .post(PINS)
+          .send(artistPinBody('missing-artist'))
+          .expect(400);
+
+        expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+      });
+
+      it('refuses an artist with fewer completed Tracks than a row needs', async () => {
+        const artist = await createArtist(spec.testApp.db, {
+          name: 'Newcomer',
+        });
+        const track = await createCompletedTrack(spec.testApp.db, {
+          title: 'Debut',
+        });
+        await linkTrackArtist(spec.testApp.db, track.id, artist.id);
+
+        const response = await spec.client
+          .post(PINS)
+          .send(artistPinBody(artist.id))
+          .expect(400);
+
+        expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+      });
+
+      it('creates an album pin that keeps no Track list of its own', async () => {
+        const album = await createAlbum(spec.testApp.db, {
+          title: 'Featured album',
+        });
+        await createAlbumDisc(spec.testApp.db, album.id, 1);
+        for (let i = 0; i < 6; i += 1) {
+          const track = await createCompletedTrack(spec.testApp.db, {
+            title: `Album track ${i}`,
+          });
+          await placeAlbumTrack(spec.testApp.db, {
+            albumId: album.id,
+            trackId: track.id,
+            discPosition: 1,
+            trackPosition: i + 1,
+          });
+        }
+
+        const response = await spec.client
+          .post(PINS)
+          .send(albumPinBody(album.id))
+          .expect(201);
+
+        expect(response.body).toMatchObject({
+          source: { type: 'album', albumId: album.id },
+        });
+      });
+
+      it('refuses an album that does not exist', async () => {
+        const response = await spec.client
+          .post(PINS)
+          .send(albumPinBody('missing-album'))
+          .expect(400);
+
+        expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+      });
+
+      it('refuses a hero whose genre offers no Track with a cover', async () => {
+        for (let i = 0; i < 6; i += 1) {
+          await createCompletedTrack(spec.testApp.db, {
+            title: `Coverless ${i}`,
+            genres: ['ambient'],
+            coverUrl: null,
+          });
+        }
+
+        const response = await spec.client
+          .post(PINS)
+          .send(
+            genrePinBody('ambient', {
+              kind: 'hero',
+              layout: 'hero',
+              position: 0,
+            }),
+          )
+          .expect(400);
+
+        expect(response.body).toMatchObject({ code: 'VALIDATION_FAILED' });
+      });
     });
   });
 });

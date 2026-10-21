@@ -46,3 +46,42 @@ export const heroPinBody = (
     position: 0,
     ...overrides,
   });
+
+/** The body of a row pin filled from a genre, as the admin API takes it. */
+export const genrePinBody = (
+  genre: string,
+  overrides: Record<string, unknown> = {},
+) => ({
+  kind: 'row',
+  layout: 'standard',
+  source: { type: 'genre', genre },
+  position: 1,
+  titles: { en: 'Festive', 'pt-BR': 'Festivo' },
+  ...overrides,
+});
+
+/** The body of a row pin filled from an Artist, as the admin API takes it. */
+export const artistPinBody = (
+  artistId: string,
+  overrides: Record<string, unknown> = {},
+) => ({
+  kind: 'row',
+  layout: 'standard',
+  source: { type: 'artist', artistId },
+  position: 1,
+  titles: { en: 'Festive', 'pt-BR': 'Festivo' },
+  ...overrides,
+});
+
+/** The body of a row pin filled from an Album, as the admin API takes it. */
+export const albumPinBody = (
+  albumId: string,
+  overrides: Record<string, unknown> = {},
+) => ({
+  kind: 'row',
+  layout: 'standard',
+  source: { type: 'album', albumId },
+  position: 1,
+  titles: { en: 'Festive', 'pt-BR': 'Festivo' },
+  ...overrides,
+});

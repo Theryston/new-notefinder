@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  EditorialPin,
-  HomeRow,
-  HomeRowTitle,
-  HomeTrack,
-  Locale,
+import {
+  EDITORIAL_PIN_MAX_TRACKS,
+  type EditorialPin,
+  type HomeRow,
+  type HomeRowTitle,
+  type HomeTrack,
+  type Locale,
 } from '@notefinder/contracts';
 import { EditorialPinsService } from '../editorial-pins/editorial-pins.service.js';
 import { HomeRepository } from './home.repository.js';
@@ -37,7 +38,28 @@ export class HomePinOverlayService {
     if (live.length === 0) {
       return rows;
     }
-    const trackIds = [...new Set(live.flatMap((pin) => pin.source.trackIds))];
+    // A genre, artist or album pin names no Tracks of its own: its Tracks are
+    // read here, so a newly processed Track shows without an edit of the pin.
+    const resolved = new Map<string, string[]>();
+    for (const pin of live) {
+      if (pin.source.type !== 'tracks') {
+        resolved.set(
+          pin.id,
+          await this.pins.findSourceTrackIds(pin.source, {
+            requireCover: pin.kind === 'hero',
+            limit: EDITORIAL_PIN_MAX_TRACKS,
+          }),
+        );
+      }
+    }
+    const trackIds = [
+      ...new Set([
+        ...live.flatMap((pin) =>
+          pin.source.type === 'tracks' ? pin.source.trackIds : [],
+        ),
+        ...[...resolved.values()].flat(),
+      ]),
+    ];
     const records =
       await this.homeRepository.findCompletedTracksByIds(trackIds);
     const tracksById = new Map(
@@ -47,7 +69,12 @@ export class HomePinOverlayService {
       ]),
     );
     const pins = live.flatMap((pin) => {
-      const overlayPin = toOverlayPin(pin, viewer.locale, tracksById);
+      const overlayPin = toOverlayPin(
+        pin,
+        viewer.locale,
+        tracksById,
+        resolved.get(pin.id) ?? [],
+      );
       return overlayPin ? [overlayPin] : [];
     });
     return applyEditorialPins(rows, pins);
@@ -59,6 +86,7 @@ const toOverlayPin = (
   pin: EditorialPin,
   locale: Locale,
   tracksById: ReadonlyMap<string, HomeTrack>,
+  resolvedIds: string[],
 ): OverlayPin | undefined => {
   const title = pin.titles[locale];
   if (title === undefined) {
@@ -68,6 +96,8 @@ const toOverlayPin = (
     key: PINNED_ROW_TITLE_KEY,
     params: { title },
   };
+  const orderedIds =
+    pin.source.type === 'tracks' ? pin.source.trackIds : resolvedIds;
   return {
     id: pin.id,
     kind: pin.kind,
@@ -76,7 +106,7 @@ const toOverlayPin = (
     createdAt: Date.parse(pin.createdAt),
     sponsored: pin.sponsored,
     title: pinnedTitle,
-    tracks: pin.source.trackIds.flatMap((trackId) => {
+    tracks: orderedIds.flatMap((trackId) => {
       const track = tracksById.get(trackId);
       return track ? [track] : [];
     }),

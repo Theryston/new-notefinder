@@ -5,9 +5,11 @@ import {
   createEditorialPinBodySchema,
   type EditorialPin,
   type EditorialPinActor,
+  type EditorialPinDynamicSource,
   type EditorialPinHistoryEntry,
   type EditorialPinHistoryPage,
   type EditorialPinPage,
+  type EditorialPinSource,
   type Locale,
   type UpdateEditorialPinBody,
 } from '@notefinder/contracts';
@@ -17,12 +19,14 @@ import {
 } from '../../common/cursor/tuple-cursor.js';
 import { AppException } from '../../common/errors/app-exception.js';
 import { EditorialPinScheduleService } from './editorial-pin-schedule.service.js';
+import { assertSourceEligible } from './editorial-pin-source-eligibility.js';
 import {
   affectedLocales,
   changedFieldsOf,
   EDITORIAL_PIN_STATE_FIELDS,
   type EditorialPinWrite,
   type PageCursor,
+  type SourceTrackQuery,
   stateOf,
   toEditorialPin,
 } from './editorial-pin-state.js';
@@ -63,6 +67,14 @@ const decodeCursor = (cursor: string | undefined): PageCursor | undefined => {
   return { createdAt: time, id };
 };
 
+/** A source as the database holds it: Tracks in order, or a dynamic reference. */
+const sourceWriteOf = (
+  source: EditorialPinSource,
+): Pick<EditorialPinWrite, 'trackIds' | 'dynamicSource'> =>
+  source.type === 'tracks'
+    ? { trackIds: source.trackIds, dynamicSource: null }
+    : { trackIds: [], dynamicSource: source };
+
 /** The fields of a validated body, as the database stores them. */
 const writeOf = (body: CreateEditorialPinBody): EditorialPinWrite => ({
   kind: body.kind,
@@ -75,7 +87,7 @@ const writeOf = (body: CreateEditorialPinBody): EditorialPinWrite => ({
   endsAt: body.endsAt ? new Date(body.endsAt) : null,
   titles: body.titles,
   sponsored: body.sponsored ?? false,
-  trackIds: body.source.trackIds,
+  ...sourceWriteOf(body.source),
 });
 
 const toHistoryEntry = (
@@ -89,23 +101,6 @@ const toHistoryEntry = (
   state: entry.state,
   createdAt: entry.createdAt.toISOString(),
 });
-
-/**
- * Why a Track cannot appear in a pin, or `undefined` when it can: it must have
- * completed its Processing, and a hero also needs a cover.
- */
-const refusalOf = (
-  kind: EditorialPinWrite['kind'],
-  track: { coverUrl: string | null } | undefined,
-): string | undefined => {
-  if (!track) {
-    return 'The Track has not completed its Processing or does not exist';
-  }
-  if (kind === 'hero' && track.coverUrl === null) {
-    return 'A hero needs a Track with a cover';
-  }
-  return undefined;
-};
 
 /**
  * Admin writes of the editorial pins: validation, the history of every change,
@@ -155,7 +150,7 @@ export class EditorialPinsService {
     actor: EditorialPinActor,
   ): Promise<EditorialPin> {
     const write = writeOf(body);
-    await this.assertTracksEligible(write);
+    await this.assertSourceEligible(write);
     const pinId = await this.insertWithHistory(write, actor);
     const pin = toEditorialPin(await this.require(pinId));
     await this.announce(pin, pin.locale);
@@ -186,12 +181,23 @@ export class EditorialPinsService {
       return currentState;
     }
     if (changed.some((field) => ['kind', 'layout', 'source'].includes(field))) {
-      await this.assertTracksEligible(next);
+      await this.assertSourceEligible(next);
     }
     await this.updateWithHistory(pinId, next, changed, actor);
     const updated = toEditorialPin(await this.require(pinId));
     await this.announce(updated, current.locale);
     return updated;
+  }
+
+  /**
+   * The Tracks a dynamic source offers now, best first, as the feed shows them.
+   * A hero reads only Tracks with a cover, and a row takes up to `limit`.
+   */
+  findSourceTrackIds(
+    source: EditorialPinDynamicSource,
+    query: SourceTrackQuery,
+  ): Promise<string[]> {
+    return this.pins.findSourceTrackIds(source, query);
   }
 
   async remove(pinId: string, actor: EditorialPinActor): Promise<void> {
@@ -226,25 +232,8 @@ export class EditorialPinsService {
     return pin;
   }
 
-  private async assertTracksEligible(write: EditorialPinWrite): Promise<void> {
-    const found = new Map(
-      (await this.pins.findCompletedTracks(write.trackIds)).map(
-        (track) => [track.id, track] as const,
-      ),
-    );
-    const issues = write.trackIds.flatMap((trackId) => {
-      const message = refusalOf(write.kind, found.get(trackId));
-      return message === undefined
-        ? []
-        : [{ code: 'custom', path: ['source', 'trackIds'], message, trackId }];
-    });
-    if (issues.length > 0) {
-      throw new AppException(
-        'VALIDATION_FAILED',
-        'Some Tracks cannot appear in this pin',
-        { location: 'custom', issues },
-      );
-    }
+  private async assertSourceEligible(write: EditorialPinWrite): Promise<void> {
+    await assertSourceEligible(this.pins, write);
   }
 
   /** Revalidates the home of the locales the pin was and is in, now. */

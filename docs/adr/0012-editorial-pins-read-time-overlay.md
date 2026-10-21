@@ -26,16 +26,23 @@ pin starting or ending takes effect on the next read, with no regeneration.
 
 **The pin model** (`editorial_pins`, `editorial_pin_tracks`, `editorial_pin_history`):
 
-- A pin is a `hero` (the hero slot) or a `row` (a standard row). Its source is
-  an ordered list of Tracks; genre, artist and album sources come later.
+- A pin is a `hero` (the hero slot) or a `row` (a standard row). Its source
+  is an ordered list of Tracks, or a genre, artist or album reference: a
+  genre or artist pin fills itself with the best Tracks by trending score, an
+  album pin follows the album order. The dynamic sources are resolved when the
+  feed is read (with the same eligibility rules), so a newly processed Track
+  shows without an edit of the pin.
 - It has a position (row 0 is the hero slot), a priority, an audience
   (`everyone`, or `visitors` for visitors who are not signed in), an optional
   locale, an optional start and end (no start: live at once; no end:
   indefinite), titles per locale and a `sponsored` flag (off by default).
 - The API refuses a pin at creation, and an edit that changes its kind, layout
-  or Tracks, when a Track cannot appear: its Processing is not completed, or a
-  hero's Track has no cover. A Track that becomes ineligible later is skipped at
-  read time, so an edit of the pin's other fields is never refused for it.
+  or source, when it cannot show: a `tracks` source naming a Track whose
+  Processing is not completed, or a hero's Track without a cover; a genre,
+  artist or album source naming an entity that does not exist or offers fewer
+  eligible Tracks than the pin needs (six for a row, one with a cover for a
+  hero). A Track that becomes ineligible later is skipped at read time, so an
+  edit of the pin's other fields is never refused for it.
 - Every change, the sponsored flag included, is a row of `editorial_pin_history`
   with the admin who made it, the fields that changed and the state after the
   change. The history has no foreign key to the pin: a removed pin keeps it.
@@ -104,8 +111,9 @@ the message `{title}` in each locale file. This needs no change to the contract.
 - Cursors name the stored feed version and a row position. A pin that starts or
   ends between two pages of a visit shifts the rows after it, so a visit can
   repeat or skip a row across that moment. The window is short and rare.
-- Adding a source (genre, artist, album) adds a variant to `editorialPinSourceSchema`
-  and a way to read its Tracks; the overlay itself does not change.
+- Adding a source (genre, artist, album) added a variant to
+  `editorialPinSourceSchema` and a read of its Tracks at feed time; the overlay
+  precedence and dedupe itself did not change.
 
 ## Alternatives considered
 
