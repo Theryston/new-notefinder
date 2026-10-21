@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 
 import { TERMS_ADVERTISING_FRAGMENT } from '../lib/terms-fragments';
 import {
@@ -352,6 +352,32 @@ const SESSION_COOKIE = {
   value: 'signed-in',
 };
 
+/**
+ * Signs the browser in for the home: the `localhost` cookie drives the
+ * server-rendered feed, and the `127.0.0.1` one is what the browser forwards
+ * to the API (a `localhost` cookie never leaves for `127.0.0.1`) when it
+ * pages. Production uses one cookie domain for both; the split hostnames of
+ * the e2e setup need both.
+ */
+async function signIn(context: BrowserContext) {
+  // The `localhost` cookie drives the server-rendered feed; the `127.0.0.1`
+  // one is what the browser forwards to the API (a cookie scoped to one host
+  // never leaves for the other). The API call is cross-site
+  // (`localhost` to `127.0.0.1`), so that cookie needs `SameSite=None`,
+  // which needs `Secure` (loopback counts as trustworthy). Production uses
+  // one cookie domain for both; the split hostnames of the e2e setup need
+  // both.
+  await context.addCookies([
+    { ...SESSION_COOKIE, url: 'http://localhost:3000' },
+    {
+      ...SESSION_COOKIE,
+      url: 'http://127.0.0.1:3333',
+      sameSite: 'None',
+      secure: true,
+    },
+  ]);
+}
+
 const continueKey = 'home.rows.continueSinging';
 const singAgainKey = 'home.rows.singAgain';
 const dailyTargetKey = 'home.rows.dailyTarget';
@@ -420,9 +446,7 @@ test.describe('signed-in home feed', () => {
       ]),
       dailyTargetStrip('daily-target'),
     ]);
-    await context.addCookies([
-      { ...SESSION_COOKIE, domain: 'localhost', path: '/' },
-    ]);
+    await signIn(context);
 
     await page.goto('/en');
 
@@ -483,9 +507,7 @@ test.describe('signed-in home feed', () => {
       ]),
     );
     await installPersonalFeed('scroll-personal', rows);
-    await context.addCookies([
-      { ...SESSION_COOKIE, domain: 'localhost', path: '/' },
-    ]);
+    await signIn(context);
 
     await page.goto('/en');
     await expect(
@@ -508,9 +530,7 @@ test.describe('signed-in home feed', () => {
     await installPersonalFeed('done-personal', [
       dailyTargetStrip('daily-target', 0, true),
     ]);
-    await context.addCookies([
-      { ...SESSION_COOKIE, domain: 'localhost', path: '/' },
-    ]);
+    await signIn(context);
 
     await page.goto('/en');
 
