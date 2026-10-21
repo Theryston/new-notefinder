@@ -119,12 +119,10 @@ function SearchResults({
   canAddMore: boolean;
   onAdd: (id: string) => void;
 }) {
-  const tForm = useTranslations('adminHomePins.form');
   const listRef = useRef<HTMLUListElement>(null);
   return (
     <ul
       ref={listRef}
-      aria-label={tForm('trackPicker.searchLabel')}
       className="flex max-h-64 flex-col gap-1 overflow-y-auto rounded-xl border border-input bg-background p-1"
     >
       {items.map((item) => {
@@ -235,8 +233,7 @@ function SelectedList({
 /**
  * Picks the pin's Tracks by name instead of pasting IDs: the admin types,
  * the eligible Tracks show up, and each pick lands in the form. Everything
- * picked stays visible by name, and every pick can be removed again. The
- * textarea under it keeps working for manual pasting.
+ * picked stays visible by name, and every pick can be removed again.
  */
 export function TrackPickerField({
   form,
@@ -257,11 +254,7 @@ export function TrackPickerField({
 
   return (
     <div className="flex flex-col gap-3">
-      <FormField
-        id="pin-track-search"
-        label={tForm('trackPicker.searchLabel')}
-        hint={tForm('trackPicker.searchHint')}
-      >
+      <FormField id="pin-track-search" label={tForm('trackPicker.searchLabel')}>
         <div className="relative">
           <SearchIcon
             aria-hidden="true"

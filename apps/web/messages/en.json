@@ -1030,14 +1030,11 @@
         "standard": "Carousel"
       },
       "trackIds": {
-        "label": "Track IDs",
-        "hint": "One Track ID per line, in the order it shows.",
-        "placeholder": "trk_abc123\ntrk_def456"
+        "label": "Track IDs"
       },
       "trackPicker": {
         "searchLabel": "Find tracks",
         "searchPlaceholder": "Type a song or artist name…",
-        "searchHint": "Only completed Tracks are listed; a hero needs one with a cover.",
         "loading": "Searching…",
         "empty": "No Tracks match your search.",
         "error": "Search is unavailable. Try again.",

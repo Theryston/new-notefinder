@@ -33,7 +33,6 @@ import {
   SponsoredField,
   TargetingFields,
   TitlesFields,
-  TracksField,
   UnsupportedSourceNote,
   useFieldError,
 } from './pin-form-fields';
@@ -114,7 +113,7 @@ function useHeroPinSync(
   }, [isHero, form, catalog.heroPosition]);
 }
 
-/** The Tracks of a tracks-sourced pin: the picker, then manual pasting. */
+/** The Tracks of a tracks-sourced pin: picked by name in the picker. */
 function SourceTracksFields({
   form,
   catalog,
@@ -122,13 +121,7 @@ function SourceTracksFields({
   form: UseFormReturn<PinFormValues>;
   catalog: PinFormCatalog;
 }) {
-  const errorOf = useFieldError(form.formState.errors, catalog);
-  return (
-    <>
-      <TrackPickerField form={form} catalog={catalog} />
-      <TracksField register={form.register} error={errorOf('trackIdsText')} />
-    </>
-  );
+  return <TrackPickerField form={form} catalog={catalog} />;
 }
 
 /** Every field of the form, driven by the kind, locale and source. */
