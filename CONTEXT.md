@@ -194,6 +194,21 @@ no vocal notes, so the music probably leaked into the mic. The flag stays on the
 attempt and shows as suspected in the Profile's practice history.
 _Avoid_: Bleed (alone), leak, bleed flag
 
+### Home
+
+**Pin**:
+An admin's hero or row on the home feed, for everyone or only for visitors who
+are not signed in, optionally for a time window and in one locale. It is applied
+over the algorithmic feed when the feed is read, so it goes live and ends at its
+times without a regeneration (`docs/adr/0012-editorial-pins-read-time-overlay.md`).
+_Avoid_: Featured item, promotion, banner
+
+**Sponsored pin**:
+A Pin marked as sponsored content. The hero or row it produces carries the
+sponsored flag for every audience, which clients show as a discreet notice.
+Algorithmic rows are never sponsored.
+_Avoid_: Ad, advertisement, paid placement
+
 ### Legacy
 
 **Legacy ID**:

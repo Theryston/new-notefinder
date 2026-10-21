@@ -34,7 +34,7 @@ export type HomeRowSource = {
   load: (locale?: Locale) => Promise<HomeCandidate[]>;
 };
 
-const toHomeCandidate = (record: HomeTrackRecord): HomeCandidate => {
+export const toHomeCandidate = (record: HomeTrackRecord): HomeCandidate => {
   const [primary] = record.artistCredit;
   const { vocalRangeLowest, vocalRangeHighest } = record;
   return {

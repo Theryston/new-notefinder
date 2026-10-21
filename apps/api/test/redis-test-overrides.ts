@@ -5,6 +5,8 @@ import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
 import { EmailProcessor } from '../src/integrations/email/email.processor.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';
 import { WebRevalidationProcessor } from '../src/integrations/web-revalidation/web-revalidation.processor.js';
+import { EDITORIAL_PIN_QUEUE } from '../src/modules/editorial-pins/editorial-pins.job.js';
+import { EditorialPinsProcessor } from '../src/modules/editorial-pins/editorial-pins.processor.js';
 import { HOME_FEED_QUEUE } from '../src/modules/home/home-feed.job.js';
 import { HomeFeedProcessor } from '../src/modules/home/home-feed.processor.js';
 import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
@@ -29,6 +31,7 @@ const QUEUES = [
   TRACK_MP3_QUEUE,
   TRACK_TRENDING_QUEUE,
   HOME_FEED_QUEUE,
+  EDITORIAL_PIN_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -40,20 +43,26 @@ const PROCESSORS = [
   TrackMp3Processor,
   TrackTrendingProcessor,
   HomeFeedProcessor,
+  EditorialPinsProcessor,
 ] as const;
 
 export type FakeQueue = {
   added: { name: string; data: unknown }[];
-  add: (name: string, data: unknown) => Promise<{ id: string }>;
+  /** The options of each job in `added`, at the same index (delay, job ID…). */
+  options: unknown[];
+  add: (name: string, data: unknown, opts?: unknown) => Promise<{ id: string }>;
   upsertJobScheduler: () => Promise<void>;
 };
 
 const createFakeQueue = (): FakeQueue => {
   const added: FakeQueue['added'] = [];
+  const options: unknown[] = [];
   return {
     added,
-    add: async (name, data) => {
+    options,
+    add: async (name, data, opts) => {
       added.push({ name, data });
+      options.push(opts);
       return { id: String(added.length) };
     },
     // Repeatable jobs are registered on boot; nothing runs them here.

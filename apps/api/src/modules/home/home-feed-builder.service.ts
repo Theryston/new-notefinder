@@ -26,7 +26,7 @@ type ComposedRow = {
   items: HomeCandidate[];
 };
 
-const toHomeTrack = (candidate: HomeCandidate): HomeTrack => ({
+export const toHomeTrack = (candidate: HomeCandidate): HomeTrack => ({
   id: candidate.id,
   title: candidate.title,
   coverUrl: candidate.coverUrl,
@@ -95,6 +95,7 @@ export class HomeFeedBuilder {
       .filter((row): row is HomeRow => row !== undefined);
     return {
       audience: 'public',
+      locale,
       version: feedVersion(locale, rows),
       algorithmVersion: HOME_ALGORITHM_VERSION,
       rows,

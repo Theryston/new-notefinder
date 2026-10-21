@@ -4,6 +4,7 @@ export * from './albums.js';
 export * from './artists.js';
 export * from './auth.js';
 export * from './daily-practice-streaks.js';
+export * from './editorial-pins.js';
 export * from './practice-attempts.js';
 export * from './relations.js';
 export * from './track-contributors.js';

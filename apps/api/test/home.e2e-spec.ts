@@ -12,7 +12,10 @@ import {
   type HomeCandidate,
   type HomeRowSource,
 } from '../src/modules/home/home-row-sources.js';
-import { PUBLIC_HOME_CACHE_CONTROL } from '../src/modules/home/home-rules.js';
+import {
+  PRIVATE_HOME_CACHE_CONTROL,
+  PUBLIC_HOME_CACHE_CONTROL,
+} from '../src/modules/home/home-rules.js';
 import { CacheService } from '../src/redis/cache.service.js';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
@@ -287,7 +290,11 @@ describe('Home feed (e2e)', () => {
       const response = await spec.client.get('/v1/home').expect(200);
 
       expect(response.body.audience).toBe('public');
-      expect(response.headers['cache-control']).toBe(PUBLIC_HOME_CACHE_CONTROL);
+      // Private, not public: the signed-in body omits the visitors-only pins,
+      // so no shared cache may keep it (the PR's "signed-in private" decision).
+      expect(response.headers['cache-control']).toBe(
+        PRIVATE_HOME_CACHE_CONTROL,
+      );
       expect(response.text).not.toContain(viewer.email);
       expect(response.text).not.toContain(viewer.id);
       expect(response.text).not.toContain('home-viewer');
