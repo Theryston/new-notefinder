@@ -37,6 +37,9 @@ const expectedPlacement: Record<HomeRow['layout'], SponsoredPlacement> = {
   'vocal-range': 'line',
   'daily-target': 'line',
   ranked: 'line',
+  genres: 'line',
+  artists: 'line',
+  albums: 'line',
 };
 
 // The text each placement shows, from the locale file (hero caption vs row line).
@@ -83,6 +86,31 @@ const plainRows = {
     title: { key: 'home.rows.top10Week', params: {} },
     items: [track],
   },
+  genres: {
+    id: 'genres',
+    layout: 'genres',
+    title: { key: 'home.rows.genres', params: {} },
+    items: [{ name: 'Rock' }],
+  },
+  artists: {
+    id: 'featured-artists',
+    layout: 'artists',
+    title: { key: 'home.rows.featuredArtists', params: {} },
+    items: [{ id: 'artist-1', name: 'Queen' }],
+  },
+  albums: {
+    id: 'featured-albums',
+    layout: 'albums',
+    title: { key: 'home.rows.featuredAlbums', params: {} },
+    items: [
+      {
+        id: 'album-1',
+        title: 'A Night at the Opera',
+        coverArtUrl: null,
+        year: 1975,
+      },
+    ],
+  },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 const sponsoredRows = {
@@ -91,6 +119,9 @@ const sponsoredRows = {
   'vocal-range': { ...plainRows['vocal-range'], sponsored: true },
   'daily-target': { ...plainRows['daily-target'], sponsored: true },
   ranked: { ...plainRows.ranked, sponsored: true },
+  genres: { ...plainRows.genres, sponsored: true },
+  artists: { ...plainRows.artists, sponsored: true },
+  albums: { ...plainRows.albums, sponsored: true },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 function renderLayout(node: ReactNode): string {

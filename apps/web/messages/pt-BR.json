@@ -13,6 +13,9 @@
     "rows": {
       "trendingToday": "Em alta hoje",
       "newTracks": "Músicas novas",
+      "genres": "Navegar por gênero",
+      "featuredArtists": "Artistas em destaque",
+      "featuredAlbums": "Álbuns em destaque",
       "pinned": "{title}",
       "easyToStart": "Fáceis de começar",
       "higherVoices": "Para vozes agudas",

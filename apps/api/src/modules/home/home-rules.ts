@@ -26,7 +26,21 @@ export const HOME_MAX_ROWS = 24;
 /** Most Tracks of one artist in one row, so a hot artist can't fill it. */
 export const MAX_TRACKS_PER_ARTIST_PER_ROW = 2;
 
-export type HomeLayout = 'hero' | 'standard' | 'vocal-range' | 'ranked';
+/** The layouts of rows that list entities (genres, artists, albums), not Tracks. */
+export type HomeEntityLayout = 'genres' | 'artists' | 'albums';
+
+export type HomeLayout =
+  | 'hero'
+  | 'standard'
+  | 'vocal-range'
+  | 'ranked'
+  | HomeEntityLayout;
+
+/**
+ * A genre tile needs this many completed Tracks in it, so a genre with a
+ * couple of Tracks never gets a tile of its own.
+ */
+export const MIN_TRACKS_PER_GENRE = 3;
 
 export type HomeRowRule = {
   minItems: number;
@@ -62,6 +76,24 @@ export const HOME_ROW_RULES = {
   ranked: {
     minItems: 6,
     maxItems: 10,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  genres: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  artists: {
+    minItems: 6,
+    maxItems: 12,
+    requiresCover: false,
+    requiresVocalRange: false,
+  },
+  albums: {
+    minItems: 6,
+    maxItems: 12,
     requiresCover: false,
     requiresVocalRange: false,
   },

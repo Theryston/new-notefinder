@@ -70,8 +70,9 @@ const algorithmicHero = (
 /**
  * The algorithmic carousel rows without the pinned Tracks. A row that falls
  * below its own layout's minimum size is dropped, as the composer drops it.
- * Rows without Tracks (the daily target strip) pass through: pins place
- * Tracks, so they can neither overlap nor empty them.
+ * Rows without Tracks (the daily target strip, the genre, artist and album
+ * rows) pass through: pins place Tracks, so they can neither overlap nor
+ * empty them.
  */
 const algorithmicRows = (
   rows: readonly HomeRow[],

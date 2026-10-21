@@ -18,6 +18,16 @@ const rowById = (body: { rows: unknown }, id: string): HomeRow | undefined =>
 
 const itemIdsOf = (row: HomeRow | undefined): string[] => {
   if (row?.layout === 'hero') return [row.track.id];
+  // The entity rows (genres, artists, albums) carry no Tracks, so they
+  // contribute no ids here. They never reach this helper's callers, which
+  // only read Track rows, but the union demands every layout be handled.
+  if (
+    row?.layout === 'genres' ||
+    row?.layout === 'artists' ||
+    row?.layout === 'albums'
+  ) {
+    return [];
+  }
   return row && 'items' in row ? row.items.map((item) => item.id) : [];
 };
 

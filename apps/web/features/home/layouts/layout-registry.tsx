@@ -2,8 +2,11 @@ import type { HomeRow } from '@notefinder/contracts';
 import type { ReactNode } from 'react';
 
 import type { SponsoredPlacement } from '../components/sponsored-notice';
+import { AlbumsLayout } from './albums-layout';
+import { ArtistsLayout } from './artists-layout';
 import { CarouselLayout } from './carousel-layout';
 import { DailyTargetLayout } from './daily-target-layout';
+import { GenresLayout } from './genres-layout';
 import { HeroLayout } from './hero-layout';
 import { RankedLayout } from './ranked-layout';
 import { VocalRangeLayout } from './vocal-range-layout';
@@ -59,6 +62,9 @@ export const homeLayoutRegistry = {
   'vocal-range': registerLayout('vocal-range', 'line', VocalRangeLayout),
   'daily-target': registerLayout('daily-target', 'line', DailyTargetLayout),
   ranked: registerLayout('ranked', 'line', RankedLayout),
+  genres: registerLayout('genres', 'line', GenresLayout),
+  artists: registerLayout('artists', 'line', ArtistsLayout),
+  albums: registerLayout('albums', 'line', AlbumsLayout),
 } satisfies Record<HomeRow['layout'], HomeLayoutEntry>;
 
 /** Whether the web renders this layout; any other one is skipped. */

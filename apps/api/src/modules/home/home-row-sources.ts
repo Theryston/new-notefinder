@@ -1,14 +1,21 @@
 import type { HomeRowTitle, HomeTrack, Locale } from '@notefinder/contracts';
 import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
 import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
-import type { ComposableTrack } from './home-feed-composer.js';
+import type {
+  ComposableEntity,
+  ComposableTrack,
+} from './home-feed-composer.js';
 import {
   popularityScore,
   rankBySignalCount,
   SINGING_SIGNAL_WINDOW_DAYS,
   TOP_10_WINDOW_DAYS,
 } from './home-popularity.js';
-import { DEFAULT_HOME_LOCALE, type HomeLayout } from './home-rules.js';
+import {
+  DEFAULT_HOME_LOCALE,
+  type HomeLayout,
+  MIN_TRACKS_PER_GENRE,
+} from './home-rules.js';
 
 /** Injection token of the row sources the builder composes, in feed order. */
 export const HOME_ROW_SOURCES = Symbol('HOME_ROW_SOURCES');
@@ -259,3 +266,87 @@ export const createHomeRowSources = (
     },
   ];
 };
+
+/** A genre as the composer places it: its name is its stable id. */
+export type HomeGenreCandidate = ComposableEntity & { name: string };
+
+/** An Artist as the composer places it: its id links to its page. */
+export type HomeArtistCandidate = ComposableEntity & { name: string };
+
+/** An Album as the composer places it: its id links to its page. */
+export type HomeAlbumCandidate = ComposableEntity & {
+  title: string;
+  coverArtUrl: string | null;
+  year: number | null;
+};
+
+/** A candidate row of entities: genres, artists or albums, never Tracks. */
+export type HomeEntityRowSource =
+  | {
+      id: string;
+      layout: 'genres';
+      title: HomeRowTitle;
+      load: (locale?: Locale) => Promise<HomeGenreCandidate[]>;
+    }
+  | {
+      id: string;
+      layout: 'artists';
+      title: HomeRowTitle;
+      load: (locale?: Locale) => Promise<HomeArtistCandidate[]>;
+    }
+  | {
+      id: string;
+      layout: 'albums';
+      title: HomeRowTitle;
+      load: (locale?: Locale) => Promise<HomeAlbumCandidate[]>;
+    };
+
+/** Injection token of the entity row sources the builder composes. */
+export const HOME_ENTITY_ROW_SOURCES = Symbol('HOME_ENTITY_ROW_SOURCES');
+
+/** The repository reads the entity row sources need; narrowed for fakes. */
+type HomeEntityRecords = Pick<
+  HomeRepository,
+  'findGenreTrackCounts' | 'findPopularArtists' | 'findPopularAlbums'
+>;
+
+/**
+ * The feed's entity rows, in order: genre tiles, featured artists, featured
+ * albums. Genres count the catalog's completed Tracks, so every locale shares
+ * the same tiles behind its translated title.
+ */
+export const createHomeEntityRowSources = (
+  repository: HomeEntityRecords,
+): HomeEntityRowSource[] => [
+  {
+    id: 'genres',
+    layout: 'genres',
+    title: title('home.rows.genres'),
+    load: async () =>
+      (await repository.findGenreTrackCounts(CANDIDATE_LIMIT))
+        .filter((entry) => entry.trackCount >= MIN_TRACKS_PER_GENRE)
+        .map((entry) => ({ id: entry.genre, name: entry.genre })),
+  },
+  {
+    id: 'featured-artists',
+    layout: 'artists',
+    title: title('home.rows.featuredArtists'),
+    load: async () =>
+      (await repository.findPopularArtists(CANDIDATE_LIMIT)).map((record) => ({
+        id: record.id,
+        name: record.name,
+      })),
+  },
+  {
+    id: 'featured-albums',
+    layout: 'albums',
+    title: title('home.rows.featuredAlbums'),
+    load: async () =>
+      (await repository.findPopularAlbums(CANDIDATE_LIMIT)).map((record) => ({
+        id: record.id,
+        title: record.title,
+        coverArtUrl: record.coverArtUrl,
+        year: record.year,
+      })),
+  },
+];
