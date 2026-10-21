@@ -949,5 +949,148 @@
         "cta": "Buscar uma música"
       }
     }
+  },
+  "adminHomePins": {
+    "metaTitle": "Destaques da home",
+    "metaDescription": "Fixe hero e fileiras na home do NoteFinder.",
+    "overline": "Admin",
+    "title": "Destaques da home",
+    "description": "Destaque o hero e fileiras temáticas na home. Um destaque entra no ar no horário inicial, e o algoritmo assume quando ele termina.",
+    "create": "Novo destaque",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "history": "Histórico",
+    "empty": "Nenhum destaque ainda. Crie um para destacá-lo na home.",
+    "sponsoredBadge": "Patrocinado",
+    "status": {
+      "scheduled": "Agendado",
+      "live": "No ar",
+      "ended": "Encerrado"
+    },
+    "kind": {
+      "hero": "Hero",
+      "row": "Fileira"
+    },
+    "audience": {
+      "everyone": "Todos",
+      "visitors": "Só visitantes"
+    },
+    "card": {
+      "position": "Posição",
+      "audience": "Público",
+      "locale": "Idioma",
+      "schedule": "Período",
+      "allLocales": "Todos os idiomas",
+      "alwaysLive": "Sempre no ar",
+      "scheduleRange": "{start} – {end}",
+      "scheduleFrom": "De {start}",
+      "scheduleUntil": "Até {end}"
+    },
+    "confirmDelete": {
+      "title": "Excluir este destaque?",
+      "description": "O destaque sai da home na hora. Isso não pode ser desfeito.",
+      "cancel": "Cancelar",
+      "confirm": "Excluir destaque"
+    },
+    "form": {
+      "titleCreate": "Novo destaque",
+      "titleEdit": "Editar destaque",
+      "cancel": "Cancelar",
+      "submitCreate": "Criar destaque",
+      "submitSave": "Salvar alterações",
+      "created": "Destaque criado.",
+      "updated": "Destaque atualizado.",
+      "kind": {
+        "label": "Tipo",
+        "hint": "O hero ocupa o topo da home; a fileira é uma seção temática.",
+        "hero": "Hero",
+        "row": "Fileira"
+      },
+      "layout": {
+        "label": "Layout",
+        "hero": "Hero",
+        "standard": "Carrossel"
+      },
+      "trackIds": {
+        "label": "Músicas",
+        "hint": "Um ID de música por linha, na ordem de exibição.",
+        "placeholder": "trk_abc123\ntrk_def456"
+      },
+      "unsupportedSource": "Este destaque foi criado a partir de gênero, artista ou álbum, e este painel não pode reordená-lo. As outras configurações ainda podem mudar.",
+      "position": {
+        "label": "Posição",
+        "hint": "A fileira 0 é o espaço do hero. No conflito, vence a maior prioridade."
+      },
+      "priority": {
+        "label": "Prioridade",
+        "hint": "A maior prioridade vence quando dois destaques querem a mesma posição."
+      },
+      "audience": {
+        "label": "Público",
+        "everyone": "Todos",
+        "visitors": "Só visitantes"
+      },
+      "locale": {
+        "label": "Idioma",
+        "all": "Todos os idiomas",
+        "names": {
+          "en": "English",
+          "pt-BR": "Português (Brasil)"
+        }
+      },
+      "startsAt": {
+        "label": "Início",
+        "hint": "Vazio significa no ar na hora."
+      },
+      "endsAt": {
+        "label": "Fim",
+        "hint": "Vazio significa que fica até ser removido."
+      },
+      "titleEn": {
+        "label": "Título (inglês)"
+      },
+      "titlePt": {
+        "label": "Título (português)"
+      },
+      "sponsored": {
+        "label": "Contém conteúdo patrocinado",
+        "help": "Visitantes veem um aviso discreto de conteúdo patrocinado neste hero ou fileira.",
+        "termsLink": "Entenda o que isso significa"
+      },
+      "errors": {
+        "invalid": "Este valor é inválido.",
+        "required": "Este campo é obrigatório.",
+        "tooLong": "Use no máximo {max} caracteres.",
+        "tooMany": "Use no máximo {max} músicas.",
+        "duplicateTracks": "Cada música aparece uma só vez no destaque.",
+        "outOfRange": "Este número está fora do intervalo.",
+        "kindLayoutMismatch": "Um destaque hero usa o layout hero; uma fileira usa um layout de fileira.",
+        "heroPositionFixed": "Um destaque hero sempre ocupa o espaço do hero.",
+        "endsBeforeStart": "O fim precisa ser depois do início."
+      }
+    },
+    "historyDialog": {
+      "title": "Histórico do destaque",
+      "empty": "Nenhuma alteração registrada ainda.",
+      "unknownActor": "Admin desconhecido",
+      "actions": {
+        "CREATED": "Criado",
+        "UPDATED": "Atualizado",
+        "DELETED": "Excluído"
+      },
+      "fields": {
+        "kind": "Tipo",
+        "layout": "Layout",
+        "source": "Músicas",
+        "position": "Posição",
+        "priority": "Prioridade",
+        "audience": "Público",
+        "locale": "Idioma",
+        "startsAt": "Início",
+        "endsAt": "Fim",
+        "titles": "Títulos",
+        "sponsored": "Sinal de patrocinado"
+      }
+    }
   }
 }

@@ -21,6 +21,8 @@ export type MockUser = {
   /** The stored Daily target, like `GET /v1/me` answers it. */
   dailyPracticeTargetSeconds?: number | null;
   updatedAt: string;
+  /** The session role; regular users reach the app's not-found page. */
+  role?: 'ADMIN' | 'USER';
 };
 
 export const ADA: MockUser = {
@@ -65,7 +67,7 @@ const currentUserOf = (user: MockUser) => ({
   emailVerified: user.emailVerified,
   username: user.username,
   image: user.image,
-  role: 'USER',
+  role: user.role ?? 'USER',
   createdAt: user.createdAt,
 });
 
