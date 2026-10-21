@@ -1,6 +1,7 @@
 'use client';
 
 import type { EditorialPin } from '@notefinder/contracts';
+import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -21,8 +22,19 @@ import { useAdminPins } from '../hooks/use-admin-pins';
 import type { PinFormCatalog } from '../pin-form';
 import { pinStatus } from '../pin-status';
 import { AdminHomePinsSkeleton } from './admin-home-pins-skeleton';
-import { PinFormDialog } from './pin-form-dialog';
-import { PinHistoryDialog } from './pin-history-dialog';
+
+// The form dialog brings react-hook-form and the field catalog along, and the
+// history dialog brings its own query: both open on an admin's click only, so
+// they load after the page to keep it inside the bundle budget.
+const PinFormDialog = dynamic(
+  () => import('./pin-form-dialog').then((module) => module.PinFormDialog),
+  { ssr: false },
+);
+const PinHistoryDialog = dynamic(
+  () =>
+    import('./pin-history-dialog').then((module) => module.PinHistoryDialog),
+  { ssr: false },
+);
 
 /**
  * The pins and what an admin does with them: a card per pin with its state,
