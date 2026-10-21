@@ -66,3 +66,25 @@ them.
 The global score stays the one the Track pages, the sitemap and the daily run
 use: this ranking reads the views on demand for the home and does not store a
 second score.
+
+## The singing signal
+
+Views say what visitors open; Attempts and favorites say what they sing and
+love. The home blends the views-based score above with that signal, while the
+sitemap keeps the views-only score:
+
+- Only valid Attempts count: runs without a forward skip and without a
+  suspected bleed (`practice_attempts.forward_skip` and `bleed_suspected` are
+  both false), inside the window the row looks at.
+- "Most sung" orders Tracks by their valid Attempts in the recent window
+  (`SINGING_SIGNAL_WINDOW_DAYS`, 28 days); "Most favorited" by their
+  favorites in the same window. A Track people sing outranks one they only
+  viewed, because the viewed-only Track has no Attempts at all.
+- The weekly Top 10 blends all three (`TOP_10_WINDOW_DAYS`, 7 days): the
+  trending score plus `POPULARITY_WEIGHTS.attempt` points per valid Attempt
+  and `POPULARITY_WEIGHTS.favorite` per favorite. The weights live in
+  `home-popularity.ts`, are unit-tested there, and make a much-sung Track
+  outrank a merely viewed one. A Track with no signal at all never charts.
+- The blend only ever runs in the home's row sources. The stored
+  `tracks.trending_score`, the per-view refresh and the daily run are
+  untouched, so the sitemap order never changes because somebody sang.

@@ -1,0 +1,2 @@
+CREATE INDEX "practice_attempts_track_id_created_at_index" ON "practice_attempts" USING btree ("track_id","created_at");--> statement-breakpoint
+CREATE INDEX "track_favorites_track_id_created_at_index" ON "track_favorites" USING btree ("track_id","created_at");

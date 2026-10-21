@@ -30,5 +30,7 @@ export const trackFavorites = pgTable(
     // Deleting a Track cascades here by Track, and the unique pair above only
     // serves lookups that start with the User.
     index().on(table.trackId),
+    // The home's "Most favorited" row counts favorites per Track in a window.
+    index().on(table.trackId, table.createdAt),
   ],
 );

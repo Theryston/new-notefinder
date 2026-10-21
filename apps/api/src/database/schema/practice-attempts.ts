@@ -61,5 +61,7 @@ export const practiceAttempts = pgTable(
     index().on(table.userId, table.trackId),
     // The User's own history, newest first.
     index().on(table.userId, table.createdAt),
+    // The home's "Most sung" row counts valid runs per Track in a window.
+    index().on(table.trackId, table.createdAt),
   ],
 );

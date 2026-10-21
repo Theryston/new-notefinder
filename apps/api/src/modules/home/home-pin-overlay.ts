@@ -96,7 +96,7 @@ const algorithmicRows = (
       return [row];
     }
     const items = row.items.filter((item) => !pinnedIds.has(item.id));
-    return items.length >= HOME_ROW_RULES.standard.minItems
+    return items.length >= HOME_ROW_RULES[row.layout].minItems
       ? [{ ...row, items }]
       : [];
   });
