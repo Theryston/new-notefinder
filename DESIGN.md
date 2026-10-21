@@ -346,6 +346,30 @@ Everything else uses existing tokens: `bg-primary` (hero), `text-primary-foregro
 (hero text), `bg-background` / `text-foreground` (the CTA), `text-muted-foreground`
 (the row line), `ring-ring` and `ring-primary-foreground` (focus).
 
+### Home feed: vocal-range rows
+
+The by-voice rows (easy to start, higher voices, lower voices) are carousels
+whose cards carry the Track's Vocal range twice: as a bar over the cover and
+as text in a chip.
+
+- **Range bar**: a slim track (`h-1`, `rounded-full`, `bg-black/45`) pinned to
+  the cover's top edge (`inset-x-2 top-2`), with the range's segment in
+  `bg-white/95`. White on the dimmed track reads over any art in both themes,
+  and the top edge never collides with the hover play badge (bottom right) or
+  the range chip (bottom left). Every Track shares one compass, the piano's
+  A0 to C8, so bars stay comparable across cards (`rangeBarGeometry` in
+  `lib/music-notes.ts` is the one place that maps keys to percentages). The
+  bar is decorative (`aria-hidden`): the chip next to it names the same range
+  as text.
+- **Range chip**: a glass pill (`glass`, `rounded-full`, `px-2.5 py-1`,
+  `font-semibold text-xs tabular-nums`) at the cover's bottom left, naming the
+  lowest and highest keys (`D3–A4`, via `pitchName`). It is plain text, so
+  screen readers announce the range with the card. Every home row's cards show
+  the chip when the feed carries a range; only the by-voice rows add the bar.
+- **Cards keep the carousel's size and shape**, so the carousel skeleton still
+  reserves exactly the rows' space: both overlays sit on the cover without
+  changing the card's height in either theme.
+
 ### Sponsored content notice
 
 A sponsored hero or row shows one discreet notice. It is plain text that

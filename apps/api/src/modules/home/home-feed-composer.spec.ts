@@ -136,4 +136,51 @@ describe('composeHomeRows', () => {
     ]);
     expect(rows.map((row) => row.id)).toEqual(['row']);
   });
+
+  describe('the by-voice rows', () => {
+    const ranged = (id: string) => track(id, { hasVocalRange: true });
+
+    it('drops a Track without a stored Vocal range', () => {
+      const items = [...tracks(5), track('no-range', { hasVocalRange: false })];
+      const rows = composeHomeRows([
+        { id: 'easy', layout: 'vocal-range' as const, items },
+      ]);
+      expect(rows).toEqual([]);
+    });
+
+    it('keeps the Tracks that have a range, and drops the others', () => {
+      const ranges = Array.from({ length: 6 }, (_, i) => ranged(`r${i}`));
+      const [row] = composeHomeRows([
+        {
+          id: 'easy',
+          layout: 'vocal-range' as const,
+          items: [track('no-range'), ...ranges],
+        },
+      ]);
+      expect(row?.items.map((item) => item.id)).toEqual([
+        'r0',
+        'r1',
+        'r2',
+        'r3',
+        'r4',
+        'r5',
+      ]);
+    });
+
+    it('drops a by-voice row below six Tracks, like a standard row', () => {
+      const ranges = Array.from({ length: 5 }, (_, i) => ranged(`r${i}`));
+      expect(
+        composeHomeRows([
+          { id: 'easy', layout: 'vocal-range' as const, items: ranges },
+        ]),
+      ).toEqual([]);
+    });
+
+    it('does not need a range from the standard rows', () => {
+      const [row] = composeHomeRows([
+        { id: 'row', layout: 'standard' as const, items: tracks(6) },
+      ]);
+      expect(row?.items).toHaveLength(6);
+    });
+  });
 });

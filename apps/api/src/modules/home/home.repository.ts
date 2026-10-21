@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, asc, desc, gt, inArray } from 'drizzle-orm';
+import { and, asc, desc, gt, inArray, isNotNull } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import { tracks } from '../../database/schema/tracks.js';
@@ -56,6 +56,22 @@ export class HomeRepository {
       .select(candidateColumns)
       .from(tracks)
       .where(and(hasCompletedProcessing(tracks.id), inArray(tracks.id, ids)));
+  }
+
+  /** Completed Tracks with a stored Vocal range, hottest first. */
+  findTracksWithVocalRange(limit: number): Promise<HomeTrackRecord[]> {
+    return this.txHost.tx
+      .select(candidateColumns)
+      .from(tracks)
+      .where(
+        and(
+          hasCompletedProcessing(tracks.id),
+          isNotNull(tracks.vocalRangeLowest),
+          isNotNull(tracks.vocalRangeHighest),
+        ),
+      )
+      .orderBy(desc(tracks.trendingScore), asc(tracks.id))
+      .limit(limit);
   }
 
   /** Completed Tracks, newest first. */

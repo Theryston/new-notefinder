@@ -116,4 +116,63 @@ describe('HomeFeedBuilder', () => {
     const feed = await buildWith([trendingSource(candidates(3))]);
     expect(feed.rows).toEqual([]);
   });
+
+  it('builds a vocal-range row whose items all carry their range', async () => {
+    const ranged = candidates(6).map((item) => ({
+      ...item,
+      hasVocalRange: true,
+    }));
+    const feed = await buildWith([
+      {
+        id: 'by-voice-easy-start',
+        layout: 'vocal-range',
+        title: { key: 'home.rows.easyToStart', params: {} },
+        load: async () => ranged,
+      },
+    ]);
+
+    expect(feed.rows).toHaveLength(1);
+    const [row] = feed.rows;
+    expect(row).toMatchObject({
+      id: 'by-voice-easy-start',
+      layout: 'vocal-range',
+      title: { key: 'home.rows.easyToStart', params: {} },
+    });
+    expect(row).not.toHaveProperty('sponsored');
+    if (row?.layout !== 'vocal-range') {
+      throw new Error('expected a vocal-range row');
+    }
+    expect(row.items).toHaveLength(6);
+    for (const item of row.items) {
+      expect(item.vocalRange).toEqual({ lowest: 60, highest: 72 });
+    }
+  });
+
+  it('leaves a range-less Track out of a vocal-range row', async () => {
+    const ranged = candidates(6).map((item) => ({
+      ...item,
+      hasVocalRange: true,
+    }));
+    const feed = await buildWith([
+      {
+        id: 'by-voice-easy-start',
+        layout: 'vocal-range',
+        title: { key: 'home.rows.easyToStart', params: {} },
+        load: async () => [
+          ...ranged,
+          candidate('no-range', {
+            vocalRange: null,
+            hasVocalRange: false,
+          }),
+        ],
+      },
+    ]);
+
+    const [row] = feed.rows;
+    if (row?.layout !== 'vocal-range') {
+      throw new Error('expected a vocal-range row');
+    }
+    expect(row.items).toHaveLength(6);
+    expect(row.items.map((item) => item.id)).not.toContain('no-range');
+  });
 });

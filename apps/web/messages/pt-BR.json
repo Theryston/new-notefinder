@@ -13,7 +13,10 @@
     "rows": {
       "trendingToday": "Em alta hoje",
       "newTracks": "Músicas novas",
-      "pinned": "{title}"
+      "pinned": "{title}",
+      "easyToStart": "Fáceis de começar",
+      "higherVoices": "Para vozes agudas",
+      "lowerVoices": "Para vozes graves"
     },
     "sponsored": {
       "hero": "conteúdo patrocinado",

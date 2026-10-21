@@ -34,6 +34,7 @@ vi.mock('@/lib/i18n/navigation', async () => {
 const expectedPlacement: Record<HomeRow['layout'], SponsoredPlacement> = {
   hero: 'caption',
   standard: 'line',
+  'vocal-range': 'line',
 };
 
 // The text each placement shows, from the locale file (hero caption vs row line).
@@ -59,11 +60,18 @@ const plainRows = {
     title: { key: 'home.rows.trendingToday', params: {} },
     items: [track],
   },
+  'vocal-range': {
+    id: 'by-voice-easy-start',
+    layout: 'vocal-range',
+    title: { key: 'home.rows.easyToStart', params: {} },
+    items: [{ ...track, vocalRange: { lowest: 50, highest: 69 } }],
+  },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 const sponsoredRows = {
   hero: { ...plainRows.hero, sponsored: true },
   standard: { ...plainRows.standard, sponsored: true },
+  'vocal-range': { ...plainRows['vocal-range'], sponsored: true },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 function renderLayout(node: ReactNode): string {
@@ -87,6 +95,7 @@ describe('home layout registry', () => {
   it('recognizes the layouts it renders and skips any other', () => {
     expect(isRegisteredLayout('hero')).toBe(true);
     expect(isRegisteredLayout('standard')).toBe(true);
+    expect(isRegisteredLayout('vocal-range')).toBe(true);
     expect(isRegisteredLayout('ranked-top-10')).toBe(false);
   });
 

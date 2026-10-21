@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSharpKey, keyOf, noteName } from './music-notes';
+import {
+  isSharpKey,
+  keyOf,
+  noteName,
+  RANGE_BAR_HIGHEST,
+  RANGE_BAR_LOWEST,
+  rangeBarGeometry,
+  rangeName,
+} from './music-notes';
 
 describe('MIDI keys', () => {
   it('takes the key nearest to a pitch', () => {
@@ -34,5 +42,49 @@ describe('MIDI keys', () => {
       true,
       false,
     ]);
+  });
+});
+
+describe('rangeName', () => {
+  it('names a range after its lowest and highest keys', () => {
+    expect(rangeName(50, 69)).toBe('D3–A4');
+  });
+
+  it('names sharps with #', () => {
+    expect(rangeName(61, 66)).toBe('C#4–F#4');
+  });
+
+  it('names a single key twice', () => {
+    expect(rangeName(60, 60)).toBe('C4–C4');
+  });
+});
+
+describe('rangeBarGeometry', () => {
+  it('spans the whole bar for the full compass', () => {
+    expect(rangeBarGeometry(RANGE_BAR_LOWEST, RANGE_BAR_HIGHEST)).toEqual({
+      leftPercent: 0,
+      widthPercent: 100,
+    });
+  });
+
+  it('places a range by its start and span', () => {
+    const { leftPercent, widthPercent } = rangeBarGeometry(60, 72);
+
+    expect(leftPercent).toBeCloseTo(44.83, 2);
+    expect(widthPercent).toBeCloseTo(13.79, 2);
+  });
+
+  it('clamps a range that hangs over the compass', () => {
+    expect(rangeBarGeometry(0, 200)).toEqual({
+      leftPercent: 0,
+      widthPercent: 100,
+    });
+  });
+
+  it('draws nothing wide for a single key', () => {
+    const { leftPercent, widthPercent } = rangeBarGeometry(60, 60);
+
+    expect(leftPercent).toBeCloseTo(44.83, 2);
+    expect(widthPercent).toBe(0);
   });
 });

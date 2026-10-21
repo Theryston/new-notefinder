@@ -1,10 +1,12 @@
 'use client';
 
+import type { TrackVocalRange } from '@notefinder/contracts';
 import { PlayIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Link } from '@/lib/i18n/navigation';
+import { rangeBarGeometry, rangeName } from '@/lib/music-notes';
 import { cn } from '@/lib/utils';
 
 import type { RequestTrackState } from './request-track-action';
@@ -90,6 +92,16 @@ export type TrackCardProps = {
   coverSizes?: string;
   /** Loads the cover eagerly; only for cards visible on first paint. */
   coverPriority?: boolean;
+  /**
+   * The Track's stored Vocal range: shows the range chip on the cover. Home
+   * rows pass it; search and grids leave it out.
+   */
+  vocalRange?: TrackVocalRange | null;
+  /**
+   * Draws the range as a bar over the cover (the vocal-range rows). Only
+   * applies with `vocalRange`; the chip stays the accessible text.
+   */
+  rangeBar?: boolean;
   /** Makes a card without a Track an action; without it the card stays static. */
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
@@ -109,12 +121,16 @@ function TrackCardCover({
   badge,
   coverSizes,
   coverPriority,
+  vocalRange,
+  rangeBar,
 }: {
   coverArtUrl?: string | null;
   placeholderSeed: string;
   badge: ReactNode;
   coverSizes?: string;
   coverPriority?: boolean;
+  vocalRange?: TrackVocalRange | null;
+  rangeBar?: boolean;
 }) {
   return (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
@@ -124,7 +140,47 @@ function TrackCardCover({
         sizes={coverSizes ?? GRID_COVER_SIZES}
         priority={coverPriority}
       />
+      {vocalRange && rangeBar ? (
+        <VocalRangeBar
+          lowest={vocalRange.lowest}
+          highest={vocalRange.highest}
+        />
+      ) : null}
+      {vocalRange ? (
+        <span className="glass absolute bottom-2 left-2 rounded-full px-2.5 py-1 font-semibold text-xs tabular-nums">
+          {rangeName(vocalRange.lowest, vocalRange.highest)}
+        </span>
+      ) : null}
       {badge}
+    </span>
+  );
+}
+
+/**
+ * The Track's range as a small bar over the cover's top edge: white on a
+ * dimmed track, so it reads over any art in both themes. The chip next to it
+ * carries the same range as text, so the bar is hidden from assistive tech.
+ */
+function VocalRangeBar({
+  lowest,
+  highest,
+}: {
+  lowest: number;
+  highest: number;
+}) {
+  const { leftPercent, widthPercent } = rangeBarGeometry(lowest, highest);
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute inset-x-2 top-2 h-1 overflow-hidden rounded-full bg-black/45"
+    >
+      <span
+        className="block h-full min-w-0.5 rounded-full bg-white/95"
+        style={{
+          marginLeft: `${leftPercent}%`,
+          width: `${widthPercent}%`,
+        }}
+      />
     </span>
   );
 }
@@ -165,6 +221,8 @@ export function TrackCard(props: TrackCardProps) {
       placeholderSeed={props.placeholderSeed}
       coverSizes={props.coverSizes}
       coverPriority={props.coverPriority}
+      vocalRange={props.vocalRange}
+      rangeBar={props.rangeBar}
       badge={badge}
     />
   );

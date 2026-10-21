@@ -57,9 +57,27 @@ export const homeCarouselRowSchema = z.object({
 
 export type HomeCarouselRow = z.infer<typeof homeCarouselRowSchema>;
 
+/**
+ * A carousel of by-voice Tracks: each card also shows the Track's Vocal range
+ * as a bar. Every item carries a range, since the row exists to show it.
+ */
+export const homeVocalRangeTrackSchema = homeTrackSchema.extend({
+  vocalRange: trackVocalRangeSchema,
+});
+
+export type HomeVocalRangeTrack = z.infer<typeof homeVocalRangeTrackSchema>;
+
+export const homeVocalRangeRowSchema = homeCarouselRowSchema.extend({
+  layout: z.literal('vocal-range'),
+  items: z.array(homeVocalRangeTrackSchema).min(1).max(HOME_CAROUSEL_MAX_ITEMS),
+});
+
+export type HomeVocalRangeRow = z.infer<typeof homeVocalRangeRowSchema>;
+
 export const homeRowSchema = z.discriminatedUnion('layout', [
   homeHeroSchema,
   homeCarouselRowSchema,
+  homeVocalRangeRowSchema,
 ]);
 
 export type HomeRow = z.infer<typeof homeRowSchema>;
