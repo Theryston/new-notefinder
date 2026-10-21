@@ -37,6 +37,7 @@ import {
   UnsupportedSourceNote,
   useFieldError,
 } from './pin-form-fields';
+import { TrackPickerField } from './track-picker-field';
 
 type PinFormDialogProps = {
   mode: 'create' | 'edit';
@@ -113,6 +114,23 @@ function useHeroPinSync(
   }, [isHero, form, catalog.heroPosition]);
 }
 
+/** The Tracks of a tracks-sourced pin: the picker, then manual pasting. */
+function SourceTracksFields({
+  form,
+  catalog,
+}: {
+  form: UseFormReturn<PinFormValues>;
+  catalog: PinFormCatalog;
+}) {
+  const errorOf = useFieldError(form.formState.errors, catalog);
+  return (
+    <>
+      <TrackPickerField form={form} catalog={catalog} />
+      <TracksField register={form.register} error={errorOf('trackIdsText')} />
+    </>
+  );
+}
+
 /** Every field of the form, driven by the kind, locale and source. */
 function PinFormSections({
   form,
@@ -150,7 +168,7 @@ function PinFormSections({
         error={errorOf('layout')}
       />
       {sourceEditable ? (
-        <TracksField register={form.register} error={errorOf('trackIdsText')} />
+        <SourceTracksFields form={form} catalog={catalog} />
       ) : (
         <UnsupportedSourceNote />
       )}

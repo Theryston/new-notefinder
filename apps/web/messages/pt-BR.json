@@ -956,6 +956,18 @@
       }
     }
   },
+  "admin": {
+    "metaTitle": "Admin",
+    "metaDescription": "Gerencie a página inicial do NoteFinder.",
+    "title": "Admin",
+    "description": "Gerencie o que a página inicial mostra.",
+    "cards": {
+      "homePins": {
+        "title": "Destaques da home",
+        "description": "Destaque o hero e fileiras temáticas na home."
+      }
+    }
+  },
   "adminHomePins": {
     "metaTitle": "Destaques da home",
     "metaDescription": "Fixe hero e fileiras na home do NoteFinder.",
@@ -1018,9 +1030,24 @@
         "standard": "Carrossel"
       },
       "trackIds": {
-        "label": "Músicas",
+        "label": "IDs das músicas",
         "hint": "Um ID de música por linha, na ordem de exibição.",
         "placeholder": "trk_abc123\ntrk_def456"
+      },
+      "trackPicker": {
+        "searchLabel": "Buscar músicas",
+        "searchPlaceholder": "Digite o nome da música ou do artista…",
+        "searchHint": "Só aparecem músicas concluídas; o hero precisa de uma com capa.",
+        "loading": "Buscando…",
+        "empty": "Nenhuma música corresponde à busca.",
+        "error": "A busca está indisponível. Tente de novo.",
+        "added": "Adicionada",
+        "selected": "Selecionadas ({count, plural, one {# música} other {# músicas}})",
+        "selectedEmpty": "Nenhuma música escolhida ainda.",
+        "remove": "Remover {title}",
+        "unavailable": "Indisponível: {id}",
+        "needsCover": "Precisa de capa para o hero",
+        "limitHint": "Até {max} músicas"
       },
       "unsupportedSource": "Este destaque foi criado a partir de gênero, artista ou álbum, e este painel não pode reordená-lo. As outras configurações ainda podem mudar.",
       "position": {

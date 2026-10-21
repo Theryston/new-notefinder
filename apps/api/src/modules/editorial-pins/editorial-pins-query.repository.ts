@@ -2,12 +2,15 @@ import type { TransactionHost } from '@nestjs-cls/transactional';
 import type {
   EditorialPinActor,
   EditorialPinDynamicSource,
+  EditorialPinKind,
 } from '@notefinder/contracts';
 import {
   and,
   asc,
   desc,
   eq,
+  ilike,
+  inArray,
   isNotNull,
   lt,
   or,
@@ -20,7 +23,10 @@ import { albums, albumTracks } from '../../database/schema/albums.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import type { editorialPins } from '../../database/schema/editorial-pins.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
-import { tracks } from '../../database/schema/tracks.js';
+import {
+  type StoredArtistCreditEntry,
+  tracks,
+} from '../../database/schema/tracks.js';
 import { users } from '../../database/schema/users.js';
 import type {
   EditorialPinWrite,
@@ -162,4 +168,72 @@ export const selectSourceExists = async (
           .where(eq(albums.id, source.albumId))
           .limit(1);
   return rows.length > 0;
+};
+
+/** A Track with what the pin picker shows to pick it. */
+export type PinTrackRecord = {
+  id: string;
+  title: string;
+  artistCredit: StoredArtistCreditEntry[];
+  coverUrl: string | null;
+};
+
+const pinTrackColumns = {
+  id: tracks.id,
+  title: tracks.title,
+  artistCredit: tracks.artistCredit,
+  coverUrl: tracks.coverUrl,
+};
+
+/** Escapes the LIKE metacharacters of an admin search, so they match literally. */
+const escapeLike = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+
+/**
+ * Completed Tracks matching `q` in the title or a credited name, hottest
+ * first. A hero only offers Tracks with a cover.
+ */
+export const selectPinTrackSearch = async (
+  txHost: TransactionHost<DatabaseAdapter>,
+  query: { q: string; kind: EditorialPinKind | undefined; limit: number },
+): Promise<PinTrackRecord[]> => {
+  const pattern = `%${escapeLike(query.q)}%`;
+  return txHost.tx
+    .select(pinTrackColumns)
+    .from(tracks)
+    .where(
+      and(
+        hasCompletedProcessing(tracks.id),
+        or(
+          ilike(tracks.title, pattern),
+          sql`${tracks.artistCredit}::text ILIKE ${pattern}`,
+        ),
+        query.kind === 'hero' ? isNotNull(tracks.coverUrl) : undefined,
+      ),
+    )
+    .orderBy(desc(tracks.trendingScore), asc(tracks.id))
+    .limit(query.limit);
+};
+
+/**
+ * The completed Tracks among `ids` with what the picker shows, in the
+ * requested order. Unknown or uncompleted IDs are left out, so the picker
+ * can still name the ones it resolves.
+ */
+export const selectPinTracksByIds = async (
+  txHost: TransactionHost<DatabaseAdapter>,
+  ids: string[],
+): Promise<PinTrackRecord[]> => {
+  if (ids.length === 0) {
+    return [];
+  }
+  const rows = await txHost.tx
+    .select(pinTrackColumns)
+    .from(tracks)
+    .where(and(inArray(tracks.id, ids), hasCompletedProcessing(tracks.id)));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [row] : [];
+  });
 };

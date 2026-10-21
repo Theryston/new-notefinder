@@ -956,6 +956,18 @@
       }
     }
   },
+  "admin": {
+    "metaTitle": "Admin",
+    "metaDescription": "Manage the NoteFinder home page.",
+    "title": "Admin",
+    "description": "Manage what the home page shows.",
+    "cards": {
+      "homePins": {
+        "title": "Home pins",
+        "description": "Feature heroes and themed rows on the home page."
+      }
+    }
+  },
   "adminHomePins": {
     "metaTitle": "Home pins",
     "metaDescription": "Pin heroes and rows on the NoteFinder home.",
@@ -1018,9 +1030,24 @@
         "standard": "Carousel"
       },
       "trackIds": {
-        "label": "Tracks",
+        "label": "Track IDs",
         "hint": "One Track ID per line, in the order it shows.",
         "placeholder": "trk_abc123\ntrk_def456"
+      },
+      "trackPicker": {
+        "searchLabel": "Find tracks",
+        "searchPlaceholder": "Type a song or artist name…",
+        "searchHint": "Only completed Tracks are listed; a hero needs one with a cover.",
+        "loading": "Searching…",
+        "empty": "No Tracks match your search.",
+        "error": "Search is unavailable. Try again.",
+        "added": "Added",
+        "selected": "Selected ({count, plural, one {# Track} other {# Tracks}})",
+        "selectedEmpty": "No Tracks picked yet.",
+        "remove": "Remove {title}",
+        "unavailable": "Unavailable: {id}",
+        "needsCover": "Needs a cover for a hero",
+        "limitHint": "Up to {max} Tracks"
       },
       "unsupportedSource": "This pin was built from a genre, artist or album source, which this panel cannot reorder. Its other settings can still change.",
       "position": {

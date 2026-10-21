@@ -2,6 +2,7 @@ import {
   createEditorialPinBodySchema,
   cursorPaginationQuerySchema,
   editorialPinIdParamSchema,
+  pinTrackSearchQuerySchema,
   updateEditorialPinBodySchema,
 } from '@notefinder/contracts';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
@@ -20,4 +21,8 @@ export class EditorialPinIdParamDto extends createZodDto(
 
 export class EditorialPinPageQueryDto extends createZodDto(
   cursorPaginationQuerySchema,
+) {}
+
+export class PinTrackSearchQueryDto extends createZodDto(
+  pinTrackSearchQuerySchema,
 ) {}

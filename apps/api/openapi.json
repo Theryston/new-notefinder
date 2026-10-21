@@ -982,6 +982,72 @@
         ]
       }
     },
+    "/v1/admin/tracks/search": {
+      "get": {
+        "operationId": "AdminTracksController_search_v1",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "ids",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hero",
+                "row"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "default": 10,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Tracks, hottest first."
+          },
+          "400": {
+            "description": "Neither `q` nor `ids` was provided, or both were."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/albums/{id}": {
       "get": {
         "operationId": "AlbumsController_getAlbum_v1",
