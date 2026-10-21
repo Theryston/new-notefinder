@@ -949,5 +949,148 @@
         "cta": "Search for a song"
       }
     }
+  },
+  "adminHomePins": {
+    "metaTitle": "Home pins",
+    "metaDescription": "Pin heroes and rows on the NoteFinder home.",
+    "overline": "Admin",
+    "title": "Home pins",
+    "description": "Feature heroes and themed rows on the home page. A pin goes live at its start time, and the algorithm takes over when it ends.",
+    "create": "New pin",
+    "edit": "Edit",
+    "delete": "Delete",
+    "history": "History",
+    "empty": "No pins yet. Create one to feature it on the home.",
+    "sponsoredBadge": "Sponsored",
+    "status": {
+      "scheduled": "Scheduled",
+      "live": "Live",
+      "ended": "Ended"
+    },
+    "kind": {
+      "hero": "Hero",
+      "row": "Row"
+    },
+    "audience": {
+      "everyone": "Everyone",
+      "visitors": "Visitors only"
+    },
+    "card": {
+      "position": "Position",
+      "audience": "Audience",
+      "locale": "Locale",
+      "schedule": "Schedule",
+      "allLocales": "All locales",
+      "alwaysLive": "Always live",
+      "scheduleRange": "{start} – {end}",
+      "scheduleFrom": "From {start}",
+      "scheduleUntil": "Until {end}"
+    },
+    "confirmDelete": {
+      "title": "Delete this pin?",
+      "description": "The pin leaves the home right away. This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete pin"
+    },
+    "form": {
+      "titleCreate": "New pin",
+      "titleEdit": "Edit pin",
+      "cancel": "Cancel",
+      "submitCreate": "Create pin",
+      "submitSave": "Save changes",
+      "created": "Pin created.",
+      "updated": "Pin updated.",
+      "kind": {
+        "label": "Type",
+        "hint": "A hero takes the top of the home; a row is a themed section.",
+        "hero": "Hero",
+        "row": "Row"
+      },
+      "layout": {
+        "label": "Layout",
+        "hero": "Hero",
+        "standard": "Carousel"
+      },
+      "trackIds": {
+        "label": "Tracks",
+        "hint": "One Track ID per line, in the order it shows.",
+        "placeholder": "trk_abc123\ntrk_def456"
+      },
+      "unsupportedSource": "This pin was built from a genre, artist or album source, which this panel cannot reorder. Its other settings can still change.",
+      "position": {
+        "label": "Position",
+        "hint": "Row 0 is the hero slot. On a conflict the higher priority wins."
+      },
+      "priority": {
+        "label": "Priority",
+        "hint": "The higher priority wins when two pins want the same position."
+      },
+      "audience": {
+        "label": "Audience",
+        "everyone": "Everyone",
+        "visitors": "Visitors only"
+      },
+      "locale": {
+        "label": "Locale",
+        "all": "All locales",
+        "names": {
+          "en": "English",
+          "pt-BR": "Português (Brasil)"
+        }
+      },
+      "startsAt": {
+        "label": "Starts at",
+        "hint": "Empty means live right away."
+      },
+      "endsAt": {
+        "label": "Ends at",
+        "hint": "Empty means it stays until removed."
+      },
+      "titleEn": {
+        "label": "Title (English)"
+      },
+      "titlePt": {
+        "label": "Title (Portuguese)"
+      },
+      "sponsored": {
+        "label": "Contains sponsored content",
+        "help": "Visitors see a discreet sponsored-content notice on this hero or row.",
+        "termsLink": "Learn what this means"
+      },
+      "errors": {
+        "invalid": "This value is invalid.",
+        "required": "This field is required.",
+        "tooLong": "Use at most {max} characters.",
+        "tooMany": "Use at most {max} Tracks.",
+        "duplicateTracks": "Each Track appears only once in a pin.",
+        "outOfRange": "This number is out of range.",
+        "kindLayoutMismatch": "A hero pin uses the hero layout; a row pin uses a row layout.",
+        "heroPositionFixed": "A hero pin always takes the hero slot.",
+        "endsBeforeStart": "The end must be after the start."
+      }
+    },
+    "historyDialog": {
+      "title": "Pin history",
+      "empty": "No changes recorded yet.",
+      "unknownActor": "Unknown admin",
+      "actions": {
+        "CREATED": "Created",
+        "UPDATED": "Updated",
+        "DELETED": "Deleted"
+      },
+      "fields": {
+        "kind": "Type",
+        "layout": "Layout",
+        "source": "Tracks",
+        "position": "Position",
+        "priority": "Priority",
+        "audience": "Audience",
+        "locale": "Locale",
+        "startsAt": "Start",
+        "endsAt": "End",
+        "titles": "Titles",
+        "sponsored": "Sponsored flag"
+      }
+    }
   }
 }
