@@ -1,4 +1,11 @@
-import { Body, Controller, Headers, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  HttpCode,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
@@ -15,6 +22,7 @@ import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
 import { EventsService } from './events.service.js';
+import { EventsVisitorThrottleGuard } from './events-visitor-throttle.guard.js';
 import { RecordEventsBodyDto } from './record-events-body.dto.js';
 
 /** Raw engagement events, buffered in Redis and answered at once. */
@@ -27,17 +35,21 @@ export class EventsController {
   // signed-in batch also carries the User. Bot batches are dropped after the
   // 202 (accepted 0), so crawlers neither pollute the table nor learn they
   // were ignored. The tighter per-IP limit keeps a flood of batches a queue
-  // problem, never a database one.
+  // problem, never a database one, and the per-visitor guard keeps one device
+  // from spending the whole IP budget.
   @Public()
   @Post()
   @HttpCode(202)
+  @UseGuards(EventsVisitorThrottleGuard)
   @Throttle({ default: { limit: 30, ttl: seconds(60) } })
   @ZodSerializerDto(recordEventsResponseSchema)
   @ApiAcceptedResponse({ description: 'The batch was queued for storing.' })
   @ApiBadRequestResponse({
     description: 'The batch is oversized or an event is invalid.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Per-IP events rate exceeded.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Per-IP or per-visitor events rate exceeded.',
+  })
   record(
     @Body() body: RecordEventsBodyDto,
     @CurrentUser() user: AuthUser | undefined,

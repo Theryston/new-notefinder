@@ -18,7 +18,9 @@ cookie (no consent banner).
 public with optional authentication. It validates one bounded batch (at most
 50 events, each a known `type` with its fields), drops known bot user agents
 after the 202, and is rate-limited per IP (a tighter limit than the global
-one, like the search endpoint). Per-visitor abuse beyond that is bounded by
+one, like the search endpoint) and per visitor id (a bounded Redis bucket
+keyed by the batch's visitor id, same budget, so one device can't spend the
+whole IP budget). Per-visitor abuse beyond that is bounded by
 the batch cap itself: one request can only ever carry 50 events.
 
 **Ingestion answers before storing.** The endpoint pushes the batch onto the
@@ -78,7 +80,7 @@ acceptance, and the terms text mentions the collection.
   once; the database sees one `INSERT` per batch, whenever the worker runs.
 - Bot traffic and floods never reach the table: bots are dropped after the
   202, oversized or invalid batches are refused with `VALIDATION_FAILED`, and
-  the per-IP limit answers 429 `RATE_LIMITED` above it.
+  the per-IP and per-visitor limits answer 429 `RATE_LIMITED` above them.
 - Analysis reads raw rows with the full event in `payload`, the User when the
   batch was signed in, and the feed version for every home event.
 - Raw volume grows fast under paid traffic and nothing is deleted in this

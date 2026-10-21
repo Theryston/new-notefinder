@@ -10,8 +10,9 @@ import { EventsRepository } from './events.repository.js';
 
 /**
  * Stores queued event batches in the monthly-partitioned table, one `INSERT`
- * per batch. Idempotent: a retried batch replays the same rows, and an
- * invalid payload is rejected without retrying.
+ * per batch. At-least-once: a retried batch replays the same rows, so a batch
+ * stored twice appears twice; an invalid payload is rejected without
+ * retrying.
  */
 @Processor(EVENTS_QUEUE, { concurrency: 2 })
 export class EventsProcessor extends WorkerHost {

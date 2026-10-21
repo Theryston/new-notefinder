@@ -63,8 +63,11 @@ export class EventsService {
     }
     const rows = events.map((event) => toRow(event, visitorId, userId));
     await this.queue.add(STORE_EVENTS_JOB, rows, {
+      // Completed batches leave Redis at once (high volume); failures follow
+      // the queue convention (`QueueModule` retries 5 times, then keeps the
+      // job), so a transient database failure stays visible instead of lost.
       removeOnComplete: true,
-      removeOnFail: true,
+      removeOnFail: { age: 7 * 24 * 60 * 60, count: 5000 },
     });
     return { accepted: rows.length };
   }
