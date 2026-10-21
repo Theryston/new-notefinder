@@ -23,7 +23,7 @@
             "description": "The batch is oversized or an event is invalid."
           },
           "429": {
-            "description": "Per-IP events rate exceeded."
+            "description": "Per-IP or per-visitor events rate exceeded."
           }
         },
         "tags": [
