@@ -3,7 +3,7 @@
 import type { HomeFeedPage, Locale } from '@notefinder/contracts';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
-import { Fragment, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHomeRows } from '../hooks/use-home-rows';
 import {
@@ -17,7 +17,9 @@ const SENTINEL_MARGIN = '600px';
 
 // The tracker only observes row visibility and posts event batches: it
 // renders nothing and runs on the client only, so it loads after the page
-// to keep the home inside the bundle budget.
+// to keep the home inside the bundle budget. Accepted gap: rows seen (or
+// cards clicked) before the chunk loads are never reported — the first
+// impression timer only starts once the tracker runs.
 const HomeEventsTracker = dynamic(
   () =>
     import('../events/home-events-tracker').then(
@@ -28,7 +30,9 @@ const HomeEventsTracker = dynamic(
 
 /**
  * The rows of the home, in feed order, with the next pages loaded as the
- * visitor scrolls. Each row renders through the layout registry; the first
+ * visitor scrolls. Each row renders through the layout registry inside a
+ * wrapper carrying the row id, so the tracker reads it from one place
+ * whatever the layout is; the layouts only mark their cards. The first
  * visible row is the only one whose images load eagerly.
  */
 export function HomeRows({
@@ -57,9 +61,9 @@ export function HomeRows({
     <div className="flex flex-col gap-12">
       <HomeEventsTracker pages={data.pages} />
       {rows.map((row, index) => (
-        <Fragment key={row.id}>
+        <div key={row.id} data-home-row-id={row.id}>
           {homeLayoutRegistry[row.layout].render(row, index === 0)}
-        </Fragment>
+        </div>
       ))}
       {isFetchingNextPage ? <CarouselRowSkeleton /> : null}
       {isFetchNextPageError ? <LoadMoreError onRetry={loadMore} /> : null}

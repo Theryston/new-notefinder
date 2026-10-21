@@ -22,8 +22,8 @@ const trackedPages = (pages: HomeFeedPage[]): TrackedHomePage[] =>
 
 /**
  * The home's engagement instrumentation: row impressions and card clicks,
- * sent to `POST /v1/events` in batches. Renders nothing; the layouts carry
- * the `data-home-*` attributes this reads.
+ * sent to `POST /v1/events` in batches. Renders nothing; the row wrapper
+ * carries the row id and the layouts the card attributes this reads.
  */
 export function HomeEventsTracker({ pages }: { pages: HomeFeedPage[] }) {
   const tracked = useMemo(() => trackedPages(pages), [pages]);

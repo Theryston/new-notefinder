@@ -33,7 +33,6 @@ export function HeroLayout({
   return (
     <section
       aria-labelledby={headingId}
-      data-home-row-id={row.id}
       className={cn(
         'relative isolate flex items-end overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground md:p-10',
         HERO_BLOCK_CLASS,
