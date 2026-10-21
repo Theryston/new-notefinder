@@ -6,6 +6,7 @@ import {
 } from 'node:http';
 import { serveAlbumRequest } from './fake-album-api-server.ts';
 import { json, matchesPath, readBody } from './fake-api-http.ts';
+import { extraFakeRoutes } from './fake-api-routes.ts';
 import {
   defaultArtistTracks,
   type FakeTrack,
@@ -21,7 +22,6 @@ import {
   serveTrackRequest,
 } from './fake-track-api.ts';
 import { serveSitemap, sitemapTracks } from './fake-track-sitemap.ts';
-import { userRoutes } from './fake-user-routes.ts';
 import { serveUserSitemap } from './fake-user-sitemap.ts';
 
 /**
@@ -259,7 +259,7 @@ const routes: Route[] = [
     pathname: '/v1/sitemaps/users',
     serve: serveUserSitemap,
   },
-  ...userRoutes,
+  ...extraFakeRoutes,
 ];
 
 const serveRequest = async (

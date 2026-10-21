@@ -7,7 +7,22 @@
   "home": {
     "title": "Find the notes of any song",
     "description": "See every vocal note on a timeline synced with the music, and sing along with real-time pitch feedback.",
-    "placeholder": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    "hero": {
+      "sing": "Sing this song"
+    },
+    "rows": {
+      "trendingToday": "Trending today",
+      "newTracks": "New Tracks",
+      "pinned": "{title}"
+    },
+    "sponsored": {
+      "hero": "sponsored content",
+      "row": "this row contains sponsored content"
+    },
+    "feed": {
+      "loadMoreError": "Could not load more rows.",
+      "retry": "Try again"
+    }
   },
   "search": {
     "metaTitle": "Search",

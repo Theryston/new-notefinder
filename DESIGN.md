@@ -308,6 +308,72 @@ terms live here instead of in a menu.
 - Lists that need data (search, profiles on desktop) may use rows with the
   same cover, title and artist plus the range and duration in mono.
 
+### Home feed: hero and carousels
+
+The home is a feed of **rows**, each with its own layout. A row's title is
+a translated key (`text-xl font-bold tracking-tight`, the same as every
+section heading); rows are spaced `gap-12`.
+
+- **Hero** (one per feed, first): a solid `bg-primary` block with
+  `rounded-2xl`, `p-6` (`md:p-10`), `min-h-72 md:min-h-80`. The cover is a
+  `rounded-2xl shadow-xl` square at the top right on phones and centered on
+  the right from `md`. The title is display type (`text-4xl font-extrabold
+  tracking-tighter`, `md:text-5xl`), the artist credit `font-semibold`, and
+  one pill CTA (`bg-background text-foreground`, `rounded-full`,
+  `px-5 py-2.5`) opens the Track. Text on the orange is `text-primary-foreground`
+  and follows the featured blocks rule (bold or large); the artist credit
+  is `font-semibold`, as on the artist and album headers.
+- **Carousel** (standard row): a horizontal track of cards with CSS scroll
+  snapping (`snap-x snap-mandatory`, `scroll-px-4`), a 16px side gutter that
+  bleeds to the screen edge, and a scrollbar hidden on the track only. Each
+  card is the Track card above at a fixed width (`w-40 sm:w-44 md:w-48`), so
+  the touch target is large and the cards keep their own square cover.
+- **Skeletons** reserve exactly the final sizes: the hero's block height and
+  a carousel's title line and card widths (`layout-dimensions.ts` is the one
+  source of both). No row may change height when its content lands.
+- Only the first row loads its images eagerly; every other cover is lazy.
+- Themes: the hero keeps its orange in both themes; cards, titles and
+  surfaces use the theme tokens, so the carousel reads in light and dark.
+
+**Home tokens.** The hero and carousel patterns add one token, and reuse the
+rest:
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `hero-scrim` | `oklch(0 0 0 / 25%)`, both themes | The darkened backing behind the hero's sponsored caption, so white text reaches about 5.7:1 on the orange. Defined in `globals.css` `:root` and `.dark`, mapped to `bg-hero-scrim`. |
+
+Everything else uses existing tokens: `bg-primary` (hero), `text-primary-foreground`
+(hero text), `bg-background` / `text-foreground` (the CTA), `text-muted-foreground`
+(the row line), `ring-ring` and `ring-primary-foreground` (focus).
+
+### Sponsored content notice
+
+A sponsored hero or row shows one discreet notice. It is plain text that
+links to the advertising section of the terms of use, not a badge or a
+banner, and it never changes the layout around it.
+
+- **Wording**: "sponsored content" on the hero, "this row contains
+  sponsored content" on a row (lowercase, like the rest of a row's meta
+  text). The text comes from the locale files.
+- **Placement** follows the layout, decided once in the layout registry:
+  - on the hero, a **caption** above the title inside the text block: small
+    (`text-sm font-medium`), `text-primary-foreground` on the `hero-scrim`
+    token (below). White on the bare orange is 3.5:1; on the scrim it is
+    about 5.7:1;
+  - on a row, a **line** under the row title: `text-xs font-medium
+    text-muted-foreground` (4.5:1 on the background in both themes), hover
+    to `text-foreground`.
+- **Target size**: the link is the hit area. Its padding (`py-3`, with
+  `-my-3` so the layout doesn't move) makes it 44px tall on the caption and
+  40px on the line. The visible backing is the text's own span, never the
+  padding.
+- **Focus**: a solid `ring-3`, never a faded one, so it clears the 3:1
+  non-text contrast: `ring-ring` (orange, 3.5:1 on white, more on dark) on
+  rows, and `ring-primary-foreground` (white, 3.5:1 on the orange) on the
+  caption and the hero's CTA.
+- A layout added to the registry must render the notice; the registry test
+  fails otherwise.
+
 ### Featured blocks
 
 Solid `bg-primary`, white text, `rounded-2xl`, display type, a single white

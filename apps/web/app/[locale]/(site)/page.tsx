@@ -1,32 +1,30 @@
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getLocale } from 'next-intl/server';
+import { Suspense } from 'react';
 
+import { HomeFeed } from '@/features/home/components/home-feed';
+import { HomeFeedSkeleton } from '@/features/home/components/home-feed-skeleton';
 import { localeAlternates } from '@/lib/i18n/metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { alternates: localeAlternates(await getLocale(), '/') };
 }
 
-// Temporary filler so the page scrolls while the header is built; replaced
-// by the real home sections.
-const placeholderKeys = Array.from(
-  { length: 12 },
-  (_, index) => `placeholder-${index}`,
-);
-
 export default function HomePage() {
   const t = useTranslations('home');
 
   return (
-    <>
-      <div className="rounded-lg bg-primary p-4">
-        <h1 className="font-extrabold text-4xl tracking-tight">{t('title')}</h1>
-        <p className="text-primary-foreground">{t('description')}</p>
-      </div>
-      {placeholderKeys.map((key) => (
-        <p key={key}>{t('placeholder')}</p>
-      ))}
-    </>
+    <div className="flex flex-col gap-10">
+      <header className="flex flex-col gap-2">
+        <h1 className="font-extrabold text-3xl tracking-tight md:text-4xl">
+          {t('title')}
+        </h1>
+        <p className="max-w-2xl text-muted-foreground">{t('description')}</p>
+      </header>
+      <Suspense fallback={<HomeFeedSkeleton />}>
+        <HomeFeed />
+      </Suspense>
+    </div>
   );
 }
