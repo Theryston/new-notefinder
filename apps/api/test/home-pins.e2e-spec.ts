@@ -1,13 +1,25 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
+import {
+  createAlbumDisc,
+  placeAlbumTrack,
+} from './utils/album-track-factories.js';
 import { type AuthClient, createAuthClient } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {
+  albumPinBody,
+  artistPinBody,
+  genrePinBody,
   rowPinBody,
   signInPinsAdmin,
 } from './utils/editorial-pin-factories.js';
+import {
+  createAlbum,
+  createArtist,
+  linkTrackArtist,
+} from './utils/factories.js';
 import {
   sharedInMemoryCache,
   withInMemoryCache,
@@ -288,5 +300,81 @@ describe('Home feed with editorial pins (e2e)', () => {
     expect(rows.map((row) => row.id)).not.toContain(`pin-${pinId}`);
     expect(rows[1]?.id).toBe('trending-today');
     expect(itemIds(rows[1])).toContain(ids[3]);
+  });
+
+  it('fills a genre pin with the best eligible Tracks, out of the other rows', async () => {
+    const pinId = await createPin(genrePinBody('rock'));
+
+    const rows = await visitorRows();
+    const pinned = rows.find((row) => row.id === `pin-${pinId}`);
+
+    // Every seeded Track is rock, hottest first, so the pin holds them all.
+    expect(itemIds(pinned)).toEqual(ids);
+    expect(rows.find((row) => row.id === 'trending-today')).toBeUndefined();
+  });
+
+  it("lists an artist pin with the Artist's best Tracks", async () => {
+    const artist = await createArtist(testApp.db, { name: 'Featured' });
+    const picked = [ids[12], ids[3], ids[9], ids[1], ids[15], ids[6]];
+    for (const id of picked) {
+      await linkTrackArtist(testApp.db, id ?? '', artist.id);
+    }
+    const pinId = await createPin(artistPinBody(artist.id));
+
+    const rows = await visitorRows();
+    const pinned = rows.find((row) => row.id === `pin-${pinId}`);
+
+    // The Artist's Tracks, hottest first, wherever they were picked from.
+    expect(itemIds(pinned)).toEqual(
+      [...picked].sort((a, b) => ids.indexOf(a ?? '') - ids.indexOf(b ?? '')),
+    );
+  });
+
+  it('follows the album order for an album pin', async () => {
+    const album = await createAlbum(testApp.db, { title: 'Featured album' });
+    await createAlbumDisc(testApp.db, album.id, 1);
+    const order = [ids[9], ids[2], ids[17], ids[5], ids[11], ids[0]];
+    for (const [index, id] of order.entries()) {
+      await placeAlbumTrack(testApp.db, {
+        albumId: album.id,
+        trackId: id ?? '',
+        discPosition: 1,
+        trackPosition: index + 1,
+      });
+    }
+    const pinId = await createPin(albumPinBody(album.id));
+
+    const rows = await visitorRows();
+    const pinned = rows.find((row) => row.id === `pin-${pinId}`);
+
+    expect(itemIds(pinned)).toEqual(order);
+  });
+
+  it('shows a newly processed Track of the genre without editing the pin', async () => {
+    const pinId = await createPin(genrePinBody('rock'));
+    const fresh = await createCompletedTrack(testApp.db, {
+      title: 'Fresh hit',
+      trendingScore: 1000,
+    });
+
+    const rows = await visitorRows();
+    const pinned = rows.find((row) => row.id === `pin-${pinId}`);
+
+    expect(itemIds(pinned)[0]).toBe(fresh.id);
+  });
+
+  it('skips a genre Track that is no longer completed, at read time', async () => {
+    const pinId = await createPin(genrePinBody('rock'));
+    const db = testApp.db;
+    await db
+      .update(trackProcessings)
+      .set({ status: 'QUEUED' })
+      .where(eq(trackProcessings.trackId, ids[0] ?? ''));
+
+    const rows = await visitorRows();
+
+    expect(itemIds(rows.find((row) => row.id === `pin-${pinId}`))).toEqual(
+      ids.slice(1),
+    );
   });
 });

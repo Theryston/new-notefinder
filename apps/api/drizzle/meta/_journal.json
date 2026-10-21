@@ -169,6 +169,13 @@
       "when": 1792536807551,
       "tag": "0023_editorial_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792581613238,
+      "tag": "0024_editorial_pin_sources",
+      "breakpoints": true
     }
   ]
 }

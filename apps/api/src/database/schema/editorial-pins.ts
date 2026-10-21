@@ -3,6 +3,7 @@ import {
   EDITORIAL_PIN_HISTORY_ACTIONS,
   EDITORIAL_PIN_KINDS,
   EDITORIAL_PIN_LAYOUTS,
+  EDITORIAL_PIN_SOURCE_TYPES,
   type EditorialPinState,
   type EditorialPinTitles,
   LOCALES,
@@ -19,6 +20,8 @@ import {
   unique,
 } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
+import { albums } from './albums.js';
+import { artists } from './artists.js';
 import { tracks } from './tracks.js';
 import { users } from './users.js';
 
@@ -38,6 +41,11 @@ export const editorialPinAudience = pgEnum(
 );
 
 export const editorialPinLocale = pgEnum('editorial_pin_locale', LOCALES);
+
+export const editorialPinSourceType = pgEnum(
+  'editorial_pin_source_type',
+  EDITORIAL_PIN_SOURCE_TYPES,
+);
 
 export const editorialPinHistoryAction = pgEnum(
   'editorial_pin_history_action',
@@ -64,6 +72,14 @@ export const editorialPins = pgTable('editorial_pins', {
   endsAt: timestamp({ withTimezone: true }),
   titles: jsonb().$type<EditorialPinTitles>().notNull(),
   sponsored: boolean().notNull().default(false),
+  // Where the Tracks come from. `tracks` reads `editorial_pin_tracks`; the other
+  // kinds read the Tracks of the source when the feed is read, so only the one
+  // column that names the source is set.
+  sourceType: editorialPinSourceType().notNull().default('tracks'),
+  sourceGenre: text(),
+  // Null unless the source names an Artist or an Album; the pin goes with them.
+  sourceArtistId: text().references(() => artists.id, { onDelete: 'cascade' }),
+  sourceAlbumId: text().references(() => albums.id, { onDelete: 'cascade' }),
   // Null once the admin who did it is removed, so the pin outlives them.
   createdById: text().references(() => users.id, { onDelete: 'set null' }),
   updatedById: text().references(() => users.id, { onDelete: 'set null' }),

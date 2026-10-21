@@ -43,24 +43,52 @@ export const EDITORIAL_PIN_MAX_POSITION = 23;
 export const EDITORIAL_PIN_MAX_PRIORITY = 1000;
 export const EDITORIAL_PIN_TITLE_MAX_LENGTH = 120;
 
+/** Where a pin's Tracks come from: each source kind. */
+export const EDITORIAL_PIN_SOURCE_TYPES = [
+  'tracks',
+  'genre',
+  'artist',
+  'album',
+] as const;
+
 /**
- * Where a pin's Tracks come from: specific Tracks, in the order the admin set
- * them. Genre, artist and album sources join it as a discriminated union; it
- * stays a plain object until then, because a one-member union is documented
- * as `oneOf`, which the OpenAPI generator cannot expand.
+ * Where a pin's Tracks come from. `tracks` is a list of specific Tracks, in the
+ * order the admin set them. `genre`, `artist` and `album` are read when the feed
+ * is read: the best Tracks of the genre or Artist, or the Album's Tracks in
+ * album order.
  */
-export const editorialPinSourceSchema = z.object({
-  type: z.literal('tracks'),
-  trackIds: z
-    .array(z.string().min(1).max(128))
-    .min(1)
-    .max(EDITORIAL_PIN_MAX_TRACKS)
-    .refine((ids) => new Set(ids).size === ids.length, {
-      message: 'A Track appears once in a pin',
-    }),
-});
+export const editorialPinSourceSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('tracks'),
+    trackIds: z
+      .array(z.string().min(1).max(128))
+      .min(1)
+      .max(EDITORIAL_PIN_MAX_TRACKS)
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: 'A Track appears once in a pin',
+      }),
+  }),
+  z.object({
+    type: z.literal('genre'),
+    genre: z.string().trim().min(1).max(100),
+  }),
+  z.object({
+    type: z.literal('artist'),
+    artistId: z.string().min(1).max(128),
+  }),
+  z.object({
+    type: z.literal('album'),
+    albumId: z.string().min(1).max(128),
+  }),
+]);
 
 export type EditorialPinSource = z.infer<typeof editorialPinSourceSchema>;
+
+/** The sources read when the feed is read, which hold no Track list of their own. */
+export type EditorialPinDynamicSource = Exclude<
+  EditorialPinSource,
+  { type: 'tracks' }
+>;
 
 /** The title a row shows in one locale. A hero keeps it for when it is demoted. */
 export const editorialPinTitleSchema = z

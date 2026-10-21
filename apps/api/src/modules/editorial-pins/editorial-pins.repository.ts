@@ -3,6 +3,7 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import type {
   EditorialPinActor,
   EditorialPinAudience,
+  EditorialPinDynamicSource,
   EditorialPinHistoryAction,
   EditorialPinState,
   Locale,
@@ -16,14 +17,21 @@ import {
 } from '../../database/schema/editorial-pins.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import { tracks } from '../../database/schema/tracks.js';
-import type { EditorialPinWrite, PageCursor } from './editorial-pin-state.js';
+import type {
+  EditorialPinWrite,
+  PageCursor,
+  SourceTrackQuery,
+} from './editorial-pin-state.js';
 import {
   actorOf,
   actorUser,
   createdAtMs,
   createdByUser,
+  dynamicSourceOf,
   olderThanCursor,
   pinColumns,
+  selectSourceExists,
+  selectSourceTrackIds,
   updatedByUser,
 } from './editorial-pins-query.repository.js';
 
@@ -126,6 +134,26 @@ export class EditorialPinsRepository {
         asc(editorialPins.id),
       );
     return this.withTracks(rows);
+  }
+
+  /**
+   * The completed Tracks a genre, artist or album offers, best first: a genre's
+   * or an Artist's by trending score, an Album's in album order. Read at feed
+   * time, so a Track processed later shows without an edit of the pin.
+   */
+  findSourceTrackIds(
+    source: EditorialPinDynamicSource,
+    query: SourceTrackQuery,
+  ): Promise<string[]> {
+    return selectSourceTrackIds(this.txHost, source, query);
+  }
+
+  /**
+   * Whether the Artist or Album a source names exists. A genre names no row of
+   * its own: it exists as far as its Tracks do, which the Track count decides.
+   */
+  sourceExists(source: EditorialPinDynamicSource): Promise<boolean> {
+    return selectSourceExists(this.txHost, source);
   }
 
   /** The Tracks among `trackIds` that have completed their Processing. */
@@ -277,6 +305,7 @@ export class EditorialPinsRepository {
       titles: pin.titles,
       sponsored: pin.sponsored,
       trackIds: trackIdsByPin.get(pin.id) ?? [],
+      dynamicSource: dynamicSourceOf(pin),
       createdBy: actorOf(actors.createdById, actors.createdByName),
       updatedBy: actorOf(actors.updatedById, actors.updatedByName),
       createdAt: pin.createdAt,
@@ -285,6 +314,10 @@ export class EditorialPinsRepository {
   }
 
   private async insertTracks(pinId: string, trackIds: string[]): Promise<void> {
+    // A genre, artist or album source holds no Track list of its own.
+    if (trackIds.length === 0) {
+      return;
+    }
     await this.txHost.tx
       .insert(editorialPinTracks)
       .values(

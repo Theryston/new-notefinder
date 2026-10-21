@@ -65,6 +65,39 @@ const collapseLiteralUnion = (property: JsonSchema): JsonSchema => {
   };
 };
 
+/** The `oneOf`/`anyOf` branches of a property, when it names a union. */
+const unionBranches = (property: JsonSchema): unknown[] | undefined => {
+  if ('oneOf' in property && Array.isArray(property.oneOf)) {
+    return property.oneOf;
+  }
+  if ('anyOf' in property && Array.isArray(property.anyOf)) {
+    return property.anyOf;
+  }
+  return undefined;
+};
+
+/**
+ * A union of inline object schemas (for example a discriminated union of pin
+ * sources) is what Swagger explores as model references, which fails with a
+ * "circular dependency" error. A plain object stands in for it here: the
+ * committed document keeps the exact schema anyway (`cleanupOpenApiDoc`
+ * replaces the components Swagger explored).
+ */
+const collapseObjectUnion = (property: JsonSchema): JsonSchema => {
+  const branches = unionBranches(property);
+  if (
+    branches === undefined ||
+    branches.length === 0 ||
+    !branches.every(
+      (branch) =>
+        isRecord(branch) && branch.type === 'object' && !('$ref' in branch),
+    )
+  ) {
+    return property;
+  }
+  return { type: 'object' };
+};
+
 /**
  * Builds the per-property metadata @nestjs/swagger reads from
  * `_OPENAPI_METADATA_FACTORY`. It is what Swagger uses to expand query/param
@@ -85,7 +118,9 @@ const toSwaggerPropertyMetadata = (
     Object.entries(properties).map(([key, property]) => [
       key,
       {
-        ...(isRecord(property) ? collapseLiteralUnion(property) : {}),
+        ...(isRecord(property)
+          ? collapseObjectUnion(collapseLiteralUnion(property))
+          : {}),
         required: required.includes(key),
       },
     ]),

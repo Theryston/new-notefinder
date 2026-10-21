@@ -65,7 +65,7 @@ describe('editorial pin state', () => {
       pin.trackIds.push('t3');
       pin.titles.en = 'Changed';
 
-      expect(state.source.trackIds).toEqual(['t1', 't2']);
+      expect(state.source).toEqual({ type: 'tracks', trackIds: ['t1', 't2'] });
       expect(state.titles.en).toBe('Festive');
     });
   });

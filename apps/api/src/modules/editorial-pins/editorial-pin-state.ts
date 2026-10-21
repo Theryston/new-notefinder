@@ -1,6 +1,7 @@
 import {
   type EditorialPin,
   type EditorialPinAudience,
+  type EditorialPinDynamicSource,
   type EditorialPinKind,
   type EditorialPinLayout,
   type EditorialPinState,
@@ -21,8 +22,20 @@ export type EditorialPinWrite = {
   endsAt: Date | null;
   titles: EditorialPinTitles;
   sponsored: boolean;
+  /** The Tracks of a `tracks` source; empty for the other sources. */
   trackIds: string[];
+  /** The genre, artist or album a pin reads at feed time; null for `tracks`. */
+  dynamicSource?: EditorialPinDynamicSource | null;
 };
+
+/**
+ * Tracks a row built from a genre, artist or album must have to be published:
+ * the minimum of a standard row of the home feed. A hero needs one with a cover.
+ */
+export const DYNAMIC_ROW_MIN_TRACKS = 6;
+
+/** How a dynamic source is read: the Tracks it offers, best first. */
+export type SourceTrackQuery = { requireCover: boolean; limit: number };
 
 /**
  * The last row of a page: its creation time and its ID. The
@@ -52,7 +65,9 @@ const isoOrNull = (date: Date | null): string | null =>
 export const stateOf = (pin: EditorialPinWrite): EditorialPinState => ({
   kind: pin.kind,
   layout: pin.layout,
-  source: { type: 'tracks', trackIds: [...pin.trackIds] },
+  source: pin.dynamicSource
+    ? { ...pin.dynamicSource }
+    : { type: 'tracks', trackIds: [...pin.trackIds] },
   position: pin.position,
   priority: pin.priority,
   audience: pin.audience,
@@ -82,7 +97,7 @@ const comparable = (state: EditorialPinState, field: string): unknown => {
     return LOCALES.map((locale) => state.titles[locale] ?? null);
   }
   if (field === 'source') {
-    return state.source.trackIds;
+    return state.source;
   }
   return state[field as keyof Omit<EditorialPinState, 'source'>];
 };
