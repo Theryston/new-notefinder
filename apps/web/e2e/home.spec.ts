@@ -353,28 +353,15 @@ const SESSION_COOKIE = {
 };
 
 /**
- * Signs the browser in for the home: the `localhost` cookie drives the
- * server-rendered feed, and the `127.0.0.1` one is what the browser forwards
- * to the API (a `localhost` cookie never leaves for `127.0.0.1`) when it
- * pages. Production uses one cookie domain for both; the split hostnames of
- * the e2e setup need both.
+ * Signs the browser in for the home: the session cookie drives the
+ * server-rendered feed. Later pages resolve through the cursor, which names
+ * its own feed version. (The browser can't carry a cookie to the API's
+ * `127.0.0.1` hostname in this Chromium, and production uses one cookie
+ * domain for web and API anyway.)
  */
 async function signIn(context: BrowserContext) {
-  // The `localhost` cookie drives the server-rendered feed; the `127.0.0.1`
-  // one is what the browser forwards to the API (a cookie scoped to one host
-  // never leaves for the other). The API call is cross-site
-  // (`localhost` to `127.0.0.1`), so that cookie needs `SameSite=None`,
-  // which needs `Secure` (loopback counts as trustworthy). Production uses
-  // one cookie domain for both; the split hostnames of the e2e setup need
-  // both.
   await context.addCookies([
     { ...SESSION_COOKIE, url: 'http://localhost:3000' },
-    {
-      ...SESSION_COOKIE,
-      url: 'http://127.0.0.1:3333',
-      sameSite: 'None',
-      secure: true,
-    },
   ]);
 }
 
@@ -404,22 +391,25 @@ const dailyTargetStrip = (
 async function installPersonalFeed(
   prefix: string,
   personal: FakeHomeRow[],
+  waitFor?: string,
 ): Promise<void> {
   await installFeed({ en: [hero(`${prefix}-public-hero`)] });
   await setHomeMock({ personal: { en: personal } });
   await revalidateHome();
-  const lead = leadTrackId(personal);
+  const lead = waitFor ?? `/en/tracks/${leadTrackId(personal)}`;
   await expect
     .poll(
       async () => {
         const response = await fetch(`${baseURL}/en`, {
           headers: { cookie: `${SESSION_COOKIE.name}=${SESSION_COOKIE.value}` },
         });
-        return response.text();
+        // React escapes apostrophes in server HTML; the message files (and
+        // getByText below) use the plain character.
+        return (await response.text()).replaceAll('&#x27;', "'");
       },
       { timeout: 15000 },
     )
-    .toContain(`/en/tracks/${lead}`);
+    .toContain(lead);
 }
 
 test.describe('signed-in home feed', () => {
@@ -527,9 +517,11 @@ test.describe('signed-in home feed', () => {
     page,
     context,
   }) => {
-    await installPersonalFeed('done-personal', [
-      dailyTargetStrip('daily-target', 0, true),
-    ]);
+    await installPersonalFeed(
+      'done-personal',
+      [dailyTargetStrip('daily-target', 0, true)],
+      messages.en.home.dailyTarget.completeToday,
+    );
     await signIn(context);
 
     await page.goto('/en');

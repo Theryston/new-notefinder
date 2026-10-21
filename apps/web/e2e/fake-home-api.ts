@@ -37,6 +37,29 @@ const personalFeeds = new Map<
   { version: string; rows: FakeHomeRow[] }
 >();
 
+/** Every installed feed, with the audience it serves as. */
+const installedFeeds = function* (): Generator<{
+  audience: 'public' | 'personal';
+  version: string;
+  rows: FakeHomeRow[];
+}> {
+  for (const feed of feeds.values()) {
+    yield { audience: 'public', ...feed };
+  }
+  for (const feed of personalFeeds.values()) {
+    yield { audience: 'personal', ...feed };
+  }
+};
+
+/** The feed a cursor names, personal or public, if still installed. */
+const feedOfVersion = (version: string | undefined) => {
+  if (!version) return undefined;
+  for (const feed of installedFeeds()) {
+    if (feed.version === version) return feed;
+  }
+  return undefined;
+};
+
 let versionCounter = 0;
 
 const installFeed = (
@@ -104,13 +127,21 @@ const serveHome = (request: IncomingMessage, response: ServerResponse) => {
   const search = new URL(request.url ?? '/', 'http://fake.local').searchParams;
   const requested = search.get('locale') ?? 'en';
   const locale: FakeHomeLocale = isLocale(requested) ? requested : 'en';
+  const cursor = search.get('cursor');
+  // A cursor names its own feed version, so it ignores the locale and the
+  // session: a personal cursor resumes the personal feed, like the real API
+  // resolves a snapshot version before falling back to the public one.
+  const byCursor = cursor
+    ? feedOfVersion(parseCursor(cursor)?.version)
+    : undefined;
   const signedIn = (request.headers.cookie ?? '').includes(SESSION_COOKIE);
-  const audience = signedIn ? 'personal' : 'public';
+  const audience = byCursor?.audience ?? (signedIn ? 'personal' : 'public');
   // Without its own fixture, the personal feed is the public rows with the
   // personal audience, like the real API serves a missing snapshot.
   const feed =
-    (signedIn ? personalFeeds.get(locale) : undefined) ?? feeds.get(locale);
-  const cursor = search.get('cursor');
+    byCursor ??
+    (signedIn ? personalFeeds.get(locale) : undefined) ??
+    feeds.get(locale);
   let offset = 0;
   if (cursor) {
     const parsed = parseCursor(cursor);
