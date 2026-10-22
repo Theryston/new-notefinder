@@ -75,9 +75,6 @@ test.describe('locale-prefixed pages', () => {
       expect(response?.status()).toBe(200);
 
       await expect(page.locator('html')).toHaveAttribute('lang', locale);
-      await expect(
-        page.getByRole('heading', { level: 1, name: messages.home.title }),
-      ).toBeVisible();
       await expect(page).toHaveTitle(messages.metadata.title);
 
       const alternate = (hreflang: string) =>

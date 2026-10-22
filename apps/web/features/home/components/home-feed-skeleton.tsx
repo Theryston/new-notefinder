@@ -24,7 +24,7 @@ const RANK_KEYS = Array.from({ length: RANKED_SKELETON_ROWS }, (_, i) => i);
 /** One carousel's reserved space: the title line, then the cards. */
 export function CarouselRowSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <div className={CAROUSEL_HEADER_CLASS}>
         <Skeleton className={CAROUSEL_TITLE_SKELETON_CLASS} />
       </div>
@@ -45,7 +45,7 @@ export function CarouselRowSkeleton() {
  */
 export function HomeFeedSkeleton() {
   return (
-    <div aria-hidden="true" className="flex flex-col gap-12">
+    <div aria-hidden="true" className="flex flex-col gap-8">
       <Skeleton className={cn('rounded-2xl', HERO_BLOCK_CLASS)} />
       <CarouselRowSkeleton />
       <CarouselRowSkeleton />
@@ -56,7 +56,7 @@ export function HomeFeedSkeleton() {
 /** Reserved space of a ranked row: the title line, then the numbered rows. */
 export function RankedRowSkeleton() {
   return (
-    <div aria-hidden="true" className="flex flex-col gap-4">
+    <div aria-hidden="true" className="flex flex-col gap-2">
       <div className={RANKED_HEADER_CLASS}>
         <Skeleton className={RANKED_TITLE_SKELETON_CLASS} />
       </div>

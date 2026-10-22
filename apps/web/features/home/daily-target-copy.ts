@@ -17,11 +17,16 @@ export type DailyTargetCopy =
       key: 'home.dailyTarget.remaining';
       params: { minutesLeft: number; minutesTotal: number };
     }
+  | {
+      key: 'home.dailyTarget.fresh';
+      params: { minutes: number };
+    }
   | { key: 'home.dailyTarget.completeToday'; params: Record<string, never> };
 
 /**
- * The strip's main line: what is left of the goal, or that the day is
- * complete. A completed day reads as complete even with seconds to spare.
+ * The strip's main line: a nudge to start when nothing was sung yet, what is
+ * left of the goal once sung a little, or that the day is complete. A
+ * completed day reads as complete even with seconds to spare.
  */
 export function dailyTargetCopy(status: {
   secondsLeft: number;
@@ -30,6 +35,12 @@ export function dailyTargetCopy(status: {
 }): DailyTargetCopy {
   if (status.completedToday || status.secondsLeft <= 0) {
     return { key: 'home.dailyTarget.completeToday', params: {} };
+  }
+  if (status.secondsLeft >= status.targetSeconds) {
+    return {
+      key: 'home.dailyTarget.fresh',
+      params: { minutes: minutesTotalOf(status.targetSeconds) },
+    };
   }
   return {
     key: 'home.dailyTarget.remaining',

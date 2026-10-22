@@ -41,7 +41,7 @@ export function RankedLayout({
   if (!isHomeRowTitleKey(key)) return null;
   const headingId = rowHeadingId(row.id);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
       <div className={RANKED_HEADER_CLASS}>
         <h2 id={headingId} className={RANKED_TITLE_CLASS}>
           {t(key, params)}

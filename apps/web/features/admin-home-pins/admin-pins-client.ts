@@ -2,10 +2,13 @@ import {
   type CreateEditorialPinBody,
   type EditorialPin,
   type EditorialPinHistoryPage,
+  type EditorialPinKind,
   type EditorialPinPage,
   editorialPinHistoryPageSchema,
   editorialPinPageSchema,
   editorialPinSchema,
+  type PinTrackSearchResult,
+  pinTrackSearchResultSchema,
   type UpdateEditorialPinBody,
 } from '@notefinder/contracts';
 import { z } from 'zod';
@@ -70,5 +73,32 @@ export function deleteAdminPin(pinId: string): Promise<void> {
   return browserApi(pinPath(pinId), {
     method: 'DELETE',
     schema: z.undefined(),
+  });
+}
+
+/**
+ * The Tracks the pin picker may offer (`q`) or shows (`ids`). Loaded on
+ * demand (`import()`): parsing runs through the contracts, which would pull
+ * Zod into the page's first-load JavaScript otherwise.
+ */
+export function searchPinTracks(
+  query: {
+    q?: string;
+    ids?: string;
+    kind?: EditorialPinKind;
+    limit?: number;
+  },
+  signal?: AbortSignal,
+): Promise<PinTrackSearchResult> {
+  const { q, ids, kind, limit } = query;
+  return browserApi('/admin/tracks/search', {
+    schema: pinTrackSearchResultSchema,
+    query: {
+      ...(q !== undefined ? { q } : {}),
+      ...(ids !== undefined ? { ids } : {}),
+      ...(kind !== undefined ? { kind } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    },
+    signal,
   });
 }

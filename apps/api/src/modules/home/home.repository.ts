@@ -94,6 +94,23 @@ export class HomeRepository {
       .where(and(hasCompletedProcessing(tracks.id), inArray(tracks.id, ids)));
   }
 
+  /**
+   * The catalog IDs of the artists the MBIDs name. Credits stored without an
+   * MBID, or whose MBID has no Artist yet, have no row here, so their names
+   * stay unlinked.
+   */
+  findArtistIdsByMbids(
+    mbids: string[],
+  ): Promise<{ mbid: string; id: string }[]> {
+    if (mbids.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.txHost.tx
+      .select({ mbid: artists.mbid, id: artists.id })
+      .from(artists)
+      .where(inArray(artists.mbid, mbids));
+  }
+
   /** Completed Tracks with a stored Vocal range, hottest first. */
   findTracksWithVocalRange(limit: number): Promise<HomeTrackRecord[]> {
     return this.txHost.tx

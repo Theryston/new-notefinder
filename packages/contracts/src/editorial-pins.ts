@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { LOCALES, type Locale, localeSchema } from './locales.js';
 import { cursorPageSchema } from './pagination.js';
+import { trackArtistCreditEntrySchema, trackCoverUrlSchema } from './tracks.js';
 
 /**
  * Editorial pins: an admin's hero or row on the home feed, applied over the
@@ -269,3 +270,73 @@ export const editorialPinIdParamSchema = z.object({
 });
 
 export type EditorialPinIdParam = z.infer<typeof editorialPinIdParamSchema>;
+
+/**
+ * One Track the admin can pick for a pin: what the picker shows to pick it.
+ * Only Tracks whose Processing completed are ever listed; a hero additionally
+ * needs a cover, which the picker reads off `coverUrl`.
+ */
+export const pinTrackSummarySchema = z.object({
+  id: z.string().min(1).max(128),
+  title: z.string().min(1).max(500),
+  artistCredit: z.array(trackArtistCreditEntrySchema).max(30),
+  coverUrl: trackCoverUrlSchema.nullable(),
+});
+
+export type PinTrackSummary = z.infer<typeof pinTrackSummarySchema>;
+
+/** `GET /v1/admin/tracks/search`: the matching Tracks, most relevant first. */
+export const pinTrackSearchResultSchema = z.object({
+  items: z.array(pinTrackSummarySchema).max(50),
+});
+
+export type PinTrackSearchResult = z.infer<typeof pinTrackSearchResultSchema>;
+
+/** How many matches an autocomplete answer carries at most. */
+export const PIN_TRACK_SEARCH_MAX_LIMIT = 20;
+
+/**
+ * Why a pin write refused a Track or a dynamic source, carried by each
+ * `VALIDATION_FAILED` issue so clients translate it instead of showing the
+ * English developer message.
+ */
+export const pinTrackIssueReasonSchema = z.enum([
+  'TRACK_NOT_COMPLETED',
+  'TRACK_NO_COVER',
+  'SOURCE_NOT_FOUND',
+  'SOURCE_INSUFFICIENT',
+]);
+
+export type PinTrackIssueReason = z.infer<typeof pinTrackIssueReasonSchema>;
+
+/**
+ * `GET /v1/admin/tracks/search`: either a text query (matches against the
+ * title and the credited artist names) or the summaries of explicit IDs (for
+ * the Tracks an edited pin already holds). `kind` keeps only the Tracks that
+ * can appear in a pin of that kind (a hero needs a cover); without it every
+ * completed Track qualifies.
+ */
+export const pinTrackSearchQuerySchema = z
+  .object({
+    q: z.string().trim().min(1).max(100).optional(),
+    ids: z.string().max(2000).optional(),
+    kind: editorialPinKindSchema.optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(PIN_TRACK_SEARCH_MAX_LIMIT)
+      .default(10),
+  })
+  .superRefine((query, ctx) => {
+    const hasQuery = query.q !== undefined;
+    const hasIds = query.ids !== undefined;
+    if (hasQuery === hasIds) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Provide either q or ids',
+      });
+    }
+  });
+
+export type PinTrackSearchQuery = z.infer<typeof pinTrackSearchQuerySchema>;

@@ -11,6 +11,10 @@ import {
   type EditorialPinPage,
   type EditorialPinSource,
   type Locale,
+  PIN_TRACK_SEARCH_MAX_LIMIT,
+  type PinTrackSearchQuery,
+  type PinTrackSearchResult,
+  type PinTrackSummary,
   type UpdateEditorialPinBody,
 } from '@notefinder/contracts';
 import {
@@ -35,6 +39,18 @@ import {
   type EditorialPinRecord,
   EditorialPinsRepository,
 } from './editorial-pins.repository.js';
+import type { PinTrackRecord } from './editorial-pins-query.repository.js';
+
+/** A record with what the pin picker shows to pick it. */
+const toPinTrackSummary = (record: PinTrackRecord): PinTrackSummary => ({
+  id: record.id,
+  title: record.title,
+  artistCredit: record.artistCredit.map(({ name, joinPhrase }) => ({
+    name,
+    joinPhrase,
+  })),
+  coverUrl: record.coverUrl,
+});
 
 /** A page request: the cursor of the previous page, and how many items. */
 type PageQuery = { cursor?: string | undefined; limit: number };
@@ -198,6 +214,35 @@ export class EditorialPinsService {
     query: SourceTrackQuery,
   ): Promise<string[]> {
     return this.pins.findSourceTrackIds(source, query);
+  }
+
+  /**
+   * Summaries of the Tracks the pin picker may offer (`q`, completed and
+   * kind-eligible, hottest first) or shows (`ids`, the ones an edited pin
+   * already holds, in that order). Only completed Tracks ever come back, so
+   * the picker never offers a Track the pin would refuse.
+   */
+  async searchPinTracks(
+    query: PinTrackSearchQuery,
+  ): Promise<PinTrackSearchResult> {
+    if (query.q !== undefined) {
+      const items = await this.pins.searchPinTracks({
+        q: query.q,
+        kind: query.kind,
+        limit: query.limit,
+      });
+      return { items: items.map(toPinTrackSummary) };
+    }
+    const ids = [
+      ...new Set(
+        (query.ids ?? '')
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0),
+      ),
+    ].slice(0, PIN_TRACK_SEARCH_MAX_LIMIT);
+    const items = await this.pins.findPinTracksByIds(ids);
+    return { items: items.map(toPinTrackSummary) };
   }
 
   async remove(pinId: string, actor: EditorialPinActor): Promise<void> {

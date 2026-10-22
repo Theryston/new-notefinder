@@ -33,7 +33,7 @@ const catalog: PinFormCatalog = {
  */
 export async function AdminHomePinsPage() {
   const t = await getTranslations('adminHomePins');
-  const { adminHomePins } = await getMessages();
+  const { adminHomePins, errors } = await getMessages();
 
   return (
     <div className="flex flex-col gap-2 py-10 md:py-12">
@@ -46,7 +46,7 @@ export async function AdminHomePinsPage() {
         </h1>
         <p className="max-w-prose text-muted-foreground">{t('description')}</p>
       </header>
-      <NextIntlClientProvider messages={{ adminHomePins }}>
+      <NextIntlClientProvider messages={{ adminHomePins, errors }}>
         <AdminHomePins catalog={catalog} />
       </NextIntlClientProvider>
     </div>

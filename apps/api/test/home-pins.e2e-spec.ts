@@ -19,6 +19,7 @@ import {
   createAlbum,
   createArtist,
   linkTrackArtist,
+  testMbid,
 } from './utils/factories.js';
 import {
   sharedInMemoryCache,
@@ -376,5 +377,43 @@ describe('Home feed with editorial pins (e2e)', () => {
     expect(itemIds(rows.find((row) => row.id === `pin-${pinId}`))).toEqual(
       ids.slice(1),
     );
+  });
+
+  it('links served credits to their Artist page, null when unknown', async () => {
+    const artistMbid = testMbid(4242);
+    const artist = await createArtist(testApp.db, {
+      name: 'Linked Artist',
+      mbid: artistMbid,
+    });
+    const linked = await createCompletedTrack(testApp.db, {
+      title: 'Linked hit',
+      coverUrl: 'https://cdn.example/linked.webp',
+      trendingScore: 1000,
+      artistCredit: [
+        { name: 'Linked Artist', joinPhrase: '', mbid: artistMbid },
+      ],
+    });
+    await linkTrackArtist(testApp.db, linked.id, artist.id);
+
+    const rows = await visitorRows();
+    const hero = rows.find((row) => row.layout === 'hero') as
+      | {
+          track?: {
+            id?: string;
+            artistCredit?: { name?: string; artistId?: string | null }[];
+          };
+        }
+      | undefined;
+
+    expect(hero?.track?.id).toBe(linked.id);
+    expect(hero?.track?.artistCredit).toEqual([
+      { name: 'Linked Artist', joinPhrase: '', artistId: artist.id },
+    ]);
+    const standard = rows.find((row) => row.layout === 'standard') as
+      | { items?: { artistCredit?: { artistId?: string | null }[] }[] }
+      | undefined;
+    expect(standard?.items?.[0]?.artistCredit).toEqual([
+      { name: expect.any(String), joinPhrase: '', artistId: null },
+    ]);
   });
 });

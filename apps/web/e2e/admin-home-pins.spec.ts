@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test';
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Request,
+  test,
+} from '@playwright/test';
 import { mockAdminPinsApi, mockPin } from './admin-pins-api-mock';
 import { type MockUser, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
@@ -32,6 +38,67 @@ const locales = [
 ] as const;
 
 test.describe('admin home pins', () => {
+  /** Fills the titles, submits the dialog and waits for the pin to show. */
+  async function submitPinTitles(
+    dialog: Locator,
+    page: Page,
+    form: (typeof messages.en)['adminHomePins']['form'],
+  ) {
+    await dialog.getByLabel(form.titleEn.label).fill('Summer picks');
+    await dialog.getByLabel(form.titlePt.label).fill('Escolhas de verão');
+    await dialog.getByRole('button', { name: form.submitCreate }).click();
+    await expect(page.getByText('Summer picks')).toBeVisible();
+  }
+
+  /** The last pin body the panel posted. */
+  function lastPostedPin(calls: Request[]) {
+    return calls
+      .map((call) => call.postDataJSON())
+      .find(
+        (body): body is Record<string, unknown> =>
+          !!body && typeof body === 'object' && 'sponsored' in body,
+      );
+  }
+
+  /** Tracks the picker search answers with. */
+  const pickerTracks = [
+    {
+      id: 'trk_summer_a',
+      title: 'Summer Song',
+      artistCredit: [{ name: 'Sun Singers', joinPhrase: '' }],
+      coverUrl: 'https://cdn.example/summer.webp',
+    },
+    {
+      id: 'trk_winter_b',
+      title: 'Winter Ballad',
+      artistCredit: [{ name: 'Snow Choir', joinPhrase: '' }],
+      coverUrl: null,
+    },
+  ];
+
+  /** Searches the picker and picks the first matching Track. */
+  async function pickTrackByName(
+    dialog: Locator,
+    pins: (typeof messages.en)['adminHomePins'],
+    query: string,
+    name: RegExp,
+  ) {
+    await dialog.getByLabel(pins.form.trackPicker.searchLabel).fill(query);
+    await dialog.getByRole('button', { name }).first().click();
+  }
+
+  /** The remove button of a picked Track in the selected list. */
+  function removeButton(
+    dialog: Locator,
+    pins: (typeof messages.en)['adminHomePins'],
+    title: string,
+  ) {
+    return dialog.getByRole('button', {
+      name: pins.form.trackPicker.remove.replace('{title}', title),
+      exact: true,
+    });
+  }
+
   for (const { locale, copy } of locales) {
     const pins = copy.adminHomePins;
 
@@ -39,7 +106,7 @@ test.describe('admin home pins', () => {
       page,
     }) => {
       await mockAuthApi(page, { user: admin });
-      const api = await mockAdminPinsApi(page);
+      const api = await mockAdminPinsApi(page, { tracks: pickerTracks });
 
       await page.goto(`/${locale}/admin/home-pins`);
       await expect(
@@ -49,41 +116,64 @@ test.describe('admin home pins', () => {
 
       await page.getByRole('button', { name: pins.create }).click();
       const dialog = page.getByRole('dialog');
-      await dialog
-        .getByLabel(pins.form.trackIds.label)
-        .fill('trk_summer_a\ntrk_summer_b');
-      await dialog.getByLabel(pins.form.titleEn.label).fill('Summer picks');
-      await dialog
-        .getByLabel(pins.form.titlePt.label)
-        .fill('Escolhas de verão');
+      await pickTrackByName(dialog, pins, 'summer', /Summer Song/);
+      await pickTrackByName(dialog, pins, 'winter', /Winter Ballad/);
       await dialog.getByRole('switch').click();
       await expect(dialog.getByRole('switch')).toHaveAttribute(
         'aria-checked',
         'true',
       );
-      await dialog
-        .getByRole('button', { name: pins.form.submitCreate })
-        .click();
+      await submitPinTitles(dialog, page, pins.form);
 
-      await expect(page.getByText('Summer picks')).toBeVisible();
       await expect(page.getByText(pins.sponsoredBadge)).toBeVisible();
 
-      const posted = api.calls
-        .map((call) => call.postDataJSON())
-        .find(
-          (body): body is Record<string, unknown> =>
-            !!body && typeof body === 'object' && 'sponsored' in body,
-        );
+      const posted = lastPostedPin(api.calls);
       expect(posted?.sponsored).toBe(true);
+      expect(posted?.source).toMatchObject({
+        trackIds: ['trk_summer_a', 'trk_winter_b'],
+      });
       expect(api.pins()).toHaveLength(1);
       expect(api.pins()[0]?.sponsored).toBe(true);
+    });
+
+    test(`${locale}: an admin picks tracks by name instead of pasting ids`, async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: admin });
+      const api = await mockAdminPinsApi(page, { tracks: pickerTracks });
+
+      await page.goto(`/${locale}/admin/home-pins`);
+      await page.getByRole('button', { name: pins.create }).click();
+      const dialog = page.getByRole('dialog');
+      const search = dialog.getByLabel(pins.form.trackPicker.searchLabel);
+      await search.fill('summer');
+
+      const result = dialog.getByRole('button', { name: /Summer Song/ });
+      await expect(result).toBeVisible();
+      await expect(
+        dialog.getByRole('button', { name: /Winter Ballad/ }),
+      ).toHaveCount(0);
+
+      await result.click();
+      await expect(removeButton(dialog, pins, 'Summer Song')).toBeVisible();
+
+      await removeButton(dialog, pins, 'Summer Song').click();
+      await expect(
+        dialog.getByText(pins.form.trackPicker.selectedEmpty),
+      ).toBeVisible();
+
+      await pickTrackByName(dialog, pins, 'summer', /Summer Song/);
+      await submitPinTitles(dialog, page, pins.form);
+
+      const posted = lastPostedPin(api.calls);
+      expect(posted?.source).toMatchObject({ trackIds: ['trk_summer_a'] });
     });
 
     test(`${locale}: the form validates required titles and the window order`, async ({
       page,
     }) => {
       await mockAuthApi(page, { user: admin });
-      await mockAdminPinsApi(page);
+      await mockAdminPinsApi(page, { tracks: pickerTracks });
 
       await page.goto(`/${locale}/admin/home-pins`);
       await page.getByRole('button', { name: pins.create }).click();
@@ -96,7 +186,7 @@ test.describe('admin home pins', () => {
         page.getByText(pins.form.errors.required).first(),
       ).toBeVisible();
 
-      await dialog.getByLabel(pins.form.trackIds.label).fill('trk_summer_a');
+      await pickTrackByName(dialog, pins, 'summer', /Summer Song/);
       await dialog.getByLabel(pins.form.titleEn.label).fill('Summer picks');
       await dialog
         .getByLabel(pins.form.titlePt.label)

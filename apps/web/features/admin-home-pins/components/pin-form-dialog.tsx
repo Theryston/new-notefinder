@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
+import { serverValidationFieldErrors } from '../admin-pin-server-error';
 import { useAdminPinMutations } from '../hooks/use-admin-pin-mutations';
 import {
   emptyPinForm,
@@ -33,10 +33,10 @@ import {
   SponsoredField,
   TargetingFields,
   TitlesFields,
-  TracksField,
   UnsupportedSourceNote,
   useFieldError,
 } from './pin-form-fields';
+import { TrackPickerField } from './track-picker-field';
 
 type PinFormDialogProps = {
   mode: 'create' | 'edit';
@@ -113,6 +113,17 @@ function useHeroPinSync(
   }, [isHero, form, catalog.heroPosition]);
 }
 
+/** The Tracks of a tracks-sourced pin: picked by name in the picker. */
+function SourceTracksFields({
+  form,
+  catalog,
+}: {
+  form: UseFormReturn<PinFormValues>;
+  catalog: PinFormCatalog;
+}) {
+  return <TrackPickerField form={form} catalog={catalog} />;
+}
+
 /** Every field of the form, driven by the kind, locale and source. */
 function PinFormSections({
   form,
@@ -150,7 +161,7 @@ function PinFormSections({
         error={errorOf('layout')}
       />
       {sourceEditable ? (
-        <TracksField register={form.register} error={errorOf('trackIdsText')} />
+        <SourceTracksFields form={form} catalog={catalog} />
       ) : (
         <UnsupportedSourceNote />
       )}
@@ -199,7 +210,7 @@ function usePinSubmit({
   onClose: () => void;
 }) {
   const t = useTranslations('adminHomePins');
-  const { createPin, updatePin } = useAdminPinMutations();
+  const { createPin, updatePin } = useAdminPinMutations(catalog);
   const sourceEditable = !pin || pin.source.type === 'tracks';
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -207,19 +218,28 @@ function usePinSubmit({
       values.kind === 'hero'
         ? { ...values, layout: 'hero', position: catalog.heroPosition }
         : values;
-    if (mode === 'create') {
-      await createPin.mutateAsync(formValuesToBody(fixed));
-      toast.success(t('form.created'));
-    } else if (pin) {
-      const body = formValuesToBody(fixed);
-      // A source from a newer admin (genre, artist, album) is left alone:
-      // only the settings change.
-      const { source: _kept, ...settings } = body;
-      await updatePin.mutateAsync({
-        pinId: pin.id,
-        body: sourceEditable ? body : settings,
-      });
-      toast.success(t('form.updated'));
+    try {
+      if (mode === 'create') {
+        await createPin.mutateAsync(formValuesToBody(fixed));
+        toast.success(t('form.created'));
+      } else if (pin) {
+        const body = formValuesToBody(fixed);
+        // A source from a newer admin (genre, artist, album) is left alone:
+        // only the settings change.
+        const { source: _kept, ...settings } = body;
+        await updatePin.mutateAsync({
+          pinId: pin.id,
+          body: sourceEditable ? body : settings,
+        });
+        toast.success(t('form.updated'));
+      }
+    } catch (error) {
+      // The mutation already toasted the specific reason; mirror the
+      // backend's field errors inline so the form names the field too.
+      for (const { field, type } of serverValidationFieldErrors(error)) {
+        form.setError(field, { type });
+      }
+      return;
     }
     onClose();
   });

@@ -5,6 +5,7 @@ import type {
   EditorialPinAudience,
   EditorialPinDynamicSource,
   EditorialPinHistoryAction,
+  EditorialPinKind,
   EditorialPinState,
   Locale,
 } from '@notefinder/contracts';
@@ -29,7 +30,10 @@ import {
   createdByUser,
   dynamicSourceOf,
   olderThanCursor,
+  type PinTrackRecord,
   pinColumns,
+  selectPinTrackSearch,
+  selectPinTracksByIds,
   selectSourceExists,
   selectSourceTrackIds,
   updatedByUser,
@@ -166,6 +170,27 @@ export class EditorialPinsRepository {
       .where(
         and(inArray(tracks.id, trackIds), hasCompletedProcessing(tracks.id)),
       );
+  }
+
+  /**
+   * Completed Tracks matching `q` in the title or a credited name, hottest
+   * first. A hero only offers Tracks with a cover.
+   */
+  searchPinTracks(query: {
+    q: string;
+    kind: EditorialPinKind | undefined;
+    limit: number;
+  }): Promise<PinTrackRecord[]> {
+    return selectPinTrackSearch(this.txHost, query);
+  }
+
+  /**
+   * The completed Tracks among `ids` with what the picker shows, in the
+   * requested order. Unknown or uncompleted IDs are left out, so the picker
+   * can still name the ones it resolves.
+   */
+  findPinTracksByIds(ids: string[]): Promise<PinTrackRecord[]> {
+    return selectPinTracksByIds(this.txHost, ids);
   }
 
   /** Writes a new pin with its Tracks and returns its ID. */

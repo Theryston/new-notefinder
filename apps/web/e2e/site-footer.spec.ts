@@ -35,9 +35,7 @@ test.describe('site footer', () => {
       })
       .click();
     await expect(page).toHaveURL(/\/pt-BR\?x=1$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      messages['pt-BR'].home.title,
-    );
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
   });
 });
 

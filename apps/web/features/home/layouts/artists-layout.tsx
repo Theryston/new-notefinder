@@ -3,12 +3,12 @@ import { useTranslations } from 'next-intl';
 
 import { ArtistAvatar } from '@/features/artists/components/artist-avatar';
 import { Link } from '@/lib/i18n/navigation';
+import { CarouselScroller } from '../components/carousel-scroller';
 import { SponsoredNotice } from '../components/sponsored-notice';
 import {
   ARTIST_ROW_ITEM_CLASS,
   CAROUSEL_HEADER_CLASS,
   CAROUSEL_TITLE_CLASS,
-  CAROUSEL_TRACK_CLASS,
 } from '../layout-dimensions';
 import { rowHeadingId } from '../row-heading-id';
 import { isHomeRowTitleKey } from '../row-titles';
@@ -30,14 +30,17 @@ export function ArtistsLayout({
   if (!isHomeRowTitleKey(key)) return null;
   const headingId = rowHeadingId(row.id);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <div className={CAROUSEL_HEADER_CLASS}>
-        <h2 id={headingId} className={CAROUSEL_TITLE_CLASS}>
-          {t(key, params)}
-        </h2>
-        {row.sponsored ? <SponsoredNotice placement="line" /> : null}
-      </div>
-      <ul className={CAROUSEL_TRACK_CLASS}>
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <CarouselScroller
+        header={
+          <div className={CAROUSEL_HEADER_CLASS}>
+            <h2 id={headingId} className={CAROUSEL_TITLE_CLASS}>
+              {t(key, params)}
+            </h2>
+            {row.sponsored ? <SponsoredNotice placement="line" /> : null}
+          </div>
+        }
+      >
         {row.items.map((artist) => (
           <li key={artist.id} className={ARTIST_ROW_ITEM_CLASS}>
             <Link
@@ -54,7 +57,7 @@ export function ArtistsLayout({
             </Link>
           </li>
         ))}
-      </ul>
+      </CarouselScroller>
     </section>
   );
 }

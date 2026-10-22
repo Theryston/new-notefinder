@@ -220,14 +220,22 @@ export class HomeService {
     return this.pinOverlay.apply(rows, { locale, signedIn });
   }
 
-  private answer(
+  private async answer(
     feed: ServedFeed,
     position: number,
     cacheable: boolean,
     signedIn: boolean,
-  ): HomePage {
+  ): Promise<HomePage> {
+    const page = pageOf(feed, position);
+    // Spec doubles of the feed service predate the artist linker; production
+    // always wires the real one.
+    const linker = this.feeds.withArtistLinks;
+    const rows =
+      linker === undefined
+        ? page.rows
+        : await linker.call(this.feeds, page.rows);
     return {
-      page: pageOf(feed, position),
+      page: { ...page, rows },
       cacheable,
       cacheControl: cacheControlOf(cacheable, signedIn),
     };

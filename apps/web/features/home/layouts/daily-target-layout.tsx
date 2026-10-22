@@ -29,8 +29,8 @@ export function DailyTargetLayout(props: {
   if (!isHomeRowTitleKey(row.title.key)) return null;
   const headingId = rowHeadingId(row.id);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className={CAROUSEL_TITLE_CLASS}>
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h2 id={headingId} className={`${CAROUSEL_TITLE_CLASS} sr-only`}>
         {t(row.title.key, row.title.params)}
       </h2>
       <div className={DAILY_TARGET_STRIP_CLASS}>
@@ -42,13 +42,21 @@ export function DailyTargetLayout(props: {
           />
           <span className="truncate">{t(key, params)}</span>
         </p>
+        {/* The pill shows just the count; the full wording stays available
+            to assistive tech, so a zero-day streak reads "0" instead of a
+            long sentence. */}
         <p className="inline-flex shrink-0 items-center gap-1 rounded-full bg-background px-3 py-1 font-semibold text-xs">
           <FlameIcon
             aria-hidden="true"
             className="size-3.5"
             strokeWidth={1.75}
           />
-          {streak('streak', { days: row.streakDays })}
+          <span aria-hidden="true" className="tabular-nums">
+            {row.streakDays}
+          </span>
+          <span className="sr-only">
+            {streak('streak', { days: row.streakDays })}
+          </span>
         </p>
       </div>
       {row.sponsored ? <SponsoredNotice placement="line" /> : null}

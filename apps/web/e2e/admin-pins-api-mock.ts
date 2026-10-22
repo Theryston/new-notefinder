@@ -3,6 +3,15 @@ import type { Page, Request, Route } from '@playwright/test';
 // Any host: the API URL the browser calls is inlined when the app is built
 // (`NEXT_PUBLIC_API_URL`), so it depends on the build, not on this suite.
 const ADMIN_PINS_ROUTE = '**/v1/admin/home-pins**';
+const ADMIN_TRACKS_ROUTE = '**/v1/admin/tracks/search**';
+
+/** A Track as the admin track search answers it. */
+export type MockPinTrack = {
+  id: string;
+  title: string;
+  artistCredit: { name: string; joinPhrase: string }[];
+  coverUrl: string | null;
+};
 
 /** A pin as the admin endpoints answer it. Specs build them by hand. */
 export type MockPin = {
@@ -151,6 +160,23 @@ const deleteReply = (store: PinStore, pinId: string): Reply => {
   return { status: 204 };
 };
 
+/** Serves one admin route pattern, recording every call like the pins do. */
+async function routeApi(
+  page: Page,
+  pattern: string,
+  calls: Request[],
+  reply: (request: Request) => Reply,
+) {
+  await page.route(pattern, async (route: Route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await fulfill(route, { status: 204 });
+      return;
+    }
+    calls.push(route.request());
+    await fulfill(route, reply(route.request()));
+  });
+}
+
 const historyReply = (
   history: Record<string, MockHistoryEntry[]>,
   pinId: string,
@@ -174,20 +200,57 @@ const routeReply = (
   return notFound;
 };
 
+const trackReply = (tracks: MockPinTrack[], request: Request): Reply => {
+  const url = new URL(request.url());
+  const ids = url.searchParams.get('ids');
+  if (ids !== null) {
+    const wanted = ids.split(',');
+    const byId = new Map(tracks.map((track) => [track.id, track]));
+    return {
+      body: {
+        items: wanted.flatMap((id) => {
+          const track = byId.get(id);
+          return track ? [track] : [];
+        }),
+      },
+    };
+  }
+  const query = (url.searchParams.get('q') ?? '').toLowerCase();
+  const kind = url.searchParams.get('kind');
+  const limit = Number(url.searchParams.get('limit') ?? '10');
+  return {
+    body: {
+      items: tracks
+        .filter(
+          (track) =>
+            track.title.toLowerCase().includes(query) ||
+            track.artistCredit.some((entry) =>
+              entry.name.toLowerCase().includes(query),
+            ),
+        )
+        .filter((track) => kind !== 'hero' || track.coverUrl !== null)
+        .slice(0, Number.isFinite(limit) ? limit : 10),
+    },
+  };
+};
+
 /**
  * Serves the admin pins endpoints over an in-memory list (`pins`, newest
  * last), so the panel reads, creates, edits, deletes and opens the history:
  * created pins get `pin_<n>` ids and join the list the panel shows; `calls`
- * records every request, and `pins()` reads the current list.
+ * records every request, and `pins()` reads the current list. `tracks` backs
+ * the track picker search the same way.
  */
 export async function mockAdminPinsApi(
   page: Page,
   {
     pins = [],
     history = {},
+    tracks = [],
   }: {
     pins?: MockPin[];
     history?: Record<string, MockHistoryEntry[]>;
+    tracks?: MockPinTrack[];
   } = {},
 ): Promise<{ calls: Request[]; pins: () => MockPin[] }> {
   const store: PinStore = {
@@ -196,15 +259,12 @@ export async function mockAdminPinsApi(
   };
   const calls: Request[] = [];
 
-  await page.route(ADMIN_PINS_ROUTE, async (route: Route) => {
-    const request = route.request();
-    if (request.method() === 'OPTIONS') {
-      await fulfill(route, { status: 204 });
-      return;
-    }
-    calls.push(request);
-    await fulfill(route, routeReply(store, history, request));
-  });
+  await routeApi(page, ADMIN_PINS_ROUTE, calls, (request) =>
+    routeReply(store, history, request),
+  );
+  await routeApi(page, ADMIN_TRACKS_ROUTE, calls, (request) =>
+    trackReply(tracks, request),
+  );
 
   return { calls, pins: () => [...store.pins] };
 }

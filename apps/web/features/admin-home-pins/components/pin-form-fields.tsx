@@ -123,34 +123,6 @@ export function LayoutField({
   );
 }
 
-/** The row's Tracks: one ID per line, in the order they show. */
-export function TracksField({
-  register,
-  error,
-}: {
-  register: UseFormRegister<PinFormValues>;
-  error?: string;
-}) {
-  const tForm = useTranslations('adminHomePins.form');
-  return (
-    <FormField
-      id="pin-tracks"
-      label={tForm('trackIds.label')}
-      hint={tForm('trackIds.hint')}
-      error={error}
-    >
-      <textarea
-        id="pin-tracks"
-        rows={4}
-        placeholder={tForm('trackIds.placeholder')}
-        className="w-full rounded-xl border border-input bg-background px-3 py-2 font-mono text-sm outline-none transition-colors focus-visible:border-ring"
-        aria-invalid={Boolean(error) || undefined}
-        {...register('trackIdsText')}
-      />
-    </FormField>
-  );
-}
-
 /** A pin built from a source this panel cannot reorder keeps its Tracks. */
 export function UnsupportedSourceNote() {
   const tForm = useTranslations('adminHomePins.form');
