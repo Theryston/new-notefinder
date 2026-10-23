@@ -21,6 +21,9 @@ export const PERSONAL_GENRE_WEIGHT = 1;
 /** What a Track's artist weighs in its personal score. */
 export const PERSONAL_ARTIST_WEIGHT = 2;
 
+/** The voice-fit signal has one share of the personal score when available. */
+const PERSONAL_VOICE_FIT_WEIGHT = 1;
+
 /**
  * The personal weight of a User with this many taste signals: 0 without data
  * (the feed stays the public one), 1 from the saturation on.
@@ -79,6 +82,16 @@ export const personalScore = (
         taste.totalArtistSignals,
       )) /
   (PERSONAL_GENRE_WEIGHT + PERSONAL_ARTIST_WEIGHT);
+
+/** Adds voice fit only when both the User and Track have a derived range. */
+export const personalScoreWithVoice = (
+  tasteScore: number,
+  voiceFit: number | null,
+): number =>
+  voiceFit === null
+    ? tasteScore
+    : (tasteScore + PERSONAL_VOICE_FIT_WEIGHT * voiceFit) /
+      (PERSONAL_VOICE_FIT_WEIGHT + 1);
 
 /** The User's taste: signal counts per genre and artist, with their totals. */
 export type PersonalTaste = {

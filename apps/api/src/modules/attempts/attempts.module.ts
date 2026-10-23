@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { HomeModule } from '../home/home.module.js';
+import { PersonalHomeQueueModule } from '../home/home-personal-queue.module.js';
 import { TracksModule } from '../tracks/tracks.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AttemptsRepository } from './attempts.repository.js';
@@ -12,7 +12,7 @@ import { UserAttemptsService } from './user-attempts.service.js';
 
 /** A signed-in User's saved practice runs and their own history. */
 @Module({
-  imports: [TracksModule, UsersModule, HomeModule],
+  imports: [TracksModule, UsersModule, PersonalHomeQueueModule],
   controllers: [
     TrackAttemptsController,
     MyAttemptsController,

@@ -24,6 +24,8 @@
       "lowerVoices": "For lower voices",
       "continueSinging": "Continue singing",
       "singAgain": "Sing again",
+      "withinYourVoice": "Within your voice",
+      "challengeYourRange": "Challenge your range",
       "dailyTarget": "Daily target",
       "mostSung": "Most sung",
       "mostFavorited": "Most favorited",
@@ -71,6 +73,8 @@
   "tracks": {
     "card": {
       "play": "Play {title}",
+      "fitsVoice": "Fits your voice",
+      "transposeVoice": "Try transposing",
       "generate": "Generate notes",
       "generateLabel": "Generate notes for {title}",
       "generating": "Generating…",

@@ -40,6 +40,8 @@ export const homeTrackSchema = trackHeaderSchema.extend({
   artistCredit: z.array(homeArtistCreditEntrySchema).max(30),
   durationMs: z.number().int().nonnegative().nullable(),
   vocalRange: trackVocalRangeSchema.nullable(),
+  /** Personal vocal rows say whether this range fits without transposing. */
+  fitsVoice: z.boolean().optional(),
 });
 
 export type HomeTrack = z.infer<typeof homeTrackSchema>;
