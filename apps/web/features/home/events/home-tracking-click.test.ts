@@ -14,7 +14,12 @@ class TestIntersectionObserver {
 }
 
 describe('home card navigation targets', () => {
-  const storage = window.localStorage;
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    clear: () => values.clear(),
+  };
 
   afterEach(() => {
     vi.unstubAllGlobals();
