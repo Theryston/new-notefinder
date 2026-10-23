@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { StorageModule } from '../../integrations/storage/storage.module.js';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
+import { AcquisitionRepository } from './acquisition.repository.js';
+import { AcquisitionService } from './acquisition.service.js';
 import { ProfileVisibilityRepository } from './profile-visibility.repository.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';
 import { UserProfileService } from './user-profile.service.js';
@@ -19,6 +21,8 @@ import { UsersService } from './users.service.js';
   providers: [
     UsersService,
     UsersRepository,
+    AcquisitionRepository,
+    AcquisitionService,
     UserSitemapService,
     UserSitemapRepository,
     UserProfileService,

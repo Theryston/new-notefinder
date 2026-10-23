@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Put,
   UseInterceptors,
 } from '@nestjs/common';
@@ -10,12 +11,15 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiConsumes,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
+  type AcquisitionRecorded,
+  acquisitionRecordedSchema,
   type CurrentUser as CurrentUserBody,
   currentUserSchema,
   type ProfileVisibility,
@@ -25,8 +29,10 @@ import { AllowMissingUsername } from '../../common/decorators/allow-missing-user
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';
+import { AcquisitionService } from './acquisition.service.js';
 import { AvatarUploadInterceptor } from './avatar-upload.interceptor.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';
+import { RecordAcquisitionBodyDto } from './record-acquisition.dto.js';
 import { SetUsernameBodyDto } from './set-username.dto.js';
 import { UpdateMeBodyDto } from './update-me.dto.js';
 import { UpdateProfileVisibilityBodyDto } from './update-profile-visibility.dto.js';
@@ -38,6 +44,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly profileVisibility: ProfileVisibilityService,
+    private readonly acquisition: AcquisitionService,
   ) {}
 
   // The client reads `username: null` here to send the user to pick one.
@@ -48,6 +55,27 @@ export class UsersController {
   @ApiUnauthorizedResponse({ description: 'No valid session.' })
   getMe(@CurrentUser() user: AuthUser): Promise<CurrentUserBody> {
     return this.usersService.getCurrentUser(user.id);
+  }
+
+  // Sign-up may return here before the Google User has picked a username.
+  @AllowMissingUsername()
+  @Post('acquisition')
+  @ZodSerializerDto(acquisitionRecordedSchema)
+  @ApiCreatedResponse({
+    description: 'The acquisition was attached to the User.',
+  })
+  @ApiBadRequestResponse({ description: 'Campaign data is invalid.' })
+  @ApiUnauthorizedResponse({ description: 'No valid session.' })
+  @ApiForbiddenResponse({
+    description: 'The account is outside the 30-minute sign-up window.',
+  })
+  @ApiConflictResponse({ description: 'Acquisition was already recorded.' })
+  async recordAcquisition(
+    @CurrentUser() user: AuthUser,
+    @Body() body: RecordAcquisitionBodyDto,
+  ): Promise<AcquisitionRecorded> {
+    await this.acquisition.record(user.id, body);
+    return { recorded: true };
   }
 
   // Multipart: the Name as a text field, the optional Avatar as a file.
