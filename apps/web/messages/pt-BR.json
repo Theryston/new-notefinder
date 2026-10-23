@@ -24,6 +24,8 @@
       "lowerVoices": "Para vozes graves",
       "continueSinging": "Continue cantando",
       "singAgain": "Cante de novo",
+      "withinYourVoice": "Dentro da sua extensão vocal",
+      "challengeYourRange": "Desafie sua extensão vocal",
       "dailyTarget": "Meta diária",
       "mostSung": "Mais cantadas",
       "mostFavorited": "Mais favoritadas",
@@ -71,6 +73,8 @@
   "tracks": {
     "card": {
       "play": "Tocar {title}",
+      "fitsVoice": "Combina com sua voz",
+      "transposeVoice": "Transponha um pouco",
       "generate": "Gerar notas",
       "generateLabel": "Gerar notas de {title}",
       "generating": "Gerando…",
