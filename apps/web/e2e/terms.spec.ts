@@ -24,11 +24,11 @@ const sectionOrder = [
 ] as const;
 
 const locales = [
-  { locale: 'en', terms: messages.en.terms, updated: 'October 19, 2026' },
+  { locale: 'en', terms: messages.en.terms, updated: 'October 23, 2026' },
   {
     locale: 'pt-BR',
     terms: messages['pt-BR'].terms,
-    updated: '19 de outubro de 2026',
+    updated: '23 de outubro de 2026',
   },
 ] as const;
 
