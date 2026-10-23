@@ -63,7 +63,7 @@ describe('buildPersonalVoiceRows', () => {
     expect(within?.items.at(-1)?.fitsVoice).toBe(false);
   });
 
-  it('puts only small, unfit edge challenges in the challenge row', () => {
+  it('puts only small, unfit edge challenges in the challenge row without a transpose cue', () => {
     const tracks = Array.from({ length: 6 }, (_, index) =>
       track(`challenge-${index}`, { lowest: 59, highest: 73 }),
     );
@@ -72,7 +72,7 @@ describe('buildPersonalVoiceRows', () => {
 
     expect(challenge?.id).toBe('challenge-your-range');
     expect(challenge?.items).toHaveLength(6);
-    expect(challenge?.items.every((item) => item.fitsVoice === false)).toBe(
+    expect(challenge?.items.every((item) => item.fitsVoice === undefined)).toBe(
       true,
     );
   });

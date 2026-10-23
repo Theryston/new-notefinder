@@ -152,6 +152,7 @@ export class PersonalHomeBuilder {
       taste,
       lambda,
       masteredTrackIds: mastered,
+      userRange,
     });
     const voiceRows = userRange
       ? buildPersonalVoiceRows({

@@ -120,7 +120,7 @@ export const buildPersonalVoiceRows = (options: {
     title: row.title,
     items: row.items.map(({ track, fitScore }) => ({
       ...track,
-      fitsVoice: fitScore > 0 && fitScore === 1,
+      ...(fitScore > 0 ? { fitsVoice: fitScore === 1 } : {}),
     })),
   }));
 };

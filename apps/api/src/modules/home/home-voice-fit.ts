@@ -56,26 +56,9 @@ export const challengeOverrun = (
 ): number | null => {
   const below = Math.max(0, user.lowest - track.lowest);
   const above = Math.max(0, track.highest - user.highest);
-  if (below > 0 && above > 0) {
-    const greatestOverrun = Math.max(below, above);
-    return below <= MAX_CHALLENGE_OVERRUN_SEMITONES &&
-      above <= MAX_CHALLENGE_OVERRUN_SEMITONES
-      ? greatestOverrun
-      : null;
-  }
-
-  const overrun =
-    below > 0
-      ? track.highest >= user.lowest
-        ? below
-        : user.lowest - track.highest
-      : above > 0
-        ? track.lowest <= user.highest
-          ? above
-          : track.lowest - user.highest
-        : 0;
-  return overrun >= MIN_CHALLENGE_OVERRUN_SEMITONES &&
-    overrun <= MAX_CHALLENGE_OVERRUN_SEMITONES
-    ? overrun
+  const greatestOverrun = Math.max(below, above);
+  return greatestOverrun >= MIN_CHALLENGE_OVERRUN_SEMITONES &&
+    greatestOverrun <= MAX_CHALLENGE_OVERRUN_SEMITONES
+    ? greatestOverrun
     : null;
 };

@@ -3,6 +3,7 @@ import type {
   HomeHero,
   HomeRow,
   HomeTrack,
+  TrackVocalRange,
 } from '@notefinder/contracts';
 import { composeHomeRows } from './home-feed-composer.js';
 import type { PersonalTaste } from './home-personal.js';
@@ -21,13 +22,16 @@ export const blendedDiscoveryPool = (options: {
   taste: PersonalTaste;
   lambda: number;
   masteredTrackIds: ReadonlySet<string>;
+  userRange?: TrackVocalRange | null;
 }): DiscoveryCandidate[] => {
-  const { publicRows, discovery, taste, lambda, masteredTrackIds } = options;
+  const { publicRows, discovery, taste, lambda, masteredTrackIds, userRange } =
+    options;
   return blendDiscoveryCandidates({
     tracks: personalTrackPool(publicRows),
     discovery,
     taste,
     lambda,
+    userRange,
   })
     .filter((candidate) => !masteredTrackIds.has(candidate.track.id))
     .sort(byBlendedDesc);

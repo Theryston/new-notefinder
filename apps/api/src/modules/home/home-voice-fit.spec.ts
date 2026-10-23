@@ -68,5 +68,9 @@ describe('challengeOverrun', () => {
     expect(challengeOverrun(userRange, { lowest: 62, highest: 70 })).toBeNull();
     expect(challengeOverrun(userRange, { lowest: 60, highest: 76 })).toBeNull();
     expect(challengeOverrun(userRange, { lowest: 56, highest: 76 })).toBeNull();
+    expect(
+      challengeOverrun(userRange, { lowest: 73, highest: 100 }),
+    ).toBeNull();
+    expect(challengeOverrun(userRange, { lowest: 32, highest: 59 })).toBeNull();
   });
 });
