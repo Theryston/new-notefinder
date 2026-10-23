@@ -1,0 +1,51 @@
+import type { HomePeopleRow, HomePerson } from '@notefinder/contracts';
+
+const SOCIAL_MIN_COMMON_TRACKS = 3;
+const SOCIAL_ROW_MIN_PEOPLE = 6;
+const SOCIAL_ROW_MAX_PEOPLE = 24;
+
+export type SocialCandidate = HomePerson & {
+  vocalDistance: number | null;
+};
+
+const rowsOf = (candidates: SocialCandidate[]): HomePeopleRow[] => {
+  const common = candidates
+    .filter((candidate) => candidate.commonTracks >= SOCIAL_MIN_COMMON_TRACKS)
+    .sort(
+      (a, b) => b.commonTracks - a.commonTracks || a.id.localeCompare(b.id),
+    );
+  if (common.length < SOCIAL_ROW_MIN_PEOPLE) return [];
+  const similar = [...common].sort((a, b) => {
+    const aDistance = a.vocalDistance ?? Number.POSITIVE_INFINITY;
+    const bDistance = b.vocalDistance ?? Number.POSITIVE_INFINITY;
+    if (aDistance !== bDistance) return aDistance < bDistance ? -1 : 1;
+    return b.commonTracks - a.commonTracks || a.id.localeCompare(b.id);
+  });
+  const toPeople = (items: SocialCandidate[]) =>
+    items.slice(0, SOCIAL_ROW_MAX_PEOPLE).map((person) => ({
+      id: person.id,
+      username: person.username,
+      name: person.name,
+      image: person.image,
+      commonTracks: person.commonTracks,
+    }));
+  return [
+    {
+      id: 'people-who-sing-what-you-sing',
+      layout: 'people',
+      title: { key: 'home.rows.peopleWhoSingWhatYouSing', params: {} },
+      items: toPeople(common),
+    },
+    {
+      id: 'similar-voices',
+      layout: 'people',
+      title: { key: 'home.rows.similarVoices', params: {} },
+      items: toPeople(similar),
+    },
+  ];
+};
+
+/** Builds the two social rows from persisted batch-computed similarities. */
+export const buildSocialRows = (
+  candidates: SocialCandidate[],
+): HomePeopleRow[] => rowsOf(candidates);

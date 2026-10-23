@@ -25,6 +25,8 @@
       "continueSinging": "Continue cantando",
       "singAgain": "Cante de novo",
       "dailyTarget": "Meta diária",
+      "peopleWhoSingWhatYouSing": "Pessoas que cantam o que você canta",
+      "similarVoices": "Vozes parecidas com a sua",
       "mostSung": "Mais cantadas",
       "mostFavorited": "Mais favoritadas",
       "top10Week": "Top 10 da semana"
@@ -36,6 +38,9 @@
     "feed": {
       "loadMoreError": "Não foi possível carregar mais fileiras.",
       "retry": "Tentar de novo"
+    },
+    "people": {
+      "commonTracks": "{count, plural, one {# faixa em comum} other {# faixas em comum}}"
     },
     "dailyTarget": {
       "remaining": "{minutesLeft, plural, one {Falta # minuto da sua meta de {minutesTotal} minutos} other {Faltam # minutos da sua meta de {minutesTotal} minutos}}",

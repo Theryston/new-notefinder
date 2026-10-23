@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type {
   HomeCarouselRow,
   HomeHero,
@@ -29,6 +29,7 @@ import {
   type DiscoveryCandidate,
 } from './home-personal-blend.js';
 import { DEFAULT_HOME_LOCALE, HOME_ALGORITHM_VERSION } from './home-rules.js';
+import { HomeSocialService } from './home-social.service.js';
 
 const title = (key: string): HomeRowTitle => ({ key, params: {} });
 
@@ -83,16 +84,22 @@ export class PersonalHomeBuilder {
     private readonly users: UsersService,
   ) {}
 
+  @Optional()
+  @Inject(HomeSocialService)
+  private readonly social?: HomeSocialService;
+
   async build(
     userId: string,
     locale: Locale = DEFAULT_HOME_LOCALE,
   ): Promise<StoredPersonalHomeFeed> {
-    const [{ feed }, signals, favorites, settings] = await Promise.all([
-      this.feeds.currentPublic(locale),
-      this.personal.findUserTrackSignals(userId),
-      this.personal.findUserFavoriteSignals(userId),
-      this.users.getPracticeSettings(userId),
-    ]);
+    const [{ feed }, signals, favorites, settings, socialRows] =
+      await Promise.all([
+        this.feeds.currentPublic(locale),
+        this.personal.findUserTrackSignals(userId),
+        this.personal.findUserFavoriteSignals(userId),
+        this.users.getPracticeSettings(userId),
+        this.social?.rowsFor(userId) ?? Promise.resolve([]),
+      ]);
     const { taste, signalCount } = buildTaste(signals, favorites);
     const lambda = personalLambda(signalCount);
     const mastered = new Set(
@@ -103,6 +110,7 @@ export class PersonalHomeBuilder {
     const rows: HomeRow[] = [
       ...this.resumeRows(signals, mastered),
       await this.dailyTargetRow(userId, settings.timeZone),
+      ...socialRows,
       ...(await this.discoveryRows(feed.rows, taste, lambda, mastered)),
     ];
     return {

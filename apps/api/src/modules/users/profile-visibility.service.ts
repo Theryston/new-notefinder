@@ -113,6 +113,21 @@ export class ProfileVisibilityService {
     return (await this.viewOf(username, undefined)).shown;
   }
 
+  /** Live section visibility for several public Profiles, keyed by User ID. */
+  async getShownSectionsByUserIds(
+    userIds: string[],
+  ): Promise<
+    Map<string, { username: string | null; shown: ProfileVisibility }>
+  > {
+    const rows = await this.repository.findManyByIds(userIds);
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        { username: row.username, shown: toVisibility(row) },
+      ]),
+    );
+  }
+
   /**
    * The Profile as the viewer may read one section of it. Returns the User's
    * ID, which the section's reads need. An unknown username and a hidden

@@ -200,6 +200,30 @@ export const homeAlbumsRowSchema = z.object({
 
 export type HomeAlbumsRow = z.infer<typeof homeAlbumsRowSchema>;
 
+/** A public Profile recommended in a personal home feed. */
+export const homePersonSchema = z.object({
+  id: z.string().min(1).max(64),
+  username: z.string().min(1).max(64),
+  name: z.string().min(1).max(200),
+  image: z.string().min(1).max(2000).nullable(),
+  commonTracks: z.number().int().min(3),
+});
+
+export type HomePerson = z.infer<typeof homePersonSchema>;
+
+export const HOME_PEOPLE_MAX_ITEMS = 24;
+
+/** Profiles that share practiced or favorited Tracks with the signed-in User. */
+export const homePeopleRowSchema = z.object({
+  id: homeRowIdSchema,
+  layout: z.literal('people'),
+  title: homeRowTitleSchema,
+  sponsored: z.boolean().optional(),
+  items: z.array(homePersonSchema).min(6).max(HOME_PEOPLE_MAX_ITEMS),
+});
+
+export type HomePeopleRow = z.infer<typeof homePeopleRowSchema>;
+
 export const homeRowSchema = z.discriminatedUnion('layout', [
   homeHeroSchema,
   homeCarouselRowSchema,
@@ -209,6 +233,7 @@ export const homeRowSchema = z.discriminatedUnion('layout', [
   homeGenresRowSchema,
   homeArtistsRowSchema,
   homeAlbumsRowSchema,
+  homePeopleRowSchema,
 ]);
 
 export type HomeRow = z.infer<typeof homeRowSchema>;

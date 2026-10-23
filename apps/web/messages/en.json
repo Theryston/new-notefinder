@@ -25,6 +25,8 @@
       "continueSinging": "Continue singing",
       "singAgain": "Sing again",
       "dailyTarget": "Daily target",
+      "peopleWhoSingWhatYouSing": "People who sing what you sing",
+      "similarVoices": "Voices similar to yours",
       "mostSung": "Most sung",
       "mostFavorited": "Most favorited",
       "top10Week": "Top 10 of the week"
@@ -36,6 +38,9 @@
     "feed": {
       "loadMoreError": "Could not load more rows.",
       "retry": "Try again"
+    },
+    "people": {
+      "commonTracks": "{count, plural, one {# track in common} other {# tracks in common}}"
     },
     "dailyTarget": {
       "remaining": "{minutesLeft, plural, one {# minute left of your {minutesTotal}-minute goal} other {# minutes left of your {minutesTotal}-minute goal}}",
