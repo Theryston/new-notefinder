@@ -1,5 +1,31 @@
+import { Test } from '@nestjs/testing';
 import { describe, expect, it, vi } from 'vitest';
+import { AttemptsProfileService } from '../attempts/attempts-profile.service.js';
+import { ProfileVisibilityService } from '../users/profile-visibility.service.js';
+import { HomeSocialRepository } from './home-social.repository.js';
 import { HomeSocialService } from './home-social.service.js';
+import { HomeSocialStore } from './home-social.store.js';
+
+const makeService = async (providers: {
+  repository?: object;
+  visibility?: object;
+  store?: object;
+  attempts?: object;
+}) => {
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      HomeSocialService,
+      { provide: HomeSocialRepository, useValue: providers.repository ?? {} },
+      {
+        provide: ProfileVisibilityService,
+        useValue: providers.visibility ?? {},
+      },
+      { provide: HomeSocialStore, useValue: providers.store ?? {} },
+      { provide: AttemptsProfileService, useValue: providers.attempts ?? {} },
+    ],
+  }).compile();
+  return { moduleRef, service: moduleRef.get(HomeSocialService) };
+};
 
 const candidate = (id: string, username = id) => ({
   id,
@@ -28,12 +54,11 @@ describe('HomeSocialService', () => {
         ]),
       ),
     };
-    const service = new HomeSocialService(
-      repository as never,
-      {} as never,
-      store as never,
-      attempts as never,
-    );
+    const { moduleRef, service } = await makeService({
+      repository,
+      store,
+      attempts,
+    });
 
     await service.refreshFor('viewer');
 
@@ -49,6 +74,7 @@ describe('HomeSocialService', () => {
         vocalDistance: 5,
       },
     ]);
+    await moduleRef.close();
   });
 
   it('uses live section visibility to mask stored overlap counts', async () => {
@@ -60,7 +86,7 @@ describe('HomeSocialService', () => {
       practiceCommonTracks: 3,
       favoriteCommonTracks: 3,
       bothCommonTracks: 2,
-      vocalDistance: index,
+      vocalDistance: null,
     }));
     const visibility = {
       getShownSectionsByUserIds: vi.fn().mockResolvedValue(
@@ -80,16 +106,13 @@ describe('HomeSocialService', () => {
       ),
     };
     const store = { read: vi.fn().mockResolvedValue(pairs) };
-    const service = new HomeSocialService(
-      {} as never,
-      visibility as never,
-      store as never,
-      {} as never,
-    );
+    const { moduleRef, service } = await makeService({ visibility, store });
 
     const rows = await service.rowsFor('viewer');
 
-    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.id)).toEqual([
+      'people-who-sing-what-you-sing',
+    ]);
     expect(rows[0]?.items).toHaveLength(6);
     expect(
       rows[0]?.items.find((person) => person.id === 'person-0'),
@@ -104,19 +127,16 @@ describe('HomeSocialService', () => {
     expect(visibility.getShownSectionsByUserIds).toHaveBeenCalledWith(
       pairs.map((pair) => pair.id),
     );
+    await moduleRef.close();
   });
 
   it('returns no social rows until a batch snapshot exists', async () => {
     const store = { read: vi.fn().mockResolvedValue(undefined) };
     const visibility = { getShownSectionsByUserIds: vi.fn() };
-    const service = new HomeSocialService(
-      {} as never,
-      visibility as never,
-      store as never,
-      {} as never,
-    );
+    const { moduleRef, service } = await makeService({ visibility, store });
 
     await expect(service.rowsFor('viewer')).resolves.toEqual([]);
     expect(visibility.getShownSectionsByUserIds).not.toHaveBeenCalled();
+    await moduleRef.close();
   });
 });

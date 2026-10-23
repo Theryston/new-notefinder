@@ -1,4 +1,7 @@
+import { Test } from '@nestjs/testing';
 import { describe, expect, it, vi } from 'vitest';
+import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
+import { ProfileVisibilityRepository } from './profile-visibility.repository.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';
 
 describe('ProfileVisibilityService batch social read', () => {
@@ -14,10 +17,14 @@ describe('ProfileVisibilityService batch social read', () => {
         },
       ]),
     };
-    const service = new ProfileVisibilityService(
-      repository as never,
-      {} as never,
-    );
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ProfileVisibilityService,
+        { provide: ProfileVisibilityRepository, useValue: repository },
+        { provide: WebRevalidationService, useValue: {} },
+      ],
+    }).compile();
+    const service = moduleRef.get(ProfileVisibilityService);
 
     await expect(
       service.getShownSectionsByUserIds(['person']),
@@ -33,5 +40,6 @@ describe('ProfileVisibilityService batch social read', () => {
       ]),
     );
     expect(repository.findManyByIds).toHaveBeenCalledWith(['person']);
+    await moduleRef.close();
   });
 });

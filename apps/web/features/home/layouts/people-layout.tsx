@@ -1,4 +1,5 @@
 import type { HomePeopleRow } from '@notefinder/contracts';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -44,6 +45,14 @@ export function PeopleLayout({
               <Avatar className="size-20 border border-border md:size-24">
                 {person.image ? (
                   <AvatarImage
+                    render={
+                      <Image
+                        fill
+                        sizes="(max-width: 768px) 80px, 96px"
+                        src={person.image}
+                        alt=""
+                      />
+                    }
                     src={person.image}
                     alt=""
                     referrerPolicy="no-referrer"

@@ -89,6 +89,17 @@ describe('Personal home social rows (e2e)', () => {
       username: 'social_hidden',
       email: 'social-hidden@example.com',
     });
+    // Newer unrelated accounts must not crowd older people with overlap out
+    // of the bounded batch candidate pool.
+    await testApp.db.insert(users).values(
+      Array.from({ length: 500 }, (_, index) => ({
+        name: `Unrelated user ${index}`,
+        email: `unrelated-${index}@example.com`,
+        username: `unrelated_${index}`,
+        emailVerified: true,
+        updatedAt: new Date('2099-01-01T00:00:00.000Z'),
+      })),
+    );
     const trackIds = tracks.map((track) => track.id);
     await Promise.all(
       [...people, hidden].map((person) => addFavorites(person.id, trackIds)),
@@ -112,21 +123,29 @@ describe('Personal home social rows (e2e)', () => {
     }[];
     const peopleRows = rows.filter((row) => row.layout === 'people');
 
-    expect(peopleRows).toHaveLength(2);
-    for (const row of peopleRows) {
-      expect(row.items).toHaveLength(6);
-      expect(row.items?.every((person) => person.commonTracks === 3)).toBe(
-        true,
-      );
-      expect(
-        row.items?.some((person) => person.username === 'social_hidden'),
-      ).toBe(false);
-      expect(
-        row.items?.some((person) => person.username === 'social_too_few'),
-      ).toBe(false);
-      expect(
-        row.items?.some((person) => person.username === 'social_viewer'),
-      ).toBe(false);
-    }
+    expect(peopleRows).toHaveLength(1);
+    expect(peopleRows[0]).toMatchObject({
+      id: 'people-who-sing-what-you-sing',
+      layout: 'people',
+    });
+    expect(peopleRows[0]?.items).toHaveLength(6);
+    expect(
+      peopleRows[0]?.items?.every((person) => person.commonTracks === 3),
+    ).toBe(true);
+    expect(
+      peopleRows[0]?.items?.some(
+        (person) => person.username === 'social_hidden',
+      ),
+    ).toBe(false);
+    expect(
+      peopleRows[0]?.items?.some(
+        (person) => person.username === 'social_too_few',
+      ),
+    ).toBe(false);
+    expect(
+      peopleRows[0]?.items?.some(
+        (person) => person.username === 'social_viewer',
+      ),
+    ).toBe(false);
   });
 });

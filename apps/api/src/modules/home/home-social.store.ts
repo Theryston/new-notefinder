@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { CacheService } from '../../redis/cache.service.js';
+import { redisKey } from '../../redis/redis.constants.js';
 
 const socialPairSchema = z.object({
   id: z.string().min(1).max(64),
@@ -16,7 +17,8 @@ const socialPairSchema = z.object({
 const storedSocialPairsSchema = z.array(socialPairSchema).max(500);
 export type StoredSocialPair = z.infer<typeof socialPairSchema>;
 
-const keyOf = (userId: string): string => `home:social:similarity:${userId}`;
+const keyOf = (userId: string): string =>
+  redisKey('home-social-similarity', userId);
 const SOCIAL_SNAPSHOT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 /** Batch-owned user-pair similarities consumed by personal feed generators. */

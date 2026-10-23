@@ -1,4 +1,6 @@
+import { Test } from '@nestjs/testing';
 import { describe, expect, it, vi } from 'vitest';
+import { CacheService } from '../../redis/cache.service.js';
 import { HomeSocialStore } from './home-social.store.js';
 
 describe('HomeSocialStore', () => {
@@ -7,19 +9,23 @@ describe('HomeSocialStore', () => {
       get: vi.fn().mockResolvedValue([]),
       set: vi.fn().mockResolvedValue(undefined),
     };
-    const store = new HomeSocialStore(cache as never);
+    const moduleRef = await Test.createTestingModule({
+      providers: [HomeSocialStore, { provide: CacheService, useValue: cache }],
+    }).compile();
+    const store = moduleRef.get(HomeSocialStore);
 
     await expect(store.read('viewer')).resolves.toEqual([]);
     await store.write('viewer', []);
 
     expect(cache.get).toHaveBeenCalledWith(
-      'home:social:similarity:viewer',
+      'notefinder:home-social-similarity:viewer',
       expect.any(Object),
     );
     expect(cache.set).toHaveBeenCalledWith(
-      'home:social:similarity:viewer',
+      'notefinder:home-social-similarity:viewer',
       [],
       604800,
     );
+    await moduleRef.close();
   });
 });

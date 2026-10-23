@@ -1,4 +1,6 @@
+import { Test } from '@nestjs/testing';
 import { describe, expect, it, vi } from 'vitest';
+import { AttemptsRepository } from './attempts.repository.js';
 import { AttemptsProfileService } from './attempts-profile.service.js';
 
 describe('AttemptsProfileService', () => {
@@ -25,7 +27,13 @@ describe('AttemptsProfileService', () => {
         },
       ]),
     };
-    const service = new AttemptsProfileService(attempts as never);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AttemptsProfileService,
+        { provide: AttemptsRepository, useValue: attempts },
+      ],
+    }).compile();
+    const service = moduleRef.get(AttemptsProfileService);
 
     await expect(
       service.vocalRangesForUsers(['singer', 'quiet']),
@@ -39,5 +47,6 @@ describe('AttemptsProfileService', () => {
       'singer',
       'quiet',
     ]);
+    await moduleRef.close();
   });
 });

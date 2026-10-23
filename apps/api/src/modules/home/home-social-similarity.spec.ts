@@ -35,11 +35,23 @@ describe('buildSocialRows', () => {
     const candidates = [
       candidate('farther', 8, 30),
       candidate('closest', 3, 2),
-      ...Array.from({ length: 4 }, (_, i) => candidate(`other-${i}`, 5)),
+      ...Array.from({ length: 4 }, (_, i) =>
+        candidate(`other-${i}`, 5, 10 + i),
+      ),
     ];
     const [common, similar] = buildSocialRows(candidates);
 
     expect(common?.items[0]).toMatchObject({ id: 'farther', commonTracks: 8 });
     expect(similar?.items[0]).toMatchObject({ id: 'closest', commonTracks: 3 });
+  });
+
+  it('omits similar voices unless six candidates have derived ranges', () => {
+    const candidates = Array.from({ length: 6 }, (_, index) =>
+      candidate(`person-${index}`, 3),
+    );
+
+    expect(buildSocialRows(candidates).map((row) => row.id)).toEqual([
+      'people-who-sing-what-you-sing',
+    ]);
   });
 });
