@@ -212,7 +212,6 @@ export class PersonalHomeBuilder {
       rows: [...leadingRows, ...tasteRows, ...voiceRows, ...discoveryRows],
     });
     return [
-      ...leadingRows,
       ...tasteRows,
       ...voiceRows,
       ...(exploration ? [exploration] : []),
