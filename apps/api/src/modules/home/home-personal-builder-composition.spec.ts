@@ -1,9 +1,13 @@
+import type { InjectionToken, ValueProvider } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import type { HomeRow, HomeTrack } from '@notefinder/contracts';
+import { AttemptsService } from '../attempts/attempts.service.js';
 import { StreaksService } from '../streaks/streaks.service.js';
 import { UsersService } from '../users/users.service.js';
 import { HomeFeedService } from './home-feed.service.js';
 import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 
 describe('PersonalHomeBuilder row composition', () => {
   it('includes the daily target and each resume row once', async () => {
@@ -77,28 +81,40 @@ describe('PersonalHomeBuilder row composition', () => {
       build: vi.fn().mockResolvedValue([]),
       explorationRow: vi.fn().mockResolvedValue(undefined),
     };
-    const builder = new PersonalHomeBuilder(
-      feeds as unknown as HomeFeedService,
-      personal as unknown as PersonalHomeRepository,
-      {
-        getStatus: vi.fn().mockResolvedValue({
-          completedToday: false,
-          targetSeconds: 300,
-          listenedSeconds: 120,
-          currentStreakDays: 2,
-        }),
-      } as unknown as StreaksService,
-      {
-        getPracticeSettings: vi.fn().mockResolvedValue({
-          dailyPracticeTargetSeconds: 300,
-          timeZone: 'UTC',
-          lastPracticeHeartbeatAt: null,
-        }),
-      } as unknown as UsersService,
-    );
-    Object.defineProperty(builder, 'tasteRows', { value: tasteRows });
+    const streaks = {
+      getStatus: vi.fn().mockResolvedValue({
+        completedToday: false,
+        targetSeconds: 300,
+        listenedSeconds: 120,
+        currentStreakDays: 2,
+      }),
+    };
+    const users = {
+      getPracticeSettings: vi.fn().mockResolvedValue({
+        dailyPracticeTargetSeconds: 300,
+        timeZone: 'UTC',
+        lastPracticeHeartbeatAt: null,
+      }),
+    };
+    const attempts = { vocalRange: vi.fn().mockResolvedValue(null) };
+    const testProviders = new Map<InjectionToken, unknown>([
+      [HomeFeedService, feeds],
+      [PersonalHomeRepository, personal],
+      [PersonalHomeTasteRowsService, tasteRows],
+      [StreaksService, streaks],
+      [UsersService, users],
+      [AttemptsService, attempts],
+    ]);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        PersonalHomeBuilder,
+        ...[...testProviders].map(
+          ([provide, useValue]): ValueProvider => ({ provide, useValue }),
+        ),
+      ],
+    }).compile();
 
-    const feed = await builder.build('user-1', 'en');
+    const feed = await moduleRef.get(PersonalHomeBuilder).build('user-1', 'en');
     const rowIds = feed.rows.map((row) => row.id);
 
     expect(new Set(rowIds).size).toBe(rowIds.length);
