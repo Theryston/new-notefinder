@@ -21,6 +21,8 @@ import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeStore } from './home-personal.store.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
 import { PersonalHomeQueueModule } from './home-personal-queue.module.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 import { HomePinOverlayService } from './home-pin-overlay.service.js';
 import {
   createHomeEntityRowSources,
@@ -76,6 +78,8 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     HomeSocialStore,
     PersonalHomeStore,
     PersonalHomeBuilder,
+    PersonalHomeTasteRowsService,
+    PersonalHomeTasteRepository,
     PersonalHomeProcessor,
   ],
 })

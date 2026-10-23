@@ -211,6 +211,13 @@
       "when": 1792769393108,
       "tag": "0029_normal_marvel_zombies",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792773484269,
+      "tag": "0030_silly_mantis",
+      "breakpoints": true
     }
   ]
 }

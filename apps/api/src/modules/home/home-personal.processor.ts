@@ -72,6 +72,7 @@ export class PersonalHomeProcessor extends WorkerHost {
   }
 
   private async refreshNightly(): Promise<void> {
+    await this.builder.refreshCommunityCooccurrence();
     const since = new Date(
       Date.now() - PERSONAL_NIGHTLY_ACTIVE_WITHIN_DAYS * 24 * 60 * 60 * 1000,
     );
@@ -84,6 +85,7 @@ export class PersonalHomeProcessor extends WorkerHost {
         `Personal nightly batch hit its cap of ${PERSONAL_NIGHTLY_MAX_USERS} Users`,
       );
     }
+    await Promise.all(userIds.map((userId) => this.social?.refreshFor(userId)));
     const results = await Promise.allSettled(
       userIds.flatMap((userId) =>
         LOCALES.map((locale: Locale) =>
