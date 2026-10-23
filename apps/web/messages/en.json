@@ -1002,7 +1002,10 @@
       "alwaysLive": "Always live",
       "scheduleRange": "{start} – {end}",
       "scheduleFrom": "From {start}",
-      "scheduleUntil": "Until {end}"
+      "scheduleUntil": "Until {end}",
+      "metrics": "{impressions} impressions · {clicks} clicks · {rate} CTR",
+      "metricsLoading": "Loading engagement…",
+      "metricsUnavailable": "Engagement counts are unavailable."
     },
     "confirmDelete": {
       "title": "Delete this pin?",
@@ -1016,6 +1019,7 @@
       "cancel": "Cancel",
       "submitCreate": "Create pin",
       "submitSave": "Save changes",
+      "preview": "Preview home",
       "created": "Pin created.",
       "updated": "Pin updated.",
       "kind": {
@@ -1086,6 +1090,18 @@
         "label": "Contains sponsored content",
         "help": "Visitors see a discreet sponsored-content notice on this hero or row.",
         "termsLink": "Learn what this means"
+      },
+      "previewDialog": {
+        "title": "Home preview",
+        "close": "Close preview",
+        "description": "See this pin over the current home feed. The preview does not change the live feed.",
+        "locale": "Language",
+        "audience": "Audience",
+        "visitor": "Visitor",
+        "signedIn": "Signed in",
+        "loading": "Loading preview…",
+        "empty": "The current feed has no rows to preview.",
+        "error": "The home preview could not be loaded."
       },
       "errors": {
         "invalid": "This value is invalid.",

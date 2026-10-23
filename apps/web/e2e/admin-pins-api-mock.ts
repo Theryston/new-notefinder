@@ -182,6 +182,39 @@ const historyReply = (
   pinId: string,
 ): Reply => ({ body: { items: history[pinId] ?? [], nextCursor: null } });
 
+const previewAndMetricsReply = (
+  store: PinStore,
+  request: Request,
+  pathname: string,
+): Reply | undefined => {
+  if (request.method() === 'GET' && pathname.endsWith('/metrics')) {
+    return {
+      body: store.pins.map((pin) => ({
+        pinId: pin.id,
+        impressions: 0,
+        clicks: 0,
+        clickThroughRate: 0,
+      })),
+    };
+  }
+  if (request.method() !== 'POST' || !pathname.endsWith('/preview')) {
+    return undefined;
+  }
+  return {
+    body: {
+      audience:
+        (request.postDataJSON() as { audience?: string } | null)?.audience ===
+        'signed-in'
+          ? 'personal'
+          : 'public',
+      version: 'preview-version',
+      algorithmVersion: 1,
+      rows: [],
+      nextCursor: null,
+    },
+  };
+};
+
 const routeReply = (
   store: PinStore,
   history: Record<string, MockHistoryEntry[]>,
@@ -189,6 +222,8 @@ const routeReply = (
 ): Reply => {
   const pinId = pinIdOf(request.url());
   const pathname = new URL(request.url()).pathname;
+  const auxiliaryReply = previewAndMetricsReply(store, request, pathname);
+  if (auxiliaryReply) return auxiliaryReply;
   if (request.method() === 'GET' && pinId === null) return listReply(store);
   if (request.method() === 'POST' && pinId === null)
     return createReply(store, request);

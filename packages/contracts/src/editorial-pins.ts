@@ -236,6 +236,28 @@ export const editorialPinSchema = editorialPinStateSchema.extend({
 
 export type EditorialPin = z.infer<typeof editorialPinSchema>;
 
+/** Aggregate engagement for the row a pin produces during its running window. */
+export const editorialPinMetricsSchema = z.object({
+  pinId: z.string().min(1).max(128),
+  impressions: z.number().int().nonnegative(),
+  clicks: z.number().int().nonnegative(),
+  clickThroughRate: z.number().nonnegative(),
+});
+
+export type EditorialPinMetrics = z.infer<typeof editorialPinMetricsSchema>;
+
+export const editorialPinMetricsPageSchema = z.array(editorialPinMetricsSchema);
+
+/** An admin-only preview of a saved, scheduled, or unsaved pin. */
+export const homePinPreviewRequestSchema = z.object({
+  pin: createEditorialPinBodySchema,
+  pinId: z.string().min(1).max(128).optional(),
+  locale: localeSchema,
+  audience: z.enum(['visitor', 'signed-in']),
+});
+
+export type HomePinPreviewRequest = z.infer<typeof homePinPreviewRequestSchema>;
+
 export const editorialPinPageSchema = cursorPageSchema(editorialPinSchema);
 
 export type EditorialPinPage = z.infer<typeof editorialPinPageSchema>;

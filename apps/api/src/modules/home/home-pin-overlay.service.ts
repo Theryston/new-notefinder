@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  type CreateEditorialPinBody,
   EDITORIAL_PIN_MAX_TRACKS,
   type EditorialPin,
   type HomeRow,
@@ -35,6 +36,32 @@ export class HomePinOverlayService {
 
   async apply(rows: HomeRow[], viewer: Viewer): Promise<HomeRow[]> {
     const live = await this.pins.findLivePins(viewer);
+    return this.applyPins(rows, viewer, live);
+  }
+
+  /** Applies a validated draft while replacing its saved version, if any. */
+  async applyPreview(
+    rows: HomeRow[],
+    viewer: Viewer,
+    body: CreateEditorialPinBody,
+    pinId?: string,
+  ): Promise<HomeRow[]> {
+    const [live] = await Promise.all([
+      this.pins.findLivePins(viewer),
+      this.pins.assertPreviewEligible(body),
+    ]);
+    const draft = this.pins.preview(body, pinId);
+    return this.applyPins(rows, viewer, [
+      ...live.filter((pin) => pin.id !== draft.id),
+      draft,
+    ]);
+  }
+
+  private async applyPins(
+    rows: HomeRow[],
+    viewer: Viewer,
+    live: EditorialPin[],
+  ): Promise<HomeRow[]> {
     if (live.length === 0) {
       return rows;
     }

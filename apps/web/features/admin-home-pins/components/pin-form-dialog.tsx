@@ -1,8 +1,12 @@
 'use client';
 
-import type { EditorialPin } from '@notefinder/contracts';
-import { useTranslations } from 'next-intl';
-import { useEffect } from 'react';
+import type {
+  EditorialPin,
+  HomePinPreviewRequest,
+} from '@notefinder/contracts';
+import dynamic from 'next/dynamic';
+import { useLocale, useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -13,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { isLocale } from '@/lib/i18n/routing';
 import { serverValidationFieldErrors } from '../admin-pin-server-error';
 import { useAdminPinMutations } from '../hooks/use-admin-pin-mutations';
 import {
@@ -38,6 +43,12 @@ import {
 } from './pin-form-fields';
 import { TrackPickerField } from './track-picker-field';
 
+const PinPreviewDialog = dynamic(
+  () =>
+    import('./pin-preview-dialog').then((module) => module.PinPreviewDialog),
+  { ssr: false },
+);
+
 type PinFormDialogProps = {
   mode: 'create' | 'edit';
   catalog: PinFormCatalog;
@@ -60,10 +71,12 @@ export function PinFormDialog({
   onClose,
 }: PinFormDialogProps) {
   const t = useTranslations('adminHomePins');
+  const pageLocale = useLocale();
   const form = useForm<PinFormValues>({
     resolver: pinFormResolver,
     defaultValues: pin ? pinToFormValues(pin) : emptyPinForm(),
   });
+  const [previewRequest, setPreviewRequest] = useState<HomePinPreviewRequest>();
   // Load validation now, so it is ready on the first submit.
   useEffect(() => {
     preloadPinFormSchema().catch(() => {});
@@ -74,6 +87,21 @@ export function PinFormDialog({
     pin,
     catalog,
     onClose,
+  });
+  const preview = form.handleSubmit((values) => {
+    const fixed: PinFormValues =
+      values.kind === 'hero'
+        ? { ...values, layout: 'hero', position: catalog.heroPosition }
+        : values;
+    const body = formValuesToBody(fixed);
+    const source =
+      pin && pin.source.type !== 'tracks' ? pin.source : body.source;
+    setPreviewRequest({
+      pin: { ...body, source },
+      locale: isLocale(pageLocale) ? pageLocale : 'en',
+      audience: 'visitor',
+      ...(pin ? { pinId: pin.id } : {}),
+    });
   });
 
   return (
@@ -90,9 +118,21 @@ export function PinFormDialog({
           className="flex flex-col gap-4"
         >
           <PinFormSections form={form} catalog={catalog} pin={pin} />
-          <FormActions mode={mode} saving={saving} onCancel={onClose} />
+          <FormActions
+            mode={mode}
+            saving={saving}
+            onPreview={() => void preview()}
+            onCancel={onClose}
+          />
         </form>
       </DialogContent>
+      {previewRequest && (
+        <PinPreviewDialog
+          request={previewRequest}
+          open
+          onClose={() => setPreviewRequest(undefined)}
+        />
+      )}
     </Dialog>
   );
 }

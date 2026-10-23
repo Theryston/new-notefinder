@@ -3,10 +3,15 @@ import {
   type EditorialPin,
   type EditorialPinHistoryPage,
   type EditorialPinKind,
+  type EditorialPinMetrics,
   type EditorialPinPage,
   editorialPinHistoryPageSchema,
+  editorialPinMetricsPageSchema,
   editorialPinPageSchema,
   editorialPinSchema,
+  type HomeFeedPage,
+  type HomePinPreviewRequest,
+  homeFeedPageSchema,
   type PinTrackSearchResult,
   pinTrackSearchResultSchema,
   type UpdateEditorialPinBody,
@@ -30,6 +35,27 @@ export async function fetchAdminPins(
     schema: editorialPinPageSchema,
     query: { limit: 100 },
     signal,
+  });
+}
+
+/** Stored event counts for all pins, limited to each pin's running period. */
+export function fetchAdminPinMetrics(
+  signal?: AbortSignal,
+): Promise<EditorialPinMetrics[]> {
+  return browserApi('/admin/home-pins/metrics', {
+    schema: editorialPinMetricsPageSchema,
+    signal,
+  });
+}
+
+/** Renders a draft over the current neutral feed without storing it. */
+export function fetchAdminPinPreview(
+  request: HomePinPreviewRequest,
+): Promise<HomeFeedPage> {
+  return browserApi('/admin/home-pins/preview', {
+    method: 'POST',
+    schema: homeFeedPageSchema,
+    body: request,
   });
 }
 

@@ -1,5 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import type { HomeFeed, HomeRow, Locale } from '@notefinder/contracts';
+import type {
+  HomeFeed,
+  HomePinPreviewRequest,
+  HomeRow,
+  Locale,
+} from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import type { StoredPersonalHomeFeed } from './home-feed.js';
@@ -100,6 +105,30 @@ export class HomeService {
     return userId === undefined
       ? this.versionPage(cursor, false)
       : this.personalVersionPage(userId, cursor, locale);
+  }
+
+  /** A private admin preview from the neutral current feed, never a snapshot. */
+  async preview(request: HomePinPreviewRequest): Promise<HomePage> {
+    const { feed } = await this.feeds.currentPublic(request.locale);
+    const signedIn = request.audience === 'signed-in';
+    const rows = this.pinOverlay
+      ? await this.pinOverlay.applyPreview(
+          feed.rows,
+          { locale: request.locale, signedIn },
+          request.pin,
+          request.pinId,
+        )
+      : feed.rows;
+    return this.answer(
+      {
+        ...feed,
+        audience: signedIn ? 'personal' : 'public',
+        rows,
+      },
+      0,
+      false,
+      signedIn,
+    );
   }
 
   private async anonymousFirstPage(locale: Locale): Promise<HomePage> {

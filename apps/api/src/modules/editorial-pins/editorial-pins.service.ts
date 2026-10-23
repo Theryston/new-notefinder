@@ -9,7 +9,6 @@ import {
   type EditorialPinHistoryEntry,
   type EditorialPinHistoryPage,
   type EditorialPinPage,
-  type EditorialPinSource,
   type Locale,
   PIN_TRACK_SEARCH_MAX_LIMIT,
   type PinTrackSearchQuery,
@@ -34,6 +33,7 @@ import {
   stateOf,
   toEditorialPin,
 } from './editorial-pin-state.js';
+import { editorialPinWriteOf, previewPinOf } from './editorial-pin-write.js';
 import {
   type EditorialPinHistoryRecord,
   type EditorialPinRecord,
@@ -83,29 +83,6 @@ const decodeCursor = (cursor: string | undefined): PageCursor | undefined => {
   return { createdAt: time, id };
 };
 
-/** A source as the database holds it: Tracks in order, or a dynamic reference. */
-const sourceWriteOf = (
-  source: EditorialPinSource,
-): Pick<EditorialPinWrite, 'trackIds' | 'dynamicSource'> =>
-  source.type === 'tracks'
-    ? { trackIds: source.trackIds, dynamicSource: null }
-    : { trackIds: [], dynamicSource: source };
-
-/** The fields of a validated body, as the database stores them. */
-const writeOf = (body: CreateEditorialPinBody): EditorialPinWrite => ({
-  kind: body.kind,
-  layout: body.layout,
-  position: body.position,
-  priority: body.priority ?? 0,
-  audience: body.audience ?? 'everyone',
-  locale: body.locale ?? null,
-  startsAt: body.startsAt ? new Date(body.startsAt) : null,
-  endsAt: body.endsAt ? new Date(body.endsAt) : null,
-  titles: body.titles,
-  sponsored: body.sponsored ?? false,
-  ...sourceWriteOf(body.source),
-});
-
 const toHistoryEntry = (
   entry: EditorialPinHistoryRecord,
 ): EditorialPinHistoryEntry => ({
@@ -143,6 +120,16 @@ export class EditorialPinsService {
     return toEditorialPin(await this.require(pinId));
   }
 
+  /** Refuses a preview for an incomplete Track or an empty dynamic source. */
+  async assertPreviewEligible(body: CreateEditorialPinBody): Promise<void> {
+    await this.assertSourceEligible(editorialPinWriteOf(body));
+  }
+
+  /** Builds a transient pin using the same write mapping as a stored pin. */
+  preview(body: CreateEditorialPinBody, pinId?: string): EditorialPin {
+    return previewPinOf(body, pinId);
+  }
+
   /** The changes of a pin, newest first. A removed pin keeps its history. */
   async history(
     pinId: string,
@@ -165,7 +152,7 @@ export class EditorialPinsService {
     body: CreateEditorialPinBody,
     actor: EditorialPinActor,
   ): Promise<EditorialPin> {
-    const write = writeOf(body);
+    const write = editorialPinWriteOf(body);
     await this.assertSourceEligible(write);
     const pinId = await this.insertWithHistory(write, actor);
     const pin = toEditorialPin(await this.require(pinId));
@@ -191,7 +178,7 @@ export class EditorialPinsService {
         issues: merged.error.issues,
       });
     }
-    const next = writeOf(merged.data);
+    const next = editorialPinWriteOf(merged.data);
     const changed = changedFieldsOf(currentState, stateOf(next));
     if (changed.length === 0) {
       return currentState;

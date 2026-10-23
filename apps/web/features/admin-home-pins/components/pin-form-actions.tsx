@@ -9,22 +9,29 @@ import { Spinner } from '@/components/ui/spinner';
 export function FormActions({
   mode,
   saving,
+  onPreview,
   onCancel,
 }: {
   mode: 'create' | 'edit';
   saving: boolean;
+  onPreview: () => void;
   onCancel: () => void;
 }) {
   const t = useTranslations('adminHomePins');
   return (
-    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      <Button type="button" variant="outline" onClick={onCancel}>
-        {t('form.cancel')}
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+      <Button type="button" variant="outline" onClick={onPreview}>
+        {t('form.preview')}
       </Button>
-      <Button type="submit" disabled={saving}>
-        {saving && <Spinner />}
-        {t(mode === 'create' ? 'form.submitCreate' : 'form.submitSave')}
-      </Button>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {t('form.cancel')}
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Spinner />}
+          {t(mode === 'create' ? 'form.submitCreate' : 'form.submitSave')}
+        </Button>
+      </div>
     </div>
   );
 }

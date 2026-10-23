@@ -105,6 +105,39 @@
         ]
       }
     },
+    "/v1/admin/home-pins/preview": {
+      "post": {
+        "operationId": "HomeAdminController_preview_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomePinPreviewBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The transient preview feed."
+          },
+          "400": {
+            "description": "The pin preview is invalid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/recommendations": {
       "get": {
         "operationId": "TrackRecommendationsController_getRecommendations_v1",
@@ -742,6 +775,26 @@
         },
         "tags": [
           "streaks"
+        ]
+      }
+    },
+    "/v1/admin/home-pins/metrics": {
+      "get": {
+        "operationId": "EditorialPinsController_pinMetrics_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored impressions, clicks and click rates."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
         ]
       }
     },
@@ -2175,6 +2228,198 @@
         "required": [
           "visitorId",
           "events"
+        ]
+      },
+      "HomePinPreviewBodyDto": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "hero",
+                  "row"
+                ]
+              },
+              "layout": {
+                "type": "string",
+                "enum": [
+                  "hero",
+                  "standard"
+                ]
+              },
+              "source": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "tracks"
+                        ]
+                      },
+                      "trackIds": {
+                        "minItems": 1,
+                        "maxItems": 24,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128
+                        }
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "trackIds"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "genre"
+                        ]
+                      },
+                      "genre": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "genre"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "artist"
+                        ]
+                      },
+                      "artistId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "artistId"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "album"
+                        ]
+                      },
+                      "albumId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "albumId"
+                    ]
+                  }
+                ]
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 23
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "audience": {
+                "type": "string",
+                "enum": [
+                  "everyone",
+                  "visitors"
+                ]
+              },
+              "locale": {
+                "nullable": true,
+                "type": "string",
+                "enum": [
+                  "en",
+                  "pt-BR"
+                ]
+              },
+              "startsAt": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "endsAt": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "titles": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "sponsored": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "layout",
+              "source",
+              "position",
+              "titles"
+            ]
+          },
+          "pinId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "visitor",
+              "signed-in"
+            ]
+          }
+        },
+        "required": [
+          "pin",
+          "locale",
+          "audience"
         ]
       },
       "CreateTrackBodyDto": {

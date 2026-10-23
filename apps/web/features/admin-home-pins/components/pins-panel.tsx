@@ -1,6 +1,6 @@
 'use client';
 
-import type { EditorialPin } from '@notefinder/contracts';
+import type { EditorialPin, EditorialPinMetrics } from '@notefinder/contracts';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -18,7 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { FormAlert } from '@/features/auth/components/form-alert';
 import { isApiError } from '@/lib/api/api-error';
 import { useAdminPinMutations } from '../hooks/use-admin-pin-mutations';
-import { useAdminPins } from '../hooks/use-admin-pins';
+import { useAdminPinMetrics, useAdminPins } from '../hooks/use-admin-pins';
 import type { PinFormCatalog } from '../pin-form';
 import { pinStatus } from '../pin-status';
 import { AdminHomePinsSkeleton } from './admin-home-pins-skeleton';
@@ -45,6 +45,7 @@ const PinHistoryDialog = dynamic(
 export function PinsPanel({ catalog }: { catalog: PinFormCatalog }) {
   const t = useTranslations('adminHomePins');
   const pins = useAdminPins();
+  const metrics = useAdminPinMetrics();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<EditorialPin | null>(null);
   const [historyOf, setHistoryOf] = useState<EditorialPin | null>(null);
@@ -71,6 +72,8 @@ export function PinsPanel({ catalog }: { catalog: PinFormCatalog }) {
             <PinCard
               key={pin.id}
               pin={pin}
+              metrics={metrics.data?.find((item) => item.pinId === pin.id)}
+              metricsFailed={metrics.isError}
               onEdit={() => setEditing(pin)}
               onHistory={() => setHistoryOf(pin)}
               onDelete={() => setDeleting(pin)}
@@ -173,11 +176,15 @@ function DeletePinDialog({
 
 function PinCard({
   pin,
+  metrics,
+  metricsFailed,
   onEdit,
   onHistory,
   onDelete,
 }: {
   pin: EditorialPin;
+  metrics: EditorialPinMetrics | undefined;
+  metricsFailed: boolean;
   onEdit: () => void;
   onHistory: () => void;
   onDelete: () => void;
@@ -218,6 +225,7 @@ function PinCard({
         )}
       </div>
       <p className="font-bold text-lg tracking-tight">{title}</p>
+      <PinMetrics metrics={metrics} failed={metricsFailed} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
         <div>
           <dt className="text-muted-foreground text-xs">
@@ -254,5 +262,36 @@ function PinCard({
         </Button>
       </div>
     </li>
+  );
+}
+
+function PinMetrics({
+  metrics,
+  failed,
+}: {
+  metrics: EditorialPinMetrics | undefined;
+  failed: boolean;
+}) {
+  const t = useTranslations('adminHomePins.card');
+  const format = useFormatter();
+  if (failed)
+    return (
+      <p className="text-muted-foreground text-sm">{t('metricsUnavailable')}</p>
+    );
+  if (!metrics)
+    return (
+      <p className="text-muted-foreground text-sm">{t('metricsLoading')}</p>
+    );
+  return (
+    <p className="text-muted-foreground text-sm">
+      {t('metrics', {
+        impressions: format.number(metrics.impressions),
+        clicks: format.number(metrics.clicks),
+        rate: format.number(metrics.clickThroughRate, {
+          style: 'percent',
+          maximumFractionDigits: 1,
+        }),
+      })}
+    </p>
   );
 }
