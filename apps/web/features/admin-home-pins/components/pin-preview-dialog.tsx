@@ -19,8 +19,11 @@ import ptBrMessages from '@/messages/pt-BR.json';
 import { useAdminPinPreview } from '../hooks/use-admin-pin-preview';
 
 const homePreviewMessages = {
-  en: { home: enMessages.home, tracks: enMessages.tracks },
-  'pt-BR': { home: ptBrMessages.home, tracks: ptBrMessages.tracks },
+  en: { home: enMessages.home, tracks: { card: enMessages.tracks.card } },
+  'pt-BR': {
+    home: ptBrMessages.home,
+    tracks: { card: ptBrMessages.tracks.card },
+  },
 };
 
 type PinPreviewDialogProps = {
