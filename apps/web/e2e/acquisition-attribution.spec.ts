@@ -11,7 +11,7 @@ const user = {
   image: null,
 };
 
-type MockState = { signedIn: boolean };
+type MockState = { signedIn: boolean; userId: string; nextUser: number };
 type MockReply = { status?: number; body: unknown };
 
 function mockReply(
@@ -23,18 +23,31 @@ function mockReply(
   switch (path) {
     case '/auth/get-session':
       return {
-        body: state.signedIn ? { session: { id: 'ses_google' }, user } : null,
+        body: state.signedIn
+          ? { session: { id: 'ses' }, user: { ...user, id: state.userId } }
+          : null,
       };
     case '/auth/sign-in/social': {
       state.signedIn = true;
+      state.userId = `usr_${state.nextUser++}`;
       const input = request.postDataJSON() as Record<string, unknown>;
       return { body: { url: input.newUserCallbackURL, redirect: true } };
     }
     case '/auth/sign-up/email':
-      return { body: { token: null, user } };
+      state.userId = `usr_${state.nextUser++}`;
+      return { body: { token: null, user: { ...user, id: state.userId } } };
     case '/auth/email-otp/verify-email':
       state.signedIn = true;
-      return { body: { status: true, token: 'email-token', user } };
+      return {
+        body: {
+          status: true,
+          token: 'email-token',
+          user: { ...user, id: state.userId },
+        },
+      };
+    case '/auth/sign-out':
+      state.signedIn = false;
+      return { body: { success: true } };
     case '/me/acquisition':
       requests.push({ url: request.url(), body: request.postDataJSON() });
       return { status: 201, body: { recorded: true } };
@@ -44,7 +57,7 @@ function mockReply(
 }
 
 async function mockApi(page: Page) {
-  const state: MockState = { signedIn: false };
+  const state: MockState = { signedIn: false, userId: '', nextUser: 1 };
   const requests: { url: string; body: Record<string, unknown> }[] = [];
 
   await page.route('**/v1/**', async (route) => {
@@ -144,4 +157,53 @@ test('attaches campaign touches after email verification signs the user in', asy
 
   await expect(page).toHaveURL(/\/en\/setup-username/);
   await expectAcquisition(requests);
+});
+
+test('attaches a second account after signing out in the same tab', async ({
+  page,
+}) => {
+  const requests = await mockApi(page);
+  await page.goto('/en/sign-up?utm_source=first-account');
+
+  const auth = messages.en.auth;
+  const completeEmailSignUp = async (name: string, email: string) => {
+    await page.getByLabel(auth.fields.name.label, { exact: true }).fill(name);
+    await page.getByLabel(auth.fields.email.label, { exact: true }).fill(email);
+    await page
+      .getByLabel(auth.fields.password.label, { exact: true })
+      .fill('analytical-1843');
+    await page.getByRole('button', { name: auth.signUp.submit }).click();
+    await expect(page).toHaveURL(/\/en\/verify-email\?/);
+    await page
+      .getByLabel(auth.verifyEmail.codeLabel)
+      .pressSequentially('424242');
+    await expect(page).toHaveURL(/\/en\/setup-username/);
+  };
+
+  await completeEmailSignUp('First Singer', 'first@example.com');
+  await expect.poll(() => requests.length).toBe(1);
+  await page.getByRole('button', { name: auth.session.signOut }).click();
+  await expect(page).toHaveURL(/\/en\/?$/);
+
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      'notefinder:campaign-touches',
+      JSON.stringify({
+        firstTouch: { utmSource: 'second-account' },
+        lastTouch: { utmSource: 'second-account' },
+      }),
+    );
+  });
+  await page.getByRole('link', { name: 'Sign in' }).click();
+  await page.getByRole('link', { name: 'Create one' }).click();
+  await expect(
+    page.getByRole('heading', { name: auth.signUp.title }),
+  ).toBeVisible();
+
+  await completeEmailSignUp('Second Singer', 'second@example.com');
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests[1]?.body).toMatchObject({
+    firstTouch: { utmSource: 'second-account' },
+    lastTouch: { utmSource: 'second-account' },
+  });
 });

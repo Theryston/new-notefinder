@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { RecordAcquisitionBody } from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { AcquisitionRepository } from './acquisition.repository.js';
@@ -10,6 +11,7 @@ const ACQUISITION_ACCOUNT_AGE_MS = 30 * 60 * 1000;
 export class AcquisitionService {
   constructor(private readonly repository: AcquisitionRepository) {}
 
+  @Transactional()
   async record(userId: string, body: RecordAcquisitionBody): Promise<void> {
     const result = await this.repository.record(
       userId,

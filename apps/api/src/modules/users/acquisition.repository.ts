@@ -22,31 +22,29 @@ export class AcquisitionRepository {
     acquisition: RecordAcquisitionBody,
     createdSince: Date,
   ): Promise<RecordAcquisitionResult> {
-    return this.txHost.tx.transaction(async (tx) => {
-      const [user] = await tx
-        .select({ createdAt: users.createdAt })
-        .from(users)
-        .where(eq(users.id, userId))
-        .for('update');
-      if (user === undefined) return 'missing';
-      if (user.createdAt < createdSince) return 'old';
+    const [user] = await this.txHost.tx
+      .select({ createdAt: users.createdAt })
+      .from(users)
+      .where(eq(users.id, userId))
+      .for('update');
+    if (user === undefined) return 'missing';
+    if (user.createdAt < createdSince) return 'old';
 
-      const [row] = await tx
-        .insert(userAcquisitions)
-        .values({
-          userId,
-          firstTouch: acquisition.firstTouch,
-          lastTouch: acquisition.lastTouch,
-        })
-        .onConflictDoNothing({ target: userAcquisitions.userId })
-        .returning({ id: userAcquisitions.id });
-      if (row === undefined) return 'duplicate';
+    const [row] = await this.txHost.tx
+      .insert(userAcquisitions)
+      .values({
+        userId,
+        firstTouch: acquisition.firstTouch,
+        lastTouch: acquisition.lastTouch,
+      })
+      .onConflictDoNothing({ target: userAcquisitions.userId })
+      .returning({ id: userAcquisitions.id });
+    if (row === undefined) return 'duplicate';
 
-      await tx
-        .update(users)
-        .set({ visitorId: acquisition.visitorId })
-        .where(eq(users.id, userId));
-      return 'recorded';
-    });
+    await this.txHost.tx
+      .update(users)
+      .set({ visitorId: acquisition.visitorId })
+      .where(eq(users.id, userId));
+    return 'recorded';
   }
 }

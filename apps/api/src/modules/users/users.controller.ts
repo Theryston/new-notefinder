@@ -18,6 +18,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
+  type AcquisitionRecorded,
   acquisitionRecordedSchema,
   type CurrentUser as CurrentUserBody,
   currentUserSchema,
@@ -72,7 +73,7 @@ export class UsersController {
   async recordAcquisition(
     @CurrentUser() user: AuthUser,
     @Body() body: RecordAcquisitionBodyDto,
-  ): Promise<{ recorded: true }> {
+  ): Promise<AcquisitionRecorded> {
     await this.acquisition.record(user.id, body);
     return { recorded: true };
   }
