@@ -1,10 +1,7 @@
-import type { TestingModuleBuilder } from '@nestjs/testing';
 import { eq } from 'drizzle-orm';
-import type { z } from 'zod';
 import { trackFavorites } from '../src/database/schema/track-favorites.js';
 import { users } from '../src/database/schema/users.js';
 import { HomeSocialService } from '../src/modules/home/home-social.service.js';
-import { CacheService } from '../src/redis/cache.service.js';
 import { createAuthClient, signIn } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -13,44 +10,27 @@ import {
   createUser,
   DEFAULT_PASSWORD,
 } from './utils/factories.js';
+import {
+  sharedInMemoryCache,
+  withInMemoryCache,
+} from './utils/in-memory-cache.js';
 import { createCompletedTrack } from './utils/track-processing-factories.js';
-
-class MemoryCache {
-  private readonly entries = new Map<string, unknown>();
-
-  async get<T>(key: string, schema: z.ZodType<T>): Promise<T | undefined> {
-    const parsed = schema.safeParse(this.entries.get(key));
-    return parsed.success ? parsed.data : undefined;
-  }
-
-  async set(key: string, value: unknown): Promise<void> {
-    this.entries.set(key, value);
-  }
-
-  async acquire(): Promise<boolean> {
-    return true;
-  }
-
-  async del(key: string): Promise<void> {
-    this.entries.delete(key);
-  }
-}
-
-const withMemoryCache = (builder: TestingModuleBuilder) =>
-  builder.overrideProvider(CacheService).useValue(new MemoryCache());
 
 describe('Personal home social rows (e2e)', () => {
   let testApp: TestApp;
 
   beforeAll(async () => {
-    testApp = await createTestApp({ override: withMemoryCache });
+    testApp = await createTestApp({ override: withInMemoryCache });
   });
 
   afterAll(async () => {
     await testApp.close();
   });
 
-  beforeEach(async () => resetDatabase(testApp.db));
+  beforeEach(async () => {
+    sharedInMemoryCache.clear();
+    await resetDatabase(testApp.db);
+  });
 
   it('requires three common Tracks and excludes Profiles that hide both sections', async () => {
     const tracks = await Promise.all(

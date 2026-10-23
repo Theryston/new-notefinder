@@ -2,32 +2,34 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import type {
   HomeCarouselRow,
-  HomeHero,
   HomeRow,
   HomeRowTitle,
   HomeTrack,
   Locale,
+  TrackVocalRange,
 } from '@notefinder/contracts';
+import { AttemptsService } from '../attempts/attempts.service.js';
 import { StreaksService } from '../streaks/streaks.service.js';
 import { UsersService } from '../users/users.service.js';
 import type { StoredPersonalHomeFeed } from './home-feed.js';
 import { HomeFeedService } from './home-feed.service.js';
 import { composeHomeRows } from './home-feed-composer.js';
-import {
-  isMasteredTrack,
-  type PersonalTaste,
-  personalLambda,
-} from './home-personal.js';
+import { isMasteredTrack, personalLambda } from './home-personal.js';
 import {
   PersonalHomeRepository,
+  type UserFavoriteSignal,
   type UserTrackSignal,
 } from './home-personal.repository.js';
+import { buildTaste } from './home-personal-blend.js';
 import {
-  blendDiscoveryCandidates,
-  buildTaste,
-  byBlendedDesc,
-  type DiscoveryCandidate,
-} from './home-personal-blend.js';
+  blendedDiscoveryPool,
+  buildPersonalDiscoveryRows,
+} from './home-personal-discovery.js';
+import {
+  buildPersonalVoiceRows,
+  personalTrackPool,
+  personalVoiceRowTrackIds,
+} from './home-personal-voice.js';
 import { DEFAULT_HOME_LOCALE, HOME_ALGORITHM_VERSION } from './home-rules.js';
 import { HomeSocialService } from './home-social.service.js';
 
@@ -77,6 +79,10 @@ const versionOf = (userId: string, locale: Locale, rows: HomeRow[]): string =>
  */
 @Injectable()
 export class PersonalHomeBuilder {
+  @Optional()
+  @Inject(AttemptsService)
+  private readonly attempts?: AttemptsService;
+
   constructor(
     private readonly feeds: HomeFeedService,
     private readonly personal: PersonalHomeRepository,
@@ -92,27 +98,25 @@ export class PersonalHomeBuilder {
     userId: string,
     locale: Locale = DEFAULT_HOME_LOCALE,
   ): Promise<StoredPersonalHomeFeed> {
-    const [{ feed }, signals, favorites, settings, socialRows] =
+    const [{ feed }, signals, favorites, settings, userRange] =
       await Promise.all([
         this.feeds.currentPublic(locale),
         this.personal.findUserTrackSignals(userId),
         this.personal.findUserFavoriteSignals(userId),
         this.users.getPracticeSettings(userId),
-        this.social?.rowsFor(userId) ?? Promise.resolve([]),
+        this.attempts?.vocalRange(userId) ?? Promise.resolve(null),
       ]);
-    const { taste, signalCount } = buildTaste(signals, favorites);
-    const lambda = personalLambda(signalCount);
-    const mastered = new Set(
-      signals
-        .filter((signal) => isMasteredTrack(signal.bestAccuracy))
-        .map((signal) => signal.trackId),
-    );
-    const rows: HomeRow[] = [
-      ...this.resumeRows(signals, mastered),
-      await this.dailyTargetRow(userId, settings.timeZone),
-      ...socialRows,
-      ...(await this.discoveryRows(feed.rows, taste, lambda, mastered)),
-    ];
+    const socialRows = await (this.social?.rowsFor(userId) ??
+      Promise.resolve([]));
+    const rows = await this.personalRowsFor({
+      userId,
+      timeZone: settings.timeZone,
+      publicRows: feed.rows,
+      signals,
+      favorites,
+      userRange,
+      socialRows,
+    });
     return {
       audience: 'personal',
       locale,
@@ -121,6 +125,101 @@ export class PersonalHomeBuilder {
       rows,
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  private async personalRowsFor(options: {
+    userId: string;
+    timeZone: string | null;
+    publicRows: HomeRow[];
+    signals: UserTrackSignal[];
+    favorites: UserFavoriteSignal[];
+    userRange: TrackVocalRange | null;
+    socialRows: HomeRow[];
+  }): Promise<HomeRow[]> {
+    const {
+      userId,
+      timeZone,
+      publicRows,
+      signals,
+      favorites,
+      userRange,
+      socialRows,
+    } = options;
+    const { taste, signalCount } = buildTaste(signals, favorites);
+    const lambda = personalLambda(signalCount);
+    const mastered = this.masteredTrackIds(signals);
+    const resumeRows = this.resumeRows(signals, mastered);
+    const resumeTrackIds = new Set(
+      resumeRows
+        .flatMap((row) => (row.layout === 'standard' ? row.items : []))
+        .map((track) => track.id),
+    );
+    const pool = personalTrackPool(publicRows);
+    const discovery = await this.personal.findDiscoveryTracks([
+      ...new Set(pool.map((track) => track.id)),
+    ]);
+    const blended = blendedDiscoveryPool({
+      publicRows,
+      discovery,
+      taste,
+      lambda,
+      masteredTrackIds: mastered,
+      userRange,
+    });
+    const voiceRows = this.voiceRowsFor({
+      publicRows,
+      userRange,
+      discovery,
+      mastered,
+      alreadyUsedTrackIds: resumeTrackIds,
+    });
+    const usedTrackIds = new Set([
+      ...resumeTrackIds,
+      ...personalVoiceRowTrackIds(voiceRows),
+    ]);
+    const rows: HomeRow[] = [
+      ...resumeRows,
+      await this.dailyTargetRow(userId, timeZone),
+      ...socialRows,
+      ...voiceRows,
+      ...buildPersonalDiscoveryRows({
+        publicRows,
+        sorted: blended,
+        masteredTrackIds: mastered,
+        alreadyUsedTrackIds: usedTrackIds,
+      }),
+    ];
+    return rows;
+  }
+
+  private masteredTrackIds(signals: UserTrackSignal[]): Set<string> {
+    return new Set(
+      signals
+        .filter((signal) => isMasteredTrack(signal.bestAccuracy))
+        .map((signal) => signal.trackId),
+    );
+  }
+
+  private voiceRowsFor(options: {
+    publicRows: HomeRow[];
+    userRange: TrackVocalRange | null;
+    discovery: Awaited<
+      ReturnType<PersonalHomeRepository['findDiscoveryTracks']>
+    >;
+    mastered: Set<string>;
+    alreadyUsedTrackIds: Set<string>;
+  }): ReturnType<typeof buildPersonalVoiceRows> {
+    const { publicRows, userRange, discovery, mastered, alreadyUsedTrackIds } =
+      options;
+    return userRange
+      ? buildPersonalVoiceRows({
+          rows: publicRows,
+          userRange,
+          discovery,
+          masteredTrackIds: mastered,
+          alreadyUsedTrackIds,
+        })
+      : [];
   }
 
   /**
@@ -185,112 +284,5 @@ export class PersonalHomeBuilder {
       streakDays: status.currentStreakDays,
       completedToday: status.completedToday,
     };
-  }
-
-  /**
-   * The public rows re-ranked by the blend. Each standard row keeps its own
-   * Tracks (reordered, mastered ones filtered) through the same composer; the
-   * hero is the top blended Track with a cover, kept out of the rows below
-   * like the public hero. A User with no data keeps the public rows as they
-   * are.
-   */
-  private async discoveryRows(
-    publicRows: HomeRow[],
-    taste: PersonalTaste,
-    lambda: number,
-    mastered: ReadonlySet<string>,
-  ): Promise<HomeRow[]> {
-    const sorted = await this.blendedPool(publicRows, taste, lambda, mastered);
-    const hero = this.discoveryHeroRow(sorted);
-    return [
-      ...(hero ? [hero] : []),
-      ...this.discoveryStandardRows(publicRows, sorted, mastered),
-    ];
-  }
-
-  /** The public Tracks with their blend inputs, best blended first. */
-  private async blendedPool(
-    publicRows: HomeRow[],
-    taste: PersonalTaste,
-    lambda: number,
-    mastered: ReadonlySet<string>,
-  ): Promise<DiscoveryCandidate[]> {
-    const pool = publicRows.flatMap((row) =>
-      row.layout === 'hero'
-        ? [row.track]
-        : row.layout === 'standard'
-          ? row.items
-          : [],
-    );
-    const ids = [...new Set(pool.map((track) => track.id))];
-    const discovery = await this.personal.findDiscoveryTracks(ids);
-    return blendDiscoveryCandidates({ tracks: pool, discovery, taste, lambda })
-      .filter((candidate) => !mastered.has(candidate.track.id))
-      .sort(byBlendedDesc);
-  }
-
-  /** The hero: the top blended Track with a cover. */
-  private discoveryHeroRow(sorted: DiscoveryCandidate[]): HomeRow | undefined {
-    const heroTrack = sorted.find((candidate) => candidate.hasCover)?.track;
-    return heroTrack
-      ? ({ id: 'hero', layout: 'hero', track: heroTrack } satisfies HomeHero)
-      : undefined;
-  }
-
-  /** Each public standard row with its own Tracks, reordered by the blend. */
-  private discoveryStandardRows(
-    publicRows: HomeRow[],
-    sorted: DiscoveryCandidate[],
-    mastered: ReadonlySet<string>,
-  ): HomeRow[] {
-    const heroId = sorted.find((candidate) => candidate.hasCover)?.track.id;
-    const blended = new Map(
-      sorted.map((candidate) => [candidate.track.id, candidate]),
-    );
-    const rows: HomeRow[] = [];
-    for (const row of publicRows) {
-      if (row.layout !== 'standard') {
-        continue;
-      }
-      const [composed] = composeHomeRows([
-        {
-          id: row.id,
-          layout: 'standard' as const,
-          title: row.title,
-          items: row.items
-            .map((track) => blended.get(track.id))
-            .filter(
-              (candidate): candidate is DiscoveryCandidate =>
-                candidate !== undefined &&
-                candidate.track.id !== heroId &&
-                !mastered.has(candidate.track.id),
-            )
-            .sort(byBlendedDesc)
-            .map((candidate) => ({
-              id: candidate.track.id,
-              artistKey: candidate.artistKey,
-              hasCover: candidate.hasCover,
-              isCompleted: true,
-            })),
-        },
-      ]);
-      if (!composed?.title) {
-        continue;
-      }
-      const itemsById = new Map(row.items.map((track) => [track.id, track]));
-      rows.push({
-        id: composed.id,
-        layout: 'standard',
-        title: composed.title,
-        items: composed.items.map((item) => {
-          const track = itemsById.get(item.id);
-          if (!track) {
-            throw new Error(`Discovery row lost Track ${item.id}`);
-          }
-          return track;
-        }),
-      } satisfies HomeCarouselRow);
-    }
-    return rows;
   }
 }

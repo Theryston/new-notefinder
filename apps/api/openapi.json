@@ -105,6 +105,145 @@
         ]
       }
     },
+    "/v1/tracks/{trackId}/attempts": {
+      "post": {
+        "operationId": "TrackAttemptsController_submitAttempt_v1",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAttemptBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved attempt."
+          },
+          "400": {
+            "description": "The run is not valid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "404": {
+            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
+          },
+          "422": {
+            "description": "The run covered too little or skipped forward."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
+    "/v1/me/attempts": {
+      "get": {
+        "operationId": "MyAttemptsController_listOwn_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The User's own attempts, newest first."
+          },
+          "400": {
+            "description": "The cursor is not one this API issued."
+          },
+          "401": {
+            "description": "No valid session."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
+    "/v1/users/{username}/attempts": {
+      "get": {
+        "operationId": "UserAttemptsController_listHistory_v1",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The User's practice history, newest first."
+          },
+          "400": {
+            "description": "The cursor is not one this API issued."
+          },
+          "404": {
+            "description": "No User has this username, or the owner hid this section (`NOT_FOUND`)."
+          }
+        },
+        "tags": [
+          "attempts"
+        ]
+      }
+    },
     "/v1/tracks/{trackId}/recommendations": {
       "get": {
         "operationId": "TrackRecommendationsController_getRecommendations_v1",
@@ -558,6 +697,42 @@
           },
           "403": {
             "description": "The user has no username yet."
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/me/acquisition": {
+      "post": {
+        "operationId": "UsersController_recordAcquisition_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordAcquisitionBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The acquisition was attached to the User."
+          },
+          "400": {
+            "description": "Campaign data is invalid."
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The account is outside the 30-minute sign-up window."
+          },
+          "409": {
+            "description": "Acquisition was already recorded."
           }
         },
         "tags": [
@@ -1483,145 +1658,6 @@
         ]
       }
     },
-    "/v1/tracks/{trackId}/attempts": {
-      "post": {
-        "operationId": "TrackAttemptsController_submitAttempt_v1",
-        "parameters": [
-          {
-            "name": "trackId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "minLength": 1,
-              "maxLength": 128,
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SubmitAttemptBodyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The saved attempt."
-          },
-          "400": {
-            "description": "The run is not valid."
-          },
-          "401": {
-            "description": "No valid session."
-          },
-          "404": {
-            "description": "Unknown ID (`NOT_FOUND`), or a legacy ID with its new ID (`RESOURCE_MOVED`)."
-          },
-          "422": {
-            "description": "The run covered too little or skipped forward."
-          }
-        },
-        "tags": [
-          "attempts"
-        ]
-      }
-    },
-    "/v1/me/attempts": {
-      "get": {
-        "operationId": "MyAttemptsController_listOwn_v1",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minLength": 1,
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The User's own attempts, newest first."
-          },
-          "400": {
-            "description": "The cursor is not one this API issued."
-          },
-          "401": {
-            "description": "No valid session."
-          }
-        },
-        "tags": [
-          "attempts"
-        ]
-      }
-    },
-    "/v1/users/{username}/attempts": {
-      "get": {
-        "operationId": "UserAttemptsController_listHistory_v1",
-        "parameters": [
-          {
-            "name": "username",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "minLength": 1,
-              "maxLength": 128,
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minLength": 1,
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The User's practice history, newest first."
-          },
-          "400": {
-            "description": "The cursor is not one this API issued."
-          },
-          "404": {
-            "description": "No User has this username, or the owner hid this section (`NOT_FOUND`)."
-          }
-        },
-        "tags": [
-          "attempts"
-        ]
-      }
-    },
     "/v1/me/following/{userId}": {
       "put": {
         "operationId": "FollowsController_follow_v1",
@@ -2177,6 +2213,72 @@
           "events"
         ]
       },
+      "SubmitAttemptBodyDto": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "NORMAL",
+              "HARD"
+            ]
+          },
+          "octaveMode": {
+            "type": "string",
+            "enum": [
+              "ANY",
+              "EXACT"
+            ]
+          },
+          "transposeSemitones": {
+            "type": "integer",
+            "minimum": -24,
+            "maximum": 24
+          },
+          "speed": {
+            "type": "number"
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "coverage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "forwardSkip": {
+            "type": "boolean"
+          },
+          "bleedSuspected": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": [
+          "difficulty",
+          "octaveMode",
+          "transposeSemitones",
+          "speed",
+          "accuracy",
+          "coverage",
+          "forwardSkip",
+          "bleedSuspected",
+          "startedAt",
+          "endedAt"
+        ]
+      },
       "CreateTrackBodyDto": {
         "type": "object",
         "properties": {
@@ -2229,6 +2331,124 @@
             ]
           }
         }
+      },
+      "RecordAcquisitionBodyDto": {
+        "type": "object",
+        "properties": {
+          "visitorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "firstTouch": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "utmSource": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmMedium": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmCampaign": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmTerm": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmContent": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "gclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "fbclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "ttclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "msclkid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "referrer": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "landingPath": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "additionalProperties": false
+          },
+          "lastTouch": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "utmSource": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmMedium": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmCampaign": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmTerm": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "utmContent": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "gclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "fbclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "ttclid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "msclkid": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "referrer": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "landingPath": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "visitorId",
+          "firstTouch",
+          "lastTouch"
+        ],
+        "additionalProperties": false
       },
       "UpdateMeBodyDto": {
         "type": "object",
@@ -2641,72 +2861,6 @@
             "type": "boolean"
           }
         }
-      },
-      "SubmitAttemptBodyDto": {
-        "type": "object",
-        "properties": {
-          "difficulty": {
-            "type": "string",
-            "enum": [
-              "EASY",
-              "NORMAL",
-              "HARD"
-            ]
-          },
-          "octaveMode": {
-            "type": "string",
-            "enum": [
-              "ANY",
-              "EXACT"
-            ]
-          },
-          "transposeSemitones": {
-            "type": "integer",
-            "minimum": -24,
-            "maximum": 24
-          },
-          "speed": {
-            "type": "number"
-          },
-          "accuracy": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "coverage": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "forwardSkip": {
-            "type": "boolean"
-          },
-          "bleedSuspected": {
-            "type": "boolean"
-          },
-          "startedAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-          },
-          "endedAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-          }
-        },
-        "required": [
-          "difficulty",
-          "octaveMode",
-          "transposeSemitones",
-          "speed",
-          "accuracy",
-          "coverage",
-          "forwardSkip",
-          "bleedSuspected",
-          "startedAt",
-          "endedAt"
-        ]
       },
       "UpdatePracticePreferencesBodyDto": {
         "type": "object",

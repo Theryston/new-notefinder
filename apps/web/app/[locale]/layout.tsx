@@ -5,6 +5,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 
 import '../globals.css';
 import { Providers } from '@/components/providers';
+import { AcquisitionAttributor } from '@/features/auth/components/acquisition-attributor';
 import { AuthGate } from '@/features/auth/components/auth-gate';
 import { getSiteUrl } from '@/lib/env/client';
 import { routing } from '@/lib/i18n/routing';
@@ -68,6 +69,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={{ errors }}>
           <Providers>
             <AuthGate />
+            <AcquisitionAttributor />
             {children}
           </Providers>
         </NextIntlClientProvider>

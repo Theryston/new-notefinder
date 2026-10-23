@@ -27,6 +27,13 @@ const REQUEST_CARD_CLASS = cn(
   'w-full text-left disabled:cursor-progress',
 );
 
+const voiceFitMessageKey = (fitsVoice: boolean | undefined) =>
+  fitsVoice === undefined
+    ? undefined
+    : fitsVoice
+      ? 'card.fitsVoice'
+      : 'card.transposeVoice';
+
 function CoverPlay({ label }: { label: string }) {
   return (
     <button
@@ -102,6 +109,8 @@ export type TrackCardProps = {
    * applies with `vocalRange`; the chip stays the accessible text.
    */
   rangeBar?: boolean;
+  /** Whether the card's vocal range fits the User without transposition. */
+  fitsVoice?: boolean;
   /** Makes a card without a Track an action; without it the card stays static. */
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
@@ -123,6 +132,7 @@ function TrackCardCover({
   coverPriority,
   vocalRange,
   rangeBar,
+  fitsVoiceLabel,
 }: {
   coverArtUrl?: string | null;
   placeholderSeed: string;
@@ -131,6 +141,7 @@ function TrackCardCover({
   coverPriority?: boolean;
   vocalRange?: TrackVocalRange | null;
   rangeBar?: boolean;
+  fitsVoiceLabel?: string;
 }) {
   return (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
@@ -149,6 +160,11 @@ function TrackCardCover({
       {vocalRange ? (
         <span className="glass absolute bottom-2 left-2 rounded-full px-2.5 py-1 font-semibold text-xs tabular-nums">
           {rangeName(vocalRange.lowest, vocalRange.highest)}
+        </span>
+      ) : null}
+      {fitsVoiceLabel ? (
+        <span className="glass absolute top-7 right-2 rounded-full px-2 py-1 font-semibold text-[0.625rem]">
+          {fitsVoiceLabel}
         </span>
       ) : null}
       {badge}
@@ -215,6 +231,8 @@ function TrackCardText({
 export function TrackCard(props: TrackCardProps) {
   const { trackId, title, subtitle, request, signIn } = props;
   const t = useTranslations('tracks');
+  const voiceFitKey = voiceFitMessageKey(props.fitsVoice);
+  const fitsVoiceLabel = voiceFitKey ? t(voiceFitKey) : undefined;
   const cover = (badge: ReactNode) => (
     <TrackCardCover
       coverArtUrl={props.coverArtUrl}
@@ -223,6 +241,7 @@ export function TrackCard(props: TrackCardProps) {
       coverPriority={props.coverPriority}
       vocalRange={props.vocalRange}
       rangeBar={props.rangeBar}
+      fitsVoiceLabel={fitsVoiceLabel}
       badge={badge}
     />
   );
