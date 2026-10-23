@@ -136,6 +136,9 @@ test('attaches campaign touches after the mocked Google sign-up redirect', async
   await expect(page).toHaveURL(`${baseURL}/en/setup-username`);
 
   await expectAcquisition(requests);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  expect(requests).toHaveLength(1);
 });
 
 test('attaches campaign touches after email verification signs the user in', async ({

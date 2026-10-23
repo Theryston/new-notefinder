@@ -13,20 +13,33 @@ import {
   readCampaignTouches,
 } from '../campaign-touches';
 
+const acquisitionRecordedKey = (userId: string) =>
+  `notefinder:acquisition-recorded:${userId}`;
+
 /** Captures campaign arrivals and attaches them after either sign-up flow. */
 export function AcquisitionAttributor() {
   const { data: user, isPending } = useQuery(sessionUserOptions());
   const sentForUser = useRef<string | null>(null);
   const { mutate } = useMutation({
-    mutationFn: async (body: RecordAcquisitionBody) => {
+    mutationFn: async (input: {
+      userId: string;
+      body: RecordAcquisitionBody;
+    }) => {
       const [{ browserApi }, { acquisitionRecordedSchema }] = await Promise.all(
         [import('@/lib/api/browser'), import('@notefinder/contracts')],
       );
       return browserApi('/me/acquisition', {
         method: 'POST',
-        body,
+        body: input.body,
         schema: acquisitionRecordedSchema,
       });
+    },
+    onSuccess: (_response, { userId }) => {
+      try {
+        window.localStorage.setItem(acquisitionRecordedKey(userId), 'true');
+      } catch {
+        // Attribution must not block the signed-in page.
+      }
     },
     onSettled: () => {
       try {
@@ -60,9 +73,10 @@ export function AcquisitionAttributor() {
 
     try {
       const storage = window.localStorage;
+      if (storage.getItem(acquisitionRecordedKey(user.id)) === 'true') return;
       const touches = readCampaignTouches(storage);
       const visitorId = getOrCreateVisitorId(storage);
-      mutate({ visitorId, ...touches });
+      mutate({ userId: user.id, body: { visitorId, ...touches } });
     } catch {
       // Storage may be unavailable; sign-up and navigation must still work.
     }
