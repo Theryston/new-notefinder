@@ -43,11 +43,14 @@ export function PeopleLayout({
               className="group flex h-full flex-col items-center gap-2 rounded-2xl p-2 text-center outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <Avatar className="size-20 border border-border md:size-24">
+                {/* Stored Google and legacy Avatar URLs may not match the optimizer hosts. */}
                 {person.image ? (
                   <AvatarImage
+                    keepMounted
                     render={
                       <Image
                         fill
+                        unoptimized
                         sizes="(max-width: 768px) 80px, 96px"
                         src={person.image}
                         alt=""
