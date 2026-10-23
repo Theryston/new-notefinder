@@ -31,22 +31,53 @@ export class TrackViewsService {
     trackId: string;
     userId: string | undefined;
     viewId: string | undefined;
+    clickId?: string;
+    visitorId?: string;
     locale?: Locale;
   }): Promise<RecordedView> {
-    const { trackId, userId, viewId, locale } = options;
+    const { trackId, userId, viewId, clickId, visitorId, locale } = options;
     await this.tracks.assertTrackExists(trackId);
     const existing =
       viewId === undefined
         ? undefined
         : await this.views.findView(viewId, trackId);
-    if (existing !== undefined) {
+    if (
+      existing !== undefined &&
+      (clickId === undefined || existing.clickId === clickId)
+    ) {
+      if (visitorId !== undefined && existing.visitorId === null) {
+        await this.views.attachVisitor(existing.id, visitorId);
+      }
       if (userId !== undefined && existing.userId === null) {
         await this.views.attachUser(existing.id, userId);
       }
       return { viewId: existing.id, created: false };
     }
-    const created = await this.views.create(trackId, userId ?? null, locale);
+    const created = await this.createView({
+      trackId,
+      userId: userId ?? null,
+      locale,
+      clickId,
+      visitorId,
+    });
     await this.trending.schedule(trackId);
     return { viewId: created, created: true };
+  }
+
+  private createView(options: {
+    trackId: string;
+    userId: string | null;
+    locale: Locale | undefined;
+    clickId: string | undefined;
+    visitorId: string | undefined;
+  }): Promise<string> {
+    const { trackId, userId, locale, clickId, visitorId } = options;
+    if (clickId === undefined && visitorId === undefined) {
+      return this.views.create(trackId, userId, locale);
+    }
+    return this.views.create(trackId, userId, locale, {
+      ...(clickId === undefined ? {} : { clickId }),
+      ...(visitorId === undefined ? {} : { visitorId }),
+    });
   }
 }

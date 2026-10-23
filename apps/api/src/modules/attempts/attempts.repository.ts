@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import {
@@ -39,6 +39,8 @@ export type VocalRangeGroupRow = {
   bestAccuracy: number;
 };
 
+export type UserVocalRangeGroupRow = VocalRangeGroupRow & { userId: string };
+
 /**
  * The runs of a User on the Tracks of one artist, split by the bleed flag,
  * with how many there are and when the latest one was saved.
@@ -49,6 +51,14 @@ export type ArtistGroupRow = {
   bleedSuspected: boolean;
   attempts: number;
   lastAttemptAt: Date;
+};
+
+/** One valid or bleed-suspected run on one credited Artist. */
+export type ArtistActivityRow = {
+  artistId: string;
+  artistName: string;
+  bleedSuspected: boolean;
+  createdAt: Date;
 };
 
 /** The fields of a run the page scored, with its owner and Track. */
@@ -65,6 +75,7 @@ export type NewPracticeAttempt = {
   bleedSuspected: boolean;
   startedAt: Date;
   endedAt: Date;
+  viewId?: string;
 };
 
 @Injectable()
@@ -148,6 +159,35 @@ export class AttemptsRepository {
       );
   }
 
+  /** The same Profile range inputs for a batch of Users. */
+  listVocalRangeGroupsByUserIds(
+    userIds: string[],
+  ): Promise<UserVocalRangeGroupRow[]> {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return this.txHost.tx
+      .select({
+        userId: practiceAttempts.userId,
+        trackVocalRangeLowest: tracks.vocalRangeLowest,
+        trackVocalRangeHighest: tracks.vocalRangeHighest,
+        transposeSemitones: practiceAttempts.transposeSemitones,
+        forwardSkip: practiceAttempts.forwardSkip,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        bestAccuracy: sql<number>`max(${practiceAttempts.accuracy})`,
+      })
+      .from(practiceAttempts)
+      .innerJoin(tracks, eq(tracks.id, practiceAttempts.trackId))
+      .where(inArray(practiceAttempts.userId, userIds))
+      .groupBy(
+        practiceAttempts.userId,
+        tracks.id,
+        tracks.vocalRangeLowest,
+        tracks.vocalRangeHighest,
+        practiceAttempts.transposeSemitones,
+        practiceAttempts.forwardSkip,
+        practiceAttempts.bleedSuspected,
+      );
+  }
+
   /**
    * The User's runs per credited artist, split by the bleed flag: one row per
    * artist and flag, counting the runs on that artist's Tracks.
@@ -172,6 +212,24 @@ export class AttemptsRepository {
       .innerJoin(artists, eq(artists.id, trackArtists.artistId))
       .where(eq(practiceAttempts.userId, userId))
       .groupBy(artists.id, artists.name, practiceAttempts.bleedSuspected);
+  }
+
+  /** Each run stays separate so downstream taste decay applies before summing. */
+  listArtistActivities(userId: string): Promise<ArtistActivityRow[]> {
+    return this.txHost.tx
+      .select({
+        artistId: artists.id,
+        artistName: artists.name,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        createdAt: practiceAttempts.createdAt,
+      })
+      .from(practiceAttempts)
+      .innerJoin(
+        trackArtists,
+        eq(trackArtists.trackId, practiceAttempts.trackId),
+      )
+      .innerJoin(artists, eq(artists.id, trackArtists.artistId))
+      .where(eq(practiceAttempts.userId, userId));
   }
 
   /** Up to `limit` attempts of the User after the cursor, newest first. */

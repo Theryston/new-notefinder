@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import type { HomeRow, HomeTrack, Locale } from '@notefinder/contracts';
+import type { HomeRow, HomeTrack } from '@notefinder/contracts';
 import { StreaksService } from '../streaks/streaks.service.js';
 import { UsersService } from '../users/users.service.js';
 import { HomeFeedService } from './home-feed.service.js';
@@ -9,6 +9,7 @@ import {
   type UserTrackSignal,
 } from './home-personal.repository.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 
 const track = (id: string, overrides: Partial<HomeTrack> = {}): HomeTrack => ({
   id,
@@ -75,6 +76,11 @@ const personal = {
   findUserFavoriteSignals: vi.fn(),
   findDiscoveryTracks: vi.fn(),
 };
+const tasteRows = {
+  findUserTasteActivities: vi.fn(),
+  build: vi.fn(),
+  explorationRow: vi.fn(),
+};
 const streaks = { getStatus: vi.fn() };
 const users = {
   getPracticeSettings: vi.fn().mockResolvedValue({
@@ -96,21 +102,26 @@ const discoveryOf = (ids: string[], scores: Record<string, number>) =>
     ]),
   );
 
-const build = async (): Promise<{
-  audience: string;
-  version: string;
-  rows: HomeRow[];
-}> => {
+const createBuilder = async (): Promise<PersonalHomeBuilder> => {
   const moduleRef = await Test.createTestingModule({
     providers: [
       PersonalHomeBuilder,
       { provide: HomeFeedService, useValue: feeds },
       { provide: PersonalHomeRepository, useValue: personal },
+      { provide: PersonalHomeTasteRowsService, useValue: tasteRows },
       { provide: StreaksService, useValue: streaks },
       { provide: UsersService, useValue: users },
     ],
   }).compile();
-  return moduleRef.get(PersonalHomeBuilder).build('user-1', 'en' as Locale);
+  return moduleRef.get(PersonalHomeBuilder);
+};
+
+const build = async (): Promise<{
+  audience: string;
+  version: string;
+  rows: HomeRow[];
+}> => {
+  return createBuilder().then((builder) => builder.build('user-1', 'en'));
 };
 
 const resetWith = (options: {
@@ -124,6 +135,7 @@ const resetWith = (options: {
   feeds.currentPublic.mockResolvedValue(publicFeedOf(ids));
   personal.findUserTrackSignals.mockResolvedValue(options.signals ?? []);
   personal.findUserFavoriteSignals.mockResolvedValue(options.favorites ?? []);
+  tasteRows.findUserTasteActivities.mockResolvedValue([]);
   personal.findDiscoveryTracks.mockResolvedValue(
     discoveryOf(ids, options.scores ?? {}),
   );
@@ -139,6 +151,9 @@ const itemIdsOf = (row: HomeRow | undefined): string[] =>
 describe('PersonalHomeBuilder', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    tasteRows.build.mockResolvedValue([]);
+    tasteRows.findUserTasteActivities.mockResolvedValue([]);
+    tasteRows.explorationRow.mockResolvedValue(undefined);
     users.getPracticeSettings.mockResolvedValue({
       dailyPracticeTargetSeconds: 300,
       timeZone: 'America/Sao_Paulo',
@@ -174,18 +189,7 @@ describe('PersonalHomeBuilder', () => {
     resetWith({});
     const first = await build();
 
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        PersonalHomeBuilder,
-        { provide: HomeFeedService, useValue: feeds },
-        { provide: PersonalHomeRepository, useValue: personal },
-        { provide: StreaksService, useValue: streaks },
-        { provide: UsersService, useValue: users },
-      ],
-    }).compile();
-    const second = await moduleRef
-      .get(PersonalHomeBuilder)
-      .build('user-2', 'en' as Locale);
+    const second = await (await createBuilder()).build('user-2', 'en');
 
     expect(second.version).not.toBe(first.version);
   });
@@ -255,6 +259,13 @@ describe('PersonalHomeBuilder', () => {
       signals: [signal('t7', { attempts: 60, genres: ['jazz'] })],
       scores: { t1: 100, t7: 1 },
     });
+    tasteRows.findUserTasteActivities.mockResolvedValue(
+      Array.from({ length: 60 }, () => ({
+        genres: ['jazz'],
+        artistKey: 'Artist t7',
+        createdAt: new Date(),
+      })),
+    );
     personal.findDiscoveryTracks.mockResolvedValue(
       new Map(
         ids.map((id) => [

@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
 import { AttemptsModule } from '../attempts/attempts.module.js';
+import { AttemptsProfileModule } from '../attempts/attempts-profile.module.js';
 import { EditorialPinsModule } from '../editorial-pins/editorial-pins.module.js';
 import { StreaksModule } from '../streaks/streaks.module.js';
 import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
@@ -21,6 +22,8 @@ import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeStore } from './home-personal.store.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
 import { PersonalHomeQueueModule } from './home-personal-queue.module.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 import { HomePinOverlayService } from './home-pin-overlay.service.js';
 import {
   createHomeEntityRowSources,
@@ -28,6 +31,9 @@ import {
   HOME_ENTITY_ROW_SOURCES,
   HOME_ROW_SOURCES,
 } from './home-row-sources.js';
+import { HomeSocialRepository } from './home-social.repository.js';
+import { HomeSocialService } from './home-social.service.js';
+import { HomeSocialStore } from './home-social.store.js';
 import { createVoiceRowSources } from './home-voice-row-sources.js';
 
 @Module({
@@ -40,6 +46,7 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     StreaksModule,
     WebRevalidationModule,
     EditorialPinsModule,
+    AttemptsProfileModule,
   ],
   controllers: [HomeController, HomeAdminController],
   providers: [
@@ -67,8 +74,13 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     HomePinOverlayService,
     HomeFeedProcessor,
     PersonalHomeRepository,
+    HomeSocialRepository,
+    HomeSocialService,
+    HomeSocialStore,
     PersonalHomeStore,
     PersonalHomeBuilder,
+    PersonalHomeTasteRowsService,
+    PersonalHomeTasteRepository,
     PersonalHomeProcessor,
   ],
 })

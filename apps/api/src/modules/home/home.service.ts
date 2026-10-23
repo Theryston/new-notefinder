@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type {
   HomeFeed,
   HomePinPreviewRequest,
@@ -22,6 +22,7 @@ import {
   PUBLIC_HOME_CACHE_CONTROL,
   UNCACHED_HOME_CACHE_CONTROL,
 } from './home-rules.js';
+import { HomeSocialService } from './home-social.service.js';
 
 export type HomePage = {
   page: HomeFeed;
@@ -86,6 +87,11 @@ export class HomeService {
     @Optional() private readonly snapshots?: PersonalHomeStore,
     @Optional() private readonly refresh?: PersonalHomeQueueService,
   ) {}
+
+  // Visibility changes must mask social snapshots on every signed-in read.
+  @Optional()
+  @Inject(HomeSocialService)
+  private readonly social?: HomeSocialService;
 
   /**
    * The first page is the locale's current feed; a cursor resumes the version
@@ -153,9 +159,10 @@ export class HomeService {
     if (!snapshot) {
       await this.requestRefresh(userId, locale);
       const { feed, cacheable } = await this.feeds.currentPublic(locale);
+      const currentRows = await this.withSocialRows(feed.rows, userId);
       const shown = cacheable
-        ? await this.withPins(feed.rows, locale, true)
-        : feed.rows;
+        ? await this.withPins(currentRows, locale, true)
+        : currentRows;
       // No snapshot yet: the public rows go out at once, as the personal
       // answer, while the rebuild runs.
       return this.answer(
@@ -173,7 +180,8 @@ export class HomeService {
     ) {
       await this.requestRefresh(userId, locale);
     }
-    const shown = await this.withPins(snapshot.rows, locale, true);
+    const currentRows = await this.withSocialRows(snapshot.rows, userId);
+    const shown = await this.withPins(currentRows, locale, true);
     return this.answer({ ...snapshot, rows: shown }, 0, true, true);
   }
 
@@ -210,7 +218,8 @@ export class HomeService {
     const { version, position } = decodeHomeCursor(cursor);
     const snapshot = await this.snapshotVersion(userId, locale, version);
     if (snapshot) {
-      const shown = await this.withPins(snapshot.rows, snapshot.locale, true);
+      const currentRows = await this.withSocialRows(snapshot.rows, userId);
+      const shown = await this.withPins(currentRows, snapshot.locale, true);
       return this.answer({ ...snapshot, rows: shown }, position, true, true);
     }
     const page = await this.versionPage(cursor, false);
@@ -253,6 +262,16 @@ export class HomeService {
       return rows;
     }
     return this.pinOverlay.apply(rows, { locale, signedIn });
+  }
+
+  /** Rebuilds social rows from current profile visibility before serving cache. */
+  private async withSocialRows(
+    rows: HomeRow[],
+    userId: string,
+  ): Promise<HomeRow[]> {
+    if (!this.social) return rows;
+    const retained = rows.filter((row) => row.layout !== 'people');
+    return [...retained, ...(await this.social.rowsFor(userId))];
   }
 
   private async answer(

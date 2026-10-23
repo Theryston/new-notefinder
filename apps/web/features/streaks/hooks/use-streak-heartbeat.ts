@@ -24,6 +24,7 @@ export function useStreakHeartbeat(
   singing: boolean,
   onCompleted: (status: StreakStatus) => void,
   account?: string,
+  viewId?: () => string | undefined,
 ) {
   const queryClient = useQueryClient();
   const heartbeat = useMutation({
@@ -42,12 +43,15 @@ export function useStreakHeartbeat(
   const singingRef = useRef(singing);
   singingRef.current = singing;
   const loop = useRef<HeartbeatLoop | null>(null);
+  const viewIdRef = useRef(viewId);
+  viewIdRef.current = viewId;
 
   useEffect(() => {
     let active = true;
     const started = startHeartbeatLoop({
       now: () => performance.now(),
       timeZone: browserTimeZone,
+      viewId: () => viewIdRef.current?.(),
       send: (body) => send.current(body),
       beacon: (body) => {
         const { url, data } = heartbeatBeacon(

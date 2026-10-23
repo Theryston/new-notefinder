@@ -4,41 +4,31 @@ import { and, count, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { dailyPracticeStreaks } from '../../database/schema/daily-practice-streaks.js';
 import { practiceAttempts } from '../../database/schema/practice-attempts.js';
+import { trackCooccurrences } from '../../database/schema/track-cooccurrences.js';
 import { trackFavorites } from '../../database/schema/track-favorites.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import {
   type StoredArtistCreditEntry,
   tracks,
 } from '../../database/schema/tracks.js';
+import type {
+  PersonalTrackCandidate,
+  UserFavoriteSignal,
+  UserTrackSignal,
+} from './home-personal.repository.types.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+
+export type {
+  PersonalTrackCandidate,
+  UserFavoriteSignal,
+  UserTrackSignal,
+} from './home-personal.repository.types.js';
 
 /** The artist key the composer's per-row cap and the taste count by. */
 const signalArtistKey = (
   credit: StoredArtistCreditEntry[],
   trackId: string,
 ): string => credit[0]?.mbid ?? credit[0]?.name ?? trackId;
-
-/** One Track the User practiced, with what the resume rows show. */
-export type UserTrackSignal = {
-  trackId: string;
-  attempts: number;
-  bestAccuracy: number;
-  lastAttemptAt: Date;
-  genres: string[];
-  artistKey: string;
-  title: string;
-  coverUrl: string | null;
-  artistCredit: { name: string; joinPhrase: string }[];
-  durationMs: number | null;
-  vocalRangeLowest: number | null;
-  vocalRangeHighest: number | null;
-};
-
-/** One Track the User favorited, with what the taste counts. */
-export type UserFavoriteSignal = {
-  trackId: string;
-  genres: string[];
-  artistKey: string;
-};
 
 /**
  * The User signals the personal feed blends in. The attempt and favorite
@@ -48,13 +38,11 @@ export type UserFavoriteSignal = {
  */
 @Injectable()
 export class PersonalHomeRepository {
-  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+  constructor(
+    private readonly txHost: TransactionHost<DatabaseAdapter>,
+    private readonly tasteRepository: PersonalHomeTasteRepository,
+  ) {}
 
-  /**
-   * One row per Track the User practiced whose Processing completed, with the
-   * run count, the best accuracy, the latest run and the card fields. Newest
-   * run first, so the resume rows lead with where the User left off.
-   */
   async findUserTrackSignals(userId: string): Promise<UserTrackSignal[]> {
     const rows = await this.txHost.tx
       .select({
@@ -111,16 +99,13 @@ export class PersonalHomeRepository {
     }));
   }
 
-  /**
-   * The Tracks the User favorited whose Processing completed, with what the
-   * taste counts.
-   */
   async findUserFavoriteSignals(userId: string): Promise<UserFavoriteSignal[]> {
     const rows = await this.txHost.tx
       .select({
         trackId: trackFavorites.trackId,
         genres: tracks.genres,
         credit: tracks.artistCredit,
+        createdAt: trackFavorites.createdAt,
       })
       .from(trackFavorites)
       .innerJoin(tracks, eq(tracks.id, trackFavorites.trackId))
@@ -134,23 +119,130 @@ export class PersonalHomeRepository {
       trackId: row.trackId,
       genres: row.genres,
       artistKey: signalArtistKey(row.credit, row.trackId),
+      createdAt: row.createdAt,
     }));
   }
 
-  /** The trending scores of the Tracks given, keyed by Track. */
-  async findTrendingScores(ids: string[]): Promise<Map<string, number>> {
-    return new Map(
-      [...(await this.findDiscoveryTracks(ids)).entries()].map(
-        ([id, track]) => [id, track.trendingScore],
-      ),
-    );
+  /** Rebuilds the bounded, global co-occurrence ranking consumed by personal feeds. */
+  async refreshCommunityCooccurrence(): Promise<void> {
+    const result = await this.txHost.tx.execute<{
+      sourceTrackId: string;
+      targetTrackId: string;
+      singerCount: number;
+    }>(sql`
+        with signals as (
+          select distinct user_id, track_id from ${practiceAttempts}
+          where forward_skip = false and bleed_suspected = false
+          union
+          select user_id, track_id from ${trackFavorites}
+        ), pairs as (
+          select source.track_id as "sourceTrackId",
+            target.track_id as "targetTrackId",
+            count(distinct source.user_id)::int as "singerCount"
+          from signals source
+          inner join signals target on target.user_id = source.user_id
+          where target.track_id <> source.track_id
+          group by source.track_id, target.track_id
+          having count(distinct source.user_id) >= 2
+        ), ranked as (
+          select "sourceTrackId", "targetTrackId", "singerCount",
+            row_number() over (
+              partition by "sourceTrackId"
+              order by "singerCount" desc, "targetTrackId" asc
+            ) as rank
+          from pairs
+        )
+        select "sourceTrackId", "targetTrackId", "singerCount"
+        from ranked where rank <= 12
+    `);
+    await this.txHost.tx.delete(trackCooccurrences);
+    if (result.rows.length > 0) {
+      await this.txHost.tx.insert(trackCooccurrences).values(result.rows);
+    }
   }
 
-  /**
-   * What the discovery blend needs of the Tracks given: their trending score
-   * for the popularity, their genres and artist for the taste. Completed
-   * Tracks only, like every home query.
-   */
+  async findCommunityCooccurrence(
+    sourceTrackIds: string[],
+  ): Promise<
+    { sourceTrackId: string; targetTrackId: string; singers: number }[]
+  > {
+    if (sourceTrackIds.length === 0) {
+      return [];
+    }
+    const rows = await this.txHost.tx
+      .select({
+        sourceTrackId: trackCooccurrences.sourceTrackId,
+        targetTrackId: trackCooccurrences.targetTrackId,
+        singers: trackCooccurrences.singerCount,
+      })
+      .from(trackCooccurrences)
+      .where(inArray(trackCooccurrences.sourceTrackId, sourceTrackIds))
+      .orderBy(
+        desc(trackCooccurrences.singerCount),
+        trackCooccurrences.targetTrackId,
+      );
+    return rows;
+  }
+
+  findUserSungTrackSources(
+    userId: string,
+    limit: number,
+  ): Promise<{ trackId: string; lastAttemptAt: Date }[]> {
+    return this.txHost.tx
+      .select({
+        trackId: practiceAttempts.trackId,
+        lastAttemptAt: sql<Date>`max(${practiceAttempts.createdAt})`.mapWith(
+          practiceAttempts.createdAt,
+        ),
+      })
+      .from(practiceAttempts)
+      .where(
+        and(
+          eq(practiceAttempts.userId, userId),
+          eq(practiceAttempts.forwardSkip, false),
+          eq(practiceAttempts.bleedSuspected, false),
+        ),
+      )
+      .groupBy(practiceAttempts.trackId)
+      .orderBy(desc(sql`max(${practiceAttempts.createdAt})`))
+      .limit(limit);
+  }
+
+  async findCommunityTrackCards(
+    ids: string[],
+  ): Promise<PersonalTrackCandidate[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.txHost.tx
+      .select({
+        id: tracks.id,
+        title: tracks.title,
+        coverUrl: tracks.coverUrl,
+        artistCredit: tracks.artistCredit,
+        durationMs: tracks.lengthMs,
+        vocalRangeLowest: tracks.vocalRangeLowest,
+        vocalRangeHighest: tracks.vocalRangeHighest,
+        genres: tracks.genres,
+        trendingScore: tracks.trendingScore,
+      })
+      .from(tracks)
+      .where(and(hasCompletedProcessing(tracks.id), inArray(tracks.id, ids)));
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [row] : [];
+    });
+  }
+
+  async findTracksOutsideGenres(
+    genres: string[],
+    limit: number,
+  ): Promise<PersonalTrackCandidate[]> {
+    if (genres.length === 0) return [];
+    return this.tasteRepository.findTracksOutsideGenres(genres, limit);
+  }
+
   async findDiscoveryTracks(
     ids: string[],
   ): Promise<
@@ -180,11 +272,6 @@ export class PersonalHomeRepository {
     );
   }
 
-  /**
-   * The Users with an Attempt or a practice heartbeat since `since`: the ones
-   * the nightly batch rebuilds. Capped, so a huge backlog can't flood the
-   * queue; the cap is a home rule, passed in by the caller.
-   */
   async findActiveUserIds(since: Date, limit: number): Promise<string[]> {
     const [attempted, heartbeated] = await Promise.all([
       this.txHost.tx

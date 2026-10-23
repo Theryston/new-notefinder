@@ -54,6 +54,9 @@ test('waits for an anonymous view across sign-in before attaching its ID', async
       },
     ],
   });
+  await page.addInitScript(() =>
+    localStorage.setItem('notefinder:visitor-id', 'pending-view-visitor'),
+  );
   await page.goto(`/en/tracks/${trackId}`);
   await expect.poll(() => posts.length).toBe(1);
   await page
@@ -77,5 +80,8 @@ test('waits for an anonymous view across sign-in before attaching its ID', async
   ).toBeVisible();
   release();
   await expect.poll(() => posts.length).toBe(2);
-  expect(posts).toEqual([{ locale: 'en' }, { viewId: 'pending-view' }]);
+  expect(posts).toEqual([
+    { locale: 'en', visitorId: 'pending-view-visitor' },
+    { viewId: 'pending-view', visitorId: 'pending-view-visitor' },
+  ]);
 });

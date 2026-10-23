@@ -34,7 +34,12 @@ const windowCounts = (starts: ViewWindowStarts) => ({
 });
 
 /** A recorded view, as far as attaching a User to it needs. */
-export type StoredView = { id: string; userId: string | null };
+export type StoredView = {
+  id: string;
+  userId: string | null;
+  clickId: string | null;
+  visitorId: string | null;
+};
 
 /** Track views, and the counts the trending score is made of. */
 @Injectable()
@@ -45,10 +50,11 @@ export class TrackViewRepository {
     trackId: string,
     userId: string | null,
     locale: Locale | undefined,
+    attribution?: { clickId?: string; visitorId?: string },
   ): Promise<string> {
     const [row] = await this.txHost.tx
       .insert(trackViews)
-      .values({ trackId, userId, locale })
+      .values({ trackId, userId, locale, ...attribution })
       .returning({ id: trackViews.id });
     if (row === undefined) {
       throw new Error('Insert returned no row');
@@ -62,7 +68,12 @@ export class TrackViewRepository {
     trackId: string,
   ): Promise<StoredView | undefined> {
     const [row] = await this.txHost.tx
-      .select({ id: trackViews.id, userId: trackViews.userId })
+      .select({
+        id: trackViews.id,
+        userId: trackViews.userId,
+        clickId: trackViews.clickId,
+        visitorId: trackViews.visitorId,
+      })
       .from(trackViews)
       .where(and(eq(trackViews.id, viewId), eq(trackViews.trackId, trackId)))
       .limit(1);
@@ -75,6 +86,14 @@ export class TrackViewRepository {
       .update(trackViews)
       .set({ userId })
       .where(and(eq(trackViews.id, viewId), isNull(trackViews.userId)));
+  }
+
+  /** Backfills an anonymous visitor id without replacing an existing one. */
+  async attachVisitor(viewId: string, visitorId: string): Promise<void> {
+    await this.txHost.tx
+      .update(trackViews)
+      .set({ visitorId })
+      .where(and(eq(trackViews.id, viewId), isNull(trackViews.visitorId)));
   }
 
   /** The Track's views per window and over all time. */

@@ -5,7 +5,7 @@ import {
 
 export const VISITOR_ID_KEY = SHARED_VISITOR_ID_KEY;
 
-/** The home events feature shares the same browser identifier as sign-up. */
+/** The stored visitor id, or a fresh one stored for the next page load. */
 export function getOrCreateVisitorId(
   storage: Pick<Storage, 'getItem' | 'setItem'>,
 ): string {

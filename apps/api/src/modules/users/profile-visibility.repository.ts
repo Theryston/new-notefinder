@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { users } from '../../database/schema/users.js';
 
@@ -54,6 +54,15 @@ export class ProfileVisibilityRepository {
       .where(eq(users.username, username))
       .limit(1);
     return row;
+  }
+
+  /** The current section flags for a bounded set of public Profile owners. */
+  async findManyByIds(ids: string[]): Promise<ProfileVisibilityRow[]> {
+    if (ids.length === 0) return [];
+    return this.txHost.tx
+      .select(profileVisibilityColumns)
+      .from(users)
+      .where(inArray(users.id, ids));
   }
 
   /** Sets the section flags given and returns the User's flags, or nothing when gone. */
