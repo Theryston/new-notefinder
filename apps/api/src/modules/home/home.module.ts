@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { WebRevalidationModule } from '../../integrations/web-revalidation/web-revalidation.module.js';
 import { AttemptsModule } from '../attempts/attempts.module.js';
+import { AttemptsProfileModule } from '../attempts/attempts-profile.module.js';
 import { EditorialPinsModule } from '../editorial-pins/editorial-pins.module.js';
 import { StreaksModule } from '../streaks/streaks.module.js';
 import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
@@ -27,6 +28,9 @@ import {
   HOME_ENTITY_ROW_SOURCES,
   HOME_ROW_SOURCES,
 } from './home-row-sources.js';
+import { HomeSocialRepository } from './home-social.repository.js';
+import { HomeSocialService } from './home-social.service.js';
+import { HomeSocialStore } from './home-social.store.js';
 import { createVoiceRowSources } from './home-voice-row-sources.js';
 
 @Module({
@@ -39,6 +43,7 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     StreaksModule,
     WebRevalidationModule,
     EditorialPinsModule,
+    AttemptsProfileModule,
   ],
   controllers: [HomeController],
   providers: [
@@ -66,6 +71,9 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     HomePinOverlayService,
     HomeFeedProcessor,
     PersonalHomeRepository,
+    HomeSocialRepository,
+    HomeSocialService,
+    HomeSocialStore,
     PersonalHomeStore,
     PersonalHomeBuilder,
     PersonalHomeProcessor,

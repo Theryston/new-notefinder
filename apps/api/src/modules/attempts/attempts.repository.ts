@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
 import {
@@ -38,6 +38,8 @@ export type VocalRangeGroupRow = {
   bleedSuspected: boolean;
   bestAccuracy: number;
 };
+
+export type UserVocalRangeGroupRow = VocalRangeGroupRow & { userId: string };
 
 /**
  * The runs of a User on the Tracks of one artist, split by the bleed flag,
@@ -140,6 +142,35 @@ export class AttemptsRepository {
       .innerJoin(tracks, eq(tracks.id, practiceAttempts.trackId))
       .where(eq(practiceAttempts.userId, userId))
       .groupBy(
+        tracks.id,
+        tracks.vocalRangeLowest,
+        tracks.vocalRangeHighest,
+        practiceAttempts.transposeSemitones,
+        practiceAttempts.forwardSkip,
+        practiceAttempts.bleedSuspected,
+      );
+  }
+
+  /** The same Profile range inputs for a batch of Users. */
+  listVocalRangeGroupsByUserIds(
+    userIds: string[],
+  ): Promise<UserVocalRangeGroupRow[]> {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return this.txHost.tx
+      .select({
+        userId: practiceAttempts.userId,
+        trackVocalRangeLowest: tracks.vocalRangeLowest,
+        trackVocalRangeHighest: tracks.vocalRangeHighest,
+        transposeSemitones: practiceAttempts.transposeSemitones,
+        forwardSkip: practiceAttempts.forwardSkip,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        bestAccuracy: sql<number>`max(${practiceAttempts.accuracy})`,
+      })
+      .from(practiceAttempts)
+      .innerJoin(tracks, eq(tracks.id, practiceAttempts.trackId))
+      .where(inArray(practiceAttempts.userId, userIds))
+      .groupBy(
+        practiceAttempts.userId,
         tracks.id,
         tracks.vocalRangeLowest,
         tracks.vocalRangeHighest,

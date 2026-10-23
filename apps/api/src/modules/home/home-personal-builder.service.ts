@@ -31,6 +31,7 @@ import {
   personalVoiceRowTrackIds,
 } from './home-personal-voice.js';
 import { DEFAULT_HOME_LOCALE, HOME_ALGORITHM_VERSION } from './home-rules.js';
+import { HomeSocialService } from './home-social.service.js';
 
 const title = (key: string): HomeRowTitle => ({ key, params: {} });
 
@@ -89,6 +90,10 @@ export class PersonalHomeBuilder {
     private readonly users: UsersService,
   ) {}
 
+  @Optional()
+  @Inject(HomeSocialService)
+  private readonly social?: HomeSocialService;
+
   async build(
     userId: string,
     locale: Locale = DEFAULT_HOME_LOCALE,
@@ -101,6 +106,8 @@ export class PersonalHomeBuilder {
         this.users.getPracticeSettings(userId),
         this.attempts?.vocalRange(userId) ?? Promise.resolve(null),
       ]);
+    const socialRows = await (this.social?.rowsFor(userId) ??
+      Promise.resolve([]));
     const rows = await this.personalRowsFor({
       userId,
       timeZone: settings.timeZone,
@@ -108,6 +115,7 @@ export class PersonalHomeBuilder {
       signals,
       favorites,
       userRange,
+      socialRows,
     });
     return {
       audience: 'personal',
@@ -126,16 +134,20 @@ export class PersonalHomeBuilder {
     signals: UserTrackSignal[];
     favorites: UserFavoriteSignal[];
     userRange: TrackVocalRange | null;
+    socialRows: HomeRow[];
   }): Promise<HomeRow[]> {
-    const { userId, timeZone, publicRows, signals, favorites, userRange } =
-      options;
+    const {
+      userId,
+      timeZone,
+      publicRows,
+      signals,
+      favorites,
+      userRange,
+      socialRows,
+    } = options;
     const { taste, signalCount } = buildTaste(signals, favorites);
     const lambda = personalLambda(signalCount);
-    const mastered = new Set(
-      signals
-        .filter((signal) => isMasteredTrack(signal.bestAccuracy))
-        .map((signal) => signal.trackId),
-    );
+    const mastered = this.masteredTrackIds(signals);
     const resumeRows = this.resumeRows(signals, mastered);
     const resumeTrackIds = new Set(
       resumeRows
@@ -154,15 +166,13 @@ export class PersonalHomeBuilder {
       masteredTrackIds: mastered,
       userRange,
     });
-    const voiceRows = userRange
-      ? buildPersonalVoiceRows({
-          rows: publicRows,
-          userRange,
-          discovery,
-          masteredTrackIds: mastered,
-          alreadyUsedTrackIds: resumeTrackIds,
-        })
-      : [];
+    const voiceRows = this.voiceRowsFor({
+      publicRows,
+      userRange,
+      discovery,
+      mastered,
+      alreadyUsedTrackIds: resumeTrackIds,
+    });
     const usedTrackIds = new Set([
       ...resumeTrackIds,
       ...personalVoiceRowTrackIds(voiceRows),
@@ -170,6 +180,7 @@ export class PersonalHomeBuilder {
     const rows: HomeRow[] = [
       ...resumeRows,
       await this.dailyTargetRow(userId, timeZone),
+      ...socialRows,
       ...voiceRows,
       ...buildPersonalDiscoveryRows({
         publicRows,
@@ -179,6 +190,36 @@ export class PersonalHomeBuilder {
       }),
     ];
     return rows;
+  }
+
+  private masteredTrackIds(signals: UserTrackSignal[]): Set<string> {
+    return new Set(
+      signals
+        .filter((signal) => isMasteredTrack(signal.bestAccuracy))
+        .map((signal) => signal.trackId),
+    );
+  }
+
+  private voiceRowsFor(options: {
+    publicRows: HomeRow[];
+    userRange: TrackVocalRange | null;
+    discovery: Awaited<
+      ReturnType<PersonalHomeRepository['findDiscoveryTracks']>
+    >;
+    mastered: Set<string>;
+    alreadyUsedTrackIds: Set<string>;
+  }): ReturnType<typeof buildPersonalVoiceRows> {
+    const { publicRows, userRange, discovery, mastered, alreadyUsedTrackIds } =
+      options;
+    return userRange
+      ? buildPersonalVoiceRows({
+          rows: publicRows,
+          userRange,
+          discovery,
+          masteredTrackIds: mastered,
+          alreadyUsedTrackIds,
+        })
+      : [];
   }
 
   /**

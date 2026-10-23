@@ -40,6 +40,7 @@ const expectedPlacement: Record<HomeRow['layout'], SponsoredPlacement> = {
   genres: 'line',
   artists: 'line',
   albums: 'line',
+  people: 'line',
 };
 
 // The text each placement shows, from the locale file (hero caption vs row line).
@@ -111,6 +112,18 @@ const plainRows = {
       },
     ],
   },
+  people: {
+    id: 'people',
+    layout: 'people',
+    title: { key: 'home.rows.peopleWhoSingWhatYouSing', params: {} },
+    items: Array.from({ length: 6 }, (_, index) => ({
+      id: `person-${index}`,
+      username: `person-${index}`,
+      name: `Person ${index}`,
+      image: null,
+      commonTracks: 3,
+    })),
+  },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 const sponsoredRows = {
@@ -122,6 +135,7 @@ const sponsoredRows = {
   genres: { ...plainRows.genres, sponsored: true },
   artists: { ...plainRows.artists, sponsored: true },
   albums: { ...plainRows.albums, sponsored: true },
+  people: { ...plainRows.people, sponsored: true },
 } satisfies Record<HomeRow['layout'], HomeRow>;
 
 function renderLayout(node: ReactNode): string {
@@ -163,6 +177,15 @@ describe('home layout registry', () => {
     );
 
     expect(markup).toBe('');
+  });
+
+  it('links each person to their Profile and shows the common-Track count', () => {
+    const markup = renderLayout(
+      homeLayoutRegistry.people.render(plainRows.people, false),
+    );
+
+    expect(markup).toContain('href="/en/users/person-0"');
+    expect(markup).toContain('3 tracks in common');
   });
 
   for (const layout of layouts) {

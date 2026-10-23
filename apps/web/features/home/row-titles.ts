@@ -22,6 +22,8 @@ export const HOME_ROW_TITLE_KEYS = [
   'home.rows.withinYourVoice',
   'home.rows.challengeYourRange',
   'home.rows.dailyTarget',
+  'home.rows.peopleWhoSingWhatYouSing',
+  'home.rows.similarVoices',
 ] as const;
 
 export type HomeRowTitleKey = (typeof HOME_ROW_TITLE_KEYS)[number];

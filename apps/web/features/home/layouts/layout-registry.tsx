@@ -8,6 +8,7 @@ import { CarouselLayout } from './carousel-layout';
 import { DailyTargetLayout } from './daily-target-layout';
 import { GenresLayout } from './genres-layout';
 import { HeroLayout } from './hero-layout';
+import { PeopleLayout } from './people-layout';
 import { RankedLayout } from './ranked-layout';
 import { VocalRangeLayout } from './vocal-range-layout';
 
@@ -65,6 +66,7 @@ export const homeLayoutRegistry = {
   genres: registerLayout('genres', 'line', GenresLayout),
   artists: registerLayout('artists', 'line', ArtistsLayout),
   albums: registerLayout('albums', 'line', AlbumsLayout),
+  people: registerLayout('people', 'line', PeopleLayout),
 } satisfies Record<HomeRow['layout'], HomeLayoutEntry>;
 
 /** Whether the web renders this layout; any other one is skipped. */

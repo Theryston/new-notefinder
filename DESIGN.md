@@ -362,6 +362,11 @@ section heading) with its items `gap-2` below it; rows are spaced `gap-8`.
   (`text-sm font-semibold`, truncated) and the release year (`text-xs
   tabular-nums text-muted-foreground`) sit under it. Each album is a real link
   to its page.
+- **People row**: the same snap track, with each Profile link shown as a
+  circular `size-20 md:size-24` avatar and the person's name plus common-Track
+  count below. Missing images use the initials fallback. The row title may
+  carry the sponsored notice beneath it; avatar borders and text use theme
+  tokens in both light and dark themes.
 - **Skeletons** reserve exactly the final sizes: the hero's block height and
   a carousel's title line and card widths (`layout-dimensions.ts` is the one
   source of both). No row may change height when its content lands.
