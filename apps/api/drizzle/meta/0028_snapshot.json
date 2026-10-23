@@ -1,6 +1,6 @@
 {
-  "id": "e87a346c-cf15-4d4f-b85d-29b7b3488648",
-  "prevId": "f72c0e26-9711-418d-b39d-c8c3df6aa8f4",
+  "id": "95fb30ed-b83b-4a96-8c71-7665a7a57a45",
+  "prevId": "4dd7db65-7d19-48d6-9ead-a8f827460146",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1464,12 +1464,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "click_id": {
-          "name": "click_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "payload": {
           "name": "payload",
           "type": "jsonb",
@@ -1594,12 +1588,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "view_id": {
-          "name": "view_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "difficulty": {
           "name": "difficulty",
@@ -1770,103 +1758,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "practice_attempts_view_id_track_views_id_fk": {
-          "name": "practice_attempts_view_id_track_views_id_fk",
-          "tableFrom": "practice_attempts",
-          "tableTo": "track_views",
-          "columnsFrom": [
-            "view_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.practice_heartbeats": {
-      "name": "practice_heartbeats",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "view_id": {
-          "name": "view_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "elapsed_seconds": {
-          "name": "elapsed_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "credited_seconds": {
-          "name": "credited_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "practice_heartbeats_user_id_users_id_fk": {
-          "name": "practice_heartbeats_user_id_users_id_fk",
-          "tableFrom": "practice_heartbeats",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "practice_heartbeats_view_id_track_views_id_fk": {
-          "name": "practice_heartbeats_view_id_track_views_id_fk",
-          "tableFrom": "practice_heartbeats",
-          "tableTo": "track_views",
-          "columnsFrom": [
-            "view_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -2703,18 +2594,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "click_id": {
-          "name": "click_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "visitor_id": {
-          "name": "visitor_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "locale": {
           "name": "locale",
           "type": "track_view_locale",
@@ -2820,6 +2699,79 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_acquisitions": {
+      "name": "user_acquisitions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_touch": {
+          "name": "first_touch",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_touch": {
+          "name": "last_touch",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_acquisitions_user_id_users_id_fk": {
+          "name": "user_acquisitions_user_id_users_id_fk",
+          "tableFrom": "user_acquisitions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_acquisitions_userId_unique": {
+          "name": "user_acquisitions_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3603,6 +3555,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "visitor_id": {
+          "name": "visitor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "username": {
           "name": "username",
           "type": "text",
@@ -3679,7 +3637,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "users_visitor_id_index": {
+          "name": "users_visitor_id_index",
+          "columns": [
+            {
+              "expression": "visitor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {

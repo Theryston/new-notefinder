@@ -91,6 +91,7 @@ export function RowTrackCards({
             vocalRange={track.vocalRange}
             rangeBar={rangeBar}
             nativeTrackLink
+            fitsVoice={track.fitsVoice}
           />
         </li>
       ))}

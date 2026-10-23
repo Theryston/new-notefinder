@@ -140,12 +140,20 @@ export class AttemptsService {
     vocalRange: TrackVocalRange | null;
     mostSungArtist: MostSungArtist | null;
   }> {
-    const vocalGroups = await this.attempts.listVocalRangeGroups(userId);
-    const artistGroups = await this.attempts.listArtistGroups(userId);
+    const [vocalRange, artistGroups] = await Promise.all([
+      this.vocalRange(userId),
+      this.attempts.listArtistGroups(userId),
+    ]);
     return {
-      vocalRange: deriveVocalRange(vocalGroups.map(toVocalRangeGroup)),
+      vocalRange,
       mostSungArtist: deriveMostSungArtist(artistGroups.map(toArtistGroup)),
     };
+  }
+
+  /** The derived range for home recommendations, using Profile's exact rules. */
+  async vocalRange(userId: string): Promise<TrackVocalRange | null> {
+    const groups = await this.attempts.listVocalRangeGroups(userId);
+    return deriveVocalRange(groups.map(toVocalRangeGroup));
   }
 
   /** The signed-in User's own attempts, newest first. */

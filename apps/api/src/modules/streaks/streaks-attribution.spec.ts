@@ -1,4 +1,4 @@
-import { Test, type TestingModule } from '@nestjs/testing';
+import * as NestTesting from '@nestjs/testing';
 import { fakeTransactionalDatabase } from '../../../test/utils/fake-transactional-db.js';
 import { DATABASE, DATABASE_POOL } from '../../database/database.js';
 import { DatabaseModule } from '../../database/database.module.js';
@@ -6,22 +6,24 @@ import { UsersService } from '../users/users.service.js';
 import { StreaksRepository } from './streaks.repository.js';
 import { StreaksService } from './streaks.service.js';
 
-const repository = {
-  findDay: vi.fn(),
-  lockDay: vi.fn(),
-  saveHeartbeat: vi.fn(),
-  findCompletedDays: vi.fn(),
-  recordAttributedHeartbeat: vi.fn(),
-};
-const users = {
-  getPracticeSettings: vi.fn(),
-  lockPracticeSettings: vi.fn(),
-  recordPracticeHeartbeat: vi.fn(),
-};
+const { repository, users } = vi.hoisted(() => ({
+  repository: {
+    findDay: vi.fn(),
+    lockDay: vi.fn(),
+    saveHeartbeat: vi.fn(),
+    findCompletedDays: vi.fn(),
+    recordAttributedHeartbeat: vi.fn(),
+  },
+  users: {
+    getPracticeSettings: vi.fn(),
+    lockPracticeSettings: vi.fn(),
+    recordPracticeHeartbeat: vi.fn(),
+  },
+}));
 
 describe('StreaksService view attribution', () => {
   let service: StreaksService;
-  let moduleRef: TestingModule;
+  let moduleRef: NestTesting.TestingModule;
 
   beforeEach(async () => {
     vi.resetAllMocks();
@@ -40,19 +42,17 @@ describe('StreaksService view attribution', () => {
     });
     repository.findCompletedDays.mockResolvedValue([]);
     const { db, pool } = fakeTransactionalDatabase();
-    moduleRef = await Test.createTestingModule({
+    const builder = NestTesting.Test.createTestingModule({
       imports: [DatabaseModule],
       providers: [
         StreaksService,
         { provide: StreaksRepository, useValue: repository },
         { provide: UsersService, useValue: users },
       ],
-    })
-      .overrideProvider(DATABASE_POOL)
-      .useValue(pool)
-      .overrideProvider(DATABASE)
-      .useValue(db)
-      .compile();
+    });
+    builder.overrideProvider(DATABASE_POOL).useValue(pool);
+    builder.overrideProvider(DATABASE).useValue(db);
+    moduleRef = await builder.compile();
     service = moduleRef.get(StreaksService);
   });
 

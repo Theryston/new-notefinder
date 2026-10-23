@@ -11,6 +11,8 @@ import { RankedLayout } from './ranked-layout';
 
 vi.mock('@/lib/i18n/navigation', async () => {
   const { createElement: create } = await import('react');
+  const localize = (path: string) =>
+    new URL(path, 'https://notefinder.test').pathname;
   return {
     Link: ({
       href,
@@ -19,7 +21,7 @@ vi.mock('@/lib/i18n/navigation', async () => {
     }: {
       href: string;
       children?: ReactNode;
-    }) => create('a', { ...props, href: `/en${href}` }, children),
+    }) => create('a', { ...props, href: `/en${localize(href)}` }, children),
   };
 });
 

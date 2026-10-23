@@ -27,6 +27,13 @@ const REQUEST_CARD_CLASS = cn(
   'w-full text-left disabled:cursor-progress',
 );
 
+const voiceFitMessageKey = (fitsVoice: boolean | undefined) =>
+  fitsVoice === undefined
+    ? undefined
+    : fitsVoice
+      ? 'card.fitsVoice'
+      : 'card.transposeVoice';
+
 function CoverPlay({ label }: { label: string }) {
   return (
     <button
@@ -102,6 +109,8 @@ export type TrackCardProps = {
    * applies with `vocalRange`; the chip stays the accessible text.
    */
   rangeBar?: boolean;
+  /** Whether the card's vocal range fits the User without transposition. */
+  fitsVoice?: boolean;
   /** Makes a card without a Track an action; without it the card stays static. */
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
@@ -125,6 +134,7 @@ function TrackCardCover({
   coverPriority,
   vocalRange,
   rangeBar,
+  fitsVoiceLabel,
 }: {
   coverArtUrl?: string | null;
   placeholderSeed: string;
@@ -133,6 +143,7 @@ function TrackCardCover({
   coverPriority?: boolean;
   vocalRange?: TrackVocalRange | null;
   rangeBar?: boolean;
+  fitsVoiceLabel?: string;
 }) {
   return (
     <span className="relative block aspect-square h-auto w-full overflow-hidden rounded-xl bg-muted">
@@ -151,6 +162,11 @@ function TrackCardCover({
       {vocalRange ? (
         <span className="glass absolute bottom-2 left-2 rounded-full px-2.5 py-1 font-semibold text-xs tabular-nums">
           {rangeName(vocalRange.lowest, vocalRange.highest)}
+        </span>
+      ) : null}
+      {fitsVoiceLabel ? (
+        <span className="glass absolute top-7 right-2 rounded-full px-2 py-1 font-semibold text-[0.625rem]">
+          {fitsVoiceLabel}
         </span>
       ) : null}
       {badge}
@@ -248,6 +264,67 @@ function TrackCardTrackLink({
   );
 }
 
+type TrackCardCopy = {
+  play: string;
+  signInLabel: string;
+  generateLabel: string;
+  generate: string;
+  generating: string;
+};
+
+function TrackCardFallback({
+  request,
+  signIn,
+  cover,
+  text,
+  copy,
+}: {
+  request: RequestTrackState | undefined;
+  signIn: TrackCardSignIn | undefined;
+  cover: (badge: ReactNode) => ReactNode;
+  text: ReactNode;
+  copy: TrackCardCopy;
+}) {
+  if (signIn) {
+    return (
+      <Link
+        href={signIn.href}
+        aria-label={copy.signInLabel}
+        className={REQUEST_CARD_CLASS}
+      >
+        {cover(<RequestBadge pending={false} hint={copy.generate} />)}
+        {text}
+      </Link>
+    );
+  }
+  if (request) {
+    return (
+      <button
+        type="button"
+        aria-busy={request.pending}
+        aria-label={copy.generateLabel}
+        disabled={request.pending}
+        onClick={request.onRequest}
+        className={REQUEST_CARD_CLASS}
+      >
+        {cover(
+          <RequestBadge
+            pending={request.pending}
+            hint={request.pending ? copy.generating : copy.generate}
+          />,
+        )}
+        {text}
+      </button>
+    );
+  }
+  return (
+    <div className={CARD_CLASS}>
+      {cover(<CoverPlay label={copy.play} />)}
+      {text}
+    </div>
+  );
+}
+
 /**
  * One track as a cover-grid card (Spotify): the cover art (or a
  * deterministic geometric placeholder when there is none), the title plus
@@ -262,6 +339,8 @@ export function TrackCard(props: TrackCardProps) {
   const { trackId, title, subtitle, request, signIn } = props;
   const locale = useLocale();
   const t = useTranslations('tracks');
+  const voiceFitKey = voiceFitMessageKey(props.fitsVoice);
+  const fitsVoiceLabel = voiceFitKey ? t(voiceFitKey) : undefined;
   const cover = (badge: ReactNode) => (
     <TrackCardCover
       coverArtUrl={props.coverArtUrl}
@@ -270,6 +349,7 @@ export function TrackCard(props: TrackCardProps) {
       coverPriority={props.coverPriority}
       vocalRange={props.vocalRange}
       rangeBar={props.rangeBar}
+      fitsVoiceLabel={fitsVoiceLabel}
       badge={badge}
     />
   );
@@ -285,45 +365,19 @@ export function TrackCard(props: TrackCardProps) {
         <TrackCardTrackLinkContent cover={cover} text={text} />
       </TrackCardTrackLink>
     );
-
-  if (signIn) {
-    return (
-      <Link
-        href={signIn.href}
-        aria-label={t('card.signInLabel', { title })}
-        className={REQUEST_CARD_CLASS}
-      >
-        {cover(<RequestBadge pending={false} hint={t('card.generate')} />)}
-        {text}
-      </Link>
-    );
-  }
-
-  if (request) {
-    return (
-      <button
-        type="button"
-        aria-busy={request.pending}
-        aria-label={t('card.generateLabel', { title })}
-        disabled={request.pending}
-        onClick={request.onRequest}
-        className={REQUEST_CARD_CLASS}
-      >
-        {cover(
-          <RequestBadge
-            pending={request.pending}
-            hint={request.pending ? t('card.generating') : t('card.generate')}
-          />,
-        )}
-        {text}
-      </button>
-    );
-  }
-
   return (
-    <div className={CARD_CLASS}>
-      {cover(<CoverPlay label={t('card.play', { title })} />)}
-      {text}
-    </div>
+    <TrackCardFallback
+      request={request}
+      signIn={signIn}
+      cover={cover}
+      text={text}
+      copy={{
+        play: t('card.play', { title }),
+        signInLabel: t('card.signInLabel', { title }),
+        generateLabel: t('card.generateLabel', { title }),
+        generate: t('card.generate'),
+        generating: t('card.generating'),
+      }}
+    />
   );
 }

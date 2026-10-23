@@ -1,5 +1,5 @@
-/** The anonymous visitor id: a random id kept in the browser's local storage
- * (no cookie), sent with events and Track views. */
+/** A browser-local visitor id stored without a cookie and shared by events,
+ * Track views, and sign-up attribution. */
 export const VISITOR_ID_KEY = 'notefinder:visitor-id';
 
 type IdStorage = Pick<Storage, 'getItem' | 'setItem'>;

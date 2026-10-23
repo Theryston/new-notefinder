@@ -1,1 +1,0 @@
-ALTER TABLE "track_views" ADD COLUMN "visitor_id" text;

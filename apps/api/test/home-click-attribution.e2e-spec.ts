@@ -7,12 +7,11 @@ import { trackViews } from '../src/database/schema/track-views.js';
 import { EVENTS_QUEUE } from '../src/modules/events/events.job.js';
 import { EventsProcessor } from '../src/modules/events/events.processor.js';
 import { EventsRepository } from '../src/modules/events/events.repository.js';
-import { signIn } from './utils/auth.js';
+import { signInWithUsername } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';
 import {
-  createCredentialAccount,
+  createPasswordUser,
   createTrack,
-  createUser,
   DEFAULT_PASSWORD,
 } from './utils/factories.js';
 
@@ -46,13 +45,14 @@ describe('home click to Track practice attribution (e2e)', () => {
   };
 
   it('stores the same click id on the event, view, heartbeat and attempt', async () => {
-    const user = await createUser(spec.testApp.db, { username: 'grace' });
-    await createCredentialAccount(spec.testApp.db, user);
-    await signIn(spec.client, {
-      email: user.email,
+    const track = await createTrack(spec.testApp.db);
+    const user = await createPasswordUser(spec.testApp.db, {
+      username: 'grace',
+    });
+    await signInWithUsername(spec.client, {
+      username: 'grace',
       password: DEFAULT_PASSWORD,
     }).expect(200);
-    const track = await createTrack(spec.testApp.db);
 
     await recordClick(track.id);
     const clickEvent = (await spec.testApp.db.select().from(events))[0];

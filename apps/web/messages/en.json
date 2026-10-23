@@ -24,6 +24,8 @@
       "lowerVoices": "For lower voices",
       "continueSinging": "Continue singing",
       "singAgain": "Sing again",
+      "withinYourVoice": "Within your voice",
+      "challengeYourRange": "Challenge your range",
       "dailyTarget": "Daily target",
       "mostSung": "Most sung",
       "mostFavorited": "Most favorited",
@@ -71,6 +73,8 @@
   "tracks": {
     "card": {
       "play": "Play {title}",
+      "fitsVoice": "Fits your voice",
+      "transposeVoice": "Try transposing",
       "generate": "Generate notes",
       "generateLabel": "Generate notes for {title}",
       "generating": "Generating…",
@@ -441,7 +445,7 @@
       },
       "privacy": {
         "title": "Privacy and Data Protection",
-        "body": "We take your privacy seriously. We collect and process personal data in accordance with applicable data protection laws, including the LGPD (Brazil's General Data Protection Law). The data we collect is used exclusively to provide and improve our services."
+        "body": "We take your privacy seriously. We collect and process personal data in accordance with applicable data protection laws, including the LGPD (Brazil's General Data Protection Law). The data we collect is used exclusively to provide and improve our services. When you create an account, we also store campaign details from your first and most recent visits, such as UTM parameters, advertising click IDs, the referrer and the landing page, to understand which campaigns bring new users. This information is stored in your account; we do not use a cookie for this purpose."
       },
       "liability": {
         "title": "Limitation of Liability",

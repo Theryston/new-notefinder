@@ -1,9 +1,8 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { postTrackView } from './track-view-query';
 import { synchronizeTrackView } from './track-view-sync';
 
 vi.mock('./track-view-query', () => ({ postTrackView: vi.fn() }));
-afterEach(() => vi.unstubAllGlobals());
 
 class AttributionSessionStorage extends Map<string, string> {
   getItem(key: string): string | null {
@@ -48,4 +47,5 @@ it('creates a new immutable view for each home click on the same Track', async (
     { clickId: 'click-b', visitorId: 'visitor-1' },
   );
   expect(values.get('notefinder:track-view:same-track')).toContain('click-b');
+  vi.unstubAllGlobals();
 });
