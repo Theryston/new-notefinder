@@ -66,7 +66,7 @@ export class PersonalHomeProcessor extends WorkerHost {
   }
 
   private async refreshNightly(): Promise<void> {
-    await this.personal.refreshCommunityCooccurrence();
+    await this.builder.refreshCommunityCooccurrence();
     const since = new Date(
       Date.now() - PERSONAL_NIGHTLY_ACTIVE_WITHIN_DAYS * 24 * 60 * 60 * 1000,
     );

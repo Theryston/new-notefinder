@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type {
   HomeArtist,
   HomeArtistsRow,
@@ -65,13 +65,10 @@ const homeTrackOf = (track: PersonalTrackCandidate): HomeTrack => ({
 
 @Injectable()
 export class PersonalHomeTasteRowsService {
-  @Optional()
-  @Inject(AttemptsService)
-  private readonly attempts?: AttemptsService;
-
   constructor(
     private readonly personal: PersonalHomeRepository,
     private readonly tasteRepository: PersonalHomeTasteRepository,
+    private readonly attempts: AttemptsService,
   ) {}
 
   async build(options: {
@@ -196,9 +193,8 @@ export class PersonalHomeTasteRowsService {
   private async mostSungArtistsRow(
     userId: string,
   ): Promise<HomeRow | undefined> {
-    const activities: MostSungArtistActivity[] = this.attempts
-      ? await this.attempts.mostSungArtistActivities(userId)
-      : [];
+    const activities: MostSungArtistActivity[] =
+      await this.attempts.mostSungArtistActivities(userId);
     const artists = rankTasteArtists(
       activities.map((activity) => ({
         artistId: activity.artist.id,

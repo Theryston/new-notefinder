@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type {
   HomeCarouselRow,
   HomeRow,
@@ -153,6 +154,11 @@ export class PersonalHomeBuilder {
       rows,
       generatedAt: new Date().toISOString(),
     });
+  }
+
+  @Transactional()
+  async refreshCommunityCooccurrence(): Promise<void> {
+    await this.personal.refreshCommunityCooccurrence();
   }
 
   private async recommendationRows(options: {

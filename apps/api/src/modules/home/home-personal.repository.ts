@@ -125,12 +125,11 @@ export class PersonalHomeRepository {
 
   /** Rebuilds the bounded, global co-occurrence ranking consumed by personal feeds. */
   async refreshCommunityCooccurrence(): Promise<void> {
-    await this.txHost.tx.transaction(async (transaction) => {
-      const result = await transaction.execute<{
-        sourceTrackId: string;
-        targetTrackId: string;
-        singerCount: number;
-      }>(sql`
+    const result = await this.txHost.tx.execute<{
+      sourceTrackId: string;
+      targetTrackId: string;
+      singerCount: number;
+    }>(sql`
         with signals as (
           select distinct user_id, track_id from ${practiceAttempts}
           where forward_skip = false and bleed_suspected = false
@@ -155,12 +154,11 @@ export class PersonalHomeRepository {
         )
         select "sourceTrackId", "targetTrackId", "singerCount"
         from ranked where rank <= 12
-      `);
-      await transaction.delete(trackCooccurrences);
-      if (result.rows.length > 0) {
-        await transaction.insert(trackCooccurrences).values(result.rows);
-      }
-    });
+    `);
+    await this.txHost.tx.delete(trackCooccurrences);
+    if (result.rows.length > 0) {
+      await this.txHost.tx.insert(trackCooccurrences).values(result.rows);
+    }
   }
 
   async findCommunityCooccurrence(

@@ -19,7 +19,10 @@ const built = (version: string) => ({
   generatedAt: '2026-10-20T10:00:00.000Z',
 });
 
-const builder = { build: vi.fn() };
+const builder = {
+  build: vi.fn(),
+  refreshCommunityCooccurrence: vi.fn(),
+};
 const store = {
   readCurrent: vi.fn(),
   writeCurrent: vi.fn(),
@@ -28,7 +31,6 @@ const store = {
 };
 const personal = {
   findActiveUserIds: vi.fn(),
-  refreshCommunityCooccurrence: vi.fn(),
 };
 const queue = { scheduleRefresh: vi.fn().mockResolvedValue(undefined) };
 

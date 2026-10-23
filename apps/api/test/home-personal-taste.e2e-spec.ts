@@ -191,7 +191,7 @@ describe('Personal home taste rows (e2e)', () => {
     }
 
     const repository = testApp.app.get(PersonalHomeRepository);
-    await repository.refreshCommunityCooccurrence();
+    await testApp.app.get(PersonalHomeBuilder).refreshCommunityCooccurrence();
     return { source, tracks: seededTracks, repository };
   };
 
@@ -305,7 +305,10 @@ describe('Personal home taste rows (e2e)', () => {
       'taste_low_data',
       'taste-low-data@example.com',
     );
-    const track = await createTrack(testApp.db, { genres: ['jazz'] });
+    const track = await createTrack(testApp.db, {
+      recordingMbid: testMbid(9_000_000_000),
+      genres: ['jazz'],
+    });
     await testApp.db.insert(trackProcessings).values({
       trackId: track.id,
       status: 'COMPLETED',

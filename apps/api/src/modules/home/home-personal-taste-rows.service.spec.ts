@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { AttemptsService } from '../attempts/attempts.service.js';
 import type { PersonalTaste } from './home-personal.js';
 import {
   PersonalHomeRepository,
@@ -68,11 +69,15 @@ describe('PersonalHomeTasteRowsService', () => {
     const tasteRepository = {
       findTracksForGenres: vi.fn().mockResolvedValue(cards),
     } as unknown as PersonalHomeTasteRepository;
+    const attempts = {
+      mostSungArtistActivities: vi.fn().mockResolvedValue([]),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         PersonalHomeTasteRowsService,
         { provide: PersonalHomeRepository, useValue: personal },
         { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
+        { provide: AttemptsService, useValue: attempts },
       ],
     }).compile();
     const service = moduleRef.get(PersonalHomeTasteRowsService);
@@ -99,5 +104,48 @@ describe('PersonalHomeTasteRowsService', () => {
     expect(tracksByRow[0]).toHaveLength(6);
     expect(tracksByRow[1]).toHaveLength(6);
     expect(new Set(tracksByRow.flat()).size).toBe(12);
+  });
+
+  it('builds the most-sung artist row from valid attempt activities', async () => {
+    const personal = {
+      findUserSungTrackSources: vi.fn().mockResolvedValue([]),
+      findCommunityCooccurrence: vi.fn().mockResolvedValue([]),
+    } as unknown as PersonalHomeRepository;
+    const tasteRepository = {
+      findTracksForGenres: vi.fn().mockResolvedValue(cards),
+    } as unknown as PersonalHomeTasteRepository;
+    const activities = Array.from({ length: 6 }, (_, index) => ({
+      artist: { id: `artist-${index}`, name: `Artist ${index}` },
+      lastAttemptAt: new Date(),
+    }));
+    const attempts = {
+      mostSungArtistActivities: vi.fn().mockResolvedValue(activities),
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        PersonalHomeTasteRowsService,
+        { provide: PersonalHomeRepository, useValue: personal },
+        { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
+        { provide: AttemptsService, useValue: attempts },
+      ],
+    }).compile();
+
+    const rows = await moduleRef.get(PersonalHomeTasteRowsService).build({
+      userId: 'user-1',
+      signals: [signal],
+      tasteSignals,
+      taste: decayedTaste(tasteSignals),
+      mastered: new Set(),
+      usedTrackIds: new Set(),
+      publicRows: [],
+    });
+
+    expect(attempts.mostSungArtistActivities).toHaveBeenCalledWith('user-1');
+    expect(
+      rows.find((row) => row.id === 'your-most-sung-artists'),
+    ).toMatchObject({
+      layout: 'artists',
+      items: activities.map(({ artist }) => artist),
+    });
   });
 });
