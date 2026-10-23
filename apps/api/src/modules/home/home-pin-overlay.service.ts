@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  type CreateEditorialPinBody,
   EDITORIAL_PIN_MAX_TRACKS,
   type EditorialPin,
   type HomeRow,
@@ -35,6 +36,33 @@ export class HomePinOverlayService {
 
   async apply(rows: HomeRow[], viewer: Viewer): Promise<HomeRow[]> {
     const live = await this.pins.findLivePins(viewer);
+    return this.applyPins(rows, viewer, live);
+  }
+
+  /** Applies a validated draft while replacing its saved version, if any. */
+  async applyPreview(
+    rows: HomeRow[],
+    viewer: Viewer,
+    body: CreateEditorialPinBody,
+    pinId?: string,
+  ): Promise<HomeRow[]> {
+    const [live] = await Promise.all([
+      this.pins.findLivePins(viewer),
+      this.pins.assertPreviewEligible(body),
+    ]);
+    const draft = this.pins.preview(body, pinId);
+    const pins = live.filter((pin) => pin.id !== draft.id);
+    if (targetsViewer(draft, viewer)) {
+      pins.push(draft);
+    }
+    return this.applyPins(rows, viewer, pins);
+  }
+
+  private async applyPins(
+    rows: HomeRow[],
+    viewer: Viewer,
+    live: EditorialPin[],
+  ): Promise<HomeRow[]> {
     if (live.length === 0) {
       return rows;
     }
@@ -80,6 +108,10 @@ export class HomePinOverlayService {
     return applyEditorialPins(rows, pins);
   }
 }
+
+const targetsViewer = (pin: EditorialPin, viewer: Viewer): boolean =>
+  (pin.locale === null || pin.locale === viewer.locale) &&
+  (pin.audience === 'everyone' || !viewer.signedIn);
 
 /** A live pin as the overlay places it, or nothing when it has no title here. */
 const toOverlayPin = (

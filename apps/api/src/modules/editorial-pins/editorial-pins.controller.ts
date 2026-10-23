@@ -23,6 +23,7 @@ import {
   type EditorialPin,
   type EditorialPinActor,
   editorialPinHistoryPageSchema,
+  editorialPinMetricsPageSchema,
   editorialPinPageSchema,
   editorialPinSchema,
 } from '@notefinder/contracts';
@@ -36,6 +37,7 @@ import {
   EditorialPinPageQueryDto,
   UpdateEditorialPinBodyDto,
 } from './editorial-pin-dtos.js';
+import { EditorialPinMetricsService } from './editorial-pin-metrics.service.js';
 import { EditorialPinsService } from './editorial-pins.service.js';
 
 const adminActor = (user: AuthUser): EditorialPinActor => ({
@@ -50,7 +52,17 @@ const adminActor = (user: AuthUser): EditorialPinActor => ({
 @ApiForbiddenResponse({ description: 'The User is not an admin.' })
 @Controller('admin/home-pins')
 export class EditorialPinsController {
-  constructor(private readonly pins: EditorialPinsService) {}
+  constructor(
+    private readonly pins: EditorialPinsService,
+    private readonly metricsService: EditorialPinMetricsService,
+  ) {}
+
+  @Get('metrics')
+  @ZodSerializerDto(editorialPinMetricsPageSchema)
+  @ApiOkResponse({ description: 'Stored impressions, clicks and click rates.' })
+  pinMetrics() {
+    return this.metricsService.list();
+  }
 
   @Get()
   @ZodSerializerDto(editorialPinPageSchema)

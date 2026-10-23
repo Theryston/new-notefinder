@@ -183,6 +183,11 @@ export class HomeFeedService {
     }
   }
 
+  /** Reads a stored feed without building, committing, or revalidating it. */
+  async storedPublicForPreview(locale: Locale): Promise<StoredHomeFeed> {
+    return (await this.store.readCurrent(locale)) ?? minimalHomeFeed();
+  }
+
   /**
    * The feed a cursor names: the current feed of any locale, or a version
    * retained for about 30 minutes after it was replaced. Undefined when the

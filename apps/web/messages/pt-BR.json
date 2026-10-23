@@ -1015,7 +1015,10 @@
       "alwaysLive": "Sempre no ar",
       "scheduleRange": "{start} – {end}",
       "scheduleFrom": "De {start}",
-      "scheduleUntil": "Até {end}"
+      "scheduleUntil": "Até {end}",
+      "metrics": "{impressions} impressões · {clicks} cliques · {rate} de CTR",
+      "metricsLoading": "Carregando engajamento…",
+      "metricsUnavailable": "As contagens de engajamento estão indisponíveis."
     },
     "confirmDelete": {
       "title": "Excluir este destaque?",
@@ -1029,6 +1032,7 @@
       "cancel": "Cancelar",
       "submitCreate": "Criar destaque",
       "submitSave": "Salvar alterações",
+      "preview": "Prévia da home",
       "created": "Destaque criado.",
       "updated": "Destaque atualizado.",
       "kind": {
@@ -1099,6 +1103,22 @@
         "label": "Contém conteúdo patrocinado",
         "help": "Visitantes veem um aviso discreto de conteúdo patrocinado neste hero ou fileira.",
         "termsLink": "Entenda o que isso significa"
+      },
+      "previewDialog": {
+        "title": "Prévia da home",
+        "close": "Fechar prévia",
+        "description": "Veja este destaque na home atual. A prévia não altera o que está no ar.",
+        "locale": "Idioma",
+        "localeOptions": {
+          "en": "Inglês",
+          "ptBR": "Português (Brasil)"
+        },
+        "audience": "Público",
+        "visitor": "Visitante",
+        "signedIn": "Com sessão iniciada",
+        "loading": "Carregando prévia…",
+        "empty": "A home atual não tem fileiras para mostrar na prévia.",
+        "error": "Não foi possível carregar a prévia da home."
       },
       "errors": {
         "invalid": "Este valor é inválido.",

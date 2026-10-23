@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { homeFeedSchema } from './home.js';
 import { LOCALES, type Locale, localeSchema } from './locales.js';
 import { cursorPageSchema } from './pagination.js';
 import { trackArtistCreditEntrySchema, trackCoverUrlSchema } from './tracks.js';
@@ -235,6 +236,37 @@ export const editorialPinSchema = editorialPinStateSchema.extend({
 });
 
 export type EditorialPin = z.infer<typeof editorialPinSchema>;
+
+/** Aggregate engagement for the row a pin produces during its running window. */
+export const editorialPinMetricsSchema = z.object({
+  pinId: z.string().min(1).max(128),
+  impressions: z.number().int().nonnegative(),
+  clicks: z.number().int().nonnegative(),
+  clickThroughRate: z.number().nonnegative(),
+});
+
+export type EditorialPinMetrics = z.infer<typeof editorialPinMetricsSchema>;
+
+export const editorialPinMetricsPageSchema = z.array(editorialPinMetricsSchema);
+
+/** An admin-only preview of a saved, scheduled, or unsaved pin. */
+export const homePinPreviewRequestSchema = z.object({
+  pin: createEditorialPinBodySchema,
+  pinId: z.string().min(1).max(128).optional(),
+  locale: localeSchema,
+  audience: z.enum(['visitor', 'signed-in']),
+});
+
+export type HomePinPreviewRequest = z.infer<typeof homePinPreviewRequestSchema>;
+
+/** A complete bounded feed returned for preview, without public-feed paging. */
+export const homePinPreviewResponseSchema = homeFeedSchema.extend({
+  nextCursor: z.null(),
+});
+
+export type HomePinPreviewResponse = z.infer<
+  typeof homePinPreviewResponseSchema
+>;
 
 export const editorialPinPageSchema = cursorPageSchema(editorialPinSchema);
 

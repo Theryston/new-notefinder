@@ -11,6 +11,7 @@ import { UsersModule } from '../users/users.module.js';
 import { HomeController } from './home.controller.js';
 import { HomeRepository } from './home.repository.js';
 import { HomeService } from './home.service.js';
+import { HomeAdminController } from './home-admin.controller.js';
 import { HOME_FEED_QUEUE } from './home-feed.job.js';
 import { HomeFeedProcessor } from './home-feed.processor.js';
 import { HomeFeedService } from './home-feed.service.js';
@@ -47,7 +48,7 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     EditorialPinsModule,
     AttemptsProfileModule,
   ],
-  controllers: [HomeController],
+  controllers: [HomeController, HomeAdminController],
   providers: [
     HomeRepository,
     {

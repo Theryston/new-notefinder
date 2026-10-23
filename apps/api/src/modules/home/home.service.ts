@@ -1,5 +1,11 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import type { HomeFeed, HomeRow, Locale } from '@notefinder/contracts';
+import type {
+  HomeFeed,
+  HomePinPreviewRequest,
+  HomePinPreviewResponse,
+  HomeRow,
+  Locale,
+} from '@notefinder/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import type { StoredPersonalHomeFeed } from './home-feed.js';
@@ -106,6 +112,35 @@ export class HomeService {
     return userId === undefined
       ? this.versionPage(cursor, false)
       : this.personalVersionPage(userId, cursor, locale);
+  }
+
+  /** A private admin preview from the neutral current feed, never a snapshot. */
+  async preview(request: HomePinPreviewRequest): Promise<{
+    page: HomePinPreviewResponse;
+    cacheable: false;
+    cacheControl: string;
+  }> {
+    const feed = await this.feeds.storedPublicForPreview(request.locale);
+    const signedIn = request.audience === 'signed-in';
+    const rows = this.pinOverlay
+      ? await this.pinOverlay.applyPreview(
+          feed.rows,
+          { locale: request.locale, signedIn },
+          request.pin,
+          request.pinId,
+        )
+      : feed.rows;
+    return {
+      page: {
+        audience: signedIn ? 'personal' : 'public',
+        version: feed.version,
+        algorithmVersion: feed.algorithmVersion,
+        rows: await this.linkRows(rows),
+        nextCursor: null,
+      },
+      cacheable: false,
+      cacheControl: UNCACHED_HOME_CACHE_CONTROL,
+    };
   }
 
   private async anonymousFirstPage(locale: Locale): Promise<HomePage> {
@@ -248,16 +283,17 @@ export class HomeService {
     const page = pageOf(feed, position);
     // Spec doubles of the feed service predate the artist linker; production
     // always wires the real one.
-    const linker = this.feeds.withArtistLinks;
-    const rows =
-      linker === undefined
-        ? page.rows
-        : await linker.call(this.feeds, page.rows);
+    const rows = await this.linkRows(page.rows);
     return {
       page: { ...page, rows },
       cacheable,
       cacheControl: cacheControlOf(cacheable, signedIn),
     };
+  }
+
+  private async linkRows(rows: HomeRow[]): Promise<HomeRow[]> {
+    const linker = this.feeds.withArtistLinks;
+    return linker === undefined ? rows : linker.call(this.feeds, rows);
   }
 }
 

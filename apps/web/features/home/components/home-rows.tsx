@@ -6,11 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHomeRows } from '../hooks/use-home-rows';
-import {
-  homeLayoutRegistry,
-  isRegisteredLayout,
-} from '../layouts/layout-registry';
-import { visibleRows } from '../visible-rows';
+import { HomeFeedRows } from './home-feed-rows';
 import { CarouselRowSkeleton } from './home-feed-skeleton';
 
 const SENTINEL_MARGIN = '600px';
@@ -49,10 +45,7 @@ export function HomeRows({
     isFetchingNextPage,
     isFetchNextPageError,
   } = useHomeRows(locale, initialPage);
-  const rows = visibleRows(
-    data.pages.flatMap((page) => page.rows),
-    isRegisteredLayout,
-  );
+  const rows = data.pages.flatMap((page) => page.rows);
   const loadMore = useCallback(() => {
     void fetchNextPage();
   }, [fetchNextPage]);
@@ -60,11 +53,7 @@ export function HomeRows({
   return (
     <div className="flex flex-col gap-8">
       <HomeEventsTracker pages={data.pages} />
-      {rows.map((row, index) => (
-        <div key={row.id} data-home-row-id={row.id}>
-          {homeLayoutRegistry[row.layout].render(row, index === 0)}
-        </div>
-      ))}
+      <HomeFeedRows rows={rows} />
       {isFetchingNextPage ? <CarouselRowSkeleton /> : null}
       {isFetchNextPageError ? <LoadMoreError onRetry={loadMore} /> : null}
       {hasNextPage && !isFetchNextPageError ? (

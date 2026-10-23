@@ -1,3 +1,4 @@
+import { homePinPreviewRequestSchema } from '@notefinder/contracts';
 import type { Page, Request, Route } from '@playwright/test';
 
 // Any host: the API URL the browser calls is inlined when the app is built
@@ -182,6 +183,65 @@ const historyReply = (
   pinId: string,
 ): Reply => ({ body: { items: history[pinId] ?? [], nextCursor: null } });
 
+const previewAndMetricsReply = (
+  store: PinStore,
+  request: Request,
+  pathname: string,
+): Reply | undefined => {
+  if (request.method() === 'GET' && pathname.endsWith('/metrics')) {
+    return {
+      body: store.pins.map((pin) => ({
+        pinId: pin.id,
+        impressions: 0,
+        clicks: 0,
+        clickThroughRate: 0,
+      })),
+    };
+  }
+  if (request.method() !== 'POST' || !pathname.endsWith('/preview')) {
+    return undefined;
+  }
+  const preview = homePinPreviewRequestSchema.parse(request.postDataJSON());
+  const pin = preview.pin;
+  const targetsLocale = pin.locale === null || pin.locale === preview.locale;
+  const targetsAudience =
+    pin.audience === 'everyone' || preview.audience === 'visitor';
+  const ids =
+    pin.source.type === 'tracks' ? pin.source.trackIds : ['trk_preview'];
+  const items =
+    targetsLocale && targetsAudience
+      ? ids.map((id) => ({
+          id,
+          title: 'Preview song',
+          coverUrl: 'https://cdn.example/preview.webp',
+          artistCredit: [{ name: 'Preview artist', joinPhrase: '' }],
+          durationMs: null,
+          vocalRange: null,
+        }))
+      : [];
+  const title = pin.titles[preview.locale];
+  return {
+    body: {
+      audience: preview.audience === 'signed-in' ? 'personal' : 'public',
+      version: 'preview-version',
+      algorithmVersion: 1,
+      rows:
+        items.length > 0 && title
+          ? [
+              {
+                id: `pin-${preview.pinId ?? 'preview'}`,
+                layout: 'standard',
+                title: { key: 'home.rows.pinned', params: { title } },
+                items,
+                sponsored: true,
+              },
+            ]
+          : [],
+      nextCursor: null,
+    },
+  };
+};
+
 const routeReply = (
   store: PinStore,
   history: Record<string, MockHistoryEntry[]>,
@@ -189,6 +249,8 @@ const routeReply = (
 ): Reply => {
   const pinId = pinIdOf(request.url());
   const pathname = new URL(request.url()).pathname;
+  const auxiliaryReply = previewAndMetricsReply(store, request, pathname);
+  if (auxiliaryReply) return auxiliaryReply;
   if (request.method() === 'GET' && pinId === null) return listReply(store);
   if (request.method() === 'POST' && pinId === null)
     return createReply(store, request);
