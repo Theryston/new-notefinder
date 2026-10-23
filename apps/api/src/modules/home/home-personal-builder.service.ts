@@ -32,6 +32,7 @@ import {
   personalVoiceRowTrackIds,
 } from './home-personal-voice.js';
 import { DEFAULT_HOME_LOCALE, HOME_ALGORITHM_VERSION } from './home-rules.js';
+import { HomeSocialService } from './home-social.service.js';
 
 const versionOf = (userId: string, locale: Locale, rows: HomeRow[]): string =>
   createHash('sha256')
@@ -63,6 +64,10 @@ export class PersonalHomeBuilder {
   @Inject(PersonalHomeTasteRowsService)
   private readonly tasteRows: PersonalHomeTasteRowsService | undefined;
 
+  @Optional()
+  @Inject(HomeSocialService)
+  private readonly social?: HomeSocialService;
+
   constructor(
     private readonly feeds: HomeFeedService,
     private readonly personal: PersonalHomeRepository,
@@ -84,12 +89,15 @@ export class PersonalHomeBuilder {
       ]);
     const activities =
       await this.requireTasteRows().findUserTasteActivities(userId);
+    const socialRows = await (this.social?.rowsFor(userId) ??
+      Promise.resolve([]));
     const rows = await this.buildRows({
       userId,
       publicRows: feed.rows,
       signals,
       favorites,
       activities,
+      socialRows,
       timeZone: settings.timeZone,
       userRange,
     });
@@ -111,6 +119,7 @@ export class PersonalHomeBuilder {
       ReturnType<PersonalHomeRepository['findUserFavoriteSignals']>
     >;
     activities: UserTasteActivity[];
+    socialRows: HomeRow[];
     timeZone: string | null;
     userRange: Awaited<ReturnType<AttemptsService['vocalRange']>>;
   }): Promise<HomeRow[]> {
@@ -120,6 +129,7 @@ export class PersonalHomeBuilder {
       signals,
       favorites,
       activities,
+      socialRows,
       timeZone,
       userRange,
     } = options;
@@ -135,6 +145,7 @@ export class PersonalHomeBuilder {
     const leadingRows: HomeRow[] = [
       ...resumeRows(signals, mastered),
       await dailyTargetRow(this.streaks, userId, timeZone),
+      ...socialRows,
     ];
     return [
       ...leadingRows,

@@ -3,6 +3,7 @@ export type SessionView = {
   viewId: string;
   /** Whether a signed-in User is on the view (recorded or attached). */
   attached: boolean;
+  clickId?: string;
 };
 
 /** What a visit to the Track page has to send, if anything. */
@@ -69,7 +70,9 @@ export function writeStoredView(
 export function nextViewAction(
   stored: SessionView | undefined,
   signedIn: boolean,
+  clickId?: string,
 ): ViewAction {
+  if (clickId !== undefined && stored?.clickId !== clickId) return 'record';
   if (stored === undefined) return 'record';
   return signedIn && !stored.attached ? 'attach' : 'none';
 }

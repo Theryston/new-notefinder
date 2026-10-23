@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { TrackClickIdUrlCleaner } from '@/features/tracks/components/track-click-id-url-cleaner';
 
 /** Unknown Track ID: a real 404 with a translated explanation. */
 export default async function TrackNotFound() {
@@ -6,6 +7,7 @@ export default async function TrackNotFound() {
 
   return (
     <div className="flex flex-col items-center gap-2 py-10 text-center">
+      <TrackClickIdUrlCleaner />
       <h1 className="font-bold text-2xl tracking-tight">
         {t('notFound.title')}
       </h1>

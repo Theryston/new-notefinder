@@ -90,6 +90,7 @@ export function RowTrackCards({
             coverPriority={priority && index < EAGER_COVERS}
             vocalRange={track.vocalRange}
             rangeBar={rangeBar}
+            nativeTrackLink
             fitsVoice={track.fitsVoice}
           />
         </li>

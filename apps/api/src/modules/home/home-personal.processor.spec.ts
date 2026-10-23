@@ -9,6 +9,7 @@ import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeStore } from './home-personal.store.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
 import { PersonalHomeQueueService } from './home-personal-queue.service.js';
+import { HomeSocialService } from './home-social.service.js';
 
 const built = (version: string) => ({
   audience: 'personal' as const,
@@ -33,6 +34,7 @@ const personal = {
   findActiveUserIds: vi.fn(),
 };
 const queue = { scheduleRefresh: vi.fn().mockResolvedValue(undefined) };
+const social = { refreshFor: vi.fn().mockResolvedValue(undefined) };
 
 const job = (name: string, data: unknown) =>
   ({ name, data }) as Parameters<PersonalHomeProcessor['process']>[0];
@@ -45,6 +47,7 @@ const moduleOf = () =>
       { provide: PersonalHomeStore, useValue: store },
       { provide: PersonalHomeRepository, useValue: personal },
       { provide: PersonalHomeQueueService, useValue: queue },
+      { provide: HomeSocialService, useValue: social },
     ],
   }).compile();
 

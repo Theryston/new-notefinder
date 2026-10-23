@@ -48,6 +48,8 @@ export const submitPracticeAttemptBodySchema = z.object({
   bleedSuspected: z.boolean(),
   startedAt: z.iso.datetime({ offset: true }),
   endedAt: z.iso.datetime({ offset: true }),
+  /** The Track page view whose practice produced this run. */
+  viewId: z.string().min(1).max(128).optional(),
 });
 
 export type SubmitPracticeAttemptBody = z.infer<
@@ -55,11 +57,13 @@ export type SubmitPracticeAttemptBody = z.infer<
 >;
 
 /** A saved attempt, as the history reads it. */
-export const practiceAttemptSchema = submitPracticeAttemptBodySchema.extend({
-  id: z.string().min(1).max(128),
-  trackId: z.string().min(1).max(128),
-  createdAt: z.iso.datetime({ offset: true }),
-});
+export const practiceAttemptSchema = submitPracticeAttemptBodySchema
+  .omit({ viewId: true })
+  .extend({
+    id: z.string().min(1).max(128),
+    trackId: z.string().min(1).max(128),
+    createdAt: z.iso.datetime({ offset: true }),
+  });
 
 export type PracticeAttempt = z.infer<typeof practiceAttemptSchema>;
 

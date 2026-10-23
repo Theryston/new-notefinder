@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, Optional } from '@nestjs/common';
 import { LOCALES, type Locale } from '@notefinder/contracts';
 import { type Job, UnrecoverableError } from 'bullmq';
 import {
@@ -16,6 +16,7 @@ import {
   PERSONAL_NIGHTLY_ACTIVE_WITHIN_DAYS,
   PERSONAL_NIGHTLY_MAX_USERS,
 } from './home-rules.js';
+import { HomeSocialService } from './home-social.service.js';
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -39,6 +40,10 @@ export class PersonalHomeProcessor extends WorkerHost {
     super();
   }
 
+  @Optional()
+  @Inject(HomeSocialService)
+  private readonly social?: HomeSocialService;
+
   async process(job: Job<unknown>): Promise<void> {
     if (job.name === REFRESH_PERSONAL_HOME_FEED_JOB) {
       await this.refreshOne(job);
@@ -57,6 +62,7 @@ export class PersonalHomeProcessor extends WorkerHost {
       throw new UnrecoverableError('Invalid personal home feed job');
     }
     const { userId, locale } = parsed.data;
+    await this.social?.refreshFor(userId);
     const next = await this.builder.build(userId, locale ?? 'en');
     const current = await this.store.readCurrent(userId, next.locale);
     if (current && current.version !== next.version) {
@@ -79,6 +85,7 @@ export class PersonalHomeProcessor extends WorkerHost {
         `Personal nightly batch hit its cap of ${PERSONAL_NIGHTLY_MAX_USERS} Users`,
       );
     }
+    await Promise.all(userIds.map((userId) => this.social?.refreshFor(userId)));
     const results = await Promise.allSettled(
       userIds.flatMap((userId) =>
         LOCALES.map((locale: Locale) =>

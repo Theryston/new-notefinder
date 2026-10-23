@@ -2,7 +2,7 @@
 
 import type { TrackVocalRange } from '@notefinder/contracts';
 import { PlayIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Link } from '@/lib/i18n/navigation';
@@ -115,6 +115,8 @@ export type TrackCardProps = {
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
   signIn?: TrackCardSignIn;
+  /** Uses a browser-native link, for home clicks that update the destination. */
+  nativeTrackLink?: boolean;
 };
 
 /**
@@ -218,6 +220,111 @@ function TrackCardText({
   );
 }
 
+function TrackCardTrackLinkContent({
+  cover,
+  text,
+}: {
+  cover: (badge: ReactNode) => ReactNode;
+  text: ReactNode;
+}) {
+  return (
+    <>
+      {cover(
+        <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
+          <PlayIcon className="size-4 fill-current" />
+        </span>,
+      )}
+      {text}
+    </>
+  );
+}
+
+function TrackCardTrackLink({
+  trackId,
+  locale,
+  native,
+  children,
+}: {
+  trackId: string;
+  locale: string;
+  native: boolean;
+  children: ReactNode;
+}) {
+  if (native) {
+    return (
+      <a href={`/${locale}/tracks/${trackId}`} className={CARD_CLASS}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={`/tracks/${trackId}`} className={CARD_CLASS}>
+      {children}
+    </Link>
+  );
+}
+
+type TrackCardCopy = {
+  play: string;
+  signInLabel: string;
+  generateLabel: string;
+  generate: string;
+  generating: string;
+};
+
+function TrackCardFallback({
+  request,
+  signIn,
+  cover,
+  text,
+  copy,
+}: {
+  request: RequestTrackState | undefined;
+  signIn: TrackCardSignIn | undefined;
+  cover: (badge: ReactNode) => ReactNode;
+  text: ReactNode;
+  copy: TrackCardCopy;
+}) {
+  if (signIn) {
+    return (
+      <Link
+        href={signIn.href}
+        aria-label={copy.signInLabel}
+        className={REQUEST_CARD_CLASS}
+      >
+        {cover(<RequestBadge pending={false} hint={copy.generate} />)}
+        {text}
+      </Link>
+    );
+  }
+  if (request) {
+    return (
+      <button
+        type="button"
+        aria-busy={request.pending}
+        aria-label={copy.generateLabel}
+        disabled={request.pending}
+        onClick={request.onRequest}
+        className={REQUEST_CARD_CLASS}
+      >
+        {cover(
+          <RequestBadge
+            pending={request.pending}
+            hint={request.pending ? copy.generating : copy.generate}
+          />,
+        )}
+        {text}
+      </button>
+    );
+  }
+  return (
+    <div className={CARD_CLASS}>
+      {cover(<CoverPlay label={copy.play} />)}
+      {text}
+    </div>
+  );
+}
+
 /**
  * One track as a cover-grid card (Spotify): the cover art (or a
  * deterministic geometric placeholder when there is none), the title plus
@@ -230,6 +337,7 @@ function TrackCardText({
  */
 export function TrackCard(props: TrackCardProps) {
   const { trackId, title, subtitle, request, signIn } = props;
+  const locale = useLocale();
   const t = useTranslations('tracks');
   const voiceFitKey = voiceFitMessageKey(props.fitsVoice);
   const fitsVoiceLabel = voiceFitKey ? t(voiceFitKey) : undefined;
@@ -247,57 +355,29 @@ export function TrackCard(props: TrackCardProps) {
   );
   const text = <TrackCardText title={title} subtitle={subtitle} />;
 
-  if (trackId) {
+  if (trackId)
     return (
-      <Link href={`/tracks/${trackId}`} className={CARD_CLASS}>
-        {cover(
-          <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
-            <PlayIcon className="size-4 fill-current" />
-          </span>,
-        )}
-        {text}
-      </Link>
-    );
-  }
-
-  if (signIn) {
-    return (
-      <Link
-        href={signIn.href}
-        aria-label={t('card.signInLabel', { title })}
-        className={REQUEST_CARD_CLASS}
+      <TrackCardTrackLink
+        trackId={trackId}
+        locale={locale}
+        native={props.nativeTrackLink ?? false}
       >
-        {cover(<RequestBadge pending={false} hint={t('card.generate')} />)}
-        {text}
-      </Link>
+        <TrackCardTrackLinkContent cover={cover} text={text} />
+      </TrackCardTrackLink>
     );
-  }
-
-  if (request) {
-    return (
-      <button
-        type="button"
-        aria-busy={request.pending}
-        aria-label={t('card.generateLabel', { title })}
-        disabled={request.pending}
-        onClick={request.onRequest}
-        className={REQUEST_CARD_CLASS}
-      >
-        {cover(
-          <RequestBadge
-            pending={request.pending}
-            hint={request.pending ? t('card.generating') : t('card.generate')}
-          />,
-        )}
-        {text}
-      </button>
-    );
-  }
-
   return (
-    <div className={CARD_CLASS}>
-      {cover(<CoverPlay label={t('card.play', { title })} />)}
-      {text}
-    </div>
+    <TrackCardFallback
+      request={request}
+      signIn={signIn}
+      cover={cover}
+      text={text}
+      copy={{
+        play: t('card.play', { title }),
+        signInLabel: t('card.signInLabel', { title }),
+        generateLabel: t('card.generateLabel', { title }),
+        generate: t('card.generate'),
+        generating: t('card.generating'),
+      }}
+    />
   );
 }

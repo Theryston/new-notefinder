@@ -1,4 +1,5 @@
-/** A browser-local visitor id shared by events and sign-up attribution. */
+/** A browser-local visitor id stored without a cookie and shared by events,
+ * Track views, and sign-up attribution. */
 export const VISITOR_ID_KEY = 'notefinder:visitor-id';
 
 type IdStorage = Pick<Storage, 'getItem' | 'setItem'>;

@@ -43,6 +43,7 @@ export const events = pgTable(
     algorithmVersion: integer(),
     itemId: text(),
     position: integer(),
+    clickId: text(),
     payload: jsonb().notNull(),
     ...timestamps,
   },

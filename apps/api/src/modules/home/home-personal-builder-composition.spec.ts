@@ -8,11 +8,12 @@ import { HomeFeedService } from './home-feed.service.js';
 import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
 import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
+import { HomeSocialService } from './home-social.service.js';
 
 describe('PersonalHomeBuilder row composition', () => {
   it('includes the daily target and each resume row once', async () => {
     const tracks = Array.from(
-      { length: 12 },
+      { length: 18 },
       (_, index) =>
         ({
           id: `song_${index}`,
@@ -20,7 +21,7 @@ describe('PersonalHomeBuilder row composition', () => {
           coverUrl: null,
           artistCredit: [{ name: `Performer ${index}`, joinPhrase: '' }],
           durationMs: null,
-          vocalRange: null,
+          vocalRange: { lowest: 60, highest: 72 },
         }) satisfies HomeTrack,
     );
     const firstTrack = tracks[0];
@@ -78,7 +79,18 @@ describe('PersonalHomeBuilder row composition', () => {
     };
     const tasteRows = {
       findUserTasteActivities: vi.fn().mockResolvedValue([]),
-      build: vi.fn().mockResolvedValue([]),
+      build: vi.fn(async ({ usedTrackIds }: { usedTrackIds: Set<string> }) => {
+        const items = tracks.slice(6, 12);
+        for (const item of items) usedTrackIds.add(item.id);
+        return [
+          {
+            id: 'because-you-sang',
+            layout: 'standard' as const,
+            title: { key: 'home.rows.becauseYouSang', params: {} },
+            items,
+          },
+        ];
+      }),
       explorationRow: vi.fn().mockResolvedValue(undefined),
     };
     const streaks = {
@@ -97,6 +109,23 @@ describe('PersonalHomeBuilder row composition', () => {
       }),
     };
     const attempts = { vocalRange: vi.fn().mockResolvedValue(null) };
+    attempts.vocalRange.mockResolvedValue({ lowest: 60, highest: 72 });
+    const social = {
+      rowsFor: vi.fn().mockResolvedValue([
+        {
+          id: 'people-who-sing-what-you-sing',
+          layout: 'people',
+          title: { key: 'home.rows.peopleWhoSingWhatYouSing', params: {} },
+          items: Array.from({ length: 6 }, (_, index) => ({
+            id: `person_${index}`,
+            username: `singer_${index}`,
+            name: `Singer ${index}`,
+            image: null,
+            commonTracks: 3,
+          })),
+        },
+      ]),
+    };
     const testProviders = new Map<InjectionToken, unknown>([
       [HomeFeedService, feeds],
       [PersonalHomeRepository, personal],
@@ -104,6 +133,7 @@ describe('PersonalHomeBuilder row composition', () => {
       [StreaksService, streaks],
       [UsersService, users],
       [AttemptsService, attempts],
+      [HomeSocialService, social],
     ]);
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -121,5 +151,10 @@ describe('PersonalHomeBuilder row composition', () => {
     expect(rowIds.filter((id) => id === 'daily-target')).toHaveLength(1);
     expect(rowIds.filter((id) => id === 'continue-singing')).toHaveLength(1);
     expect(rowIds.filter((id) => id === 'sing-again')).toHaveLength(1);
+    expect(
+      rowIds.filter((id) => id === 'people-who-sing-what-you-sing'),
+    ).toHaveLength(1);
+    expect(rowIds).toContain('within-your-voice');
+    expect(rowIds).toContain('because-you-sang');
   });
 });

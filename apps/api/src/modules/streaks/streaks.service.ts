@@ -76,6 +76,15 @@ export class StreaksService {
       lastHeartbeatAt: settings.lastPracticeHeartbeatAt,
       now,
     });
+    if (body.viewId !== undefined && body.elapsedSeconds >= 1) {
+      const elapsedSeconds = Math.floor(body.elapsedSeconds);
+      await this.streaks.recordAttributedHeartbeat({
+        userId,
+        viewId: body.viewId,
+        elapsedSeconds,
+        creditedSeconds: credit.creditedSeconds,
+      });
+    }
     if (body.elapsedSeconds < 1) {
       return {
         status: await this.statusOf(

@@ -1,5 +1,5 @@
 {
-  "id": "53e303d2-0e9f-450c-98c1-44343c93ce49",
+  "id": "a5750142-3e8d-4d8b-ac7e-44461ce52453",
   "prevId": "95fb30ed-b83b-4a96-8c71-7665a7a57a45",
   "version": "7",
   "dialect": "postgresql",
@@ -1464,6 +1464,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "click_id": {
+          "name": "click_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "payload": {
           "name": "payload",
           "type": "jsonb",
@@ -1588,6 +1594,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "view_id": {
+          "name": "view_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "difficulty": {
           "name": "difficulty",
@@ -1758,6 +1770,103 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "practice_attempts_view_id_track_views_id_fk": {
+          "name": "practice_attempts_view_id_track_views_id_fk",
+          "tableFrom": "practice_attempts",
+          "tableTo": "track_views",
+          "columnsFrom": [
+            "view_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.practice_heartbeats": {
+      "name": "practice_heartbeats",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "view_id": {
+          "name": "view_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "elapsed_seconds": {
+          "name": "elapsed_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credited_seconds": {
+          "name": "credited_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "practice_heartbeats_user_id_users_id_fk": {
+          "name": "practice_heartbeats_user_id_users_id_fk",
+          "tableFrom": "practice_heartbeats",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "practice_heartbeats_view_id_track_views_id_fk": {
+          "name": "practice_heartbeats_view_id_track_views_id_fk",
+          "tableFrom": "practice_heartbeats",
+          "tableTo": "track_views",
+          "columnsFrom": [
+            "view_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1970,127 +2079,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.track_cooccurrences": {
-      "name": "track_cooccurrences",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "source_track_id": {
-          "name": "source_track_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "target_track_id": {
-          "name": "target_track_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "singer_count": {
-          "name": "singer_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "track_cooccurrences_source_track_id_singer_count_index": {
-          "name": "track_cooccurrences_source_track_id_singer_count_index",
-          "columns": [
-            {
-              "expression": "source_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "singer_count",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "track_cooccurrences_source_track_id_target_track_id_index": {
-          "name": "track_cooccurrences_source_track_id_target_track_id_index",
-          "columns": [
-            {
-              "expression": "source_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "target_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "track_cooccurrences_source_track_id_tracks_id_fk": {
-          "name": "track_cooccurrences_source_track_id_tracks_id_fk",
-          "tableFrom": "track_cooccurrences",
-          "tableTo": "tracks",
-          "columnsFrom": [
-            "source_track_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "track_cooccurrences_target_track_id_tracks_id_fk": {
-          "name": "track_cooccurrences_target_track_id_tracks_id_fk",
-          "tableFrom": "track_cooccurrences",
-          "tableTo": "tracks",
-          "columnsFrom": [
-            "target_track_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2711,6 +2699,18 @@
         },
         "user_id": {
           "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "click_id": {
+          "name": "click_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visitor_id": {
+          "name": "visitor_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

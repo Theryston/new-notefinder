@@ -22,7 +22,8 @@ const trackedPages = (pages: HomeFeedPage[]): TrackedHomePage[] =>
               row.layout === 'daily-target' ||
                 row.layout === 'genres' ||
                 row.layout === 'artists' ||
-                row.layout === 'albums'
+                row.layout === 'albums' ||
+                row.layout === 'people'
               ? []
               : row.items.map((item) => ({ id: item.id })),
       }),

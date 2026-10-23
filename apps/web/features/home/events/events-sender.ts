@@ -10,6 +10,7 @@ export type ClickTarget = {
   algorithmVersion: number;
   itemId: string;
   position?: number;
+  clickId?: string;
 };
 
 /** The click event of a home card. Sent asynchronously, never awaited. */

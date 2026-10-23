@@ -12,6 +12,7 @@ export type HeartbeatLoopDeps = {
   /** A monotonic clock in milliseconds (`performance.now`). */
   now: () => number;
   timeZone: () => string;
+  viewId?: () => string | undefined;
   /** Reports the time and answers with the status (`POST` heartbeat). */
   send: (body: StreakHeartbeatBody) => Promise<StreakHeartbeatResult>;
   /** Reports the time in a way that survives the page closing. */
@@ -37,8 +38,13 @@ export function startHeartbeatLoop(deps: HeartbeatLoopDeps): HeartbeatLoop {
 
   const pending = (): StreakHeartbeatBody | null => {
     const elapsedSeconds = meter.take(deps.now());
+    const viewId = deps.viewId?.();
     return elapsedSeconds >= 1
-      ? { elapsedSeconds, timeZone: deps.timeZone() }
+      ? {
+          elapsedSeconds,
+          timeZone: deps.timeZone(),
+          ...(viewId === undefined ? {} : { viewId }),
+        }
       : null;
   };
 
