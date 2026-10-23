@@ -5,6 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import { sessionUserOptions } from '@/features/auth/session';
+import { isApiError } from '@/lib/api/api-error';
 import { getOrCreateVisitorId } from '@/lib/visitor-id';
 
 import {
@@ -15,6 +16,14 @@ import {
 
 const acquisitionRecordedKey = (userId: string) =>
   `notefinder:acquisition-recorded:${userId}`;
+
+function markAcquisitionRecorded(userId: string): void {
+  try {
+    window.localStorage.setItem(acquisitionRecordedKey(userId), 'true');
+  } catch {
+    // Attribution must not block the signed-in page.
+  }
+}
 
 /** Captures campaign arrivals and attaches them after either sign-up flow. */
 export function AcquisitionAttributor() {
@@ -35,10 +44,12 @@ export function AcquisitionAttributor() {
       });
     },
     onSuccess: (_response, { userId }) => {
-      try {
-        window.localStorage.setItem(acquisitionRecordedKey(userId), 'true');
-      } catch {
-        // Attribution must not block the signed-in page.
+      markAcquisitionRecorded(userId);
+    },
+    onError: (error, { userId }) => {
+      if (isApiError(error) && error.code === 'CONFLICT') {
+        // A conflict means the API already has this user's acquisition row.
+        markAcquisitionRecorded(userId);
       }
     },
     onSettled: () => {
