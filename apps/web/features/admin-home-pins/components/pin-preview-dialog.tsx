@@ -1,12 +1,8 @@
 'use client';
 
-import type {
-  HomeFeedPage,
-  HomePinPreviewRequest,
-  Locale,
-} from '@notefinder/contracts';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import type { HomePinPreviewRequest, Locale } from '@notefinder/contracts';
+import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   Dialog,
@@ -18,7 +14,14 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { HomeFeedRows } from '@/features/home/components/home-feed-rows';
 import { isLocale } from '@/lib/i18n/routing';
-import { fetchAdminPinPreview } from '../admin-pins-client';
+import enMessages from '@/messages/en.json';
+import ptBrMessages from '@/messages/pt-BR.json';
+import { useAdminPinPreview } from '../hooks/use-admin-pin-preview';
+
+const homePreviewMessages = {
+  en: { home: enMessages.home, tracks: enMessages.tracks },
+  'pt-BR': { home: ptBrMessages.home, tracks: ptBrMessages.tracks },
+};
 
 type PinPreviewDialogProps = {
   request: HomePinPreviewRequest;
@@ -35,35 +38,25 @@ export function PinPreviewDialog({
   const t = useTranslations('adminHomePins.form.previewDialog');
   const [locale, setLocale] = useState<Locale>(request.locale);
   const [audience, setAudience] = useState(request.audience);
-  const [feed, setFeed] = useState<HomeFeedPage>();
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    let active = true;
-    setLoading(true);
-    setFailed(false);
-    const previewRequest: HomePinPreviewRequest = {
+  const previewRequest = useMemo<HomePinPreviewRequest>(
+    () => ({
       pin: request.pin,
       locale,
       audience,
       ...(request.pinId ? { pinId: request.pinId } : {}),
-    };
-    fetchAdminPinPreview(previewRequest)
-      .then((result) => {
-        if (active) setFeed(result);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [audience, locale, open, request]);
+    }),
+    [audience, locale, request],
+  );
+  const {
+    data: feed,
+    isError,
+    isPending,
+  } = useAdminPinPreview(previewRequest, open);
+
+  useEffect(() => {
+    setLocale(request.locale);
+    setAudience(request.audience);
+  }, [request.audience, request.locale]);
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -84,8 +77,8 @@ export function PinPreviewDialog({
                 }
               }}
             >
-              <option value="en">English</option>
-              <option value="pt-BR">Português (Brasil)</option>
+              <option value="en">{t('localeOptions.en')}</option>
+              <option value="pt-BR">{t('localeOptions.ptBR')}</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 font-medium">
@@ -103,12 +96,12 @@ export function PinPreviewDialog({
           </label>
         </div>
         <div aria-live="polite" className="min-h-32 overflow-y-auto">
-          {loading ? (
+          {isPending ? (
             <div className="flex min-h-32 items-center justify-center gap-2 text-muted-foreground">
               <Spinner />
               {t('loading')}
             </div>
-          ) : failed ? (
+          ) : isError ? (
             <p role="alert" className="py-8 text-center text-muted-foreground">
               {t('error')}
             </p>
@@ -117,7 +110,12 @@ export function PinPreviewDialog({
               {t('empty')}
             </p>
           ) : (
-            <HomeFeedRows rows={feed.rows} />
+            <NextIntlClientProvider
+              locale={locale}
+              messages={homePreviewMessages[locale]}
+            >
+              <HomeFeedRows rows={feed.rows} />
+            </NextIntlClientProvider>
           )}
         </div>
       </DialogContent>

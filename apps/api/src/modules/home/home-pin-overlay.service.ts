@@ -51,10 +51,11 @@ export class HomePinOverlayService {
       this.pins.assertPreviewEligible(body),
     ]);
     const draft = this.pins.preview(body, pinId);
-    return this.applyPins(rows, viewer, [
-      ...live.filter((pin) => pin.id !== draft.id),
-      draft,
-    ]);
+    const pins = live.filter((pin) => pin.id !== draft.id);
+    if (targetsViewer(draft, viewer)) {
+      pins.push(draft);
+    }
+    return this.applyPins(rows, viewer, pins);
   }
 
   private async applyPins(
@@ -107,6 +108,10 @@ export class HomePinOverlayService {
     return applyEditorialPins(rows, pins);
   }
 }
+
+const targetsViewer = (pin: EditorialPin, viewer: Viewer): boolean =>
+  (pin.locale === null || pin.locale === viewer.locale) &&
+  (pin.audience === 'everyone' || !viewer.signedIn);
 
 /** A live pin as the overlay places it, or nothing when it has no title here. */
 const toOverlayPin = (

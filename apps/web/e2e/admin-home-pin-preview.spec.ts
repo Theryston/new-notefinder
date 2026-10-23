@@ -34,7 +34,16 @@ for (const { locale, copy } of adminLocales) {
       preview.getByRole('heading', { name: pins.form.previewDialog.title }),
     ).toBeVisible();
     await expect(
-      preview.getByText(pins.form.previewDialog.empty),
+      preview.getByRole('heading', {
+        name: locale === 'en' ? 'Preview picks' : 'Escolhas da prévia',
+      }),
+    ).toBeVisible();
+    await expect(
+      preview.getByText(
+        locale === 'en'
+          ? 'this row contains sponsored content'
+          : 'esta fileira contém conteúdo patrocinado',
+      ),
     ).toBeVisible();
     const firstPreview = api.calls.find((call) =>
       call.url().includes('/home-pins/preview'),
@@ -61,5 +70,8 @@ for (const { locale, copy } of adminLocales) {
           ?.postDataJSON(),
       )
       .toMatchObject({ audience: 'signed-in', locale: 'pt-BR' });
+    await expect(
+      preview.getByText('esta fileira contém conteúdo patrocinado'),
+    ).toBeVisible();
   });
 }

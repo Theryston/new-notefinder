@@ -9,9 +9,9 @@ import {
   editorialPinMetricsPageSchema,
   editorialPinPageSchema,
   editorialPinSchema,
-  type HomeFeedPage,
   type HomePinPreviewRequest,
-  homeFeedPageSchema,
+  type HomePinPreviewResponse,
+  homePinPreviewResponseSchema,
   type PinTrackSearchResult,
   pinTrackSearchResultSchema,
   type UpdateEditorialPinBody,
@@ -51,10 +51,10 @@ export function fetchAdminPinMetrics(
 /** Renders a draft over the current neutral feed without storing it. */
 export function fetchAdminPinPreview(
   request: HomePinPreviewRequest,
-): Promise<HomeFeedPage> {
+): Promise<HomePinPreviewResponse> {
   return browserApi('/admin/home-pins/preview', {
     method: 'POST',
-    schema: homeFeedPageSchema,
+    schema: homePinPreviewResponseSchema,
     body: request,
   });
 }

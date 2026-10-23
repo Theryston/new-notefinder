@@ -1,3 +1,4 @@
+import { homePinPreviewRequestSchema } from '@notefinder/contracts';
 import type { Page, Request, Route } from '@playwright/test';
 
 // Any host: the API URL the browser calls is inlined when the app is built
@@ -200,16 +201,42 @@ const previewAndMetricsReply = (
   if (request.method() !== 'POST' || !pathname.endsWith('/preview')) {
     return undefined;
   }
+  const preview = homePinPreviewRequestSchema.parse(request.postDataJSON());
+  const pin = preview.pin;
+  const targetsLocale = pin.locale === null || pin.locale === preview.locale;
+  const targetsAudience =
+    pin.audience === 'everyone' || preview.audience === 'visitor';
+  const ids =
+    pin.source.type === 'tracks' ? pin.source.trackIds : ['trk_preview'];
+  const items =
+    targetsLocale && targetsAudience
+      ? ids.map((id) => ({
+          id,
+          title: 'Preview song',
+          coverUrl: 'https://cdn.example/preview.webp',
+          artistCredit: [{ name: 'Preview artist', joinPhrase: '' }],
+          durationMs: null,
+          vocalRange: null,
+        }))
+      : [];
+  const title = pin.titles[preview.locale];
   return {
     body: {
-      audience:
-        (request.postDataJSON() as { audience?: string } | null)?.audience ===
-        'signed-in'
-          ? 'personal'
-          : 'public',
+      audience: preview.audience === 'signed-in' ? 'personal' : 'public',
       version: 'preview-version',
       algorithmVersion: 1,
-      rows: [],
+      rows:
+        items.length > 0 && title
+          ? [
+              {
+                id: `pin-${preview.pinId ?? 'preview'}`,
+                layout: 'standard',
+                title: { key: 'home.rows.pinned', params: { title } },
+                items,
+                sponsored: true,
+              },
+            ]
+          : [],
       nextCursor: null,
     },
   };

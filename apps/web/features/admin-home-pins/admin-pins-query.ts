@@ -3,6 +3,8 @@ import type {
   EditorialPinKind,
   EditorialPinMetrics,
   EditorialPinPage,
+  HomePinPreviewRequest,
+  HomePinPreviewResponse,
   PinTrackSearchResult,
 } from '@notefinder/contracts';
 import { queryOptions } from '@tanstack/react-query';
@@ -12,6 +14,8 @@ export const adminPinKeys = {
   all: ['admin-home-pins'] as const,
   list: () => [...adminPinKeys.all, 'list'] as const,
   metrics: () => [...adminPinKeys.all, 'metrics'] as const,
+  preview: (request: HomePinPreviewRequest) =>
+    [...adminPinKeys.all, 'preview', request] as const,
   history: (pinId: string) => [...adminPinKeys.all, pinId, 'history'] as const,
   trackSearch: (kind: EditorialPinKind, query: string) =>
     [...adminPinKeys.all, 'track-search', kind, query] as const,
@@ -42,6 +46,22 @@ export function adminPinMetricsQueryOptions() {
       const { fetchAdminPinMetrics } = await import('./admin-pins-client');
       return fetchAdminPinMetrics(signal);
     },
+    retry: false,
+  });
+}
+
+/** A transient feed for one draft, audience, and locale selection. */
+export function adminPinPreviewQueryOptions(
+  request: HomePinPreviewRequest,
+  enabled: boolean,
+) {
+  return queryOptions({
+    queryKey: adminPinKeys.preview(request),
+    queryFn: async (): Promise<HomePinPreviewResponse> => {
+      const { fetchAdminPinPreview } = await import('./admin-pins-client');
+      return fetchAdminPinPreview(request);
+    },
+    enabled,
     retry: false,
   });
 }

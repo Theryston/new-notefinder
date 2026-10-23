@@ -2,6 +2,7 @@ import { count } from 'drizzle-orm';
 import request from 'supertest';
 import { editorialPins } from '../src/database/schema/editorial-pins.js';
 import { events } from '../src/database/schema/events.js';
+import { HomeFeedBuilder } from '../src/modules/home/home-feed-builder.service.js';
 import { type AuthClient, createAuthClient, signIn } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -57,6 +58,7 @@ describe('Admin home pin preview and metrics (e2e)', () => {
   it('keeps preview admin-only and does not persist a scheduled signed-in draft', async () => {
     const anonymous = request(testApp.app.getHttpServer());
     await anonymous.post(PREVIEW_PATH).send({}).expect(401);
+    await anonymous.get(METRICS_PATH).expect(401);
 
     const user = await createUser(testApp.db, { username: 'preview-user' });
     await createCredentialAccount(testApp.db, user);
@@ -66,6 +68,8 @@ describe('Admin home pin preview and metrics (e2e)', () => {
       password: DEFAULT_PASSWORD,
     }).expect(200);
     await regular.post(PREVIEW_PATH).send({}).expect(403);
+    await regular.get(METRICS_PATH).expect(403);
+    await admin.post(PREVIEW_PATH).send({}).expect(400);
 
     const draft = rowPinBody(trackIds.slice(7, 13), {
       startsAt: new Date(Date.now() + 60_000).toISOString(),
@@ -73,14 +77,23 @@ describe('Admin home pin preview and metrics (e2e)', () => {
       sponsored: true,
     });
     const before = await admin.get('/v1/home').expect(200);
-    const preview = await admin
+    const signedInPreview = await admin
       .post(PREVIEW_PATH)
       .send({ pin: draft, locale: 'en', audience: 'signed-in' })
       .expect(200);
 
-    expect(preview.headers['cache-control']).toBe('private, no-store');
-    expect(preview.body.audience).toBe('personal');
-    expect(preview.body.rows).toContainEqual(
+    expect(signedInPreview.headers['cache-control']).toBe('private, no-store');
+    expect(signedInPreview.body.audience).toBe('personal');
+    expect(signedInPreview.body.rows).not.toContainEqual(
+      expect.objectContaining({
+        id: 'pin-preview',
+      }),
+    );
+    const visitorPreview = await admin
+      .post(PREVIEW_PATH)
+      .send({ pin: draft, locale: 'en', audience: 'visitor' })
+      .expect(200);
+    expect(visitorPreview.body.rows).toContainEqual(
       expect.objectContaining({
         id: 'pin-preview',
         sponsored: true,
@@ -92,6 +105,59 @@ describe('Admin home pin preview and metrics (e2e)', () => {
     ).toEqual([{ count: 0 }]);
     const after = await admin.get('/v1/home').expect(200);
     expect(after.body.rows).toEqual(before.body.rows);
+  });
+
+  it('keeps draft targeting while ignoring only its schedule', async () => {
+    const draft = rowPinBody(trackIds.slice(7, 13), {
+      audience: 'visitors',
+      locale: 'pt-BR',
+      startsAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+    const wrongLocale = await admin
+      .post(PREVIEW_PATH)
+      .send({ pin: draft, locale: 'en', audience: 'visitor' })
+      .expect(200);
+    expect(wrongLocale.body.rows).not.toContainEqual(
+      expect.objectContaining({ id: 'pin-preview' }),
+    );
+
+    const wrongAudience = await admin
+      .post(PREVIEW_PATH)
+      .send({ pin: draft, locale: 'pt-BR', audience: 'signed-in' })
+      .expect(200);
+    expect(wrongAudience.body.rows).not.toContainEqual(
+      expect.objectContaining({ id: 'pin-preview' }),
+    );
+
+    const eligible = await admin
+      .post(PREVIEW_PATH)
+      .send({ pin: draft, locale: 'pt-BR', audience: 'visitor' })
+      .expect(200);
+    expect(eligible.body.rows).toContainEqual(
+      expect.objectContaining({
+        id: 'pin-preview',
+        title: { key: 'home.rows.pinned', params: { title: 'Festivo' } },
+      }),
+    );
+  });
+
+  it('does not build or store a public feed when the preview cache is cold', async () => {
+    const build = vi.spyOn(testApp.app.get(HomeFeedBuilder), 'build');
+    const write = vi.spyOn(sharedInMemoryCache, 'set');
+    const draft = rowPinBody(trackIds.slice(7, 13));
+
+    const preview = await admin
+      .post(PREVIEW_PATH)
+      .send({ pin: draft, locale: 'en', audience: 'visitor' })
+      .expect(200);
+
+    expect(preview.body.rows).toContainEqual(
+      expect.objectContaining({ id: 'pin-preview' }),
+    );
+    expect(build).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    build.mockRestore();
+    write.mockRestore();
   });
 
   it('replaces an existing pin in an edit preview and uses the chosen locale', async () => {

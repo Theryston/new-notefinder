@@ -1096,6 +1096,10 @@
         "close": "Close preview",
         "description": "See this pin over the current home feed. The preview does not change the live feed.",
         "locale": "Language",
+        "localeOptions": {
+          "en": "English",
+          "ptBR": "Português (Brasil)"
+        },
         "audience": "Audience",
         "visitor": "Visitor",
         "signedIn": "Signed in",

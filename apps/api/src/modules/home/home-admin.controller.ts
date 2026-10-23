@@ -14,8 +14,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
-  homeFeedSchema,
   homePinPreviewRequestSchema,
+  homePinPreviewResponseSchema,
 } from '@notefinder/contracts';
 import type { Response } from 'express';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -36,7 +36,7 @@ export class HomeAdminController {
 
   @Post('preview')
   @HttpCode(HttpStatus.OK)
-  @ZodSerializerDto(homeFeedSchema)
+  @ZodSerializerDto(homePinPreviewResponseSchema)
   @ApiOkResponse({ description: 'The transient preview feed.' })
   @ApiBadRequestResponse({ description: 'The pin preview is invalid.' })
   async preview(

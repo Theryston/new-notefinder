@@ -1096,6 +1096,10 @@
         "close": "Fechar prévia",
         "description": "Veja este destaque na home atual. A prévia não altera o que está no ar.",
         "locale": "Idioma",
+        "localeOptions": {
+          "en": "Inglês",
+          "ptBR": "Português (Brasil)"
+        },
         "audience": "Público",
         "visitor": "Visitante",
         "signedIn": "Com sessão iniciada",
