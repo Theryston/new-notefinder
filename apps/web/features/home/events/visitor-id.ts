@@ -1,17 +1,14 @@
-/**
- * The anonymous visitor id: a random id kept in the browser's local storage
- * (no cookie), sent with every events batch so a visitor's earlier events
- * join to the account they later create.
- */
-export const VISITOR_ID_KEY = 'notefinder:visitor-id';
+import {
+  getOrCreateVisitorId as getSharedVisitorId,
+  VISITOR_ID_KEY as SHARED_VISITOR_ID_KEY,
+} from '@/lib/visitor-id';
 
-type IdStorage = Pick<Storage, 'getItem' | 'setItem'>;
+/** The anonymous visitor id used by home events and Track views. */
+export const VISITOR_ID_KEY = SHARED_VISITOR_ID_KEY;
 
 /** The stored visitor id, or a fresh one stored for the next page load. */
-export function getOrCreateVisitorId(storage: IdStorage): string {
-  const existing = storage.getItem(VISITOR_ID_KEY);
-  if (existing) return existing;
-  const created = crypto.randomUUID();
-  storage.setItem(VISITOR_ID_KEY, created);
-  return created;
+export function getOrCreateVisitorId(
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+): string {
+  return getSharedVisitorId(storage);
 }

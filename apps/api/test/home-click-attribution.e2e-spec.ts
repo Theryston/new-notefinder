@@ -20,7 +20,7 @@ describe('home click to Track practice attribution (e2e)', () => {
   const spec = useAuthSpec();
   const clickId = 'home-click-1';
 
-  const recordClick = async (trackId: string) => {
+  const recordClick = async (trackId: string, clickIdentifier = clickId) => {
     await request(spec.testApp.app.getHttpServer())
       .post('/v1/events')
       .send({
@@ -28,7 +28,7 @@ describe('home click to Track practice attribution (e2e)', () => {
         events: [
           {
             type: 'home.item_click',
-            clickId,
+            clickId: clickIdentifier,
             rowId: 'trending',
             feedVersion: 'a1b2c3d4e5f60718',
             algorithmVersion: 1,
@@ -64,11 +64,11 @@ describe('home click to Track practice attribution (e2e)', () => {
 
     const viewResponse = await spec.client
       .post(`/v1/tracks/${track.id}/views`)
-      .send({ clickId, locale: 'en' })
+      .send({ clickId, visitorId: 'visitor-home-1', locale: 'en' })
       .expect(201);
     const viewId = viewResponse.body.viewId as string;
     expect(await spec.testApp.db.select().from(trackViews)).toMatchObject([
-      { id: viewId, clickId, userId: user.id },
+      { id: viewId, clickId, visitorId: 'visitor-home-1', userId: user.id },
     ]);
 
     await spec.client
@@ -100,6 +100,39 @@ describe('home click to Track practice attribution (e2e)', () => {
     expect(await spec.testApp.db.select().from(practiceAttempts)).toMatchObject(
       [{ userId: user.id, trackId: track.id, viewId }],
     );
+
+    await recordClick(track.id, 'home-click-2');
+    const secondView = await spec.client
+      .post(`/v1/tracks/${track.id}/views`)
+      .send({
+        viewId,
+        clickId: 'home-click-2',
+        visitorId: 'visitor-home-1',
+        locale: 'en',
+      })
+      .expect(201);
+    const secondViewId = secondView.body.viewId as string;
+    expect(secondViewId).not.toBe(viewId);
+    expect(
+      await spec.testApp.db
+        .select({ id: trackViews.id, clickId: trackViews.clickId })
+        .from(trackViews),
+    ).toEqual([
+      { id: viewId, clickId: 'home-click-1' },
+      { id: secondViewId, clickId: 'home-click-2' },
+    ]);
+    expect(await spec.testApp.db.select().from(practiceAttempts)).toMatchObject(
+      [{ userId: user.id, trackId: track.id, viewId }],
+    );
+    await spec.client
+      .post('/v1/me/streak/heartbeat')
+      .send({ elapsedSeconds: 5, timeZone: 'UTC', viewId: secondViewId })
+      .expect(200);
+    expect(
+      await spec.testApp.db
+        .select({ viewId: practiceHeartbeats.viewId })
+        .from(practiceHeartbeats),
+    ).toEqual(expect.arrayContaining([{ viewId }, { viewId: secondViewId }]));
   });
 
   it('records views without a click id and with an unknown click id', async () => {
@@ -113,11 +146,15 @@ describe('home click to Track practice attribution (e2e)', () => {
       .expect(201);
 
     expect(
-      (
-        await spec.testApp.db
-          .select({ clickId: trackViews.clickId })
-          .from(trackViews)
-      ).map((view) => view.clickId),
-    ).toEqual([null, 'unknown-click']);
+      await spec.testApp.db
+        .select({
+          clickId: trackViews.clickId,
+          visitorId: trackViews.visitorId,
+        })
+        .from(trackViews),
+    ).toEqual([
+      { clickId: null, visitorId: null },
+      { clickId: 'unknown-click', visitorId: null },
+    ]);
   });
 });

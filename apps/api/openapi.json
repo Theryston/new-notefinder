@@ -2231,6 +2231,11 @@
             "minLength": 1,
             "maxLength": 128
           },
+          "visitorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
           "locale": {
             "type": "string",
             "enum": [

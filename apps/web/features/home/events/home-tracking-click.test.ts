@@ -14,10 +14,21 @@ class TestIntersectionObserver {
 }
 
 describe('home card navigation targets', () => {
+  const visitorStorage = () => {
+    const values = new Map<string, string>();
+    return {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      clear: () => values.clear(),
+    };
+  };
+
+  const storage = visitorStorage();
+
   afterEach(() => {
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
-    window.localStorage.clear();
+    storage.clear();
   });
 
   it('updates normal, modified and middle-click link destinations', () => {
@@ -27,7 +38,14 @@ describe('home card navigation targets', () => {
     });
     vi.stubGlobal('IntersectionObserver', TestIntersectionObserver);
     vi.stubGlobal('navigator', { sendBeacon: () => true });
-    window.localStorage.setItem('notefinder:visitor-id', 'visitor-1');
+    vi.stubGlobal('window', {
+      localStorage: storage,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      innerWidth: 1024,
+      innerHeight: 768,
+    });
+    storage.setItem('notefinder:visitor-id', 'visitor-1');
     document.body.innerHTML =
       '<section data-home-row-id="row-0">' +
       '<a href="/en/tracks/song" data-home-item-id="song" ' +
@@ -54,7 +72,7 @@ describe('home card navigation targets', () => {
     expect(link.href).toContain('clickId=click-2');
 
     link.dispatchEvent(
-      new MouseEvent('auxclick', { bubbles: true, button: 1 }),
+      new MouseEvent('mousedown', { bubbles: true, button: 1 }),
     );
     expect(link.href).toContain('clickId=click-3');
     stop();

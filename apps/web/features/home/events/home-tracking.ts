@@ -1,6 +1,7 @@
 import type { HomeEvent } from '@notefinder/contracts';
 import { getClientEnv } from '@/lib/env/client';
 import { withClickId } from '@/lib/home-click-id';
+import { getOrCreateVisitorId } from '@/lib/visitor-id';
 import {
   browserEventsTransport,
   buildClickEvent,
@@ -14,7 +15,6 @@ import {
   rowMetaOf,
   type TrackedHomePage,
 } from './tracked-rows';
-import { getOrCreateVisitorId } from './visitor-id';
 
 /** A row is reported once it is at least half visible... */
 const IMPRESSION_VISIBLE_RATIO = 0.5;
@@ -118,8 +118,7 @@ const trackCardClicks = (
   meta: Map<string, HomeRowMeta>,
   send: (events: HomeEvent[]) => void,
 ): (() => void) => {
-  const onClick = (event: MouseEvent): void => {
-    if (event.type === 'auxclick' && event.button !== 1) return;
+  const recordClick = (event: MouseEvent): void => {
     const target = clickTargetOf(event.target, meta);
     const link = (event.target as Element | null)?.closest?.(
       'a[href]',
@@ -129,11 +128,17 @@ const trackCardClicks = (
     link.href = withClickId(link.href, clickId);
     send([buildClickEvent({ ...target, clickId })]);
   };
+  const onClick = (event: MouseEvent): void => {
+    if (event.button === 0) recordClick(event);
+  };
+  const onMiddleMouseDown = (event: MouseEvent): void => {
+    if (event.button === 1) recordClick(event);
+  };
   document.addEventListener('click', onClick, true);
-  document.addEventListener('auxclick', onClick, true);
+  document.addEventListener('mousedown', onMiddleMouseDown, true);
   return () => {
     document.removeEventListener('click', onClick, true);
-    document.removeEventListener('auxclick', onClick, true);
+    document.removeEventListener('mousedown', onMiddleMouseDown, true);
   };
 };
 

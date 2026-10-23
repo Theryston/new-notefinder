@@ -15,12 +15,13 @@ export async function synchronizeTrackView(
   trackId: string,
   signedIn: boolean,
   locale?: Locale,
-  clickId?: string,
+  attribution?: { clickId?: string; visitorId?: string },
 ): Promise<void> {
   while (pending.has(trackId)) await pending.get(trackId);
   const storage = sessionStorageOrUndefined();
   const stored = readStoredView(storage, trackId);
-  const action = nextViewAction(stored, signedIn);
+  const { clickId, visitorId } = attribution ?? {};
+  const action = nextViewAction(stored, signedIn, clickId);
   if (action === 'none' && clickId === undefined) return;
   // Only a new view takes the locale: an attached one keeps the locale it has.
   const request = postViewForAction({
@@ -29,8 +30,13 @@ export async function synchronizeTrackView(
     storedViewId: stored?.viewId,
     locale,
     clickId,
+    visitorId,
   }).then((viewId) => {
-    writeStoredView(storage, trackId, { viewId, attached: signedIn });
+    writeStoredView(storage, trackId, {
+      viewId,
+      attached: signedIn,
+      ...(clickId === undefined ? {} : { clickId }),
+    });
   });
   pending.set(trackId, request);
   try {
@@ -46,14 +52,19 @@ const postViewForAction = (options: {
   storedViewId: string | undefined;
   locale?: Locale;
   clickId: string | undefined;
+  visitorId: string | undefined;
 }): Promise<string> => {
-  const { trackId, action, storedViewId, locale, clickId } = options;
+  const { trackId, action, storedViewId, locale, clickId, visitorId } = options;
+  const attribution = {
+    ...(clickId === undefined ? {} : { clickId }),
+    ...(visitorId === undefined ? {} : { visitorId }),
+  };
   if (action === 'record') {
-    return clickId === undefined
+    return Object.keys(attribution).length === 0
       ? postTrackView(trackId, undefined, locale)
-      : postTrackView(trackId, undefined, locale, clickId);
+      : postTrackView(trackId, undefined, locale, attribution);
   }
-  return clickId === undefined
+  return Object.keys(attribution).length === 0
     ? postTrackView(trackId, storedViewId)
-    : postTrackView(trackId, storedViewId, undefined, clickId);
+    : postTrackView(trackId, storedViewId, undefined, attribution);
 };

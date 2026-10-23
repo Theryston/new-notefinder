@@ -54,6 +54,8 @@ export function RankedLayout({
             <a
               href={`/${locale}/tracks/${track.id}`}
               className={RANKED_ITEM_CLASS}
+              data-home-item-id={track.id}
+              data-home-item-position={index}
             >
               <span aria-hidden="true" className={RANKED_RANK_CLASS}>
                 {index + 1}

@@ -49,6 +49,7 @@ export class TrackViewsController {
       userId: user?.id,
       viewId: body.viewId,
       clickId: body.clickId,
+      visitorId: body.visitorId,
       locale: body.locale,
     });
     response.status(recorded.created ? HttpStatus.CREATED : HttpStatus.OK);

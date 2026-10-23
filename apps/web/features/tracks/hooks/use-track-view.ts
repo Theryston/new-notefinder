@@ -17,18 +17,20 @@ export function useTrackView(
   trackId: string,
   signedIn: boolean,
   clickId: string | undefined,
+  visitorId: string | undefined,
 ) {
   // Strict Mode runs effects twice; a ref survives that remount.
   const sent = useRef<string | null>(null);
   const locale = useLocale();
   const { mutate } = useMutation({
-    mutationFn: () => synchronizeTrackView(trackId, signedIn, locale, clickId),
+    mutationFn: () =>
+      synchronizeTrackView(trackId, signedIn, locale, { clickId, visitorId }),
   });
 
   useEffect(() => {
-    const attempt = `${trackId}:${signedIn}:${clickId ?? ''}`;
+    const attempt = `${trackId}:${signedIn}:${clickId ?? ''}:${visitorId ?? ''}`;
     if (sent.current === attempt) return;
     sent.current = attempt;
     mutate();
-  }, [trackId, signedIn, clickId, mutate]);
+  }, [trackId, signedIn, clickId, visitorId, mutate]);
 }

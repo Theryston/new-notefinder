@@ -9,8 +9,8 @@ describe('TrackViewsService click attribution', () => {
     const views = {
       findView: vi.fn(),
       create: vi.fn().mockResolvedValue('view-1'),
-      attachClick: vi.fn(),
       attachUser: vi.fn(),
+      attachVisitor: vi.fn(),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -28,25 +28,29 @@ describe('TrackViewsService click attribution', () => {
         userId: undefined,
         viewId: undefined,
         clickId: 'click-1',
+        visitorId: 'visitor-1',
       });
 
-      expect(views.create).toHaveBeenCalledWith(
-        'track-1',
-        null,
-        undefined,
-        'click-1',
-      );
+      expect(views.create).toHaveBeenCalledWith('track-1', null, undefined, {
+        clickId: 'click-1',
+        visitorId: 'visitor-1',
+      });
     } finally {
       await moduleRef.close();
     }
   });
 
-  it('updates the click id when a same-session view already exists', async () => {
+  it('creates a separate view when a later click references the previous view', async () => {
     const views = {
-      findView: vi.fn().mockResolvedValue({ id: 'view-1', userId: null }),
-      create: vi.fn(),
-      attachClick: vi.fn(),
+      findView: vi.fn().mockResolvedValue({
+        id: 'view-1',
+        userId: null,
+        clickId: 'click-1',
+        visitorId: 'visitor-1',
+      }),
+      create: vi.fn().mockResolvedValue('view-2'),
       attachUser: vi.fn(),
+      attachVisitor: vi.fn(),
     };
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -64,9 +68,88 @@ describe('TrackViewsService click attribution', () => {
         userId: undefined,
         viewId: 'view-1',
         clickId: 'click-2',
+        visitorId: 'visitor-1',
       });
 
-      expect(views.attachClick).toHaveBeenCalledWith('view-1', 'click-2');
+      expect(views.create).toHaveBeenCalledWith('track-1', null, undefined, {
+        clickId: 'click-2',
+        visitorId: 'visitor-1',
+      });
+      expect(views.attachUser).not.toHaveBeenCalled();
+      expect(views.attachVisitor).not.toHaveBeenCalled();
+    } finally {
+      await moduleRef.close();
+    }
+  });
+
+  it('reuses the same click view without changing its attribution', async () => {
+    const views = {
+      findView: vi.fn().mockResolvedValue({
+        id: 'view-1',
+        userId: null,
+        clickId: 'click-1',
+        visitorId: 'visitor-1',
+      }),
+      create: vi.fn(),
+      attachUser: vi.fn(),
+      attachVisitor: vi.fn(),
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TrackViewsService,
+        { provide: TracksService, useValue: { assertTrackExists: vi.fn() } },
+        { provide: TrackViewRepository, useValue: views },
+        { provide: TrackTrendingQueueService, useValue: { schedule: vi.fn() } },
+      ],
+    }).compile();
+
+    try {
+      const service = moduleRef.get(TrackViewsService);
+      await expect(
+        service.record({
+          trackId: 'track-1',
+          userId: undefined,
+          viewId: 'view-1',
+          clickId: 'click-1',
+          visitorId: 'visitor-1',
+        }),
+      ).resolves.toEqual({ viewId: 'view-1', created: false });
+      expect(views.create).not.toHaveBeenCalled();
+    } finally {
+      await moduleRef.close();
+    }
+  });
+
+  it('backfills a missing visitor id without replacing click attribution', async () => {
+    const views = {
+      findView: vi.fn().mockResolvedValue({
+        id: 'view-1',
+        userId: null,
+        clickId: 'click-1',
+        visitorId: null,
+      }),
+      create: vi.fn(),
+      attachUser: vi.fn(),
+      attachVisitor: vi.fn(),
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        TrackViewsService,
+        { provide: TracksService, useValue: { assertTrackExists: vi.fn() } },
+        { provide: TrackViewRepository, useValue: views },
+        { provide: TrackTrendingQueueService, useValue: { schedule: vi.fn() } },
+      ],
+    }).compile();
+
+    try {
+      await moduleRef.get(TrackViewsService).record({
+        trackId: 'track-1',
+        userId: undefined,
+        viewId: 'view-1',
+        clickId: 'click-1',
+        visitorId: 'visitor-1',
+      });
+      expect(views.attachVisitor).toHaveBeenCalledWith('view-1', 'visitor-1');
       expect(views.create).not.toHaveBeenCalled();
     } finally {
       await moduleRef.close();
