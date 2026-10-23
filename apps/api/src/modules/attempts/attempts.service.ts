@@ -26,6 +26,10 @@ import {
   deriveVocalRange,
   type VocalRangeGroup,
 } from './profile-chips.js';
+import {
+  type MostSungArtistSignal,
+  rankMostSungArtists,
+} from './profile-chips-ranking.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
@@ -145,6 +149,12 @@ export class AttemptsService {
       vocalRange: deriveVocalRange(vocalGroups.map(toVocalRangeGroup)),
       mostSungArtist: deriveMostSungArtist(artistGroups.map(toArtistGroup)),
     };
+  }
+
+  /** Every Artist ranked by the same valid-run and recency rules as the Profile chip. */
+  async mostSungArtists(userId: string): Promise<MostSungArtistSignal[]> {
+    const rows = await this.attempts.listArtistGroups(userId);
+    return rankMostSungArtists(rows.map(toArtistGroup));
   }
 
   /** The signed-in User's own attempts, newest first. */

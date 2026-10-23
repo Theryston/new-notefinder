@@ -1,4 +1,10 @@
 import type { MostSungArtist, TrackVocalRange } from '@notefinder/contracts';
+import {
+  type ArtistGroup,
+  rankMostSungArtists,
+} from './profile-chips-ranking.js';
+
+export type { ArtistGroup } from './profile-chips-ranking.js';
 
 /**
  * The Profile chips a User's saved Attempts decide: the Vocal range and the
@@ -29,14 +35,6 @@ export type VocalRangeGroup = {
 };
 
 /** The runs of one artist, split by the bleed flag. */
-export type ArtistGroup = {
-  artist: MostSungArtist;
-  bleedSuspected: boolean;
-  /** How many runs credit this artist with the flag. */
-  attempts: number;
-  lastAttemptAt: Date;
-};
-
 const isQualifyingForRange = (group: VocalRangeGroup): boolean =>
   group.bestAccuracy >= VOCAL_RANGE_MIN_ACCURACY &&
   !group.forwardSkip &&
@@ -82,18 +80,6 @@ export function deriveVocalRange(
   return range;
 }
 
-type ArtistTally = {
-  artist: MostSungArtist;
-  attempts: number;
-  latestAt: number;
-};
-
-/** Most runs first, then the most recent one, then the smaller ID. */
-const byMostSung = (a: ArtistTally, b: ArtistTally): number =>
-  b.attempts - a.attempts ||
-  b.latestAt - a.latestAt ||
-  (a.artist.id < b.artist.id ? -1 : 1);
-
 /**
  * The artist with the most valid runs (a suspected bleed never counts). A run
  * on a Track that credits several artists counts for each of them. Ties go to
@@ -103,21 +89,5 @@ const byMostSung = (a: ArtistTally, b: ArtistTally): number =>
 export function deriveMostSungArtist(
   groups: readonly ArtistGroup[],
 ): MostSungArtist | null {
-  const tallies = new Map<string, ArtistTally>();
-  for (const group of groups) {
-    if (group.bleedSuspected) {
-      continue;
-    }
-    const previous = tallies.get(group.artist.id);
-    tallies.set(group.artist.id, {
-      artist: group.artist,
-      attempts: (previous?.attempts ?? 0) + group.attempts,
-      latestAt: Math.max(
-        previous?.latestAt ?? Number.NEGATIVE_INFINITY,
-        group.lastAttemptAt.getTime(),
-      ),
-    });
-  }
-  const [winner] = [...tallies.values()].sort(byMostSung);
-  return winner ? { id: winner.artist.id, name: winner.artist.name } : null;
+  return rankMostSungArtists(groups)[0]?.artist ?? null;
 }

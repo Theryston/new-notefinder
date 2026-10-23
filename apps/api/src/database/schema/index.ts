@@ -9,6 +9,7 @@ export * from './events.js';
 export * from './practice-attempts.js';
 export * from './relations.js';
 export * from './track-contributors.js';
+export * from './track-cooccurrences.js';
 export * from './track-favorites.js';
 export * from './track-lyrics.js';
 export * from './track-notes.js';

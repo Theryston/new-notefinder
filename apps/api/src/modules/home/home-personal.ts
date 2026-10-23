@@ -21,6 +21,15 @@ export const PERSONAL_GENRE_WEIGHT = 1;
 /** What a Track's artist weighs in its personal score. */
 export const PERSONAL_ARTIST_WEIGHT = 2;
 
+/** Recent practice matters more; taste signals lose half their weight each month. */
+export const TASTE_SIGNAL_HALF_LIFE_DAYS = 30;
+
+/** The share of discovery placements reserved for Tracks outside the User's taste. */
+export const EXPLORATION_SLOT_SHARE = 0.2;
+
+/** How many preferred genres can supply one personal genre row. */
+export const PERSONAL_GENRE_LIMIT = 3;
+
 /**
  * The personal weight of a User with this many taste signals: 0 without data
  * (the feed stays the public one), 1 from the saturation on.
