@@ -28,6 +28,8 @@
       "moreOfYourGenres": "Mais dos seus gêneros",
       "yourMostSungArtists": "Seus artistas mais cantados",
       "explore": "Explore algo novo",
+      "withinYourVoice": "Dentro da sua extensão vocal",
+      "challengeYourRange": "Desafie sua extensão vocal",
       "dailyTarget": "Meta diária",
       "mostSung": "Mais cantadas",
       "mostFavorited": "Mais favoritadas",
@@ -75,6 +77,8 @@
   "tracks": {
     "card": {
       "play": "Tocar {title}",
+      "fitsVoice": "Combina com sua voz",
+      "transposeVoice": "Transponha um pouco",
       "generate": "Gerar notas",
       "generateLabel": "Gerar notas de {title}",
       "generating": "Gerando…",
@@ -445,7 +449,7 @@
       },
       "privacy": {
         "title": "Privacidade e Proteção de Dados",
-        "body": "Levamos sua privacidade a sério. Coletamos e processamos dados pessoais de acordo com as leis aplicáveis de proteção de dados, incluindo a LGPD (Lei Geral de Proteção de Dados). Os dados coletados são utilizados exclusivamente para fornecer e melhorar nossos serviços."
+        "body": "Levamos sua privacidade a sério. Coletamos e processamos dados pessoais de acordo com as leis aplicáveis de proteção de dados, incluindo a LGPD (Lei Geral de Proteção de Dados). Os dados coletados são utilizados exclusivamente para fornecer e melhorar nossos serviços. Quando você cria uma conta, também armazenamos detalhes de campanha da sua primeira e da visita mais recente, como parâmetros UTM, identificadores de cliques em anúncios, a origem da visita e a página de entrada, para entender quais campanhas trazem novos usuários. Essas informações são armazenadas na sua conta; não usamos cookies para essa finalidade."
       },
       "liability": {
         "title": "Limitação de Responsabilidade",

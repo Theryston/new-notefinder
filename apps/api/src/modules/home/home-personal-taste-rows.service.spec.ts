@@ -47,6 +47,22 @@ const tasteSignals: TasteSignal[] = Array.from({ length: 4 }, () => ({
   lastSignalAt: new Date(),
 }));
 
+const createService = async (
+  personal: PersonalHomeRepository,
+  tasteRepository: PersonalHomeTasteRepository,
+  attempts: { mostSungArtistActivities: ReturnType<typeof vi.fn> },
+) => {
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      PersonalHomeTasteRowsService,
+      { provide: PersonalHomeRepository, useValue: personal },
+      { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
+      { provide: AttemptsService, useValue: attempts },
+    ],
+  }).compile();
+  return moduleRef.get(PersonalHomeTasteRowsService);
+};
+
 describe('PersonalHomeTasteRowsService', () => {
   it('reserves co-occurrence Tracks before composing the genre row', async () => {
     const personal = {
@@ -72,15 +88,7 @@ describe('PersonalHomeTasteRowsService', () => {
     const attempts = {
       mostSungArtistActivities: vi.fn().mockResolvedValue([]),
     };
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        PersonalHomeTasteRowsService,
-        { provide: PersonalHomeRepository, useValue: personal },
-        { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
-        { provide: AttemptsService, useValue: attempts },
-      ],
-    }).compile();
-    const service = moduleRef.get(PersonalHomeTasteRowsService);
+    const service = await createService(personal, tasteRepository, attempts);
     const usedTrackIds = new Set<string>();
     const taste: PersonalTaste = decayedTaste(tasteSignals);
 
@@ -121,16 +129,8 @@ describe('PersonalHomeTasteRowsService', () => {
     const attempts = {
       mostSungArtistActivities: vi.fn().mockResolvedValue(activities),
     };
-    const moduleRef = await Test.createTestingModule({
-      providers: [
-        PersonalHomeTasteRowsService,
-        { provide: PersonalHomeRepository, useValue: personal },
-        { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
-        { provide: AttemptsService, useValue: attempts },
-      ],
-    }).compile();
-
-    const rows = await moduleRef.get(PersonalHomeTasteRowsService).build({
+    const service = await createService(personal, tasteRepository, attempts);
+    const rows = await service.build({
       userId: 'user-1',
       signals: [signal],
       tasteSignals,

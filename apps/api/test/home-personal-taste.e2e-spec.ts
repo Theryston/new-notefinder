@@ -5,13 +5,10 @@ import { practiceAttempts } from '../src/database/schema/practice-attempts.js';
 import { trackFavorites } from '../src/database/schema/track-favorites.js';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
 import { tracks } from '../src/database/schema/tracks.js';
-import { REFRESH_PERSONAL_HOME_FEED_JOB } from '../src/modules/home/home-personal.job.js';
 import { isMasteredTrack } from '../src/modules/home/home-personal.js';
-import { PersonalHomeProcessor } from '../src/modules/home/home-personal.processor.js';
 import { PersonalHomeRepository } from '../src/modules/home/home-personal.repository.js';
 import { PersonalHomeStore } from '../src/modules/home/home-personal.store.js';
 import { PersonalHomeBuilder } from '../src/modules/home/home-personal-builder.service.js';
-import { PersonalHomeQueueService } from '../src/modules/home/home-personal-queue.service.js';
 import {
   decayedTaste,
   tasteMatch,
@@ -79,17 +76,19 @@ describe('Personal home taste rows (e2e)', () => {
     await testApp?.close();
   });
 
-  const signInAs = async (username: string, email: string) => {
-    const user = await createUser(testApp.db, {
-      username,
-      email,
-    });
-    await createCredentialAccount(testApp.db, user);
+  const clientFor = async (email: string) => {
     const client = createAuthClient(testApp);
     await signIn(client, {
-      email: user.email,
+      email,
       password: DEFAULT_PASSWORD,
     }).expect(200);
+    return client;
+  };
+
+  const signInAs = async (username: string, email: string) => {
+    const user = await createUser(testApp.db, { username, email });
+    await createCredentialAccount(testApp.db, user);
+    const client = await clientFor(user.email);
     return { user, client };
   };
 
@@ -139,16 +138,10 @@ describe('Personal home taste rows (e2e)', () => {
   };
 
   const refresh = async (userId: string) => {
-    const processor = new PersonalHomeProcessor(
-      testApp.app.get(PersonalHomeBuilder),
-      testApp.app.get(PersonalHomeStore),
-      testApp.app.get(PersonalHomeRepository),
-      testApp.app.get(PersonalHomeQueueService),
-    );
-    await processor.process({
-      name: REFRESH_PERSONAL_HOME_FEED_JOB,
-      data: { userId, locale: 'en' },
-    } as Parameters<PersonalHomeProcessor['process']>[0]);
+    const feed = await testApp.app.get(PersonalHomeBuilder).build(userId, 'en');
+    await testApp.app
+      .get(PersonalHomeStore)
+      .writeCurrent(userId, feed.locale, feed);
   };
 
   const seedTasteData = async (viewerId: string) => {

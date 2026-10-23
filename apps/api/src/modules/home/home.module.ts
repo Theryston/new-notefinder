@@ -19,7 +19,6 @@ import { PersonalHomeProcessor } from './home-personal.processor.js';
 import { PersonalHomeRepository } from './home-personal.repository.js';
 import { PersonalHomeStore } from './home-personal.store.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
-import { PersonalHomePublicRowsService } from './home-personal-public-rows.service.js';
 import { PersonalHomeQueueModule } from './home-personal-queue.module.js';
 import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
 import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
@@ -73,7 +72,6 @@ import { createVoiceRowSources } from './home-voice-row-sources.js';
     PersonalHomeBuilder,
     PersonalHomeTasteRowsService,
     PersonalHomeTasteRepository,
-    PersonalHomePublicRowsService,
     PersonalHomeProcessor,
   ],
 })

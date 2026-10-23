@@ -23,6 +23,7 @@ const apiUser = {
 describe('parseSessionUser', () => {
   it('keeps what the gate needs', () => {
     expect(parseSessionUser({ session: {}, user: apiUser })).toEqual({
+      id: 'usr_1',
       name: 'Ada Lovelace',
       email: 'ada@example.com',
       emailVerified: true,

@@ -1,5 +1,5 @@
 {
-  "id": "09505059-1166-42aa-9548-f28aed5b728e",
+  "id": "4dd7db65-7d19-48d6-9ead-a8f827460146",
   "prevId": "0988b663-e583-423d-90f6-e9a38199147c",
   "version": "7",
   "dialect": "postgresql",
@@ -1974,127 +1974,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.track_cooccurrences": {
-      "name": "track_cooccurrences",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "source_track_id": {
-          "name": "source_track_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "target_track_id": {
-          "name": "target_track_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "singer_count": {
-          "name": "singer_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "track_cooccurrences_source_track_id_singer_count_index": {
-          "name": "track_cooccurrences_source_track_id_singer_count_index",
-          "columns": [
-            {
-              "expression": "source_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "singer_count",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "track_cooccurrences_source_track_id_target_track_id_index": {
-          "name": "track_cooccurrences_source_track_id_target_track_id_index",
-          "columns": [
-            {
-              "expression": "source_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "target_track_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "track_cooccurrences_source_track_id_tracks_id_fk": {
-          "name": "track_cooccurrences_source_track_id_tracks_id_fk",
-          "tableFrom": "track_cooccurrences",
-          "tableTo": "tracks",
-          "columnsFrom": [
-            "source_track_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "track_cooccurrences_target_track_id_tracks_id_fk": {
-          "name": "track_cooccurrences_target_track_id_tracks_id_fk",
-          "tableFrom": "track_cooccurrences",
-          "tableTo": "tracks",
-          "columnsFrom": [
-            "target_track_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.track_favorites": {
       "name": "track_favorites",
       "schema": "",
@@ -2820,6 +2699,79 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_acquisitions": {
+      "name": "user_acquisitions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_touch": {
+          "name": "first_touch",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_touch": {
+          "name": "last_touch",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_acquisitions_user_id_users_id_fk": {
+          "name": "user_acquisitions_user_id_users_id_fk",
+          "tableFrom": "user_acquisitions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_acquisitions_userId_unique": {
+          "name": "user_acquisitions_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3599,6 +3551,12 @@
         },
         "image": {
           "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visitor_id": {
+          "name": "visitor_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

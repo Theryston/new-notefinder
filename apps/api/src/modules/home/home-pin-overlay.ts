@@ -178,7 +178,9 @@ const capExplorationRow = (rows: HomeRow[]): HomeRow[] => {
           ? 1
           : row.layout === 'standard'
             ? row.items.length
-            : 0),
+            : row.layout === 'vocal-range'
+              ? row.items.length
+              : 0),
     0,
   );
   const maxItems = explorationSlotCount(visibleSlots);

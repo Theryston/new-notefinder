@@ -1,10 +1,12 @@
-import type { HomeTrack } from '@notefinder/contracts';
+import type { HomeTrack, TrackVocalRange } from '@notefinder/contracts';
 import {
   blendScore,
   type PersonalTaste,
   personalScore,
+  personalScoreWithVoice,
 } from './home-personal.js';
 import type { UserTrackSignal } from './home-personal.repository.js';
+import { voiceFitScore } from './home-voice-fit.js';
 
 /** A Track of the public feed with its blend inputs. */
 export type DiscoveryCandidate = {
@@ -81,8 +83,9 @@ export const blendDiscoveryCandidates = (options: {
   discovery: ReadonlyMap<string, DiscoveryTrack>;
   taste: PersonalTaste;
   lambda: number;
+  userRange?: TrackVocalRange | null;
 }): DiscoveryCandidate[] => {
-  const { tracks, discovery, taste, lambda } = options;
+  const { tracks, discovery, taste, lambda, userRange } = options;
   const maxScore = Math.max(
     0,
     ...[...discovery.values()].map((track) => track.trendingScore),
@@ -91,11 +94,16 @@ export const blendDiscoveryCandidates = (options: {
     const found = discovery.get(track.id);
     const popularity =
       maxScore > 0 ? (found?.trendingScore ?? 0) / maxScore : 1;
-    const personal = personalScore(
+    const tasteScore = personalScore(
       found?.genres ?? [],
       found?.artistKey ?? artistKeyOf(track),
       taste,
     );
+    const voiceFit =
+      userRange && track.vocalRange
+        ? voiceFitScore(userRange, track.vocalRange)
+        : null;
+    const personal = personalScoreWithVoice(tasteScore, voiceFit);
     return {
       track,
       artistKey: artistKeyOf(track),

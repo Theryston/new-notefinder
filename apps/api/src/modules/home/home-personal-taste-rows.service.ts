@@ -15,6 +15,7 @@ import {
   type PersonalTrackCandidate,
   type UserTrackSignal,
 } from './home-personal.repository.js';
+import type { UserTasteActivity } from './home-personal.repository.types.js';
 import {
   decayedSignalCount,
   explorationSlotCount,
@@ -23,6 +24,7 @@ import {
   tasteMatch,
   topGenres,
 } from './home-personal-recommendations.js';
+import { trackIdsOfRow } from './home-personal-resume-rows.js';
 import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
 import { HOME_ROW_RULES } from './home-rules.js';
 
@@ -31,18 +33,6 @@ const CO_OCCURRENCE_SOURCE_LIMIT = 12;
 const PERSONAL_CANDIDATE_LIMIT = 60;
 
 const title = (key: string): HomeRowTitle => ({ key, params: {} });
-
-const trackIdsOfRow = (row: HomeRow): string[] => {
-  if (row.layout === 'hero') return [row.track.id];
-  if (
-    row.layout === 'standard' ||
-    row.layout === 'vocal-range' ||
-    row.layout === 'ranked'
-  ) {
-    return row.items.map((track) => track.id);
-  }
-  return [];
-};
 
 const artistKeyOf = (track: PersonalTrackCandidate): string =>
   track.artistCredit[0]?.mbid ?? track.artistCredit[0]?.name ?? track.id;
@@ -70,6 +60,10 @@ export class PersonalHomeTasteRowsService {
     private readonly tasteRepository: PersonalHomeTasteRepository,
     private readonly attempts: AttemptsService,
   ) {}
+
+  findUserTasteActivities(userId: string): Promise<UserTasteActivity[]> {
+    return this.tasteRepository.findUserTasteActivities(userId);
+  }
 
   async build(options: {
     userId: string;
