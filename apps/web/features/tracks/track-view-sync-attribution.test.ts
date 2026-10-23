@@ -5,13 +5,20 @@ import { synchronizeTrackView } from './track-view-sync';
 vi.mock('./track-view-query', () => ({ postTrackView: vi.fn() }));
 afterEach(() => vi.unstubAllGlobals());
 
+class AttributionSessionStorage extends Map<string, string> {
+  getItem(key: string): string | null {
+    return this.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.set(key, value);
+  }
+}
+
 it('creates a new immutable view for each home click on the same Track', async () => {
-  const values = new Map<string, string>();
+  const values = new AttributionSessionStorage();
   vi.stubGlobal('window', {
-    sessionStorage: {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-    },
+    sessionStorage: values,
   });
   vi.mocked(postTrackView)
     .mockResolvedValueOnce('view-a')
