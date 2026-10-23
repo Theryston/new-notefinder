@@ -19,6 +19,10 @@ export const HOME_ROW_TITLE_KEYS = [
   'home.rows.lowerVoices',
   'home.rows.continueSinging',
   'home.rows.singAgain',
+  'home.rows.becauseYouSang',
+  'home.rows.moreOfYourGenres',
+  'home.rows.yourMostSungArtists',
+  'home.rows.explore',
   'home.rows.dailyTarget',
 ] as const;
 

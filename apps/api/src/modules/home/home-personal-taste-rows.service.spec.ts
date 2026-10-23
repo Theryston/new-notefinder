@@ -1,0 +1,103 @@
+import { Test } from '@nestjs/testing';
+import type { PersonalTaste } from './home-personal.js';
+import {
+  PersonalHomeRepository,
+  type UserTrackSignal,
+} from './home-personal.repository.js';
+import type { PersonalTrackCandidate } from './home-personal.repository.types.js';
+import {
+  decayedTaste,
+  type TasteSignal,
+} from './home-personal-recommendations.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
+
+const cards = Array.from({ length: 12 }, (_, index) => ({
+  id: `track-${index}`,
+  title: `Track ${index}`,
+  coverUrl: `https://cdn.example/${index}.webp`,
+  artistCredit: [],
+  durationMs: 180_000,
+  vocalRangeLowest: null,
+  vocalRangeHighest: null,
+  genres: ['rock'],
+  trendingScore: 12 - index,
+})) satisfies PersonalTrackCandidate[];
+
+const signal = {
+  trackId: 'source',
+  attempts: 1,
+  bestAccuracy: 0.7,
+  lastAttemptAt: new Date(),
+  genres: ['rock'],
+  artistKey: 'source-artist',
+  title: 'Source track',
+  coverUrl: 'https://cdn.example/source.webp',
+  artistCredit: [],
+  durationMs: 180_000,
+  vocalRangeLowest: null,
+  vocalRangeHighest: null,
+} satisfies UserTrackSignal;
+
+const tasteSignals: TasteSignal[] = Array.from({ length: 4 }, () => ({
+  genres: ['rock'],
+  artistKey: 'source-artist',
+  weight: 1,
+  lastSignalAt: new Date(),
+}));
+
+describe('PersonalHomeTasteRowsService', () => {
+  it('reserves co-occurrence Tracks before composing the genre row', async () => {
+    const personal = {
+      findUserSungTrackSources: vi
+        .fn()
+        .mockResolvedValue([{ trackId: 'source', lastAttemptAt: new Date() }]),
+      findCommunityCooccurrence: vi.fn().mockResolvedValue(
+        cards.slice(0, 6).map((card) => ({
+          sourceTrackId: 'source',
+          targetTrackId: card.id,
+          singers: 3,
+        })),
+      ),
+      findCommunityTrackCards: vi
+        .fn()
+        .mockImplementation(async (ids: string[]) =>
+          cards.filter((card) => ids.includes(card.id)),
+        ),
+    } as unknown as PersonalHomeRepository;
+    const tasteRepository = {
+      findTracksForGenres: vi.fn().mockResolvedValue(cards),
+    } as unknown as PersonalHomeTasteRepository;
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        PersonalHomeTasteRowsService,
+        { provide: PersonalHomeRepository, useValue: personal },
+        { provide: PersonalHomeTasteRepository, useValue: tasteRepository },
+      ],
+    }).compile();
+    const service = moduleRef.get(PersonalHomeTasteRowsService);
+    const usedTrackIds = new Set<string>();
+    const taste: PersonalTaste = decayedTaste(tasteSignals);
+
+    const rows = await service.build({
+      userId: 'user-1',
+      signals: [signal],
+      tasteSignals,
+      taste,
+      mastered: new Set(),
+      usedTrackIds,
+      publicRows: [],
+    });
+
+    const tracksByRow = rows
+      .filter(
+        (row): row is Extract<typeof row, { layout: 'standard' }> =>
+          row.layout === 'standard',
+      )
+      .map((row) => row.items.map((track) => track.id));
+    expect(tracksByRow).toHaveLength(2);
+    expect(tracksByRow[0]).toHaveLength(6);
+    expect(tracksByRow[1]).toHaveLength(6);
+    expect(new Set(tracksByRow.flat()).size).toBe(12);
+  });
+});

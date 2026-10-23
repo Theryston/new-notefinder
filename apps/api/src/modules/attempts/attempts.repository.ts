@@ -51,6 +51,14 @@ export type ArtistGroupRow = {
   lastAttemptAt: Date;
 };
 
+/** One valid or bleed-suspected run on one credited Artist. */
+export type ArtistActivityRow = {
+  artistId: string;
+  artistName: string;
+  bleedSuspected: boolean;
+  createdAt: Date;
+};
+
 /** The fields of a run the page scored, with its owner and Track. */
 export type NewPracticeAttempt = {
   userId: string;
@@ -172,6 +180,24 @@ export class AttemptsRepository {
       .innerJoin(artists, eq(artists.id, trackArtists.artistId))
       .where(eq(practiceAttempts.userId, userId))
       .groupBy(artists.id, artists.name, practiceAttempts.bleedSuspected);
+  }
+
+  /** Each run stays separate so downstream taste decay applies before summing. */
+  listArtistActivities(userId: string): Promise<ArtistActivityRow[]> {
+    return this.txHost.tx
+      .select({
+        artistId: artists.id,
+        artistName: artists.name,
+        bleedSuspected: practiceAttempts.bleedSuspected,
+        createdAt: practiceAttempts.createdAt,
+      })
+      .from(practiceAttempts)
+      .innerJoin(
+        trackArtists,
+        eq(trackArtists.trackId, practiceAttempts.trackId),
+      )
+      .innerJoin(artists, eq(artists.id, trackArtists.artistId))
+      .where(eq(practiceAttempts.userId, userId));
   }
 
   /** Up to `limit` attempts of the User after the cursor, newest first. */

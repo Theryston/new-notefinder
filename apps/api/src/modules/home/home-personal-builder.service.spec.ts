@@ -9,6 +9,9 @@ import {
   type UserTrackSignal,
 } from './home-personal.repository.js';
 import { PersonalHomeBuilder } from './home-personal-builder.service.js';
+import { PersonalHomePublicRowsService } from './home-personal-public-rows.service.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 
 const track = (id: string, overrides: Partial<HomeTrack> = {}): HomeTrack => ({
   id,
@@ -75,6 +78,11 @@ const personal = {
   findUserFavoriteSignals: vi.fn(),
   findDiscoveryTracks: vi.fn(),
 };
+const personalTaste = { findUserTasteActivities: vi.fn() };
+const tasteRows = {
+  build: vi.fn(),
+  explorationRow: vi.fn(),
+};
 const streaks = { getStatus: vi.fn() };
 const users = {
   getPracticeSettings: vi.fn().mockResolvedValue({
@@ -106,6 +114,9 @@ const build = async (): Promise<{
       PersonalHomeBuilder,
       { provide: HomeFeedService, useValue: feeds },
       { provide: PersonalHomeRepository, useValue: personal },
+      { provide: PersonalHomeTasteRepository, useValue: personalTaste },
+      PersonalHomePublicRowsService,
+      { provide: PersonalHomeTasteRowsService, useValue: tasteRows },
       { provide: StreaksService, useValue: streaks },
       { provide: UsersService, useValue: users },
     ],
@@ -124,6 +135,7 @@ const resetWith = (options: {
   feeds.currentPublic.mockResolvedValue(publicFeedOf(ids));
   personal.findUserTrackSignals.mockResolvedValue(options.signals ?? []);
   personal.findUserFavoriteSignals.mockResolvedValue(options.favorites ?? []);
+  personalTaste.findUserTasteActivities.mockResolvedValue([]);
   personal.findDiscoveryTracks.mockResolvedValue(
     discoveryOf(ids, options.scores ?? {}),
   );
@@ -139,6 +151,8 @@ const itemIdsOf = (row: HomeRow | undefined): string[] =>
 describe('PersonalHomeBuilder', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    tasteRows.build.mockResolvedValue([]);
+    tasteRows.explorationRow.mockResolvedValue(undefined);
     users.getPracticeSettings.mockResolvedValue({
       dailyPracticeTargetSeconds: 300,
       timeZone: 'America/Sao_Paulo',
@@ -179,6 +193,9 @@ describe('PersonalHomeBuilder', () => {
         PersonalHomeBuilder,
         { provide: HomeFeedService, useValue: feeds },
         { provide: PersonalHomeRepository, useValue: personal },
+        { provide: PersonalHomeTasteRepository, useValue: personalTaste },
+        PersonalHomePublicRowsService,
+        { provide: PersonalHomeTasteRowsService, useValue: tasteRows },
         { provide: StreaksService, useValue: streaks },
         { provide: UsersService, useValue: users },
       ],
@@ -255,6 +272,13 @@ describe('PersonalHomeBuilder', () => {
       signals: [signal('t7', { attempts: 60, genres: ['jazz'] })],
       scores: { t1: 100, t7: 1 },
     });
+    personalTaste.findUserTasteActivities.mockResolvedValue(
+      Array.from({ length: 60 }, () => ({
+        genres: ['jazz'],
+        artistKey: 'Artist t7',
+        createdAt: new Date(),
+      })),
+    );
     personal.findDiscoveryTracks.mockResolvedValue(
       new Map(
         ids.map((id) => [

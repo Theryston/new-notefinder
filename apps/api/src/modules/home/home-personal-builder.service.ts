@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   HomeCarouselRow,
   HomeRow,
@@ -20,13 +20,15 @@ import {
   PersonalHomeRepository,
   type UserTrackSignal,
 } from './home-personal.repository.js';
-import { PersonalHomeBuilderDataService } from './home-personal-builder-data.service.js';
+import type { UserTasteActivity } from './home-personal.repository.types.js';
 import { PersonalHomePublicRowsService } from './home-personal-public-rows.service.js';
 import {
   decayedSignalCount,
   decayedTaste,
   type TasteSignal,
 } from './home-personal-recommendations.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
+import { PersonalHomeTasteRowsService } from './home-personal-taste-rows.service.js';
 import { DEFAULT_HOME_LOCALE, HOME_ALGORITHM_VERSION } from './home-rules.js';
 
 const title = (key: string) => ({ key, params: {} });
@@ -96,21 +98,28 @@ export class PersonalHomeBuilder {
     private readonly users: UsersService,
   ) {}
 
-  @Optional()
-  @Inject(PersonalHomeBuilderDataService)
-  private readonly data?: PersonalHomeBuilderDataService;
+  @Inject(PersonalHomePublicRowsService)
+  private readonly publicRows?: PersonalHomePublicRowsService;
+
+  @Inject(PersonalHomeTasteRowsService)
+  private readonly tasteRows?: PersonalHomeTasteRowsService;
+
+  @Inject(PersonalHomeTasteRepository)
+  private readonly tasteRepository?: PersonalHomeTasteRepository;
 
   async build(
     userId: string,
     locale: Locale = DEFAULT_HOME_LOCALE,
   ): Promise<StoredPersonalHomeFeed> {
-    const [{ feed }, signals, favorites, settings] = await Promise.all([
-      this.feeds.currentPublic(locale),
-      this.personal.findUserTrackSignals(userId),
-      this.personal.findUserFavoriteSignals(userId),
-      this.users.getPracticeSettings(userId),
-    ]);
-    const tasteSignals = this.tasteSignals(signals, favorites);
+    const [{ feed }, signals, favorites, activities, settings] =
+      await Promise.all([
+        this.feeds.currentPublic(locale),
+        this.personal.findUserTrackSignals(userId),
+        this.personal.findUserFavoriteSignals(userId),
+        this.requireTasteRepository().findUserTasteActivities(userId),
+        this.users.getPracticeSettings(userId),
+      ]);
+    const tasteSignals = this.tasteSignals(activities, favorites);
     const taste = decayedTaste(tasteSignals);
     const signalCount = decayedSignalCount(tasteSignals);
     const lambda = personalLambda(signalCount);
@@ -157,28 +166,15 @@ export class PersonalHomeBuilder {
     leadingRows: HomeRow[];
     publicRows: HomeRow[];
   }): Promise<HomeRow[]> {
-    if (!this.data) {
-      const fallback = new PersonalHomePublicRowsService(this.personal);
-      const blended = await fallback.blendPool(
-        options.publicRows,
-        options.taste,
-        options.lambda,
-        options.mastered,
-      );
-      return fallback.rows(
-        options.publicRows,
-        blended,
-        options.mastered,
-        options.usedTrackIds,
-      );
-    }
-    const blended = await this.data.publicRows.blendPool(
+    const publicRows = this.requirePublicRows();
+    const tasteRows = this.requireTasteRows();
+    const blended = await publicRows.blendPool(
       options.publicRows,
       options.taste,
       options.lambda,
       options.mastered,
     );
-    const personalRows = await this.data.tasteRows.build({
+    const personalRows = await tasteRows.build({
       userId: options.userId,
       signals: options.signals,
       tasteSignals: options.tasteSignals,
@@ -187,7 +183,7 @@ export class PersonalHomeBuilder {
       usedTrackIds: options.usedTrackIds,
       publicRows: options.publicRows,
     });
-    const discoveryRows = this.data.publicRows.rows(
+    const discoveryRows = publicRows.rows(
       options.publicRows,
       blended,
       options.mastered,
@@ -196,7 +192,7 @@ export class PersonalHomeBuilder {
     for (const row of discoveryRows) {
       for (const id of trackIdsOfRow(row)) options.usedTrackIds.add(id);
     }
-    const explore = await this.data.tasteRows.explorationRow({
+    const explore = await tasteRows.explorationRow({
       taste: options.taste,
       tasteSignals: options.tasteSignals,
       mastered: options.mastered,
@@ -210,18 +206,36 @@ export class PersonalHomeBuilder {
     return [...personalRows, ...(explore ? [explore] : []), ...discoveryRows];
   }
 
+  private requirePublicRows(): PersonalHomePublicRowsService {
+    if (!this.publicRows)
+      throw new Error('Home public rows are not configured');
+    return this.publicRows;
+  }
+
+  private requireTasteRows(): PersonalHomeTasteRowsService {
+    if (!this.tasteRows) throw new Error('Home taste rows are not configured');
+    return this.tasteRows;
+  }
+
+  private requireTasteRepository(): PersonalHomeTasteRepository {
+    if (!this.tasteRepository) {
+      throw new Error('Home taste repository is not configured');
+    }
+    return this.tasteRepository;
+  }
+
   private tasteSignals(
-    signals: UserTrackSignal[],
+    activities: UserTasteActivity[],
     favorites: Awaited<
       ReturnType<PersonalHomeRepository['findUserFavoriteSignals']>
     >,
   ): TasteSignal[] {
     return [
-      ...signals.map((signal) => ({
-        genres: signal.genres,
-        artistKey: signal.artistKey,
-        weight: signal.attempts,
-        lastSignalAt: signal.lastAttemptAt,
+      ...activities.map((activity) => ({
+        genres: activity.genres,
+        artistKey: activity.artistKey,
+        weight: 1,
+        lastSignalAt: activity.createdAt,
       })),
       ...favorites.map((favorite) => ({
         genres: favorite.genres,

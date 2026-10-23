@@ -5,6 +5,7 @@ import type {
   HomeTrack,
   HomeVocalRangeTrack,
 } from '@notefinder/contracts';
+import { explorationSlotCount } from './home-personal-recommendations.js';
 import { HOME_MAX_ROWS, HOME_ROW_RULES } from './home-rules.js';
 
 /**
@@ -163,6 +164,35 @@ const placeRows = (
   return rows;
 };
 
+/** Pins can remove whole standard rows, so recalculate exploration afterward. */
+const capExplorationRow = (rows: HomeRow[]): HomeRow[] => {
+  const explorationIndex = rows.findIndex((row) => row.id === 'explore');
+  const exploration = rows[explorationIndex];
+  if (exploration?.layout !== 'standard') return rows;
+  const visibleSlots = rows.reduce(
+    (total, row, index) =>
+      total +
+      (index === explorationIndex
+        ? 0
+        : row.layout === 'hero'
+          ? 1
+          : row.layout === 'standard'
+            ? row.items.length
+            : 0),
+    0,
+  );
+  const maxItems = explorationSlotCount(visibleSlots);
+  if (maxItems < HOME_ROW_RULES.standard.minItems) {
+    return rows.filter((_, index) => index !== explorationIndex);
+  }
+  if (exploration.items.length <= maxItems) return rows;
+  return rows.map((row, index) =>
+    index === explorationIndex && row.layout === 'standard'
+      ? { ...row, items: row.items.slice(0, maxItems) }
+      : row,
+  );
+};
+
 /**
  * Applies the live editorial pins over the algorithmic feed rows, at read time.
  * Precedence: the pinned hero, the pinned rows, then the algorithmic rows, which
@@ -195,5 +225,7 @@ export const applyEditorialPins = (
     ordered.filter((pin) => pin !== heroPin),
     heroTrack,
   );
-  return placeRows(hero, rowPins, algorithmicRows(rows, pinnedIds));
+  return capExplorationRow(
+    placeRows(hero, rowPins, algorithmicRows(rows, pinnedIds)),
+  );
 };

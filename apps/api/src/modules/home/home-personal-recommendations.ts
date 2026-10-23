@@ -80,13 +80,27 @@ export const topGenres = (taste: PersonalTaste): string[] =>
 export const rankTasteArtists = (
   artists: readonly ArtistTasteSignal[],
   now = Date.now(),
-): ArtistTasteSignal[] =>
-  [...artists].sort(
+): ArtistTasteSignal[] => {
+  const totals = new Map<string, ArtistTasteSignal>();
+  for (const activity of artists) {
+    const previous = totals.get(activity.artistId);
+    const weight = decaySignal(activity.attempts, activity.lastAttemptAt, now);
+    totals.set(activity.artistId, {
+      ...activity,
+      attempts: (previous?.attempts ?? 0) + weight,
+      lastAttemptAt:
+        previous && previous.lastAttemptAt > activity.lastAttemptAt
+          ? previous.lastAttemptAt
+          : activity.lastAttemptAt,
+    });
+  }
+  return [...totals.values()].sort(
     (a, b) =>
-      decaySignal(b.attempts, b.lastAttemptAt, now) -
-        decaySignal(a.attempts, a.lastAttemptAt, now) ||
+      b.attempts - a.attempts ||
+      b.lastAttemptAt.getTime() - a.lastAttemptAt.getTime() ||
       a.artistId.localeCompare(b.artistId),
   );
+};
 
 /** An exploration slot is one fifth of the visible discovery positions. */
 export const explorationSlotCount = (trackSlots: number): number =>

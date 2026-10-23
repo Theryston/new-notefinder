@@ -26,10 +26,7 @@ import {
   deriveVocalRange,
   type VocalRangeGroup,
 } from './profile-chips.js';
-import {
-  type MostSungArtistSignal,
-  rankMostSungArtists,
-} from './profile-chips-ranking.js';
+import { type MostSungArtistActivity } from './profile-chips-ranking.js';
 
 /** A run must cover this share of the Track's notes to be saved. */
 const MIN_ATTEMPT_COVERAGE = 0.9;
@@ -151,10 +148,17 @@ export class AttemptsService {
     };
   }
 
-  /** Every Artist ranked by the same valid-run and recency rules as the Profile chip. */
-  async mostSungArtists(userId: string): Promise<MostSungArtistSignal[]> {
-    const rows = await this.attempts.listArtistGroups(userId);
-    return rankMostSungArtists(rows.map(toArtistGroup));
+  /** Every valid Artist run, kept separate for per-run taste decay. */
+  async mostSungArtistActivities(
+    userId: string,
+  ): Promise<MostSungArtistActivity[]> {
+    const rows = await this.attempts.listArtistActivities(userId);
+    return rows
+      .filter((row) => !row.bleedSuspected)
+      .map((row) => ({
+        artist: { id: row.artistId, name: row.artistName },
+        lastAttemptAt: row.createdAt,
+      }));
   }
 
   /** The signed-in User's own attempts, newest first. */

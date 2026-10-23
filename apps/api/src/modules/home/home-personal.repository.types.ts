@@ -20,6 +20,12 @@ export type UserFavoriteSignal = {
   createdAt: Date;
 };
 
+export type UserTasteActivity = {
+  genres: string[];
+  artistKey: string;
+  createdAt: Date;
+};
+
 export type PersonalTrackCandidate = {
   id: string;
   title: string;

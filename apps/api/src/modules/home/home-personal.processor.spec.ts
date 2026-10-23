@@ -26,7 +26,10 @@ const store = {
   retire: vi.fn(),
   readRetired: vi.fn(),
 };
-const personal = { findActiveUserIds: vi.fn() };
+const personal = {
+  findActiveUserIds: vi.fn(),
+  refreshCommunityCooccurrence: vi.fn(),
+};
 const queue = { scheduleRefresh: vi.fn().mockResolvedValue(undefined) };
 
 const job = (name: string, data: unknown) =>

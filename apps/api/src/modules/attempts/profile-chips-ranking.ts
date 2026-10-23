@@ -14,6 +14,12 @@ export type MostSungArtistSignal = {
   lastAttemptAt: Date;
 };
 
+/** A single valid run and the Artist it credits. */
+export type MostSungArtistActivity = {
+  artist: MostSungArtist;
+  lastAttemptAt: Date;
+};
+
 /** Most valid runs first, then latest run, then stable Artist id. */
 export const rankMostSungArtists = (
   groups: readonly ArtistGroup[],

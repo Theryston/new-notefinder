@@ -7,6 +7,7 @@ import {
   decayedTaste,
   decaySignal,
   explorationSlotCount,
+  rankTasteArtists,
   topGenres,
 } from './home-personal-recommendations.js';
 
@@ -58,6 +59,61 @@ describe('personal taste recommendations', () => {
     );
 
     expect(topGenres(taste)).toEqual(['rock', 'folk', 'jazz']);
+  });
+
+  it('decays each artist activity before adding it to the artist total', () => {
+    const now = Date.parse('2026-10-23T00:00:00.000Z');
+    const ancient = new Date(now - 180 * 24 * 60 * 60 * 1000);
+    const recent = new Date(now);
+    const activities = [
+      ...Array.from({ length: 100 }, () => ({
+        artistId: 'rock-artist',
+        name: 'Rock artist',
+        attempts: 1,
+        lastAttemptAt: ancient,
+      })),
+      ...Array.from({ length: 10 }, () => ({
+        artistId: 'jazz-artist',
+        name: 'Jazz artist',
+        attempts: 1,
+        lastAttemptAt: recent,
+      })),
+      {
+        artistId: 'rock-artist',
+        name: 'Rock artist',
+        attempts: 1,
+        lastAttemptAt: recent,
+      },
+    ];
+
+    expect(
+      rankTasteArtists(activities, now).map(({ artistId }) => artistId),
+    ).toEqual(['jazz-artist', 'rock-artist']);
+  });
+
+  it('lets recent genre activity outweigh more numerous ancient practice', () => {
+    const now = Date.parse('2026-10-23T00:00:00.000Z');
+    const ancient = new Date(now - 180 * 24 * 60 * 60 * 1000);
+    const recent = new Date(now);
+    const taste = decayedTaste(
+      [
+        ...Array.from({ length: 100 }, () => ({
+          genres: ['rock'],
+          artistKey: 'rock-artist',
+          weight: 1,
+          lastSignalAt: ancient,
+        })),
+        ...Array.from({ length: 10 }, () => ({
+          genres: ['jazz'],
+          artistKey: 'jazz-artist',
+          weight: 1,
+          lastSignalAt: recent,
+        })),
+      ],
+      now,
+    );
+
+    expect(topGenres(taste)[0]).toBe('jazz');
   });
 
   it('keeps exploration within the named share of feed positions', () => {

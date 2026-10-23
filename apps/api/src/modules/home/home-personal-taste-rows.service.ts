@@ -7,7 +7,7 @@ import type {
   HomeTrack,
 } from '@notefinder/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
-import type { MostSungArtistSignal } from '../attempts/profile-chips-ranking.js';
+import type { MostSungArtistActivity } from '../attempts/profile-chips-ranking.js';
 import { composeHomeRows } from './home-feed-composer.js';
 import type { PersonalTaste } from './home-personal.js';
 import {
@@ -23,6 +23,7 @@ import {
   tasteMatch,
   topGenres,
 } from './home-personal-recommendations.js';
+import { PersonalHomeTasteRepository } from './home-personal-taste.repository.js';
 import { HOME_ROW_RULES } from './home-rules.js';
 
 const MIN_TASTE_SIGNALS = 3;
@@ -68,7 +69,10 @@ export class PersonalHomeTasteRowsService {
   @Inject(AttemptsService)
   private readonly attempts?: AttemptsService;
 
-  constructor(private readonly personal: PersonalHomeRepository) {}
+  constructor(
+    private readonly personal: PersonalHomeRepository,
+    private readonly tasteRepository: PersonalHomeTasteRepository,
+  ) {}
 
   async build(options: {
     userId: string;
@@ -82,18 +86,28 @@ export class PersonalHomeTasteRowsService {
     if (decayedSignalCount(options.tasteSignals) < MIN_TASTE_SIGNALS) {
       return [];
     }
-    const [cooccurrence, genres, artists] = await Promise.all([
-      this.becauseYouSangRow(options),
-      this.genreTasteRow(options),
-      this.mostSungArtistsRow(options.userId),
-    ]);
-    const rows = [cooccurrence, genres, artists].flatMap((row) =>
-      row ? [row] : [],
-    );
-    for (const row of rows) {
-      for (const id of trackIdsOfRow(row)) options.usedTrackIds.add(id);
-    }
+    const rows: HomeRow[] = [];
+    const cooccurrence = await this.becauseYouSangRow(options);
+    if (cooccurrence) rows.push(cooccurrence);
+    this.reserveRows([cooccurrence], options.usedTrackIds);
+
+    const genres = await this.genreTasteRow(options);
+    if (genres) rows.push(genres);
+    this.reserveRows([genres], options.usedTrackIds);
+
+    const artists = await this.mostSungArtistsRow(options.userId);
+    if (artists) rows.push(artists);
     return rows;
+  }
+
+  private reserveRows(
+    rows: (HomeRow | undefined)[],
+    usedTrackIds: Set<string>,
+  ): void {
+    for (const row of rows) {
+      if (!row) continue;
+      for (const id of trackIdsOfRow(row)) usedTrackIds.add(id);
+    }
   }
 
   async explorationRow(options: {
@@ -159,7 +173,7 @@ export class PersonalHomeTasteRowsService {
     usedTrackIds: ReadonlySet<string>;
   }): Promise<HomeRow | undefined> {
     const genres = topGenres(options.taste);
-    const cards = await this.personal.findTracksForGenres(
+    const cards = await this.tasteRepository.findTracksForGenres(
       genres,
       PERSONAL_CANDIDATE_LIMIT,
     );
@@ -182,15 +196,15 @@ export class PersonalHomeTasteRowsService {
   private async mostSungArtistsRow(
     userId: string,
   ): Promise<HomeRow | undefined> {
-    const signals: MostSungArtistSignal[] = this.attempts
-      ? await this.attempts.mostSungArtists(userId)
+    const activities: MostSungArtistActivity[] = this.attempts
+      ? await this.attempts.mostSungArtistActivities(userId)
       : [];
     const artists = rankTasteArtists(
-      signals.map((signal) => ({
-        artistId: signal.artist.id,
-        name: signal.artist.name,
-        attempts: signal.attempts,
-        lastAttemptAt: signal.lastAttemptAt,
+      activities.map((activity) => ({
+        artistId: activity.artist.id,
+        name: activity.artist.name,
+        attempts: 1,
+        lastAttemptAt: activity.lastAttemptAt,
       })),
     ).slice(0, HOME_ROW_RULES.artists.maxItems);
     if (artists.length < HOME_ROW_RULES.artists.minItems) return undefined;
