@@ -1,5 +1,5 @@
 import type { HomeHero, HomeTrack } from '@notefinder/contracts';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 import { entityRingClass } from '@/components/entity-header';
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
@@ -56,6 +56,7 @@ export function HeroLayout({
   priority: boolean;
 }) {
   const t = useTranslations('home.hero');
+  const locale = useLocale();
   const { track } = row;
   const headingId = rowHeadingId(row.id);
   return (
@@ -86,13 +87,13 @@ export function HeroLayout({
         <p className="font-semibold text-sm">
           <HeroArtistCredit credit={track.artistCredit} />
         </p>
-        <Link
-          href={`/tracks/${track.id}`}
+        <a
+          href={`/${locale}/tracks/${track.id}`}
           className={CTA_CLASS}
           data-home-item-id={track.id}
         >
           {t('sing')}
-        </Link>
+        </a>
       </div>
     </section>
   );

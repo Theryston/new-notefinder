@@ -26,6 +26,8 @@ import { users } from './users.js';
  * recorded, so popularity can be computed per language. Legacy views have no
  * locale (the legacy app did not record one), so the import leaves it null,
  * as does a client that omits it.
+ * `clickId` joins an optional home click to this view. Legacy views leave it
+ * null, and an unknown click id is retained without preventing the view.
  */
 export const trackViewLocale = pgEnum('track_view_locale', LOCALES);
 
@@ -37,6 +39,7 @@ export const trackViews = pgTable(
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
     userId: text().references(() => users.id, { onDelete: 'set null' }),
+    clickId: text(),
     locale: trackViewLocale(),
     ...timestamps,
   },

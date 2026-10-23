@@ -15,18 +15,21 @@ export async function synchronizeTrackView(
   trackId: string,
   signedIn: boolean,
   locale?: Locale,
+  clickId?: string,
 ): Promise<void> {
   while (pending.has(trackId)) await pending.get(trackId);
   const storage = sessionStorageOrUndefined();
   const stored = readStoredView(storage, trackId);
   const action = nextViewAction(stored, signedIn);
-  if (action === 'none') return;
+  if (action === 'none' && clickId === undefined) return;
   // Only a new view takes the locale: an attached one keeps the locale it has.
-  const request = (
-    action === 'attach'
-      ? postTrackView(trackId, stored?.viewId)
-      : postTrackView(trackId, undefined, locale)
-  ).then((viewId) => {
+  const request = postViewForAction({
+    trackId,
+    action,
+    storedViewId: stored?.viewId,
+    locale,
+    clickId,
+  }).then((viewId) => {
     writeStoredView(storage, trackId, { viewId, attached: signedIn });
   });
   pending.set(trackId, request);
@@ -36,3 +39,21 @@ export async function synchronizeTrackView(
     pending.delete(trackId);
   }
 }
+
+const postViewForAction = (options: {
+  trackId: string;
+  action: 'record' | 'attach' | 'none';
+  storedViewId: string | undefined;
+  locale?: Locale;
+  clickId: string | undefined;
+}): Promise<string> => {
+  const { trackId, action, storedViewId, locale, clickId } = options;
+  if (action === 'record') {
+    return clickId === undefined
+      ? postTrackView(trackId, undefined, locale)
+      : postTrackView(trackId, undefined, locale, clickId);
+  }
+  return clickId === undefined
+    ? postTrackView(trackId, storedViewId)
+    : postTrackView(trackId, storedViewId, undefined, clickId);
+};

@@ -1,5 +1,6 @@
 import type { HomeEvent } from '@notefinder/contracts';
 import { getClientEnv } from '@/lib/env/client';
+import { withClickId } from '@/lib/home-click-id';
 import {
   browserEventsTransport,
   buildClickEvent,
@@ -118,11 +119,22 @@ const trackCardClicks = (
   send: (events: HomeEvent[]) => void,
 ): (() => void) => {
   const onClick = (event: MouseEvent): void => {
+    if (event.type === 'auxclick' && event.button !== 1) return;
     const target = clickTargetOf(event.target, meta);
-    if (target !== undefined) send([buildClickEvent(target)]);
+    const link = (event.target as Element | null)?.closest?.(
+      'a[href]',
+    ) as HTMLAnchorElement | null;
+    if (target === undefined || link === null) return;
+    const clickId = crypto.randomUUID();
+    link.href = withClickId(link.href, clickId);
+    send([buildClickEvent({ ...target, clickId })]);
   };
   document.addEventListener('click', onClick, true);
-  return () => document.removeEventListener('click', onClick, true);
+  document.addEventListener('auxclick', onClick, true);
+  return () => {
+    document.removeEventListener('click', onClick, true);
+    document.removeEventListener('auxclick', onClick, true);
+  };
 };
 
 /** Flushes on an interval and when the page hides, and once more on cleanup. */

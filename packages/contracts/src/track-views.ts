@@ -21,6 +21,7 @@ import { trackCoverUrlSchema } from './tracks.js';
  */
 export const recordTrackViewBodySchema = z.object({
   viewId: z.string().min(1).max(128).optional(),
+  clickId: z.string().min(1).max(128).optional(),
   locale: localeSchema.optional(),
 });
 

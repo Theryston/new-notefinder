@@ -2,7 +2,7 @@
 
 import type { TrackVocalRange } from '@notefinder/contracts';
 import { PlayIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { Link } from '@/lib/i18n/navigation';
@@ -106,6 +106,8 @@ export type TrackCardProps = {
   request?: RequestTrackState;
   /** Makes a card without a Track a link to sign in first. */
   signIn?: TrackCardSignIn;
+  /** Uses a browser-native link, for home clicks that update the destination. */
+  nativeTrackLink?: boolean;
 };
 
 /**
@@ -202,6 +204,50 @@ function TrackCardText({
   );
 }
 
+function TrackCardTrackLinkContent({
+  cover,
+  text,
+}: {
+  cover: (badge: ReactNode) => ReactNode;
+  text: ReactNode;
+}) {
+  return (
+    <>
+      {cover(
+        <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
+          <PlayIcon className="size-4 fill-current" />
+        </span>,
+      )}
+      {text}
+    </>
+  );
+}
+
+function TrackCardTrackLink({
+  trackId,
+  locale,
+  native,
+  children,
+}: {
+  trackId: string;
+  locale: string;
+  native: boolean;
+  children: ReactNode;
+}) {
+  if (native) {
+    return (
+      <a href={`/${locale}/tracks/${trackId}`} className={CARD_CLASS}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={`/tracks/${trackId}`} className={CARD_CLASS}>
+      {children}
+    </Link>
+  );
+}
+
 /**
  * One track as a cover-grid card (Spotify): the cover art (or a
  * deterministic geometric placeholder when there is none), the title plus
@@ -214,6 +260,7 @@ function TrackCardText({
  */
 export function TrackCard(props: TrackCardProps) {
   const { trackId, title, subtitle, request, signIn } = props;
+  const locale = useLocale();
   const t = useTranslations('tracks');
   const cover = (badge: ReactNode) => (
     <TrackCardCover
@@ -228,18 +275,16 @@ export function TrackCard(props: TrackCardProps) {
   );
   const text = <TrackCardText title={title} subtitle={subtitle} />;
 
-  if (trackId) {
+  if (trackId)
     return (
-      <Link href={`/tracks/${trackId}`} className={CARD_CLASS}>
-        {cover(
-          <span aria-hidden="true" className={PLAY_BADGE_CLASS}>
-            <PlayIcon className="size-4 fill-current" />
-          </span>,
-        )}
-        {text}
-      </Link>
+      <TrackCardTrackLink
+        trackId={trackId}
+        locale={locale}
+        native={props.nativeTrackLink ?? false}
+      >
+        <TrackCardTrackLinkContent cover={cover} text={text} />
+      </TrackCardTrackLink>
     );
-  }
 
   if (signIn) {
     return (

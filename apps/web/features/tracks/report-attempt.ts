@@ -4,6 +4,7 @@ import {
   type PendingAttemptStorage,
   writePendingAttempt,
 } from './pending-attempt';
+import { readStoredView } from './track-view-session';
 
 /**
  * Routes a finished run: a signed-in User's is submitted at once through
@@ -23,9 +24,14 @@ export function reportAttempt({
   submit: (body: SubmitPracticeAttemptBody) => void;
   storage: PendingAttemptStorage | undefined;
 }): void {
+  const viewId = readStoredView(storage, trackId)?.viewId;
+  const attributed =
+    body.viewId !== undefined || viewId === undefined
+      ? body
+      : { ...body, viewId };
   if (signedIn) {
-    submit(body);
+    submit(attributed);
   } else {
-    writePendingAttempt(storage, { trackId, body });
+    writePendingAttempt(storage, { trackId, body: attributed });
   }
 }

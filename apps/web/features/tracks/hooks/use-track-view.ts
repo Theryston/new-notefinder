@@ -13,18 +13,22 @@ import { synchronizeTrackView } from '../track-view-sync';
  * `track-view-session.ts`; this is the wiring. A failure is silent: a missed
  * view is not worth interrupting the page for.
  */
-export function useTrackView(trackId: string, signedIn: boolean) {
+export function useTrackView(
+  trackId: string,
+  signedIn: boolean,
+  clickId: string | undefined,
+) {
   // Strict Mode runs effects twice; a ref survives that remount.
   const sent = useRef<string | null>(null);
   const locale = useLocale();
   const { mutate } = useMutation({
-    mutationFn: () => synchronizeTrackView(trackId, signedIn, locale),
+    mutationFn: () => synchronizeTrackView(trackId, signedIn, locale, clickId),
   });
 
   useEffect(() => {
-    const attempt = `${trackId}:${signedIn}`;
+    const attempt = `${trackId}:${signedIn}:${clickId ?? ''}`;
     if (sent.current === attempt) return;
     sent.current = attempt;
     mutate();
-  }, [trackId, signedIn, mutate]);
+  }, [trackId, signedIn, clickId, mutate]);
 }

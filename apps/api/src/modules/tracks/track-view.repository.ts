@@ -45,15 +45,24 @@ export class TrackViewRepository {
     trackId: string,
     userId: string | null,
     locale: Locale | undefined,
+    clickId?: string,
   ): Promise<string> {
     const [row] = await this.txHost.tx
       .insert(trackViews)
-      .values({ trackId, userId, locale })
+      .values({ trackId, userId, locale, clickId })
       .returning({ id: trackViews.id });
     if (row === undefined) {
       throw new Error('Insert returned no row');
     }
     return row.id;
+  }
+
+  /** Keeps a home click on an existing same-session view when revisited. */
+  async attachClick(viewId: string, clickId: string): Promise<void> {
+    await this.txHost.tx
+      .update(trackViews)
+      .set({ clickId })
+      .where(eq(trackViews.id, viewId));
   }
 
   /** The view, only when it belongs to the Track. */

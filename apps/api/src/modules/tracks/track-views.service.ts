@@ -31,21 +31,28 @@ export class TrackViewsService {
     trackId: string;
     userId: string | undefined;
     viewId: string | undefined;
+    clickId?: string;
     locale?: Locale;
   }): Promise<RecordedView> {
-    const { trackId, userId, viewId, locale } = options;
+    const { trackId, userId, viewId, clickId, locale } = options;
     await this.tracks.assertTrackExists(trackId);
     const existing =
       viewId === undefined
         ? undefined
         : await this.views.findView(viewId, trackId);
     if (existing !== undefined) {
+      if (clickId !== undefined) {
+        await this.views.attachClick(existing.id, clickId);
+      }
       if (userId !== undefined && existing.userId === null) {
         await this.views.attachUser(existing.id, userId);
       }
       return { viewId: existing.id, created: false };
     }
-    const created = await this.views.create(trackId, userId ?? null, locale);
+    const created =
+      clickId === undefined
+        ? await this.views.create(trackId, userId ?? null, locale)
+        : await this.views.create(trackId, userId ?? null, locale, clickId);
     await this.trending.schedule(trackId);
     return { viewId: created, created: true };
   }
