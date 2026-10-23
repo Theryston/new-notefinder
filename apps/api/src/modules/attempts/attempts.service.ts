@@ -108,6 +108,7 @@ export class AttemptsService {
       bleedSuspected: body.bleedSuspected,
       startedAt: new Date(body.startedAt),
       endedAt: new Date(body.endedAt),
+      ...(body.viewId === undefined ? {} : { viewId: body.viewId }),
     };
     return toPracticeAttempt(await this.attempts.insert(attempt));
   }

@@ -1,8 +1,7 @@
 import type { HomeRankedRow } from '@notefinder/contracts';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';
-import { Link } from '@/lib/i18n/navigation';
 import { noteName } from '@/lib/music-notes';
 import { creditText } from '@/lib/track-credit';
 import { SponsoredNotice } from '../components/sponsored-notice';
@@ -37,6 +36,7 @@ export function RankedLayout({
   priority: boolean;
 }) {
   const t = useTranslations();
+  const locale = useLocale();
   const { key, params } = row.title;
   if (!isHomeRowTitleKey(key)) return null;
   const headingId = rowHeadingId(row.id);
@@ -51,7 +51,12 @@ export function RankedLayout({
       <ol className={RANKED_LIST_CLASS}>
         {row.items.map((track, index) => (
           <li key={track.id}>
-            <Link href={`/tracks/${track.id}`} className={RANKED_ITEM_CLASS}>
+            <a
+              href={`/${locale}/tracks/${track.id}`}
+              className={RANKED_ITEM_CLASS}
+              data-home-item-id={track.id}
+              data-home-item-position={index}
+            >
               <span aria-hidden="true" className={RANKED_RANK_CLASS}>
                 {index + 1}
               </span>
@@ -72,7 +77,7 @@ export function RankedLayout({
                     : null}
                 </span>
               </span>
-            </Link>
+            </a>
           </li>
         ))}
       </ol>

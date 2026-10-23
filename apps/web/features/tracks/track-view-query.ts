@@ -11,6 +11,7 @@ export async function postTrackView(
   trackId: string,
   viewId: string | undefined,
   locale?: Locale,
+  attribution?: { clickId?: string; visitorId?: string },
 ): Promise<string> {
   const view = await browserApi(
     `/tracks/${encodeURIComponent(trackId)}/views`,
@@ -18,6 +19,7 @@ export async function postTrackView(
       method: 'POST',
       body: {
         ...(viewId === undefined ? {} : { viewId }),
+        ...attribution,
         ...(locale === undefined ? {} : { locale }),
       },
       schema: trackViewSchema,

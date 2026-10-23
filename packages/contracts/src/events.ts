@@ -18,6 +18,8 @@ export const visitorIdSchema = z.string().min(1).max(64);
 
 export type VisitorId = z.infer<typeof visitorIdSchema>;
 
+export const clickIdSchema = z.string().min(1).max(128);
+
 const eventRowIdSchema = z.string().min(1).max(64);
 
 /** The feed the row was seen in, so impressions join to the feed version. */
@@ -48,6 +50,8 @@ export type HomeRowImpressionEvent = z.infer<
 /** A home card clicked. Sent asynchronously, never delaying the navigation. */
 export const homeItemClickEventSchema = z.object({
   type: z.literal('home.item_click'),
+  /** Joins the click to the Track view opened by this link. */
+  clickId: clickIdSchema.optional(),
   rowId: eventRowIdSchema,
   feedVersion: eventFeedVersionSchema,
   algorithmVersion: z.number().int().positive(),

@@ -8,7 +8,7 @@ import type {
 } from '@notefinder/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useRef } from 'react';
+import { type RefObject, useMemo, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { KaraokeLine } from '@/features/lyrics/components/karaoke-line';
@@ -32,7 +32,10 @@ import type { PlaybackController } from '../playback/playback-controller';
 import { reportAttempt } from '../report-attempt';
 import { playbackStore, usePlaybackState } from '../stores/playback-store';
 import { useTranspose } from '../stores/transpose-store';
-import { sessionStorageOrUndefined } from '../track-view-session';
+import {
+  readStoredView,
+  sessionStorageOrUndefined,
+} from '../track-view-session';
 import { transposeNotes } from '../transpose/transpose';
 import { ListeningActions } from './listening-actions';
 import { PendingAttemptSubmitter } from './pending-attempt-submitter';
@@ -63,6 +66,9 @@ function useTransposedNotes(notes: TrackNotes | undefined) {
     [notes, semitones],
   );
 }
+
+const currentViewId = (trackId: string) =>
+  readStoredView(sessionStorageOrUndefined(), trackId)?.viewId;
 
 function TrackTimeline({
   header,
@@ -226,6 +232,35 @@ function usePracticeController({
   return { controller, directAudio, expectDirectAudio, hostRef };
 }
 
+function TrackPracticeDock({
+  header,
+  controller,
+  directAudio,
+  expectDirectAudio,
+  hostRef,
+}: {
+  header: TrackDetail;
+  controller: PlaybackController | null;
+  directAudio: boolean;
+  expectDirectAudio: boolean;
+  hostRef: RefObject<HTMLDivElement | null>;
+}) {
+  if (header.youtubeVideoId === null && !directAudio) return null;
+  return (
+    <PracticeDock
+      controller={controller}
+      hostRef={hostRef}
+      videoId={header.youtubeVideoId ?? ''}
+      directAudio={directAudio}
+      expectDirectAudio={expectDirectAudio}
+      trackKey={header.key}
+      trackTitle={header.title}
+      artistText={creditText(header.artistCredit)}
+      viewId={() => currentViewId(header.id)}
+    />
+  );
+}
+
 /**
  * The practice view below the title row: the note timeline (or the "no voice"
  * message for a Track without notes), the lyrics and the dock that plays the
@@ -282,18 +317,13 @@ function PracticeBodyContent(props: PracticeBodyProps & { signedIn: boolean }) {
       />
       <SharedMomentSeek controller={controller} />
       <TrackLyricsBlock lyrics={lyrics} controller={controller} />
-      {header.youtubeVideoId === null && !directAudio ? null : (
-        <PracticeDock
-          controller={controller}
-          hostRef={hostRef}
-          videoId={header.youtubeVideoId ?? ''}
-          directAudio={directAudio !== undefined}
-          expectDirectAudio={expectDirectAudio}
-          trackKey={header.key}
-          trackTitle={header.title}
-          artistText={creditText(header.artistCredit)}
-        />
-      )}
+      <TrackPracticeDock
+        header={header}
+        controller={controller}
+        directAudio={directAudio !== undefined}
+        expectDirectAudio={expectDirectAudio}
+        hostRef={hostRef}
+      />
     </div>
   );
 }

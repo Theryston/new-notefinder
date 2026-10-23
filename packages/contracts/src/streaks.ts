@@ -33,6 +33,8 @@ export const streakHeartbeatBodySchema = z.object({
   // up to the cap and the time its own clock saw pass.
   elapsedSeconds: z.number().min(0),
   timeZone: timeZoneSchema,
+  /** The Track page view that produced this practice time. */
+  viewId: z.string().min(1).max(128).optional(),
 });
 
 export type StreakHeartbeatBody = z.infer<typeof streakHeartbeatBodySchema>;

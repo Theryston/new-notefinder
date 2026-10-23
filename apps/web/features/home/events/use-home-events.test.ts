@@ -287,6 +287,7 @@ describe('useHomeEvents', () => {
       events: [
         {
           type: 'home.item_click',
+          clickId: expect.any(String),
           rowId: 'row-0',
           feedVersion: 'a1b2c3d4e5f60718',
           algorithmVersion: 1,
@@ -295,6 +296,7 @@ describe('useHomeEvents', () => {
         },
       ],
     });
+    expect(link.href).toContain('clickId=');
   });
 
   it('keeps the same visitor id across page loads', async () => {

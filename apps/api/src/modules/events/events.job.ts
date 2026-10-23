@@ -16,6 +16,7 @@ const storedEventSchema = z.object({
   algorithmVersion: z.number().int().positive().nullable(),
   itemId: z.string().min(1).max(128).nullable(),
   position: z.number().int().nonnegative().nullable(),
+  clickId: z.string().min(1).max(128).nullable().optional(),
   payload: z.unknown(),
 });
 

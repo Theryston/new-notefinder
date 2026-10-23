@@ -3,6 +3,7 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { and, eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { dailyPracticeStreaks } from '../../database/schema/daily-practice-streaks.js';
+import { practiceHeartbeats } from '../../database/schema/practice-heartbeats.js';
 
 /** One practice day of a User. */
 export type PracticeDayRow = {
@@ -30,6 +31,16 @@ const ofDay = (userId: string, day: string) =>
 @Injectable()
 export class StreaksRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+
+  /** Stores only heartbeats explicitly tied to a Track page view. */
+  async recordAttributedHeartbeat(values: {
+    userId: string;
+    viewId: string;
+    elapsedSeconds: number;
+    creditedSeconds: number;
+  }): Promise<void> {
+    await this.txHost.tx.insert(practiceHeartbeats).values(values);
+  }
 
   async findDay(
     userId: string,

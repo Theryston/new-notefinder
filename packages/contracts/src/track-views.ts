@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { clickIdSchema, visitorIdSchema } from './events.js';
 import { localeSchema } from './locales.js';
 import { cursorPageSchema } from './pagination.js';
 import {
@@ -21,6 +22,8 @@ import { trackCoverUrlSchema } from './tracks.js';
  */
 export const recordTrackViewBodySchema = z.object({
   viewId: z.string().min(1).max(128).optional(),
+  clickId: clickIdSchema.optional(),
+  visitorId: visitorIdSchema.optional(),
   locale: localeSchema.optional(),
 });
 

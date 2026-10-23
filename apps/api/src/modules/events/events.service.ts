@@ -35,7 +35,12 @@ const toRow = (
   };
   return event.type === 'home.row_impression'
     ? { ...shared, itemId: null, position: null }
-    : { ...shared, itemId: event.itemId, position: event.position ?? null };
+    : {
+        ...shared,
+        itemId: event.itemId,
+        position: event.position ?? null,
+        ...(event.clickId === undefined ? {} : { clickId: event.clickId }),
+      };
 };
 
 /**

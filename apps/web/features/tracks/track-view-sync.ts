@@ -15,19 +15,28 @@ export async function synchronizeTrackView(
   trackId: string,
   signedIn: boolean,
   locale?: Locale,
+  attribution?: { clickId?: string; visitorId?: string },
 ): Promise<void> {
   while (pending.has(trackId)) await pending.get(trackId);
   const storage = sessionStorageOrUndefined();
   const stored = readStoredView(storage, trackId);
-  const action = nextViewAction(stored, signedIn);
-  if (action === 'none') return;
+  const { clickId, visitorId } = attribution ?? {};
+  const action = nextViewAction(stored, signedIn, clickId);
+  if (action === 'none' && clickId === undefined) return;
   // Only a new view takes the locale: an attached one keeps the locale it has.
-  const request = (
-    action === 'attach'
-      ? postTrackView(trackId, stored?.viewId)
-      : postTrackView(trackId, undefined, locale)
-  ).then((viewId) => {
-    writeStoredView(storage, trackId, { viewId, attached: signedIn });
+  const request = postViewForAction({
+    trackId,
+    action,
+    storedViewId: stored?.viewId,
+    locale,
+    clickId,
+    visitorId,
+  }).then((viewId) => {
+    writeStoredView(storage, trackId, {
+      viewId,
+      attached: signedIn,
+      ...(clickId === undefined ? {} : { clickId }),
+    });
   });
   pending.set(trackId, request);
   try {
@@ -36,3 +45,26 @@ export async function synchronizeTrackView(
     pending.delete(trackId);
   }
 }
+
+const postViewForAction = (options: {
+  trackId: string;
+  action: 'record' | 'attach' | 'none';
+  storedViewId: string | undefined;
+  locale?: Locale;
+  clickId: string | undefined;
+  visitorId: string | undefined;
+}): Promise<string> => {
+  const { trackId, action, storedViewId, locale, clickId, visitorId } = options;
+  const attribution = {
+    ...(clickId === undefined ? {} : { clickId }),
+    ...(visitorId === undefined ? {} : { visitorId }),
+  };
+  if (action === 'record') {
+    return Object.keys(attribution).length === 0
+      ? postTrackView(trackId, undefined, locale)
+      : postTrackView(trackId, undefined, locale, attribution);
+  }
+  return Object.keys(attribution).length === 0
+    ? postTrackView(trackId, storedViewId)
+    : postTrackView(trackId, storedViewId, undefined, attribution);
+};

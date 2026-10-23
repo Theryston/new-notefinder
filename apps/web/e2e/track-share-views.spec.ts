@@ -169,10 +169,16 @@ test.describe('Track views', () => {
     const api = await mockViewsApi(page);
     const trackId = 'clx-views-once';
     await setTrackMock({ tracks: [completedTrack(trackId)] });
+    await page.addInitScript(() =>
+      localStorage.setItem('notefinder:visitor-id', 'views-once-visitor'),
+    );
 
     await page.goto(`/en/tracks/${trackId}`);
     await expect.poll(() => api.posts.length).toBe(1);
-    expect(api.posts[0]).toEqual({ trackId, body: { locale: 'en' } });
+    expect(api.posts[0]).toEqual({
+      trackId,
+      body: { locale: 'en', visitorId: 'views-once-visitor' },
+    });
 
     await page.reload();
     await expect(
@@ -201,6 +207,9 @@ test.describe('Track views', () => {
     const api = await mockViewsApi(page);
     const trackId = 'clx-views-attach';
     await setTrackMock({ tracks: [completedTrack(trackId)] });
+    await page.addInitScript(() =>
+      localStorage.setItem('notefinder:visitor-id', 'views-attach-visitor'),
+    );
     await page.goto(`/en/tracks/${trackId}`);
     await expect.poll(() => api.posts.length).toBe(1);
 
@@ -221,7 +230,10 @@ test.describe('Track views', () => {
 
     await expect(page).toHaveURL(`/en/tracks/${trackId}`);
     await expect.poll(() => api.posts.length).toBe(2);
-    expect(api.posts[1]).toEqual({ trackId, body: { viewId: 'view-1' } });
+    expect(api.posts[1]).toEqual({
+      trackId,
+      body: { viewId: 'view-1', visitorId: 'views-attach-visitor' },
+    });
   });
 });
 

@@ -65,6 +65,7 @@ export type NewPracticeAttempt = {
   bleedSuspected: boolean;
   startedAt: Date;
   endedAt: Date;
+  viewId?: string;
 };
 
 @Injectable()

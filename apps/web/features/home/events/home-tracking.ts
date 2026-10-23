@@ -1,5 +1,7 @@
 import type { HomeEvent } from '@notefinder/contracts';
 import { getClientEnv } from '@/lib/env/client';
+import { withClickId } from '@/lib/home-click-id';
+import { getOrCreateVisitorId } from '@/lib/visitor-id';
 import {
   browserEventsTransport,
   buildClickEvent,
@@ -13,7 +15,6 @@ import {
   rowMetaOf,
   type TrackedHomePage,
 } from './tracked-rows';
-import { getOrCreateVisitorId } from './visitor-id';
 
 /** A row is reported once it is at least half visible... */
 const IMPRESSION_VISIBLE_RATIO = 0.5;
@@ -117,12 +118,28 @@ const trackCardClicks = (
   meta: Map<string, HomeRowMeta>,
   send: (events: HomeEvent[]) => void,
 ): (() => void) => {
-  const onClick = (event: MouseEvent): void => {
+  const recordClick = (event: MouseEvent): void => {
     const target = clickTargetOf(event.target, meta);
-    if (target !== undefined) send([buildClickEvent(target)]);
+    const link = (event.target as Element | null)?.closest?.(
+      'a[href]',
+    ) as HTMLAnchorElement | null;
+    if (target === undefined || link === null) return;
+    const clickId = crypto.randomUUID();
+    link.href = withClickId(link.href, clickId);
+    send([buildClickEvent({ ...target, clickId })]);
+  };
+  const onClick = (event: MouseEvent): void => {
+    if (event.button === 0) recordClick(event);
+  };
+  const onMiddleMouseDown = (event: MouseEvent): void => {
+    if (event.button === 1) recordClick(event);
   };
   document.addEventListener('click', onClick, true);
-  return () => document.removeEventListener('click', onClick, true);
+  document.addEventListener('mousedown', onMiddleMouseDown, true);
+  return () => {
+    document.removeEventListener('click', onClick, true);
+    document.removeEventListener('mousedown', onMiddleMouseDown, true);
+  };
 };
 
 /** Flushes on an interval and when the page hides, and once more on cleanup. */

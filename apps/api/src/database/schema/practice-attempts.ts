@@ -9,6 +9,7 @@ import {
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
+import { trackViews } from './track-views.js';
 import { tracks } from './tracks.js';
 import { users } from './users.js';
 
@@ -26,7 +27,7 @@ export const octaveMode = pgEnum('octave_mode', ['ANY', 'EXACT']);
  * A signed-in User's saved practice run on a Track: only runs that covered
  * at least 90% of the notes without skipping forward are saved (the API
  * refuses the rest). Attempts have no legacy equivalent: the legacy app kept
- * no per-run history.
+ * no per-run history. `viewId` is null for old or unlinked rows.
  */
 export const practiceAttempts = pgTable(
   'practice_attempts',
@@ -38,6 +39,7 @@ export const practiceAttempts = pgTable(
     trackId: text()
       .notNull()
       .references(() => tracks.id, { onDelete: 'cascade' }),
+    viewId: text().references(() => trackViews.id, { onDelete: 'set null' }),
     difficulty: practiceDifficulty().notNull(),
     octaveMode: octaveMode().notNull(),
     transposeSemitones: integer().notNull(),
