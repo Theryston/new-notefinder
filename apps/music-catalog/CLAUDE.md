@@ -146,7 +146,7 @@ src/
       representative-release.ts the earliest Official release, else of any status (pure)
     search/
       search.handler.ts         the `search` handler
-      search.service.ts         readiness, scope, Meilisearch, summaries, order
+      search.service.ts         cached readiness, Meilisearch and result order
       order-by-ids.ts           rows -> the order of a list of ids, dropping the missing (pure)
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
@@ -288,11 +288,16 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
 - **Request timeout**: a request still unanswered after `REQUEST_TIMEOUT_MS`
   gets `INTERNAL` ("Request timed out"). The handler keeps running (a promise
   can't be cancelled), so handlers must be safe to finish late.
-- Every operation that reads the catalog (`getRecording`, `search`)
-  starts with `BootstrapService.assertReady()`: until the first import
-  reaches `ready` it answers `CATALOG_NOT_READY` (after the payload is
-  validated), and it reads the phase on every request, so it follows the
-  worker. `status` is the only operation that answers meanwhile.
+- `getRecording`, `getReleaseGroup` and `getArtist` start with
+  `BootstrapService.assertReady()`, which reads the import phase on each
+  request. `search` uses `SearchReadiness`: the server loads the persisted
+  phase before listening, then refreshes it in the background every five
+  seconds (one refresh at a time). Search answers `CATALOG_NOT_READY` until
+  that cache reaches `ready`; state changes normally propagate within five
+  seconds. A refresh error is logged and keeps the last known phase, while an
+  initial read error prevents the server from listening. The refresh adopts a
+  completed blue-green cutover before it reads the serving database. `status`
+  remains available while the first import runs.
 - Changing a field of a result is a breaking change for consumers: add
   fields, don't rename or remove them (same rule as the API's contracts).
   A new operation adds its type to `musicCatalogRequestTypeSchema` and its

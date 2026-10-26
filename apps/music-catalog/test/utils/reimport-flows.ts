@@ -50,7 +50,9 @@ export const readStatus = async (client: TestClient) => {
 export const searchForMbids = async (
   client: TestClient,
   query: string,
+  waitForReady: () => Promise<void> = async () => undefined,
 ): Promise<string[]> => {
+  await waitForReady();
   const response = await requestSearch(client, { query });
   if (!response.ok) {
     throw new Error(`search failed: ${response.error.code}`);
@@ -152,6 +154,7 @@ const serveCatalogFlow = async (
     env: { CATALOG_DATASET: 'full' },
   });
   await worker.tick();
+  await server.waitForSearchPhase('ready');
   // A stale backlog entry: the switch must drop what the retired copy
   // queued, since its MBIDs are meaningless on the new one.
   await addRecording(db, {
@@ -204,7 +207,10 @@ export const useReimportFlow = (options: {
   };
   return {
     statusResult: () => readStatus(client()),
-    searchMbids: (query: string) => searchForMbids(client(), query),
+    searchMbids: (query: string) =>
+      searchForMbids(client(), query, () =>
+        server().waitForSearchPhase('ready'),
+      ),
     serveCatalog: () => serveCatalogFlow(server(), needParallel()),
     restoreParallel: (seed?: (db: Database) => Promise<void>) =>
       restoreParallelInto({

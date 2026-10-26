@@ -4,12 +4,12 @@ import type {
 } from '@notefinder/contracts';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
-import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
 import { orderByIds } from './order-by-ids.js';
+import type { SearchReadiness } from './search-readiness.js';
 
 export type SearchServiceDeps = {
-  bootstrap: BootstrapService;
+  readiness: SearchReadiness;
   /** Opened with the search-only key: this service never writes. */
   index: MeilisearchIndex<RecordingDocument>;
   summaries: RecordingSummaryService;
@@ -28,7 +28,7 @@ export class SearchService {
   async search(
     params: MusicCatalogSearchParams,
   ): Promise<MusicCatalogSearchResult> {
-    await this.deps.bootstrap.assertReady();
+    this.deps.readiness.assertReady();
     const mbids = await this.deps.index.search(params.query, {
       limit: params.limit,
       offset: params.offset,

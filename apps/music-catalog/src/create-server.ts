@@ -34,6 +34,7 @@ import { ReplicationRepository } from './modules/replication/replication.reposit
 import { ReplicationService } from './modules/replication/replication.service.js';
 import { createSearchHandler } from './modules/search/search.handler.js';
 import { SearchService } from './modules/search/search.service.js';
+import { SearchReadiness } from './modules/search/search-readiness.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
 import { assembleWorkerReimport } from './reimport-wiring.js';
 import { buildServingIndexing } from './worker/indexing-stack.js';
@@ -41,10 +42,16 @@ import { createWorkerTick } from './worker/worker-tick.js';
 import type { Handler } from './ws/handler.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
+const SEARCH_READINESS_REFRESH_INTERVAL_MS = 5000;
+
 export type CreateServerOptions = {
   env: ServerEnv;
   db: Database;
   logger: Logger;
+  /** Test-only timing override; production uses the five-second interval. */
+  searchReadinessRefreshIntervalMs?: number;
+  /** Exposes the cache to e2e setup so tests can await phase propagation. */
+  onSearchReadinessCreated?: (readiness: SearchReadiness) => void;
 };
 
 /**
@@ -111,6 +118,52 @@ const createEntityHandlers = (
   ),
 ];
 
+const createServerSearch = (options: {
+  bootstrap: BootstrapService;
+  env: ServerEnv;
+  dbSource: () => Database;
+  logger: Logger;
+  refreshIntervalMs: number;
+}): { search: SearchService; readiness: SearchReadiness } => {
+  const { bootstrap, env, dbSource, logger, refreshIntervalMs } = options;
+  const readiness = new SearchReadiness({
+    readPhase: () => bootstrap.getImportPhase(),
+    refreshIntervalMs,
+    logger,
+  });
+  const search = new SearchService({
+    readiness,
+    index: createMeilisearchIndex<RecordingDocument>({
+      url: env.MEILISEARCH_URL,
+      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
+      ...RECORDINGS_INDEX,
+    }),
+    summaries: new RecordingSummaryService(
+      new RecordingSummaryRepository(dbSource),
+    ),
+  });
+  return { search, readiness };
+};
+
+const withSearchReadiness = (
+  server: WsServer,
+  readiness: SearchReadiness,
+): WsServer => ({
+  start: async () => {
+    await readiness.start();
+    try {
+      return await server.start();
+    } catch (error) {
+      await readiness.stop();
+      throw error;
+    }
+  },
+  stop: async () => {
+    await readiness.stop();
+    await server.stop();
+  },
+});
+
 /**
  * The composition root of the server process: builds each module's
  * repository, service and handler, and hands the handlers to the WebSocket
@@ -153,19 +206,17 @@ export const createMusicCatalogServer = (
     new RecordingRepository(dbSource),
     bootstrap,
   );
-  const search = new SearchService({
+  const { search, readiness: searchReadiness } = createServerSearch({
     bootstrap,
-    // The server only searches: its key cannot write.
-    index: createMeilisearchIndex<RecordingDocument>({
-      url: env.MEILISEARCH_URL,
-      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
-      ...RECORDINGS_INDEX,
-    }),
-    summaries: new RecordingSummaryService(
-      new RecordingSummaryRepository(dbSource),
-    ),
+    env,
+    dbSource,
+    logger,
+    refreshIntervalMs:
+      options.searchReadinessRefreshIntervalMs ??
+      SEARCH_READINESS_REFRESH_INTERVAL_MS,
   });
-  return createWsServer({
+  options.onSearchReadinessCreated?.(searchReadiness);
+  const wsServer = createWsServer({
     port: env.PORT,
     apiKeys: env.API_KEYS,
     handlers: [
@@ -178,6 +229,7 @@ export const createMusicCatalogServer = (
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logger,
   });
+  return withSearchReadiness(wsServer, searchReadiness);
 };
 
 export type CreateWorkerOptions = {

@@ -113,6 +113,7 @@ describe('first import: the mbslave container lays the dataset down (e2e)', {
   };
 
   const searchMbids = async (query: string): Promise<string[]> => {
+    await server().waitForSearchPhase('ready');
     const response = await requestSearch(client(), { query });
     if (!response.ok) {
       throw new Error(`search failed: ${response.error.code}`);

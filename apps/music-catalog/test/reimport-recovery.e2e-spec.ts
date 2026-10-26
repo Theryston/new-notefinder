@@ -151,6 +151,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       nextCopy: { db: parallel().db, url: parallel().url },
     });
     await restarted.tick();
+    await statusResult();
 
     await expect(searchMbids('Brand New Next Song')).resolves.toEqual([
       mbid(903),
@@ -248,6 +249,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       nextCopy: { db: parallel().db, url: parallel().url },
     });
     await restarted.tick();
+    await statusResult();
 
     await expect(searchMbids('Brand New Next Song')).resolves.toEqual([
       mbid(903),
@@ -293,6 +295,7 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       nextCopy: { db: parallel().db, url: parallel().url },
     });
     await restarted.tick();
+    await statusResult();
 
     await expect(searchMbids('Brand New Next Song')).resolves.toEqual([
       mbid(903),

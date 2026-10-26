@@ -11,7 +11,8 @@ import type { TestClient } from './ws-client.js';
 export const requestSearch = async (
   client: TestClient,
   payload: unknown,
-): Promise<MusicCatalogSearchResponse> =>
-  musicCatalogSearchResponseSchema.parse(
+): Promise<MusicCatalogSearchResponse> => {
+  return musicCatalogSearchResponseSchema.parse(
     await client.request('search', payload),
   );
+};

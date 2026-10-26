@@ -1,12 +1,17 @@
 import { useTestServer } from './utils/create-test-server.js';
 import { setBootstrapState } from './utils/database.js';
 import { requestSearch } from './utils/search-client.js';
+import { createTestWorker, indexCatalog } from './utils/test-worker.js';
 import { useReadyCatalog } from './utils/use-ready-catalog.js';
 import { useTestClient } from './utils/use-test-client.js';
 
 describe('search: requests (e2e)', () => {
   const server = useTestServer();
   const client = useTestClient(server);
+
+  beforeAll(async () => {
+    await indexCatalog(server(), createTestWorker(server()));
+  });
 
   describe('before the first import has finished', () => {
     it('answers CATALOG_NOT_READY when the import has not recorded anything yet', async () => {

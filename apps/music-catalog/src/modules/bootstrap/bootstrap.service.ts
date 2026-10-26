@@ -80,6 +80,15 @@ export class BootstrapService {
   }
 
   /**
+   * Reads the first-import phase for the search readiness cache, adopting a
+   * completed blue-green cutover before the database reference is read.
+   */
+  async getImportPhase(): Promise<MusicCatalogStatusResult['phase']> {
+    await this.reimport?.cutover?.adoptIfSwitched();
+    return (await this.repository.getState())?.phase ?? 'restoring';
+  }
+
+  /**
    * Refuses the request while the first import has not finished, for every
    * operation that reads the catalog (`status` is the one that may answer
    * meanwhile). The state is read on every call, so it follows the worker.

@@ -1,9 +1,9 @@
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
-import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
 import { SearchService } from './search.service.js';
+import type { SearchReadiness } from './search-readiness.js';
 
 const summary = (mbid: string) => ({
   mbid,
@@ -30,8 +30,8 @@ const setup = (
   } = {},
 ) => {
   const callOrder: string[] = [];
-  const bootstrap = {
-    assertReady: vi.fn(async () => {
+  const readiness = {
+    assertReady: vi.fn(() => {
       callOrder.push('assertReady');
       if (options.notReady) {
         throw new CatalogError('CATALOG_NOT_READY', 'still importing');
@@ -51,7 +51,7 @@ const setup = (
     }),
   };
   const service = new SearchService({
-    bootstrap: bootstrap as unknown as BootstrapService,
+    readiness: readiness as unknown as SearchReadiness,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
     summaries: summaries as unknown as RecordingSummaryService,
   });
@@ -103,7 +103,15 @@ describe('SearchService', () => {
     await expect(service.search(params)).resolves.toEqual({ results: [] });
   });
 
-  it('refuses the search, reaching neither the index nor the database, before the catalog is ready', async () => {
+  it('propagates Meilisearch failures instead of returning an empty result', async () => {
+    const { service, index } = setup();
+    const failure = new Error('Meilisearch unavailable');
+    index.search.mockRejectedValueOnce(failure);
+
+    await expect(service.search(params)).rejects.toBe(failure);
+  });
+
+  it('refuses the search before reaching the index or summaries when the cached catalog is not ready', async () => {
     const { service, index, summaries } = setup({ notReady: true });
 
     await expect(service.search(params)).rejects.toMatchObject({

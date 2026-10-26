@@ -153,6 +153,7 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
       env,
       db: createDatabase(pool),
       logger: testLogger,
+      searchReadinessRefreshIntervalMs: 10,
     });
     const { port } = await ws.start();
     const tcp = await connect(`ws://127.0.0.1:${port}`, API_KEY);

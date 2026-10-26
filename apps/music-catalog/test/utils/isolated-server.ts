@@ -1,9 +1,15 @@
+import type { BootstrapPhase } from '@notefinder/contracts';
 import { inject } from 'vitest';
 import { parseServerEnv, type ServerEnv } from '../../src/config/env.js';
 import { createMusicCatalogServer } from '../../src/create-server.js';
-import type { Database } from '../../src/database/database.js';
 import { createDatabase, createPool } from '../../src/database/database.js';
-import { API_KEY, type TestServer, testLogger } from './create-test-server.js';
+import type { SearchReadiness } from '../../src/modules/search/search-readiness.js';
+import {
+  API_KEY,
+  type TestServer,
+  testLogger,
+  waitForSearchPhase,
+} from './create-test-server.js';
 import { resetDatabase } from './database.js';
 import { connect, type TestClient } from './ws-client.js';
 
@@ -16,7 +22,8 @@ type RunningServer = {
   url: string;
   env: ServerEnv;
   stop: () => Promise<void>;
-  db: Database;
+  db: ReturnType<typeof createDatabase>;
+  waitForSearchPhase: (phase: BootstrapPhase) => Promise<void>;
 };
 
 // Boots the real server on a free port against the e2e database, resetting
@@ -34,16 +41,27 @@ const bootIsolatedServer = async (): Promise<RunningServer> => {
   });
   const pool = createPool(parsed.DATABASE_URL, () => undefined);
   const db = createDatabase(pool);
+  await resetDatabase(db);
+  let readiness: SearchReadiness | undefined;
   const ws = createMusicCatalogServer({
     env: parsed,
     db,
     logger: testLogger,
+    searchReadinessRefreshIntervalMs: 10,
+    onSearchReadinessCreated: (cache) => {
+      readiness = cache;
+    },
   });
   const { port } = await ws.start();
+  if (readiness === undefined) {
+    throw new Error('The test server did not expose search readiness');
+  }
+  const searchCache = readiness;
   return {
     url: `ws://127.0.0.1:${port}`,
     env: parsed,
     db,
+    waitForSearchPhase: (phase) => waitForSearchPhase(searchCache, phase),
     stop: async () => {
       await ws.stop();
       await pool.end();
@@ -63,7 +81,6 @@ export const useIsolatedServer = (): IsolatedServer => {
 
   beforeEach(async () => {
     running = await bootIsolatedServer();
-    await resetDatabase(running.db);
     tcpClient = await connect(running.url, API_KEY);
   });
 
@@ -83,6 +100,7 @@ export const useIsolatedServer = (): IsolatedServer => {
         url: running.url,
         env: running.env,
         db: running.db,
+        waitForSearchPhase: running.waitForSearchPhase,
         close: running.stop,
       };
     },

@@ -3,6 +3,7 @@ import { parseWorkerEnv } from '../../src/config/env.js';
 import { createMusicCatalogWorker } from '../../src/create-server.js';
 import type { Database } from '../../src/database/database.js';
 import { RECORDINGS_INDEX } from '../../src/lib/recordings-index.js';
+import { BootstrapRepository } from '../../src/modules/bootstrap/bootstrap.repository.js';
 import { type TestServer, testLogger } from './create-test-server.js';
 import { setBootstrapState } from './database.js';
 import { meilisearchRequest } from './meilisearch-http.js';
@@ -56,6 +57,11 @@ export const indexCatalog = async (
 ): Promise<void> => {
   await setBootstrapState(server.db, { phase: 'restored', dataset: 'tiny' });
   await worker.tick();
+  if (
+    (await new BootstrapRepository(server.db).getState())?.phase === 'ready'
+  ) {
+    await server.waitForSearchPhase('ready');
+  }
 };
 
 const master = (method: string, path: string, body?: unknown) =>

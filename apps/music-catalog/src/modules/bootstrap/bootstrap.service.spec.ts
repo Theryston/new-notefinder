@@ -105,3 +105,30 @@ describe('BootstrapService assertReady', () => {
     await expect(service.assertReady()).resolves.toBeUndefined();
   });
 });
+
+describe('BootstrapService getImportPhase', () => {
+  it('adopts a completed blue-green cutover before reading the serving phase', async () => {
+    const calls: string[] = [];
+    const repository = {
+      getState: vi.fn(async () => {
+        calls.push('phase');
+        return { phase: 'ready' as const, dataset: 'full' as const };
+      }),
+    };
+    const service = new BootstrapService(
+      repository as unknown as BootstrapRepository,
+      'tiny',
+      undefined,
+      {
+        cutover: {
+          adoptIfSwitched: vi.fn(async () => {
+            calls.push('cutover');
+          }),
+        },
+      },
+    );
+
+    await expect(service.getImportPhase()).resolves.toBe('ready');
+    expect(calls).toEqual(['cutover', 'phase']);
+  });
+});
