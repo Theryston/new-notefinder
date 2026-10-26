@@ -58,6 +58,7 @@ export const buildRecordingDocument = (
   genres: chooseTags(parts.tagLevels).genres.map((genre) => genre.name),
   disambiguation: row.disambiguation,
   primaryReleaseMbid: parts.primaryReleaseMbid,
+  trackId: row.trackId ?? null,
 });
 
 /**

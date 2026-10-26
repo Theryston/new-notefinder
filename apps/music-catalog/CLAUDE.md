@@ -9,9 +9,10 @@ others later) talk to it over one long-lived, authenticated **WebSocket**. The
 full design is in the parent spec, issue #55; this file documents what exists.
 
 **What exists today**: the whole service. The authenticated WebSocket server
-answering `status`, `getRecording` and `search` (issues #57, #59 and #58), the
-protocol envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint, the recording outbox, the replication state, the reimport state),
+answering `status`, `getRecording`, `search` and `associateTrack` (issues #57,
+#59, #58 and #385), the protocol envelope, our own Postgres schema (the
+bootstrap state, indexing checkpoint, Recording outbox, replication and
+reimport state, and the durable Track projection),
 read-only declarations of the MusicBrainz tables the queries read,
 **Meilisearch** as the search engine behind a small integration, the `server`
 and `worker` entrypoints (the worker indexes every Recording once the
@@ -146,6 +147,10 @@ src/
     search/
       search.handler.ts         the `search` handler
       search.service.ts         readiness, selected display fields from Meilisearch
+    track-association/
+      track-association.handler.ts  authenticated Track link delivery
+      track-association.service.ts  retryable cutover behavior
+      track-association.repository.ts exact-MBID durable projection and index work
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
@@ -253,8 +258,8 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   requests can be in flight on one connection and responses may arrive in any
   order: match them by `id`. `id` is `null` in a failure only when the
   message was too broken to read one from it.
-- `type` is `status`, `getRecording`, `search`, `getReleaseGroup` or
-  `getArtist`. `payload` is validated per type; `status` takes none (missing
+- `type` is `status`, `getRecording`, `search`, `associateTrack`,
+  `getReleaseGroup` or `getArtist`. `payload` is validated per type; `status` takes none (missing
   or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
   dataset: 'tiny' | 'full', replicationSequence?, pendingOutbox? }`, read
@@ -267,7 +272,8 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   one lands; see "Continuous replication") and `pendingOutbox` the entries
   still waiting to reach the index — the replication lag. Both are absent
   when the service answers without replication state.
-- Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
+- Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`,
+  `REIMPORT_SWITCHING` (retry `associateTrack` after the cutover),
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
   `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`,
   `RELEASE_GROUP_NOT_FOUND`, `RELEASE_GROUP_MOVED`, `ARTIST_NOT_FOUND`,

@@ -1,5 +1,6 @@
 import type { CatalogDataset } from '@notefinder/contracts';
 import type { WorkerEnv } from './config/env.js';
+import { withCatalogWriteLock } from './database/catalog-write-lock.js';
 import type { Database } from './database/database.js';
 import { databaseNameOf } from './database/database-ref.js';
 import type { MeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
@@ -24,6 +25,8 @@ import { ReimportStateRepository } from './modules/reimport/reimport-state.repos
 import { ReimportSwitchService } from './modules/reimport/reimport-switch.service.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
+import { SyncService } from './modules/sync/sync.service.js';
+import { TrackAssociationRepository } from './modules/track-association/track-association.repository.js';
 
 export type WorkerReimportOptions = {
   bootstrap: BootstrapService;
@@ -89,11 +92,27 @@ const REIMPORT_SWAP_PROBE_SIZE = 200;
 // The four steps against the parallel copy. Split from the assembly above
 // so each function stays small; covered by the same construction spec.
 const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
-  const { env, nextDb } = parts;
+  const { env, nextDb, logger } = parts;
   const nextIndex = createMeilisearchIndex<RecordingDocument>({
     url: env.MEILISEARCH_URL,
     apiKey: env.MEILISEARCH_WRITE_API_KEY,
     ...RECORDINGS_NEXT_INDEX,
+  });
+  const associationSync = new SyncService({
+    bootstrap: new BootstrapService(
+      new BootstrapRepository(nextDb),
+      env.CATALOG_DATASET,
+    ),
+    outbox: new RecordingOutboxRepository(() => nextDb),
+    documents: new RecordingDocumentService(
+      new RecordingDocumentRepository(nextDb),
+    ),
+    index: nextIndex,
+    batchSize: env.INDEXING_BATCH_SIZE,
+    associations: new TrackAssociationRepository(nextDb),
+    writeLock: <Result>(run: () => Promise<Result>) =>
+      withCatalogWriteLock(nextDb, run),
+    logger,
   });
   return {
     ensureTriggersCopy: async (): Promise<void> => {
@@ -104,8 +123,10 @@ const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
       onProgress: (fraction: number) => Promise<void>,
     ): Promise<void> => {
       await detachedIndexing(parts, nextIndex).runDetached(signal);
+      await associationSync.drainAssociations();
       await onProgress(1);
     },
+    prepareSwitch: () => associationSync.drainAssociations(),
     switchToCopy: buildSwitchStep(parts, nextIndex),
   };
 };
@@ -176,5 +197,7 @@ const detachedIndexing = (
     index: nextIndex,
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
+    writeLock: <Result>(run: () => Promise<Result>) =>
+      withCatalogWriteLock(nextDb, run),
   });
 };

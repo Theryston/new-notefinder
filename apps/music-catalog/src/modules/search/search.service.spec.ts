@@ -62,7 +62,7 @@ describe('SearchService', () => {
         limit: 10,
         offset: 20,
       },
-      ['mbid', 'title', 'artistCredit', 'primaryReleaseMbid'],
+      ['mbid', 'title', 'artistCredit', 'primaryReleaseMbid', 'trackId'],
     );
     expect(callOrder).toEqual(['assertReady', 'index']);
   });

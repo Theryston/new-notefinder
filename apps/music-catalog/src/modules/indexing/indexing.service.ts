@@ -19,6 +19,8 @@ export type IndexingServiceDeps = {
   /** How many Recordings go to Meilisearch in one task. */
   batchSize: number;
   logger: Logger;
+  /** Serializes complete-document replacement with Track association writes. */
+  writeLock?: <Result>(run: () => Promise<Result>) => Promise<Result>;
 };
 
 export class IndexingService {
@@ -81,15 +83,20 @@ export class IndexingService {
     let afterId = checkpoint;
     let indexed = 0;
     for (let batchNumber = 1; !signal.aborted; batchNumber++) {
-      const batch = await documents.findBatch(afterId, batchSize);
+      const writeBatch = async () => {
+        const batch = await documents.findBatch(afterId, batchSize);
+        if (batch === undefined) return undefined;
+        await index.upsert(batch.documents);
+        await repository.saveCheckpoint(
+          RECORDINGS_INDEX.uid,
+          batch.lastRecordingId,
+        );
+        return batch;
+      };
+      const batch = await (this.deps.writeLock?.(writeBatch) ?? writeBatch());
       if (batch === undefined) {
         return true;
       }
-      await index.upsert(batch.documents);
-      await repository.saveCheckpoint(
-        RECORDINGS_INDEX.uid,
-        batch.lastRecordingId,
-      );
       afterId = batch.lastRecordingId;
       indexed += batch.documents.length;
       logger.info('Indexed a batch of Recordings', {

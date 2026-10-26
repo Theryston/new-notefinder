@@ -8,6 +8,7 @@ import { resolveLatestDumpUrls } from '../../src/modules/bootstrap/dump-urls.js'
 import { RestoreService } from '../../src/modules/bootstrap/restore.service.js';
 import { ReimportRestoreService } from '../../src/modules/reimport/reimport-restore.service.js';
 import { ReimportStateRepository } from '../../src/modules/reimport/reimport-state.repository.js';
+import { TrackAssociationRepository } from '../../src/modules/track-association/track-association.repository.js';
 import { applyMusicBrainzSchema } from '../setup/musicbrainz-schema.js';
 import { type TestServer, testLogger } from './create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './database.js';
@@ -69,12 +70,13 @@ export type ParallelRestoreOptions = {
   dumpsUrl: string;
   /** Seeds what the new dump would load. */
   seed?: (db: Database) => Promise<void>;
+  associations?: TrackAssociationRepository;
 };
 
 export const restoreParallelInto = async (
   options: ParallelRestoreOptions,
 ): Promise<'restored'> => {
-  const { servingDb, servingUrl, next, dumpsUrl, seed } = options;
+  const { servingDb, servingUrl, next, dumpsUrl, seed, associations } = options;
   const { db } = next;
   const mbslave = new MbslaveClient(async (args) => {
     if (args[0] === 'init') {
@@ -116,6 +118,9 @@ export const restoreParallelInto = async (
     currentMbslaveRef: 'v32.0.0',
     servingDatabaseUrl: servingUrl,
     nextDatabaseUrl: next.url,
+    associations:
+      associations ?? new TrackAssociationRepository(servingDb, servingUrl),
+    nextDatabase: db,
     dataset: 'full',
     logger: testLogger,
   });
@@ -214,6 +219,10 @@ export const useReimportFlow = (options: {
         next: needParallel(),
         dumpsUrl: needDumps().url,
         seed,
+        associations: new TrackAssociationRepository(
+          server().db,
+          inject('databaseUrl'),
+        ),
       }),
   };
 };

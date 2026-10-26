@@ -49,6 +49,7 @@ const setup = (
       },
     ),
     switchToCopy: vi.fn(async () => undefined),
+    prepareSwitch: vi.fn(async () => undefined),
   };
   const service = new ReimportService({
     bootstrap: bootstrap as unknown as BootstrapService,

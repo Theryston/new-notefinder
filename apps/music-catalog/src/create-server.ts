@@ -7,45 +7,30 @@ import {
   createProcessMbslaveRun,
   MbslaveClient,
 } from './integrations/mbslave/mbslave-client.js';
-import { createMeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
-import {
-  RECORDINGS_INDEX,
-  type RecordingDocument,
-} from './lib/recordings-index.js';
 import type { Logger } from './logger.js';
-import { createGetArtistHandler } from './modules/artist/artist.handler.js';
-import { ArtistRepository } from './modules/artist/artist.repository.js';
-import { ArtistService } from './modules/artist/artist.service.js';
-import { createStatusHandler } from './modules/bootstrap/bootstrap.handler.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
 import type { ReplicationStatusSource } from './modules/bootstrap/bootstrap.service.js';
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
-import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
-import { RecordingRepository } from './modules/recording/recording.repository.js';
-import { RecordingService } from './modules/recording/recording.service.js';
 import { readReimportStatus } from './modules/reimport/reimport.service.js';
 import { ReimportStateRepository } from './modules/reimport/reimport-state.repository.js';
-import { createGetReleaseGroupHandler } from './modules/release-group/release-group.handler.js';
-import { ReleaseGroupRepository } from './modules/release-group/release-group.repository.js';
-import { ReleaseGroupService } from './modules/release-group/release-group.service.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { ReplicationService } from './modules/replication/replication.service.js';
-import { createSearchHandler } from './modules/search/search.handler.js';
-import { SearchService } from './modules/search/search.service.js';
-import { SearchReadiness } from './modules/search/search-readiness.js';
+import type { SearchReadiness } from './modules/search/search-readiness.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
 import { assembleWorkerReimport } from './reimport-wiring.js';
+import { createServerHandlers } from './server-handlers.js';
 import { buildServingIndexing } from './worker/indexing-stack.js';
 import { createWorkerTick } from './worker/worker-tick.js';
-import type { Handler } from './ws/handler.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 const SEARCH_READINESS_REFRESH_INTERVAL_MS = 5000;
-const SEARCH_READINESS_QUERY_TIMEOUT_MS = 5000;
 
 export type CreateServerOptions = {
   env: ServerEnv;
   db: Database;
+  servingDatabaseUrl?: string;
+  /** The parallel reimport database to mirror acknowledged associations into. */
+  nextCopy?: { db: Database; url: string };
   logger: Logger;
   /** Test-only timing override; production uses the five-second interval. */
   searchReadinessRefreshIntervalMs?: number;
@@ -61,6 +46,7 @@ export type CreateServerOptions = {
  */
 type DatabaseRef = {
   current: Database;
+  currentUrl: string;
 };
 
 type ServingBootstrapOptions = {
@@ -69,7 +55,7 @@ type ServingBootstrapOptions = {
   /** The server reports replication; the worker has no loop to report. */
   replication?: ReplicationStatusSource;
   openDatabase: (url: string) => Database;
-  adopt: (db: Database) => void;
+  adopt: (db: Database, url: string) => void;
   logger: Logger;
 };
 
@@ -103,47 +89,6 @@ const createServingBootstrap = (
   return { bootstrap, reimportState };
 };
 
-// The reads that answer one entity by MBID (a release group, an artist),
-// wired the same way as the Recording's.
-const createEntityHandlers = (
-  dbSource: () => Database,
-  bootstrap: BootstrapService,
-): Handler[] => [
-  createGetReleaseGroupHandler(
-    new ReleaseGroupService(new ReleaseGroupRepository(dbSource), bootstrap),
-  ),
-  createGetArtistHandler(
-    new ArtistService(new ArtistRepository(dbSource), bootstrap),
-  ),
-];
-
-const createServerSearch = (options: {
-  bootstrap: BootstrapService;
-  env: ServerEnv;
-  logger: Logger;
-  refreshIntervalMs: number;
-}): { search: SearchService; readiness: SearchReadiness } => {
-  const { bootstrap, env, logger, refreshIntervalMs } = options;
-  const readiness = new SearchReadiness({
-    readPhase: (shouldContinue) =>
-      bootstrap.getImportPhase({
-        queryTimeoutMs: SEARCH_READINESS_QUERY_TIMEOUT_MS,
-        shouldContinue,
-      }),
-    refreshIntervalMs,
-    logger,
-  });
-  const search = new SearchService({
-    readiness,
-    index: createMeilisearchIndex<RecordingDocument>({
-      url: env.MEILISEARCH_URL,
-      apiKey: env.MEILISEARCH_SEARCH_API_KEY,
-      ...RECORDINGS_INDEX,
-    }),
-  });
-  return { search, readiness };
-};
-
 export const withSearchReadiness = (
   server: WsServer,
   readiness: SearchReadiness,
@@ -173,7 +118,10 @@ export const createMusicCatalogServer = (
   const { env, db, logger } = options;
   // Every repository reads through the reference, so the cutover watcher
   // can flip the process to the reimported copy without restarting it.
-  const dbRef: DatabaseRef = { current: db };
+  const dbRef: DatabaseRef = {
+    current: db,
+    currentUrl: options.servingDatabaseUrl ?? env.DATABASE_URL,
+  };
   const dbSource = (): Database => dbRef.current;
   // The server never runs the replication loop (that is the mbslave
   // container's): it only reads the recorded sequence and the backlog for
@@ -194,33 +142,28 @@ export const createMusicCatalogServer = (
     dataset: env.CATALOG_DATASET,
     replication,
     openDatabase: (url) => openCutoverDatabase(url, logger),
-    adopt: (database) => {
+    adopt: (database, url) => {
       dbRef.current = database;
+      dbRef.currentUrl = url;
     },
     logger,
   });
-  const recording = new RecordingService(
-    new RecordingRepository(dbSource),
+  const { handlers, readiness: searchReadiness } = createServerHandlers({
     bootstrap,
-  );
-  const { search, readiness: searchReadiness } = createServerSearch({
-    bootstrap,
+    dbSource,
+    currentUrl: () => dbRef.currentUrl,
     env,
+    nextCopy: options.nextCopy,
     logger,
     refreshIntervalMs:
       options.searchReadinessRefreshIntervalMs ??
       SEARCH_READINESS_REFRESH_INTERVAL_MS,
+    onReadinessCreated: options.onSearchReadinessCreated,
   });
-  options.onSearchReadinessCreated?.(searchReadiness);
   const wsServer = createWsServer({
     port: env.PORT,
     apiKeys: env.API_KEYS,
-    handlers: [
-      createStatusHandler(bootstrap),
-      createGetRecordingHandler(recording),
-      createSearchHandler(search),
-      ...createEntityHandlers(dbSource, bootstrap),
-    ],
+    handlers,
     heartbeatIntervalMs: env.HEARTBEAT_INTERVAL_MS,
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logger,
@@ -255,7 +198,7 @@ export const createMusicCatalogWorker = (
   options: CreateWorkerOptions,
 ): MusicCatalogWorker => {
   const { env, db, logger, signal } = options;
-  const dbRef: DatabaseRef = { current: db };
+  const dbRef: DatabaseRef = { current: db, currentUrl: env.DATABASE_URL };
   const dbSource = (): Database => dbRef.current;
   const { bootstrap, reimportState } = createServingBootstrap({
     dbSource,
@@ -266,8 +209,9 @@ export const createMusicCatalogWorker = (
         ? next.db
         : openCutoverDatabase(url, logger);
     },
-    adopt: (database) => {
+    adopt: (database, url) => {
       dbRef.current = database;
+      dbRef.currentUrl = url;
     },
     logger,
   });

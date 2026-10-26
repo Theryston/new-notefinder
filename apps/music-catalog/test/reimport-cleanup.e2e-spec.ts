@@ -12,6 +12,7 @@ import { createDatabase, createPool } from '../src/database/database.js';
 import { readReimportStateOf } from '../src/modules/reimport/read-reimport-state.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import { resolveServingDatabaseUrl } from '../src/modules/reimport/resolve-serving-url.js';
+import { TrackAssociationRepository } from '../src/modules/track-association/track-association.repository.js';
 import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
 import { API_KEY, testLogger } from './utils/create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
@@ -28,6 +29,8 @@ import {
   stallReplication,
   useFakeDumps,
 } from './utils/reimport-harness.js';
+import { requestSearch } from './utils/search-client.js';
+import { requestTrackAssociation } from './utils/track-association-client.js';
 import { connect, type TestClient } from './utils/ws-client.js';
 
 // The yearly schema change: the retired copy is deleted by default (see
@@ -124,6 +127,7 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
   const bootServerOn = async (
     configuredUrl: string,
     reimportUrl?: string,
+    next?: ParallelCopy,
   ): Promise<{
     servingUrl: string;
     client: TestClient;
@@ -152,6 +156,8 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     const ws = createMusicCatalogServer({
       env,
       db: createDatabase(pool),
+      servingDatabaseUrl: resolved,
+      ...(next === undefined ? {} : { nextCopy: next }),
       logger: testLogger,
       searchReadinessRefreshIntervalMs: 10,
     });
@@ -269,6 +275,14 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     const worker = await bootWorkerOn(serveUrl, next);
     await worker.tick();
     await stallReplication(serving);
+    const server = await bootServerOn(serveUrl, nextUrl, next);
+    const retainedTrackId = '00000000-0000-4000-8000-000000000301';
+    const inFlightTrackId = '00000000-0000-4000-8000-000000000302';
+    const postCutoverTrackId = '00000000-0000-4000-8000-000000000303';
+    await requestTrackAssociation(server.client, {
+      mbid: mbid(901),
+      trackId: retainedTrackId,
+    });
 
     await restoreParallelInto({
       servingDb: serving,
@@ -276,6 +290,11 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
       next,
       dumpsUrl: dumps().url,
       seed: seedNewDump,
+      associations: new TrackAssociationRepository(serving, serveUrl),
+    });
+    await requestTrackAssociation(server.client, {
+      mbid: mbid(903),
+      trackId: inFlightTrackId,
     });
     await worker.tick();
     // The default cleanup drops the retired database on the flip. The flip
@@ -296,17 +315,41 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     // phases on the new copy.
     const restarted = await bootWorkerOn(serveUrl, next);
     await expect(restarted.tick()).resolves.toBeUndefined();
-    const server = await bootServerOn(serveUrl, nextUrl);
+    await server.stop();
+    const servingServer = await bootServerOn(serveUrl, nextUrl, next);
     try {
-      expect(server.servingUrl).toBe(nextUrl);
-      await expect(readStatus(server.client)).resolves.toMatchObject({
+      expect(servingServer.servingUrl).toBe(nextUrl);
+      await expect(readStatus(servingServer.client)).resolves.toMatchObject({
         phase: 'ready',
       });
       await expect(
-        searchForMbids(server.client, 'Brand New Next Song'),
+        searchForMbids(servingServer.client, 'Brand New Next Song'),
       ).resolves.toEqual([mbid(903)]);
+      await expect(
+        requestSearch(servingServer.client, { query: 'Same Take Song' }),
+      ).resolves.toMatchObject({
+        ok: true,
+        result: { results: [{ mbid: mbid(901), trackId: retainedTrackId }] },
+      });
+      await expect(
+        requestSearch(servingServer.client, { query: 'Brand New Next Song' }),
+      ).resolves.toMatchObject({
+        ok: true,
+        result: { results: [{ mbid: mbid(903), trackId: inFlightTrackId }] },
+      });
+      await requestTrackAssociation(servingServer.client, {
+        mbid: mbid(904),
+        trackId: postCutoverTrackId,
+      });
+      await restarted.tick();
+      await expect(
+        requestSearch(servingServer.client, { query: 'Steady Control Song' }),
+      ).resolves.toMatchObject({
+        ok: true,
+        result: { results: [{ mbid: mbid(904), trackId: postCutoverTrackId }] },
+      });
     } finally {
-      await server.stop();
+      await servingServer.stop();
     }
   });
 });

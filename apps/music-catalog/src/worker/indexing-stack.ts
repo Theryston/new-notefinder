@@ -1,3 +1,4 @@
+import { withCatalogWriteLock } from '../database/catalog-write-lock.js';
 import type { DatabaseSource } from '../database/database-ref.js';
 import type { MeilisearchIndex } from '../integrations/meilisearch/meilisearch-index.js';
 import { createMeilisearchIndex } from '../integrations/meilisearch/meilisearch-index.js';
@@ -13,6 +14,7 @@ import { RecordingDocumentRepository } from '../modules/recording/recording-docu
 import { RecordingDocumentService } from '../modules/recording/recording-document.service.js';
 import { RecordingOutboxRepository } from '../modules/sync/recording-outbox.repository.js';
 import { SyncService } from '../modules/sync/sync.service.js';
+import { TrackAssociationRepository } from '../modules/track-association/track-association.repository.js';
 
 export type ServingIndexingOptions = {
   bootstrap: BootstrapService;
@@ -41,6 +43,7 @@ export const buildServingIndexing = (
   options: ServingIndexingOptions,
 ): ServingIndexing => {
   const { bootstrap, dbSource, logger } = options;
+  const getDb = typeof dbSource === 'function' ? dbSource : () => dbSource;
   const documents = new RecordingDocumentService(
     new RecordingDocumentRepository(dbSource),
   );
@@ -49,6 +52,8 @@ export const buildServingIndexing = (
     apiKey: options.writeApiKey,
     ...RECORDINGS_INDEX,
   });
+  const writeLock = <Result>(run: () => Promise<Result>): Promise<Result> =>
+    withCatalogWriteLock(getDb(), run);
   return {
     documents,
     index,
@@ -59,6 +64,7 @@ export const buildServingIndexing = (
       index,
       batchSize: options.batchSize,
       logger,
+      writeLock,
     }),
     sync: new SyncService({
       bootstrap,
@@ -67,6 +73,8 @@ export const buildServingIndexing = (
       index,
       batchSize: options.batchSize,
       logger,
+      associations: new TrackAssociationRepository(dbSource),
+      writeLock,
     }),
   };
 };

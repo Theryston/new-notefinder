@@ -109,6 +109,7 @@ describe('buildRecordingDocument', () => {
       [
         'mbid',
         'primaryReleaseMbid',
+        'trackId',
         ...RECORDINGS_INDEX_SETTINGS.searchableAttributes,
       ].sort(),
     );

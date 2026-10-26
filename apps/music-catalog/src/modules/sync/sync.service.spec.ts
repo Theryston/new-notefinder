@@ -6,6 +6,7 @@ import type {
   CurrentDocument,
   RecordingDocumentService,
 } from '../recording/recording-document.service.js';
+import type { TrackAssociationRepository } from '../track-association/track-association.repository.js';
 import type { RecordingOutboxRepository } from './recording-outbox.repository.js';
 import { SyncService } from './sync.service.js';
 import type { OutboxEntry } from './sync-plan.js';
@@ -45,6 +46,7 @@ const setup = (
     phase?: string;
     pending?: OutboxEntry[][];
     documents?: Map<number, CurrentDocument>;
+    associationPending?: string[];
   } = {},
 ) => {
   const batches = options.pending ?? [];
@@ -60,6 +62,7 @@ const setup = (
     markProcessed: vi.fn(async () => undefined),
   };
   const documents = {
+    findIdsByMbids: vi.fn(async () => [7]),
     findDocumentsByIds: vi.fn(async (ids: readonly number[]) => {
       const known = options.documents ?? new Map();
       return ids.flatMap((id) => {
@@ -72,15 +75,20 @@ const setup = (
     upsert: vi.fn(async () => undefined),
     deleteDocuments: vi.fn(async () => undefined),
   };
+  const associations = {
+    peekPending: vi.fn(async () => options.associationPending ?? []),
+    markIndexed: vi.fn(async () => undefined),
+  };
   const service = new SyncService({
     bootstrap: bootstrap as unknown as BootstrapService,
     outbox: outbox as unknown as RecordingOutboxRepository,
     documents: documents as unknown as RecordingDocumentService,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
     batchSize: 100,
+    associations: associations as unknown as TrackAssociationRepository,
     logger: silentLogger,
   });
-  return { service, bootstrap, outbox, documents, index };
+  return { service, bootstrap, outbox, documents, index, associations };
 };
 
 const liveSignal = new AbortController().signal;
@@ -184,5 +192,29 @@ describe('SyncService.drain', () => {
     await service.drain(controller.signal);
 
     expect(outbox.peekPending).not.toHaveBeenCalled();
+  });
+});
+
+describe('SyncService.drainAssociations', () => {
+  it('keeps a failed index update pending and retries it after a worker restart', async () => {
+    const { service, index, associations } = setup({
+      associationPending: ['mbid-7'],
+      documents: new Map([[7, found(7, 'mbid-7')]]),
+    });
+    index.upsert.mockRejectedValueOnce(new Error('Meilisearch task failed'));
+
+    await expect(service.drainAssociations()).rejects.toThrow(
+      'Meilisearch task failed',
+    );
+    expect(associations.markIndexed).not.toHaveBeenCalled();
+
+    const restarted = setup({
+      associationPending: ['mbid-7'],
+      documents: new Map([[7, found(7, 'mbid-7')]]),
+    });
+    await restarted.service.drainAssociations();
+
+    expect(restarted.index.upsert).toHaveBeenCalledWith([document('mbid-7')]);
+    expect(restarted.associations.markIndexed).toHaveBeenCalledWith(['mbid-7']);
   });
 });
