@@ -67,6 +67,26 @@ describe('SearchService', () => {
     expect(callOrder).toEqual(['assertReady', 'index']);
   });
 
+  it('does not hydrate indexed hits from a summary repository', async () => {
+    const { readiness, index } = setup({ hits: [document('a')] });
+    const findByMbids = vi.fn(() => {
+      throw new Error('search must not hydrate summaries from Postgres');
+    });
+    const serviceWithSummarySentinel = new SearchService({
+      readiness: readiness as unknown as SearchReadiness,
+      index: index as unknown as MeilisearchIndex<RecordingDocument>,
+      summaries: { findByMbids },
+    } as unknown as ConstructorParameters<typeof SearchService>[0]);
+
+    await expect(
+      serviceWithSummarySentinel.search(params),
+    ).resolves.toMatchObject({
+      results: [{ mbid: 'a' }],
+    });
+    expect(readiness.assertReady).toHaveBeenCalledOnce();
+    expect(findByMbids).not.toHaveBeenCalled();
+  });
+
   it('returns compact items in the order the index ranked them', async () => {
     const { service } = setup({
       hits: [document('c'), document('a'), document('b')],
