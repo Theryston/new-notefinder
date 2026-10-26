@@ -31,6 +31,7 @@ import { ReplicationRepository } from './modules/replication/replication.reposit
 import { ReplicationService } from './modules/replication/replication.service.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
 import { TrackAssociationRepository } from './modules/track-association/track-association.repository.js';
+import { TrackAssociationService } from './modules/track-association/track-association.service.js';
 
 // The process the mbslave container runs on start: it lays the dataset down
 // when needed, then replicates continuously in `full` mode (in `tiny` mode
@@ -168,7 +169,9 @@ const reimportRestore =
         currentMbslaveRef: env.MBSLAVE_REF,
         servingDatabaseUrl: servingUrl,
         nextDatabaseUrl,
-        associations: new TrackAssociationRepository(dbSource, servingUrl),
+        associations: new TrackAssociationService(
+          new TrackAssociationRepository(dbSource, servingUrl),
+        ),
         nextDatabase: nextDb,
         dataset: env.CATALOG_DATASET,
         logger,

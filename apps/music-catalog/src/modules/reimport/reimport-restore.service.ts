@@ -3,7 +3,7 @@ import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RestoreService } from '../bootstrap/restore.service.js';
 import type { ReplicationService } from '../replication/replication.service.js';
-import type { TrackAssociationRepository } from '../track-association/track-association.repository.js';
+import type { TrackAssociationService } from '../track-association/track-association.service.js';
 import { planReimport } from './reimport-plan.js';
 import type { ReimportStateRepository } from './reimport-state.repository.js';
 
@@ -23,7 +23,7 @@ export type ReimportRestoreDeps = {
   /** The restore pointed at the parallel database. */
   restore: RestoreService;
   /** Durable Track projection transferred before the parallel copy indexes. */
-  associations?: TrackAssociationRepository;
+  associations?: TrackAssociationService;
   nextDatabase?: import('../../database/database.js').Database;
   /** The mbslave release running here (`MBSLAVE_REF`), when known. */
   currentMbslaveRef: string | undefined;

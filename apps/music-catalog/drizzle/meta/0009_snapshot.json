@@ -64,7 +64,7 @@
       "columns": {
         "index_uid": {
           "name": "index_uid",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },

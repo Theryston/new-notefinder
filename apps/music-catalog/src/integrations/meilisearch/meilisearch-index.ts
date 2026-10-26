@@ -132,19 +132,20 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
   }
 
   /**
-   * Whether the index holds a document with this primary key. The reimport
-   * asks it about the parallel copy's documents before swapping: when a
-   * restarted flip finds them already here, the swap ran and only the flip
-   * record and the cleanup are left, so replaying the swap (which would swap
-   * back) is skipped.
+   * Whether the index holds a document with this primary key. Reimport
+   * recovery reads a generation marker to tell whether the atomic swap ran.
    */
   async hasDocument(id: string): Promise<boolean> {
+    return (await this.getDocument(id)) !== undefined;
+  }
+
+  /** Reads a document by its primary key, or returns undefined when absent. */
+  async getDocument(id: string): Promise<TDocument | undefined> {
     try {
-      await this.client.index(this.uid).getDocument(id);
-      return true;
+      return await this.client.index<TDocument>(this.uid).getDocument(id);
     } catch (error) {
       if (isIndexNotFound(error) || isDocumentNotFound(error)) {
-        return false;
+        return undefined;
       }
       throw error;
     }

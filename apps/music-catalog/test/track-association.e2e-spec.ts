@@ -1,15 +1,10 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { inject } from 'vitest';
-import { withCatalogWriteLock } from '../src/database/catalog-write-lock.js';
 import { indexingCheckpoint } from '../src/database/schema/indexing-checkpoint.js';
-import { createMeilisearchIndex } from '../src/integrations/meilisearch/meilisearch-index.js';
-import {
-  RECORDINGS_INDEX,
-  type RecordingDocument,
-} from '../src/lib/recordings-index.js';
-import { RecordingDocumentRepository } from '../src/modules/recording/recording-document.repository.js';
-import { RecordingDocumentService } from '../src/modules/recording/recording-document.service.js';
+import { MeilisearchIndex } from '../src/integrations/meilisearch/meilisearch-index.js';
+import { RECORDINGS_INDEX } from '../src/lib/recordings-index.js';
 import { useTestServer } from './utils/create-test-server.js';
+import { waitForCatalogWriteLockWaiter } from './utils/database.js';
 import { meilisearchRequest } from './utils/meilisearch-http.js';
 import { addArtist, addRecording, mbid } from './utils/musicbrainz.js';
 import { requestSearch } from './utils/search-client.js';
@@ -112,6 +107,75 @@ describe('Track association projection (e2e)', () => {
     });
   });
 
+  it('scans past a lower pending MBID for a missing Recording at batch size one', async () => {
+    const artist = await addArtist(server().db, { name: 'Batch Band' });
+    const recording = await addRecording(server().db, {
+      mbid: mbid(511),
+      name: 'Batch Song',
+      artists: [{ artist }],
+    });
+    await indexCatalog(server());
+    await requestTrackAssociation(client(), {
+      mbid: mbid(510),
+      trackId: TRACK_A,
+    });
+    await requestTrackAssociation(client(), {
+      mbid: recording.mbid,
+      trackId: TRACK_B,
+    });
+
+    await createTestWorker(server(), {
+      env: { INDEXING_BATCH_SIZE: '1' },
+    }).tick();
+
+    await expect(
+      requestSearch(client(), { query: 'Batch Song' }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { results: [{ mbid: recording.mbid, trackId: TRACK_B }] },
+    });
+    const missingDocument = await meilisearchRequest(
+      inject('meilisearch'),
+      'GET',
+      `/indexes/recordings/documents/${mbid(510)}`,
+    );
+    expect(missingDocument.status).toBe(404);
+  });
+
+  it('retries an acknowledged association after a Meilisearch write failure and worker restart', async () => {
+    const artist = await addArtist(server().db, { name: 'Retry Band' });
+    const recording = await addRecording(server().db, {
+      mbid: mbid(512),
+      name: 'Retry Song',
+      artists: [{ artist }],
+    });
+    await indexCatalog(server());
+    await requestTrackAssociation(client(), {
+      mbid: recording.mbid,
+      trackId: TRACK_A,
+    });
+
+    const failedWorker = createTestWorker(server(), {
+      env: { MEILISEARCH_WRITE_API_KEY: 'invalid-worker-key' },
+    });
+    await expect(failedWorker.tick()).rejects.toThrow();
+    await expect(
+      requestSearch(client(), { query: 'Retry Song' }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { results: [{ mbid: recording.mbid, trackId: null }] },
+    });
+
+    await createTestWorker(server()).tick();
+
+    await expect(
+      requestSearch(client(), { query: 'Retry Song' }),
+    ).resolves.toMatchObject({
+      ok: true,
+      result: { results: [{ mbid: recording.mbid, trackId: TRACK_A }] },
+    });
+  });
+
   it('orders a stale metadata replacement before a concurrent association and retries the complete document', async () => {
     const artist = await addArtist(server().db, { name: 'Race Band' });
     const recording = await addRecording(server().db, {
@@ -120,43 +184,49 @@ describe('Track association projection (e2e)', () => {
       artists: [{ artist }],
     });
     await indexCatalog(server());
-    const documents = new RecordingDocumentService(
-      new RecordingDocumentRepository(server().db),
-    );
     const meilisearch = inject('meilisearch');
-    const index = createMeilisearchIndex<RecordingDocument>({
-      url: meilisearch.url,
-      apiKey: meilisearch.writeKey,
-      ...RECORDINGS_INDEX,
-    });
+    await server().db.execute(sql`
+      update musicbrainz.recording
+      set name = 'Race Song Updated'
+      where gid = ${recording.mbid}
+    `);
     let releaseWrite: () => void = () => undefined;
-    let snapshotReady: () => void = () => undefined;
+    let metadataWriteReady: () => void = () => undefined;
     const release = new Promise<void>((resolve) => {
       releaseWrite = resolve;
     });
-    const snapshotted = new Promise<void>((resolve) => {
-      snapshotReady = resolve;
+    const metadataWrite = new Promise<void>((resolve) => {
+      metadataWriteReady = resolve;
     });
-    const staleReplacement = withCatalogWriteLock(server().db, async () => {
-      const [snapshot] = await documents.findDocumentsByIds([recording.id]);
-      if (snapshot === undefined) {
-        throw new Error('The Recording snapshot was missing.');
+    const originalUpsert = MeilisearchIndex.prototype.upsert;
+    const upsert = vi.spyOn(MeilisearchIndex.prototype, 'upsert');
+    upsert.mockImplementation(async function <
+      Document extends Record<string, unknown>,
+    >(this: MeilisearchIndex<Document>, documents: Document[]) {
+      if (documents.some((document) => document.mbid === recording.mbid)) {
+        metadataWriteReady();
+        await release;
       }
-      snapshotReady();
-      await release;
-      await index.upsert([snapshot.document]);
+      await originalUpsert.call(this, documents);
     });
-    await snapshotted;
-    const delivery = requestTrackAssociation(client(), {
-      mbid: recording.mbid,
-      trackId: TRACK_A,
-    });
-    releaseWrite();
-    await Promise.all([staleReplacement, delivery]);
-    await createTestWorker(server()).tick();
+    try {
+      const workerTick = createTestWorker(server()).tick();
+      await metadataWrite;
+      const delivery = client().request(
+        'associateTrack',
+        { mbid: recording.mbid, trackId: TRACK_A },
+        'metadata-association-race',
+      );
+      await waitForCatalogWriteLockWaiter(server().db);
+      releaseWrite();
+      await Promise.all([workerTick, delivery]);
+    } finally {
+      releaseWrite();
+      upsert.mockRestore();
+    }
 
     await expect(
-      requestSearch(client(), { query: 'Race Song' }),
+      requestSearch(client(), { query: 'Race Song Updated' }),
     ).resolves.toMatchObject({
       ok: true,
       result: { results: [{ mbid: recording.mbid, trackId: TRACK_A }] },
@@ -166,7 +236,11 @@ describe('Track association projection (e2e)', () => {
       'GET',
       `/indexes/recordings/documents/${recording.mbid}`,
     );
-    expect(indexed.json).toMatchObject({ trackId: TRACK_A });
+    expect(indexed.json).toMatchObject({
+      trackId: TRACK_A,
+      title: 'Race Song Updated',
+      artistCredit: 'Race Band',
+    });
   });
 
   it('keeps the Track ID through a full index reconstruction', async () => {

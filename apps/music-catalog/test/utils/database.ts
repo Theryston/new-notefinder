@@ -27,6 +27,24 @@ export const resetDatabase = async (db: Database): Promise<void> => {
   }
 };
 
+/** Waits until another transaction is queued on the catalog write fence. */
+export const waitForCatalogWriteLockWaiter = async (
+  db: Database,
+): Promise<void> => {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const result = await db.execute<{ waiting: boolean }>(sql`
+      select exists (
+        select 1 from pg_locks
+        where locktype = 'advisory' and not granted
+      ) as "waiting"
+    `);
+    if (result.rows[0]?.waiting) return;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error('No transaction queued on the catalog write fence.');
+};
+
 /** Writes the row the import keeps, as it would at each step of it. */
 export const setBootstrapState = async (
   db: Database,

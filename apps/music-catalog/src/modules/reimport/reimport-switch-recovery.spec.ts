@@ -10,36 +10,20 @@ const silentLogger: Logger = {
   error: () => undefined,
 };
 
-// The same fakes as reimport-switch.service.spec.ts (left untouched), with
-// the recovery seams on top: the single-task swap, the flip-record check and
-// the sampled probe. Only the recovery plays here; the plain flip keeps its
-// own spec.
 const setup = (
-  options: {
-    alreadySwitched?: boolean;
-    heldDocuments?: string[];
-    probe?: string[];
-    swapBothFails?: boolean;
-  } = {},
+  options: { alreadySwitched?: boolean; servingGeneration?: string } = {},
 ) => {
   const calls: string[] = [];
-  const held = new Set(options.heldDocuments ?? []);
-  const switchIndex = (name: string) => ({
-    swapWith: vi.fn(async (uid: string) => {
-      calls.push(`${name}.swapWith(${uid})`);
-    }),
-    hasDocument: vi.fn(async (id: string) => held.has(id)),
-    deleteIndex: vi.fn(async () => {
+  const deleteIndex = (name: string) =>
+    vi.fn(async () => {
       calls.push(`${name}.deleteIndex`);
-    }),
+    });
+  const servingGeneration = vi.fn(
+    async () => options.servingGeneration ?? 'old-database-oid',
+  );
+  const swapBoth = vi.fn(async () => {
+    calls.push('swapPairs(recordings+generation)');
   });
-  const nextIndex = switchIndex('recordings_next');
-  const swapBoth =
-    options.swapBothFails === true
-      ? undefined
-      : vi.fn(async () => {
-          calls.push('swapPairs(recordings)');
-        });
   const deps: ReimportSwitchDeps = {
     servingOutbox: {
       clearAll: vi.fn(async () => {
@@ -63,104 +47,86 @@ const setup = (
         calls.push('sequences.clearStall');
       }),
     },
-    servingIndex: switchIndex('recordings'),
-    nextIndex,
+    nextIndex: { deleteIndex: deleteIndex('recordings_next') },
+    generation: {
+      serving: servingGeneration,
+      next: async () => 'new-database-oid',
+      deleteNext: deleteIndex('recordings_generation_next'),
+    },
     nextUrl: 'postgres://host/next',
     oldDatabaseName: undefined,
     cleanupOldCopy: false,
     swapBoth,
     alreadySwitched: vi.fn(async () => options.alreadySwitched ?? false),
-    swapProbe: vi.fn(async () => options.probe ?? []),
     logger: silentLogger,
   };
-  const service = new ReimportSwitchService(deps);
-  return { service, deps, calls, swapBoth };
+  return {
+    service: new ReimportSwitchService(deps),
+    deps,
+    calls,
+    swapBoth,
+    servingGeneration,
+  };
 };
 
 describe('ReimportSwitchService recovery', () => {
-  it('swaps the index pair in one task on the first flip', async () => {
+  it('swaps recordings and generation markers in one task on the first flip', async () => {
     const { service, deps, calls, swapBoth } = setup();
 
     await service.switchToCopy();
 
-    expect(swapBoth).toHaveBeenCalledTimes(1);
-    expect(deps.servingIndex.swapWith).not.toHaveBeenCalled();
+    expect(swapBoth).toHaveBeenCalledOnce();
     expect(calls).toEqual([
       'outbox.clearAll',
-      'swapPairs(recordings)',
+      'swapPairs(recordings+generation)',
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
+      'recordings_generation_next.deleteIndex',
     ]);
+    expect(deps.nextIndex.deleteIndex).toHaveBeenCalledOnce();
   });
 
   it('completes the flip without swapping back when already switched', async () => {
-    const { service, deps, calls, swapBoth } = setup({
+    const { service, deps, calls, swapBoth, servingGeneration } = setup({
       alreadySwitched: true,
+      servingGeneration: 'new-database-oid',
     });
 
     await service.switchToCopy();
 
     expect(swapBoth).not.toHaveBeenCalled();
+    expect(servingGeneration).not.toHaveBeenCalled();
     expect(deps.servingOutbox.clearAll).not.toHaveBeenCalled();
     expect(calls).toEqual([
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
+      'recordings_generation_next.deleteIndex',
     ]);
   });
 
-  it('skips the swap when the probe proves it already ran', async () => {
+  it('skips the swap when the exact next database marker proves it ran', async () => {
     const { service, calls, swapBoth } = setup({
-      alreadySwitched: false,
-      heldDocuments: ['new-mbid-1', 'new-mbid-2'],
-      probe: ['new-mbid-1', 'new-mbid-2'],
+      servingGeneration: 'new-database-oid',
     });
 
     await service.switchToCopy();
 
     expect(swapBoth).not.toHaveBeenCalled();
-    expect(calls[0]).toBe('outbox.clearAll');
+    expect(calls).toContain('outbox.clearAll');
     expect(calls).toContain('serving.markSwitched(postgres://host/next)');
   });
 
-  it('swaps when the probe misses a sampled document', async () => {
+  it('swaps when the active marker identifies the old database', async () => {
     const { service, swapBoth } = setup({
-      alreadySwitched: false,
-      heldDocuments: ['new-mbid-1'],
-      probe: ['new-mbid-1', 'new-mbid-2'],
+      servingGeneration: 'old-database-oid',
     });
 
     await service.switchToCopy();
 
-    expect(swapBoth).toHaveBeenCalledTimes(1);
-  });
-
-  it('swaps when no probe or document check is wired', async () => {
-    const { service, deps, swapBoth } = setup();
-    delete deps.swapProbe;
-    delete deps.servingIndex.hasDocument;
-
-    await service.switchToCopy();
-
-    expect(swapBoth).toHaveBeenCalledTimes(1);
-  });
-
-  it('falls back to the plain swap without the single task', async () => {
-    const { service, deps, calls } = setup({ swapBothFails: true });
-    delete deps.swapBoth;
-
-    await service.switchToCopy();
-
-    expect(calls).toEqual([
-      'outbox.clearAll',
-      'recordings.swapWith(recordings_next)',
-      'serving.markSwitched(postgres://host/next)',
-      'next.markSwitched(postgres://host/next)',
-      'sequences.clearStall',
-      'recordings_next.deleteIndex',
-    ]);
+    expect(swapBoth).toHaveBeenCalledOnce();
   });
 });

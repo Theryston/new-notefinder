@@ -6,7 +6,7 @@ import type {
   CurrentDocument,
   RecordingDocumentService,
 } from '../recording/recording-document.service.js';
-import type { TrackAssociationRepository } from '../track-association/track-association.repository.js';
+import type { TrackAssociationService } from '../track-association/track-association.service.js';
 import type { RecordingOutboxRepository } from './recording-outbox.repository.js';
 import { SyncService } from './sync.service.js';
 import type { OutboxEntry } from './sync-plan.js';
@@ -76,7 +76,9 @@ const setup = (
     deleteDocuments: vi.fn(async () => undefined),
   };
   const associations = {
-    peekPending: vi.fn(async () => options.associationPending ?? []),
+    peekPending: vi.fn(async (_limit: number, afterMbid?: string) =>
+      afterMbid === undefined ? (options.associationPending ?? []) : [],
+    ),
     markIndexed: vi.fn(async () => undefined),
   };
   const service = new SyncService({
@@ -85,7 +87,7 @@ const setup = (
     documents: documents as unknown as RecordingDocumentService,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
     batchSize: 100,
-    associations: associations as unknown as TrackAssociationRepository,
+    associations: associations as unknown as TrackAssociationService,
     logger: silentLogger,
   });
   return { service, bootstrap, outbox, documents, index, associations };

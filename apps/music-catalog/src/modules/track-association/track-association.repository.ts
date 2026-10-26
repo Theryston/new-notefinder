@@ -23,7 +23,9 @@ export class TrackAssociationRepository {
 
   /** Acknowledges only after each live copy has durably stored retry work. */
   async put(association: TrackAssociation): Promise<boolean> {
-    return withCatalogWriteLock(this.getServing(), async (transaction) => {
+    const serving = this.getServing();
+    const servingUrl = this.getServingUrl();
+    return withCatalogWriteLock(serving, async (transaction) => {
       const [state] = await transaction
         .select({ phase: reimportState.phase, detail: reimportState.detail })
         .from(reimportState)
@@ -34,12 +36,12 @@ export class TrackAssociationRepository {
       }
       const shouldMirror =
         this.nextCopy !== undefined &&
-        this.nextCopy.url !== this.getServingUrl() &&
+        this.nextCopy.url !== servingUrl &&
         (state?.phase === 'restoring' || state?.phase === 'indexing');
       const staleCopy =
         state?.phase === 'switched' &&
         state.detail !== null &&
-        state.detail !== this.getServingUrl();
+        state.detail !== servingUrl;
       if (state?.phase === 'switching' || staleCopy) {
         return 'switching' as const;
       }
@@ -56,11 +58,18 @@ export class TrackAssociationRepository {
     }).then((outcome) => outcome === 'accepted');
   }
 
-  async peekPending(limit: number): Promise<string[]> {
+  async peekPending(limit: number, afterMbid?: string): Promise<string[]> {
     const rows = await this.getServing()
       .select({ mbid: trackAssociation.recordingMbid })
       .from(trackAssociation)
-      .where(eq(trackAssociation.pending, true))
+      .where(
+        afterMbid === undefined
+          ? eq(trackAssociation.pending, true)
+          : and(
+              eq(trackAssociation.pending, true),
+              gt(trackAssociation.recordingMbid, afterMbid),
+            ),
+      )
       .orderBy(asc(trackAssociation.recordingMbid))
       .limit(limit);
     return rows.map((row) => row.mbid);

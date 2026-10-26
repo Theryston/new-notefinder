@@ -15,6 +15,7 @@ import { RecordingDocumentService } from '../modules/recording/recording-documen
 import { RecordingOutboxRepository } from '../modules/sync/recording-outbox.repository.js';
 import { SyncService } from '../modules/sync/sync.service.js';
 import { TrackAssociationRepository } from '../modules/track-association/track-association.repository.js';
+import { TrackAssociationService } from '../modules/track-association/track-association.service.js';
 
 export type ServingIndexingOptions = {
   bootstrap: BootstrapService;
@@ -73,7 +74,9 @@ export const buildServingIndexing = (
       index,
       batchSize: options.batchSize,
       logger,
-      associations: new TrackAssociationRepository(dbSource),
+      associations: new TrackAssociationService(
+        new TrackAssociationRepository(dbSource),
+      ),
       writeLock,
     }),
   };

@@ -746,7 +746,8 @@ downtime and with a single human step (issue #69):
    server, migrated like the serving one) while the current copy keeps serving.
    Then the worker reinstalls the change triggers there, indexes into the
    `recordings_next` index and flips over: one atomic Meilisearch `swap-indexes`
-   task for the index pair, and the reads for the database (every repository
+   task moves the recording and private database-generation marker pairs
+   together, and the reads for the database (every repository
    resolves a reference the flip swaps, so in-flight requests finish on the old
    copy). The retired copy's indexes are deleted; its database is dropped unless
    `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection until the
@@ -758,9 +759,9 @@ downtime and with a single human step (issue #69):
    (`restoring` → `indexing` → `switching`). A reimport interrupted by a
    crash or restart resumes on the parallel copy (the restore redoes from a
    clean state, indexing resumes after its checkpoint, the flip replays
-   forward: a rerun that finds the flip record, or the swapped documents
-   without it, completes the flip instead of swapping back, then every
-   restarted process opens the new copy).
+   forward: a rerun that finds the flip record or the exact database OID in
+   the active generation marker completes the flip instead of swapping back,
+   then every restarted process opens the new copy).
 
 - **Disk.** About twice the steady state during a reimport (the parallel
   database plus the `*_next` indexes next to the serving ones), back to
@@ -833,14 +834,14 @@ downtime and with a single human step (issue #69):
   serving the old copy. With `REIMPORT_CLEANUP_OLD_COPY=false` the retired
   database is kept for inspection instead: the flip record survives in the
   new copy, so restarts keep opening it.
-- **Crash windows.** The index swap is one Meilisearch task, so there is no
-  half-swapped catalog. The residual window is the flip record right after
-  it: a crash there replays the flip, finds the swapped documents through a
-  sample of the parallel copy's ids (hundreds, so a differing copy is missed
-  only by extreme bad luck; an identical copy is harmless either way) and
-  completes forward instead of swapping back. If a flip ever looks wrong,
-  compare the serving index counts with the serving database before dropping
-  anything: `recordings` must hold the new copy's documents.
+- **Crash windows.** The recording indexes and private database-generation
+  marker indexes move in one Meilisearch task, so there is no half-swapped
+  catalog. The marker stores PostgreSQL's database OID, not a connection URL.
+  If a crash happens after the task but before the flip record, a rerun sees
+  the target database OID in the active marker and completes forward. The
+  marker index is not exposed to search and its retired `*_next` copy is
+  deleted with the retired recording index. If either marker is missing or
+  names neither expected database, the worker stops instead of guessing.
 - **Greppable logs.** Until the bump, the container crash-loops on mbslave's
   own schema-mismatch message (`mbslave output`, then `Replication failed,
   the next start resumes it`) while `status` carries the stall. The reimport

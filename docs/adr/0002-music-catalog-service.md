@@ -153,3 +153,11 @@ deliveries receive the retryable `REIMPORT_SWITCHING` error; after adoption,
 the new copy accepts them. This keeps Track identity API-owned while the
 projection survives reimport and retired-database cleanup. MusicBrainz merge
 redirects do not move or choose associations between MBIDs.
+
+Pending association indexing scans keyset pages rather than stopping when a
+page contains only MBIDs whose Recording rows are not present yet; those rows
+stay pending and remain recoverable when a later metadata index pass creates
+the complete document. Reimport recovery swaps a private generation-marker
+index pair atomically with the Recording pair. The marker carries the
+PostgreSQL database OID, so a restart can tell exactly whether the target copy
+is active even when old and new catalogs share the same first Recording IDs.

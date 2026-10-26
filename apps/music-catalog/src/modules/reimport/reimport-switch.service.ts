@@ -1,4 +1,3 @@
-import { RECORDINGS_NEXT_INDEX } from '../../lib/recordings-index.js';
 import type { Logger } from '../../logger.js';
 
 /** The outbox of the copy being retired: its entries die with it. */
@@ -17,12 +16,18 @@ type SwitchSequences = {
   clearStall: () => Promise<void>;
 };
 
-/** One side of the atomic index swap. */
+/** An index retired after the atomic swap. */
 export type SwitchIndex = {
-  swapWith: (otherUid: string) => Promise<void>;
-  /** Absent in older fakes: then the swap always runs (see below). */
-  hasDocument?: (id: string) => Promise<boolean>;
   deleteIndex: () => Promise<void>;
+};
+
+type SwitchGeneration = {
+  /** The database identity held by the active generation marker. */
+  serving: () => Promise<string>;
+  /** The database identity expected after this copy is active. */
+  next: () => Promise<string>;
+  /** The swapped-out marker index, removed with the retired catalog index. */
+  deleteNext: () => Promise<void>;
 };
 
 export type ReimportSwitchDeps = {
@@ -30,20 +35,16 @@ export type ReimportSwitchDeps = {
   servingState: SwitchState;
   nextState: SwitchState;
   sequences: SwitchSequences;
-  servingIndex: SwitchIndex;
   nextIndex: SwitchIndex;
+  generation: SwitchGeneration;
   /** The parallel database URL the reads flip to. */
   nextUrl: string;
   /** The retired database, dropped when cleaning up. */
   oldDatabaseName: string | undefined;
   /** Drop the retired database; otherwise it is kept for inspection. */
   cleanupOldCopy: boolean;
-  /**
-   * Swaps the index pairs in one Meilisearch task (see `swapPairs`):
-   * without it the flip falls back to a plain swap of the recordings pair.
-   * Absent in older callers; the wiring always provides it.
-   */
-  swapBoth?: () => Promise<void>;
+  /** Swaps recordings and generation marker pairs in one Meilisearch task. */
+  swapBoth: () => Promise<void>;
   /**
    * Whether the flip record already points at the parallel copy. A rerun
    * that finds it skips the outbox clear and the swaps (replaying the swap
@@ -51,24 +52,15 @@ export type ReimportSwitchDeps = {
    * cleanup instead. Absent in older callers; the wiring always provides it.
    */
   alreadySwitched?: () => Promise<boolean>;
-  /**
-   * A sample of the parallel copy's document ids. When the flip record is
-   * missing but every sampled id is already in the serving index, the swap
-   * ran and the process died before recording it: the swaps are skipped the
-   * same way. Empty or absent (older callers): the swap always runs.
-   */
-  swapProbe?: () => Promise<string[]>;
   logger: Logger;
 };
 
 /**
  * Flips the serving copy to the parallel one. Every step only makes sense
  * once: a process restarted mid-flip replays it, skipping what already
- * happened (the flip record, then the sampled probe) instead of swapping
- * back, so the rerun completes the flip. The swap itself is one atomic
- * Meilisearch task; the residual crash window is the flip record right
- * after it (see the runbook), where a rerun finds the sampled documents and
- * still completes forward.
+ * happened (the flip record, then the generation marker) instead of
+ * swapping back. The marker and recordings move in one atomic Meilisearch
+ * task, so overlapping Recording IDs cannot confuse recovery.
  */
 export class ReimportSwitchService {
   constructor(private readonly deps: ReimportSwitchDeps) {}
@@ -94,34 +86,21 @@ export class ReimportSwitchService {
     await this.deps.sequences.clearStall();
     // After the swap the `*_next` indexes hold the retired copy.
     await this.deps.nextIndex.deleteIndex();
+    await this.deps.generation.deleteNext();
     await this.dropRetiredDatabase();
   }
 
-  // True when the serving index already holds every sampled document of the
-  // parallel copy: the swap ran. A sample cannot prove it exactly (an
-  // identical copy is indistinguishable and harmless either way), but with
-  // hundreds of ids a differing copy is missed only by extreme bad luck;
-  // the runbook's count check catches even that.
+  // The marker pair is swapped atomically with the catalog pair, so its
+  // database OID proves the exact swap outcome even when catalog IDs overlap.
   private async swapAlreadyRan(): Promise<boolean> {
-    const probe = (await this.deps.swapProbe?.()) ?? [];
-    if (probe.length === 0) {
-      return false;
-    }
-    for (const id of probe) {
-      if (!((await this.deps.servingIndex.hasDocument?.(id)) ?? false)) {
-        return false;
-      }
-    }
-    return true;
+    return (
+      (await this.deps.generation.serving()) ===
+      (await this.deps.generation.next())
+    );
   }
 
   private async swapIndexes(): Promise<void> {
-    const both = this.deps.swapBoth;
-    if (both !== undefined) {
-      await both();
-      return;
-    }
-    await this.deps.servingIndex.swapWith(RECORDINGS_NEXT_INDEX.uid);
+    await this.deps.swapBoth();
   }
 
   private async dropRetiredDatabase(): Promise<void> {

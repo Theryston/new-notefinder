@@ -6,7 +6,7 @@ import type {
   CurrentDocument,
   RecordingDocumentService,
 } from '../recording/recording-document.service.js';
-import type { TrackAssociationRepository } from '../track-association/track-association.repository.js';
+import type { TrackAssociationService } from '../track-association/track-association.service.js';
 import type { RecordingOutboxRepository } from './recording-outbox.repository.js';
 import { type OutboxEntry, planSync } from './sync-plan.js';
 
@@ -19,7 +19,7 @@ export type SyncServiceDeps = {
   /** How many outbox entries one batch rebuilds. */
   batchSize: number;
   logger: Logger;
-  associations?: TrackAssociationRepository;
+  associations?: TrackAssociationService;
   /** Serializes complete-document replacement with Track association writes. */
   writeLock?: <Result>(run: () => Promise<Result>) => Promise<Result>;
 };
@@ -103,9 +103,9 @@ export class SyncService {
   private async drainPendingAssociations(limit: number): Promise<void> {
     const { associations, documents, index, writeLock } = this.deps;
     if (associations === undefined) return;
-    const processBatch = async (): Promise<number> => {
-      const mbids = await associations.peekPending(limit);
-      if (mbids.length === 0) return 0;
+    let afterMbid: string | undefined;
+    const processBatch = async (): Promise<string[]> => {
+      const mbids = await associations.peekPending(limit, afterMbid);
       const ids = await documents.findIdsByMbids(mbids);
       const current = await documents.findDocumentsByIds(ids);
       if (current.length > 0) {
@@ -114,11 +114,13 @@ export class SyncService {
           current.map((recording) => recording.mbid),
         );
       }
-      return current.length;
+      return mbids;
     };
     while (true) {
-      const processed = await (writeLock?.(processBatch) ?? processBatch());
-      if (processed === 0 || processed < limit) return;
+      const mbids = await (writeLock?.(processBatch) ?? processBatch());
+      if (mbids.length === 0) return;
+      afterMbid = mbids.at(-1);
+      if (mbids.length < limit) return;
     }
   }
 }

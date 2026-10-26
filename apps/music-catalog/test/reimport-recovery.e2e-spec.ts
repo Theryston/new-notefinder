@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { inject } from 'vitest';
+import type { Database } from '../src/database/database.js';
 import { MbslaveClient } from '../src/integrations/mbslave/mbslave-client.js';
 import {
   createMeilisearchIndex,
@@ -10,10 +11,14 @@ import {
   RECORDINGS_NEXT_INDEX,
   type RecordingDocument,
 } from '../src/lib/recordings-index.js';
+import {
+  REIMPORT_GENERATION_INDEX,
+  REIMPORT_GENERATION_NEXT_INDEX,
+  type ReimportGenerationDocument,
+} from '../src/lib/reimport-generation-index.js';
 import { BootstrapRepository } from '../src/modules/bootstrap/bootstrap.repository.js';
 import { BootstrapService } from '../src/modules/bootstrap/bootstrap.service.js';
 import { RestoreService } from '../src/modules/bootstrap/restore.service.js';
-import { RecordingDocumentRepository } from '../src/modules/recording/recording-document.repository.js';
 import { ReimportRestoreService } from '../src/modules/reimport/reimport-restore.service.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import {
@@ -58,8 +63,8 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
   const { statusResult, searchMbids, serveCatalog, restoreParallel } =
     useReimportFlow({ server, client, parallel, dumps });
 
-  // The flip below, wired like the worker does (single-task swap, flip
-  // record, probe), against the real databases and the real Meilisearch.
+  // The flip below, wired like the worker does (single-task swap, exact
+  // generation marker, flip record), against the real databases and Meili.
   // The retired database is never dropped here: the shared e2e database
   // serves these suites, and the default cleanup has its own suite.
   const flipWith = (fail: { deletes?: boolean; marks?: boolean } = {}) => {
@@ -74,14 +79,24 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
       apiKey: meilisearch.writeKey,
       ...RECORDINGS_NEXT_INDEX,
     });
+    const servingGenerationIndex =
+      createMeilisearchIndex<ReimportGenerationDocument>({
+        url: meilisearch.url,
+        apiKey: meilisearch.writeKey,
+        ...REIMPORT_GENERATION_INDEX,
+      });
+    const nextGenerationIndex =
+      createMeilisearchIndex<ReimportGenerationDocument>({
+        url: meilisearch.url,
+        apiKey: meilisearch.writeKey,
+        ...REIMPORT_GENERATION_NEXT_INDEX,
+      });
     const delegate = (
       index: MeilisearchIndex<RecordingDocument>,
       failDelete: boolean,
     ): SwitchIndex => {
       let deleteFailed = false;
       return {
-        swapWith: (uid: string) => index.swapWith(uid),
-        hasDocument: (id: string) => index.hasDocument(id),
         deleteIndex: async () => {
           if (failDelete && fail.deletes === true && !deleteFailed) {
             deleteFailed = true;
@@ -105,8 +120,18 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
           : new ReimportStateRepository(server().db),
       nextState: new ReimportStateRepository(parallel().db),
       sequences: new ReplicationRepository(server().db),
-      servingIndex: delegate(recordingIndex, false),
       nextIndex: delegate(nextRecordingIndex, true),
+      generation: {
+        serving: async () => {
+          const marker = await servingGenerationIndex.getDocument('catalog');
+          if (marker === undefined) {
+            throw new Error('The serving generation marker was missing.');
+          }
+          return marker.databaseOid;
+        },
+        next: () => databaseOid(parallel().db),
+        deleteNext: () => nextGenerationIndex.deleteIndex(),
+      },
       nextUrl: parallel().url,
       oldDatabaseName: undefined,
       cleanupOldCopy: true,
@@ -117,16 +142,16 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
             servingUid: RECORDINGS_INDEX.uid,
             nextUid: RECORDINGS_NEXT_INDEX.uid,
           },
+          {
+            servingUid: REIMPORT_GENERATION_INDEX.uid,
+            nextUid: REIMPORT_GENERATION_NEXT_INDEX.uid,
+          },
         ]);
       },
       alreadySwitched: async () => {
         const state = await new ReimportStateRepository(server().db).get();
         return state?.phase === 'switched' && state.detail === parallel().url;
       },
-      swapProbe: async () =>
-        (
-          await new RecordingDocumentRepository(parallel().db).findBatch(0, 200)
-        ).map((row) => row.mbid),
       logger: testLogger,
     });
     return { run: () => service.switchToCopy(), swaps: () => swaps };
@@ -282,8 +307,8 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     const crashed = flipWith({ marks: true });
     await expect(crashed.run()).rejects.toThrow('container lost mid-flip');
 
-    // The rerun finds the swapped documents through the probe and completes
-    // the flip instead of swapping back: the single swap ran exactly once.
+    // The rerun finds the target database OID in the active marker and
+    // completes the flip instead of swapping back: the swap ran exactly once.
     const rerun = flipWith();
     await rerun.run();
     expect(crashed.swaps() + rerun.swaps()).toBe(1);
@@ -307,3 +332,16 @@ describe('yearly schema change: recovering an interrupted reimport (e2e)', {
     });
   });
 });
+
+const databaseOid = async (db: Database): Promise<string> => {
+  const result = await db.execute<{ databaseOid: string }>(sql`
+    select oid::text as "databaseOid"
+    from pg_database
+    where datname = current_database()
+  `);
+  const row = result.rows[0];
+  if (row === undefined) {
+    throw new Error('Database identity was missing.');
+  }
+  return row.databaseOid;
+};

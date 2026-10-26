@@ -9,10 +9,15 @@ import {
 } from '../src/create-server.js';
 import type { Database } from '../src/database/database.js';
 import { createDatabase, createPool } from '../src/database/database.js';
+import {
+  REIMPORT_GENERATION_INDEX,
+  REIMPORT_GENERATION_NEXT_INDEX,
+} from '../src/lib/reimport-generation-index.js';
 import { readReimportStateOf } from '../src/modules/reimport/read-reimport-state.js';
 import { ReimportStateRepository } from '../src/modules/reimport/reimport-state.repository.js';
 import { resolveServingDatabaseUrl } from '../src/modules/reimport/resolve-serving-url.js';
 import { TrackAssociationRepository } from '../src/modules/track-association/track-association.repository.js';
+import { TrackAssociationService } from '../src/modules/track-association/track-association.service.js';
 import { applyMusicBrainzSchema } from './setup/musicbrainz-schema.js';
 import { API_KEY, testLogger } from './utils/create-test-server.js';
 import { setBootstrapState, setReplicationControl } from './utils/database.js';
@@ -120,6 +125,16 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     const meilisearch = inject('meilisearch');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings_next');
+    void meilisearchRequest(
+      meilisearch,
+      'DELETE',
+      `/indexes/${REIMPORT_GENERATION_INDEX.uid}`,
+    );
+    void meilisearchRequest(
+      meilisearch,
+      'DELETE',
+      `/indexes/${REIMPORT_GENERATION_NEXT_INDEX.uid}`,
+    );
   });
 
   // A server booted like `server.ts`: the flip record (or its absence)
@@ -290,7 +305,9 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
       next,
       dumpsUrl: dumps().url,
       seed: seedNewDump,
-      associations: new TrackAssociationRepository(serving, serveUrl),
+      associations: new TrackAssociationService(
+        new TrackAssociationRepository(serving, serveUrl),
+      ),
     });
     await requestTrackAssociation(server.client, {
       mbid: mbid(903),
