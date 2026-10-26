@@ -5,7 +5,7 @@ import type { ReimportState } from './modules/reimport/reimport-state.repository
 
 export type CutoverWatcherOptions = {
   /** The flip record, read from whichever copy this process serves. */
-  readState: () => Promise<ReimportState | undefined>;
+  readState: (queryTimeoutMs?: number) => Promise<ReimportState | undefined>;
   /** Opens the database the flip points at. */
   openDatabase: (url: string) => Database;
   /** Points this process's reads at the opened database. */
@@ -25,12 +25,19 @@ export const createCutoverWatcher = (
 ): CutoverWatcher => {
   let adopted = false;
   return {
-    adoptIfSwitched: async (): Promise<void> => {
+    adoptIfSwitched: async (
+      queryTimeoutMs,
+      shouldContinue = () => true,
+    ): Promise<void> => {
       if (adopted) {
         return;
       }
-      const switched = await options.readState();
-      if (switched?.phase === 'switched' && switched.detail) {
+      const switched = await options.readState(queryTimeoutMs);
+      if (
+        shouldContinue() &&
+        switched?.phase === 'switched' &&
+        switched.detail
+      ) {
         options.adopt(options.openDatabase(switched.detail));
         adopted = true;
         options.logger.info('Adopted the reimported copy');

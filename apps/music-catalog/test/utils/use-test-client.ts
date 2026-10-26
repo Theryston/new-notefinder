@@ -12,6 +12,8 @@ export const useTestClient = (server: () => TestServer): (() => TestClient) => {
 
   beforeEach(async () => {
     await resetDatabase(server().db);
+    await server().restart?.();
+    await server().waitForSearchPhase('restoring');
     client = await connect(server().url, API_KEY);
   });
 

@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import { bootstrapState } from '../../database/schema/bootstrap-state.js';
+import { withStatementTimeout } from '../../database/with-statement-timeout.js';
 
 export type BootstrapState = {
   phase: BootstrapPhase;
@@ -30,15 +31,20 @@ export class BootstrapRepository {
   }
 
   /** The recorded state, or undefined until the import writes it. */
-  async getState(): Promise<BootstrapState | undefined> {
-    const [state] = await this.getDb()
-      .select({
-        phase: bootstrapState.phase,
-        dataset: bootstrapState.dataset,
-      })
-      .from(bootstrapState)
-      .limit(1);
-    return state;
+  async getState(timeoutMs?: number): Promise<BootstrapState | undefined> {
+    const read = async (db: Database) => {
+      const [state] = await db
+        .select({
+          phase: bootstrapState.phase,
+          dataset: bootstrapState.dataset,
+        })
+        .from(bootstrapState)
+        .limit(1);
+      return state;
+    };
+    return timeoutMs === undefined
+      ? read(this.getDb())
+      : withStatementTimeout(this.getDb(), timeoutMs, read);
   }
 
   /**

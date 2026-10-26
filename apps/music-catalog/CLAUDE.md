@@ -286,11 +286,23 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
 - **Request timeout**: a request still unanswered after `REQUEST_TIMEOUT_MS`
   gets `INTERNAL` ("Request timed out"). The handler keeps running (a promise
   can't be cancelled), so handlers must be safe to finish late.
-- Every operation that reads the catalog (`getRecording`, `search`)
-  starts with `BootstrapService.assertReady()`: until the first import
-  reaches `ready` it answers `CATALOG_NOT_READY` (after the payload is
-  validated), and it reads the phase on every request, so it follows the
-  worker. `status` is the only operation that answers meanwhile.
+- `getRecording`, `getReleaseGroup` and `getArtist` start with
+  `BootstrapService.assertReady()`, which reads the import phase on each
+  request. `search` uses `SearchReadiness`: the server loads the persisted
+  phase before listening, then refreshes it in the background every five
+  seconds (one refresh at a time). Search answers `CATALOG_NOT_READY` until
+  that cache reaches `ready`; state changes normally propagate within five
+  seconds. A refresh error is logged and keeps the last known phase, while an
+  initial read error prevents the server from listening. The refresh adopts a
+  completed blue-green cutover before it reads the serving database. Each
+  readiness read uses a short-lived pool with five-second connection and query
+  timeouts and a slightly shorter PostgreSQL statement timeout, leaving time
+  for cancellation to return before the client deadline. This prevents a
+  stalled read from holding shutdown's pool close indefinitely. Stopping
+  readiness prevents late cutover adoption.
+  After first readiness, the cache stays ready through replacement-copy
+  indexing, while refreshes still perform cutover adoption.
+  `status` remains available while the first import runs.
 - Changing a field of a result is a breaking change for consumers: add
   fields, don't rename or remove them (same rule as the API's contracts).
   A new operation adds its type to `musicCatalogRequestTypeSchema` and its
@@ -1117,10 +1129,14 @@ rate limited). Beyond that:
     -c "DELETE FROM music_catalog.indexing_checkpoint"
   ```
 
-  The worker's next ticks reindex every Recording from Postgres and the catalog
-  is `ready` again (`search` answers `CATALOG_NOT_READY` meanwhile; `tiny` took
-  36 s). This same in-place reconstruction backfills `primaryReleaseMbid` for
-  the compact search result change; it does not run mbslave or download a dump.
+  Restart every serving `server` instance after this update. Wait until each
+  has started before relying on `CATALOG_NOT_READY`: an already-running process
+  keeps cached search readiness monotonic at `ready`, while each restarted
+  server loads persisted `indexing` before accepting requests. Leave the worker
+  running; its next ticks reindex every Recording from Postgres and backfill
+  `primaryReleaseMbid` for compact search results. The catalog becomes `ready`
+  again after indexing completes (`tiny` took 36 s); this does not run mbslave
+  or download a dump.
 - **Starting from nothing**: `docker compose down -v` deletes the volumes,
   and the next `up -d` is a first run. Never run it against a catalog worth
   keeping.

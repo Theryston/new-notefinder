@@ -105,3 +105,57 @@ describe('BootstrapService assertReady', () => {
     await expect(service.assertReady()).resolves.toBeUndefined();
   });
 });
+
+describe('BootstrapService getImportPhase', () => {
+  it('adopts a completed blue-green cutover before reading the serving phase', async () => {
+    const calls: string[] = [];
+    const repository = {
+      getState: vi.fn(async () => {
+        calls.push('phase');
+        return { phase: 'ready' as const, dataset: 'full' as const };
+      }),
+    };
+    const service = new BootstrapService(
+      repository as unknown as BootstrapRepository,
+      'tiny',
+      undefined,
+      {
+        cutover: {
+          adoptIfSwitched: vi.fn(async () => {
+            calls.push('cutover');
+          }),
+        },
+      },
+    );
+
+    await expect(service.getImportPhase()).resolves.toBe('ready');
+    expect(calls).toEqual(['cutover', 'phase']);
+  });
+
+  it('bounds both cutover adoption and phase reads when a timeout is supplied', async () => {
+    const repository = {
+      getState: vi.fn(async () => ({
+        phase: 'ready' as const,
+        dataset: 'full' as const,
+      })),
+    };
+    const cutover = { adoptIfSwitched: vi.fn(async () => undefined) };
+    const shouldContinue = vi.fn(() => true);
+    const service = new BootstrapService(
+      repository as unknown as BootstrapRepository,
+      'tiny',
+      undefined,
+      { cutover },
+    );
+
+    await expect(
+      service.getImportPhase({ queryTimeoutMs: 5000, shouldContinue }),
+    ).resolves.toBe('ready');
+
+    expect(cutover.adoptIfSwitched).toHaveBeenCalledExactlyOnceWith(
+      5000,
+      shouldContinue,
+    );
+    expect(repository.getState).toHaveBeenCalledExactlyOnceWith(5000);
+  });
+});

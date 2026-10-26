@@ -146,8 +146,13 @@ jobs:
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
-      # The API converts the downloaded audio with ffmpeg (FFMPEG_PATH, default
-      # `ffmpeg`), and its e2e suite runs that conversion for real.
+      # Azure's priority-1 mirror stalled while downloading ffmpeg dependencies.
+      - name: Prefer Ubuntu archive mirror
+        run: |
+          sudo sed -i '/^http:\/\/azure\.archive\.ubuntu\.com\/ubuntu\/[[:space:]]/d' /etc/apt/apt-mirrors.txt
+          grep -q '^https://archive.ubuntu.com/ubuntu/[[:space:]]' /etc/apt/apt-mirrors.txt
+
+      # The API converts downloaded audio with ffmpeg, and e2e runs it for real.
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 

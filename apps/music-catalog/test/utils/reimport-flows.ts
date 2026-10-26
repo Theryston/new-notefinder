@@ -152,6 +152,7 @@ const serveCatalogFlow = async (
     env: { CATALOG_DATASET: 'full' },
   });
   await worker.tick();
+  await server.waitForSearchPhase('ready');
   // A stale backlog entry: the switch must drop what the retired copy
   // queued, since its MBIDs are meaningless on the new one.
   await addRecording(db, {

@@ -192,6 +192,7 @@ describe('indexing: the worker takes the catalog to ready (e2e)', () => {
 
       expect(sent).toEqual([tunes.slice(4)]);
       expect(await phase()).toBe('ready');
+      await server().waitForSearchPhase('ready');
       expect([...(await searchMbids('tune'))].sort()).toEqual(tunes);
     });
 

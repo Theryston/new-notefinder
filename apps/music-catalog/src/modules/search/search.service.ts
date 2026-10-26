@@ -8,10 +8,10 @@ import {
   RECORDING_SEARCH_ATTRIBUTES,
   type RecordingDocument,
 } from '../../lib/recordings-index.js';
-import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
+import type { SearchReadiness } from './search-readiness.js';
 
 export type SearchServiceDeps = {
-  bootstrap: BootstrapService;
+  readiness: SearchReadiness;
   /** Opened with the search-only key: this service never writes. */
   index: MeilisearchIndex<RecordingDocument>;
 };
@@ -27,7 +27,7 @@ export class SearchService {
   async search(
     params: MusicCatalogSearchParams,
   ): Promise<MusicCatalogSearchResult> {
-    await this.deps.bootstrap.assertReady();
+    this.deps.readiness.assertReady();
     const documents = await this.deps.index.search(
       params.query,
       {

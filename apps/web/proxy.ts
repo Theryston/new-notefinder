@@ -1,3 +1,4 @@
+import { clickIdSchema } from '@notefinder/contracts';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
@@ -6,6 +7,7 @@ import {
   parseCatalogRoute,
 } from '@/lib/entity-route';
 import { getServerEnv } from '@/lib/env/server';
+import { consumeClickId } from '@/lib/home-click-id';
 import { detectLocale } from '@/lib/i18n/detect-locale';
 import { isLocale, localeCookieName } from '@/lib/i18n/routing';
 import {
@@ -48,6 +50,18 @@ async function checkCatalogRoute(
     );
   }
   if (verdict.kind === 'missing') {
+    const clickId = clickIdSchema.safeParse(
+      request.nextUrl.searchParams.get('clickId'),
+    );
+    if (route.collection === 'tracks' && clickId.success) {
+      const { cleanHref } = consumeClickId(request.nextUrl.href);
+      const response = NextResponse.redirect(
+        new URL(cleanHref, request.url),
+        307,
+      );
+      response.headers.set('Cache-Control', 'private, no-store');
+      return response;
+    }
     return NextResponse.rewrite(new URL('/_not-found', request.url));
   }
   return undefined;

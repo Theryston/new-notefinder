@@ -36,6 +36,7 @@ describe('yearly schema change: the schema-change stall (e2e)', {
       env: { CATALOG_DATASET: 'full' },
     });
     await worker.tick();
+    await server().waitForSearchPhase('ready');
 
     await stallReplication(db);
 

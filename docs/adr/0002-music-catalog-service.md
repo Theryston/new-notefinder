@@ -110,3 +110,26 @@ from LRCLIB, so the Lyrics in the Decision, the LRCLIB dump in the Context,
 and the temporary disk of its import in the Consequences no longer apply. The
 MusicBrainz, Meilisearch, WebSocket and blue-green reimport decisions stand.
 The text above is kept as history.
+
+## Update (#384)
+
+Search readiness is loaded from persisted bootstrap state before the WebSocket
+server accepts requests, then refreshed in the background every five seconds.
+Only one refresh runs at a time. A normal state change is therefore visible to
+search within five seconds; this is not an event-to-index latency guarantee.
+Refresh failures are logged and retain the last known phase until the next
+refresh succeeds, so a database outage does not turn a ready search into a
+fabricated empty result. If the initial state cannot be read, the server does
+not start accepting requests. Each background read adopts a completed
+blue-green cutover before checking the serving database. Search requests consult
+the in-memory phase and do not query bootstrap, replication, backlog or reimport
+state in Postgres.
+Each readiness database read uses a short-lived pool with five-second
+connection and query timeouts and a slightly shorter PostgreSQL statement
+timeout, leaving time for PostgreSQL to return its cancellation response. A
+stalled read releases its connection before process shutdown closes the serving pool; unrelated
+catalog queries keep their existing timeout behavior. Stopping readiness also
+prevents an in-flight read from adopting a cutover after shutdown begins. Once
+the first import reaches `ready`, readiness remains ready while the replacement
+copy finishes indexing after cutover, and refreshes continue to observe and
+adopt the cutover.

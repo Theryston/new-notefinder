@@ -1,8 +1,9 @@
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
-import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
+import type { Logger } from '../../logger.js';
 import { SearchService } from './search.service.js';
+import { SearchReadiness } from './search-readiness.js';
 
 const document = (mbid: string): RecordingDocument => ({
   mbid,
@@ -23,11 +24,11 @@ const params = {
 } as const;
 
 const setup = (
-  options: { hits?: ReturnType<typeof document>[]; notReady?: boolean } = {},
+  options: { hits?: RecordingDocument[]; notReady?: boolean } = {},
 ) => {
   const callOrder: string[] = [];
-  const bootstrap = {
-    assertReady: vi.fn(async () => {
+  const readiness = {
+    assertReady: vi.fn(() => {
       callOrder.push('assertReady');
       if (options.notReady) {
         throw new CatalogError('CATALOG_NOT_READY', 'still importing');
@@ -41,10 +42,10 @@ const setup = (
     }),
   };
   const service = new SearchService({
-    bootstrap: bootstrap as unknown as BootstrapService,
+    readiness: readiness as unknown as SearchReadiness,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
   });
-  return { service, bootstrap, index, callOrder };
+  return { service, readiness, index, callOrder };
 };
 
 describe('SearchService', () => {
@@ -66,21 +67,23 @@ describe('SearchService', () => {
     expect(callOrder).toEqual(['assertReady', 'index']);
   });
 
-  it('does not hydrate indexed hits from the summary repository', async () => {
-    const { bootstrap, index } = setup({ hits: [document('a')] });
+  it('does not hydrate indexed hits from a summary repository', async () => {
+    const { readiness, index } = setup({ hits: [document('a')] });
     const findByMbids = vi.fn(() => {
       throw new Error('search must not hydrate summaries from Postgres');
     });
-    const service = new SearchService({
-      bootstrap: bootstrap as unknown as BootstrapService,
+    const serviceWithSummarySentinel = new SearchService({
+      readiness: readiness as unknown as SearchReadiness,
       index: index as unknown as MeilisearchIndex<RecordingDocument>,
       summaries: { findByMbids },
     } as unknown as ConstructorParameters<typeof SearchService>[0]);
 
-    await expect(service.search(params)).resolves.toMatchObject({
+    await expect(
+      serviceWithSummarySentinel.search(params),
+    ).resolves.toMatchObject({
       results: [{ mbid: 'a' }],
     });
-    expect(bootstrap.assertReady).toHaveBeenCalledOnce();
+    expect(readiness.assertReady).toHaveBeenCalledOnce();
     expect(findByMbids).not.toHaveBeenCalled();
   });
 
@@ -91,7 +94,7 @@ describe('SearchService', () => {
 
     const { results } = await service.search(params);
 
-    expect(results.map((r) => r.mbid)).toEqual(['c', 'a', 'b']);
+    expect(results.map((result) => result.mbid)).toEqual(['c', 'a', 'b']);
   });
 
   it('derives the cover URL from the indexed primary-release MBID', async () => {
@@ -115,7 +118,7 @@ describe('SearchService', () => {
     });
   });
 
-  it('treats a pre-upgrade index document without a release MBID as a null cover', async () => {
+  it('treats a pre-upgrade document without a release MBID as a null cover', async () => {
     const legacyDocument: RecordingDocument = { ...document('a') };
     delete legacyDocument.primaryReleaseMbid;
     const { service } = setup({ hits: [legacyDocument] });
@@ -131,12 +134,74 @@ describe('SearchService', () => {
     await expect(service.search(params)).resolves.toEqual({ results: [] });
   });
 
-  it('refuses the search, reaching neither the index nor the database, before the catalog is ready', async () => {
+  it('propagates Meilisearch failures instead of returning an empty result', async () => {
+    const { service, index } = setup();
+    const failure = new Error('Meilisearch unavailable');
+    index.search.mockRejectedValueOnce(failure);
+
+    await expect(service.search(params)).rejects.toBe(failure);
+  });
+
+  it('checks readiness before reaching the index when the catalog is not ready', async () => {
     const { service, index } = setup({ notReady: true });
 
     await expect(service.search(params)).rejects.toMatchObject({
       code: 'CATALOG_NOT_READY',
     });
     expect(index.search).not.toHaveBeenCalled();
+  });
+
+  it('never reads readiness from its source during search requests', async () => {
+    const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() };
+    const readReadyPhase = vi.fn(async () => 'ready' as const);
+    const readiness = new SearchReadiness({
+      readPhase: readReadyPhase,
+      refreshIntervalMs: 60_000,
+      logger: logger as unknown as Logger,
+    });
+    await readiness.start();
+    readReadyPhase.mockClear();
+    const index = {
+      search: vi
+        .fn()
+        .mockResolvedValueOnce([document('a')])
+        .mockResolvedValueOnce([])
+        .mockRejectedValueOnce(new Error('Meilisearch unavailable')),
+    };
+    const service = new SearchService({
+      readiness,
+      index: index as unknown as MeilisearchIndex<RecordingDocument>,
+    });
+
+    try {
+      await expect(service.search(params)).resolves.toMatchObject({
+        results: [{ mbid: 'a' }],
+      });
+      await expect(service.search(params)).resolves.toEqual({ results: [] });
+      await expect(service.search(params)).rejects.toThrow(
+        'Meilisearch unavailable',
+      );
+      expect(readReadyPhase).not.toHaveBeenCalled();
+
+      const notReadyRead = vi.fn(async () => 'indexing' as const);
+      const notReady = new SearchReadiness({
+        readPhase: notReadyRead,
+        refreshIntervalMs: 60_000,
+        logger: logger as unknown as Logger,
+      });
+      await notReady.start();
+      notReadyRead.mockClear();
+      const notReadyService = new SearchService({
+        readiness: notReady,
+        index: index as unknown as MeilisearchIndex<RecordingDocument>,
+      });
+      await expect(notReadyService.search(params)).rejects.toMatchObject({
+        code: 'CATALOG_NOT_READY',
+      });
+      expect(notReadyRead).not.toHaveBeenCalled();
+      await notReady.stop();
+    } finally {
+      await readiness.stop();
+    }
   });
 });
