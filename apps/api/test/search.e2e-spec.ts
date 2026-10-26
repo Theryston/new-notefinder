@@ -39,13 +39,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
             results: [
               {
                 ...recordingSummary(testMbid(index + 1), `Song ${index}`),
-                primaryRelease: {
-                  mbid: testMbid(10 + index),
-                  title: `Release ${index}`,
-                  year: 2020,
-                  coverArtUrl:
-                    'https://coverartarchive.org/release/test/front-500',
-                },
+                coverUrl: 'https://coverartarchive.org/release/test/front-500',
               },
             ],
           },
@@ -56,13 +50,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
           results: [
             {
               ...recordingSummary(testMbid(1), 'First Song'),
-              primaryRelease: {
-                mbid: testMbid(11),
-                title: 'First Release',
-                year: 2020,
-                coverArtUrl:
-                  'https://coverartarchive.org/release/test/front-500',
-              },
+              coverUrl: 'https://coverartarchive.org/release/test/front-500',
             },
             recordingSummary(testMbid(2), 'Second Song'),
           ],
@@ -118,9 +106,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
     expect(
       response.body.results.map((item: { trackId: unknown }) => item.trackId),
     ).toEqual([track.id, null]);
-    expect(response.body.results[0].primaryRelease.coverArtUrl).toContain(
-      'https://',
-    );
+    expect(response.body.results[0].coverUrl).toContain('https://');
   });
 
   it('needs no authentication', async () => {

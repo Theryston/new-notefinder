@@ -4,9 +4,8 @@ import {
 } from '@notefinder/contracts';
 
 /**
- * Minimal catalog summary for tests, parsed so it never drifts from the
- * contract. Only the MBID and title vary per case; art and genres are
- * irrelevant to the Track link.
+ * Minimal compact catalog result for tests, parsed against the protocol
+ * contract. Only the MBID and title vary per case.
  */
 export const recordingSummary = (
   mbid: string,
@@ -15,10 +14,7 @@ export const recordingSummary = (
   recordingSummarySchema.parse({
     mbid,
     title,
-    lengthMs: 180_000,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: 'Test Artist', artists: [] },
-    genres: [],
-    primaryRelease: null,
+    artistCredit: 'Test Artist',
+    coverUrl: null,
+    trackId: null,
   });

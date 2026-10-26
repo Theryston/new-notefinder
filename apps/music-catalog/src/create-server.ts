@@ -23,8 +23,6 @@ import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
 import { RecordingRepository } from './modules/recording/recording.repository.js';
 import { RecordingService } from './modules/recording/recording.service.js';
-import { RecordingSummaryRepository } from './modules/recording/recording-summary.repository.js';
-import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
 import { readReimportStatus } from './modules/reimport/reimport.service.js';
 import { ReimportStateRepository } from './modules/reimport/reimport-state.repository.js';
 import { createGetReleaseGroupHandler } from './modules/release-group/release-group.handler.js';
@@ -161,9 +159,6 @@ export const createMusicCatalogServer = (
       apiKey: env.MEILISEARCH_SEARCH_API_KEY,
       ...RECORDINGS_INDEX,
     }),
-    summaries: new RecordingSummaryService(
-      new RecordingSummaryRepository(dbSource),
-    ),
   });
   return createWsServer({
     port: env.PORT,

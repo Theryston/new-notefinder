@@ -15,6 +15,7 @@ export type DocumentParts = {
   artistNames: string[];
   releaseTitles: string[];
   workTitles: string[];
+  primaryReleaseMbid: string | null;
   tagLevels: TagLevels;
 };
 
@@ -56,6 +57,7 @@ export const buildRecordingDocument = (
   workTitles: uniqueTexts(parts.workTitles),
   genres: chooseTags(parts.tagLevels).genres.map((genre) => genre.name),
   disambiguation: row.disambiguation,
+  primaryReleaseMbid: parts.primaryReleaseMbid,
 });
 
 /**
@@ -70,6 +72,12 @@ export const buildDocuments = (
   const artistNames = groupBy(details.artistNames, (r) => r.artistCreditId);
   const releaseTitles = groupBy(details.releaseTitles, (r) => r.recordingId);
   const workTitles = groupBy(details.workTitles, (r) => r.recordingId);
+  const primaryReleases = new Map(
+    details.primaryReleases.map((release) => [
+      release.recordingId,
+      release.mbid,
+    ]),
+  );
   const ownGenres = groupBy(details.genres.recording, (r) => r.recordingId);
   const groupGenres = groupBy(
     details.genres.releaseGroup,
@@ -81,6 +89,7 @@ export const buildDocuments = (
       artistNames: artistNamesOf(artistNames.get(row.artistCreditId) ?? []),
       releaseTitles: (releaseTitles.get(row.id) ?? []).map((r) => r.title),
       workTitles: (workTitles.get(row.id) ?? []).map((r) => r.title),
+      primaryReleaseMbid: primaryReleases.get(row.id) ?? null,
       tagLevels: {
         recording: ownGenres.get(row.id) ?? [],
         release_group: groupGenres.get(row.id) ?? [],

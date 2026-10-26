@@ -85,6 +85,7 @@ export class RecordingDocumentService {
     const [
       artistNames,
       releaseTitles,
+      primaryReleases,
       workTitles,
       recording,
       releaseGroup,
@@ -92,6 +93,7 @@ export class RecordingDocumentService {
     ] = await Promise.all([
       this.repository.findArtistNames(artistCreditIds),
       this.repository.findReleaseTitles(recordingIds),
+      this.repository.findPrimaryReleases(recordingIds),
       this.repository.findWorkTitles(recordingIds),
       this.repository.findRecordingGenres(recordingIds),
       this.repository.findReleaseGroupGenres(recordingIds),
@@ -100,6 +102,7 @@ export class RecordingDocumentService {
     return {
       artistNames,
       releaseTitles,
+      primaryReleases,
       workTitles,
       genres: { recording, releaseGroup, artist },
     };

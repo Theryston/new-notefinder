@@ -8,10 +8,9 @@
  * changed row as `NEW` (the builder derives the `OLD` side for deletes and
  * for updates that move a row's linkage) and must return the columns
  * `recording_id` and `recording_mbid` of every Recording the change affects.
- * Tables whose columns only `getRecording` shows live (isrcs, release dates
- * and countries, cover art, release group names, link type names) have no
- * entry: nothing they change is in the index, and the summaries searches
- * show are read from Postgres at query time.
+ * Tables whose columns only `getRecording` shows live (isrcs, cover art,
+ * release group names, link type names) have no entry: nothing they change is
+ * in the indexed search document.
  */
 
 type TrackedTable = {
