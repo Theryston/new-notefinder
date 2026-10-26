@@ -44,7 +44,7 @@ const setup = (
     bootstrap: bootstrap as unknown as BootstrapService,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
   });
-  return { service, index, callOrder };
+  return { service, bootstrap, index, callOrder };
 };
 
 describe('SearchService', () => {
@@ -64,6 +64,24 @@ describe('SearchService', () => {
       ['mbid', 'title', 'artistCredit', 'primaryReleaseMbid'],
     );
     expect(callOrder).toEqual(['assertReady', 'index']);
+  });
+
+  it('does not hydrate indexed hits from the summary repository', async () => {
+    const { bootstrap, index } = setup({ hits: [document('a')] });
+    const findByMbids = vi.fn(() => {
+      throw new Error('search must not hydrate summaries from Postgres');
+    });
+    const service = new SearchService({
+      bootstrap: bootstrap as unknown as BootstrapService,
+      index: index as unknown as MeilisearchIndex<RecordingDocument>,
+      summaries: { findByMbids },
+    } as unknown as ConstructorParameters<typeof SearchService>[0]);
+
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [{ mbid: 'a' }],
+    });
+    expect(bootstrap.assertReady).toHaveBeenCalledOnce();
+    expect(findByMbids).not.toHaveBeenCalled();
   });
 
   it('returns compact items in the order the index ranked them', async () => {
