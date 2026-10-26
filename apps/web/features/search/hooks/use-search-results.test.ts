@@ -23,12 +23,8 @@ function resultItem(n: number, title: string, trackId: string | null = null) {
   return {
     mbid: mbid(n),
     title,
-    lengthMs: null,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: 'Artist', artists: [] },
-    genres: [],
-    primaryRelease: null,
+    artistCredit: 'Artist',
+    coverUrl: null,
     trackId,
   };
 }
