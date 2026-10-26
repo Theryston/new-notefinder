@@ -128,9 +128,10 @@ const createServerSearch = (options: {
 }): { search: SearchService; readiness: SearchReadiness } => {
   const { bootstrap, env, dbSource, logger, refreshIntervalMs } = options;
   const readiness = new SearchReadiness({
-    readPhase: () =>
+    readPhase: (shouldContinue) =>
       bootstrap.getImportPhase({
         queryTimeoutMs: SEARCH_READINESS_QUERY_TIMEOUT_MS,
+        shouldContinue,
       }),
     refreshIntervalMs,
     logger,

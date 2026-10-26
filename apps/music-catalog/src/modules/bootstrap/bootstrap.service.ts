@@ -37,7 +37,10 @@ export type ReimportStatusSource = {
  * circuits once adopted, so the steady state costs nothing.
  */
 export type CutoverWatcher = {
-  adoptIfSwitched: (queryTimeoutMs?: number) => Promise<void>;
+  adoptIfSwitched: (
+    queryTimeoutMs?: number,
+    shouldContinue?: () => boolean,
+  ) => Promise<void>;
 };
 
 export class BootstrapService {
@@ -85,8 +88,12 @@ export class BootstrapService {
    */
   async getImportPhase(options?: {
     queryTimeoutMs?: number;
+    shouldContinue?: () => boolean;
   }): Promise<MusicCatalogStatusResult['phase']> {
-    await this.reimport?.cutover?.adoptIfSwitched(options?.queryTimeoutMs);
+    await this.reimport?.cutover?.adoptIfSwitched(
+      options?.queryTimeoutMs,
+      options?.shouldContinue,
+    );
     return (
       (await this.repository.getState(options?.queryTimeoutMs))?.phase ??
       'restoring'

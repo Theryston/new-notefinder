@@ -25,12 +25,19 @@ export const createCutoverWatcher = (
 ): CutoverWatcher => {
   let adopted = false;
   return {
-    adoptIfSwitched: async (queryTimeoutMs): Promise<void> => {
+    adoptIfSwitched: async (
+      queryTimeoutMs,
+      shouldContinue = () => true,
+    ): Promise<void> => {
       if (adopted) {
         return;
       }
       const switched = await options.readState(queryTimeoutMs);
-      if (switched?.phase === 'switched' && switched.detail) {
+      if (
+        shouldContinue() &&
+        switched?.phase === 'switched' &&
+        switched.detail
+      ) {
         options.adopt(options.openDatabase(switched.detail));
         adopted = true;
         options.logger.info('Adopted the reimported copy');

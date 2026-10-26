@@ -89,4 +89,41 @@ describe('createCutoverWatcher', () => {
     expect(opened).toHaveLength(0);
     expect(adopted).toHaveLength(0);
   });
+
+  it('does not adopt a cutover after its readiness read is stopped', async () => {
+    let resolveState:
+      | ((state: {
+          phase: 'switched';
+          progressPct: null;
+          detail: string;
+        }) => void)
+      | undefined;
+    const opened: string[] = [];
+    const adopted: Database[] = [];
+    const watcher = createCutoverWatcher({
+      readState: () =>
+        new Promise((resolve) => {
+          resolveState = resolve;
+        }),
+      openDatabase: (url) => {
+        opened.push(url);
+        return {} as Database;
+      },
+      adopt: (db) => adopted.push(db),
+      logger: silentLogger,
+    });
+    let shouldContinue = true;
+
+    const adoption = watcher.adoptIfSwitched(5000, () => shouldContinue);
+    shouldContinue = false;
+    resolveState?.({
+      phase: 'switched',
+      progressPct: null,
+      detail: 'postgres://host/next',
+    });
+    await adoption;
+
+    expect(opened).toHaveLength(0);
+    expect(adopted).toHaveLength(0);
+  });
 });

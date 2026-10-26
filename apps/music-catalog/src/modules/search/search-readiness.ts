@@ -3,7 +3,7 @@ import { CatalogError } from '../../errors/catalog-error.js';
 import type { Logger } from '../../logger.js';
 
 export type SearchReadinessOptions = {
-  readPhase: () => Promise<BootstrapPhase>;
+  readPhase: (shouldContinue: () => boolean) => Promise<BootstrapPhase>;
   refreshIntervalMs: number;
   logger: Logger;
 };
@@ -23,7 +23,7 @@ export class SearchReadiness {
 
   /** Loads persisted readiness before searches can be served. */
   async start(): Promise<void> {
-    this.phase = await this.options.readPhase();
+    this.phase = await this.options.readPhase(() => !this.stopped);
     this.timer ??= setInterval(() => {
       void this.refresh();
     }, this.options.refreshIntervalMs);
@@ -54,7 +54,7 @@ export class SearchReadiness {
     if (this.refreshInFlight !== undefined) return this.refreshInFlight;
 
     this.refreshInFlight = this.options
-      .readPhase()
+      .readPhase(() => !this.stopped)
       .then((phase) => {
         if (this.stopped) return;
         // Cutover can expose the replacement copy while its worker finishes

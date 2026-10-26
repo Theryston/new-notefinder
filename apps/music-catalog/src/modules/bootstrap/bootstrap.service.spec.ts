@@ -140,6 +140,7 @@ describe('BootstrapService getImportPhase', () => {
       })),
     };
     const cutover = { adoptIfSwitched: vi.fn(async () => undefined) };
+    const shouldContinue = vi.fn(() => true);
     const service = new BootstrapService(
       repository as unknown as BootstrapRepository,
       'tiny',
@@ -148,10 +149,13 @@ describe('BootstrapService getImportPhase', () => {
     );
 
     await expect(
-      service.getImportPhase({ queryTimeoutMs: 5000 }),
+      service.getImportPhase({ queryTimeoutMs: 5000, shouldContinue }),
     ).resolves.toBe('ready');
 
-    expect(cutover.adoptIfSwitched).toHaveBeenCalledExactlyOnceWith(5000);
+    expect(cutover.adoptIfSwitched).toHaveBeenCalledExactlyOnceWith(
+      5000,
+      shouldContinue,
+    );
     expect(repository.getState).toHaveBeenCalledExactlyOnceWith(5000);
   });
 });
