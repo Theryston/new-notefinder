@@ -4,24 +4,12 @@ import { toTrackCardProps } from './search-result-to-track-card';
 
 const mbid = '00000000-0000-4000-8000-000000000001';
 
-function resultItem(trackId: string | null, coverArtUrl: string | null) {
+function resultItem(trackId: string | null, coverUrl: string | null) {
   return {
     mbid,
     title: 'Bohemian Rhapsody',
-    lengthMs: null,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: 'Queen', artists: [] },
-    genres: [],
-    primaryRelease:
-      coverArtUrl === null
-        ? null
-        : {
-            mbid: '00000000-0000-4000-8000-000000000009',
-            title: 'A Night at the Opera',
-            year: 1975,
-            coverArtUrl,
-          },
+    artistCredit: 'Queen',
+    coverUrl,
     trackId,
   };
 }
@@ -39,7 +27,7 @@ describe('toTrackCardProps', () => {
     });
   });
 
-  it('maps the primary release art to the cover', () => {
+  it('maps the indexed cover URL to the cover', () => {
     const props = toTrackCardProps(
       resultItem('clxlinkedtrack01', 'https://cover.test/opera.jpg'),
     );

@@ -7,14 +7,10 @@ import {
   deleteRecording,
   mbid,
 } from './utils/musicbrainz.js';
-import {
-  addGenre,
-  addRelease,
-  addTag,
-  addTrack,
-} from './utils/musicbrainz-relations.js';
+import { addRelease, addTrack } from './utils/musicbrainz-relations.js';
 import { requestSearch } from './utils/search-client.js';
 import {
+  createTestWorker,
   indexCatalog,
   meilisearchOrder,
   useEmptySearchIndex,
@@ -35,12 +31,11 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
     return response.result.results;
   };
 
-  describe('the summary of a result', () => {
-    it('has the core fields, the artist credit, the primary release and the genres', async () => {
+  describe('the compact display result', () => {
+    it('returns only the displayed fields and the selected release cover', async () => {
       const db = server().db;
       const hall = await addArtist(db, { name: 'Hall', mbid: mbid(11) });
       const oates = await addArtist(db, { name: 'Oates', mbid: mbid(12) });
-      await addGenre(db, { name: 'soul', mbid: mbid(910) });
       const richGirl = await addRecording(db, {
         mbid: mbid(150),
         name: 'Rich Girl',
@@ -59,7 +54,6 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
         events: [{ country: 'US', year: 1976, month: 9 }],
       });
       await addTrack(db, { release: album, recording: richGirl });
-      await addTag(db, { recording: richGirl }, { name: 'soul', count: 6 });
       await indexCatalog(server());
 
       const [result] = await search({ query: 'rich girl' });
@@ -67,116 +61,37 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
       expect(result).toEqual({
         mbid: mbid(150),
         title: 'Rich Girl',
-        lengthMs: 143_000,
-        disambiguation: 'album version',
-        video: true,
-        artistCredit: {
-          name: 'Daryl Hall and John Oates',
-          artists: [
-            {
-              mbid: mbid(11),
-              name: 'Hall',
-              creditedName: 'Daryl Hall',
-              joinPhrase: ' and ',
-            },
-            {
-              mbid: mbid(12),
-              name: 'Oates',
-              creditedName: 'John Oates',
-              joinPhrase: '',
-            },
-          ],
-        },
-        primaryRelease: {
-          mbid: mbid(350),
-          title: 'Bigger Than Both of Us',
-          year: 1976,
-          coverArtUrl: `https://coverartarchive.org/release/${mbid(350)}/front-500`,
-        },
-        genres: [{ mbid: mbid(910), name: 'soul', count: 6 }],
+        artistCredit: 'Daryl Hall and John Oates',
+        coverUrl: `https://coverartarchive.org/release/${mbid(350)}/front-500`,
+        trackId: null,
       });
+      expect(Object.keys(result ?? {}).sort()).toEqual([
+        'artistCredit',
+        'coverUrl',
+        'mbid',
+        'title',
+        'trackId',
+      ]);
     });
 
-    it('keeps every field, empty or null, for a Recording the catalog knows nothing more about', async () => {
+    it('returns a null cover when the Recording has no release', async () => {
       await addRecording(server().db, { mbid: mbid(100), name: 'Untitled' });
       await indexCatalog(server());
 
       const [result] = await search({ query: 'untitled' });
 
-      expect(result).toMatchObject({
+      expect(result).toEqual({
         mbid: mbid(100),
-        lengthMs: null,
-        disambiguation: '',
-        video: false,
-        primaryRelease: null,
-        genres: [],
+        title: 'Untitled',
+        artistCredit: 'Artist of Untitled',
+        coverUrl: null,
+        trackId: null,
       });
     });
 
-    it('shows the year of the primary release as null when its date is unknown', async () => {
-      const recording = await addRecording(server().db, {
-        mbid: mbid(100),
-        name: 'Undated',
-      });
-      const release = await addRelease(server().db, {
-        name: 'No date',
-        artistCredit: recording.artistCredit,
-      });
-      await addTrack(server().db, { release, recording });
-      await indexCatalog(server());
-
-      const [result] = await search({ query: 'undated' });
-
-      expect(result?.primaryRelease).toMatchObject({
-        title: 'No date',
-        year: null,
-      });
-    });
-
-    it('takes the genres of the release group, then of the artist, when the Recording has none', async () => {
+    it('keeps the same primary release selection as getRecording', async () => {
       const db = server().db;
       const artist = await addArtist(db, { name: 'Band' });
-      await addGenre(db, { name: 'rock', mbid: mbid(900) });
-      await addGenre(db, { name: 'jazz', mbid: mbid(901) });
-      const withAlbum = await addRecording(db, {
-        mbid: mbid(100),
-        name: 'Alpha',
-        artists: [{ artist }],
-      });
-      const album = await addRelease(db, {
-        name: 'Album',
-        artistCredit: withAlbum.artistCredit,
-      });
-      await addTrack(db, { release: album, recording: withAlbum });
-      await addTag(
-        db,
-        { releaseGroup: album.releaseGroup },
-        { name: 'rock', count: 3 },
-      );
-      await addRecording(db, {
-        mbid: mbid(101),
-        name: 'Beta',
-        artists: [{ artist }],
-      });
-      await addTag(db, { artist }, { name: 'jazz', count: 5 });
-      await indexCatalog(server());
-
-      const [alpha] = await search({ query: 'alpha' });
-      const [beta] = await search({ query: 'beta' });
-
-      expect(alpha?.genres).toEqual([
-        { mbid: mbid(900), name: 'rock', count: 3 },
-      ]);
-      expect(beta?.genres).toEqual([
-        { mbid: mbid(901), name: 'jazz', count: 5 },
-      ]);
-    });
-
-    it('agrees with getRecording on the genres and on the release listed first', async () => {
-      const db = server().db;
-      const artist = await addArtist(db, { name: 'Band' });
-      await addGenre(db, { name: 'rock', mbid: mbid(900) });
-      await addGenre(db, { name: 'pop', mbid: mbid(901) });
       const song = await addRecording(db, {
         mbid: mbid(100),
         name: 'Song',
@@ -213,22 +128,6 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
           position: position + 1,
         });
       }
-      await addTag(
-        db,
-        { releaseGroup: original.releaseGroup },
-        { name: 'rock', count: 2 },
-      );
-      await addTag(
-        db,
-        { releaseGroup: reissue.releaseGroup },
-        { name: 'rock', count: 3 },
-      );
-      await addTag(
-        db,
-        { releaseGroup: reissue.releaseGroup },
-        { name: 'pop', count: 1 },
-      );
-      await addTag(db, { artist }, { name: 'pop', count: 50 });
       await indexCatalog(server());
 
       const [result] = await search({ query: 'song' });
@@ -238,12 +137,49 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
         throw new Error('getRecording failed');
       }
       const listedFirst = full.result.releases[0];
-      expect(result?.primaryRelease).toMatchObject({
-        mbid: listedFirst?.mbid,
-        title: 'Original',
-        year: 1971,
+      expect(result?.coverUrl).toBe(
+        `https://coverartarchive.org/release/${listedFirst?.mbid}/front-500`,
+      );
+    });
+
+    it('updates the displayed cover when incremental indexing selects a new primary release', async () => {
+      const db = server().db;
+      const artist = await addArtist(db, { name: 'Band' });
+      const song = await addRecording(db, {
+        mbid: mbid(100),
+        name: 'Song',
+        artists: [{ artist }],
       });
-      expect(result?.genres).toEqual(full.result.genres);
+      const firstRelease = await addRelease(db, {
+        name: 'First release',
+        mbid: mbid(400),
+        artistCredit: song.artistCredit,
+        events: [{ country: 'US', year: 1990 }],
+      });
+      await addTrack(db, { release: firstRelease, recording: song });
+      const worker = createTestWorker(server());
+      await indexCatalog(server(), worker);
+
+      await expect(search({ query: 'song' })).resolves.toMatchObject([
+        {
+          coverUrl: `https://coverartarchive.org/release/${mbid(400)}/front-500`,
+        },
+      ]);
+
+      const earlierRelease = await addRelease(db, {
+        name: 'Earlier release',
+        mbid: mbid(401),
+        artistCredit: song.artistCredit,
+        events: [{ country: 'GB', year: 1970 }],
+      });
+      await addTrack(db, { release: earlierRelease, recording: song });
+      await worker.tick();
+
+      await expect(search({ query: 'song' })).resolves.toMatchObject([
+        {
+          coverUrl: `https://coverartarchive.org/release/${mbid(401)}/front-500`,
+        },
+      ]);
     });
   });
 
@@ -291,14 +227,18 @@ describe('search: what a result shows and the order of the results (e2e)', () =>
       ]);
     });
 
-    it('drops a match that has since left the database and keeps the rest in order', async () => {
+    it('serves the indexed page without checking PostgreSQL for stale matches', async () => {
       const { byLove } = await arrangeRelevance();
       // MusicBrainz deleted it after the index was built.
       await deleteRecording(server().db, byLove);
 
       const results = await search({ query: 'love' });
 
-      expect(results.map((r) => r.mbid)).toEqual([mbid(102), mbid(100)]);
+      expect(results.map((r) => r.mbid)).toEqual([
+        mbid(102),
+        mbid(101),
+        mbid(100),
+      ]);
     });
 
     it('pages through the results with limit and offset', async () => {

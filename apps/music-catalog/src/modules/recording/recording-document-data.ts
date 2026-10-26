@@ -15,6 +15,9 @@ export type DocumentRecordingRow = {
   artistCreditName: string;
 };
 
+/** The primary release selected for one Recording during index construction. */
+export type PrimaryReleaseRow = { recordingId: number; mbid: string };
+
 /** One artist of a credit with one of its aliases (null when it has none). */
 export type ArtistNameRow = {
   artistCreditId: number;
@@ -45,5 +48,6 @@ export type BatchDetails = {
   artistNames: ArtistNameRow[];
   releaseTitles: RecordingTitleRow[];
   workTitles: RecordingTitleRow[];
+  primaryReleases: PrimaryReleaseRow[];
   genres: BatchGenreRows;
 };

@@ -223,18 +223,29 @@ describe('MeilisearchIndex', () => {
   });
 
   describe('search', () => {
-    it('asks for the primary key only and returns it in the order of the hits', async () => {
+    it('asks for the selected fields only and returns hits in Meilisearch order', async () => {
       const { meili, index } = setup({
-        searchHits: [{ mbid: 'c' }, { mbid: 'a' }, { mbid: 'b' }],
+        searchHits: [
+          { mbid: 'c', title: 'C' },
+          { mbid: 'a', title: 'A' },
+          { mbid: 'b', title: 'B' },
+        ],
       });
 
-      const ids = await meili.search('hello', { limit: 10, offset: 20 });
+      const hits = await meili.search('hello', { limit: 10, offset: 20 }, [
+        'mbid',
+        'title',
+      ]);
 
-      expect(ids).toEqual(['c', 'a', 'b']);
+      expect(hits).toEqual([
+        { mbid: 'c', title: 'C' },
+        { mbid: 'a', title: 'A' },
+        { mbid: 'b', title: 'B' },
+      ]);
       expect(index.search).toHaveBeenCalledExactlyOnceWith('hello', {
         limit: 10,
         offset: 20,
-        attributesToRetrieve: ['mbid'],
+        attributesToRetrieve: ['mbid', 'title'],
       });
     });
 
@@ -242,7 +253,7 @@ describe('MeilisearchIndex', () => {
       const { meili } = setup();
 
       await expect(
-        meili.search('nothing', { limit: 5, offset: 0 }),
+        meili.search('nothing', { limit: 5, offset: 0 }, ['mbid']),
       ).resolves.toEqual([]);
     });
 
@@ -250,7 +261,7 @@ describe('MeilisearchIndex', () => {
       const { meili } = setup({ searchHits: [{ title: 'No key' }] });
 
       await expect(
-        meili.search('hello', { limit: 5, offset: 0 }),
+        meili.search('hello', { limit: 5, offset: 0 }, ['mbid']),
       ).rejects.toThrow('without its mbid');
     });
   });
@@ -275,9 +286,9 @@ describe('MeilisearchIndex', () => {
         primaryKey: 'mbid',
       });
 
-      await expect(index.search('q', { limit: 1, offset: 0 })).resolves.toEqual(
-        ['a'],
-      );
+      await expect(
+        index.search('q', { limit: 1, offset: 0 }, ['mbid']),
+      ).resolves.toEqual([{ mbid: 'a' }]);
 
       const [url, init] = fetchMock.mock.calls[0] as unknown as [
         URL | string,

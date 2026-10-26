@@ -24,7 +24,7 @@ export type Hit = {
   title: string;
   artist: string;
   trackId: string | null;
-  coverArtUrl?: string;
+  coverUrl?: string;
 };
 
 /**
@@ -37,7 +37,7 @@ export const RANKED: Hit[] = [
     title: 'Under Pressure',
     artist: 'Queen & David Bowie',
     trackId: null,
-    coverArtUrl: coverOf(101),
+    coverUrl: coverOf(101),
   },
   { title: 'Radio Ga Ga', artist: 'Queen', trackId: 'seedtrack02' },
   { title: 'Bohemian Rhapsody', artist: 'Queen', trackId: 'seedtrack01' },
@@ -50,19 +50,8 @@ function resultBody(hit: Hit, index: number) {
   return {
     mbid: mbidOf(index + 1),
     title: hit.title,
-    lengthMs: null,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: hit.artist, artists: [] },
-    genres: [],
-    primaryRelease: hit.coverArtUrl
-      ? {
-          mbid: mbidOf(index + 500),
-          title: hit.title,
-          year: 1980,
-          coverArtUrl: hit.coverArtUrl,
-        }
-      : null,
+    artistCredit: hit.artist,
+    coverUrl: hit.coverUrl ?? null,
     trackId: hit.trackId,
   };
 }

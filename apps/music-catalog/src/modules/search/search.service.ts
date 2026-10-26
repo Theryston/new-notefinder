@@ -3,41 +3,50 @@ import type {
   MusicCatalogSearchResult,
 } from '@notefinder/contracts';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
-import type { RecordingDocument } from '../../lib/recordings-index.js';
+import { coverArtUrl } from '../../lib/cover-art-url.js';
+import {
+  RECORDING_SEARCH_ATTRIBUTES,
+  type RecordingDocument,
+} from '../../lib/recordings-index.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
-import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
-import { orderByIds } from './order-by-ids.js';
 
 export type SearchServiceDeps = {
   bootstrap: BootstrapService;
   /** Opened with the search-only key: this service never writes. */
   index: MeilisearchIndex<RecordingDocument>;
-  summaries: RecordingSummaryService;
 };
 
 export class SearchService {
   constructor(private readonly deps: SearchServiceDeps) {}
 
   /**
-   * Finds Recordings by metadata. The search engine picks the matches and
-   * their order; Postgres, read once for the whole page, supplies what a
-   * result shows, and the results come back exactly in the engine's order
-   * (a match whose Recording has since left the database is dropped).
+   * Finds Recordings by metadata and returns the display fields stored in
+   * Meilisearch, preserving its relevance order without a search-time DB read.
    * `CATALOG_NOT_READY` until the first import has finished.
    */
   async search(
     params: MusicCatalogSearchParams,
   ): Promise<MusicCatalogSearchResult> {
     await this.deps.bootstrap.assertReady();
-    const mbids = await this.deps.index.search(params.query, {
-      limit: params.limit,
-      offset: params.offset,
-    });
-    return this.byMbids(mbids);
-  }
-
-  private async byMbids(mbids: string[]): Promise<MusicCatalogSearchResult> {
-    const summaries = await this.deps.summaries.findByMbids(mbids);
-    return { results: orderByIds(mbids, summaries, (s) => s.mbid) };
+    const documents = await this.deps.index.search(
+      params.query,
+      {
+        limit: params.limit,
+        offset: params.offset,
+      },
+      [...RECORDING_SEARCH_ATTRIBUTES],
+    );
+    return {
+      results: documents.map((document) => ({
+        mbid: document.mbid,
+        title: document.title,
+        artistCredit: document.artistCredit,
+        coverUrl:
+          typeof document.primaryReleaseMbid !== 'string'
+            ? null
+            : coverArtUrl(document.primaryReleaseMbid),
+        trackId: null,
+      })),
+    };
   }
 }

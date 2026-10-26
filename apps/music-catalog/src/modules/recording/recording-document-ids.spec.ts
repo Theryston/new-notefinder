@@ -17,6 +17,7 @@ const setup = (rows: DocumentRecordingRow[]) => {
     findByIds: vi.fn(async () => rows),
     findArtistNames: vi.fn(async () => []),
     findReleaseTitles: vi.fn(async () => []),
+    findPrimaryReleases: vi.fn(async () => []),
     findWorkTitles: vi.fn(async () => []),
     findRecordingGenres: vi.fn(async () => []),
     findReleaseGroupGenres: vi.fn(async () => []),

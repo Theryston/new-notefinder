@@ -12,17 +12,9 @@ const API_KEY = 'test-music-catalog-api-key-change-me-00';
 const testSummary = (mbid: string, title: string) => ({
   mbid,
   title,
-  lengthMs: 180_000,
-  disambiguation: '',
-  video: false,
-  artistCredit: { name: 'Test Artist', artists: [] },
-  genres: [],
-  primaryRelease: {
-    mbid: '11111111-1111-1111-8111-111111111111',
-    title: 'Test Release',
-    year: 2020,
-    coverArtUrl: 'https://coverartarchive.org/release/test/front-500',
-  },
+  artistCredit: 'Test Artist',
+  coverUrl: 'https://coverartarchive.org/release/test/front-500',
+  trackId: null,
 });
 
 const MBID_1 = '11111111-1111-1111-8111-111111111111';

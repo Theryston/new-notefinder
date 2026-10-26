@@ -57,7 +57,7 @@ export class TracksService {
   }
 
   /**
-   * Enriches catalog summaries with the Track link, keeping the catalog's
+   * Enriches compact catalog results with the Track link, keeping the catalog's
    * order: each hit carries its Track id when notefinder already processed
    * that Recording, else null (the web renders a static card for those).
    */

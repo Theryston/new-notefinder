@@ -50,8 +50,11 @@ for (const { locale, messages } of cases) {
 
       // No Enter: typing alone never navigates, debounced or not. It asks
       // only for the header suggestions (limit 6).
+      const suggestionsRequest = page.waitForRequest(
+        (request) => searchParamsOf(request).query === 'queen',
+      );
       await header.fill('queen');
-      await page.waitForTimeout(500);
+      await suggestionsRequest;
       await expect(page).toHaveURL(home);
       expect(search.calls).toHaveLength(1);
       expect(searchParamsOf(lastRequest(search.calls))).toMatchObject({

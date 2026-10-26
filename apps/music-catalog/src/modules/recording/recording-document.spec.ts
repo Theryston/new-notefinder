@@ -23,6 +23,7 @@ const parts = (overrides: Partial<DocumentParts> = {}): DocumentParts => ({
   artistNames: [],
   releaseTitles: [],
   workTitles: [],
+  primaryReleaseMbid: null,
   tagLevels: { recording: [], release_group: [], artist: [] },
   ...overrides,
 });
@@ -105,7 +106,11 @@ describe('buildRecordingDocument', () => {
     const document = buildRecordingDocument(row, parts());
 
     expect(Object.keys(document).sort()).toEqual(
-      ['mbid', ...RECORDINGS_INDEX_SETTINGS.searchableAttributes].sort(),
+      [
+        'mbid',
+        'primaryReleaseMbid',
+        ...RECORDINGS_INDEX_SETTINGS.searchableAttributes,
+      ].sort(),
     );
   });
 });
@@ -168,6 +173,7 @@ describe('buildDocuments', () => {
   const details = (overrides: Partial<BatchDetails> = {}): BatchDetails => ({
     artistNames: [],
     releaseTitles: [],
+    primaryReleases: [],
     workTitles: [],
     genres: { recording: [], releaseGroup: [], artist: [] },
     ...overrides,

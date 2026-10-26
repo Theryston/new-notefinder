@@ -21,6 +21,9 @@ const setup = (rows: DocumentRecordingRow[]) => {
     countAll: vi.fn(async () => rows.length),
     findArtistNames: vi.fn(async () => []),
     findReleaseTitles: vi.fn(async () => [{ recordingId: 11, title: 'Album' }]),
+    findPrimaryReleases: vi.fn(async () => [
+      { recordingId: 11, mbid: 'release-1' },
+    ]),
     findWorkTitles: vi.fn(async () => []),
     findRecordingGenres: vi.fn(async () => []),
     findReleaseGroupGenres: vi.fn(async () => []),
@@ -41,7 +44,12 @@ describe('RecordingDocumentService', () => {
 
       expect(repository.findBatch).toHaveBeenCalledExactlyOnceWith(10, 2);
       expect(batch?.documents).toMatchObject([
-        { mbid: 'mbid-11', title: 'Title 11', releaseTitles: ['Album'] },
+        {
+          mbid: 'mbid-11',
+          title: 'Title 11',
+          releaseTitles: ['Album'],
+          primaryReleaseMbid: 'release-1',
+        },
         { mbid: 'mbid-12', title: 'Title 12', releaseTitles: [] },
       ]);
     });
@@ -65,6 +73,7 @@ describe('RecordingDocumentService', () => {
 
       for (const query of [
         repository.findReleaseTitles,
+        repository.findPrimaryReleases,
         repository.findWorkTitles,
         repository.findRecordingGenres,
         repository.findReleaseGroupGenres,

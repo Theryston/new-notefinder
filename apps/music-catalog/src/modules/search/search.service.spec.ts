@@ -2,18 +2,18 @@ import { CatalogError } from '../../errors/catalog-error.js';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
-import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
 import { SearchService } from './search.service.js';
 
-const summary = (mbid: string) => ({
+const document = (mbid: string): RecordingDocument => ({
   mbid,
   title: `Title of ${mbid}`,
-  lengthMs: null,
-  disambiguation: '',
-  video: false,
-  artistCredit: { name: 'Artist', artists: [] },
-  primaryRelease: null,
+  artistCredit: 'Artist',
+  primaryReleaseMbid: null,
+  artistAliases: [],
+  releaseTitles: [],
+  workTitles: [],
   genres: [],
+  disambiguation: '',
 });
 
 const params = {
@@ -23,11 +23,7 @@ const params = {
 } as const;
 
 const setup = (
-  options: {
-    hits?: string[];
-    summaries?: ReturnType<typeof summary>[];
-    notReady?: boolean;
-  } = {},
+  options: { hits?: ReturnType<typeof document>[]; notReady?: boolean } = {},
 ) => {
   const callOrder: string[] = [];
   const bootstrap = {
@@ -44,41 +40,53 @@ const setup = (
       return options.hits ?? [];
     }),
   };
-  const summaries = {
-    findByMbids: vi.fn(async () => {
-      callOrder.push('summaries');
-      return options.summaries ?? [];
-    }),
-  };
   const service = new SearchService({
     bootstrap: bootstrap as unknown as BootstrapService,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
-    summaries: summaries as unknown as RecordingSummaryService,
   });
-  return { service, index, summaries, callOrder };
+  return { service, bootstrap, index, callOrder };
 };
 
 describe('SearchService', () => {
-  it('asks the index for the page of the query, then reads the summaries of what it found', async () => {
-    const { service, index, summaries, callOrder } = setup({
-      hits: ['a', 'b'],
-      summaries: [summary('a'), summary('b')],
+  it('searches the bounded display fields directly in the index', async () => {
+    const { service, index, callOrder } = setup({
+      hits: [document('a'), document('b')],
     });
 
     await service.search(params);
 
-    expect(index.search).toHaveBeenCalledExactlyOnceWith('hello', {
-      limit: 10,
-      offset: 20,
-    });
-    expect(summaries.findByMbids).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
-    expect(callOrder).toEqual(['assertReady', 'index', 'summaries']);
+    expect(index.search).toHaveBeenCalledExactlyOnceWith(
+      'hello',
+      {
+        limit: 10,
+        offset: 20,
+      },
+      ['mbid', 'title', 'artistCredit', 'primaryReleaseMbid'],
+    );
+    expect(callOrder).toEqual(['assertReady', 'index']);
   });
 
-  it('returns the summaries in the order the index ranked them, not the order they were read in', async () => {
+  it('does not hydrate indexed hits from the summary repository', async () => {
+    const { bootstrap, index } = setup({ hits: [document('a')] });
+    const findByMbids = vi.fn(() => {
+      throw new Error('search must not hydrate summaries from Postgres');
+    });
+    const service = new SearchService({
+      bootstrap: bootstrap as unknown as BootstrapService,
+      index: index as unknown as MeilisearchIndex<RecordingDocument>,
+      summaries: { findByMbids },
+    } as unknown as ConstructorParameters<typeof SearchService>[0]);
+
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [{ mbid: 'a' }],
+    });
+    expect(bootstrap.assertReady).toHaveBeenCalledOnce();
+    expect(findByMbids).not.toHaveBeenCalled();
+  });
+
+  it('returns compact items in the order the index ranked them', async () => {
     const { service } = setup({
-      hits: ['c', 'a', 'b'],
-      summaries: [summary('a'), summary('b'), summary('c')],
+      hits: [document('c'), document('a'), document('b')],
     });
 
     const { results } = await service.search(params);
@@ -86,15 +94,35 @@ describe('SearchService', () => {
     expect(results.map((r) => r.mbid)).toEqual(['c', 'a', 'b']);
   });
 
-  it('drops the hits that are no longer in the database', async () => {
-    const { service } = setup({
-      hits: ['a', 'gone', 'b'],
-      summaries: [summary('b'), summary('a')],
+  it('derives the cover URL from the indexed primary-release MBID', async () => {
+    const indexed = {
+      ...document('a'),
+      primaryReleaseMbid: '00000000-0000-4000-8000-000000000050',
+    };
+    const { service } = setup({ hits: [indexed] });
+
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [
+        {
+          mbid: 'a',
+          title: 'Title of a',
+          artistCredit: 'Artist',
+          coverUrl:
+            'https://coverartarchive.org/release/00000000-0000-4000-8000-000000000050/front-500',
+          trackId: null,
+        },
+      ],
     });
+  });
 
-    const { results } = await service.search(params);
+  it('treats a pre-upgrade index document without a release MBID as a null cover', async () => {
+    const legacyDocument: RecordingDocument = { ...document('a') };
+    delete legacyDocument.primaryReleaseMbid;
+    const { service } = setup({ hits: [legacyDocument] });
 
-    expect(results.map((r) => r.mbid)).toEqual(['a', 'b']);
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [{ mbid: 'a', coverUrl: null, trackId: null }],
+    });
   });
 
   it('returns no results when the index finds nothing', async () => {
@@ -104,12 +132,11 @@ describe('SearchService', () => {
   });
 
   it('refuses the search, reaching neither the index nor the database, before the catalog is ready', async () => {
-    const { service, index, summaries } = setup({ notReady: true });
+    const { service, index } = setup({ notReady: true });
 
     await expect(service.search(params)).rejects.toMatchObject({
       code: 'CATALOG_NOT_READY',
     });
     expect(index.search).not.toHaveBeenCalled();
-    expect(summaries.findByMbids).not.toHaveBeenCalled();
   });
 });

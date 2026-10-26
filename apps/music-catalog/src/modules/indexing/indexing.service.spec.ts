@@ -14,6 +14,7 @@ const doc = (id: number): RecordingDocument => ({
   mbid: `mbid-${id}`,
   title: `Title ${id}`,
   artistCredit: 'Artist',
+  primaryReleaseMbid: null,
   artistAliases: [],
   releaseTitles: [],
   workTitles: [],
