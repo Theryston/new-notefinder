@@ -1131,9 +1131,12 @@ rate limited). Beyond that:
     -c "DELETE FROM music_catalog.indexing_checkpoint"
   ```
 
-  The worker's next ticks reindex every Recording from Postgres and the catalog
-  is `ready` again (`search` answers `CATALOG_NOT_READY` meanwhile; `tiny` took
-  36 s).
+  Restart every serving `server` instance after this update. Wait until each
+  has started before relying on `CATALOG_NOT_READY`: an already-running process
+  keeps cached search readiness monotonic at `ready`, while each restarted
+  server loads persisted `indexing` before accepting requests. Leave the worker
+  running; its next ticks reindex every Recording from Postgres. The catalog
+  becomes `ready` again after indexing completes (`tiny` took 36 s).
 - **Starting from nothing**: `docker compose down -v` deletes the volumes,
   and the next `up -d` is a first run. Never run it against a catalog worth
   keeping.
