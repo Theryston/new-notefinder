@@ -1,9 +1,10 @@
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
+import type { Logger } from '../../logger.js';
 import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
 import { SearchService } from './search.service.js';
-import type { SearchReadiness } from './search-readiness.js';
+import { SearchReadiness } from './search-readiness.js';
 
 const summary = (mbid: string) => ({
   mbid,
@@ -119,5 +120,64 @@ describe('SearchService', () => {
     });
     expect(index.search).not.toHaveBeenCalled();
     expect(summaries.findByMbids).not.toHaveBeenCalled();
+  });
+
+  it('never reads readiness again on nonempty, empty, failing, or not-ready requests', async () => {
+    const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() };
+    const readReadyPhase = vi.fn(async () => 'ready' as const);
+    const readiness = new SearchReadiness({
+      readPhase: readReadyPhase,
+      refreshIntervalMs: 5000,
+      logger: logger as unknown as Logger,
+    });
+    await readiness.start();
+    readReadyPhase.mockClear();
+    const index = {
+      search: vi
+        .fn()
+        .mockResolvedValueOnce(['a'])
+        .mockResolvedValueOnce([])
+        .mockRejectedValueOnce(new Error('Meilisearch unavailable')),
+    };
+    const summaries = {
+      findByMbids: vi.fn(async () => [summary('a')]),
+    };
+    const service = new SearchService({
+      readiness,
+      index: index as unknown as MeilisearchIndex<RecordingDocument>,
+      summaries: summaries as unknown as RecordingSummaryService,
+    });
+
+    try {
+      await expect(service.search(params)).resolves.toMatchObject({
+        results: [{ mbid: 'a' }],
+      });
+      await expect(service.search(params)).resolves.toEqual({ results: [] });
+      await expect(service.search(params)).rejects.toThrow(
+        'Meilisearch unavailable',
+      );
+      expect(readReadyPhase).not.toHaveBeenCalled();
+
+      const notReadyRead = vi.fn(async () => 'indexing' as const);
+      const notReady = new SearchReadiness({
+        readPhase: notReadyRead,
+        refreshIntervalMs: 5000,
+        logger: logger as unknown as Logger,
+      });
+      await notReady.start();
+      notReadyRead.mockClear();
+      const notReadyService = new SearchService({
+        readiness: notReady,
+        index: index as unknown as MeilisearchIndex<RecordingDocument>,
+        summaries: summaries as unknown as RecordingSummaryService,
+      });
+      await expect(notReadyService.search(params)).rejects.toMatchObject({
+        code: 'CATALOG_NOT_READY',
+      });
+      expect(notReadyRead).not.toHaveBeenCalled();
+      await notReady.stop();
+    } finally {
+      await readiness.stop();
+    }
   });
 });

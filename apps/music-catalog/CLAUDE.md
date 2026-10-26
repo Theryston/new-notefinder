@@ -296,8 +296,12 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   that cache reaches `ready`; state changes normally propagate within five
   seconds. A refresh error is logged and keeps the last known phase, while an
   initial read error prevents the server from listening. The refresh adopts a
-  completed blue-green cutover before it reads the serving database. `status`
-  remains available while the first import runs.
+  completed blue-green cutover before it reads the serving database. Each
+  readiness query has a five-second PostgreSQL statement timeout scoped to its
+  transaction, so a stalled read cannot hold shutdown's pool close indefinitely.
+  After first readiness, the cache stays ready through replacement-copy
+  indexing, while refreshes still perform cutover adoption.
+  `status` remains available while the first import runs.
 - Changing a field of a result is a breaking change for consumers: add
   fields, don't rename or remove them (same rule as the API's contracts).
   A new operation adds its type to `musicCatalogRequestTypeSchema` and its

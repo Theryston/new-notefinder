@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import { reimportState } from '../../database/schema/reimport-state.js';
+import { withStatementTimeout } from '../../database/with-statement-timeout.js';
 
 /**
  * Where the blue-green reimport stands. After the flip the phase is
@@ -23,15 +24,22 @@ export class ReimportStateRepository {
   }
 
   /** The reimport state, or undefined when no reimport is running. */
-  async get(): Promise<ReimportState | undefined> {
-    const [state] = await this.getDb()
-      .select({
-        phase: reimportState.phase,
-        progressPct: reimportState.progressPct,
-        detail: reimportState.detail,
-      })
-      .from(reimportState)
-      .limit(1);
+  async get(timeoutMs?: number): Promise<ReimportState | undefined> {
+    const read = async (db: Database) => {
+      const [state] = await db
+        .select({
+          phase: reimportState.phase,
+          progressPct: reimportState.progressPct,
+          detail: reimportState.detail,
+        })
+        .from(reimportState)
+        .limit(1);
+      return state;
+    };
+    const state =
+      timeoutMs === undefined
+        ? await read(this.getDb())
+        : await withStatementTimeout(this.getDb(), timeoutMs, read);
     return state as ReimportState | undefined;
   }
 

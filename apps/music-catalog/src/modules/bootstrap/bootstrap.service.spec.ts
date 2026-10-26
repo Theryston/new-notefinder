@@ -131,4 +131,27 @@ describe('BootstrapService getImportPhase', () => {
     await expect(service.getImportPhase()).resolves.toBe('ready');
     expect(calls).toEqual(['cutover', 'phase']);
   });
+
+  it('bounds both cutover adoption and phase reads when a timeout is supplied', async () => {
+    const repository = {
+      getState: vi.fn(async () => ({
+        phase: 'ready' as const,
+        dataset: 'full' as const,
+      })),
+    };
+    const cutover = { adoptIfSwitched: vi.fn(async () => undefined) };
+    const service = new BootstrapService(
+      repository as unknown as BootstrapRepository,
+      'tiny',
+      undefined,
+      { cutover },
+    );
+
+    await expect(
+      service.getImportPhase({ queryTimeoutMs: 5000 }),
+    ).resolves.toBe('ready');
+
+    expect(cutover.adoptIfSwitched).toHaveBeenCalledExactlyOnceWith(5000);
+    expect(repository.getState).toHaveBeenCalledExactlyOnceWith(5000);
+  });
 });

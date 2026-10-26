@@ -114,3 +114,9 @@ not start accepting requests. Each background read adopts a completed
 blue-green cutover before checking the serving database. Search requests consult
 the in-memory phase and do not query bootstrap, replication, backlog or reimport
 state in Postgres.
+Each readiness database query has a five-second PostgreSQL statement timeout
+scoped to its own transaction. A stalled refresh is canceled by Postgres, so
+process shutdown can close its pool without waiting indefinitely; unrelated
+catalog queries keep their existing timeout behavior. Once the first import
+reaches `ready`, readiness remains ready while the replacement copy finishes
+indexing after cutover, and refreshes continue to observe and adopt the cutover.

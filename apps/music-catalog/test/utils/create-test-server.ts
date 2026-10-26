@@ -29,6 +29,8 @@ export type TestServer = {
   db: Database;
   /** Waits until the background cache observes the requested test phase. */
   waitForSearchPhase: (phase: BootstrapPhase) => Promise<void>;
+  /** Starts a fresh process cache after the test resets the shared database. */
+  restart?: () => Promise<void>;
   close: () => Promise<void>;
 };
 
@@ -69,28 +71,44 @@ const createTestServer = async (
   // Startup now reads persisted search readiness and cutover state before
   // listening; give each server a known empty catalog just like each test.
   await resetDatabase(db);
-  let searchReadiness: SearchReadiness | undefined;
-  const server = createMusicCatalogServer({
-    env: parsed,
-    db,
-    logger: testLogger,
-    searchReadinessRefreshIntervalMs: 10,
-    onSearchReadinessCreated: (readiness) => {
-      searchReadiness = readiness;
-    },
-  });
-  const { port } = await server.start();
-  if (searchReadiness === undefined) {
-    throw new Error('The test server did not expose search readiness');
-  }
-  const readiness = searchReadiness;
+  let server: ReturnType<typeof createMusicCatalogServer> | undefined;
+  let readiness: SearchReadiness | undefined;
+  let url: string | undefined;
+  const start = async () => {
+    server = createMusicCatalogServer({
+      env: parsed,
+      db,
+      logger: testLogger,
+      searchReadinessRefreshIntervalMs: 10,
+      onSearchReadinessCreated: (cache) => {
+        readiness = cache;
+      },
+    });
+    const { port } = await server.start();
+    url = `ws://127.0.0.1:${port}`;
+  };
+  await start();
   return {
-    url: `ws://127.0.0.1:${port}`,
+    get url() {
+      if (url === undefined) {
+        throw new Error('The test server has not started');
+      }
+      return url;
+    },
     env: parsed,
     db,
-    waitForSearchPhase: (phase) => waitForSearchPhase(readiness, phase),
+    waitForSearchPhase: (phase) => {
+      if (readiness === undefined) {
+        throw new Error('The test server did not expose search readiness');
+      }
+      return waitForSearchPhase(readiness, phase);
+    },
+    restart: async () => {
+      await server?.stop();
+      await start();
+    },
     close: async () => {
-      await server.stop();
+      await server?.stop();
       await pool.end();
     },
   };

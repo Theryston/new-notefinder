@@ -13,6 +13,7 @@ export class SearchReadiness {
   private phase: BootstrapPhase = 'restoring';
   private timer: ReturnType<typeof setInterval> | undefined;
   private refreshInFlight: Promise<void> | undefined;
+  private stopped = false;
 
   constructor(private readonly options: SearchReadinessOptions) {}
 
@@ -39,22 +40,28 @@ export class SearchReadiness {
     }
   }
 
-  /** Stops future polling and waits for the current bounded refresh. */
+  /** Stops future polling and prevents an in-flight refresh from adopting. */
   async stop(): Promise<void> {
+    this.stopped = true;
     if (this.timer !== undefined) {
       clearInterval(this.timer);
       this.timer = undefined;
     }
-    await this.refreshInFlight;
   }
 
   private refresh(): Promise<void> {
+    if (this.stopped) return Promise.resolve();
     if (this.refreshInFlight !== undefined) return this.refreshInFlight;
 
     this.refreshInFlight = this.options
       .readPhase()
       .then((phase) => {
-        this.phase = phase;
+        if (this.stopped) return;
+        // Cutover can expose the replacement copy while its worker finishes
+        // indexing. The already-serving catalog stays searchable meanwhile.
+        if (this.phase !== 'ready' || phase === 'ready') {
+          this.phase = phase;
+        }
       })
       .catch((error: unknown) => {
         this.options.logger.error('Search readiness refresh failed', { error });

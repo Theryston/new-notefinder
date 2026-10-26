@@ -50,9 +50,7 @@ export const readStatus = async (client: TestClient) => {
 export const searchForMbids = async (
   client: TestClient,
   query: string,
-  waitForReady: () => Promise<void> = async () => undefined,
 ): Promise<string[]> => {
-  await waitForReady();
   const response = await requestSearch(client, { query });
   if (!response.ok) {
     throw new Error(`search failed: ${response.error.code}`);
@@ -207,10 +205,7 @@ export const useReimportFlow = (options: {
   };
   return {
     statusResult: () => readStatus(client()),
-    searchMbids: (query: string) =>
-      searchForMbids(client(), query, () =>
-        server().waitForSearchPhase('ready'),
-      ),
+    searchMbids: (query: string) => searchForMbids(client(), query),
     serveCatalog: () => serveCatalogFlow(server(), needParallel()),
     restoreParallel: (seed?: (db: Database) => Promise<void>) =>
       restoreParallelInto({

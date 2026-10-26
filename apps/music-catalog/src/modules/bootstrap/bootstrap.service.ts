@@ -37,7 +37,7 @@ export type ReimportStatusSource = {
  * circuits once adopted, so the steady state costs nothing.
  */
 export type CutoverWatcher = {
-  adoptIfSwitched: () => Promise<void>;
+  adoptIfSwitched: (queryTimeoutMs?: number) => Promise<void>;
 };
 
 export class BootstrapService {
@@ -83,9 +83,14 @@ export class BootstrapService {
    * Reads the first-import phase for the search readiness cache, adopting a
    * completed blue-green cutover before the database reference is read.
    */
-  async getImportPhase(): Promise<MusicCatalogStatusResult['phase']> {
-    await this.reimport?.cutover?.adoptIfSwitched();
-    return (await this.repository.getState())?.phase ?? 'restoring';
+  async getImportPhase(options?: {
+    queryTimeoutMs?: number;
+  }): Promise<MusicCatalogStatusResult['phase']> {
+    await this.reimport?.cutover?.adoptIfSwitched(options?.queryTimeoutMs);
+    return (
+      (await this.repository.getState(options?.queryTimeoutMs))?.phase ??
+      'restoring'
+    );
   }
 
   /**

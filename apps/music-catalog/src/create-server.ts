@@ -43,6 +43,7 @@ import type { Handler } from './ws/handler.js';
 import { createWsServer, type WsServer } from './ws/ws-server.js';
 
 const SEARCH_READINESS_REFRESH_INTERVAL_MS = 5000;
+const SEARCH_READINESS_QUERY_TIMEOUT_MS = 5000;
 
 export type CreateServerOptions = {
   env: ServerEnv;
@@ -94,7 +95,7 @@ const createServingBootstrap = (
         reportReimport: () => readReimportStatus(reimportState),
       },
       cutover: createCutoverWatcher({
-        readState: () => reimportState.get(),
+        readState: (queryTimeoutMs) => reimportState.get(queryTimeoutMs),
         openDatabase: options.openDatabase,
         adopt: options.adopt,
         logger: options.logger,
@@ -127,7 +128,10 @@ const createServerSearch = (options: {
 }): { search: SearchService; readiness: SearchReadiness } => {
   const { bootstrap, env, dbSource, logger, refreshIntervalMs } = options;
   const readiness = new SearchReadiness({
-    readPhase: () => bootstrap.getImportPhase(),
+    readPhase: () =>
+      bootstrap.getImportPhase({
+        queryTimeoutMs: SEARCH_READINESS_QUERY_TIMEOUT_MS,
+      }),
     refreshIntervalMs,
     logger,
   });
@@ -145,23 +149,21 @@ const createServerSearch = (options: {
   return { search, readiness };
 };
 
-const withSearchReadiness = (
+export const withSearchReadiness = (
   server: WsServer,
   readiness: SearchReadiness,
 ): WsServer => ({
   start: async () => {
-    await readiness.start();
     try {
+      await readiness.start();
       return await server.start();
     } catch (error) {
-      await readiness.stop();
+      await Promise.allSettled([readiness.stop(), server.stop()]);
       throw error;
     }
   },
-  stop: async () => {
-    await readiness.stop();
-    await server.stop();
-  },
+  stop: async () =>
+    Promise.all([readiness.stop(), server.stop()]).then(() => undefined),
 });
 
 /**
