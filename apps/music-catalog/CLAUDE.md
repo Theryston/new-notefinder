@@ -297,9 +297,11 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   seconds. A refresh error is logged and keeps the last known phase, while an
   initial read error prevents the server from listening. The refresh adopts a
   completed blue-green cutover before it reads the serving database. Each
-  readiness read uses a short-lived pool with five-second connection, query
-  and PostgreSQL statement timeouts, so a stalled read cannot hold shutdown's
-  pool close indefinitely. Stopping readiness prevents late cutover adoption.
+  readiness read uses a short-lived pool with five-second connection and query
+  timeouts and a slightly shorter PostgreSQL statement timeout, leaving time
+  for cancellation to return before the client deadline. This prevents a
+  stalled read from holding shutdown's pool close indefinitely. Stopping
+  readiness prevents late cutover adoption.
   After first readiness, the cache stays ready through replacement-copy
   indexing, while refreshes still perform cutover adoption.
   `status` remains available while the first import runs.

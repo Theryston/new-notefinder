@@ -115,8 +115,9 @@ blue-green cutover before checking the serving database. Search requests consult
 the in-memory phase and do not query bootstrap, replication, backlog or reimport
 state in Postgres.
 Each readiness database read uses a short-lived pool with five-second
-connection, query and PostgreSQL statement timeouts. A stalled read releases
-its connection before process shutdown closes the serving pool; unrelated
+connection and query timeouts and a slightly shorter PostgreSQL statement
+timeout, leaving time for PostgreSQL to return its cancellation response. A
+stalled read releases its connection before process shutdown closes the serving pool; unrelated
 catalog queries keep their existing timeout behavior. Stopping readiness also
 prevents an in-flight read from adopting a cutover after shutdown begins. Once
 the first import reaches `ready`, readiness remains ready while the replacement

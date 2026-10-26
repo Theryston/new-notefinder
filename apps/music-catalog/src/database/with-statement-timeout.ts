@@ -18,11 +18,17 @@ const runWithBoundedPool = async <Result>(
   query: (transaction: TimeoutTransaction) => Promise<Result>,
 ): Promise<Result> => {
   const sourcePool = (db as Database & { $client: Pool }).$client;
+  // Leave time for PostgreSQL to return its cancellation response before the
+  // client-side deadline expires.
+  const statementTimeoutMs = Math.max(
+    1,
+    timeoutMs - Math.min(250, timeoutMs / 10),
+  );
   const pool = new Pool({
     ...sourcePool.options,
     connectionTimeoutMillis: timeoutMs,
     query_timeout: timeoutMs,
-    statement_timeout: timeoutMs,
+    statement_timeout: statementTimeoutMs,
     max: 1,
   });
   let client: PoolClient | undefined;
@@ -33,7 +39,7 @@ const runWithBoundedPool = async <Result>(
     const boundedDatabase = drizzle({ client, casing: 'snake_case' });
     return await boundedDatabase.transaction(async (transaction) => {
       await transaction.execute(
-        sql`select set_config('statement_timeout', ${`${timeoutMs}ms`}, true)`,
+        sql`select set_config('statement_timeout', ${`${statementTimeoutMs}ms`}, true)`,
       );
       return query(transaction);
     });
