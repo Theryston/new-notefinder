@@ -23,8 +23,6 @@ import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
 import { createGetRecordingHandler } from './modules/recording/recording.handler.js';
 import { RecordingRepository } from './modules/recording/recording.repository.js';
 import { RecordingService } from './modules/recording/recording.service.js';
-import { RecordingSummaryRepository } from './modules/recording/recording-summary.repository.js';
-import { RecordingSummaryService } from './modules/recording/recording-summary.service.js';
 import { readReimportStatus } from './modules/reimport/reimport.service.js';
 import { ReimportStateRepository } from './modules/reimport/reimport-state.repository.js';
 import { createGetReleaseGroupHandler } from './modules/release-group/release-group.handler.js';
@@ -122,11 +120,10 @@ const createEntityHandlers = (
 const createServerSearch = (options: {
   bootstrap: BootstrapService;
   env: ServerEnv;
-  dbSource: () => Database;
   logger: Logger;
   refreshIntervalMs: number;
 }): { search: SearchService; readiness: SearchReadiness } => {
-  const { bootstrap, env, dbSource, logger, refreshIntervalMs } = options;
+  const { bootstrap, env, logger, refreshIntervalMs } = options;
   const readiness = new SearchReadiness({
     readPhase: (shouldContinue) =>
       bootstrap.getImportPhase({
@@ -143,9 +140,6 @@ const createServerSearch = (options: {
       apiKey: env.MEILISEARCH_SEARCH_API_KEY,
       ...RECORDINGS_INDEX,
     }),
-    summaries: new RecordingSummaryService(
-      new RecordingSummaryRepository(dbSource),
-    ),
   });
   return { search, readiness };
 };
@@ -212,7 +206,6 @@ export const createMusicCatalogServer = (
   const { search, readiness: searchReadiness } = createServerSearch({
     bootstrap,
     env,
-    dbSource,
     logger,
     refreshIntervalMs:
       options.searchReadinessRefreshIntervalMs ??

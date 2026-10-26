@@ -15,7 +15,9 @@ import {
 import {
   medium,
   release,
+  releaseCountry,
   releaseGroupTag,
+  releaseUnknownCountry,
   track,
 } from '../../database/schema/musicbrainz/release.js';
 import { genre, tag } from '../../database/schema/musicbrainz/tag.js';
@@ -27,6 +29,7 @@ import type {
   ArtistNameRow,
   CreditGenreRow,
   DocumentRecordingRow,
+  PrimaryReleaseRow,
   RecordingGenreRow,
   RecordingTitleRow,
 } from './recording-document-data.js';
@@ -110,6 +113,59 @@ export class RecordingDocumentRepository {
       .innerJoin(medium, eq(medium.id, track.medium))
       .innerJoin(release, eq(release.id, medium.release))
       .where(inArray(track.recording, recordingIds));
+  }
+
+  /** The same dated-first, title/MBID-tied release shown by getRecording. */
+  async findPrimaryReleases(
+    recordingIds: number[],
+  ): Promise<PrimaryReleaseRow[]> {
+    if (recordingIds.length === 0) return [];
+    const result = await this.getDb().execute<PrimaryReleaseRow>(sql`
+      select selected.recording_id as "recordingId",
+        selected.release_mbid as "mbid"
+      from (
+        select ${track.recording} as recording_id, ${release.gid} as release_mbid,
+          row_number() over (
+            partition by ${track.recording}
+            order by release_date.date asc nulls last,
+              ${release.name} collate "C", ${release.gid},
+              ${medium.position}, ${track.position}
+          ) as position
+        from ${track}
+        join ${medium} on ${medium.id} = ${track.medium}
+        join ${release} on ${release.id} = ${medium.release}
+        cross join lateral (
+          select min(event_date.date collate "C") as date
+          from (
+            select case when ${releaseCountry.dateYear} is null then null
+              else lpad(${releaseCountry.dateYear}::text, 4, '0') ||
+                case when ${releaseCountry.dateMonth} is null then '' else
+                  '-' || lpad(${releaseCountry.dateMonth}::text, 2, '0') ||
+                  case when ${releaseCountry.dateDay} is null then '' else
+                    '-' || lpad(${releaseCountry.dateDay}::text, 2, '0') end
+                end end as date
+            from ${releaseCountry}
+            where ${releaseCountry.release} = ${release.id}
+            union all
+            select case when ${releaseUnknownCountry.dateYear} is null then null
+              else lpad(${releaseUnknownCountry.dateYear}::text, 4, '0') ||
+                case when ${releaseUnknownCountry.dateMonth} is null then '' else
+                  '-' || lpad(${releaseUnknownCountry.dateMonth}::text, 2, '0') ||
+                  case when ${releaseUnknownCountry.dateDay} is null then '' else
+                    '-' || lpad(${releaseUnknownCountry.dateDay}::text, 2, '0') end
+                end end
+            from ${releaseUnknownCountry}
+            where ${releaseUnknownCountry.release} = ${release.id}
+          ) event_date
+        ) release_date
+        where ${track.recording} in (${sql.join(
+          recordingIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      ) selected
+      where selected.position = 1
+    `);
+    return result.rows;
   }
 
   findWorkTitles(recordingIds: number[]): Promise<RecordingTitleRow[]> {

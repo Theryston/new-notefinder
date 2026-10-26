@@ -7,7 +7,7 @@ import {
 } from './sync-tracked-tables.js';
 
 // The tables whose changes reach a Recording's document (issue #61): the
-// Recording itself and every table the document and summary queries read.
+// Recording itself and every table the indexed document reads.
 const EXPECTED_TABLES = [
   'recording',
   'recording_gid_redirect',
@@ -34,7 +34,7 @@ const EXPECTED_TABLES = [
 ];
 
 describe('the sync triggers', () => {
-  it('watches every table that feeds a Recording document or summary', () => {
+  it('watches every table that feeds a Recording document', () => {
     expect(TRACKED_TABLES.map((entry) => entry.table).sort()).toEqual(
       [...EXPECTED_TABLES].sort(),
     );

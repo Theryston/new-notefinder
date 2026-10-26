@@ -17,12 +17,8 @@ function resultBody(item: SearchMockItem, index: number) {
   return {
     mbid: mbidOf(index + 1),
     title: item.title,
-    lengthMs: null,
-    disambiguation: '',
-    video: false,
-    artistCredit: { name: item.artist, artists: [] },
-    genres: [],
-    primaryRelease: null,
+    artistCredit: item.artist,
+    coverUrl: null,
     trackId: item.trackId,
   };
 }

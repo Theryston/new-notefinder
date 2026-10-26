@@ -1,7 +1,7 @@
 import { useTestServer } from './utils/create-test-server.js';
 import { setBootstrapState } from './utils/database.js';
 import { requestSearch } from './utils/search-client.js';
-import { createTestWorker, indexCatalog } from './utils/test-worker.js';
+import { indexCatalog, useEmptySearchIndex } from './utils/test-worker.js';
 import { useReadyCatalog } from './utils/use-ready-catalog.js';
 import { useTestClient } from './utils/use-test-client.js';
 
@@ -9,9 +9,7 @@ describe('search: requests (e2e)', () => {
   const server = useTestServer();
   const client = useTestClient(server);
 
-  beforeAll(async () => {
-    await indexCatalog(server(), createTestWorker(server()));
-  });
+  useEmptySearchIndex();
 
   describe('before the first import has finished', () => {
     it('answers CATALOG_NOT_READY when the import has not recorded anything yet', async () => {
@@ -80,6 +78,7 @@ describe('search: requests (e2e)', () => {
     );
 
     it('accepts the biggest page at the deepest offset', async () => {
+      await indexCatalog(server());
       const response = await requestSearch(client(), {
         query: 'song',
         limit: 100,
@@ -90,6 +89,7 @@ describe('search: requests (e2e)', () => {
     });
 
     it('ignores a scope sent by an older client and searches the metadata', async () => {
+      await indexCatalog(server());
       const response = await requestSearch(client(), {
         query: 'yesterday all my troubles',
         scope: 'lyrics',

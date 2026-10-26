@@ -2,19 +2,19 @@ import { CatalogError } from '../../errors/catalog-error.js';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import type { RecordingDocument } from '../../lib/recordings-index.js';
 import type { Logger } from '../../logger.js';
-import type { RecordingSummaryService } from '../recording/recording-summary.service.js';
 import { SearchService } from './search.service.js';
 import { SearchReadiness } from './search-readiness.js';
 
-const summary = (mbid: string) => ({
+const document = (mbid: string): RecordingDocument => ({
   mbid,
   title: `Title of ${mbid}`,
-  lengthMs: null,
-  disambiguation: '',
-  video: false,
-  artistCredit: { name: 'Artist', artists: [] },
-  primaryRelease: null,
+  artistCredit: 'Artist',
+  primaryReleaseMbid: null,
+  artistAliases: [],
+  releaseTitles: [],
+  workTitles: [],
   genres: [],
+  disambiguation: '',
 });
 
 const params = {
@@ -24,11 +24,7 @@ const params = {
 } as const;
 
 const setup = (
-  options: {
-    hits?: string[];
-    summaries?: ReturnType<typeof summary>[];
-    notReady?: boolean;
-  } = {},
+  options: { hits?: RecordingDocument[]; notReady?: boolean } = {},
 ) => {
   const callOrder: string[] = [];
   const readiness = {
@@ -45,57 +41,71 @@ const setup = (
       return options.hits ?? [];
     }),
   };
-  const summaries = {
-    findByMbids: vi.fn(async () => {
-      callOrder.push('summaries');
-      return options.summaries ?? [];
-    }),
-  };
   const service = new SearchService({
     readiness: readiness as unknown as SearchReadiness,
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
-    summaries: summaries as unknown as RecordingSummaryService,
   });
-  return { service, index, summaries, callOrder };
+  return { service, readiness, index, callOrder };
 };
 
 describe('SearchService', () => {
-  it('asks the index for the page of the query, then reads the summaries of what it found', async () => {
-    const { service, index, summaries, callOrder } = setup({
-      hits: ['a', 'b'],
-      summaries: [summary('a'), summary('b')],
+  it('searches the bounded display fields directly in the index', async () => {
+    const { service, index, callOrder } = setup({
+      hits: [document('a'), document('b')],
     });
 
     await service.search(params);
 
-    expect(index.search).toHaveBeenCalledExactlyOnceWith('hello', {
-      limit: 10,
-      offset: 20,
-    });
-    expect(summaries.findByMbids).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
-    expect(callOrder).toEqual(['assertReady', 'index', 'summaries']);
+    expect(index.search).toHaveBeenCalledExactlyOnceWith(
+      'hello',
+      {
+        limit: 10,
+        offset: 20,
+      },
+      ['mbid', 'title', 'artistCredit', 'primaryReleaseMbid'],
+    );
+    expect(callOrder).toEqual(['assertReady', 'index']);
   });
 
-  it('returns the summaries in the order the index ranked them, not the order they were read in', async () => {
+  it('returns compact items in the order the index ranked them', async () => {
     const { service } = setup({
-      hits: ['c', 'a', 'b'],
-      summaries: [summary('a'), summary('b'), summary('c')],
+      hits: [document('c'), document('a'), document('b')],
     });
 
     const { results } = await service.search(params);
 
-    expect(results.map((r) => r.mbid)).toEqual(['c', 'a', 'b']);
+    expect(results.map((result) => result.mbid)).toEqual(['c', 'a', 'b']);
   });
 
-  it('drops the hits that are no longer in the database', async () => {
-    const { service } = setup({
-      hits: ['a', 'gone', 'b'],
-      summaries: [summary('b'), summary('a')],
+  it('derives the cover URL from the indexed primary-release MBID', async () => {
+    const indexed = {
+      ...document('a'),
+      primaryReleaseMbid: '00000000-0000-4000-8000-000000000050',
+    };
+    const { service } = setup({ hits: [indexed] });
+
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [
+        {
+          mbid: 'a',
+          title: 'Title of a',
+          artistCredit: 'Artist',
+          coverUrl:
+            'https://coverartarchive.org/release/00000000-0000-4000-8000-000000000050/front-500',
+          trackId: null,
+        },
+      ],
     });
+  });
 
-    const { results } = await service.search(params);
+  it('treats a pre-upgrade document without a release MBID as a null cover', async () => {
+    const legacyDocument: RecordingDocument = { ...document('a') };
+    delete legacyDocument.primaryReleaseMbid;
+    const { service } = setup({ hits: [legacyDocument] });
 
-    expect(results.map((r) => r.mbid)).toEqual(['a', 'b']);
+    await expect(service.search(params)).resolves.toMatchObject({
+      results: [{ mbid: 'a', coverUrl: null, trackId: null }],
+    });
   });
 
   it('returns no results when the index finds nothing', async () => {
@@ -112,22 +122,21 @@ describe('SearchService', () => {
     await expect(service.search(params)).rejects.toBe(failure);
   });
 
-  it('refuses the search before reaching the index or summaries when the cached catalog is not ready', async () => {
-    const { service, index, summaries } = setup({ notReady: true });
+  it('checks readiness before reaching the index when the catalog is not ready', async () => {
+    const { service, index } = setup({ notReady: true });
 
     await expect(service.search(params)).rejects.toMatchObject({
       code: 'CATALOG_NOT_READY',
     });
     expect(index.search).not.toHaveBeenCalled();
-    expect(summaries.findByMbids).not.toHaveBeenCalled();
   });
 
-  it('never reads readiness again on nonempty, empty, failing, or not-ready requests', async () => {
+  it('never reads readiness from its source during search requests', async () => {
     const logger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() };
     const readReadyPhase = vi.fn(async () => 'ready' as const);
     const readiness = new SearchReadiness({
       readPhase: readReadyPhase,
-      refreshIntervalMs: 5000,
+      refreshIntervalMs: 60_000,
       logger: logger as unknown as Logger,
     });
     await readiness.start();
@@ -135,17 +144,13 @@ describe('SearchService', () => {
     const index = {
       search: vi
         .fn()
-        .mockResolvedValueOnce(['a'])
+        .mockResolvedValueOnce([document('a')])
         .mockResolvedValueOnce([])
         .mockRejectedValueOnce(new Error('Meilisearch unavailable')),
-    };
-    const summaries = {
-      findByMbids: vi.fn(async () => [summary('a')]),
     };
     const service = new SearchService({
       readiness,
       index: index as unknown as MeilisearchIndex<RecordingDocument>,
-      summaries: summaries as unknown as RecordingSummaryService,
     });
 
     try {
@@ -161,7 +166,7 @@ describe('SearchService', () => {
       const notReadyRead = vi.fn(async () => 'indexing' as const);
       const notReady = new SearchReadiness({
         readPhase: notReadyRead,
-        refreshIntervalMs: 5000,
+        refreshIntervalMs: 60_000,
         logger: logger as unknown as Logger,
       });
       await notReady.start();
@@ -169,7 +174,6 @@ describe('SearchService', () => {
       const notReadyService = new SearchService({
         readiness: notReady,
         index: index as unknown as MeilisearchIndex<RecordingDocument>,
-        summaries: summaries as unknown as RecordingSummaryService,
       });
       await expect(notReadyService.search(params)).rejects.toMatchObject({
         code: 'CATALOG_NOT_READY',

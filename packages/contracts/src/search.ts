@@ -9,9 +9,9 @@ import {
 
 // The public track search: what the web sends the API and what the API
 // answers. The query mirrors the Music catalog payload semantics (same
-// defaults and bounds), so the API forwards it as-is; the result reuses the
-// catalog's summaries untouched and only adds the Track link. Never redeclare
-// these shapes in an app: import them from here.
+// defaults and bounds), so the API forwards it as-is; the API adds the
+// existing Track ID to the compact result. Never redeclare these shapes in
+// an app: import them from here.
 
 // Limits arrive as HTTP query params (strings), so they coerce; the catalog
 // payload takes real numbers over the WebSocket.
@@ -33,13 +33,11 @@ export type SearchQuery = z.input<typeof searchQuerySchema>;
 export type SearchQueryParams = z.output<typeof searchQuerySchema>;
 
 /**
- * One search hit: the catalog's summary plus the Track link. `trackId` is
+ * One compact search hit. `trackId` is
  * the Track id when notefinder already processed that Recording, else null:
  * the web links only when it is present, otherwise it renders a static card.
  */
-export const searchResultItemSchema = recordingSummarySchema.extend({
-  trackId: z.string().nullable(),
-});
+export const searchResultItemSchema = recordingSummarySchema;
 
 export type SearchResultItem = z.infer<typeof searchResultItemSchema>;
 

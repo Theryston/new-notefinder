@@ -4,11 +4,9 @@ import {
   musicCatalogErrorResponseSchema,
   musicCatalogSuccessResponseSchema,
 } from './music-catalog.js';
-import { recordingSchema } from './music-catalog-recording.js';
 
-// `search`, the second operation of the Music catalog protocol
-// (music-catalog.ts): free text in, an ordered list of Recording summaries
-// out. Kept in its own file, like the Recording, so the envelope stays small.
+// `search`, the second operation of the Music catalog protocol: free text in,
+// an ordered list of the fields search surfaces display.
 
 /** The page size when a client does not ask for one. */
 export const SEARCH_DEFAULT_LIMIT = 20;
@@ -54,46 +52,14 @@ export type MusicCatalogSearchParams = z.output<
   typeof musicCatalogSearchPayloadSchema
 >;
 
-/** The release a search result shows the Recording on. */
-export const recordingSummaryReleaseSchema = z.object({
+/** The compact item shared by private catalog and public search responses. */
+export const recordingSummarySchema = z.object({
   mbid: mbidSchema,
   title: z.string(),
-  /** The year of the release's earliest release event; null when unknown. */
-  year: z.number().int().nullable(),
-  /**
-   * Cover Art Archive URL built from the release MBID. The catalog does not
-   * know which releases have art, so it may answer 404.
-   */
-  coverArtUrl: z.string(),
+  artistCredit: z.string(),
+  coverUrl: z.string().nullable(),
+  trackId: z.string().nullable(),
 });
-
-export type RecordingSummaryRelease = z.infer<
-  typeof recordingSummaryReleaseSchema
->;
-
-/**
- * A Recording as a search result lists it: enough to render a row without
- * another round-trip. The fields it shares with `getRecording`'s Recording
- * are that Recording's own (same names, same meaning; the genres are chosen
- * by the same rule), so a result never tells a different story.
- */
-export const recordingSummarySchema = recordingSchema
-  .pick({
-    mbid: true,
-    title: true,
-    lengthMs: true,
-    disambiguation: true,
-    video: true,
-    artistCredit: true,
-    genres: true,
-  })
-  .extend({
-    /**
-     * The release listed first by `getRecording` (the oldest, undated last);
-     * null when the Recording is on no release.
-     */
-    primaryRelease: recordingSummaryReleaseSchema.nullable(),
-  });
 
 export type RecordingSummary = z.infer<typeof recordingSummarySchema>;
 

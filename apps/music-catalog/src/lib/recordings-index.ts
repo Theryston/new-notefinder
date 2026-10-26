@@ -3,8 +3,7 @@ import type { IndexSettings } from '../integrations/meilisearch/meilisearch-inde
 
 /**
  * What the worker puts in Meilisearch for one Recording, and what a search
- * looks at. Only the MBID is read back: the summaries shown to a client come
- * from Postgres, so the index holds text to match on and nothing to display.
+ * looks at, plus the small set of fields search surfaces display.
  */
 export type RecordingDocument = {
   mbid: string;
@@ -18,6 +17,8 @@ export type RecordingDocument = {
   /** Genre names, from the level `getRecording` takes its genres from. */
   genres: string[];
   disambiguation: string;
+  /** The release selected for the displayed cover, when the Recording has one. */
+  primaryReleaseMbid?: string | null;
 };
 
 /** The index of Recordings; its primary key is the MBID. */
@@ -56,3 +57,11 @@ export const RECORDINGS_INDEX_SETTINGS: IndexSettings = {
   // derived from the same constant).
   pagination: { maxTotalHits: SEARCH_MAX_TOTAL_HITS },
 };
+
+/** Fields displayed in search results; searchable metadata stays index-only. */
+export const RECORDING_SEARCH_ATTRIBUTES = [
+  'mbid',
+  'title',
+  'artistCredit',
+  'primaryReleaseMbid',
+] as const satisfies readonly (keyof RecordingDocument)[];

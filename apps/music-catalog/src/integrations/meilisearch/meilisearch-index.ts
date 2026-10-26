@@ -165,21 +165,18 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
     }
   }
 
-  /**
-   * The primary keys of the best matches for `query`, in the order
-   * Meilisearch ranked them. Nothing else is asked for: the caller loads
-   * what it shows from its own database.
-   */
+  /** The selected fields of the best matches, in Meilisearch's order. */
   async search(
     query: string,
     page: { limit: number; offset: number },
-  ): Promise<string[]> {
+    attributesToRetrieve: string[],
+  ): Promise<TDocument[]> {
     const { hits } = await this.client
       .index<TDocument>(this.uid)
       .search(query, {
         limit: page.limit,
         offset: page.offset,
-        attributesToRetrieve: [this.primaryKey],
+        attributesToRetrieve,
       });
     return hits.map((hit) => {
       const id: unknown = hit[this.primaryKey];
@@ -188,7 +185,7 @@ export class MeilisearchIndex<TDocument extends Record<string, unknown>> {
           `Meilisearch returned a hit without its ${this.primaryKey}`,
         );
       }
-      return id;
+      return hit;
     });
   }
 

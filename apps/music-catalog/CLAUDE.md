@@ -26,8 +26,9 @@ the service rebuilds the catalog into a parallel copy with zero downtime), the
 **production deploy** (issue
 #65: the two images CI publishes to GHCR and the single compose with Caddy in
 `deploy/`, operated as "Operations (production)" below) and the test and
-quality setup. `search` returns results in **Meilisearch's relevance order**,
-loaded from Postgres without re-ranking. `getReleaseGroup` and `getArtist`
+quality setup. `search` returns compact display results in **Meilisearch's
+relevance order**, directly from its index without search-time PostgreSQL
+hydration. `getReleaseGroup` and `getArtist`
 (issue #138) read one release group (an Album, ADR 0003) and one artist by
 MBID, for the API's metadata import.
 
@@ -130,8 +131,6 @@ src/
       assemble-recording.ts     rows -> the protocol's Recording (pure)
       genre-fallback.ts         which level the genres and tags come from (pure)
       release-event.ts          the date and country a release is shown with (pure)
-      recording-summary.*       the summaries a search lists (one query), for the search module
-      assemble-summary.ts       summary row -> the protocol's RecordingSummary (pure)
       recording-document.*      the documents of a batch of Recordings, for the indexing module
       recording-document.ts     rows -> the document Meilisearch indexes (pure)
     artist/
@@ -146,8 +145,7 @@ src/
       representative-release.ts the earliest Official release, else of any status (pure)
     search/
       search.handler.ts         the `search` handler
-      search.service.ts         cached readiness, Meilisearch and result order
-      order-by-ids.ts           rows -> the order of a list of ids, dropping the missing (pure)
+      search.service.ts         readiness, selected display fields from Meilisearch
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
@@ -378,26 +376,26 @@ payload schema drops unknown fields).
   `pagination.maxTotalHits`, which the index settings pin to
   `SEARCH_MAX_TOTAL_HITS`); the bounds live in contracts and derive from it.
 
-Result `{ results: RecordingSummary[] }` (an object, so fields can be added
-later), best match first:
+Result `{ results: RecordingSummary[] }`, best match first. Each item has only
+`mbid`, `title`, printed `artistCredit`, nullable `coverUrl`, and nullable
+`trackId` (null in the private catalog protocol; the API supplies an existing
+Track ID). Meilisearch stores the first four display fields, with the primary
+release MBID used to derive `coverUrl`; display identifiers are not searchable.
 
-- `mbid`, `title`, `lengthMs`, `disambiguation`, `video`, `artistCredit`
-  and `genres` are the Recording's own (the schema is `getRecording`'s
-  `recordingSchema` picked, so the names and meaning cannot drift), and
-  `primaryRelease` is `{ mbid, title, year, coverArtUrl }` or null.
-- `primaryRelease` is the release `getRecording` lists first (the oldest by
-  earliest release event, undated last, then by title and MBID); `year` is
-  the year of that event, null when unknown. `genres` follow the same
-  fallback as `getRecording` (the Recording's, else its release groups', else
-  its artists'; never mixed).
-- **The order is Meilisearch's, untouched**: the server asks Meilisearch for
-  the MBIDs only (`attributesToRetrieve` is the primary key), reads every
-  summary of the page from Postgres in **one query**
-  (`RecordingSummaryRepository`, one statement with a lateral subquery per
-  part) and puts the rows back in the order of the MBIDs (`orderByIds`).
-  An MBID Meilisearch returns that is no longer in the database is dropped,
-  so a page can be shorter than `limit` without being the last one: stop
-  paging on an empty page.
+- The primary release is chosen during initial indexing and incremental
+  updates with the same earliest-event, undated-last, title/MBID and
+  medium/track-position tie-breaks as `getRecording`.
+- A pre-upgrade index document may not have `primaryReleaseMbid`; it is served
+  with `coverUrl: null` until that Recording is reindexed. To fill covers for
+  every existing Recording without downloading or restoring MusicBrainz data,
+  use the in-place reconstruction command in [Backups and recovery](#backups-and-recovery).
+  This moves the catalog to `indexing`, so search answers
+  `CATALOG_NOT_READY` until the worker finishes. For a production rebuild
+  that keeps the serving copy available, use the existing blue-green reimport.
+- **The order is Meilisearch's, untouched**: search retrieves only the MBID,
+  title, printed artist credit and primary-release MBID from the index. It
+  performs no Postgres summary hydration. Stale hits remain until the worker's
+  outbox sync updates or removes them.
 - Before `ready` it answers `CATALOG_NOT_READY` (after validating).
   Meilisearch being down is `INTERNAL`.
 
@@ -630,9 +628,9 @@ After the first import, every change to the MusicBrainz tables reaches the
   `medium`, `track`, `release_country`, `release_unknown_country`,
   `release_group_tag`, `work`, `l_recording_work`, `url`, `link`,
   `l_recording_url`, `link_type`, `tag`, `genre`. Only tables whose columns
-  feed the indexed document are tracked: what `getRecording` shows live
-  (isrcs, release dates and countries, release group names, link type names)
-  needs no trigger, and search summaries are read from Postgres at query time.
+  feed the indexed document are tracked. Release events are tracked because
+  they select the primary release displayed in search; other data that
+  `getRecording` shows live (isrcs, link type names) needs no trigger.
 
   To track another table, add one entry to `TRACKED_TABLES`: the MusicBrainz
   table plus a `selectNew` query that returns `recording_id` and
@@ -1135,8 +1133,10 @@ rate limited). Beyond that:
   has started before relying on `CATALOG_NOT_READY`: an already-running process
   keeps cached search readiness monotonic at `ready`, while each restarted
   server loads persisted `indexing` before accepting requests. Leave the worker
-  running; its next ticks reindex every Recording from Postgres. The catalog
-  becomes `ready` again after indexing completes (`tiny` took 36 s).
+  running; its next ticks reindex every Recording from Postgres and backfill
+  `primaryReleaseMbid` for compact search results. The catalog becomes `ready`
+  again after indexing completes (`tiny` took 36 s); this does not run mbslave
+  or download a dump.
 - **Starting from nothing**: `docker compose down -v` deletes the volumes,
   and the next `up -d` is a first run. Never run it against a catalog worth
   keeping.
@@ -1488,7 +1488,7 @@ and 959 MB (mbslave).
   check, envelope parsing and error mapping, handlers and their payload
   validation, the dispatcher with its timeout, the WebSocket heartbeat with fake
   timers, the worker loop and its heartbeat file, the abortable sleep, the
-  logger, building the Meilisearch document and the summary, re-sorting rows by
+  logger, building the Meilisearch document and compact search result,
   Meilisearch's order, the sync plan and the tracked trigger set, the
   replication loop and its token gate). Services are tested with a mocked
   repository, and `MeilisearchIndex` with a fake client. Not unit-tested,

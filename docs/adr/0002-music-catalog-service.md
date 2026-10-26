@@ -35,8 +35,18 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
     old MBIDs resolvable.
   - A merged MBID answers `RECORDING_MOVED` with the new one, the same pattern
     as ADR 0001.
-- **Search uses Meilisearch.** Results keep Meilisearch's relevance order when
-  loaded from Postgres, with no re-ranking.
+- **Search uses Meilisearch.** It stores the text used for matching plus the
+  compact display fields (Recording MBID, title, printed artist credit and
+  primary-release MBID). Search returns those fields in Meilisearch's
+  relevance order; cover URLs are derived from the indexed release MBID, and
+  Track IDs are added by the API. The API does not hydrate search results from
+  the Music catalog's Postgres database.
+  - Existing documents without the indexed primary-release MBID are handled
+    as results without a cover until rebuilt. The established in-place index
+    reconstruction resets the bootstrap phase and indexing checkpoints, then
+    indexes the existing Postgres rows without reimporting MusicBrainz data;
+    searches answer `CATALOG_NOT_READY` until it completes. A blue-green
+    reimport rebuilds the index while the serving copy stays available.
   - On the 2.95 M-Recording sample it reached 95.8% recall@10 on title and
     artist, and 91% on title only.
   - It handled typos and prefixes, with p95 latency of 22-97 ms.
