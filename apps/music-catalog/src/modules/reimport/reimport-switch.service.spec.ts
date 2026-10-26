@@ -16,15 +16,12 @@ const setup = (
   const calls: string[] = [];
   const info = vi.fn();
   const switchIndex = (name: string) => ({
-    swapWith: vi.fn(async (uid: string) => {
-      calls.push(`${name}.swapWith(${uid})`);
-    }),
     deleteIndex: vi.fn(async () => {
       calls.push(`${name}.deleteIndex`);
     }),
   });
-  const servingIndex = switchIndex('recordings');
   const nextIndex = switchIndex('recordings_next');
+  const nextGenerationIndex = switchIndex('recordings_generation_next');
   const deps: ReimportSwitchDeps = {
     servingOutbox: {
       clearAll: vi.fn(async () => {
@@ -50,11 +47,18 @@ const setup = (
         calls.push('sequences.clearStall');
       }),
     },
-    servingIndex,
     nextIndex,
+    generation: {
+      serving: vi.fn(async () => 'old-database-oid'),
+      next: async () => 'new-database-oid',
+      deleteNext: nextGenerationIndex.deleteIndex,
+    },
     nextUrl: 'postgres://host/next',
     oldDatabaseName: options.oldDatabaseName ?? 'serving',
     cleanupOldCopy: options.cleanupOldCopy ?? false,
+    swapBoth: vi.fn(async () => {
+      calls.push('swapPairs(recordings+generation)');
+    }),
     logger: { ...silentLogger, info },
   };
   const service = new ReimportSwitchService(deps);
@@ -69,11 +73,12 @@ describe('ReimportSwitchService', () => {
 
     expect(calls).toEqual([
       'outbox.clearAll',
-      'recordings.swapWith(recordings_next)',
+      'swapPairs(recordings+generation)',
       'serving.markSwitched(postgres://host/next)',
       'next.markSwitched(postgres://host/next)',
       'sequences.clearStall',
       'recordings_next.deleteIndex',
+      'recordings_generation_next.deleteIndex',
     ]);
   });
 

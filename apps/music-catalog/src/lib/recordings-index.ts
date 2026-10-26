@@ -19,6 +19,8 @@ export type RecordingDocument = {
   disambiguation: string;
   /** The release selected for the displayed cover, when the Recording has one. */
   primaryReleaseMbid?: string | null;
+  /** The API-owned Track currently associated with this exact Recording. */
+  trackId?: string | null;
 };
 
 /** The index of Recordings; its primary key is the MBID. */
@@ -64,4 +66,5 @@ export const RECORDING_SEARCH_ATTRIBUTES = [
   'title',
   'artistCredit',
   'primaryReleaseMbid',
+  'trackId',
 ] as const satisfies readonly (keyof RecordingDocument)[];

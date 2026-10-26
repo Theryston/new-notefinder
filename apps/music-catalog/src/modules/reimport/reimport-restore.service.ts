@@ -3,6 +3,7 @@ import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RestoreService } from '../bootstrap/restore.service.js';
 import type { ReplicationService } from '../replication/replication.service.js';
+import type { TrackAssociationService } from '../track-association/track-association.service.js';
 import { planReimport } from './reimport-plan.js';
 import type { ReimportStateRepository } from './reimport-state.repository.js';
 
@@ -21,6 +22,9 @@ export type ReimportRestoreDeps = {
   nextState: ParallelCopyState;
   /** The restore pointed at the parallel database. */
   restore: RestoreService;
+  /** Durable Track projection transferred before the parallel copy indexes. */
+  associations?: TrackAssociationService;
+  nextDatabase?: import('../../database/database.js').Database;
   /** The mbslave release running here (`MBSLAVE_REF`), when known. */
   currentMbslaveRef: string | undefined;
   /** The serving database URL, to never restore into it. */
@@ -91,12 +95,14 @@ export class ReimportRestoreService {
         { dataset },
       );
       await this.deps.restore.run();
+      await this.transferAssociations();
       await state.advance({ from: 'restoring', to: 'indexing' });
       return 'restored';
     }
     if (decision === 'continue-restore') {
       await this.guardParallelDatabase();
       await this.deps.restore.run();
+      await this.transferAssociations();
       await state.advance({ from: 'restoring', to: 'indexing' });
       return 'restored';
     }
@@ -108,6 +114,13 @@ export class ReimportRestoreService {
       return decision;
     }
     return 'idle';
+  }
+
+  private async transferAssociations(): Promise<void> {
+    const { associations, nextDatabase } = this.deps;
+    if (associations !== undefined && nextDatabase !== undefined) {
+      await associations.transferTo(nextDatabase, 500);
+    }
   }
 
   // The parallel database must hold nothing but this reimport's copy: a

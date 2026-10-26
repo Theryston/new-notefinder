@@ -38,6 +38,7 @@ const setup = (
     getRawIndex?: () => Promise<unknown>;
     currentSettings?: Record<string, unknown>;
     searchHits?: Record<string, unknown>[];
+    document?: Doc;
     task?: Record<string, unknown>;
   } = {},
 ) => {
@@ -50,6 +51,12 @@ const setup = (
     updateSettings: vi.fn(() => enqueued(options.task ?? {})),
     addDocuments: vi.fn(() => enqueued(options.task ?? {})),
     search: vi.fn(async () => ({ hits: options.searchHits ?? [] })),
+    getDocument: vi.fn(async () => {
+      if (options.document === undefined) {
+        throw apiError(404, 'document_not_found');
+      }
+      return options.document;
+    }),
   };
   const client = {
     getRawIndex: vi.fn(options.getRawIndex ?? (async () => ({}))),
@@ -263,6 +270,40 @@ describe('MeilisearchIndex', () => {
       await expect(
         meili.search('hello', { limit: 5, offset: 0 }, ['mbid']),
       ).rejects.toThrow('without its mbid');
+    });
+  });
+
+  describe('getDocument', () => {
+    it('returns the document when it exists', async () => {
+      const { meili, index } = setup({ document: { mbid: 'a', title: 'A' } });
+
+      await expect(meili.getDocument('a')).resolves.toEqual({
+        mbid: 'a',
+        title: 'A',
+      });
+      expect(index.getDocument).toHaveBeenCalledExactlyOnceWith('a');
+    });
+
+    it('returns undefined when the document is absent', async () => {
+      const { meili } = setup();
+
+      await expect(meili.getDocument('missing')).resolves.toBeUndefined();
+    });
+
+    it('does not hide errors other than a missing document or index', async () => {
+      const index = {
+        getDocument: vi.fn(async () => {
+          throw apiError(403, 'invalid_api_key');
+        }),
+      };
+      const client = { index: vi.fn(() => index) };
+      const failing = new MeilisearchIndex<Doc>(
+        client as never,
+        'recordings',
+        'mbid',
+      );
+
+      await expect(failing.getDocument('a')).rejects.toThrow('invalid_api_key');
     });
   });
 

@@ -24,9 +24,24 @@ const servingUrl = await resolveServingDatabaseUrl({
 const pool = createPool(servingUrl, (error) => {
   logger.error('Database connection error', { error });
 });
+const nextPool =
+  env.REIMPORT_DATABASE_URL === undefined
+    ? undefined
+    : createPool(env.REIMPORT_DATABASE_URL, (error) => {
+        logger.error('Database connection error', { error });
+      });
 const server = createMusicCatalogServer({
   env,
   db: createDatabase(pool),
+  servingDatabaseUrl: servingUrl,
+  ...(nextPool === undefined || env.REIMPORT_DATABASE_URL === undefined
+    ? {}
+    : {
+        nextCopy: {
+          db: createDatabase(nextPool),
+          url: env.REIMPORT_DATABASE_URL,
+        },
+      }),
   logger,
 });
 
@@ -39,6 +54,7 @@ const shutdown = async (signal: string): Promise<void> => {
   logger.info('Shutting down', { signal });
   await server.stop();
   await pool.end();
+  await nextPool?.end();
 };
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

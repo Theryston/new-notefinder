@@ -9,7 +9,7 @@ export type CutoverWatcherOptions = {
   /** Opens the database the flip points at. */
   openDatabase: (url: string) => Database;
   /** Points this process's reads at the opened database. */
-  adopt: (db: Database) => void;
+  adopt: (db: Database, url: string) => void;
   logger: Logger;
 };
 
@@ -38,7 +38,8 @@ export const createCutoverWatcher = (
         switched?.phase === 'switched' &&
         switched.detail
       ) {
-        options.adopt(options.openDatabase(switched.detail));
+        const database = options.openDatabase(switched.detail);
+        options.adopt(database, switched.detail);
         adopted = true;
         options.logger.info('Adopted the reimported copy');
       }

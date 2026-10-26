@@ -18,11 +18,11 @@ describe('yearly schema change: reimporting beside the serving copy (e2e)', {
   // One server per test (not per file): a switch test flips its process to
   // the parallel database, and the next test must read the serving copy
   // again. Booting per test is what keeps the adoption honest.
-  const { server, client } = useIsolatedServer();
+  const parallel = useParallelDatabase();
+  const { server, client } = useIsolatedServer(parallel);
 
   useEmptySearchIndex();
 
-  const parallel = useParallelDatabase();
   useCleanParallelCopy(parallel);
   const dumps = useFakeDumps();
   const { statusResult, searchMbids, serveCatalog, restoreParallel } =

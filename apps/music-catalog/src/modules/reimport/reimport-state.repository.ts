@@ -1,5 +1,6 @@
 import type { ReimportPhase } from '@notefinder/contracts';
 import { and, eq, sql } from 'drizzle-orm';
+import { acquireCatalogWriteLock } from '../../database/catalog-write-lock.js';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';
 import { reimportState } from '../../database/schema/reimport-state.js';
@@ -63,12 +64,17 @@ export class ReimportStateRepository {
     from: ReimportState['phase'];
     to: ReimportState['phase'];
   }): Promise<void> {
-    await this.getDb()
-      .update(reimportState)
-      .set({ phase: move.to, progressPct: null })
-      .where(
-        and(eq(reimportState.id, true), eq(reimportState.phase, move.from)),
-      );
+    await this.getDb().transaction(async (transaction) => {
+      if (move.to === 'switching') {
+        await acquireCatalogWriteLock(transaction);
+      }
+      await transaction
+        .update(reimportState)
+        .set({ phase: move.to, progressPct: null })
+        .where(
+          and(eq(reimportState.id, true), eq(reimportState.phase, move.from)),
+        );
+    });
   }
 
   /** Records the indexing progress, 0 to 100. */

@@ -6,6 +6,7 @@ import type {
   CurrentDocument,
   RecordingDocumentService,
 } from '../recording/recording-document.service.js';
+import type { TrackAssociationService } from '../track-association/track-association.service.js';
 import type { RecordingOutboxRepository } from './recording-outbox.repository.js';
 import { type OutboxEntry, planSync } from './sync-plan.js';
 
@@ -18,6 +19,9 @@ export type SyncServiceDeps = {
   /** How many outbox entries one batch rebuilds. */
   batchSize: number;
   logger: Logger;
+  associations?: TrackAssociationService;
+  /** Serializes complete-document replacement with Track association writes. */
+  writeLock?: <Result>(run: () => Promise<Result>) => Promise<Result>;
 };
 
 export class SyncService {
@@ -64,26 +68,59 @@ export class SyncService {
     while (!signal.aborted) {
       const entries = await outbox.peekPending(batchSize);
       if (entries.length === 0) {
-        return;
+        break;
       }
       const ids = [...new Set(entries.map((entry) => entry.recordingId))];
-      const found: CurrentDocument[] = await documents.findDocumentsByIds(ids);
-      const current = new Map(
-        found.map((recording) => [
-          recording.id,
-          { mbid: recording.mbid, document: recording.document },
-        ]),
-      );
-      const plan = planSync(entries, current);
-      await index.upsert(plan.upserts);
-      await index.deleteDocuments(plan.deletes);
-      await outbox.markProcessed(entries);
+      const syncBatch = async (): Promise<void> => {
+        const found: CurrentDocument[] =
+          await documents.findDocumentsByIds(ids);
+        const current = new Map(
+          found.map((recording) => [
+            recording.id,
+            { mbid: recording.mbid, document: recording.document },
+          ]),
+        );
+        const plan = planSync(entries, current);
+        await index.upsert(plan.upserts);
+        await index.deleteDocuments(plan.deletes);
+        await outbox.markProcessed(entries);
+      };
+      await (this.deps.writeLock?.(syncBatch) ?? syncBatch());
       synced += entries.length;
       logger.info('Synced a batch of Recordings', {
         synced,
         recordings: ids.length,
       });
     }
-    logger.info('Sync paused: the worker is stopping', { synced });
+    await this.drainAssociations();
+    logger.info('Sync drained the pending MusicBrainz changes', { synced });
+  }
+
+  async drainAssociations(): Promise<void> {
+    await this.drainPendingAssociations(this.deps.batchSize);
+  }
+
+  private async drainPendingAssociations(limit: number): Promise<void> {
+    const { associations, documents, index, writeLock } = this.deps;
+    if (associations === undefined) return;
+    let afterMbid: string | undefined;
+    const processBatch = async (): Promise<string[]> => {
+      const mbids = await associations.peekPending(limit, afterMbid);
+      const ids = await documents.findIdsByMbids(mbids);
+      const current = await documents.findDocumentsByIds(ids);
+      if (current.length > 0) {
+        await index.upsert(current.map((recording) => recording.document));
+        await associations.markIndexed(
+          current.map((recording) => recording.mbid),
+        );
+      }
+      return mbids;
+    };
+    while (true) {
+      const mbids = await (writeLock?.(processBatch) ?? processBatch());
+      if (mbids.length === 0) return;
+      afterMbid = mbids.at(-1);
+      if (mbids.length < limit) return;
+    }
   }
 }

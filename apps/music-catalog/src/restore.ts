@@ -30,6 +30,8 @@ import { resolveServingDatabaseUrl } from './modules/reimport/resolve-serving-ur
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { ReplicationService } from './modules/replication/replication.service.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
+import { TrackAssociationRepository } from './modules/track-association/track-association.repository.js';
+import { TrackAssociationService } from './modules/track-association/track-association.service.js';
 
 // The process the mbslave container runs on start: it lays the dataset down
 // when needed, then replicates continuously in `full` mode (in `tiny` mode
@@ -124,8 +126,9 @@ const nextPool =
     : createPool(nextDatabaseUrl, (error) => {
         logger.error('Database connection error', { error });
       });
+const nextDb = nextPool === undefined ? undefined : createDatabase(nextPool);
 const reimportRestore =
-  nextPool === undefined ||
+  nextDb === undefined ||
   nextDatabaseUrl === undefined ||
   nextDatabaseName === undefined
     ? undefined
@@ -134,11 +137,10 @@ const reimportRestore =
         replication,
         state: new ReimportStateRepository(dbSource),
         nextState: {
-          getState: () =>
-            new BootstrapRepository(createDatabase(nextPool)).getState(),
+          getState: () => new BootstrapRepository(nextDb).getState(),
         },
         restore: new RestoreService({
-          repository: new BootstrapRepository(createDatabase(nextPool)),
+          repository: new BootstrapRepository(nextDb),
           // The parallel restore targets the parallel database: mbslave
           // reads the database name from its own variables, so only it is
           // overridden (the serving connection above is untouched).
@@ -159,8 +161,7 @@ const reimportRestore =
           ),
           resolveUrls: resolveLatestDumpUrls,
           resolveTotalBytes: (urls) => fetchArchiveTotalBytes(urls),
-          seedTiny: () =>
-            new TinySeedRepository(createDatabase(nextPool)).seed(),
+          seedTiny: () => new TinySeedRepository(nextDb).seed(),
           baseUrl: env.MUSICBRAINZ_DUMP_BASE_URL,
           dataset: env.CATALOG_DATASET,
           logger,
@@ -168,6 +169,10 @@ const reimportRestore =
         currentMbslaveRef: env.MBSLAVE_REF,
         servingDatabaseUrl: servingUrl,
         nextDatabaseUrl,
+        associations: new TrackAssociationService(
+          new TrackAssociationRepository(dbSource, servingUrl),
+        ),
+        nextDatabase: nextDb,
         dataset: env.CATALOG_DATASET,
         logger,
       });

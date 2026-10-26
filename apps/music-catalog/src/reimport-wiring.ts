@@ -1,5 +1,6 @@
 import type { CatalogDataset } from '@notefinder/contracts';
 import type { WorkerEnv } from './config/env.js';
+import { withCatalogWriteLock } from './database/catalog-write-lock.js';
 import type { Database } from './database/database.js';
 import { databaseNameOf } from './database/database-ref.js';
 import type { MeilisearchIndex } from './integrations/meilisearch/meilisearch-index.js';
@@ -9,6 +10,12 @@ import {
   RECORDINGS_NEXT_INDEX,
   type RecordingDocument,
 } from './lib/recordings-index.js';
+import {
+  REIMPORT_GENERATION_INDEX,
+  REIMPORT_GENERATION_INDEX_SETTINGS,
+  REIMPORT_GENERATION_NEXT_INDEX,
+  type ReimportGenerationDocument,
+} from './lib/reimport-generation-index.js';
 import type { Logger } from './logger.js';
 import { BootstrapRepository } from './modules/bootstrap/bootstrap.repository.js';
 import { BootstrapService } from './modules/bootstrap/bootstrap.service.js';
@@ -16,6 +23,7 @@ import { IndexingRepository } from './modules/indexing/indexing.repository.js';
 import { IndexingService } from './modules/indexing/indexing.service.js';
 import { RecordingDocumentRepository } from './modules/recording/recording-document.repository.js';
 import { RecordingDocumentService } from './modules/recording/recording-document.service.js';
+import { DatabaseIdentityRepository } from './modules/reimport/database-identity.repository.js';
 import {
   type ReimportCopy,
   ReimportService,
@@ -24,6 +32,9 @@ import { ReimportStateRepository } from './modules/reimport/reimport-state.repos
 import { ReimportSwitchService } from './modules/reimport/reimport-switch.service.js';
 import { ReplicationRepository } from './modules/replication/replication.repository.js';
 import { RecordingOutboxRepository } from './modules/sync/recording-outbox.repository.js';
+import { SyncService } from './modules/sync/sync.service.js';
+import { TrackAssociationRepository } from './modules/track-association/track-association.repository.js';
+import { TrackAssociationService } from './modules/track-association/track-association.service.js';
 
 export type WorkerReimportOptions = {
   bootstrap: BootstrapService;
@@ -80,23 +91,37 @@ type NextCopyParts = {
   logger: Logger;
 };
 
-// How many of the parallel copy's ids the flip samples before swapping: a
-// differing copy is missed only when every sampled id exists on both sides,
-// so hundreds make a wrong skip vanishingly unlikely, while an identical
-// copy is harmless to swap twice anyway.
-const REIMPORT_SWAP_PROBE_SIZE = 200;
-
 // The four steps against the parallel copy. Split from the assembly above
 // so each function stays small; covered by the same construction spec.
 const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
-  const { env, nextDb } = parts;
+  const { env, nextDb, logger } = parts;
   const nextIndex = createMeilisearchIndex<RecordingDocument>({
     url: env.MEILISEARCH_URL,
     apiKey: env.MEILISEARCH_WRITE_API_KEY,
     ...RECORDINGS_NEXT_INDEX,
   });
+  const generations = createGenerationIndexes(parts);
+  const associationSync = new SyncService({
+    bootstrap: new BootstrapService(
+      new BootstrapRepository(nextDb),
+      env.CATALOG_DATASET,
+    ),
+    outbox: new RecordingOutboxRepository(() => nextDb),
+    documents: new RecordingDocumentService(
+      new RecordingDocumentRepository(nextDb),
+    ),
+    index: nextIndex,
+    batchSize: env.INDEXING_BATCH_SIZE,
+    associations: new TrackAssociationService(
+      new TrackAssociationRepository(nextDb),
+    ),
+    writeLock: <Result>(run: () => Promise<Result>) =>
+      withCatalogWriteLock(nextDb, run),
+    logger,
+  });
   return {
     ensureTriggersCopy: async (): Promise<void> => {
+      await generations.prepare(true);
       await new RecordingOutboxRepository(nextDb).ensureTriggers();
     },
     indexCopy: async (
@@ -104,9 +129,73 @@ const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
       onProgress: (fraction: number) => Promise<void>,
     ): Promise<void> => {
       await detachedIndexing(parts, nextIndex).runDetached(signal);
+      await associationSync.drainAssociations();
       await onProgress(1);
     },
-    switchToCopy: buildSwitchStep(parts, nextIndex),
+    prepareSwitch: async () => {
+      await generations.prepare(false);
+      await associationSync.drainAssociations();
+    },
+    switchToCopy: buildSwitchStep(parts, nextIndex, generations),
+  };
+};
+
+type GenerationIndexes = {
+  serving: MeilisearchIndex<ReimportGenerationDocument>;
+  next: MeilisearchIndex<ReimportGenerationDocument>;
+  nextDatabaseOid: () => Promise<string>;
+  prepare: (allowInitialServingMarker: boolean) => Promise<void>;
+};
+
+const createGenerationIndexes = (parts: NextCopyParts): GenerationIndexes => {
+  const { env, dbSource, nextDb } = parts;
+  const serving = createMeilisearchIndex<ReimportGenerationDocument>({
+    url: env.MEILISEARCH_URL,
+    apiKey: env.MEILISEARCH_WRITE_API_KEY,
+    ...REIMPORT_GENERATION_INDEX,
+  });
+  const next = createMeilisearchIndex<ReimportGenerationDocument>({
+    url: env.MEILISEARCH_URL,
+    apiKey: env.MEILISEARCH_WRITE_API_KEY,
+    ...REIMPORT_GENERATION_NEXT_INDEX,
+  });
+  const nextDatabaseOid = () => new DatabaseIdentityRepository(nextDb).getOid();
+  return {
+    serving,
+    next,
+    nextDatabaseOid,
+    prepare: async (allowInitialServingMarker) => {
+      await Promise.all([
+        serving.ensure(REIMPORT_GENERATION_INDEX_SETTINGS),
+        next.ensure(REIMPORT_GENERATION_INDEX_SETTINGS),
+      ]);
+      const [servingDatabaseOid, targetDatabaseOid, marker] = await Promise.all(
+        [
+          new DatabaseIdentityRepository(dbSource()).getOid(),
+          nextDatabaseOid(),
+          serving.getDocument('catalog'),
+        ],
+      );
+      if (marker === undefined) {
+        if (!allowInitialServingMarker) {
+          throw new Error(
+            'Cannot recover the reimport swap: serving generation marker is missing.',
+          );
+        }
+        await serving.upsert([
+          { id: 'catalog', databaseOid: servingDatabaseOid },
+        ]);
+      } else if (
+        marker.databaseOid !== servingDatabaseOid &&
+        marker.databaseOid !== targetDatabaseOid
+      ) {
+        throw new Error(
+          'Cannot recover the reimport swap: serving generation marker ' +
+            'matches neither database.',
+        );
+      }
+      await next.upsert([{ id: 'catalog', databaseOid: targetDatabaseOid }]);
+    },
   };
 };
 
@@ -115,6 +204,7 @@ const buildNextCopy = (parts: NextCopyParts): ReimportCopy => {
 const buildSwitchStep = (
   parts: NextCopyParts,
   nextIndex: MeilisearchIndex<RecordingDocument>,
+  generations: GenerationIndexes,
 ): ReimportCopy['switchToCopy'] => {
   const { env, dbSource, nextDb, nextUrl, index, logger } = parts;
   return () =>
@@ -123,8 +213,20 @@ const buildSwitchStep = (
       servingState: new ReimportStateRepository(dbSource),
       nextState: new ReimportStateRepository(nextDb),
       sequences: new ReplicationRepository(dbSource),
-      servingIndex: index,
       nextIndex,
+      generation: {
+        serving: async () => {
+          const marker = await generations.serving.getDocument('catalog');
+          if (marker === undefined) {
+            throw new Error(
+              'Cannot recover the reimport swap: marker is missing.',
+            );
+          }
+          return marker.databaseOid;
+        },
+        next: generations.nextDatabaseOid,
+        deleteNext: () => generations.next.deleteIndex(),
+      },
       nextUrl,
       oldDatabaseName: databaseNameOf(env.DATABASE_URL),
       cleanupOldCopy: env.REIMPORT_CLEANUP_OLD_COPY !== 'false',
@@ -134,6 +236,10 @@ const buildSwitchStep = (
             servingUid: RECORDINGS_INDEX.uid,
             nextUid: RECORDINGS_NEXT_INDEX.uid,
           },
+          {
+            servingUid: REIMPORT_GENERATION_INDEX.uid,
+            nextUid: REIMPORT_GENERATION_NEXT_INDEX.uid,
+          },
         ]),
       // A rerun that finds the flip record completes the flip instead of
       // swapping back. Either copy's row proves it: the record is written
@@ -142,16 +248,6 @@ const buildSwitchStep = (
         const state = await new ReimportStateRepository(dbSource).get();
         return state?.phase === 'switched' && state.detail === nextUrl;
       },
-      // A sample of the parallel copy's ids: when the flip record is
-      // missing but the serving index already holds them all, the swap ran
-      // and the process died before recording it.
-      swapProbe: async () =>
-        (
-          await new RecordingDocumentRepository(nextDb).findBatch(
-            0,
-            REIMPORT_SWAP_PROBE_SIZE,
-          )
-        ).map((row) => row.mbid),
       logger,
     }).switchToCopy();
 };
@@ -176,5 +272,7 @@ const detachedIndexing = (
     index: nextIndex,
     batchSize: env.INDEXING_BATCH_SIZE,
     logger,
+    writeLock: <Result>(run: () => Promise<Result>) =>
+      withCatalogWriteLock(nextDb, run),
   });
 };

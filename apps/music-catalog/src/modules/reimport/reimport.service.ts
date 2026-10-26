@@ -26,6 +26,8 @@ export type ReimportCopy = {
   ) => Promise<void>;
   /** Swaps the indexes, flips the reads and deletes the old copy. */
   switchToCopy: (signal: AbortSignal) => Promise<void>;
+  /** Drains associations admitted before switching closed delivery. */
+  prepareSwitch: () => Promise<void>;
 };
 
 export type ReimportServiceDeps = {
@@ -78,6 +80,7 @@ export class ReimportService {
       return 'indexed';
     }
     if (decision === 'run-switch') {
+      await copy.prepareSwitch();
       await copy.switchToCopy(signal);
       this.deps.logger.info('Reimport switched to the parallel copy');
       return 'switched';

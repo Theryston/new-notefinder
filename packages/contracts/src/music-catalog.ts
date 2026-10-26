@@ -15,6 +15,7 @@ export const musicCatalogErrorCodeSchema = z.enum([
   'VALIDATION_FAILED',
   'UNKNOWN_REQUEST_TYPE',
   'CATALOG_NOT_READY',
+  'REIMPORT_SWITCHING',
   'RECORDING_NOT_FOUND',
   'RECORDING_MOVED',
   'RELEASE_GROUP_NOT_FOUND',
@@ -75,6 +76,7 @@ export const musicCatalogRequestTypeSchema = z.enum([
   'status',
   'getRecording',
   'search',
+  'associateTrack',
   'getReleaseGroup',
   'getArtist',
 ]);

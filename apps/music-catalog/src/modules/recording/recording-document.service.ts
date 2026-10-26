@@ -77,6 +77,10 @@ export class RecordingDocumentService {
     });
   }
 
+  findIdsByMbids(mbids: readonly string[]): Promise<number[]> {
+    return this.repository.findIdsByMbids(mbids);
+  }
+
   private async loadDetails(
     rows: readonly DocumentRecordingRow[],
   ): Promise<BatchDetails> {

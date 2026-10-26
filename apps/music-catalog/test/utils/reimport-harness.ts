@@ -6,6 +6,10 @@ import { inject } from 'vitest';
 import type { Database } from '../../src/database/database.js';
 import { createDatabase, createPool } from '../../src/database/database.js';
 import { MbslaveClient } from '../../src/integrations/mbslave/mbslave-client.js';
+import {
+  REIMPORT_GENERATION_INDEX,
+  REIMPORT_GENERATION_NEXT_INDEX,
+} from '../../src/lib/reimport-generation-index.js';
 import { ReimportStateRepository } from '../../src/modules/reimport/reimport-state.repository.js';
 import { ReplicationRepository } from '../../src/modules/replication/replication.repository.js';
 import { ReplicationService } from '../../src/modules/replication/replication.service.js';
@@ -132,6 +136,16 @@ export const useCleanParallelCopy = (parallel: () => ParallelCopy): void => {
     // which is fine).
     const meilisearch = inject('meilisearch');
     void meilisearchRequest(meilisearch, 'DELETE', '/indexes/recordings_next');
+    void meilisearchRequest(
+      meilisearch,
+      'DELETE',
+      `/indexes/${REIMPORT_GENERATION_INDEX.uid}`,
+    );
+    void meilisearchRequest(
+      meilisearch,
+      'DELETE',
+      `/indexes/${REIMPORT_GENERATION_NEXT_INDEX.uid}`,
+    );
   });
 };
 

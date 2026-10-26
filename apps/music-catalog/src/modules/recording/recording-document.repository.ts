@@ -25,6 +25,7 @@ import {
   lRecordingWork,
   work,
 } from '../../database/schema/musicbrainz/work.js';
+import { trackAssociation } from '../../database/schema/track-association.js';
 import type {
   ArtistNameRow,
   CreditGenreRow,
@@ -43,6 +44,7 @@ const documentColumns = {
   disambiguation: recording.comment,
   artistCreditId: recording.artistCredit,
   artistCreditName: artistCredit.name,
+  trackId: trackAssociation.trackId,
 };
 
 /**
@@ -64,6 +66,10 @@ export class RecordingDocumentRepository {
       .select(documentColumns)
       .from(recording)
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
+      .leftJoin(
+        trackAssociation,
+        eq(trackAssociation.recordingMbid, recording.gid),
+      )
       .where(gt(recording.id, afterId))
       .orderBy(asc(recording.id))
       .limit(limit);
@@ -87,7 +93,20 @@ export class RecordingDocumentRepository {
       .select(documentColumns)
       .from(recording)
       .innerJoin(artistCredit, eq(artistCredit.id, recording.artistCredit))
+      .leftJoin(
+        trackAssociation,
+        eq(trackAssociation.recordingMbid, recording.gid),
+      )
       .where(inArray(recording.id, [...ids]));
+  }
+
+  async findIdsByMbids(mbids: readonly string[]): Promise<number[]> {
+    if (mbids.length === 0) return [];
+    const rows = await this.getDb()
+      .select({ id: recording.id })
+      .from(recording)
+      .where(inArray(recording.gid, [...mbids]));
+    return rows.map((row) => row.id);
   }
 
   /** Each credited artist with each of its aliases (once without aliases). */

@@ -9,9 +9,10 @@ others later) talk to it over one long-lived, authenticated **WebSocket**. The
 full design is in the parent spec, issue #55; this file documents what exists.
 
 **What exists today**: the whole service. The authenticated WebSocket server
-answering `status`, `getRecording` and `search` (issues #57, #59 and #58), the
-protocol envelope, our own Postgres schema (the bootstrap state, the indexing
-checkpoint, the recording outbox, the replication state, the reimport state),
+answering `status`, `getRecording`, `search` and `associateTrack` (issues #57,
+#59, #58 and #385), the protocol envelope, our own Postgres schema (the
+bootstrap state, indexing checkpoint, Recording outbox, replication and
+reimport state, and the durable Track projection),
 read-only declarations of the MusicBrainz tables the queries read,
 **Meilisearch** as the search engine behind a small integration, the `server`
 and `worker` entrypoints (the worker indexes every Recording once the
@@ -146,6 +147,10 @@ src/
     search/
       search.handler.ts         the `search` handler
       search.service.ts         readiness, selected display fields from Meilisearch
+    track-association/
+      track-association.handler.ts  authenticated Track link delivery
+      track-association.service.ts  retryable cutover behavior
+      track-association.repository.ts exact-MBID durable projection and index work
     indexing/
       indexing.service.ts       the worker's initial indexing: batches, checkpoint, ready
       indexing.repository.ts    the indexing checkpoint
@@ -253,8 +258,8 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   requests can be in flight on one connection and responses may arrive in any
   order: match them by `id`. `id` is `null` in a failure only when the
   message was too broken to read one from it.
-- `type` is `status`, `getRecording`, `search`, `getReleaseGroup` or
-  `getArtist`. `payload` is validated per type; `status` takes none (missing
+- `type` is `status`, `getRecording`, `search`, `associateTrack`,
+  `getReleaseGroup` or `getArtist`. `payload` is validated per type; `status` takes none (missing
   or `{}`).
 - `status` result: `{ phase: 'restoring' | 'restored' | 'indexing' | 'ready',
   dataset: 'tiny' | 'full', replicationSequence?, pendingOutbox? }`, read
@@ -267,7 +272,8 @@ failure   { id, ok: false, error: { code, message, newMbid? } }
   one lands; see "Continuous replication") and `pendingOutbox` the entries
   still waiting to reach the index — the replication lag. Both are absent
   when the service answers without replication state.
-- Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`
+- Error `code`s: `UNAUTHORIZED` (handshake only), `VALIDATION_FAILED`,
+  `REIMPORT_SWITCHING` (retry `associateTrack` after the cutover),
   (malformed message or payload, binary frame), `UNKNOWN_REQUEST_TYPE`,
   `CATALOG_NOT_READY`, `RECORDING_NOT_FOUND`, `RECORDING_MOVED`,
   `RELEASE_GROUP_NOT_FOUND`, `RELEASE_GROUP_MOVED`, `ARTIST_NOT_FOUND`,
@@ -740,7 +746,8 @@ downtime and with a single human step (issue #69):
    server, migrated like the serving one) while the current copy keeps serving.
    Then the worker reinstalls the change triggers there, indexes into the
    `recordings_next` index and flips over: one atomic Meilisearch `swap-indexes`
-   task for the index pair, and the reads for the database (every repository
+   task moves the recording and private database-generation marker pairs
+   together, and the reads for the database (every repository
    resolves a reference the flip swaps, so in-flight requests finish on the old
    copy). The retired copy's indexes are deleted; its database is dropped unless
    `REIMPORT_CLEANUP_OLD_COPY=false`, which keeps it for inspection until the
@@ -752,9 +759,9 @@ downtime and with a single human step (issue #69):
    (`restoring` → `indexing` → `switching`). A reimport interrupted by a
    crash or restart resumes on the parallel copy (the restore redoes from a
    clean state, indexing resumes after its checkpoint, the flip replays
-   forward: a rerun that finds the flip record, or the swapped documents
-   without it, completes the flip instead of swapping back, then every
-   restarted process opens the new copy).
+   forward: a rerun that finds the flip record or the exact database OID in
+   the active generation marker completes the flip instead of swapping back,
+   then every restarted process opens the new copy).
 
 - **Disk.** About twice the steady state during a reimport (the parallel
   database plus the `*_next` indexes next to the serving ones), back to
@@ -827,14 +834,14 @@ downtime and with a single human step (issue #69):
   serving the old copy. With `REIMPORT_CLEANUP_OLD_COPY=false` the retired
   database is kept for inspection instead: the flip record survives in the
   new copy, so restarts keep opening it.
-- **Crash windows.** The index swap is one Meilisearch task, so there is no
-  half-swapped catalog. The residual window is the flip record right after
-  it: a crash there replays the flip, finds the swapped documents through a
-  sample of the parallel copy's ids (hundreds, so a differing copy is missed
-  only by extreme bad luck; an identical copy is harmless either way) and
-  completes forward instead of swapping back. If a flip ever looks wrong,
-  compare the serving index counts with the serving database before dropping
-  anything: `recordings` must hold the new copy's documents.
+- **Crash windows.** The recording indexes and private database-generation
+  marker indexes move in one Meilisearch task, so there is no half-swapped
+  catalog. The marker stores PostgreSQL's database OID, not a connection URL.
+  If a crash happens after the task but before the flip record, a rerun sees
+  the target database OID in the active marker and completes forward. The
+  marker index is not exposed to search and its retired `*_next` copy is
+  deleted with the retired recording index. If either marker is missing or
+  names neither expected database, the worker stops instead of guessing.
 - **Greppable logs.** Until the bump, the container crash-loops on mbslave's
   own schema-mismatch message (`mbslave output`, then `Replication failed,
   the next start resumes it`) while `status` carries the stall. The reimport

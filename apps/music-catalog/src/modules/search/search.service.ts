@@ -45,7 +45,7 @@ export class SearchService {
           typeof document.primaryReleaseMbid !== 'string'
             ? null
             : coverArtUrl(document.primaryReleaseMbid),
-        trackId: null,
+        trackId: document.trackId ?? null,
       })),
     };
   }

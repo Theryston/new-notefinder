@@ -11,6 +11,7 @@ import {
   waitForSearchPhase,
 } from './create-test-server.js';
 import { resetDatabase } from './database.js';
+import type { ParallelCopy } from './reimport-harness.js';
 import { connect, type TestClient } from './ws-client.js';
 
 export type IsolatedServer = {
@@ -28,7 +29,9 @@ type RunningServer = {
 
 // Boots the real server on a free port against the e2e database, resetting
 // it first: the next test starts from an empty catalog either way.
-const bootIsolatedServer = async (): Promise<RunningServer> => {
+const bootIsolatedServer = async (
+  nextCopy?: () => ParallelCopy,
+): Promise<RunningServer> => {
   const meilisearch = inject('meilisearch');
   const parsed = parseServerEnv({
     NODE_ENV: 'test',
@@ -38,6 +41,9 @@ const bootIsolatedServer = async (): Promise<RunningServer> => {
     CATALOG_DATASET: 'tiny',
     MEILISEARCH_URL: meilisearch.url,
     MEILISEARCH_SEARCH_API_KEY: meilisearch.searchKey,
+    ...(nextCopy === undefined
+      ? {}
+      : { REIMPORT_DATABASE_URL: nextCopy().url }),
   });
   const pool = createPool(parsed.DATABASE_URL, () => undefined);
   const db = createDatabase(pool);
@@ -46,6 +52,8 @@ const bootIsolatedServer = async (): Promise<RunningServer> => {
   const ws = createMusicCatalogServer({
     env: parsed,
     db,
+    servingDatabaseUrl: inject('databaseUrl'),
+    ...(nextCopy === undefined ? {} : { nextCopy: nextCopy() }),
     logger: testLogger,
     searchReadinessRefreshIntervalMs: 10,
     onSearchReadinessCreated: (cache) => {
@@ -75,12 +83,14 @@ const bootIsolatedServer = async (): Promise<RunningServer> => {
  * next test, so each test reads the serving copy again. Mirrors
  * `useTestServer`/`useTestClient`, with the database reset per test.
  */
-export const useIsolatedServer = (): IsolatedServer => {
+export const useIsolatedServer = (
+  nextCopy?: () => ParallelCopy,
+): IsolatedServer => {
   let running: RunningServer | undefined;
   let tcpClient: TestClient | undefined;
 
   beforeEach(async () => {
-    running = await bootIsolatedServer();
+    running = await bootIsolatedServer(nextCopy);
     tcpClient = await connect(running.url, API_KEY);
   });
 

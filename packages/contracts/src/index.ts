@@ -18,6 +18,7 @@ export * from './music-catalog-artist.js';
 export * from './music-catalog-recording.js';
 export * from './music-catalog-release-group.js';
 export * from './music-catalog-search.js';
+export * from './music-catalog-track-association.js';
 export * from './pagination.js';
 export * from './pitch.js';
 export * from './practice-attempts.js';
