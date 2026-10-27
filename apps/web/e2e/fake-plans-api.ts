@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import type { Locale, PlanCatalog } from '@notefinder/contracts';
 
@@ -59,14 +60,14 @@ export function defaultPlanCatalog(locale: Locale): PlanCatalog {
   };
 }
 
-type Reply = { catalog?: PlanCatalog; status?: number };
+type Reply = { catalog?: PlanCatalog; status?: number; delayMs?: number };
 const overrides = new Map<Locale, Reply>();
 
 export const planRoutes = [
   {
     method: 'GET',
     pathname: '/v1/plans',
-    serve: (
+    serve: async (
       request: IncomingMessage,
       response: ServerResponse,
     ): Promise<void> => {
@@ -78,6 +79,7 @@ export const planRoutes = [
           : 'en';
       const reply = overrides.get(locale);
       const status = reply?.status ?? 200;
+      if (reply?.delayMs) await delay(reply.delayMs);
       json(
         response,
         status,
@@ -90,7 +92,6 @@ export const planRoutes = [
             },
         request,
       );
-      return Promise.resolve();
     },
   },
   {

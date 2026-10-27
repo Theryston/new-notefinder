@@ -7,6 +7,50 @@ import { webServerEnv } from './web-server-env';
 
 test.describe.configure({ mode: 'serial' });
 
+test('a delayed first comparison paints its natural mobile geometry without placeholder growth', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await mockAuthApi(page);
+  await installCatalog('pt-BR', {
+    catalog: defaultPlanCatalog('pt-BR'),
+    delayMs: 300,
+  });
+  await page.addInitScript(() => {
+    const frames: { placeholders: number; heights: number[] }[] = [];
+    const record = () => {
+      const main = document.querySelector('main');
+      if (!main) return;
+      const placeholders = main.querySelectorAll(
+        '[data-slot="skeleton"]',
+      ).length;
+      const heights = Array.from(main.querySelectorAll('article'), (card) =>
+        Math.round(card.getBoundingClientRect().height),
+      );
+      if (!placeholders && !heights.length) return;
+      frames.push({ placeholders, heights });
+      document.documentElement.dataset.planRenderFrames =
+        JSON.stringify(frames);
+    };
+    const observer = new MutationObserver(() => requestAnimationFrame(record));
+    observer.observe(document, { childList: true, subtree: true });
+  });
+  await page.goto('/pt-BR/plans');
+  await expect(
+    page.getByRole('article', { name: 'Pro', exact: true }),
+  ).toBeVisible();
+  const frames: { placeholders: number; heights: number[] }[] = JSON.parse(
+    (await page.locator('html').getAttribute('data-plan-render-frames')) ??
+      '[]',
+  );
+  expect(frames.length).toBeGreaterThan(0);
+  expect(frames.some((frame) => frame.placeholders > 0)).toBe(false);
+  const painted = frames.filter((frame) => frame.heights.length === 2);
+  expect(painted.length).toBeGreaterThan(0);
+  expect(new Set(painted.map((frame) => frame.heights.join(','))).size).toBe(1);
+  await installCatalog('pt-BR', { catalog: defaultPlanCatalog('pt-BR') });
+});
+
 test('a cold unavailable catalog shows a localized error and retries successfully', async ({
   page,
 }) => {
@@ -118,7 +162,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
 
 async function installCatalog(
   locale: Locale,
-  reply: { catalog?: PlanCatalog; status?: number },
+  reply: { catalog?: PlanCatalog; status?: number; delayMs?: number },
 ) {
   const result = await fetch('http://127.0.0.1:3333/__plans-mock/set', {
     method: 'POST',

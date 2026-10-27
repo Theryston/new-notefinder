@@ -1,15 +1,16 @@
-import type { Locale } from '@notefinder/contracts';
-import { connection } from 'next/server';
+import type { Locale, PlanCatalog } from '@notefinder/contracts';
 import { getTranslations } from 'next-intl/server';
 
-import { getPlanCatalog } from '../queries';
 import { PlanCard } from './plan-card';
 
-export async function PlanComparison({ locale }: { locale: Locale }) {
-  // A temporary catalog outage must not become a build-time error page.
-  await connection();
+export async function PlanComparison({
+  locale,
+  catalog,
+}: {
+  locale: Locale;
+  catalog: PlanCatalog | null;
+}) {
   const t = await getTranslations('plans');
-  const catalog = await getPlanCatalog(locale).catch(() => null);
   if (!catalog) {
     return (
       <div role="alert" className="rounded-2xl bg-muted p-8 text-center">

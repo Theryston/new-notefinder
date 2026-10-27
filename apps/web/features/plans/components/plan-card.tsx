@@ -15,7 +15,7 @@ export async function PlanCard({ plan, currency }: Props) {
   return (
     <article
       aria-labelledby={`plan-${plan.id}`}
-      className="flex min-h-176 flex-col gap-6 rounded-2xl bg-card p-6 shadow-sm md:p-8"
+      className="flex flex-col gap-6 rounded-2xl bg-card p-6 shadow-sm md:p-8"
     >
       <div className="space-y-2">
         <h2
