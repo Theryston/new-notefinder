@@ -225,6 +225,13 @@
       "when": 1793100039388,
       "tag": "0031_wild_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793109247821,
+      "tag": "0032_square_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

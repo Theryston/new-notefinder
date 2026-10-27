@@ -1,0 +1,1 @@
+ALTER TABLE "track_association_events" ADD CONSTRAINT "track_association_events_track_id_unique" UNIQUE("track_id");

@@ -19,6 +19,8 @@ import {
 import { TrackAssociationProcessor } from '../src/modules/tracks/track-association.processor.js';
 import { TrackAssociationService } from '../src/modules/tracks/track-association.service.js';
 import { TrackAssociationEventRepository } from '../src/modules/tracks/track-association-event.repository.js';
+import { TrackAssociationSyncRepository } from '../src/modules/tracks/track-association-sync.repository.js';
+import { TrackAssociationSyncService } from '../src/modules/tracks/track-association-sync.service.js';
 import { TrackProcessingRepository } from '../src/modules/tracks/track-processing.repository.js';
 import { type AuthClient, createAuthClient, signIn } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
@@ -36,12 +38,37 @@ import {
 } from './utils/fake-music-catalog.js';
 import { recordingFixture } from './utils/recording-fixtures.js';
 
+const recordProjectedAssociation = (
+  projected: Map<string, string>,
+  mbid: string,
+  trackId: string | null,
+): void => {
+  if (trackId === null) {
+    projected.delete(mbid);
+    return;
+  }
+  projected.set(mbid, trackId);
+};
+
+const searchMbid = (
+  query: unknown,
+  searchMbids: Map<string, string>,
+): string => {
+  if (typeof query === 'string') {
+    const mapped = searchMbids.get(query);
+    if (mapped !== undefined) return mapped;
+    if (query === 'overlap') return testMbid(999);
+  }
+  return testMbid(1);
+};
+
 describe('Track association outbox (e2e)', () => {
   let catalog: FakeMusicCatalog;
   let testApp: TestApp;
   let associationOutage = false;
   let associationCalls = 0;
-  let projectedTrackId: string | null = null;
+  let projectedTrackIds = new Map<string, string>();
+  let searchMbids = new Map<string, string>();
 
   const createWorker = async () => {
     const upsertJobScheduler = vi.fn().mockResolvedValue(undefined);
@@ -85,11 +112,16 @@ describe('Track association outbox (e2e)', () => {
         if (associationOutage) {
           return { error: { code: 'REIMPORT_SWITCHING', message: 'Retry.' } };
         }
-        projectedTrackId = association.trackId;
+        recordProjectedAssociation(
+          projectedTrackIds,
+          association.mbid,
+          association.trackId,
+        );
         return { result: {} };
       }
       if ('query' in payload) {
-        const recording = recordingFixture({ mbid: testMbid(1) });
+        const mbid = searchMbid(payload.query, searchMbids);
+        const recording = recordingFixture({ mbid });
         return {
           result: {
             results: [
@@ -98,7 +130,7 @@ describe('Track association outbox (e2e)', () => {
                 title: recording.title,
                 artistCredit: recording.artistCredit.name,
                 coverUrl: recording.releases[0]?.coverArtUrl ?? null,
-                trackId: projectedTrackId,
+                trackId: projectedTrackIds.get(mbid) ?? null,
               },
             ],
           },
@@ -124,7 +156,8 @@ describe('Track association outbox (e2e)', () => {
     await resetDatabase(testApp.db);
     associationOutage = false;
     associationCalls = 0;
-    projectedTrackId = null;
+    projectedTrackIds = new Map();
+    searchMbids = new Map();
   });
 
   it('links the Track in compact catalog search after delivery', async () => {
@@ -241,10 +274,133 @@ describe('Track association outbox (e2e)', () => {
         new Date(now.getTime() + TRACK_ASSOCIATION_CLAIM_LEASE_MS),
       );
     expect(associationCalls).toBe(2);
-    expect(projectedTrackId).toBe(trackId);
+    expect(projectedTrackIds.get(testMbid(1))).toBe(trackId);
     const [event] = await testApp.db.select().from(trackAssociationEvents);
     expect(event?.deliveredAt).toBeInstanceOf(Date);
   });
+
+  it('synchronizes every Track in bounded pages and restores links on rerun', async () => {
+    const seededTracks = Array.from({ length: 251 }, (_, index) => ({
+      recordingMbid: testMbid(index + 1),
+      title: `Seeded ${index + 1}`,
+    }));
+    const inserted = await testApp.db
+      .insert(tracks)
+      .values(seededTracks)
+      .returning();
+    const sync = testApp.app.get(TrackAssociationSyncService);
+    const syncRepository = testApp.app.get(TrackAssociationSyncRepository);
+    const originalFindPage = syncRepository.findPage.bind(syncRepository);
+    let overlapTrackId: string | undefined;
+    const findPage = vi
+      .spyOn(syncRepository, 'findPage')
+      .mockImplementation(async (afterId, limit) => {
+        const page = await originalFindPage(afterId, limit);
+        if (page.length === 0 && overlapTrackId === undefined) {
+          const [track] = await testApp.db
+            .insert(tracks)
+            .values({
+              id: 'zzzzzzzzzzzzzzzzzzzzzzzz',
+              recordingMbid: testMbid(999),
+              title: 'Created during synchronization',
+            })
+            .returning();
+          if (track === undefined) {
+            throw new Error('Track insert returned no row');
+          }
+          overlapTrackId = track.id;
+          await testApp.db.insert(trackAssociationEvents).values({
+            trackId: track.id,
+            recordingMbid: track.recordingMbid,
+          });
+        }
+        return page;
+      });
+
+    await sync.synchronize();
+    expect(projectedTrackIds.size).toBe(252);
+    const search = await testApp.http
+      .get('/v1/search')
+      .query({ query: 'Bohemian Rhapsody' })
+      .expect(200);
+    expect(search.body.results[0]?.trackId).toBe(
+      inserted.find((track) => track.recordingMbid === testMbid(1))?.id,
+    );
+    const overlapSearch = await testApp.http
+      .get('/v1/search')
+      .query({ query: 'overlap' })
+      .expect(200);
+    expect(overlapSearch.body.results[0]?.trackId).toBe(overlapTrackId);
+
+    projectedTrackIds.clear();
+    await sync.synchronize();
+    expect(projectedTrackIds.size).toBe(252);
+    const events = await testApp.db.select().from(trackAssociationEvents);
+    expect(events).toHaveLength(252);
+    expect(events.every((event) => event.deliveredAt instanceof Date)).toBe(
+      true,
+    );
+    findPage.mockRestore();
+  }, 60_000);
+
+  it('recovers search links after sync interruption', async () => {
+    const inserted = await testApp.db
+      .insert(tracks)
+      .values(
+        Array.from({ length: 51 }, (_, index) => ({
+          id: `sync-track-${String(index + 1).padStart(3, '0')}`,
+          recordingMbid: testMbid(index + 1),
+          title: `Interrupted sync ${index + 1}`,
+        })),
+      )
+      .returning();
+    const associations = testApp.app.get(TrackAssociationService);
+    const dispatchPending = associations.dispatchPending.bind(associations);
+    const interruptedDispatch = vi
+      .spyOn(associations, 'dispatchPending')
+      .mockImplementation(async (now) => {
+        await dispatchPending(now);
+        throw new Error('Simulated sync process interruption');
+      });
+    const sync = testApp.app.get(TrackAssociationSyncService);
+
+    try {
+      await expect(sync.synchronize()).rejects.toThrow(
+        'Simulated sync process interruption',
+      );
+    } finally {
+      interruptedDispatch.mockRestore();
+    }
+    expect(associationCalls).toBe(50);
+
+    const linked = inserted.find(
+      (track) => projectedTrackIds.get(track.recordingMbid) === track.id,
+    );
+    const pending = inserted.find(
+      (track) => !projectedTrackIds.has(track.recordingMbid),
+    );
+    expect(linked).toBeDefined();
+    expect(pending).toBeDefined();
+    if (linked === undefined || pending === undefined) return;
+
+    searchMbids.set('sync-linked', linked.recordingMbid);
+    searchMbids.set('sync-pending', pending.recordingMbid);
+    const searchTrackId = async (query: string) => {
+      const response = await testApp.http
+        .get('/v1/search')
+        .query({ query })
+        .expect(200);
+      return response.body.results[0]?.trackId;
+    };
+    expect(await searchTrackId('sync-linked')).toBe(linked.id);
+    expect(await searchTrackId('sync-pending')).toBeNull();
+
+    await sync.synchronize();
+
+    expect(await searchTrackId('sync-linked')).toBe(linked.id);
+    expect(await searchTrackId('sync-pending')).toBe(pending.id);
+    expect(projectedTrackIds.size).toBe(51);
+  }, 60_000);
 
   it('rolls the outbox event back with a failed Track creation transaction', async () => {
     const user = await createPasswordUser(testApp.db);

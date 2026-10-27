@@ -96,4 +96,47 @@ export class TrackAssociationEventRepository {
       .returning({ id: trackAssociationEvents.id });
     return deleted.length;
   }
+
+  async enqueueSynchronizationPage(
+    rows: { id: string; recordingMbid: string }[],
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    await this.txHost.tx
+      .insert(trackAssociationEvents)
+      .values(
+        rows.map((row) => ({
+          trackId: row.id,
+          recordingMbid: row.recordingMbid,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: trackAssociationEvents.trackId,
+        set: {
+          recordingMbid: sql`excluded.recording_mbid`,
+          attempts: 0,
+          nextAttemptAt: new Date(),
+          claimedUntil: null,
+          deliveredAt: null,
+        },
+      });
+  }
+
+  countPendingForTracks(trackIds: string[]): Promise<{ count: number }[]> {
+    return this.txHost.tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(trackAssociationEvents)
+      .where(
+        and(
+          inArray(trackAssociationEvents.trackId, trackIds),
+          isNull(trackAssociationEvents.deliveredAt),
+        ),
+      );
+  }
+
+  countPending(): Promise<{ count: number }[]> {
+    return this.txHost.tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(trackAssociationEvents)
+      .where(isNull(trackAssociationEvents.deliveredAt));
+  }
 }

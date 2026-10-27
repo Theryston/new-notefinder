@@ -1,7 +1,6 @@
 import { searchResultSchema } from '@notefinder/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
-import { resetDatabase } from './utils/database.js';
-import { createTrack, testMbid } from './utils/factories.js';
+import { testMbid } from './utils/factories.js';
 import {
   FAKE_CATALOG_API_KEY,
   type FakeMusicCatalog,
@@ -11,10 +10,9 @@ import { recordingSummary } from './utils/recording-summaries.js';
 
 // End-to-end unauthenticated search through the API over one persistent
 // Music catalog WebSocket: the API multiplexes queries by request id,
-// enriches each hit with its Track id when the Recording was processed
-// (else null, rendered as a static card), bounds abuse with a per-IP rate
+// forwards each catalog-provided Track association, bounds abuse with a per-IP rate
 // limit, and surfaces catalog outages as retryable 503/504 errors.
-describe('Search enrichment plus limits plus errors (e2e)', () => {
+describe('Catalog search plus limits plus errors (e2e)', () => {
   let catalog: FakeMusicCatalog;
   let testApp: TestApp;
 
@@ -50,6 +48,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
           results: [
             {
               ...recordingSummary(testMbid(1), 'First Song'),
+              trackId: 'catalog-track-1',
               coverUrl: 'https://coverartarchive.org/release/test/front-500',
             },
             recordingSummary(testMbid(2), 'Second Song'),
@@ -71,10 +70,6 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
     await catalog.close();
   });
 
-  beforeEach(async () => {
-    await resetDatabase(testApp.db);
-  });
-
   // Supertest connects from loopback, a trusted proxy by default, so
   // X-Forwarded-For sets the client IP and isolates each test's rate-limit
   // bucket (the search route allows 30/min per IP).
@@ -90,11 +85,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
       .set('X-Forwarded-For', clientIp)
       .query(query);
 
-  it('links the processed Recording and leaves the other static', async () => {
-    const track = await createTrack(testApp.db, {
-      recordingMbid: testMbid(1),
-    });
-
+  it('returns catalog association ids in relevance order', async () => {
     const response = await searchAs('203.0.113.11', {
       query: 'queen',
     }).expect(200);
@@ -105,7 +96,7 @@ describe('Search enrichment plus limits plus errors (e2e)', () => {
     ).toEqual(['First Song', 'Second Song']);
     expect(
       response.body.results.map((item: { trackId: unknown }) => item.trackId),
-    ).toEqual([track.id, null]);
+    ).toEqual(['catalog-track-1', null]);
     expect(response.body.results[0].coverUrl).toContain('https://');
   });
 

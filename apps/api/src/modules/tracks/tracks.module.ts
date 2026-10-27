@@ -17,6 +17,8 @@ import { TRACK_ASSOCIATION_QUEUE } from './track-association.job.js';
 import { TrackAssociationProcessor } from './track-association.processor.js';
 import { TrackAssociationService } from './track-association.service.js';
 import { TrackAssociationEventRepository } from './track-association-event.repository.js';
+import { TrackAssociationSyncRepository } from './track-association-sync.repository.js';
+import { TrackAssociationSyncService } from './track-association-sync.service.js';
 import { TrackAudioService } from './track-audio.service.js';
 import { TrackContributionsService } from './track-contributions.service.js';
 import { TrackContributorRepository } from './track-contributor.repository.js';
@@ -120,6 +122,8 @@ import { TracksService } from './tracks.service.js';
     TrackRequestService,
     TrackAssociationEventRepository,
     TrackAssociationService,
+    TrackAssociationSyncRepository,
+    TrackAssociationSyncService,
     TrackAssociationProcessor,
     TrackRequestLauncherService,
     TrackRequestFlowService,
@@ -163,6 +167,7 @@ import { TracksService } from './tracks.service.js';
     TracksService,
     TrackAlbumCoverService,
     TrackContributionsService,
+    TrackAssociationSyncService,
     TrackLocaleTrendingService,
   ],
 })
