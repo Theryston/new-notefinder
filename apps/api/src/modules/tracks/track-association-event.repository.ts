@@ -1,6 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { TransactionHost } from '@nestjs-cls/transactional';
 import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
-import { DATABASE, type Database } from '../../database/database.js';
+import type { DatabaseAdapter } from '../../database/database.js';
 import { trackAssociationEvents } from '../../database/schema/track-association-events.js';
 
 export type ClaimedTrackAssociation = {
@@ -13,14 +14,14 @@ export type ClaimedTrackAssociation = {
 /** Durable queue state for Track links that the Music catalog has not acknowledged. */
 @Injectable()
 export class TrackAssociationEventRepository {
-  constructor(@Inject(DATABASE) private readonly db: Database) {}
+  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
   async claimPending(
     now: Date,
     claimExpiresAt: Date,
     limit: number,
   ): Promise<ClaimedTrackAssociation[]> {
-    const due = this.db
+    const due = this.txHost.tx
       .select({ id: trackAssociationEvents.id })
       .from(trackAssociationEvents)
       .where(
@@ -40,7 +41,7 @@ export class TrackAssociationEventRepository {
       .limit(limit)
       .for('update', { skipLocked: true });
 
-    return this.db
+    return this.txHost.tx
       .update(trackAssociationEvents)
       .set({
         claimedUntil: claimExpiresAt,
@@ -57,7 +58,7 @@ export class TrackAssociationEventRepository {
 
   /** Records delivery only after the catalog's durable acknowledgment. */
   async markDelivered(id: string, deliveredAt: Date): Promise<void> {
-    await this.db
+    await this.txHost.tx
       .update(trackAssociationEvents)
       .set({ deliveredAt, claimedUntil: null })
       .where(
@@ -70,7 +71,7 @@ export class TrackAssociationEventRepository {
 
   /** Releases a failed claim with durable exponential backoff. */
   async scheduleRetry(id: string, nextAttemptAt: Date): Promise<void> {
-    await this.db
+    await this.txHost.tx
       .update(trackAssociationEvents)
       .set({ nextAttemptAt, claimedUntil: null })
       .where(
@@ -83,13 +84,13 @@ export class TrackAssociationEventRepository {
 
   /** Deletes at most one old delivered page; pending events are never eligible. */
   async deleteDeliveredBefore(cutoff: Date, limit: number): Promise<number> {
-    const expired = this.db
+    const expired = this.txHost.tx
       .select({ id: trackAssociationEvents.id })
       .from(trackAssociationEvents)
       .where(lt(trackAssociationEvents.deliveredAt, cutoff))
       .orderBy(asc(trackAssociationEvents.deliveredAt))
       .limit(limit);
-    const deleted = await this.db
+    const deleted = await this.txHost.tx
       .delete(trackAssociationEvents)
       .where(inArray(trackAssociationEvents.id, expired))
       .returning({ id: trackAssociationEvents.id });
@@ -100,7 +101,7 @@ export class TrackAssociationEventRepository {
     rows: { id: string; recordingMbid: string }[],
   ): Promise<void> {
     if (rows.length === 0) return;
-    await this.db
+    await this.txHost.tx
       .insert(trackAssociationEvents)
       .values(
         rows.map((row) => ({
@@ -121,7 +122,7 @@ export class TrackAssociationEventRepository {
   }
 
   countPendingForTracks(trackIds: string[]): Promise<{ count: number }[]> {
-    return this.db
+    return this.txHost.tx
       .select({ count: sql<number>`count(*)::int` })
       .from(trackAssociationEvents)
       .where(
@@ -133,7 +134,7 @@ export class TrackAssociationEventRepository {
   }
 
   countPending(): Promise<{ count: number }[]> {
-    return this.db
+    return this.txHost.tx
       .select({ count: sql<number>`count(*)::int` })
       .from(trackAssociationEvents)
       .where(isNull(trackAssociationEvents.deliveredAt));

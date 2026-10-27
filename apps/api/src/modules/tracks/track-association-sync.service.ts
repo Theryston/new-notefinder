@@ -28,18 +28,21 @@ export class TrackAssociationSyncService {
   }
 
   private async waitForPage(trackIds: string[]): Promise<void> {
-    for (;;) {
-      await this.delivery.dispatchPending();
-      const pending = await this.events.countPendingForTracks(trackIds);
-      if ((pending[0]?.count ?? 0) === 0) return;
-      await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL_MS));
-    }
+    await this.waitUntilSettled(() =>
+      this.events.countPendingForTracks(trackIds),
+    );
   }
 
   private async waitForOutbox(): Promise<void> {
+    await this.waitUntilSettled(() => this.events.countPending());
+  }
+
+  private async waitUntilSettled(
+    countPending: () => Promise<{ count: number }[]>,
+  ): Promise<void> {
     for (;;) {
       await this.delivery.dispatchPending();
-      const pending = await this.events.countPending();
+      const pending = await countPending();
       if ((pending[0]?.count ?? 0) === 0) return;
       await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL_MS));
     }

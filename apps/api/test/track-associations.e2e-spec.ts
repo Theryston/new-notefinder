@@ -50,8 +50,17 @@ const recordProjectedAssociation = (
   projected.set(mbid, trackId);
 };
 
-const searchMbid = (query: unknown): string =>
-  query === 'overlap' ? testMbid(999) : testMbid(1);
+const searchMbid = (
+  query: unknown,
+  searchMbids: Map<string, string>,
+): string => {
+  if (typeof query === 'string') {
+    const mapped = searchMbids.get(query);
+    if (mapped !== undefined) return mapped;
+    if (query === 'overlap') return testMbid(999);
+  }
+  return testMbid(1);
+};
 
 describe('Track association outbox (e2e)', () => {
   let catalog: FakeMusicCatalog;
@@ -59,6 +68,7 @@ describe('Track association outbox (e2e)', () => {
   let associationOutage = false;
   let associationCalls = 0;
   let projectedTrackIds = new Map<string, string>();
+  let searchMbids = new Map<string, string>();
 
   const createWorker = async () => {
     const upsertJobScheduler = vi.fn().mockResolvedValue(undefined);
@@ -110,7 +120,7 @@ describe('Track association outbox (e2e)', () => {
         return { result: {} };
       }
       if ('query' in payload) {
-        const mbid = searchMbid(payload.query);
+        const mbid = searchMbid(payload.query, searchMbids);
         const recording = recordingFixture({ mbid });
         return {
           result: {
@@ -147,6 +157,7 @@ describe('Track association outbox (e2e)', () => {
     associationOutage = false;
     associationCalls = 0;
     projectedTrackIds = new Map();
+    searchMbids = new Map();
   });
 
   it('links the Track in compact catalog search after delivery', async () => {
@@ -330,6 +341,65 @@ describe('Track association outbox (e2e)', () => {
       true,
     );
     findPage.mockRestore();
+  }, 60_000);
+
+  it('recovers search links after sync interruption', async () => {
+    const inserted = await testApp.db
+      .insert(tracks)
+      .values(
+        Array.from({ length: 51 }, (_, index) => ({
+          id: `sync-track-${String(index + 1).padStart(3, '0')}`,
+          recordingMbid: testMbid(index + 1),
+          title: `Interrupted sync ${index + 1}`,
+        })),
+      )
+      .returning();
+    const associations = testApp.app.get(TrackAssociationService);
+    const dispatchPending = associations.dispatchPending.bind(associations);
+    const interruptedDispatch = vi
+      .spyOn(associations, 'dispatchPending')
+      .mockImplementation(async (now) => {
+        await dispatchPending(now);
+        throw new Error('Simulated sync process interruption');
+      });
+    const sync = testApp.app.get(TrackAssociationSyncService);
+
+    try {
+      await expect(sync.synchronize()).rejects.toThrow(
+        'Simulated sync process interruption',
+      );
+    } finally {
+      interruptedDispatch.mockRestore();
+    }
+    expect(associationCalls).toBe(50);
+
+    const linked = inserted.find(
+      (track) => projectedTrackIds.get(track.recordingMbid) === track.id,
+    );
+    const pending = inserted.find(
+      (track) => !projectedTrackIds.has(track.recordingMbid),
+    );
+    expect(linked).toBeDefined();
+    expect(pending).toBeDefined();
+    if (linked === undefined || pending === undefined) return;
+
+    searchMbids.set('sync-linked', linked.recordingMbid);
+    searchMbids.set('sync-pending', pending.recordingMbid);
+    const searchTrackId = async (query: string) => {
+      const response = await testApp.http
+        .get('/v1/search')
+        .query({ query })
+        .expect(200);
+      return response.body.results[0]?.trackId;
+    };
+    expect(await searchTrackId('sync-linked')).toBe(linked.id);
+    expect(await searchTrackId('sync-pending')).toBeNull();
+
+    await sync.synchronize();
+
+    expect(await searchTrackId('sync-linked')).toBe(linked.id);
+    expect(await searchTrackId('sync-pending')).toBe(pending.id);
+    expect(projectedTrackIds.size).toBe(51);
   }, 60_000);
 
   it('rolls the outbox event back with a failed Track creation transaction', async () => {
