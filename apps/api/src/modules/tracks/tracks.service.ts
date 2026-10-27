@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  CatalogTrack,
-  Mbid,
-  RecordingSummary,
-  SearchResultItem,
-} from '@notefinder/contracts';
+import type { CatalogTrack, Mbid } from '@notefinder/contracts';
 import { throwMovedOrMissing } from './track-not-found.js';
 import { TracksRepository } from './tracks.repository.js';
 
@@ -54,22 +49,5 @@ export class TracksService {
    */
   findTrackIdsByRecordingMbids(mbids: Mbid[]): Promise<Map<string, string>> {
     return this.tracksRepository.findTrackIdsByRecordingMbids(mbids);
-  }
-
-  /**
-   * Enriches compact catalog results with the Track link, keeping the catalog's
-   * order: each hit carries its Track id when notefinder already processed
-   * that Recording, else null (the web renders a static card for those).
-   */
-  async attachTrackIds(
-    results: RecordingSummary[],
-  ): Promise<SearchResultItem[]> {
-    const trackIds = await this.findTrackIdsByRecordingMbids(
-      results.map((result) => result.mbid),
-    );
-    return results.map((result) => ({
-      ...result,
-      trackId: trackIds.get(result.mbid) ?? null,
-    }));
   }
 }

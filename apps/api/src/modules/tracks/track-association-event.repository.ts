@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { TransactionHost } from '@nestjs-cls/transactional';
+import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
-import type { DatabaseAdapter } from '../../database/database.js';
+import { DATABASE, type Database } from '../../database/database.js';
 import { trackAssociationEvents } from '../../database/schema/track-association-events.js';
 
 export type ClaimedTrackAssociation = {
@@ -14,14 +13,14 @@ export type ClaimedTrackAssociation = {
 /** Durable queue state for Track links that the Music catalog has not acknowledged. */
 @Injectable()
 export class TrackAssociationEventRepository {
-  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+  constructor(@Inject(DATABASE) private readonly db: Database) {}
 
   async claimPending(
     now: Date,
     claimExpiresAt: Date,
     limit: number,
   ): Promise<ClaimedTrackAssociation[]> {
-    const due = this.txHost.tx
+    const due = this.db
       .select({ id: trackAssociationEvents.id })
       .from(trackAssociationEvents)
       .where(
@@ -41,7 +40,7 @@ export class TrackAssociationEventRepository {
       .limit(limit)
       .for('update', { skipLocked: true });
 
-    return this.txHost.tx
+    return this.db
       .update(trackAssociationEvents)
       .set({
         claimedUntil: claimExpiresAt,
@@ -58,7 +57,7 @@ export class TrackAssociationEventRepository {
 
   /** Records delivery only after the catalog's durable acknowledgment. */
   async markDelivered(id: string, deliveredAt: Date): Promise<void> {
-    await this.txHost.tx
+    await this.db
       .update(trackAssociationEvents)
       .set({ deliveredAt, claimedUntil: null })
       .where(
@@ -71,7 +70,7 @@ export class TrackAssociationEventRepository {
 
   /** Releases a failed claim with durable exponential backoff. */
   async scheduleRetry(id: string, nextAttemptAt: Date): Promise<void> {
-    await this.txHost.tx
+    await this.db
       .update(trackAssociationEvents)
       .set({ nextAttemptAt, claimedUntil: null })
       .where(
@@ -84,16 +83,59 @@ export class TrackAssociationEventRepository {
 
   /** Deletes at most one old delivered page; pending events are never eligible. */
   async deleteDeliveredBefore(cutoff: Date, limit: number): Promise<number> {
-    const expired = this.txHost.tx
+    const expired = this.db
       .select({ id: trackAssociationEvents.id })
       .from(trackAssociationEvents)
       .where(lt(trackAssociationEvents.deliveredAt, cutoff))
       .orderBy(asc(trackAssociationEvents.deliveredAt))
       .limit(limit);
-    const deleted = await this.txHost.tx
+    const deleted = await this.db
       .delete(trackAssociationEvents)
       .where(inArray(trackAssociationEvents.id, expired))
       .returning({ id: trackAssociationEvents.id });
     return deleted.length;
+  }
+
+  async enqueueSynchronizationPage(
+    rows: { id: string; recordingMbid: string }[],
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    await this.db
+      .insert(trackAssociationEvents)
+      .values(
+        rows.map((row) => ({
+          trackId: row.id,
+          recordingMbid: row.recordingMbid,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: trackAssociationEvents.trackId,
+        set: {
+          recordingMbid: sql`excluded.recording_mbid`,
+          attempts: 0,
+          nextAttemptAt: new Date(),
+          claimedUntil: null,
+          deliveredAt: null,
+        },
+      });
+  }
+
+  countPendingForTracks(trackIds: string[]): Promise<{ count: number }[]> {
+    return this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(trackAssociationEvents)
+      .where(
+        and(
+          inArray(trackAssociationEvents.trackId, trackIds),
+          isNull(trackAssociationEvents.deliveredAt),
+        ),
+      );
+  }
+
+  countPending(): Promise<{ count: number }[]> {
+    return this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(trackAssociationEvents)
+      .where(isNull(trackAssociationEvents.deliveredAt));
   }
 }

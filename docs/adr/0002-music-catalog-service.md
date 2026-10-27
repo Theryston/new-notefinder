@@ -39,8 +39,8 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
   compact display fields (Recording MBID, title, printed artist credit and
   primary-release MBID). Search returns those fields in Meilisearch's
   relevance order; cover URLs are derived from the indexed release MBID, and
-  Track IDs are added by the API. The API does not hydrate search results from
-  the Music catalog's Postgres database.
+  Track IDs are read from the Music catalog's Meilisearch documents. Search
+  does not hydrate results from either service's Postgres database.
   - Existing documents without the indexed primary-release MBID are handled
     as results without a cover until rebuilt. The established in-place index
     reconstruction resets the bootstrap phase and indexing checkpoints, then
@@ -179,3 +179,15 @@ the expired lease causes an idempotent resend after restart. Successfully
 delivered rows are deleted in batches after 30 days; pending rows are never
 eligible for cleanup. This adds no environment variables and keeps Track
 creation independent of catalog delivery and search indexing.
+
+## Update (#387)
+
+Public API search now forwards compact catalog results directly, including
+their nullable Track IDs. Before switching an environment to this path, an
+operator runs `node dist/main.js --sync-track-associations` against the API
+image. The command keyset-pages every existing API Track through the
+authenticated durable outbox and waits for catalog acknowledgments and
+concurrent pending events before succeeding. It can be rerun to restore a lost
+projection. Track creation continues to populate the same outbox; no periodic
+reconciliation scan is added. See `docs/track-association-sync.md` for the
+cutover and recovery steps.

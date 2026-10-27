@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
 
@@ -25,5 +32,6 @@ export const trackAssociationEvents = pgTable(
     index('track_association_events_delivered_idx')
       .on(table.deliveredAt)
       .where(sql`${table.deliveredAt} is not null`),
+    unique('track_association_events_track_id_unique').on(table.trackId),
   ],
 );
