@@ -21,6 +21,7 @@ export * from './music-catalog-search.js';
 export * from './music-catalog-track-association.js';
 export * from './pagination.js';
 export * from './pitch.js';
+export * from './plans.js';
 export * from './practice-attempts.js';
 export * from './practice-preferences.js';
 export * from './profile-visibility.js';

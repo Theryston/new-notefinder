@@ -1,0 +1,79 @@
+{
+  "freeName": "Free",
+  "freeDescription": "Everything you need to start singing.",
+  "proDescription": "Everything in Free, plus future tools for your singing.",
+  "benefits": [
+    {
+      "id": "track-search",
+      "name": "Track search",
+      "description": "Find Tracks to sing along with.",
+      "status": "available"
+    },
+    {
+      "id": "track-requests",
+      "name": "Track requests",
+      "description": "Request new Tracks for Processing.",
+      "status": "available"
+    },
+    {
+      "id": "unlimited-singing",
+      "name": "Unlimited singing",
+      "description": "Practice singing without paid membership or practice limits.",
+      "status": "available"
+    },
+    {
+      "id": "vocal-notes",
+      "name": "Vocal notes",
+      "description": "See the vocal notes on the playback timeline.",
+      "status": "available"
+    },
+    {
+      "id": "basic-pitch-feedback",
+      "name": "Live basic pitch feedback",
+      "description": "Follow your pitch in real time with your microphone.",
+      "status": "available"
+    },
+    {
+      "id": "advanced-scoring",
+      "name": "Advanced singing-performance scoring",
+      "description": "Planned: singing-performance feedback beyond counting correct vocal notes.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "ad-free",
+      "name": "Ad-free experience",
+      "description": "Planned: sing and explore without advertising.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "attempt-comparison",
+      "name": "Attempt comparison",
+      "description": "Planned: compare your practice Attempts.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "difficulty-map",
+      "name": "Difficulty map",
+      "description": "Planned: explore the challenging parts of a Track.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "progress",
+      "name": "Progress over time",
+      "description": "Planned: follow your singing progress over time.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "targeted-practice",
+      "name": "Targeted practice",
+      "description": "Planned: focus practice on the parts you want to improve.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "cloud-recordings",
+      "name": "Cloud recordings",
+      "description": "Planned: keep your singing recordings in the cloud.",
+      "status": "coming-soon"
+    }
+  ]
+}

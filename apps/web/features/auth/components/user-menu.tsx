@@ -2,6 +2,7 @@
 
 import {
   FileTextIcon,
+  LayersIcon,
   LogOutIcon,
   type LucideIcon,
   PencilIcon,
@@ -23,6 +24,7 @@ import {
   PreferencesSubmenus,
 } from '@/components/preferences';
 import { Button } from '@/components/ui/button';
+import { DrawerClose } from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +54,7 @@ function useMenuLinks(user: SessionUser): MenuLink[] {
   return [
     ...profile,
     { href: '/me/edit', label: t('account.editProfile'), icon: PencilIcon },
+    { href: '/plans', label: t('account.plans'), icon: LayersIcon },
   ];
 }
 
@@ -157,10 +160,15 @@ function UserDrawer({ user, currentPath }: Props) {
       <MenuDrawerList>
         {links.map(({ href, label, icon: Icon }) => (
           <li key={href}>
-            <Link href={href} className={menuDrawerItemClassName()}>
+            <DrawerClose
+              nativeButton={false}
+              role="link"
+              render={<Link href={href} />}
+              className={menuDrawerItemClassName()}
+            >
               <Icon />
               {label}
-            </Link>
+            </DrawerClose>
           </li>
         ))}
       </MenuDrawerList>

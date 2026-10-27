@@ -1,0 +1,79 @@
+{
+  "freeName": "Grátis",
+  "freeDescription": "Tudo o que você precisa para começar a cantar.",
+  "proDescription": "Tudo do Grátis, além de futuras ferramentas para o seu canto.",
+  "benefits": [
+    {
+      "id": "track-search",
+      "name": "Busca de faixas",
+      "description": "Encontre faixas para cantar junto.",
+      "status": "available"
+    },
+    {
+      "id": "track-requests",
+      "name": "Pedidos de faixas",
+      "description": "Peça novas faixas para processamento.",
+      "status": "available"
+    },
+    {
+      "id": "unlimited-singing",
+      "name": "Canto sem limites",
+      "description": "Pratique canto sem assinatura paga nem limites de prática.",
+      "status": "available"
+    },
+    {
+      "id": "vocal-notes",
+      "name": "Notas vocais",
+      "description": "Veja as notas vocais na linha do tempo da reprodução.",
+      "status": "available"
+    },
+    {
+      "id": "basic-pitch-feedback",
+      "name": "Feedback básico de afinação ao vivo",
+      "description": "Acompanhe sua afinação em tempo real com o microfone.",
+      "status": "available"
+    },
+    {
+      "id": "advanced-scoring",
+      "name": "Avaliação avançada de canto",
+      "description": "Planejado: feedback sobre o desempenho no canto além da contagem de notas vocais corretas.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "ad-free",
+      "name": "Experiência sem anúncios",
+      "description": "Planejado: cante e explore sem publicidade.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "attempt-comparison",
+      "name": "Comparação de tentativas",
+      "description": "Planejado: compare suas tentativas de prática.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "difficulty-map",
+      "name": "Mapa de dificuldade",
+      "description": "Planejado: explore os trechos desafiadores de uma faixa.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "progress",
+      "name": "Evolução ao longo do tempo",
+      "description": "Planejado: acompanhe sua evolução no canto ao longo do tempo.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "targeted-practice",
+      "name": "Prática direcionada",
+      "description": "Planejado: concentre a prática nos trechos que deseja melhorar.",
+      "status": "coming-soon"
+    },
+    {
+      "id": "cloud-recordings",
+      "name": "Gravações na nuvem",
+      "description": "Planejado: guarde suas gravações de canto na nuvem.",
+      "status": "coming-soon"
+    }
+  ]
+}
