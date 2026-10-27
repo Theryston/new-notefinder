@@ -16,8 +16,6 @@ export type ClaimedTrackAssociation = {
 export class TrackAssociationEventRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
 
-  /** Joins Track creation's active transaction, so the outbox cannot drift from it. */
-
   async claimPending(
     now: Date,
     claimExpiresAt: Date,

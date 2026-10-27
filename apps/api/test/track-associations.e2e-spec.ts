@@ -1,12 +1,22 @@
+import { getQueueToken } from '@nestjs/bullmq';
+import { Test, type TestingModule } from '@nestjs/testing';
 import {
   createTrackResultSchema,
   musicCatalogTrackAssociationPayloadSchema,
 } from '@notefinder/contracts';
+import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { trackAssociationEvents } from '../src/database/schema/track-association-events.js';
 import { tracks } from '../src/database/schema/tracks.js';
 import { MusicCatalogClient } from '../src/integrations/music-catalog/music-catalog.client.js';
-import { TRACK_ASSOCIATION_CLAIM_LEASE_MS } from '../src/modules/tracks/track-association.job.js';
+import {
+  DELIVER_TRACK_ASSOCIATIONS_JOB,
+  TRACK_ASSOCIATION_CLAIM_LEASE_MS,
+  TRACK_ASSOCIATION_POLL_INTERVAL_MS,
+  TRACK_ASSOCIATION_QUEUE,
+  TRACK_ASSOCIATION_SCHEDULER_ID,
+} from '../src/modules/tracks/track-association.job.js';
+import { TrackAssociationProcessor } from '../src/modules/tracks/track-association.processor.js';
 import { TrackAssociationService } from '../src/modules/tracks/track-association.service.js';
 import { TrackAssociationEventRepository } from '../src/modules/tracks/track-association-event.repository.js';
 import { TrackProcessingRepository } from '../src/modules/tracks/track-processing.repository.js';
@@ -32,6 +42,30 @@ describe('Track association outbox (e2e)', () => {
   let associationOutage = false;
   let associationCalls = 0;
   let projectedTrackId: string | null = null;
+
+  const createWorker = async () => {
+    const upsertJobScheduler = vi.fn().mockResolvedValue(undefined);
+    const workerModule: TestingModule = await Test.createTestingModule({
+      providers: [
+        TrackAssociationProcessor,
+        {
+          provide: TrackAssociationService,
+          useValue: testApp.app.get(TrackAssociationService),
+        },
+        {
+          provide: getQueueToken(TRACK_ASSOCIATION_QUEUE),
+          useValue: { upsertJobScheduler },
+        },
+      ],
+    }).compile();
+    const processor = workerModule.get(TrackAssociationProcessor);
+    await processor.onModuleInit();
+    return {
+      close: () => workerModule.close(),
+      processor,
+      upsertJobScheduler,
+    };
+  };
 
   const signedInClient = async (user: User): Promise<AuthClient> => {
     const client = createAuthClient(testApp);
@@ -148,7 +182,42 @@ describe('Track association outbox (e2e)', () => {
     expect(associationCalls).toBe(2);
   });
 
-  it('recovers an acknowledged event after a worker restart', async () => {
+  it('re-registers polling and delivers a pending event after processor restart', async () => {
+    const user = await createPasswordUser(testApp.db);
+    const response = await (await signedInClient(user))
+      .post('/v1/tracks')
+      .send({ recordingMbid: testMbid(1), locale: 'en' })
+      .expect(202);
+    const { trackId } = createTrackResultSchema.parse(response.body);
+    const [pending] = await testApp.db.select().from(trackAssociationEvents);
+    expect(pending).toMatchObject({ trackId, deliveredAt: null });
+
+    const previousWorker = await createWorker();
+    expect(previousWorker.upsertJobScheduler).toHaveBeenCalledWith(
+      TRACK_ASSOCIATION_SCHEDULER_ID,
+      { every: TRACK_ASSOCIATION_POLL_INTERVAL_MS },
+      { name: DELIVER_TRACK_ASSOCIATIONS_JOB, data: {} },
+    );
+    await previousWorker.close();
+
+    const restartedWorker = await createWorker();
+    expect(restartedWorker.upsertJobScheduler).toHaveBeenCalledWith(
+      TRACK_ASSOCIATION_SCHEDULER_ID,
+      { every: TRACK_ASSOCIATION_POLL_INTERVAL_MS },
+      { name: DELIVER_TRACK_ASSOCIATIONS_JOB, data: {} },
+    );
+    await restartedWorker.processor.process({
+      name: DELIVER_TRACK_ASSOCIATIONS_JOB,
+      data: {},
+    } as Job<unknown>);
+    await restartedWorker.close();
+
+    expect(associationCalls).toBe(1);
+    const [delivered] = await testApp.db.select().from(trackAssociationEvents);
+    expect(delivered?.deliveredAt).toBeInstanceOf(Date);
+  });
+
+  it('redelivers after the catalog acknowledges before the outbox acknowledgment', async () => {
     const user = await createPasswordUser(testApp.db);
     const response = await (await signedInClient(user))
       .post('/v1/tracks')
