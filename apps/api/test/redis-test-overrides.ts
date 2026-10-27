@@ -16,6 +16,8 @@ import { PersonalHomeProcessor } from '../src/modules/home/home-personal.process
 import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
 import { StreakReminderProcessor } from '../src/modules/streaks/streak-reminder.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
+import { TRACK_ASSOCIATION_QUEUE } from '../src/modules/tracks/track-association.job.js';
+import { TrackAssociationProcessor } from '../src/modules/tracks/track-association.processor.js';
 import { TRACK_MP3_QUEUE } from '../src/modules/tracks/track-mp3.job.js';
 import { TrackMp3Processor } from '../src/modules/tracks/track-mp3.processor.js';
 import { TRACK_PROCESSING_QUEUE } from '../src/modules/tracks/track-processing.job.js';
@@ -34,6 +36,7 @@ const QUEUES = [
   TRACK_METADATA_QUEUE,
   TRACK_MP3_QUEUE,
   TRACK_TRENDING_QUEUE,
+  TRACK_ASSOCIATION_QUEUE,
   HOME_FEED_QUEUE,
   PERSONAL_HOME_FEED_QUEUE,
   EDITORIAL_PIN_QUEUE,
@@ -48,6 +51,7 @@ const PROCESSORS = [
   TrackMetadataProcessor,
   TrackMp3Processor,
   TrackTrendingProcessor,
+  TrackAssociationProcessor,
   HomeFeedProcessor,
   PersonalHomeProcessor,
   EditorialPinsProcessor,

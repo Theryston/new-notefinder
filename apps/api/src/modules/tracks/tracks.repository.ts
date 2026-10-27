@@ -7,11 +7,11 @@ import type {
   CatalogTrackTag,
   CatalogTrackWork,
   Mbid,
-  TrackArtistCreditEntry,
 } from '@notefinder/contracts';
 import { and, asc, desc, eq, gt, inArray, ne } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';
+import { trackAssociationEvents } from '../../database/schema/track-association-events.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';
 import {
   legacyTrackIds,
@@ -22,47 +22,17 @@ import {
   trackWorks,
 } from '../../database/schema/tracks.js';
 import { type ByTrack, groupByTrack } from './group-by-track.js';
-import type { NewTrackCoreRow, NewTrackRows } from './track-from-recording.js';
+import type { NewTrackCoreRow } from './track-from-recording.js';
 import type { NoteSummary } from './track-note-summary.js';
-
-/** The companion rows of a new Track (everything but the core row). */
-type NewTrackDetails = Omit<NewTrackRows, 'track'>;
-
-/** A Track as its Processing reads it (see `findPipelineTrack`). */
-export type PipelineTrack = {
-  id: string;
-  title: string;
-  /** In milliseconds; null when MusicBrainz has none. */
-  lengthMs: number | null;
-  coverUrl: string | null;
-  /** The artists as the credit prints them, in credit order. */
-  artistNames: string[];
-  /** Every URL the Recording links to. */
-  externalUrls: string[];
-  releases: { mbid: string; title: string; year: number | null }[];
-};
-
-/** The Track fields the Processing page's header shows. */
-export type TrackHeaderRow = {
-  id: string;
-  title: string;
-  coverUrl: string | null;
-  artistCredit: TrackArtistCreditEntry[];
-};
-
-/** Inserts the rows with `insert` when there are any, and does nothing otherwise. */
-async function insertIfAny<TRow>(
-  rows: readonly TRow[],
-  insert: (rows: TRow[]) => Promise<unknown>,
-): Promise<void> {
-  if (rows.length > 0) {
-    await insert([...rows]);
-  }
-}
-
-/** The rows of one Track, each carrying its Track ID. */
-const onTrack = <TRow extends object>(rows: readonly TRow[], trackId: string) =>
-  rows.map((row) => ({ ...row, trackId }));
+import type {
+  PipelineTrack,
+  TrackHeaderRow,
+} from './track-repository.helpers.js';
+import {
+  insertIfAny,
+  type NewTrackDetails,
+  onTrack,
+} from './track-repository.helpers.js';
 
 @Injectable()
 export class TracksRepository {
@@ -98,6 +68,17 @@ export class TracksRepository {
       .onConflictDoNothing({ target: tracks.recordingMbid })
       .returning({ id: tracks.id });
     return inserted?.id;
+  }
+
+  /** Records the durable Music catalog association in the Track transaction. */
+  async insertAssociationEvent(
+    recordingMbid: Mbid,
+    trackId: string,
+  ): Promise<void> {
+    await this.txHost.tx.insert(trackAssociationEvents).values({
+      recordingMbid,
+      trackId,
+    });
   }
 
   /** The companion rows of a new Track: releases, works, tags and links. */

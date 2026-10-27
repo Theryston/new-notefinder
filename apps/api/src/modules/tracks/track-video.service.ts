@@ -8,6 +8,7 @@ import {
   messageOf,
   TrackProcessingFailure,
 } from './track-processing-failure.js';
+import type { PipelineTrack } from './track-repository.helpers.js';
 import {
   chooseSearchMatch,
   isValidCandidate,
@@ -15,7 +16,6 @@ import {
   recordingTargetOf,
   searchQueryOf,
 } from './track-video-matching.js';
-import type { PipelineTrack } from './tracks.repository.js';
 import { youtubeVideoIdOf } from './youtube-video-id.js';
 
 /** The video a Processing chose, and where it was found. */

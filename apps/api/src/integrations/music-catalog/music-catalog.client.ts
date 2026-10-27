@@ -15,6 +15,8 @@ import {
   type MusicCatalogResponse,
   type MusicCatalogSearchParams,
   type MusicCatalogSearchResult,
+  type MusicCatalogTrackAssociationPayload,
+  musicCatalogAssociateTrackResponseSchema,
   musicCatalogGetArtistResponseSchema,
   musicCatalogGetRecordingResponseSchema,
   musicCatalogGetReleaseGroupResponseSchema,
@@ -157,6 +159,19 @@ export class MusicCatalogClient implements OnModuleInit, OnModuleDestroy {
         'search',
         params,
         musicCatalogSearchResponseSchema,
+      ),
+    );
+  }
+
+  /** Persists and projects a Track association in the Music catalog. */
+  async associateTrack(
+    payload: MusicCatalogTrackAssociationPayload,
+  ): Promise<void> {
+    resultOrThrow(
+      await this.requestOrFail(
+        'associateTrack',
+        payload,
+        musicCatalogAssociateTrackResponseSchema,
       ),
     );
   }

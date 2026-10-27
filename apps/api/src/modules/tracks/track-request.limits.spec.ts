@@ -27,6 +27,7 @@ const tracks = {
   findTrackIdsByRecordingMbids: vi.fn(),
   insertTrack: vi.fn(),
   insertTrackDetails: vi.fn(),
+  insertAssociationEvent: vi.fn(),
 };
 const processings = {
   insertQueuedProcessing: vi.fn(),

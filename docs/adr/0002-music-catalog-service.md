@@ -161,3 +161,21 @@ the complete document. Reimport recovery swaps a private generation-marker
 index pair atomically with the Recording pair. The marker carries the
 PostgreSQL database OID, so a restart can tell exactly whether the target copy
 is active even when old and new catalogs share the same first Recording IDs.
+
+## Update (#386)
+
+When a Track is created, the API inserts its Recording MBID and Track ID into
+`track_association_events` inside the same PostgreSQL transaction as the Track,
+its first Processing and Contribution. The outbox row is therefore committed
+only when Track creation commits. A BullMQ scheduler polls the outbox every
+five seconds; Redis schedules delivery but PostgreSQL owns the pending work.
+
+Workers claim bounded batches with a one-minute lease, deliver through the
+authenticated `associateTrack` WebSocket operation, and mark rows delivered
+only after the catalog acknowledgment. Failed deliveries receive durable
+exponential backoff capped at ten minutes. If the worker stops after the
+catalog accepted an association but before the API saved its acknowledgment,
+the expired lease causes an idempotent resend after restart. Successfully
+delivered rows are deleted in batches after 30 days; pending rows are never
+eligible for cleanup. This adds no environment variables and keeps Track
+creation independent of catalog delivery and search indexing.

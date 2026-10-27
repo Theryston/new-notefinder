@@ -13,6 +13,10 @@ import { YouTubeMusicModule } from '../../integrations/youtube-music/youtube-mus
 import { TRACK_METADATA_QUEUE } from '../../queue/track-metadata.job.js';
 import { UsersModule } from '../users/users.module.js';
 import { TrackAlbumCoverService } from './track-album-cover.service.js';
+import { TRACK_ASSOCIATION_QUEUE } from './track-association.job.js';
+import { TrackAssociationProcessor } from './track-association.processor.js';
+import { TrackAssociationService } from './track-association.service.js';
+import { TrackAssociationEventRepository } from './track-association-event.repository.js';
 import { TrackAudioService } from './track-audio.service.js';
 import { TrackContributionsService } from './track-contributions.service.js';
 import { TrackContributorRepository } from './track-contributor.repository.js';
@@ -82,6 +86,7 @@ import { TracksService } from './tracks.service.js';
     BullModule.registerQueue({ name: TRACK_METADATA_QUEUE }),
     BullModule.registerQueue({ name: TRACK_MP3_QUEUE }),
     BullModule.registerQueue({ name: TRACK_TRENDING_QUEUE }),
+    BullModule.registerQueue({ name: TRACK_ASSOCIATION_QUEUE }),
     CoverArtModule,
     EmailModule,
     FfmpegModule,
@@ -113,6 +118,9 @@ import { TracksService } from './tracks.service.js';
     TrackContributionsService,
     TrackRequestLimitRepository,
     TrackRequestService,
+    TrackAssociationEventRepository,
+    TrackAssociationService,
+    TrackAssociationProcessor,
     TrackRequestLauncherService,
     TrackRequestFlowService,
     TrackMetadataQueueService,

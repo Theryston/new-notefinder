@@ -101,6 +101,7 @@ export class TrackRequestService {
       return this.existingTrack(recording.mbid);
     }
     await this.tracks.insertTrackDetails(trackId, details);
+    await this.tracks.insertAssociationEvent(recording.mbid, trackId);
     const processingId = await this.processings.insertQueuedProcessing(trackId);
     const contributorId = await this.processings.findOrInsertContributor(
       trackId,
