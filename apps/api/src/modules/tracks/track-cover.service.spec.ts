@@ -5,7 +5,7 @@ import { StorageService } from '../../integrations/storage/storage.service.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import type { YouTubeVideo } from '../../integrations/youtube-music/youtube-video.js';
 import { TrackCoverService } from './track-cover.service.js';
-import type { PipelineTrack } from './tracks.repository.js';
+import type { PipelineTrack } from './track-repository.helpers.js';
 import { TracksRepository } from './tracks.repository.js';
 
 // The cover choice and what is stored: the Cover Art Archive first, then the

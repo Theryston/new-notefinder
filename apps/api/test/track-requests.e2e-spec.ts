@@ -1,5 +1,9 @@
-import { createTrackResultSchema } from '@notefinder/contracts';
+import {
+  createTrackResultSchema,
+  musicCatalogTrackAssociationPayloadSchema,
+} from '@notefinder/contracts';
 import { eq } from 'drizzle-orm';
+import { trackAssociationEvents } from '../src/database/schema/track-association-events.js';
 import {
   trackContributions,
   trackContributors,
@@ -38,6 +42,73 @@ import { recordingFixture } from './utils/recording-fixtures.js';
 /** What the fake catalog answers for one MBID instead of the default. */
 type CatalogAnswer = ReturnType<FakeCatalogHandler>;
 
+type FakeCatalogState = {
+  recordings: Map<string, ReturnType<typeof recordingFixture>>;
+  overrides: Map<string, CatalogAnswer>;
+  catalogCalls: string[];
+  projectedTrackIds: Map<string, string | null>;
+  getAssociationOutage: () => boolean;
+  countAssociation: () => void;
+};
+
+const handleAssociation = (
+  payload: Parameters<FakeCatalogHandler>[0],
+  state: FakeCatalogState,
+): CatalogAnswer => {
+  const association = musicCatalogTrackAssociationPayloadSchema.parse(payload);
+  state.countAssociation();
+  if (state.getAssociationOutage()) {
+    return {
+      error: {
+        code: 'REIMPORT_SWITCHING',
+        message: 'Retry after the serving copy changes.',
+      },
+    };
+  }
+  state.projectedTrackIds.set(association.mbid, association.trackId);
+  return { result: {} };
+};
+
+const handleCompactSearch = (state: FakeCatalogState): CatalogAnswer => {
+  const recording = state.recordings.get(testMbid(1));
+  if (recording === undefined) return { result: { results: [] } };
+  return {
+    result: {
+      results: [
+        {
+          mbid: recording.mbid,
+          title: recording.title,
+          artistCredit: recording.artistCredit.name,
+          coverUrl: recording.releases[0]?.coverArtUrl ?? null,
+          trackId: state.projectedTrackIds.get(recording.mbid) ?? null,
+        },
+      ],
+    },
+  };
+};
+
+const handleRecording = (
+  payload: Parameters<FakeCatalogHandler>[0],
+  state: FakeCatalogState,
+): CatalogAnswer => {
+  const mbid = String(payload.mbid);
+  state.catalogCalls.push(mbid);
+  const special = state.overrides.get(mbid);
+  if (special !== undefined) return special;
+  const recording = state.recordings.get(mbid);
+  return recording === undefined
+    ? { error: { code: 'RECORDING_NOT_FOUND', message: 'No such Recording' } }
+    : { result: recording };
+};
+
+const createTrackRequestCatalogHandler =
+  (state: FakeCatalogState) =>
+  (payload: Parameters<FakeCatalogHandler>[0]): CatalogAnswer => {
+    if ('trackId' in payload) return handleAssociation(payload, state);
+    if ('query' in payload) return handleCompactSearch(state);
+    return handleRecording(payload, state);
+  };
+
 // POST /v1/tracks end to end: the Recording is read from the Music catalog
 // over its WebSocket, the Track and its first Processing are written in one
 // unit, and a Recording that already has a Track answers without writing.
@@ -46,9 +117,12 @@ describe('POST /v1/tracks (e2e)', () => {
   let testApp: TestApp;
   // Recordings the catalog knows, and answers the catalog gives instead
   // (a merge, an outage, a slow reply), per MBID. Reset before each test.
-  let recordings: Map<string, ReturnType<typeof recordingFixture>>;
-  let overrides: Map<string, CatalogAnswer>;
-  let catalogCalls: string[];
+  const recordings = new Map<string, ReturnType<typeof recordingFixture>>();
+  const overrides = new Map<string, CatalogAnswer>();
+  const catalogCalls: string[] = [];
+  const projectedTrackIds = new Map<string, string | null>();
+  let associationCalls = 0;
+  let associationOutage = false;
 
   const body = (mbid: string, locale = 'en') => ({
     recordingMbid: mbid,
@@ -85,21 +159,18 @@ describe('POST /v1/tracks (e2e)', () => {
   };
 
   beforeAll(async () => {
-    catalog = await startFakeMusicCatalog((payload) => {
-      const mbid = String(payload.mbid);
-      catalogCalls.push(mbid);
-      const special = overrides.get(mbid);
-      if (special !== undefined) {
-        return special;
-      }
-      const recording = recordings.get(mbid);
-      if (recording === undefined) {
-        return {
-          error: { code: 'RECORDING_NOT_FOUND', message: 'No such Recording' },
-        };
-      }
-      return { result: recording };
-    });
+    catalog = await startFakeMusicCatalog(
+      createTrackRequestCatalogHandler({
+        recordings,
+        overrides,
+        catalogCalls,
+        projectedTrackIds,
+        getAssociationOutage: () => associationOutage,
+        countAssociation: () => {
+          associationCalls += 1;
+        },
+      }),
+    );
     const options: Pick<CreateTestAppOptions, 'env'> = {
       env: {
         MUSIC_CATALOG_URL: catalog.url,
@@ -117,11 +188,13 @@ describe('POST /v1/tracks (e2e)', () => {
 
   beforeEach(async () => {
     await resetDatabase(testApp.db);
-    recordings = new Map([
-      [testMbid(1), recordingFixture({ mbid: testMbid(1) })],
-    ]);
-    overrides = new Map();
-    catalogCalls = [];
+    recordings.clear();
+    recordings.set(testMbid(1), recordingFixture({ mbid: testMbid(1) }));
+    overrides.clear();
+    catalogCalls.length = 0;
+    projectedTrackIds.clear();
+    associationCalls = 0;
+    associationOutage = false;
   });
 
   describe('access', () => {
@@ -172,6 +245,16 @@ describe('POST /v1/tracks (e2e)', () => {
         .expect(202);
 
       const { trackId } = createTrackResultSchema.parse(response.body);
+      const [associationEvent] = await testApp.db
+        .select()
+        .from(trackAssociationEvents)
+        .where(eq(trackAssociationEvents.trackId, trackId));
+      expect(associationEvent).toMatchObject({
+        recordingMbid: testMbid(1),
+        trackId,
+        deliveredAt: null,
+      });
+      expect(associationCalls).toBe(0);
       const [track] = await trackRowsOf(testMbid(1));
       expect(track).toMatchObject({
         id: trackId,
@@ -406,6 +489,9 @@ describe('POST /v1/tracks (e2e)', () => {
       expect(response.body).toEqual({ trackId: existing.id });
       expect(catalogCalls).toEqual([]);
       expect(await testApp.db.select().from(trackProcessings)).toEqual([]);
+      expect(await testApp.db.select().from(trackAssociationEvents)).toEqual(
+        [],
+      );
       expect(await storedLocaleOf(user.id)).toEqual({ locale: 'pt-BR' });
     });
 
@@ -463,5 +549,8 @@ describe('POST /v1/tracks (e2e)', () => {
     expect(await trackRowsOf(testMbid(1))).toHaveLength(1);
     expect(await testApp.db.select().from(trackProcessings)).toHaveLength(1);
     expect(await testApp.db.select().from(trackContributions)).toHaveLength(1);
+    expect(await testApp.db.select().from(trackAssociationEvents)).toHaveLength(
+      1,
+    );
   });
 });

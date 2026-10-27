@@ -1,0 +1,101 @@
+import { Injectable } from '@nestjs/common';
+import { TransactionHost } from '@nestjs-cls/transactional';
+import { and, asc, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import type { DatabaseAdapter } from '../../database/database.js';
+import { trackAssociationEvents } from '../../database/schema/track-association-events.js';
+
+export type ClaimedTrackAssociation = {
+  id: string;
+  recordingMbid: string;
+  trackId: string;
+  attempts: number;
+};
+
+/** Durable queue state for Track links that the Music catalog has not acknowledged. */
+@Injectable()
+export class TrackAssociationEventRepository {
+  constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
+
+  /** Joins Track creation's active transaction, so the outbox cannot drift from it. */
+
+  async claimPending(
+    now: Date,
+    claimExpiresAt: Date,
+    limit: number,
+  ): Promise<ClaimedTrackAssociation[]> {
+    const due = this.txHost.tx
+      .select({ id: trackAssociationEvents.id })
+      .from(trackAssociationEvents)
+      .where(
+        and(
+          isNull(trackAssociationEvents.deliveredAt),
+          lte(trackAssociationEvents.nextAttemptAt, now),
+          or(
+            isNull(trackAssociationEvents.claimedUntil),
+            lte(trackAssociationEvents.claimedUntil, now),
+          ),
+        ),
+      )
+      .orderBy(
+        asc(trackAssociationEvents.nextAttemptAt),
+        asc(trackAssociationEvents.createdAt),
+      )
+      .limit(limit)
+      .for('update', { skipLocked: true });
+
+    return this.txHost.tx
+      .update(trackAssociationEvents)
+      .set({
+        claimedUntil: claimExpiresAt,
+        attempts: sql`${trackAssociationEvents.attempts} + 1`,
+      })
+      .where(inArray(trackAssociationEvents.id, due))
+      .returning({
+        id: trackAssociationEvents.id,
+        recordingMbid: trackAssociationEvents.recordingMbid,
+        trackId: trackAssociationEvents.trackId,
+        attempts: trackAssociationEvents.attempts,
+      });
+  }
+
+  /** Records delivery only after the catalog's durable acknowledgment. */
+  async markDelivered(id: string, deliveredAt: Date): Promise<void> {
+    await this.txHost.tx
+      .update(trackAssociationEvents)
+      .set({ deliveredAt, claimedUntil: null })
+      .where(
+        and(
+          eq(trackAssociationEvents.id, id),
+          isNull(trackAssociationEvents.deliveredAt),
+        ),
+      );
+  }
+
+  /** Releases a failed claim with durable exponential backoff. */
+  async scheduleRetry(id: string, nextAttemptAt: Date): Promise<void> {
+    await this.txHost.tx
+      .update(trackAssociationEvents)
+      .set({ nextAttemptAt, claimedUntil: null })
+      .where(
+        and(
+          eq(trackAssociationEvents.id, id),
+          isNull(trackAssociationEvents.deliveredAt),
+        ),
+      );
+  }
+
+  /** Deletes at most one old delivered page; pending events are never eligible. */
+  async deleteDeliveredBefore(cutoff: Date, limit: number): Promise<number> {
+    const expired = this.txHost.tx
+      .select({ id: trackAssociationEvents.id })
+      .from(trackAssociationEvents)
+      .where(lt(trackAssociationEvents.deliveredAt, cutoff))
+      .orderBy(asc(trackAssociationEvents.deliveredAt))
+      .limit(limit);
+    const deleted = await this.txHost.tx
+      .delete(trackAssociationEvents)
+      .where(inArray(trackAssociationEvents.id, expired))
+      .returning({ id: trackAssociationEvents.id });
+    return deleted.length;
+  }
+}

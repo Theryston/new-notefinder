@@ -1,4 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import { musicCatalogTrackAssociationPayloadSchema } from '@notefinder/contracts';
 import { WebSocketServer } from 'ws';
 import {
   type FakeMusicCatalog,
@@ -110,6 +111,27 @@ describe('MusicCatalogClient', () => {
 
     expect(first.results.map((item) => item.title)).toEqual(['First']);
     expect(second.results.map((item) => item.title)).toEqual(['Second']);
+  });
+
+  it('delivers an exact Recording association and accepts the catalog acknowledgment', async () => {
+    const payload = musicCatalogTrackAssociationPayloadSchema.parse({
+      mbid: MBID_1,
+      trackId: 'cmh0abcde1234567890fghijk',
+    });
+    fake = await startFakeMusicCatalog((payload) => {
+      expect(payload).toEqual({
+        mbid: MBID_1,
+        trackId: 'cmh0abcde1234567890fghijk',
+      });
+      return { result: {} };
+    });
+    const created = await createClient(fake.url);
+    moduleRef = created.moduleRef;
+
+    await expect(
+      created.client.associateTrack(payload),
+    ).resolves.toBeUndefined();
+    expect(fake.seenAuth).toEqual([`Bearer ${API_KEY}`]);
   });
 
   it('times out when the catalog is too slow', async () => {

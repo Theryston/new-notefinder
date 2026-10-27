@@ -27,6 +27,7 @@ const tracks = {
   findTrackIdsByRecordingMbids: vi.fn(),
   insertTrack: vi.fn(),
   insertTrackDetails: vi.fn(),
+  insertAssociationEvent: vi.fn(),
 };
 const processings = {
   insertQueuedProcessing: vi.fn(),
@@ -69,6 +70,7 @@ describe('TrackRequestService', () => {
     vi.clearAllMocks();
     tracks.findTrackIdsByRecordingMbids.mockResolvedValue(new Map());
     tracks.insertTrack.mockResolvedValue('track-new');
+    tracks.insertAssociationEvent.mockResolvedValue(undefined);
     processings.insertQueuedProcessing.mockResolvedValue('processing-1');
     processings.findOrInsertContributor.mockResolvedValue('contributor-1');
     moduleRef = await Test.createTestingModule({
@@ -125,6 +127,10 @@ describe('TrackRequestService', () => {
         title: 'Bohemian Rhapsody',
         genres: ['rock'],
       }),
+    );
+    expect(tracks.insertAssociationEvent).toHaveBeenCalledWith(
+      testMbid(1),
+      'track-new',
     );
     expect(tracks.insertTrackDetails).toHaveBeenCalledWith(
       'track-new',
@@ -230,6 +236,7 @@ describe('TrackRequestService', () => {
         created: false,
       },
     );
+    expect(tracks.insertAssociationEvent).not.toHaveBeenCalled();
     expect(tracks.insertTrackDetails).not.toHaveBeenCalled();
     expect(processings.insertQueuedProcessing).not.toHaveBeenCalled();
     expect(processings.insertContribution).not.toHaveBeenCalled();

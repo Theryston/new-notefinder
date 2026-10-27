@@ -7,12 +7,13 @@ import { StorageService } from '../../integrations/storage/storage.service.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import { COVER_CONTENT_TYPE, toStoredCover } from './track-cover-image.js';
 import { primaryReleaseOf } from './track-primary-release.js';
+import type { PipelineTrack } from './track-repository.helpers.js';
 import {
   chooseSearchMatch,
   recordingTargetOf,
   searchQueryOf,
 } from './track-video-matching.js';
-import { type PipelineTrack, TracksRepository } from './tracks.repository.js';
+import { TracksRepository } from './tracks.repository.js';
 
 /** The key a Track's cover is stored under; one per Track. */
 const coverKey = (trackId: string): string => `track-covers/${trackId}.webp`;

@@ -3,8 +3,8 @@ import { ENV } from '../../config/env.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import type { YouTubeVideo } from '../../integrations/youtube-music/youtube-video.js';
 import { TrackProcessingFailure } from './track-processing-failure.js';
+import type { PipelineTrack } from './track-repository.helpers.js';
 import { TrackVideoService } from './track-video.service.js';
-import type { PipelineTrack } from './tracks.repository.js';
 
 // "Bohemian Rhapsody" by Queen, 5:54, with the YouTube videos the cases use.
 const LINK_ID = 'aaaaaaaaaaa';
