@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   BILLING_CYCLES,
+  type BillingCycle,
   type Locale,
   localizedCatalogCopySchema,
   PLAN_CURRENCIES,
@@ -19,6 +20,24 @@ function localizedCopy(copy: unknown, locale: Locale) {
   const parsed = localizedCatalogCopySchema.safeParse(copy);
   if (!parsed.success) throw new ZodSerializationException(parsed.error);
   return parsed.data[locale];
+}
+
+function saleAvailable(row: CatalogRecord, cycles: BillingCycle[]): boolean {
+  return (
+    row.saleEnabled === true &&
+    row.contractingEnabled === true &&
+    cycles.length > 0 &&
+    cycles.every((cycle) =>
+      PLAN_CURRENCIES.every((currency) =>
+        row.prices.some(
+          (price) =>
+            price.cycle === cycle &&
+            price.currency === currency &&
+            Boolean(price.stripePriceId),
+        ),
+      ),
+    )
+  );
 }
 
 function publicPlan(
@@ -48,6 +67,9 @@ function publicPlan(
     kind: row.kind,
     ...localizedCopy(row.copy, locale),
     trialDays: row.trialDays,
+    ...(row.saleEnabled !== undefined
+      ? { saleAvailable: saleAvailable(row, cycles) }
+      : {}),
     offers: cycles.flatMap((cycle) =>
       row.prices
         .filter((price) => price.cycle === cycle && price.currency === currency)

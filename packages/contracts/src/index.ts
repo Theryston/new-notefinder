@@ -1,5 +1,6 @@
 export * from './accuracy-bands.js';
 export * from './acquisition.js';
+export * from './admin-plans.js';
 export * from './albums.js';
 export * from './artists.js';
 export * from './auth.js';

@@ -4,6 +4,7 @@ import {
   type BillingCycle,
   type LocalizedCatalogCopy,
   PLAN_CURRENCIES,
+  type SaveAdminPlanBody,
 } from '@notefinder/contracts';
 import {
   boolean,
@@ -13,6 +14,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
@@ -30,6 +32,9 @@ export const plans = pgTable(
     copy: jsonb().$type<LocalizedCatalogCopy>().notNull(),
     displayOrder: integer().notNull().default(0),
     published: boolean().notNull().default(false),
+    saleEnabled: boolean().notNull().default(false),
+    stripeProductId: text(),
+    pendingSyncId: text(),
     enabledCycles: billingCycle()
       .array()
       .$type<BillingCycle[]>()
@@ -79,8 +84,30 @@ export const planPrices = pgTable(
     cycle: billingCycle().notNull(),
     currency: planCurrency().notNull(),
     amount: integer().notNull(),
+    stripePriceId: text(),
     current: boolean().notNull().default(true),
     ...timestamps,
   },
   (table) => [index().on(table.planId, table.current)],
+);
+
+export const planCatalogSettings = pgTable('plan_catalog_settings', {
+  id: id(),
+  contractingEnabled: boolean().notNull().default(false),
+  ...timestamps,
+});
+
+export const planSyncOperations = pgTable(
+  'plan_sync_operations',
+  {
+    id: id(),
+    planId: text()
+      .notNull()
+      .references(() => plans.id, { onDelete: 'restrict' }),
+    body: jsonb().$type<SaveAdminPlanBody>().notNull(),
+    status: text().$type<'pending' | 'failed' | 'synced'>().notNull(),
+    leaseUntil: timestamp({ withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [index().on(table.planId)],
 );

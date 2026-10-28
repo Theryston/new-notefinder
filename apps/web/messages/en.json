@@ -979,6 +979,10 @@
       "homePins": {
         "title": "Home pins",
         "description": "Feature heroes and themed rows on the home page."
+      },
+      "plans": {
+        "title": "Plans and prices",
+        "description": "Manage localized paid plans, billing cycles and new-sale availability."
       }
     }
   },
@@ -1175,6 +1179,42 @@
     "noOffers": "No billing cycles are currently offered.",
     "error": "Plans could not be loaded. Please try again.",
     "retry": "Try again",
-    "empty": "There are no plans to compare right now."
+    "empty": "There are no plans to compare right now.",
+    "salesPaused": "New subscriptions are currently unavailable."
+  },
+  "adminPlans": {
+    "title": "Plans and prices",
+    "intro": "Manage localized paid plans, billing cycles and new-sale availability.",
+    "newPlan": "New paid plan",
+    "editPlan": "Edit paid plan",
+    "name": "Name",
+    "description": "Description",
+    "english": "English",
+    "portuguese": "Brazilian Portuguese",
+    "displayOrder": "Display order",
+    "published": "Publish plan",
+    "saleEnabled": "Available for new sales",
+    "cycles": "Billing cycles",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "minorUnits": "Enter independent BRL and USD amounts in minor units (1990 means 19.90). Every published cycle needs both currencies.",
+    "price": "{cycle} price in {currency} (minor units)",
+    "save": "Save and synchronize",
+    "saving": "Synchronizing…",
+    "retry": "Retry synchronization",
+    "cancel": "Cancel",
+    "invalid": "Complete both translations and enter a positive whole-number price in both currencies for every published cycle.",
+    "loading": "Loading plans…",
+    "empty": "No plans yet.",
+    "contractingEnabled": "Allow new paid subscriptions",
+    "edit": "Edit {name}",
+    "publishedStatus": "Published",
+    "draftStatus": "Draft",
+    "saleOn": "New sales enabled",
+    "saleOff": "New sales disabled",
+    "failed": "Synchronization failed. Open the plan to retry.",
+    "pending": "Synchronization pending.",
+    "pendingHelp": "Retry the saved change first. Its settings are preserved until synchronization succeeds.",
+    "testMode": "Billing is being validated in Stripe test mode. Catalog changes do not change existing subscriptions."
   }
 }
