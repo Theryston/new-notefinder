@@ -8,6 +8,7 @@ import {
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';
 import { messages } from './messages';
+import { registerPlanCheckoutJourneys } from './plans-checkout-journeys';
 import { webServerEnv } from './web-server-env';
 
 test.describe.configure({ mode: 'serial' });
@@ -228,3 +229,4 @@ test('catalog updates retain configured cycles, omit undisclosed benefits, and s
 registerAdminPlanJourneys();
 registerPlanRetryJourney();
 registerInvalidPlanPriceJourneys();
+registerPlanCheckoutJourneys(installCatalog);

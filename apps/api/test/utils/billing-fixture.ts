@@ -28,7 +28,7 @@ export function billingProvider() {
         id: `cs_${input.id}`,
         livemode: false,
         customer: input.customer,
-        url: 'https://checkout.stripe.com/c/pay/test',
+        url: `https://checkout.stripe.com/c/pay/${input.id}`,
         status: 'open',
         subscription: null,
       };
@@ -41,6 +41,13 @@ export function billingProvider() {
     getCheckout: vi.fn(async (id: string) => {
       const session = sessions.get(id);
       if (!session) throw new Error('Unknown checkout');
+      return session;
+    }),
+    expireCheckout: vi.fn(async (id: string) => {
+      const session = sessions.get(id);
+      if (session?.status !== 'open')
+        throw new Error('Checkout cannot be expired');
+      session.status = 'expired';
       return session;
     }),
     getSubscription: vi.fn(async (id: string) => {

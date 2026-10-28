@@ -1260,16 +1260,10 @@
   "billing": {
     "chooseAnnual": "Choose annual",
     "chooseMonthly": "Choose monthly",
-    "checkoutTitle": "Subscribe to {plan}",
     "annualCharge": "{amount} charged annually",
     "monthlyCharge": "{amount} charged monthly",
-    "immediateBilling": "Payment starts immediately. You will continue to Stripe to pay securely.",
-    "available": "Available",
-    "comingSoon": "Coming soon",
-    "acknowledge": "I understand that benefits marked coming soon are not available yet and that billing starts immediately.",
     "checkoutError": "Checkout could not start. The offer may have changed. Review the plans and try again.",
-    "redirecting": "Opening Stripe…",
-    "pay": "Continue to payment",
+    "redirecting": "Loading…",
     "unavailable": "This offer is no longer available. Please choose a current offer.",
     "viewPlans": "View plans",
     "loading": "Loading subscription…",
@@ -1283,8 +1277,6 @@
     "contractCurrency": "Contract currency: {currency}",
     "periodStart": "Current period started on {date}",
     "periodEnd": "Current period ends on {date}",
-    "noSubscription": "You have no paid subscription.",
-    "checkoutHeading": "Subscribe",
-    "benefitStatus": "{benefit} · {status}"
+    "noSubscription": "You have no paid subscription."
   }
 }

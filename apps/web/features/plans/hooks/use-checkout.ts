@@ -1,0 +1,35 @@
+'use client';
+
+import type { CreateCheckoutBody, Plan } from '@notefinder/contracts';
+import { useMutation } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
+import { useRouter } from '@/lib/i18n/navigation';
+
+export function useCheckout(planId: string) {
+  const locale = useLocale();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: async (offer: Plan['offers'][number]) => {
+      const [{ browserApi }, { checkoutResultSchema }] = await Promise.all([
+        import('@/lib/api/browser'),
+        import('@notefinder/contracts'),
+      ]);
+      const body: CreateCheckoutBody = {
+        planId,
+        offerId: offer.id,
+        cycle: offer.cycle,
+        locale,
+        comingSoonAcknowledged: true,
+      };
+      return browserApi('/me/subscription/checkout', {
+        schema: checkoutResultSchema,
+        method: 'POST',
+        body,
+      });
+    },
+    onSuccess: (result) => {
+      if (result.action === 'manage') router.push('/subscription');
+      else window.location.assign(result.url);
+    },
+  });
+}

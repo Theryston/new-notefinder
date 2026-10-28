@@ -27,6 +27,7 @@ export class SubscriptionsService {
     await this.reserve(userId, body);
     await this.ensureCustomer(userId);
     await this.reconcile(userId, body);
+    await this.replacePendingCheckout(userId, body);
     return this.start(userId, body);
   }
 
@@ -35,19 +36,13 @@ export class SubscriptionsService {
   async reserve(userId: string, body: CreateCheckoutBody) {
     await this.repository.lock(userId);
     const existing = await this.repository.current(userId);
-    if (existing) {
-      if (
-        !existing.contract.checkoutId ||
-        existing.contract.stripeSubscriptionId
-      )
-        return;
-      const session = await this.stripe.getCheckout(
-        existing.contract.checkoutId,
-      );
-      if (session.status !== 'expired' || session.subscription) return;
-    }
+    if (existing) return;
+    await this.repository.create(await this.reservation(userId, body));
+  }
+
+  private async reservation(userId: string, body: CreateCheckoutBody) {
     const price = checkoutOffer(await this.repository.offer(body), body);
-    const reservation = {
+    return {
       id: createId(),
       userId,
       planId: body.planId,
@@ -61,8 +56,6 @@ export class SubscriptionsService {
       createdAt: new Date(),
       status: 'pending' as const,
     };
-    if (existing) await this.repository.update(userId, reservation);
-    else await this.repository.create(reservation);
   }
 
   @Transactional()
@@ -115,6 +108,37 @@ export class SubscriptionsService {
     });
   }
 
+  // Expiry must succeed before committing a new attempt identity. Session creation
+  // runs afterwards so a lost response can still be recovered with that identity.
+  @Transactional()
+  async replacePendingCheckout(userId: string, body: CreateCheckoutBody) {
+    await this.repository.lock(userId);
+    const row = await this.repository.current(userId);
+    if (!row) return;
+    const contract = row.contract;
+    if (!contract.checkoutId || contract.stripeSubscriptionId) return;
+    const session = await this.stripe.getCheckout(contract.checkoutId);
+    if (session.status === 'complete' || session.subscription) return;
+    const sameOffer =
+      contract.priceId === body.offerId &&
+      contract.planId === body.planId &&
+      contract.cycle === body.cycle;
+    if (session.status === 'open' && sameOffer) return;
+    const reservation = await this.reservation(userId, body);
+    const expired =
+      session.status === 'expired'
+        ? session
+        : await this.stripe.expireCheckout(session.id);
+    if (
+      expired.id !== session.id ||
+      expired.customer !== session.customer ||
+      expired.status !== 'expired' ||
+      expired.subscription
+    )
+      throw new AppException('CONFLICT', 'Checkout could not be expired');
+    await this.repository.update(userId, reservation);
+  }
+
   @Transactional()
   async start(
     userId: string,
@@ -134,7 +158,8 @@ export class SubscriptionsService {
       return { action: 'manage' };
     if (contract.checkoutId) {
       const session = await this.stripe.getCheckout(contract.checkoutId);
-      if (session.status === 'complete') return { action: 'manage' };
+      if (session.status === 'complete' || session.subscription)
+        return { action: 'manage' };
       if (session.status === 'open' && session.url)
         return { action: 'checkout', url: session.url };
       throw new AppException(

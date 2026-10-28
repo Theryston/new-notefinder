@@ -7,18 +7,15 @@ import { BillingSkeleton } from './billing-skeleton';
 
 export function BillingGate({
   children,
-  checkout = false,
   redirectTo,
 }: {
   children: ReactNode;
-  checkout?: boolean;
   redirectTo: string;
 }) {
   return (
     <SessionUserBoundary
       render={(user, loading) => (
         <Gate
-          checkout={checkout}
           ready={Boolean(user?.emailVerified && user.username)}
           loading={loading}
           signedIn={Boolean(user)}
@@ -32,14 +29,12 @@ export function BillingGate({
 }
 function Gate({
   ready,
-  checkout,
   loading,
   signedIn,
   redirectTo,
   children,
 }: {
   ready: boolean;
-  checkout: boolean;
   loading: boolean;
   signedIn: boolean;
   redirectTo: string;
@@ -51,7 +46,6 @@ function Gate({
     if (!loading && !signedIn)
       router.replace({ pathname: '/sign-in', query: { redirectTo } });
   }, [loading, signedIn, router, redirectTo]);
-  if (!ready || loading)
-    return <BillingSkeleton checkout={checkout} label={t('loading')} />;
+  if (!ready || loading) return <BillingSkeleton label={t('loading')} />;
   return children;
 }

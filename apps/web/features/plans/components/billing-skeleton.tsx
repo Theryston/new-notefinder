@@ -1,12 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function BillingSkeleton({
-  checkout = false,
-  label,
-}: {
-  checkout?: boolean;
-  label: string;
-}) {
+export function BillingSkeleton({ label }: { label: string }) {
   return (
     <section
       aria-busy="true"
@@ -15,13 +9,7 @@ export function BillingSkeleton({
     >
       <Skeleton className="h-9 w-3/4" />
       <Skeleton className="h-6 w-2/3" />
-      {[
-        'plan',
-        'terms',
-        'dates',
-        'status',
-        ...(checkout ? ['benefits', 'disclosure', 'payment'] : []),
-      ].map((row) => (
+      {['plan', 'terms', 'dates', 'status'].map((row) => (
         <Skeleton key={row} className="h-6 w-full" />
       ))}
       <Skeleton className="h-10 w-48 rounded-full" />

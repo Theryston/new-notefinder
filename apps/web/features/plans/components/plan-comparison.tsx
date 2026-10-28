@@ -1,5 +1,6 @@
 import type { Locale, PlanCatalog } from '@notefinder/contracts';
-import { getTranslations } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages, getTranslations } from 'next-intl/server';
 
 import { PlanCard } from './plan-card';
 
@@ -11,6 +12,7 @@ export async function PlanComparison({
   catalog: PlanCatalog | null;
 }) {
   const t = await getTranslations('plans');
+  const { billing } = await getMessages();
   if (!catalog) {
     return (
       <div role="alert" className="rounded-2xl bg-muted p-8 text-center">
@@ -32,10 +34,12 @@ export async function PlanComparison({
     );
   }
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {catalog.plans.map((plan) => (
-        <PlanCard key={plan.id} plan={plan} currency={catalog.currency} />
-      ))}
-    </div>
+    <NextIntlClientProvider messages={{ billing }}>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {catalog.plans.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} currency={catalog.currency} />
+        ))}
+      </div>
+    </NextIntlClientProvider>
   );
 }
