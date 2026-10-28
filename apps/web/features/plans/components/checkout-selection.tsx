@@ -1,28 +1,38 @@
 'use client';
 
-import type { Plan } from '@notefinder/contracts';
+import type {
+  BillingCycle,
+  Plan,
+  PlanCurrency,
+  PlanOffer,
+} from '@notefinder/contracts';
+import { ArrowRightIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { useRouter } from '@/lib/i18n/navigation';
 import { useCheckout } from '../hooks/use-checkout';
+import { selectedPlanOffer } from '../plan-pricing';
+import { PlanCycleOptions } from './plan-cycle-options';
+import { PlanPrice } from './plan-price';
 
-type SelectionProps = {
-  plan: Plan;
+type CheckoutPlan = Pick<Plan, 'id' | 'name' | 'offers' | 'saleAvailable'>;
+type Props = { plan: CheckoutPlan; currency: PlanCurrency };
+type SelectionProps = Props & {
   loading: boolean;
   signedIn: boolean;
   ready: boolean;
 };
 
-export function CheckoutSelection({ plan }: { plan: Plan }) {
-  if (plan.saleAvailable !== true) return null;
+export function CheckoutSelection({ plan, currency }: Props) {
   return (
     <SessionUserBoundary
       render={(user, loading) => (
         <UserCheckoutSelection
           plan={plan}
+          currency={currency}
           loading={loading}
           signedIn={Boolean(user)}
           ready={Boolean(user?.emailVerified && user.username)}
@@ -33,13 +43,50 @@ export function CheckoutSelection({ plan }: { plan: Plan }) {
 }
 
 function UserCheckoutSelection(props: SelectionProps) {
+  const t = useTranslations('plans');
+  const billing = useTranslations('billing');
+  const selection = usePlanSelection(props);
+  if (!selection.offer)
+    return <p className="text-muted-foreground text-sm">{t('noOffers')}</p>;
+  return (
+    <div className="space-y-5">
+      <PlanPrice offer={selection.offer} currency={props.currency} />
+      <PlanCycleOptions
+        planId={props.plan.id}
+        offers={props.plan.offers}
+        selected={selection.offer}
+        currency={props.currency}
+        disabled={selection.busy}
+        onChange={selection.setCycle}
+      />
+      <CheckoutAction
+        plan={props.plan}
+        busy={selection.busy}
+        disabled={selection.disabled}
+        onClick={selection.choose}
+      />
+      {selection.failed || selection.unavailable ? (
+        <p role="alert" className="text-sm">
+          {billing(selection.unavailable ? 'unavailable' : 'checkoutError')}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function usePlanSelection(props: SelectionProps) {
   const { plan, loading, signedIn, ready } = props;
-  const t = useTranslations('billing');
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const router = useRouter();
   const checkout = useCheckout(plan.id);
-  const busy = checkout.isPending;
-  const resume = useResumeCheckout({ ...props, start: checkout.mutate });
-  function choose(offer: Plan['offers'][number]) {
+  const offer = selectedPlanOffer(plan.offers, cycle);
+  const resume = useResumeCheckout({
+    ...props,
+    start: checkout.mutate,
+    select: setCycle,
+  });
+  function choose() {
+    if (!offer || checkout.isPending || plan.saleAvailable !== true) return;
     if (!signedIn) {
       const query = new URLSearchParams({
         plan: plan.id,
@@ -50,33 +97,43 @@ function UserCheckoutSelection(props: SelectionProps) {
         pathname: '/sign-in',
         query: { redirectTo: `/plans?${query}` },
       });
-    } else if (ready && !busy) checkout.mutate(offer);
+    } else if (ready) checkout.mutate(offer);
   }
+  return {
+    offer,
+    setCycle,
+    choose,
+    busy: checkout.isPending,
+    disabled: loading || checkout.isPending || (signedIn && !ready),
+    failed: checkout.isError,
+    unavailable: resume.unavailable,
+  };
+}
+
+function CheckoutAction({
+  plan,
+  busy,
+  disabled,
+  onClick,
+}: {
+  plan: CheckoutPlan;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const t = useTranslations('plans');
+  const billing = useTranslations('billing');
+  if (plan.saleAvailable !== true)
+    return (
+      <p className="rounded-full bg-muted px-4 py-3 text-center text-muted-foreground text-sm">
+        {t(plan.saleAvailable === false ? 'salesPaused' : 'checkoutPending')}
+      </p>
+    );
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        {plan.offers.map((offer) => (
-          <Button
-            key={offer.id}
-            disabled={loading || busy || (signedIn && !ready)}
-            onClick={() => choose(offer)}
-          >
-            {t(
-              busy && checkout.variables?.id === offer.id
-                ? 'redirecting'
-                : offer.cycle === 'annual'
-                  ? 'chooseAnnual'
-                  : 'chooseMonthly',
-            )}
-          </Button>
-        ))}
-      </div>
-      {checkout.isError || resume.unavailable ? (
-        <p role="alert">
-          {t(resume.unavailable ? 'unavailable' : 'checkoutError')}
-        </p>
-      ) : null}
-    </div>
+    <Button size="lg" className="w-full" disabled={disabled} onClick={onClick}>
+      {busy ? billing('redirecting') : t('choosePlan', { plan: plan.name })}
+      {!busy ? <ArrowRightIcon aria-hidden /> : null}
+    </Button>
   );
 }
 
@@ -85,7 +142,11 @@ function useResumeCheckout({
   loading,
   ready,
   start,
-}: SelectionProps & { start: (offer: Plan['offers'][number]) => void }) {
+  select,
+}: SelectionProps & {
+  start: (offer: PlanOffer) => void;
+  select: (cycle: BillingCycle) => void;
+}) {
   const search = useSearchParams();
   const router = useRouter();
   const attempted = useRef(false);
@@ -94,10 +155,19 @@ function useResumeCheckout({
     (item) =>
       item.id === search.get('offer') && item.cycle === search.get('cycle'),
   );
-  // Returning from authentication only resumes the offer the visitor selected.
+  // An authenticated return resumes only a currently offered, purchasable selection.
   useEffect(() => {
-    if (loading || !ready || !selected || !offer || attempted.current) return;
+    if (
+      loading ||
+      !ready ||
+      !selected ||
+      !offer ||
+      attempted.current ||
+      plan.saleAvailable !== true
+    )
+      return;
     attempted.current = true;
+    select(offer.cycle);
     const query = new URLSearchParams(search);
     for (const key of ['plan', 'cycle', 'offer']) query.delete(key);
     router.replace(
@@ -105,6 +175,16 @@ function useResumeCheckout({
       { scroll: false },
     );
     start(offer);
-  }, [loading, ready, selected, offer, start, router, search]);
+  }, [
+    loading,
+    ready,
+    selected,
+    offer,
+    start,
+    select,
+    router,
+    search,
+    plan.saleAvailable,
+  ]);
   return { unavailable: selected && !offer };
 }

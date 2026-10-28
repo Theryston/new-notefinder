@@ -40,6 +40,24 @@ async function mockCheckout(
   return requests;
 }
 
+async function selectCycle(
+  page: Page,
+  locale: Locale,
+  cycle: 'monthly' | 'annual',
+) {
+  await page
+    .getByRole('radio', { name: new RegExp(messages[locale].plans[cycle]) })
+    .check();
+}
+
+async function submitCheckout(page: Page, locale: Locale) {
+  await page
+    .getByRole('button', {
+      name: messages[locale].plans.choosePlan.replace('{plan}', 'Pro'),
+    })
+    .click();
+}
+
 async function enableCheckout(install: InstallCatalog, locale: Locale) {
   const catalog = defaultPlanCatalog(locale);
   const pro = catalog.plans.find((plan) => plan.id === 'pro');
@@ -78,15 +96,11 @@ export function registerPlanCheckoutJourneys(install: InstallCatalog) {
         const pro = page.getByRole('article', { name: 'Pro', exact: true });
         await expect(
           pro.getByText(messages[locale].plans.comingSoon, { exact: true }),
-        ).toHaveCount(7);
+        ).toHaveCount(1);
+        await expect(pro.getByRole('listitem')).toHaveCount(7);
         await expect(pro.getByRole('checkbox')).toHaveCount(0);
-        await pro
-          .getByRole('button', {
-            name: messages[locale].billing[
-              cycle === 'annual' ? 'chooseAnnual' : 'chooseMonthly'
-            ],
-          })
-          .click();
+        await selectCycle(page, locale, cycle);
+        await submitCheckout(page, locale);
         await expect(page).toHaveURL(STRIPE_URL);
         expect(requests).toEqual([
           {
@@ -121,16 +135,17 @@ function registerCheckoutPendingJourney(install: InstallCatalog) {
     const requests = await mockCheckout(page, 'checkout', () => response);
     await openPlans(page, '/pt-BR/plans');
     const pro = page.getByRole('article', { name: 'Pro', exact: true });
-    await pro
-      .getByRole('button', { name: messages['pt-BR'].billing.chooseMonthly })
-      .click();
+    await selectCycle(page, 'pt-BR', 'monthly');
+    await submitCheckout(page, 'pt-BR');
     const loading = pro.getByRole('button', {
       name: messages['pt-BR'].billing.redirecting,
     });
     await expect(loading).toBeVisible();
     await expect(loading).toBeDisabled();
     await expect(
-      pro.getByRole('button', { name: messages['pt-BR'].billing.chooseAnnual }),
+      pro.getByRole('radio', {
+        name: new RegExp(messages['pt-BR'].plans.annual),
+      }),
     ).toBeDisabled();
     await expect(pro.getByRole('button', { name: /stripe/i })).toHaveCount(0);
     expect(requests).toHaveLength(1);
@@ -138,11 +153,12 @@ function registerCheckoutPendingJourney(install: InstallCatalog) {
     await expect(page).toHaveURL(STRIPE_URL);
     await page.goBack();
     await expect(
-      pro.getByRole('button', { name: messages['pt-BR'].billing.chooseAnnual }),
+      pro.getByRole('radio', {
+        name: new RegExp(messages['pt-BR'].plans.annual),
+      }),
     ).toBeEnabled();
-    await pro
-      .getByRole('button', { name: messages['pt-BR'].billing.chooseAnnual })
-      .click();
+    await selectCycle(page, 'pt-BR', 'annual');
+    await submitCheckout(page, 'pt-BR');
     await expect(page).toHaveURL(STRIPE_URL);
     expect(requests).toHaveLength(2);
     expect(requests[1]).toMatchObject({ cycle: 'annual', offerId: 'annual' });
@@ -170,9 +186,8 @@ function registerSignInJourney(install: InstallCatalog) {
     const requests = await mockCheckout(page);
     const path = '/plans?plan=pro&cycle=annual&offer=annual';
     await openPlans(page, '/en/plans');
-    await page
-      .getByRole('button', { name: messages.en.billing.chooseAnnual })
-      .click();
+    await selectCycle(page, 'en', 'annual');
+    await submitCheckout(page, 'en');
     await expect(page).toHaveURL(/sign-in/);
     expect(new URL(page.url()).searchParams.get('redirectTo')).toBe(path);
     await page
@@ -214,9 +229,8 @@ function registerResumeJourney(install: InstallCatalog) {
     });
     const requests = await mockCheckout(page);
     await openPlans(page, '/pt-BR/plans');
-    await page
-      .getByRole('button', { name: messages['pt-BR'].billing.chooseMonthly })
-      .click();
+    await selectCycle(page, 'pt-BR', 'monthly');
+    await submitCheckout(page, 'pt-BR');
     await expect(page).toHaveURL(/sign-in/);
     await page
       .getByLabel(messages['pt-BR'].auth.signIn.emailOrUsername.label)
@@ -257,9 +271,8 @@ function registerCheckoutRecoveryJourneys(install: InstallCatalog) {
       messages.en.billing.unavailable,
     );
     expect(requests).toEqual([]);
-    await page
-      .getByRole('button', { name: messages.en.billing.chooseAnnual })
-      .click();
+    await selectCycle(page, 'en', 'annual');
+    await submitCheckout(page, 'en');
     await expect(page).toHaveURL(STRIPE_URL);
     expect(requests).toHaveLength(1);
     await install('en', { catalog: defaultPlanCatalog('en') });
@@ -274,9 +287,8 @@ function registerCheckoutRecoveryJourneys(install: InstallCatalog) {
       route.fulfill({ json: { subscription: null } }),
     );
     await openPlans(page, '/en/plans');
-    await page
-      .getByRole('button', { name: messages.en.billing.chooseMonthly })
-      .click();
+    await selectCycle(page, 'en', 'monthly');
+    await submitCheckout(page, 'en');
     await expect(page).toHaveURL('/en/subscription');
     expect(requests).toHaveLength(1);
     await install('en', { catalog: defaultPlanCatalog('en') });
