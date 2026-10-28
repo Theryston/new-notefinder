@@ -175,6 +175,16 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
       ...(next === undefined ? {} : { nextCopy: next }),
       logger: testLogger,
       searchReadinessRefreshIntervalMs: 10,
+      onSearchReadinessCreated: (readiness) => {
+        const start = readiness.start.bind(readiness);
+        // This fixture exercises cleanup and restart. Live adoption is
+        // covered by reimport-switch; no background reader should outlive
+        // the scratch database that this scenario deliberately deletes.
+        vi.spyOn(readiness, 'start').mockImplementationOnce(async () => {
+          await start();
+          await readiness.stop();
+        });
+      },
     });
     const { port } = await ws.start();
     const tcp = await connect(`ws://127.0.0.1:${port}`, API_KEY);
@@ -313,6 +323,7 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
       mbid: mbid(903),
       trackId: inFlightTrackId,
     });
+    await server.stop();
     await worker.tick();
     // The default cleanup drops the retired database on the flip. The flip
     // itself completed; the tick's later steps then fail on the dropped
@@ -332,7 +343,6 @@ describe('yearly schema change: deleting the retired copy (e2e)', {
     // phases on the new copy.
     const restarted = await bootWorkerOn(serveUrl, next);
     await expect(restarted.tick()).resolves.toBeUndefined();
-    await server.stop();
     const servingServer = await bootServerOn(serveUrl, nextUrl, next);
     try {
       expect(servingServer.servingUrl).toBe(nextUrl);
