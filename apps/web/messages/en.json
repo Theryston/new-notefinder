@@ -979,6 +979,10 @@
       "homePins": {
         "title": "Home pins",
         "description": "Feature heroes and themed rows on the home page."
+      },
+      "benefits": {
+        "title": "Plan benefits",
+        "description": "Maintain shared benefit descriptions and choose the benefits shown by each plan. Catalog changes only change the presentation of the offer."
       }
     }
   },
@@ -1176,5 +1180,41 @@
     "error": "Plans could not be loaded. Please try again.",
     "retry": "Try again",
     "empty": "There are no plans to compare right now."
+  },
+  "adminBenefits": {
+    "title": "Plan benefits",
+    "description": "Maintain shared benefit descriptions and choose the benefits shown by each plan. Catalog changes only change the presentation of the offer.",
+    "create": "Create benefit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "name": "Name",
+    "descriptionField": "Description",
+    "status": "Global availability",
+    "statuses": {
+      "available": "Available",
+      "coming-soon": "Coming soon",
+      "hidden": "Hidden"
+    },
+    "locales": {
+      "en": "English",
+      "pt-BR": "Brazilian Portuguese"
+    },
+    "invalidCopy": "Enter a name (1–120 characters) and description (1–1000 characters) for each language.",
+    "loading": "Loading benefits…",
+    "loadError": "Benefits could not be loaded.",
+    "retry": "Try again",
+    "empty": "No benefits yet. Create one to start building your catalog.",
+    "planBenefits": "Benefits by plan",
+    "noPlans": "There are no plans to configure.",
+    "saveLinks": "Save plan benefits",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "deleteTitle": "Delete {name}?",
+    "deleteDescription": "This removes the benefit from every linked plan. Existing subscriptions and billing history are preserved.",
+    "usedBy": "Plans using this benefit",
+    "unused": "No plans use this benefit.",
+    "confirmDelete": "Delete benefit"
   }
 }
