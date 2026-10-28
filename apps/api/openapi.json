@@ -1304,6 +1304,101 @@
         ]
       }
     },
+    "/v1/admin/plans": {
+      "get": {
+        "operationId": "AdminPlansController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPlansController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/plans/contracting": {
+      "put": {
+        "operationId": "AdminPlansController_contracting_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContractingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/plans/{planId}": {
+      "put": {
+        "operationId": "AdminPlansController_save_v1",
+        "parameters": [
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/benefits": {
       "get": {
         "operationId": "AdminBenefitsController_list_v1",
@@ -3363,6 +3458,118 @@
             "type": "boolean"
           }
         }
+      },
+      "ContractingDto": {
+        "type": "object",
+        "properties": {
+          "contractingEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contractingEnabled"
+        ]
+      },
+      "SavePlanDto": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "copy": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "name",
+                "description"
+              ]
+            },
+            "required": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "saleEnabled": {
+            "type": "boolean"
+          },
+          "enabledCycles": {
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "monthly",
+                "annual"
+              ]
+            }
+          },
+          "prices": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "cycle": {
+                  "type": "string",
+                  "enum": [
+                    "monthly",
+                    "annual"
+                  ]
+                },
+                "currency": {
+                  "type": "string",
+                  "enum": [
+                    "BRL",
+                    "USD"
+                  ]
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "exclusiveMinimum": true,
+                  "maximum": 99999999
+                }
+              },
+              "required": [
+                "cycle",
+                "currency",
+                "amount"
+              ]
+            }
+          }
+        },
+        "required": [
+          "operationId",
+          "copy",
+          "displayOrder",
+          "published",
+          "saleEnabled",
+          "enabledCycles",
+          "prices"
+        ]
       },
       "WriteBenefitDto": {
         "type": "object",

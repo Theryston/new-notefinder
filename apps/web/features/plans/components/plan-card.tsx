@@ -84,7 +84,9 @@ export async function PlanCard({ plan, currency }: Props) {
           </Link>
         ) : (
           <p className="text-muted-foreground text-sm">
-            {t('checkoutPending')}
+            {t(
+              plan.saleAvailable === false ? 'salesPaused' : 'checkoutPending',
+            )}
           </p>
         )}
       </div>

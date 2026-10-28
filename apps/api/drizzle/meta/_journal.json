@@ -239,6 +239,20 @@
       "when": 1793142207909,
       "tag": "0033_hot_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793187932645,
+      "tag": "0034_gorgeous_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793190265778,
+      "tag": "0035_parallel_shape",
+      "breakpoints": true
     }
   ]
 }

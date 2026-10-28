@@ -8,6 +8,7 @@ import { Link } from '@/lib/i18n/navigation';
 const sections = [
   { href: '/admin/home-pins', key: 'homePins' },
   { href: '/admin/benefits', key: 'benefits' },
+  { href: '/admin/plans', key: 'plans' },
 ] as const;
 
 /** The admin sections: one card per area, each a real link to its page. */

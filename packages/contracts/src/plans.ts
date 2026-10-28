@@ -42,6 +42,7 @@ export const planSchema = catalogCopySchema.extend({
   id: z.string().min(1),
   kind: z.enum(['free', 'paid']),
   trialDays: z.number().int().nonnegative(),
+  saleAvailable: z.boolean().optional(),
   offers: z.array(planOfferSchema),
   benefits: z.array(planBenefitSchema),
 });

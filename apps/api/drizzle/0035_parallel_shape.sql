@@ -1,0 +1,1 @@
+ALTER TABLE "plan_sync_operations" ADD COLUMN "lease_token" text;

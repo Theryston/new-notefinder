@@ -980,6 +980,10 @@
         "title": "Destaques da home",
         "description": "Destaque o hero e fileiras temáticas na home."
       },
+      "plans": {
+        "title": "Planos e preços",
+        "description": "Gerencie planos pagos traduzidos, ciclos de cobrança e disponibilidade para novas vendas."
+      },
       "benefits": {
         "title": "Benefícios dos planos",
         "description": "Gerencie as descrições compartilhadas e escolha os benefícios apresentados por cada plano. As alterações no catálogo afetam apenas a apresentação da oferta."
@@ -1179,7 +1183,43 @@
     "noOffers": "Nenhum ciclo de cobrança está disponível no momento.",
     "error": "Não foi possível carregar os planos. Tente novamente.",
     "retry": "Tentar novamente",
-    "empty": "Não há planos para comparar no momento."
+    "empty": "Não há planos para comparar no momento.",
+    "salesPaused": "Novas assinaturas estão indisponíveis no momento."
+  },
+  "adminPlans": {
+    "title": "Planos e preços",
+    "intro": "Gerencie planos pagos traduzidos, ciclos de cobrança e disponibilidade para novas vendas.",
+    "newPlan": "Novo plano pago",
+    "editPlan": "Editar plano pago",
+    "name": "Nome",
+    "description": "Descrição",
+    "english": "Inglês",
+    "portuguese": "Português brasileiro",
+    "displayOrder": "Ordem de exibição",
+    "published": "Publicar plano",
+    "saleEnabled": "Disponível para novas vendas",
+    "cycles": "Ciclos de cobrança",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "minorUnits": "Informe valores independentes em BRL e USD em unidades mínimas (1990 significa 19,90). Cada ciclo publicado precisa das duas moedas.",
+    "price": "Preço {cycle} em {currency} (unidades mínimas)",
+    "save": "Salvar e sincronizar",
+    "saving": "Sincronizando…",
+    "retry": "Tentar sincronização novamente",
+    "cancel": "Cancelar",
+    "invalid": "Preencha as duas traduções e informe um preço inteiro positivo nas duas moedas para cada ciclo publicado.",
+    "loading": "Carregando planos…",
+    "empty": "Nenhum plano ainda.",
+    "contractingEnabled": "Permitir novas assinaturas pagas",
+    "edit": "Editar {name}",
+    "publishedStatus": "Publicado",
+    "draftStatus": "Rascunho",
+    "saleOn": "Novas vendas habilitadas",
+    "saleOff": "Novas vendas desabilitadas",
+    "failed": "A sincronização falhou. Abra o plano para tentar novamente.",
+    "pending": "Sincronização pendente.",
+    "pendingHelp": "Tente novamente a alteração salva. As configurações serão mantidas até a sincronização ser concluída.",
+    "testMode": "A cobrança está sendo validada no modo de teste do Stripe. Alterações no catálogo não mudam assinaturas existentes."
   },
   "adminBenefits": {
     "title": "Benefícios dos planos",

@@ -103,6 +103,7 @@ const envSchema = z
     // Transactional email through Resend. Required in production; elsewhere,
     // when unset, emails (including one-time codes) are logged instead.
     RESEND_API_KEY: optional(z.string().min(1)),
+    STRIPE_SECRET_KEY: optional(z.string().regex(/^sk_test_[a-zA-Z0-9]+$/)),
     EMAIL_FROM: z
       .string()
       .min(3)
