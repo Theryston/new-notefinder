@@ -5,6 +5,7 @@ import type {
 import { eq, sql } from 'drizzle-orm';
 import { planSyncOperations } from '../src/database/schema/plans.js';
 import { StripeCatalogService } from '../src/integrations/stripe/stripe-catalog.service.js';
+import { PlansRepository } from '../src/modules/plans/plans.repository.js';
 import { createAuthClient, signIn } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -256,5 +257,92 @@ describe('Plan synchronization claim fencing (e2e)', () => {
     expect(
       (await app.http.get('/v1/plans').expect(200)).body.plans[0],
     ).toMatchObject(newer.copy.en);
+  });
+  it('does not reclaim an operation completed while a retry held a stale pre-lock read', async () => {
+    const client = createAuthClient(app);
+    const user = await createUser(app.db, { role: 'ADMIN' });
+    await createCredentialAccount(app.db, user);
+    await signIn(client, {
+      email: user.email,
+      password: DEFAULT_PASSWORD,
+    }).expect(200);
+    const input = change();
+    const planId = `plan-${input.operationId}`;
+    const firstPrice = deferred();
+    const finishFirst = deferred();
+    const retryRead = deferred();
+    const resumeRetry = deferred();
+    let providerCopy: LocalizedCatalogCopy | undefined;
+    stripe.syncProduct.mockImplementation(
+      async (request: { copy: LocalizedCatalogCopy }) => {
+        providerCopy = request.copy;
+        return 'prod_studio';
+      },
+    );
+    stripe.ensurePrice.mockImplementationOnce(
+      async (price: { key: string }) => {
+        firstPrice.resolve();
+        await finishFirst.promise;
+        return `price_${price.key}`;
+      },
+    );
+    const original = client
+      .post('/v1/admin/plans')
+      .send(input)
+      .then((response) => response);
+    await firstPrice.promise;
+    const repository = app.app.get(PlansRepository);
+    const realRead = repository.operation.bind(repository);
+    let intercepted = false;
+    let cachedExpiry = 0;
+    const read = vi
+      .spyOn(repository, 'operation')
+      .mockImplementation(async (id) => {
+        const operation = await realRead(id);
+        if (!intercepted && id === input.operationId && operation?.leaseUntil) {
+          intercepted = true;
+          cachedExpiry = operation.leaseUntil.getTime();
+          retryRead.resolve();
+          await resumeRetry.promise;
+        }
+        return operation;
+      });
+    const retry = client
+      .post('/v1/admin/plans')
+      .send(input)
+      .then((response) => response);
+    await retryRead.promise;
+    finishFirst.resolve();
+    expect((await original).status).toBe(201);
+    const newer = {
+      ...input,
+      operationId: crypto.randomUUID(),
+      copy: {
+        ...input.copy,
+        en: { name: 'Studio B', description: 'The later confirmed offer.' },
+      },
+      prices: input.prices.map((price) => ({
+        ...price,
+        amount: price.amount + 100,
+      })),
+    };
+    await client.put(`/v1/admin/plans/${planId}`).send(newer).expect(200);
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(cachedExpiry + 1);
+    try {
+      resumeRetry.resolve();
+      expect((await retry).status).toBe(201);
+      const catalog = await client.get('/v1/admin/plans').expect(200);
+      expect(catalog.body.plans[0]).toMatchObject({
+        copy: newer.copy,
+        prices: newer.prices,
+        pendingOperation: null,
+      });
+      expect(providerCopy).toEqual(newer.copy);
+      expect(stripe.syncProduct).toHaveBeenCalledTimes(2);
+    } finally {
+      clock.mockRestore();
+      read.mockRestore();
+      resumeRetry.resolve();
+    }
   });
 });

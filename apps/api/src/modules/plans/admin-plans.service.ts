@@ -80,6 +80,24 @@ export class AdminPlansService {
     leaseToken: string,
   ) {
     await this.plans.lockOperation(body.operationId);
+    if (await this.completedOperation(planId, body)) return true;
+    let snapshot = await this.plans.find(planId);
+    if (snapshot) this.assertClaimablePlan(snapshot, body.operationId);
+    if (create) {
+      await this.plans.createDraft(planId, body);
+      snapshot ??= await this.plans.find(planId);
+    }
+    this.assertClaimablePlan(snapshot, body.operationId);
+    this.assertClaimablePlan(
+      await this.plans.find(planId, true),
+      body.operationId,
+    );
+    if (await this.completedOperation(planId, body)) return true;
+    await this.plans.claim(planId, body, leaseToken);
+    return false;
+  }
+
+  private async completedOperation(planId: string, body: SaveAdminPlanBody) {
     const operation = await this.plans.operation(body.operationId);
     if (
       operation &&
@@ -97,18 +115,6 @@ export class AdminPlansService {
         'The synchronization is already running',
       );
     }
-    let snapshot = await this.plans.find(planId);
-    if (snapshot) this.assertClaimablePlan(snapshot, body.operationId);
-    if (create) {
-      await this.plans.createDraft(planId, body);
-      snapshot ??= await this.plans.find(planId);
-    }
-    this.assertClaimablePlan(snapshot, body.operationId);
-    this.assertClaimablePlan(
-      await this.plans.find(planId, true),
-      body.operationId,
-    );
-    await this.plans.claim(planId, body, leaseToken);
     return false;
   }
 

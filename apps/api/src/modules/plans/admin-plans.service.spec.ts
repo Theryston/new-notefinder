@@ -208,6 +208,24 @@ describe('Admin plan synchronization policy', () => {
       pendingOperation: input(),
     });
   });
+  it('rechecks completed operation state after taking the plan lock', async () => {
+    repository.operation
+      .mockResolvedValueOnce({
+        planId: 'studio',
+        body: input(),
+        status: 'pending',
+        leaseUntil: new Date(0),
+      })
+      .mockResolvedValue({
+        planId: 'studio',
+        body: input(),
+        status: 'synced',
+        leaseUntil: null,
+      });
+    await service.save('studio', input());
+    expect(repository.claim).not.toHaveBeenCalled();
+    expect(stripe.syncProduct).not.toHaveBeenCalled();
+  });
 });
 
 describe('Obsolete synchronization workers', () => {
