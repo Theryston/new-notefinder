@@ -19,8 +19,8 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     # A cold API run tests over 4,000 mutants, including expensive static
-    # mutants, and can exceed 30 minutes before saving its incremental cache.
-    timeout-minutes: ${{ matrix.app == 'api' && 60 || 30 }}
+    # mutants, and can exceed 60 minutes before saving its incremental cache.
+    timeout-minutes: ${{ matrix.app == 'api' && 90 || 30 }}
     strategy:
       fail-fast: false
       matrix:
