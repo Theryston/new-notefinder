@@ -1,4 +1,4 @@
-import { localeSchema } from '@notefinder/contracts';
+import { localeSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 
 // A User's personal feed is rebuilt by a delayed job, never inside a request.

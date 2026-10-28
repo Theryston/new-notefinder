@@ -63,7 +63,7 @@ describe('pending attempt', () => {
     const storage = memory();
     writePendingAttempt(storage, attempt('track-1'));
     writePendingAttempt(storage, attempt('track-2'));
-    storage.setItem('notefinder:track-view:track-1', '{}');
+    storage.setItem('vozzify:track-view:track-1', '{}');
 
     expect(listPendingAttempts(storage)).toEqual([
       attempt('track-1'),
@@ -79,7 +79,7 @@ describe('pending attempt', () => {
   it('ignores what is not a run anymore', () => {
     const storage = memory();
     storage.setItem(
-      'notefinder:pending-attempt:track-1',
+      'vozzify:pending-attempt:track-1',
       JSON.stringify({ trackId: 'track-1', body: { accuracy: 'high' } }),
     );
 
@@ -89,7 +89,7 @@ describe('pending attempt', () => {
 
   it('ignores what is not JSON at all', () => {
     const storage = memory();
-    storage.setItem('notefinder:pending-attempt:track-1', 'not json{');
+    storage.setItem('vozzify:pending-attempt:track-1', 'not json{');
 
     expect(readPendingAttempt(storage, 'track-1')).toBeUndefined();
   });

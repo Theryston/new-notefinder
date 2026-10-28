@@ -1,4 +1,4 @@
-import type { TrackVocalRange } from '@notefinder/contracts';
+import type { TrackVocalRange } from '@vozzify/contracts';
 import {
   challengeOverrun,
   MAX_CHALLENGE_OVERRUN_SEMITONES,

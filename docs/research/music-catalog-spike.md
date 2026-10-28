@@ -70,7 +70,7 @@ proposed; where a decision differs from a proposal in
   full-text search only as a calibration point; the decision is a three-way
   benchmark on the 2.95 M sample instead, and Meilisearch was not measured by
   the spike.
-- **Licence: notefinder is non-commercial.** It uses the free MetaBrainz token;
+- **Licence: vozzify is non-commercial.** It uses the free MetaBrainz token;
   attribution for genres and tags (CC BY-NC-SA 3.0) is owed where they are
   shown, which is web work and out of scope for the Music catalog. Carried by
   [#62](https://github.com/Theryston/vozzify/issues/62) (replication,
@@ -700,7 +700,7 @@ million; the ±2 s rule removes a third of the title-and-artist matches.
   Non-profit ($0.00/month and up), Stealth Start-Up ($0.00 and up), Bronze
   ($100 and up), Silver ($600), Gold ($1,250), Unicorn ($2,000). The same page tells "a pre-revenue start-up and expect to have revenue in the future" to "sign up with a commercial account". The Live Data Feed page adds "MetaBrainz does not charge
   for access to the data. However, we ask that commercial users support our
-  efforts financially." **[source]** Whether notefinder counts as commercial,
+  efforts financially." **[source]** Whether vozzify counts as commercial,
   and which tier, is a maintainer decision (flagged in the impact section).
   This is not legal advice.
 - **How it is used.** Packets: `GET
@@ -1009,7 +1009,7 @@ survive without a maintainer decision (proposal given, nothing decided).
    CC BY-NC-SA 3.0; a free token is for non-commercial use, and companies with
    or expecting revenue are asked to sign up to a commercial tier
    ([section 6](#6-what-does-the-metabrainz-replication-token-need)). The
-   maintainer needs to decide whether notefinder is commercial, and if so which
+   maintainer needs to decide whether vozzify is commercial, and if so which
    tier, before `full` mode is deployed. The core dump (recordings, artists,
    releases, works, URLs, `genre` list) is CC0; only `mbdump-derived` and the
    replication packets are NC-SA, so "core only, no genres, no sync" is a legal

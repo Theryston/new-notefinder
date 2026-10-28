@@ -2,7 +2,7 @@ import {
   TRACK_PROCESSING_STEPS,
   type TrackProcessingStatus,
   type TrackProcessingStep,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 // The order of a Processing's steps as this build runs them (pure). A later
 // ticket appends its step here and adds its handler to TrackPipelineService;

@@ -1,4 +1,4 @@
-import type { TrackProcessingVideo } from '@notefinder/contracts';
+import type { TrackProcessingVideo } from '@vozzify/contracts';
 import { ExternalLinkIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';

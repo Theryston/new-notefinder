@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import type { RecordAcquisitionBody } from '@notefinder/contracts';
+import type { RecordAcquisitionBody } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { AcquisitionRepository } from './acquisition.repository.js';
 

@@ -1,7 +1,7 @@
 'use client';
 
-import type { ProfileSection, ProfileVisibility } from '@notefinder/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ProfileSection, ProfileVisibility } from '@vozzify/contracts';
 import { toast } from 'sonner';
 
 import { profileVisibilityQueryOptions } from '../profile-visibility-query';

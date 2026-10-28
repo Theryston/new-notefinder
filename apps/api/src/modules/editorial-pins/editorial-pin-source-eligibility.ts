@@ -2,7 +2,7 @@ import type {
   EditorialPinDynamicSource,
   EditorialPinKind,
   PinTrackIssueReason,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import {
   DYNAMIC_ROW_MIN_TRACKS,

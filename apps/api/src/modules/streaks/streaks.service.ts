@@ -5,7 +5,7 @@ import {
   type StreakHeartbeatBody,
   type StreakHeartbeatResult,
   type StreakStatus,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { UsersService } from '../users/users.service.js';
 import {
   creditHeartbeat,

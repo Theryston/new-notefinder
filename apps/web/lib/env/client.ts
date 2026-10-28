@@ -33,7 +33,7 @@ const siteUrlSchema = z.object({
 let cachedSiteUrl: URL | undefined;
 
 /**
- * Public origin of the site (e.g. `https://notefinder.com.br`), used as
+ * Public origin of the site (e.g. `https://vozzify.com`), used as
  * `metadataBase` so canonical and hreflang URLs are absolute. Separate from
  * `getClientEnv()` because metadata is rendered during `next build`, where
  * the other public values may be missing. Static pages bake it in at build

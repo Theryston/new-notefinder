@@ -1,4 +1,4 @@
-import { musicCatalogStatusResponseSchema } from '@notefinder/contracts';
+import { musicCatalogStatusResponseSchema } from '@vozzify/contracts';
 import { inject } from 'vitest';
 import type { Database } from '../../src/database/database.js';
 import { MbslaveClient } from '../../src/integrations/mbslave/mbslave-client.js';

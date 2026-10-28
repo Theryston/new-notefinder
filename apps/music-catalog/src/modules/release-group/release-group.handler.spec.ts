@@ -1,4 +1,4 @@
-import type { MusicCatalogReleaseGroup } from '@notefinder/contracts';
+import type { MusicCatalogReleaseGroup } from '@vozzify/contracts';
 import { createGetReleaseGroupHandler } from './release-group.handler.js';
 import type { ReleaseGroupService } from './release-group.service.js';
 

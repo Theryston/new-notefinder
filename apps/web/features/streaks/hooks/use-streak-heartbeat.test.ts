@@ -1,8 +1,8 @@
+import { QueryClient } from '@tanstack/react-query';
 import type {
   StreakHeartbeatBody,
   StreakHeartbeatResult,
-} from '@notefinder/contracts';
-import { QueryClient } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { streakKeys } from '../query-keys';

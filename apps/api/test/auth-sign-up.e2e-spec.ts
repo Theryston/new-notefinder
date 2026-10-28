@@ -1,4 +1,4 @@
-import { NAME_MAX_LENGTH } from '@notefinder/contracts';
+import { NAME_MAX_LENGTH } from '@vozzify/contracts';
 import { users } from '../src/database/schema/users.js';
 import {
   countEmailsTo,

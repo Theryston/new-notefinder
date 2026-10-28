@@ -1,6 +1,6 @@
-# notefinder
+# vozzify
 
-notefinder shows the exact vocal notes a singer hits in any song, on a timeline
+vozzify shows the exact vocal notes a singer hits in any song, on a timeline
 synced with playback, with real-time pitch feedback from the user's mic.
 
 This repo is a **from-scratch rewrite** of the original monolith
@@ -31,7 +31,7 @@ packages/
 - Package manager: **nub** (`nub.lock`, pnpm-compatible). Never use npm/pnpm/yarn
   directly and never commit another lockfile. Node version is in `.node-version`.
 - Task runner: **Turborepo** (`turbo.json`). Internal packages are referenced as
-  `"@notefinder/<name>": "workspace:*"`.
+  `"@vozzify/<name>": "workspace:*"`.
 - New shared code goes in `packages/<name>` only when at least two apps need it.
 
 ## Commands (from the root)
@@ -50,7 +50,7 @@ nub run test:cov            # unit tests + coverage thresholds (what CI runs)
 nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
-nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | note-detector | @notefinder/contracts)
+nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | note-detector | @vozzify/contracts)
 ```
 
 Before considering a change done, run `lint`, `check-types` and `test:cov` for
@@ -175,7 +175,7 @@ design token means updating `DESIGN.md` and the tokens in
   default when possible). Never commit real `.env` files or secrets.
 - `docker-compose.yml` provides Postgres 17, the API's Redis 8 (6379) and
   MinIO (S3 API on 9000, console on 9001; `minio-init` creates the public
-  `notefinder` bucket, so uploads use the same code as production's S3) for
+  `vozzify` bucket, so uploads use the same code as production's S3) for
   local development, and includes `apps/web/docker-compose.yml` (`web-redis`
   on 6380, the web's shared cache) and `apps/music-catalog/docker-compose.yml`
   (`music-catalog-postgres` on 5433, the Music catalog's own database, and

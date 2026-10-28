@@ -1,6 +1,6 @@
 'use client';
 
-import type { FollowListUser } from '@notefinder/contracts';
+import type { FollowListUser } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';
 

@@ -64,7 +64,7 @@ describe('submitPendingAttempt', () => {
       body: { ...body },
       schema: expect.anything(),
     });
-    expect(storage.getItem('notefinder:pending-attempt:t1')).toBeNull();
+    expect(storage.getItem('vozzify:pending-attempt:t1')).toBeNull();
     expect(
       queryClient.getQueryState(trackKeys.userState('t1'))?.isInvalidated,
     ).toBe(true);
@@ -82,7 +82,7 @@ describe('submitPendingAttempt', () => {
         submitPendingAttempt({ queryClient, storage, pending }),
       ).rejects.toBeInstanceOf(ApiError);
 
-      expect(storage.getItem('notefinder:pending-attempt:t1')).toBeNull();
+      expect(storage.getItem('vozzify:pending-attempt:t1')).toBeNull();
       expect(
         queryClient.getQueryState(trackKeys.userState('t1'))?.isInvalidated,
       ).not.toBe(true);
@@ -103,7 +103,7 @@ describe('submitPendingAttempt', () => {
         submitPendingAttempt({ queryClient, storage, pending }),
       ).rejects.toThrow();
 
-      expect(storage.getItem('notefinder:pending-attempt:t1')).not.toBeNull();
+      expect(storage.getItem('vozzify:pending-attempt:t1')).not.toBeNull();
     },
   );
 });

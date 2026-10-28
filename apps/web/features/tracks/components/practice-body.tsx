@@ -5,7 +5,7 @@ import type {
   TrackDetail,
   TrackLyrics,
   TrackNotes,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { MicOffIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useMemo, useRef } from 'react';

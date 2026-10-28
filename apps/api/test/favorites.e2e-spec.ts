@@ -1,4 +1,4 @@
-import { userTrackStateSchema } from '@notefinder/contracts';
+import { userTrackStateSchema } from '@vozzify/contracts';
 import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { trackFavorites } from '../src/database/schema/track-favorites.js';

@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { cacheTags, type HomeRow } from '@notefinder/contracts';
+import { cacheTags, type HomeRow } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
 import { minimalHomeFeed, type StoredHomeFeed } from './home-feed.js';

@@ -1,4 +1,4 @@
-import type { TrackVocalRange } from '@notefinder/contracts';
+import type { TrackVocalRange } from '@vozzify/contracts';
 
 /** A song may need at most this many semitones of transposition to fit. */
 export const MAX_VOICE_TRANSPOSITION_SEMITONES = 3;

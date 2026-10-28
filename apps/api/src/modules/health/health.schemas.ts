@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Consumed only by infrastructure (Coolify, load balancers), never by the web
-// or mobile apps, so the shape lives here instead of @notefinder/contracts.
+// or mobile apps, so the shape lives here instead of @vozzify/contracts.
 
 const healthCheckStatusSchema = z.enum(['ok', 'error']);
 

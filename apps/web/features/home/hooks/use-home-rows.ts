@@ -1,7 +1,7 @@
 'use client';
 
-import type { HomeFeedPage, Locale } from '@notefinder/contracts';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type { HomeFeedPage, Locale } from '@vozzify/contracts';
 
 import { homeRowsQueryOptions } from '../home-rows-query';
 

@@ -1,4 +1,4 @@
-import type { CatalogDataset, ReplicationStalled } from '@notefinder/contracts';
+import type { CatalogDataset, ReplicationStalled } from '@vozzify/contracts';
 import type { MbslaveClient } from '../../integrations/mbslave/mbslave-client.js';
 import { sleepUnlessAborted } from '../../lib/abortable-sleep.js';
 import type { Logger } from '../../logger.js';

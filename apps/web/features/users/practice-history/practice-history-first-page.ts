@@ -3,7 +3,7 @@ import 'server-only';
 import {
   type PracticeAttemptHistoryPage,
   practiceAttemptHistoryPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cache } from 'react';
 
 import { isApiError } from '@/lib/api/api-error';

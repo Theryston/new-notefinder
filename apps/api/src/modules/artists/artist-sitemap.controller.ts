@@ -3,7 +3,7 @@ import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   type ArtistSitemapPage,
   artistSitemapPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ListSitemapQueryDto } from '../../common/sitemap/list-sitemap-query.dto.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

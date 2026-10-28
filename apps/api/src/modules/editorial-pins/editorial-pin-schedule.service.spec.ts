@@ -1,6 +1,6 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { EditorialPin } from '@notefinder/contracts';
+import type { EditorialPin } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { EditorialPinScheduleService } from './editorial-pin-schedule.service.js';
 import {

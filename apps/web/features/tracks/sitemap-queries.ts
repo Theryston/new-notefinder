@@ -5,7 +5,7 @@ import {
   TRACK_SITEMAP_PAGE_SIZE,
   type TrackSitemapPage,
   trackSitemapPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';

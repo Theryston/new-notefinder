@@ -3,7 +3,7 @@ import type {
   MusicCatalogReimportStatus,
   MusicCatalogStatusResult,
   ReplicationStalled,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';
 

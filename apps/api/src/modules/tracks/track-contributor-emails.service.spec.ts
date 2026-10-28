@@ -18,7 +18,7 @@ const emails = {
   sendTrackCompleted: vi.fn(),
   sendTrackFailed: vi.fn(),
 };
-const env = { WEB_URL: 'https://notefinder.test' };
+const env = { WEB_URL: 'https://vozzify.test' };
 
 // The Track row the Processing ended with, and the Track fields its emails get.
 const endedTrack = {
@@ -78,7 +78,7 @@ describe('TrackContributorEmailsService', () => {
       {
         to: 'ana@example.com',
         locale: 'pt-BR',
-        trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1',
+        trackUrl: 'https://vozzify.test/pt-BR/tracks/track-1',
         track,
       },
       { jobId: 'track-email-processing-1-ana' },
@@ -87,7 +87,7 @@ describe('TrackContributorEmailsService', () => {
       {
         to: 'bob@example.com',
         locale: 'en',
-        trackUrl: 'https://notefinder.test/en/tracks/track-1',
+        trackUrl: 'https://vozzify.test/en/tracks/track-1',
         track,
       },
       { jobId: 'track-email-processing-1-bob' },

@@ -4,18 +4,18 @@ import { hasSessionCookie, isSessionCookieName } from './session-cookie';
 
 describe('isSessionCookieName', () => {
   it.each([
-    'notefinder.session_token',
-    '__Secure-notefinder.session_token',
-    'notefinder.session_data',
+    'vozzify.session_token',
+    '__Secure-vozzify.session_token',
+    'vozzify.session_data',
   ])('recognizes the Better Auth session cookie %s', (name) => {
     expect(isSessionCookieName(name)).toBe(true);
   });
 
   it.each([
     'NEXT_LOCALE',
-    'notefinderTheme',
-    'notefinder',
-    'notefinder-e2e-session',
+    'vozzifyTheme',
+    'vozzify',
+    'vozzify-e2e-session',
     'theme',
   ])('ignores the unrelated cookie %s', (name) => {
     expect(isSessionCookieName(name)).toBe(false);
@@ -25,7 +25,7 @@ describe('isSessionCookieName', () => {
 describe('hasSessionCookie', () => {
   it('is true when any cookie is a session cookie', () => {
     expect(
-      hasSessionCookie(['NEXT_LOCALE', '__Secure-notefinder.session_token']),
+      hasSessionCookie(['NEXT_LOCALE', '__Secure-vozzify.session_token']),
     ).toBe(true);
   });
 

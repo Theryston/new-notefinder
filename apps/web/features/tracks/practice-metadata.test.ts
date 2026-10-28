@@ -7,7 +7,7 @@ vi.mock('next-intl/server', () => ({ getTranslations: vi.fn() }));
 
 const { buildPracticeMetadata } = await import('./practice-metadata');
 
-const siteUrl = new URL('https://notefinder.example');
+const siteUrl = new URL('https://vozzify.example');
 
 // Echoes the key and values, so a test sees which message was picked.
 const translate = (key: string, values: Record<string, string>) =>
@@ -76,7 +76,7 @@ describe('buildPracticeMetadata', () => {
       url: '/pt-BR/tracks/track-1',
       images: [{ url: 'https://images.example.com/cover.webp' }],
       duration: 248,
-      musicians: [new URL('https://notefinder.example/pt-BR/artists/artist-1')],
+      musicians: [new URL('https://vozzify.example/pt-BR/artists/artist-1')],
     });
   });
 

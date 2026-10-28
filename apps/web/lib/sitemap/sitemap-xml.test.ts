@@ -11,7 +11,7 @@ import {
   sitemapContentMeta,
 } from './sitemap-xml';
 
-const site = 'https://notefinder.com.br/';
+const site = 'https://vozzify.com/';
 const updatedAt = '2026-10-14T12:00:00.000Z';
 
 const entry = (
@@ -39,10 +39,10 @@ describe('buildSitemapUrlset', () => {
     );
 
     expect(locsOf(xml)).toEqual([
-      'https://notefinder.com.br/en/tracks/clx-hot',
-      'https://notefinder.com.br/pt-BR/tracks/clx-hot',
-      'https://notefinder.com.br/en/tracks/clx-cold',
-      'https://notefinder.com.br/pt-BR/tracks/clx-cold',
+      'https://vozzify.com/en/tracks/clx-hot',
+      'https://vozzify.com/pt-BR/tracks/clx-hot',
+      'https://vozzify.com/en/tracks/clx-cold',
+      'https://vozzify.com/pt-BR/tracks/clx-cold',
     ]);
   });
 
@@ -53,9 +53,9 @@ describe('buildSitemapUrlset', () => {
     expect(urls).toHaveLength(2);
     for (const url of urls) {
       expect(alternatesOf(url)).toEqual([
-        'en https://notefinder.com.br/en/tracks/clx-hot',
-        'pt-BR https://notefinder.com.br/pt-BR/tracks/clx-hot',
-        'x-default https://notefinder.com.br/tracks/clx-hot',
+        'en https://vozzify.com/en/tracks/clx-hot',
+        'pt-BR https://vozzify.com/pt-BR/tracks/clx-hot',
+        'x-default https://vozzify.com/tracks/clx-hot',
       ]);
     }
   });
@@ -67,14 +67,14 @@ describe('buildSitemapUrlset', () => {
     );
 
     expect(locsOf(xml)).toEqual([
-      'https://notefinder.com.br/en',
-      'https://notefinder.com.br/pt-BR',
+      'https://vozzify.com/en',
+      'https://vozzify.com/pt-BR',
     ]);
     for (const url of urlsOf(xml)) {
       expect(alternatesOf(url)).toEqual([
-        'en https://notefinder.com.br/en',
-        'pt-BR https://notefinder.com.br/pt-BR',
-        'x-default https://notefinder.com.br/',
+        'en https://vozzify.com/en',
+        'pt-BR https://vozzify.com/pt-BR',
+        'x-default https://vozzify.com/',
       ]);
     }
   });
@@ -117,7 +117,7 @@ describe('buildSitemapUrlset', () => {
 
   it('adds image tags with their values wherever the entry exposes them', () => {
     const cover: SitemapImage = {
-      loc: 'https://cdn.notefinder.com.br/covers/hot.jpg',
+      loc: 'https://cdn.vozzify.com/covers/hot.jpg',
       title: 'Hot cover',
       caption: 'Cover art',
     };
@@ -127,7 +127,7 @@ describe('buildSitemapUrlset', () => {
     );
 
     expect(xml).toContain(
-      '<image:image><image:loc>https://cdn.notefinder.com.br/covers/hot.jpg</image:loc>' +
+      '<image:image><image:loc>https://cdn.vozzify.com/covers/hot.jpg</image:loc>' +
         '<image:title>Hot cover</image:title>' +
         '<image:caption>Cover art</image:caption></image:image>',
     );
@@ -136,10 +136,10 @@ describe('buildSitemapUrlset', () => {
 
   it('adds video tags with their values, including player and publication date', () => {
     const clip: SitemapVideo = {
-      thumbnailLoc: 'https://cdn.notefinder.com.br/thumbs/hot.jpg',
+      thumbnailLoc: 'https://cdn.vozzify.com/thumbs/hot.jpg',
       title: 'Hot video',
       description: 'The video',
-      playerLoc: 'https://notefinder.com.br/en/tracks/clx-hot',
+      playerLoc: 'https://vozzify.com/en/tracks/clx-hot',
       duration: 210,
       publicationDate: '2026-10-01T00:00:00.000Z',
     };
@@ -149,12 +149,12 @@ describe('buildSitemapUrlset', () => {
     );
 
     expect(xml).toContain(
-      '<video:thumbnail_loc>https://cdn.notefinder.com.br/thumbs/hot.jpg</video:thumbnail_loc>',
+      '<video:thumbnail_loc>https://cdn.vozzify.com/thumbs/hot.jpg</video:thumbnail_loc>',
     );
     expect(xml).toContain('<video:title>Hot video</video:title>');
     expect(xml).toContain('<video:description>The video</video:description>');
     expect(xml).toContain(
-      '<video:player_loc>https://notefinder.com.br/en/tracks/clx-hot</video:player_loc>',
+      '<video:player_loc>https://vozzify.com/en/tracks/clx-hot</video:player_loc>',
     );
     expect(xml).not.toContain('<video:content_loc>');
     expect(xml).toContain('<video:duration>210</video:duration>');
@@ -180,10 +180,10 @@ describe('buildSitemapUrlset', () => {
           entry(['tracks', 'clx-hot'], 'track', {
             videos: [
               {
-                thumbnailLoc: 'https://cdn.notefinder.com.br/t.jpg',
+                thumbnailLoc: 'https://cdn.vozzify.com/t.jpg',
                 title: 'T',
                 description: 'D',
-                contentLoc: 'https://cdn.notefinder.com.br/v.mp4',
+                contentLoc: 'https://cdn.vozzify.com/v.mp4',
                 duration,
               },
             ],
@@ -202,17 +202,17 @@ describe('buildSitemapUrlset', () => {
 
   it('requires a content or a player location on every video', () => {
     const base = {
-      thumbnailLoc: 'https://cdn.notefinder.com.br/t.jpg',
+      thumbnailLoc: 'https://cdn.vozzify.com/t.jpg',
       title: 'T',
       description: 'D',
     };
     const byContent: SitemapVideo = {
       ...base,
-      contentLoc: 'https://cdn.notefinder.com.br/v.mp4',
+      contentLoc: 'https://cdn.vozzify.com/v.mp4',
     };
     const byPlayer: SitemapVideo = {
       ...base,
-      playerLoc: 'https://notefinder.com.br/en/tracks/clx-hot',
+      playerLoc: 'https://vozzify.com/en/tracks/clx-hot',
     };
     // @ts-expect-error a video with neither location is not a SitemapVideo
     const withoutLocation: SitemapVideo = base;
@@ -241,7 +241,7 @@ describe('buildSitemapUrlset', () => {
   it('encodes each segment once, so a slash in an ID stays inside it', () => {
     const xml = buildSitemapUrlset([entry(['tracks', 'a/b'])], site);
 
-    expect(locsOf(xml)[0]).toBe('https://notefinder.com.br/en/tracks/a%2Fb');
+    expect(locsOf(xml)[0]).toBe('https://vozzify.com/en/tracks/a%2Fb');
     expect(xml).not.toContain('a/b');
   });
 
@@ -251,9 +251,7 @@ describe('buildSitemapUrlset', () => {
       site,
     );
 
-    expect(locsOf(xml)[0]).toBe(
-      'https://notefinder.com.br/en/users/ana%20maria%3Fx',
-    );
+    expect(locsOf(xml)[0]).toBe('https://vozzify.com/en/users/ana%20maria%3Fx');
     expect(xml).not.toContain('%2520');
   });
 
@@ -263,7 +261,7 @@ describe('buildSitemapUrlset', () => {
         entry(['users', 'a&b'], 'user', {
           images: [
             {
-              loc: 'https://cdn.notefinder.com.br/a.jpg',
+              loc: 'https://cdn.vozzify.com/a.jpg',
               title: 'Fish & Chips <best>',
             },
           ],
@@ -272,7 +270,7 @@ describe('buildSitemapUrlset', () => {
       site,
     );
 
-    expect(locsOf(xml)[0]).toBe('https://notefinder.com.br/en/users/a%26b');
+    expect(locsOf(xml)[0]).toBe('https://vozzify.com/en/users/a%26b');
     expect(xml).toContain('Fish &amp; Chips &lt;best&gt;');
     expect(xml).not.toContain('a&b');
   });
@@ -288,12 +286,12 @@ describe('buildSitemapIndex', () => {
         },
         { segments: ['albums', 'sitemap', '1.xml'] },
       ],
-      'https://notefinder.com.br',
+      'https://vozzify.com',
     );
 
     expect(locsOf(xml)).toEqual([
-      'https://notefinder.com.br/tracks/sitemap/0.xml',
-      'https://notefinder.com.br/albums/sitemap/1.xml',
+      'https://vozzify.com/tracks/sitemap/0.xml',
+      'https://vozzify.com/albums/sitemap/1.xml',
     ]);
     expect(xml).toContain('<lastmod>2026-10-14T00:00:00.000Z</lastmod>');
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);

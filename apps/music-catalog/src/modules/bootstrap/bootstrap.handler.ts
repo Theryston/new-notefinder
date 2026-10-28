@@ -1,7 +1,7 @@
 import {
   musicCatalogStatusPayloadSchema,
   musicCatalogStatusResultSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { BootstrapService } from './bootstrap.service.js';
 

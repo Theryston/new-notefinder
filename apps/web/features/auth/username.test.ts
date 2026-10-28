@@ -1,4 +1,4 @@
-import { usernameSchema } from '@notefinder/contracts';
+import { usernameSchema } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { normalizeUsernameInput, suggestUsername } from './username';

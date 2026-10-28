@@ -3,7 +3,7 @@ import {
   albumSchema,
   albumTracksPageSchema,
   apiErrorSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   createAlbumDisc,
   placeAlbumTrack,

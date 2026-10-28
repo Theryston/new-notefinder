@@ -1,4 +1,4 @@
-import type { TrackHeader, TrackProcessing } from '@notefinder/contracts';
+import type { TrackHeader, TrackProcessing } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import {

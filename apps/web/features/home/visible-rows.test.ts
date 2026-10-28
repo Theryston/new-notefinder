@@ -1,4 +1,4 @@
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { uniqueRows, visibleRows } from './visible-rows';

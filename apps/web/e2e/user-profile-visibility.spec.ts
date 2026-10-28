@@ -1,10 +1,10 @@
-import type { ProfileVisibility } from '@notefinder/contracts';
 import {
   type APIRequestContext,
   expect,
   type Page,
   test,
 } from '@playwright/test';
+import type { ProfileVisibility } from '@vozzify/contracts';
 
 import { ADA, mockAuthApi } from './auth-api-mock';
 import {

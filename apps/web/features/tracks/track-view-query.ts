@@ -1,4 +1,4 @@
-import { type Locale, trackViewSchema } from '@notefinder/contracts';
+import { type Locale, trackViewSchema } from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

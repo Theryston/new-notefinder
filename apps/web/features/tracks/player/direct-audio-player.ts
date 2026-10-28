@@ -1,4 +1,4 @@
-import type { TrackAudio } from '@notefinder/contracts';
+import type { TrackAudio } from '@vozzify/contracts';
 import * as Tone from 'tone';
 
 import { BasePlayer } from './base-player';

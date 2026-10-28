@@ -1,5 +1,5 @@
-import type { ApiErrorCode, ProfileFollow } from '@notefinder/contracts';
 import type { QueryClient } from '@tanstack/react-query';
+import type { ApiErrorCode, ProfileFollow } from '@vozzify/contracts';
 
 import { isApiError } from '@/lib/api/api-error';
 

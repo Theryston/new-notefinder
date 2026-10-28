@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { robotsTxt } from './robots-txt';
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 
 describe('robotsTxt', () => {
   it('references the absolute index URL for the host', () => {

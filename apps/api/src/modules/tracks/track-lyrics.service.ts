@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TrackLyrics } from '@notefinder/contracts';
+import type { TrackLyrics } from '@vozzify/contracts';
 import { TrackLyricsRepository } from './track-lyrics.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';
 

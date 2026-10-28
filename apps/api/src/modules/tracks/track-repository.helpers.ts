@@ -1,4 +1,4 @@
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import type { TrackArtistCreditEntry } from '@vozzify/contracts';
 import type { NewTrackRows } from './track-from-recording.js';
 
 /** A Track as its Processing reads it (see `findPipelineTrack`). */

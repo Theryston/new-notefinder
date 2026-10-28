@@ -1,4 +1,4 @@
-import { mbidSchema } from '@notefinder/contracts';
+import { mbidSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 import data from './tiny-seed-data.json' with { type: 'json' };
 

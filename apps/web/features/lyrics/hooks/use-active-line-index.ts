@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackLyricLine } from '@notefinder/contracts';
+import type { TrackLyricLine } from '@vozzify/contracts';
 import { useSyncExternalStore } from 'react';
 
 import { lineIndexAt } from '../lyrics-position';

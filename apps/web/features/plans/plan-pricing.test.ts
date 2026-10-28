@@ -1,4 +1,4 @@
-import type { PlanOffer } from '@notefinder/contracts';
+import type { PlanOffer } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   annualSavingsMonths,

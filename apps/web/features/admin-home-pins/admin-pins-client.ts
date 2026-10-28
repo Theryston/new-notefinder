@@ -15,7 +15,7 @@ import {
   type PinTrackSearchResult,
   pinTrackSearchResultSchema,
   type UpdateEditorialPinBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { z } from 'zod';
 
 import { browserApi } from '@/lib/api/browser';

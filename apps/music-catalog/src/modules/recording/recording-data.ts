@@ -1,4 +1,4 @@
-import type { RecordingTagsSource } from '@notefinder/contracts';
+import type { RecordingTagsSource } from '@vozzify/contracts';
 import type { CreditedArtistRow } from '../../database/credited-artists.js';
 import type { PartialDate } from '../../lib/partial-date.js';
 import type { TagVotes } from '../../lib/tag-votes.js';

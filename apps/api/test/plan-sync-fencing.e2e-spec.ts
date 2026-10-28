@@ -1,7 +1,7 @@
 import type {
   LocalizedCatalogCopy,
   SaveAdminPlanBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq, sql } from 'drizzle-orm';
 import { planSyncOperations } from '../src/database/schema/plans.js';
 import { StripeCatalogService } from '../src/integrations/stripe/stripe-catalog.service.js';

@@ -1,4 +1,4 @@
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 
 import { postTrackView } from './track-view-query';
 import {

@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 
 type Playback = { getState(): { status: string; time: number; rate: number } };
 type Synth = { play(midi: number, seconds: number): void; stop(): void };

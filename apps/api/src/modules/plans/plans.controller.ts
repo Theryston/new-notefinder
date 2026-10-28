@@ -4,7 +4,7 @@ import {
   listPlansQuerySchema,
   type PlanCatalog,
   planCatalogSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

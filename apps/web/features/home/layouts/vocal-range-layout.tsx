@@ -1,4 +1,4 @@
-import type { HomeVocalRangeRow } from '@notefinder/contracts';
+import type { HomeVocalRangeRow } from '@vozzify/contracts';
 
 import { RowCarouselShell, RowTrackCards } from './row-carousel-shell';
 

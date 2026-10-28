@@ -1,4 +1,4 @@
-import type { CurrentUser } from '@notefinder/contracts';
+import type { CurrentUser } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/lib/api/api-error';

@@ -1,4 +1,4 @@
-import { OTP_LENGTH } from '@notefinder/contracts';
+import { OTP_LENGTH } from '@vozzify/contracts';
 import request from 'supertest';
 import {
   EMAIL_QUEUE,
@@ -15,7 +15,7 @@ import type { TestApp } from './create-test-app.js';
 const TEST_WEB_ORIGIN = 'http://localhost:3000';
 
 /** Name of Better Auth's session cookie (`cookiePrefix` + `.session_token`). */
-export const SESSION_COOKIE = 'notefinder.session_token';
+export const SESSION_COOKIE = 'vozzify.session_token';
 
 export type AuthClient = ReturnType<typeof request.agent>;
 

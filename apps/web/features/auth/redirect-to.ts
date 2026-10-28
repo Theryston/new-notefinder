@@ -4,7 +4,7 @@ export const DEFAULT_REDIRECT = '/';
 
 // Any origin works: it only lets `URL` resolve the path, and a value that
 // resolves elsewhere (`//evil.com`, `https://…`) is rejected by comparing it.
-const BASE = 'http://notefinder.invalid';
+const BASE = 'http://vozzify.invalid';
 
 function stripLocale(pathname: string): string {
   const [, first, ...rest] = pathname.split('/');

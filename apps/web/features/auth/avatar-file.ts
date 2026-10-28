@@ -1,7 +1,7 @@
 import {
   AVATAR_MAX_BYTES,
   AVATAR_MIME_TYPES,
-} from '@notefinder/contracts/avatar-rules';
+} from '@vozzify/contracts/avatar-rules';
 
 export type AvatarFileProblem = 'unsupportedType' | 'tooLarge';
 

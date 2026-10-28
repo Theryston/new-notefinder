@@ -2,7 +2,7 @@ import type {
   MusicCatalogReleaseGroup,
   MusicCatalogReleaseMedium,
   MusicCatalogRepresentativeRelease,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { CreditedArtistRow } from '../../database/credited-artists.js';
 import { releaseGroupCoverArtUrl } from '../../lib/cover-art-url.js';
 import { type TagVotes, votedGenres } from '../../lib/tag-votes.js';

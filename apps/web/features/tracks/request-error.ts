@@ -2,7 +2,7 @@ import {
   type ApiErrorCode,
   processingLimitDetailsSchema,
   type TrackRequestLimit,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { isApiError } from '@/lib/api/api-error';
 

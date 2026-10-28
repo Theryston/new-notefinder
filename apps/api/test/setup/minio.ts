@@ -12,10 +12,10 @@ import type { E2eStorage } from './storage-settings.js';
 const MINIO_IMAGE = 'ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z';
 // Covers pulling the image on a cold CI runner, not only the boot.
 const CONTAINER_STARTUP_TIMEOUT_MS = 120_000;
-const BUCKET = 'notefinder-e2e';
+const BUCKET = 'vozzify-e2e';
 const REGION = 'us-east-1';
-const ROOT_USER = 'notefinder-e2e';
-const ROOT_PASSWORD = 'notefinder-e2e-secret';
+const ROOT_USER = 'vozzify-e2e';
+const ROOT_PASSWORD = 'vozzify-e2e-secret';
 
 const logger = new Logger('E2eStorage');
 

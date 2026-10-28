@@ -1,4 +1,4 @@
-import type { Locale, PlanCatalog } from '@notefinder/contracts';
+import type { Locale, PlanCatalog } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 

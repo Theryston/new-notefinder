@@ -1,6 +1,6 @@
-# NoteFinder design system
+# Vozzify design system
 
-The visual language of NoteFinder. It applies to the web app today and to the
+The visual language of Vozzify. It applies to the web app today and to the
 mobile app later. Tokens live in `apps/web/app/globals.css`: when you change a
 value, change this file in the same PR.
 
@@ -128,7 +128,7 @@ times, vocal ranges and other data that must line up. Use
 
 - The symbol is `components/logo-mark.tsx` (`currentColor`, orange by
   default). On orange fills it is white; on photos, white.
-- The wordmark is **NoteFinder** (capital N and F), Figtree `font-bold`,
+- The wordmark is **Vozzify** (capital V), Figtree `font-bold`,
   `tracking-tight`, placed to the right of the symbol with a gap of ~0.3× the
   symbol size. The symbol is ~1.15× the wordmark's font size.
 - Compact contexts (favicon, app icon, tight mobile header) use the symbol
@@ -179,7 +179,7 @@ Shadow scale: `shadow-xs` (inputs, pressed), `shadow-sm` (cards),
 
 ## Spacing and density
 
-**Spacious.** NoteFinder is used with one hand while singing, often on a
+**Spacious.** Vozzify is used with one hand while singing, often on a
 phone, so targets are large and lists breathe.
 
 - 4px base grid (Tailwind's default scale). Prefer `gap-*` on flex/grid
@@ -494,7 +494,7 @@ hex values of the tokens, because email has no CSS variables.
 
 Exception to the featured-block rule above: every transactional email opens
 with one featured block, even though it isn't editorial content. It holds the
-logo (the 24px `apple-icon`, `alt=""`) with the NoteFinder wordmark, an
+logo (the 24px `apple-icon`, `alt=""`) with the Vozzify wordmark, an
 overline (12px, semibold, uppercase, `tracking-wider`) and the display title
 (48px, weight 800, `tracking-tighter`, max ~9ch). Below it: body text (16px,
 line-height 1.5, max ~44ch, `#09090B`), then a black pill CTA with white text

@@ -1,4 +1,4 @@
-import type { ApiError } from '@notefinder/contracts';
+import type { ApiError } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { ApiError as ApiErrorClass } from '@/lib/api/api-error';

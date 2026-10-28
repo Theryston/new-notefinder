@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackContributorEntry } from '@notefinder/contracts';
+import type { TrackContributorEntry } from '@vozzify/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef, useState } from 'react';

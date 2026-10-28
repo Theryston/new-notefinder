@@ -1,7 +1,7 @@
 'use client';
 
-import type { VerifyEmailBody } from '@notefinder/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { VerifyEmailBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -22,7 +22,7 @@ import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
 
 const verifyEmailResolver = lazyResolver<VerifyEmailBody>(() =>
-  import('@notefinder/contracts').then((m) => m.verifyEmailBodySchema),
+  import('@vozzify/contracts').then((m) => m.verifyEmailBodySchema),
 );
 
 type Notice = { tone: 'error'; code: AuthErrorCode } | { tone: 'success' };

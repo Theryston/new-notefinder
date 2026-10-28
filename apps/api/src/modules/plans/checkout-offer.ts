@@ -1,7 +1,4 @@
-import {
-  type CreateCheckoutBody,
-  PLAN_CURRENCIES,
-} from '@notefinder/contracts';
+import { type CreateCheckoutBody, PLAN_CURRENCIES } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import type { SubscriptionsRepository } from './subscriptions.repository.js';
 

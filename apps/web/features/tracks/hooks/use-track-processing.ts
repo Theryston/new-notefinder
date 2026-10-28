@@ -1,10 +1,10 @@
 'use client';
 
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import {
   type TrackProcessingState,
   trackProcessingStateSchema,
-} from '@notefinder/contracts';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

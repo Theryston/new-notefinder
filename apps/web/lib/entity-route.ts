@@ -1,7 +1,4 @@
-import {
-  apiErrorSchema,
-  resourceMovedDetailsSchema,
-} from '@notefinder/contracts';
+import { apiErrorSchema, resourceMovedDetailsSchema } from '@vozzify/contracts';
 
 import { isApiError } from '@/lib/api/api-error';
 

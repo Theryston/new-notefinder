@@ -1,4 +1,4 @@
-import type { Subscription } from '@notefinder/contracts';
+import type { Subscription } from '@vozzify/contracts';
 
 export function subscriptionState(subscription: Subscription | null) {
   if (!subscription) return 'free';

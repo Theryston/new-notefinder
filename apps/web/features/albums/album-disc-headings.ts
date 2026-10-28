@@ -1,4 +1,4 @@
-import type { AlbumDisc, AlbumTrack } from '@notefinder/contracts';
+import type { AlbumDisc, AlbumTrack } from '@vozzify/contracts';
 
 /**
  * The two disc heading shapes, translated: "Disc {number}" for a disc without

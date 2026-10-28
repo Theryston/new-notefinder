@@ -5,7 +5,7 @@ import {
   PayloadTooLargeException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AVATAR_MAX_BYTES } from '@notefinder/contracts';
+import { AVATAR_MAX_BYTES } from '@vozzify/contracts';
 import type { Request } from 'express';
 import type { Observable } from 'rxjs';
 import { invalidAvatar } from './avatar-image.js';

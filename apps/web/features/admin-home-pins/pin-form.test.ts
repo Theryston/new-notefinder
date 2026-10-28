@@ -1,4 +1,4 @@
-import type { EditorialPin } from '@notefinder/contracts';
+import type { EditorialPin } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

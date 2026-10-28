@@ -2,7 +2,7 @@ import {
   pitchName,
   type TrackArtistCreditEntry,
   type TrackVocalRange,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { EmailMessage } from './email.job.js';
 import { escapeHtml } from './email-html.js';
 import {
@@ -27,24 +27,23 @@ type TrackEmailCopy = {
 // User-facing copy lives only here, one entry per locale.
 const COMPLETED = {
   en: {
-    subject: 'Your notes are ready on notefinder',
+    subject: 'Your notes are ready on vozzify',
     overline: 'Notes ready',
     title: 'Time to practice',
     preheader: 'The vocal notes of your track are ready to practice.',
-    reason:
-      'You got this email because you contributed to a track on NoteFinder.',
+    reason: 'You got this email because you contributed to a track on Vozzify.',
     intro:
       'The vocal notes and timed lyrics of a track you contributed to are ready.',
     action: 'Open the track to start practicing.',
     link: 'Open the track',
   },
   'pt-BR': {
-    subject: 'As notas da sua música estão prontas no notefinder',
+    subject: 'As notas da sua música estão prontas no vozzify',
     overline: 'Notas prontas',
     title: 'Hora de praticar',
     preheader: 'As notas vocais da sua música estão prontas para praticar.',
     reason:
-      'Você recebeu este email porque contribuiu com uma música no NoteFinder.',
+      'Você recebeu este email porque contribuiu com uma música no Vozzify.',
     intro:
       'As notas vocais e a letra sincronizada de uma música em que você participou estão prontas.',
     action: 'Abra a música para começar a praticar.',
@@ -58,8 +57,7 @@ const FAILED = {
     overline: 'Processing failed',
     title: 'Not ready yet',
     preheader: 'We could not finish the notes of your track.',
-    reason:
-      'You got this email because you contributed to a track on NoteFinder.',
+    reason: 'You got this email because you contributed to a track on Vozzify.',
     intro:
       'The processing of a track you contributed to failed before its notes were ready.',
     action:
@@ -72,7 +70,7 @@ const FAILED = {
     title: 'Ainda não ficou pronto',
     preheader: 'Não conseguimos terminar as notas da sua música.',
     reason:
-      'Você recebeu este email porque contribuiu com uma música no NoteFinder.',
+      'Você recebeu este email porque contribuiu com uma música no Vozzify.',
     intro:
       'O processamento de uma música em que você participou falhou antes de as notas ficarem prontas.',
     action:

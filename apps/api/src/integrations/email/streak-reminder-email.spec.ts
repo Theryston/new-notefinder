@@ -7,10 +7,10 @@ import { renderStreakReminderEmail } from './streak-reminder-email.js';
 
 describe('Practice reminder email', () => {
   it.each([
-    ['en', 'Keep your practice streak on notefinder', 'Start practicing'],
+    ['en', 'Keep your practice streak on vozzify', 'Start practicing'],
     [
       'pt-BR',
-      'Mantenha sua sequência de prática no notefinder',
+      'Mantenha sua sequência de prática no vozzify',
       'Começar a praticar',
     ],
   ] as const)(
@@ -19,15 +19,15 @@ describe('Practice reminder email', () => {
       const email = renderStreakReminderEmail({
         to: 'user@example.com',
         locale,
-        siteUrl: `https://notefinder.test/${locale}?a=1&b=2`,
-        webUrl: 'https://notefinder.test',
+        siteUrl: `https://vozzify.test/${locale}?a=1&b=2`,
+        webUrl: 'https://vozzify.test',
       });
       expect(email.subject).toBe(subject);
       expect(email.text).toContain(action);
-      expect(email.text).toContain(`https://notefinder.test/${locale}?a=1&b=2`);
+      expect(email.text).toContain(`https://vozzify.test/${locale}?a=1&b=2`);
       expect(email.html).toContain(`<html lang="${locale}">`);
       expect(email.html).toContain(
-        `href="https://notefinder.test/${locale}?a=1&amp;b=2"`,
+        `href="https://vozzify.test/${locale}?a=1&amp;b=2"`,
       );
     },
   );
@@ -37,15 +37,15 @@ describe('Practice reminder email', () => {
       providers: [
         EmailService,
         { provide: getQueueToken(EMAIL_QUEUE), useValue: { add } },
-        { provide: ENV, useValue: { WEB_URL: 'https://notefinder.test' } },
+        { provide: ENV, useValue: { WEB_URL: 'https://vozzify.test' } },
       ],
     }).compile();
     await module.get(EmailService).send(
       renderStreakReminderEmail({
         to: 'user@example.com',
         locale: 'en',
-        siteUrl: 'https://notefinder.test/en',
-        webUrl: 'https://notefinder.test',
+        siteUrl: 'https://vozzify.test/en',
+        webUrl: 'https://vozzify.test',
       }),
       { jobId: 'reminder-user-day', retainForSeconds: 172800 },
     );

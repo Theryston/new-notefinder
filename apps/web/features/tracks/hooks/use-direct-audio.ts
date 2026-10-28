@@ -1,5 +1,5 @@
-import type { TrackAudio } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { TrackAudio } from '@vozzify/contracts';
 
 import { trackKeys } from '../query-keys';
 
@@ -9,7 +9,7 @@ export function useDirectAudio(trackId: string, admin: boolean) {
     queryKey: trackKeys.directAudio(trackId),
     queryFn: async ({ signal }): Promise<TrackAudio> => {
       const [{ trackAudioSchema }, { browserApi }] = await Promise.all([
-        import('@notefinder/contracts'),
+        import('@vozzify/contracts'),
         import('@/lib/api/browser'),
       ]);
       return browserApi(`/tracks/${trackId}/audio`, {

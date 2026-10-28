@@ -1,4 +1,4 @@
-import { homeFeedPageSchema } from '@notefinder/contracts';
+import { homeFeedPageSchema } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 const track = {

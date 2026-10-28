@@ -9,11 +9,11 @@ const base = {
 const storage = {
   S3_ENDPOINT: 'http://localhost:9000',
   S3_REGION: 'us-east-1',
-  S3_BUCKET: 'notefinder',
+  S3_BUCKET: 'vozzify',
   S3_ACCESS_KEY_ID: 'access-key',
   S3_SECRET_ACCESS_KEY: 'secret-key',
   S3_FORCE_PATH_STYLE: 'true',
-  S3_PUBLIC_URL: 'http://localhost:9000/notefinder/',
+  S3_PUBLIC_URL: 'http://localhost:9000/vozzify/',
 };
 
 describe('resolveStorageConfig', () => {
@@ -21,11 +21,11 @@ describe('resolveStorageConfig', () => {
     expect(resolveStorageConfig(parseEnv({ ...base, ...storage }))).toEqual({
       endpoint: 'http://localhost:9000',
       region: 'us-east-1',
-      bucket: 'notefinder',
+      bucket: 'vozzify',
       accessKeyId: 'access-key',
       secretAccessKey: 'secret-key',
       forcePathStyle: true,
-      publicUrl: 'http://localhost:9000/notefinder',
+      publicUrl: 'http://localhost:9000/vozzify',
     });
   });
 

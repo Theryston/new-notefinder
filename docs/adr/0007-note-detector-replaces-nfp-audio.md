@@ -5,7 +5,7 @@
 
 ## Context
 
-The Vocal notes notefinder shows are mostly missing. The previous worker (ADR
+The Vocal notes vozzify shows are mostly missing. The previous worker (ADR
 0004), ported from the legacy app with its parameters frozen on purpose,
 separates the vocals with a CascadedNet (about 8 dB vocals SDR, several dB
 behind the state of the art, and it removes part of the voice with the music)
@@ -83,7 +83,7 @@ share of sung time that has a Vocal note.
 - **Keeping CREPE and tuning the heuristics**: the gate and the grouping are
   what lose the notes, and the fragmentation comes from rounding every frame
   to a key, not from a parameter.
-- **Fine-tuning GAME on notefinder's data**: out of scope; the off-the-shelf
+- **Fine-tuning GAME on vozzify's data**: out of scope; the off-the-shelf
   model already clears the bar.
 
 ## Consequences

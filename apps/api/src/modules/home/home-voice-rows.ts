@@ -1,4 +1,4 @@
-import type { TrackVocalRange } from '@notefinder/contracts';
+import type { TrackVocalRange } from '@vozzify/contracts';
 
 /**
  * The by-voice rows: which Tracks suit which voice, judged from the Track's

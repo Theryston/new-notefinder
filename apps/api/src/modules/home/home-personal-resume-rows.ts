@@ -1,8 +1,4 @@
-import type {
-  HomeCarouselRow,
-  HomeRow,
-  HomeTrack,
-} from '@notefinder/contracts';
+import type { HomeCarouselRow, HomeRow, HomeTrack } from '@vozzify/contracts';
 import { composeHomeRows } from './home-feed-composer.js';
 import type { UserTrackSignal } from './home-personal.repository.js';
 

@@ -1,4 +1,4 @@
-import type { AvatarMimeType } from '@notefinder/contracts';
+import type { AvatarMimeType } from '@vozzify/contracts';
 import sharp from 'sharp';
 import {
   createImage,

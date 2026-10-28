@@ -1,6 +1,6 @@
 'use client';
 
-import type { PinTrackSummary } from '@notefinder/contracts';
+import type { PinTrackSummary } from '@vozzify/contracts';
 import { CheckIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useRef, useState } from 'react';

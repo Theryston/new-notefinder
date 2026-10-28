@@ -1,4 +1,4 @@
-import { SEARCH_MAX_LIMIT, SEARCH_MAX_OFFSET } from '@notefinder/contracts';
+import { SEARCH_MAX_LIMIT, SEARCH_MAX_OFFSET } from '@vozzify/contracts';
 import {
   RECORDINGS_INDEX,
   RECORDINGS_INDEX_SETTINGS,

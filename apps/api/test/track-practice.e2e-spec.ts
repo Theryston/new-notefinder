@@ -1,4 +1,4 @@
-import { trackDetailSchema, trackNotesSchema } from '@notefinder/contracts';
+import { trackDetailSchema, trackNotesSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import { trackNotes } from '../src/database/schema/track-notes.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';

@@ -3,7 +3,7 @@ import {
   albumTrackSchema,
   albumTracksPageSchema,
   cacheTags,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 // Locks the album track listing contract: one entry per processed Recording
 // in album order, each carrying the disc it sits on, cursor-paginated, and the

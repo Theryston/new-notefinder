@@ -93,7 +93,7 @@ const envSchema = z
       .default('http://localhost:3333')
       .transform((url) => url.replace(/\/+$/, '')),
     // Registrable domain shared by the web and the API (e.g.
-    // `notefinder.com.br` for web on the apex and API on a subdomain). When
+    // `vozzify.com` for web on the apex and API on a subdomain). When
     // set, the session cookie is sent to both, so the web server can forward
     // it. Unset: host-only cookie on the API's host.
     AUTH_COOKIE_DOMAIN: optional(z.string().min(1)),
@@ -105,10 +105,7 @@ const envSchema = z
     RESEND_API_KEY: optional(z.string().min(1)),
     STRIPE_SECRET_KEY: optional(z.string().regex(/^sk_test_[a-zA-Z0-9]+$/)),
     STRIPE_WEBHOOK_SECRET: optional(z.string().startsWith('whsec_').min(10)),
-    EMAIL_FROM: z
-      .string()
-      .min(3)
-      .default('notefinder <noreply@notefinder.com.br>'),
+    EMAIL_FROM: z.string().min(3).default('vozzify <noreply@vozzify.com>'),
     // Optional here so the schema itself doesn't force a storage config on
     // every consumer; the group below must be complete once any of it is set,
     // and the storage module refuses to boot without it.

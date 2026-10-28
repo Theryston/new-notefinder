@@ -1,4 +1,4 @@
-import type { UserFavoritesPage } from '@notefinder/contracts';
+import type { UserFavoritesPage } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 

@@ -1,4 +1,4 @@
-import type { HomeTrack, TrackVocalRange } from '@notefinder/contracts';
+import type { HomeTrack, TrackVocalRange } from '@vozzify/contracts';
 import {
   blendScore,
   type PersonalTaste,

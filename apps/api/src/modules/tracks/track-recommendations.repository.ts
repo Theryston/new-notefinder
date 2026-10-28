@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { TrackRecommendations } from '@notefinder/contracts';
+import type { TrackRecommendations } from '@vozzify/contracts';
 import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { hasCompletedProcessing } from '../../database/schema/track-processings.js';

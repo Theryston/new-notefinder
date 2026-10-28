@@ -1,7 +1,7 @@
 'use client';
 
-import type { CurrentUser } from '@notefinder/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CurrentUser } from '@vozzify/contracts';
 import { useEffect } from 'react';
 
 import { useRouter } from '@/lib/i18n/navigation';

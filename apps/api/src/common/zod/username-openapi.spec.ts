@@ -12,7 +12,7 @@ import {
   setUsernameBodySchema,
   USERNAME_MAX_LENGTH,
   usernameSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { z } from 'zod';
 import { createOpenApiDocument } from '../../setup-app.js';
 import { createZodDto } from './create-zod-dto.js';

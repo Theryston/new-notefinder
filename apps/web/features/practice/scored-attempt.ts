@@ -3,7 +3,7 @@ import {
   type PracticeSpeed,
   type SubmitPracticeAttemptBody,
   type TrackNote,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { type BleedSample, suspectBleed } from './bleed';
 import type { PracticeScore, ScoringSettings } from './scoring';

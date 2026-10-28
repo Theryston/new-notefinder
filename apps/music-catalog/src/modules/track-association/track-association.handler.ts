@@ -1,7 +1,7 @@
 import {
   musicCatalogTrackAssociationPayloadSchema,
   musicCatalogTrackAssociationResultSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { TrackAssociationService } from './track-association.service.js';
 

@@ -7,7 +7,7 @@ import {
   type HomeRowTitle,
   type HomeTrack,
   type Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { EditorialPinsService } from '../editorial-pins/editorial-pins.service.js';
 import { HomeRepository } from './home.repository.js';
 import { toHomeTrack } from './home-feed-builder.service.js';

@@ -1,7 +1,7 @@
 import type {
   MusicCatalogSearchParams,
   MusicCatalogSearchResult,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import { coverArtUrl } from '../../lib/cover-art-url.js';
 import {

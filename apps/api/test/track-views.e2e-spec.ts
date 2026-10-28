@@ -3,7 +3,7 @@ import {
   trackDetailSchema,
   trackSitemapPageSchema,
   trackViewSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';

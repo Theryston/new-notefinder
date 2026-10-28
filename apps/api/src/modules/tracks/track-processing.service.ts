@@ -4,7 +4,7 @@ import type {
   TrackContributorEntry,
   TrackContributorsPage,
   TrackProcessingState,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { TrackContributorRepository } from './track-contributor.repository.js';
 import {
   decodeTrackContributorCursor,

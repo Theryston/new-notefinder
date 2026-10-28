@@ -1,4 +1,4 @@
-import { publicProfileSummarySchema } from '@notefinder/contracts';
+import { publicProfileSummarySchema } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

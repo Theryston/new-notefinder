@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { cursorPaginationQuerySchema } from '@notefinder/contracts';
+import { cursorPaginationQuerySchema } from '@vozzify/contracts';
 import { Public } from '../src/common/decorators/public.decorator.js';
 import { createZodDto } from '../src/common/zod/create-zod-dto.js';
 import { ZodSerializerDto } from '../src/common/zod/zod-serializer.interceptor.js';

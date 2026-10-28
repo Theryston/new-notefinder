@@ -1,5 +1,5 @@
 'use client';
-import type { AdminPlan } from '@notefinder/contracts';
+import type { AdminPlan } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';

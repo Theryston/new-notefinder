@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  RetryTrackBody,
-  TrackProcessingState,
-} from '@notefinder/contracts';
+import type { RetryTrackBody, TrackProcessingState } from '@vozzify/contracts';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TrackProcessingService } from './track-processing.service.js';

@@ -1,4 +1,4 @@
-import type { RecordEventsBody } from '@notefinder/contracts';
+import type { RecordEventsBody } from '@vozzify/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildClickEvent,

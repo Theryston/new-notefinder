@@ -1,6 +1,6 @@
 'use client';
 
-import type { HomeFeedPage } from '@notefinder/contracts';
+import type { HomeFeedPage } from '@vozzify/contracts';
 import { useMemo } from 'react';
 import type { TrackedHomePage, TrackedHomeRow } from './tracked-rows';
 import { useHomeEvents } from './use-home-events';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { BestPracticeScores } from '@notefinder/contracts';
+import type { BestPracticeScores } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { bestScoreAt } from '../best-score';
 import { useScoringSettings } from '../stores/scoring-settings';

@@ -1,7 +1,7 @@
 'use client';
 
-import type { HomePinPreviewRequest } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { HomePinPreviewRequest } from '@vozzify/contracts';
 
 import { adminPinPreviewQueryOptions } from '../admin-pins-query';
 

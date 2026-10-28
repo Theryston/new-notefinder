@@ -1,4 +1,4 @@
-import { BOOTSTRAP_PHASES, CATALOG_DATASETS } from '@notefinder/contracts';
+import { BOOTSTRAP_PHASES, CATALOG_DATASETS } from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import { boolean, check, timestamp } from 'drizzle-orm/pg-core';
 import { musicCatalog } from './music-catalog-schema.js';

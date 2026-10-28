@@ -1,4 +1,4 @@
-import type { CursorPage } from '@notefinder/contracts';
+import type { CursorPage } from '@vozzify/contracts';
 
 /**
  * The items of the `index`th sitemap file, or undefined past the last one.

@@ -1,8 +1,8 @@
+import type { Page, Route } from '@playwright/test';
 import type {
   PracticePreferences,
   SubmitPracticeAttemptBody,
-} from '@notefinder/contracts';
-import type { Page, Route } from '@playwright/test';
+} from '@vozzify/contracts';
 
 /**
  * The practice routes the page calls: `POST /v1/tracks/:trackId/attempts`,

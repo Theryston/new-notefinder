@@ -141,7 +141,7 @@ function brandMark(): ReactElement {
         fontWeight: 800,
       }}
     >
-      NoteFinder
+      Vozzify
     </div>
   );
 }

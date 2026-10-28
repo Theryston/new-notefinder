@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { TrackProcessingVideoSource } from '@notefinder/contracts';
+import type { TrackProcessingVideoSource } from '@vozzify/contracts';
 import { ENV, type Env } from '../../config/env.js';
 import { YouTubeMusicClient } from '../../integrations/youtube-music/youtube-music.client.js';
 import type { YouTubeVideo } from '../../integrations/youtube-music/youtube-video.js';

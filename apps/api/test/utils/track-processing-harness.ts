@@ -3,7 +3,7 @@ import {
   type Locale,
   type Recording,
   trackProcessingStateSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
 import request, { type Response } from 'supertest';

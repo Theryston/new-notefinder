@@ -3,7 +3,7 @@ import { expect, type Page, test } from '@playwright/test';
 const localOrigin = 'http://localhost:3000';
 // Listed in SITEMAP_EXTRA_HOSTS by e2e/web-server-env.ts. The site URL is
 // the default (http://localhost:3000), so its origin is plain http.
-const extraHost = 'notefinder.example';
+const extraHost = 'vozzify.example';
 const extraOrigin = `http://${extraHost}`;
 
 // The fake API caps a listing page at two entries: the fake's Albums (6) and

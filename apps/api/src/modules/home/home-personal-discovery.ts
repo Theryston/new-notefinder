@@ -4,7 +4,7 @@ import type {
   HomeRow,
   HomeTrack,
   TrackVocalRange,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { composeHomeRows } from './home-feed-composer.js';
 import type { PersonalTaste } from './home-personal.js';
 import {

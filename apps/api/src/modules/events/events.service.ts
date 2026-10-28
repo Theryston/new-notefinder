@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
-import type { HomeEvent } from '@notefinder/contracts';
+import type { HomeEvent } from '@vozzify/contracts';
 import type { Queue } from 'bullmq';
 import type { StoredEvent } from './events.job.js';
 import {

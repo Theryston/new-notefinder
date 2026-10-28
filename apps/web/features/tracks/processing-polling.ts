@@ -1,7 +1,7 @@
 import {
   isTrackProcessingTerminal,
   type TrackProcessingState,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /** How often the Processing page asks the API for the state while it runs. */
 export const PROCESSING_POLL_INTERVAL_MS = 1_500;

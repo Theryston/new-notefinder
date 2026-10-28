@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { TrackProcessingStatus } from '@notefinder/contracts';
+import type { TrackProcessingStatus } from '@vozzify/contracts';
 import { ENV, type Env } from '../../config/env.js';
 import { EmailService } from '../../integrations/email/email.service.js';
 import type { EmailLocale } from '../../integrations/email/email-locale.js';

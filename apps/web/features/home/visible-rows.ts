@@ -1,4 +1,4 @@
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 
 /** Keeps the first occurrence of each row id, so React keys stay unique. */
 export function uniqueRows(rows: readonly HomeRow[]): HomeRow[] {

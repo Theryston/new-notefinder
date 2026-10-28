@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import type { HomeRow, HomeTrack } from '@notefinder/contracts';
+import type { HomeRow, HomeTrack } from '@vozzify/contracts';
 import { StreaksService } from '../streaks/streaks.service.js';
 import { UsersService } from '../users/users.service.js';
 import { HomeFeedService } from './home-feed.service.js';

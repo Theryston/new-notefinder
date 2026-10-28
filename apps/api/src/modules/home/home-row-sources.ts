@@ -1,4 +1,4 @@
-import type { HomeRowTitle, HomeTrack, Locale } from '@notefinder/contracts';
+import type { HomeRowTitle, HomeTrack, Locale } from '@vozzify/contracts';
 import { TrackLocaleTrendingService } from '../tracks/track-locale-trending.service.js';
 import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
 import type {

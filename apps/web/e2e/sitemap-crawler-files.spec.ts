@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 // Listed in SITEMAP_EXTRA_HOSTS by e2e/web-server-env.ts (plain http, as the
 // site URL is the default one).
-const extraHost = 'notefinder.example';
+const extraHost = 'vozzify.example';
 const extraOrigin = `http://${extraHost}`;
 
 // Every file a crawler reads from the new app's domain. The legacy shard URLs

@@ -4,7 +4,7 @@
  * changes the feed version even when the rows look the same.
  */
 
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 
 export const HOME_ALGORITHM_VERSION = 1;
 
@@ -19,7 +19,7 @@ export const HOME_PAGE_SIZE = 6;
 
 /**
  * The most rows a feed holds. Matches the `rows` limit of `homeFeedSchema` in
- * @notefinder/contracts, which hard-codes the same 24.
+ * @vozzify/contracts, which hard-codes the same 24.
  */
 export const HOME_MAX_ROWS = 24;
 

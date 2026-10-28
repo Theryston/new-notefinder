@@ -1,4 +1,4 @@
-import { musicCatalogStatusResponseSchema } from '@notefinder/contracts';
+import { musicCatalogStatusResponseSchema } from '@vozzify/contracts';
 import { MbslaveClient } from '../src/integrations/mbslave/mbslave-client.js';
 import { ReplicationRepository } from '../src/modules/replication/replication.repository.js';
 import { ReplicationService } from '../src/modules/replication/replication.service.js';

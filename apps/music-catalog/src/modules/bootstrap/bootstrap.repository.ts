@@ -1,4 +1,4 @@
-import type { BootstrapPhase, CatalogDataset } from '@notefinder/contracts';
+import type { BootstrapPhase, CatalogDataset } from '@vozzify/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';

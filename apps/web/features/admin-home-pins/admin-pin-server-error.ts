@@ -1,4 +1,4 @@
-import type { PinTrackIssueReason } from '@notefinder/contracts';
+import type { PinTrackIssueReason } from '@vozzify/contracts';
 
 import { isApiError } from '@/lib/api/api-error';
 

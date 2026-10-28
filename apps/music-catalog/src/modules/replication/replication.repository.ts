@@ -1,4 +1,4 @@
-import type { ReplicationStallReason } from '@notefinder/contracts';
+import type { ReplicationStallReason } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.js';
 import type { DatabaseSource } from '../../database/database-ref.js';

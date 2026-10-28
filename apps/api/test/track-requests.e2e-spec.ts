@@ -1,7 +1,7 @@
 import {
   createTrackResultSchema,
   musicCatalogTrackAssociationPayloadSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import { trackAssociationEvents } from '../src/database/schema/track-association-events.js';
 import {

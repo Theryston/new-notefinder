@@ -1,5 +1,5 @@
-import type { ApiErrorCode, FollowListPage } from '@notefinder/contracts';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
+import type { ApiErrorCode, FollowListPage } from '@vozzify/contracts';
 
 import { followErrorCode } from './follow-changes';
 import type { FollowListRowAction } from './follow-list-actions';

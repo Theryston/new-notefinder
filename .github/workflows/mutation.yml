@@ -35,9 +35,9 @@ jobs:
       - name: Install dependencies
         run: nub install --frozen-lockfile
 
-      # The unit tests import @notefinder/contracts from its build output.
+      # The unit tests import @vozzify/contracts from its build output.
       - name: Build contracts
-        run: nub run build --filter=@notefinder/contracts
+        run: nub run build --filter=@vozzify/contracts
 
       # Incremental mode only re-tests mutants in code or tests that changed
       # since the cached run (this branch's, else main's).

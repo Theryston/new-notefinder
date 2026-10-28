@@ -1,6 +1,6 @@
 'use client';
 
-import type { SearchResultItem } from '@notefinder/contracts';
+import type { SearchResultItem } from '@vozzify/contracts';
 import { SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { MouseEvent, ReactNode, RefObject } from 'react';

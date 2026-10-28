@@ -1,4 +1,4 @@
-import { LOCALES } from '@notefinder/contracts';
+import { LOCALES } from '@vozzify/contracts';
 import {
   boolean,
   index,
@@ -17,7 +17,7 @@ export const userRole = pgEnum('user_role', ['USER', 'ADMIN']);
 export const userLocale = pgEnum('user_locale', LOCALES);
 
 /**
- * Better Auth's `user` model plus notefinder's own fields. Better Auth reads
+ * Better Auth's `user` model plus vozzify's own fields. Better Auth reads
  * and writes this table through the Drizzle adapter, so the core columns keep
  * its field names (see `modules/auth/auth.ts`).
  *

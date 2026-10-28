@@ -1,6 +1,6 @@
 /** A browser-local visitor id stored without a cookie and shared by events,
  * Track views, and sign-up attribution. */
-export const VISITOR_ID_KEY = 'notefinder:visitor-id';
+export const VISITOR_ID_KEY = 'vozzify:visitor-id';
 
 type IdStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

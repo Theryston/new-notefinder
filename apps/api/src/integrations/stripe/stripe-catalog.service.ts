@@ -1,8 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type {
-  AdminPlanPrice,
-  LocalizedCatalogCopy,
-} from '@notefinder/contracts';
+import type { AdminPlanPrice, LocalizedCatalogCopy } from '@vozzify/contracts';
 import { z } from 'zod';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';

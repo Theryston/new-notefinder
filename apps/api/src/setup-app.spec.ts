@@ -39,7 +39,7 @@ describe('createOpenApiDocument', () => {
     const document = createOpenApiDocument(app);
 
     expect(document.info).toMatchObject({
-      title: 'notefinder API',
+      title: 'vozzify API',
       version: '1',
     });
     expect(document.paths['/things']?.post).toBeDefined();

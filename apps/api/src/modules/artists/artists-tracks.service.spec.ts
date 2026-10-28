@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { catalogTracksPageSchema } from '@notefinder/contracts';
+import { catalogTracksPageSchema } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import { ArtistsRepository } from './artists.repository.js';

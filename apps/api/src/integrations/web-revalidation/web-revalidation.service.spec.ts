@@ -1,6 +1,6 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 import { ZodError } from 'zod';
 import {
   WEB_REVALIDATION_JOB,

@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/sitemap/request-origin', () => ({
-  requestSiteOrigin: () => 'https://notefinder.com.br',
+  requestSiteOrigin: () => 'https://vozzify.com',
 }));
 
 const { GET } = await import('./route');
 
-const request = new Request('https://notefinder.com.br/pages/sitemap/0.xml');
+const request = new Request('https://vozzify.com/pages/sitemap/0.xml');
 
 const get = (path: string[]) =>
   GET(request, { params: Promise.resolve({ path }) });
@@ -19,8 +19,8 @@ describe('GET /pages/sitemap/[...path]', () => {
     expect(response.headers.get('content-type')).toContain('application/xml');
     expect(response.headers.get('vary')).toBe('X-Forwarded-Host, Host');
     const xml = await response.text();
-    expect(xml).toContain('<loc>https://notefinder.com.br/en/terms</loc>');
-    expect(xml).toContain('<loc>https://notefinder.com.br/pt-BR/sign-in</loc>');
+    expect(xml).toContain('<loc>https://vozzify.com/en/terms</loc>');
+    expect(xml).toContain('<loc>https://vozzify.com/pt-BR/sign-in</loc>');
   });
 
   it('answers 404 past the only file and for anything that is not a shard', async () => {

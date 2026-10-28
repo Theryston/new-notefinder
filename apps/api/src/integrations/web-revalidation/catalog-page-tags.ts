@@ -1,4 +1,4 @@
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 
 /**
  * The cache tags of the Artist and Album pages a Track is listed on: each

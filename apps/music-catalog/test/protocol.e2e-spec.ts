@@ -2,7 +2,7 @@ import {
   type MusicCatalogErrorResponse,
   musicCatalogErrorResponseSchema,
   musicCatalogStatusResponseSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   API_KEY,
   ROTATED_API_KEY,

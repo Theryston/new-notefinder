@@ -5,8 +5,8 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { FollowListPage } from '@notefinder/contracts';
-import { followListPageSchema } from '@notefinder/contracts';
+import type { FollowListPage } from '@vozzify/contracts';
+import { followListPageSchema } from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { FollowListQueryDto } from './follow-list-query.dto.js';

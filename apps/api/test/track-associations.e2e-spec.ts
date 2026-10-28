@@ -3,7 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import {
   createTrackResultSchema,
   musicCatalogTrackAssociationPayloadSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { trackAssociationEvents } from '../src/database/schema/track-association-events.js';

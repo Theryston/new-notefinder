@@ -2,7 +2,7 @@ import type {
   BootstrapPhase,
   CatalogDataset,
   ReplicationStallReason,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { ReimportState } from './reimport-state.repository.js';
 
 /**

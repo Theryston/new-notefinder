@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { CacheService } from '../../redis/cache.service.js';
 import {
   type StoredPersonalHomeFeed,

@@ -1,4 +1,4 @@
-import type { TrackAudio } from '@notefinder/contracts';
+import type { TrackAudio } from '@vozzify/contracts';
 import type { PlayerPort } from './player-port';
 
 export type CreatePlayerOptions = {

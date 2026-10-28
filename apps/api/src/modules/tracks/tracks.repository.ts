@@ -7,7 +7,7 @@ import type {
   CatalogTrackTag,
   CatalogTrackWork,
   Mbid,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { and, asc, desc, eq, gt, inArray, ne } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { artists, trackArtists } from '../../database/schema/artists.js';

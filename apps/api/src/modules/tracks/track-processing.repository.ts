@@ -6,7 +6,7 @@ import {
   type TrackProcessingStatus,
   type TrackProcessingStep,
   type TrackProcessingVideoSource,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { DatabaseAdapter } from '../../database/database.js';

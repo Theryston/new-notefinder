@@ -1,7 +1,7 @@
 import type {
   StreakHeartbeatBody,
   StreakHeartbeatResult,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { createPracticeMeter } from './practice-meter';
 

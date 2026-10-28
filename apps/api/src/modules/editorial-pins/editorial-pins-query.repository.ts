@@ -3,7 +3,7 @@ import type {
   EditorialPinActor,
   EditorialPinDynamicSource,
   EditorialPinKind,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   and,
   asc,

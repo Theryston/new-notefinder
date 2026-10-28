@@ -1,4 +1,4 @@
-import type { TrackProcessing } from '@notefinder/contracts';
+import type { TrackProcessing } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 

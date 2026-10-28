@@ -2,7 +2,7 @@ import type {
   TrackProcessingFailureCode,
   TrackProcessingStatus,
   TrackProcessingStep,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   type CarriedOutputs,
   carriedOutputsOf,

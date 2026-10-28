@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { cacheTags, currentUserSchema } from '@notefinder/contracts';
+import { cacheTags, currentUserSchema } from '@vozzify/contracts';
 import { createImage, describeImage } from '../../../test/utils/images.js';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ZodValidationException } from '../../common/zod/zod-validation.pipe.js';

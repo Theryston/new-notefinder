@@ -2,7 +2,7 @@ import { clampTranspose } from './transpose';
 
 type TransposeStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
-const storageKey = (trackId: string) => `notefinder:transpose:${trackId}`;
+const storageKey = (trackId: string) => `vozzify:transpose:${trackId}`;
 
 /**
  * `localStorage`, or `undefined` where it can't be used (the server, private

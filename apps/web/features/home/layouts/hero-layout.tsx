@@ -1,4 +1,4 @@
-import type { HomeHero, HomeTrack } from '@notefinder/contracts';
+import type { HomeHero, HomeTrack } from '@vozzify/contracts';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 import { entityRingClass } from '@/components/entity-header';

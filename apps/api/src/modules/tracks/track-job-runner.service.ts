@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 import { UnrecoverableError } from 'bullmq';
 import type { z } from 'zod';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';

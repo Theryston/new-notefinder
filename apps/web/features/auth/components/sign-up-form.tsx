@@ -1,6 +1,6 @@
 'use client';
 
-import type { SignUpBody } from '@notefinder/contracts';
+import type { SignUpBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -21,7 +21,7 @@ import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
 
 const signUpResolver = lazyResolver<SignUpBody>(() =>
-  import('@notefinder/contracts').then((m) => m.signUpBodySchema),
+  import('@vozzify/contracts').then((m) => m.signUpBodySchema),
 );
 
 type SignUpError = AuthErrorCode | 'GOOGLE';

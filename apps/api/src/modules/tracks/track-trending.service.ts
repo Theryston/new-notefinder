@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { TrackViewRepository } from './track-view.repository.js';
 import { TracksRepository } from './tracks.repository.js';

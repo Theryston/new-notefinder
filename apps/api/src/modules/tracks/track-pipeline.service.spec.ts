@@ -1,6 +1,6 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { TrackProcessingStep } from '@notefinder/contracts';
+import type { TrackProcessingStep } from '@vozzify/contracts';
 import { UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { TrackAudioService } from './track-audio.service.js';

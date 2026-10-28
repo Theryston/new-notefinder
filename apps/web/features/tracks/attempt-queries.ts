@@ -2,7 +2,7 @@ import {
   type PracticeAttempt,
   practiceAttemptSchema,
   type SubmitPracticeAttemptBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

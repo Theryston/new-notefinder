@@ -1,4 +1,4 @@
-import { SITEMAP_PAGE_SIZE } from '@notefinder/contracts';
+import { SITEMAP_PAGE_SIZE } from '@vozzify/contracts';
 import { cacheTag } from 'next/cache';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

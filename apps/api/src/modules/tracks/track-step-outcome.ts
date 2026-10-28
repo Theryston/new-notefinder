@@ -1,4 +1,4 @@
-import type { TrackProcessingFailureCode } from '@notefinder/contracts';
+import type { TrackProcessingFailureCode } from '@vozzify/contracts';
 
 // What a step leaves for the pipeline (pure). A step is done and the pipeline
 // moves on; it has to be checked again later (a long wait, such as a RapidAPI

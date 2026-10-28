@@ -1,14 +1,14 @@
 'use client';
 
 import {
-  type TrackContributorsPage,
-  trackContributorsPageSchema,
-} from '@notefinder/contracts';
-import {
   infiniteQueryOptions,
   keepPreviousData,
   useInfiniteQuery,
 } from '@tanstack/react-query';
+import {
+  type TrackContributorsPage,
+  trackContributorsPageSchema,
+} from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

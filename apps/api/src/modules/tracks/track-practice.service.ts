@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TrackDetail, TrackNotes } from '@notefinder/contracts';
+import type { TrackDetail, TrackNotes } from '@vozzify/contracts';
 import {
   TrackPracticeRepository,
   type TrackPracticeRow,

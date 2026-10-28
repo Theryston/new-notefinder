@@ -7,7 +7,7 @@ const localOrigin = 'http://localhost:3000';
 // the hot Track has a cover.
 const hot = 'clx-sitemap-hot';
 const cold = 'clx-sitemap-cold';
-const hotCover = 'https://files.notefinder.example/covers/clx-sitemap-hot.webp';
+const hotCover = 'https://files.vozzify.example/covers/clx-sitemap-hot.webp';
 
 const locsOf = (xml: string): string[] =>
   [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1] ?? '');

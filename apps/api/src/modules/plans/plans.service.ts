@@ -8,7 +8,7 @@ import {
   type Plan,
   type PlanCatalog,
   type PlanCurrency,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { ZodSerializationException } from '../../common/zod/zod-serializer.interceptor.js';
 import { PlansRepository } from './plans.repository.js';
 

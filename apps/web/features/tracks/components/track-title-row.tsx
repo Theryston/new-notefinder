@@ -1,4 +1,4 @@
-import type { TrackContributor, TrackDetail } from '@notefinder/contracts';
+import type { TrackContributor, TrackDetail } from '@vozzify/contracts';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';

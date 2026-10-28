@@ -1,4 +1,4 @@
-import type { Recording, TrackArtistCreditEntry } from '@notefinder/contracts';
+import type { Recording, TrackArtistCreditEntry } from '@vozzify/contracts';
 
 // The rows a new Track is made of, mapped from the Music catalog's Recording:
 // the core row and the companion tables that the Track page shows. Pure, so

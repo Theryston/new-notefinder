@@ -1,4 +1,4 @@
-import type { TrackKey, TrackNote } from '@notefinder/contracts';
+import type { TrackKey, TrackNote } from '@vozzify/contracts';
 
 const SEMITONES_PER_OCTAVE = 12;
 

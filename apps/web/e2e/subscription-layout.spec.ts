@@ -1,5 +1,5 @@
-import type { Subscription } from '@notefinder/contracts';
 import { expect, type Page, test } from '@playwright/test';
+import type { Subscription } from '@vozzify/contracts';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
 

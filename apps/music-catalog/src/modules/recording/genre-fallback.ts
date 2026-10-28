@@ -2,7 +2,7 @@ import type {
   RecordingGenre,
   RecordingTag,
   RecordingTagsSource,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { votedTags } from '../../lib/tag-votes.js';
 import type { TagLevels, TagVotesRow } from './recording-data.js';
 

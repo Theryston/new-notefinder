@@ -1,4 +1,4 @@
-# notefinder Music catalog
+# vozzify Music catalog
 
 Private service that holds every Recording in the world (kept in sync with
 MusicBrainz) and answers searches over an authenticated WebSocket: `status`,

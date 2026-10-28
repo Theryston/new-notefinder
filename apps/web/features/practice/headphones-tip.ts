@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'notefinder:headphones-tip-seen';
+const STORAGE_KEY = 'vozzify:headphones-tip-seen';
 
 /**
  * Whether this is the first time the mic is turned on in this browser, and

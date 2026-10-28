@@ -1,4 +1,4 @@
-import type { ProfileSection } from '@notefinder/contracts';
+import type { ProfileSection } from '@vozzify/contracts';
 import { getTranslations } from 'next-intl/server';
 
 import { getSectionVisibilityLabels } from '../section-visibility-labels';

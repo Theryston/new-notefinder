@@ -1,9 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import type {
-  MusicCatalogReleaseGroup,
-  Recording,
-} from '@notefinder/contracts';
+import type { MusicCatalogReleaseGroup, Recording } from '@vozzify/contracts';
 import {
   artistFixture,
   queenAndBowieCredit,

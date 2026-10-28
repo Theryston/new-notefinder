@@ -1,4 +1,4 @@
-import type { Plan, PlanCurrency } from '@notefinder/contracts';
+import type { Plan, PlanCurrency } from '@vozzify/contracts';
 import { getTranslations } from 'next-intl/server';
 import { CheckoutSelection } from './checkout-selection';
 import { PlanBenefits } from './plan-benefits';

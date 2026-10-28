@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { planCatalogSchema } from '@notefinder/contracts';
+import { planCatalogSchema } from '@vozzify/contracts';
 import { eq, sql } from 'drizzle-orm';
 import {
   benefits,

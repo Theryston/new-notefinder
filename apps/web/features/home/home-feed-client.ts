@@ -1,4 +1,4 @@
-import { homeFeedPageSchema, type Locale } from '@notefinder/contracts';
+import { homeFeedPageSchema, type Locale } from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

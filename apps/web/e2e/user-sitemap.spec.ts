@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 // Listed in SITEMAP_EXTRA_HOSTS by e2e/web-server-env.ts.
-const extraHost = 'notefinder.example';
+const extraHost = 'vozzify.example';
 const extraOrigin = `http://${extraHost}`;
 
 const sitemapNamespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';

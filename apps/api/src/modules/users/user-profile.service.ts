@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   asDailyPracticeTargetSeconds,
   type PublicProfile,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { UsersRepository } from './users.repository.js';
 

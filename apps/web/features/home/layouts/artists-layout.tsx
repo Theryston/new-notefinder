@@ -1,4 +1,4 @@
-import type { HomeArtistsRow } from '@notefinder/contracts';
+import type { HomeArtistsRow } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { ArtistAvatar } from '@/features/artists/components/artist-avatar';

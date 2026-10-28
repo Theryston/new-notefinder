@@ -1,8 +1,8 @@
 'use client';
 
-import type { SetUsernameBody } from '@notefinder/contracts';
-import { USERNAME_MAX_LENGTH } from '@notefinder/contracts/auth-rules';
 import { useQueryClient } from '@tanstack/react-query';
+import type { SetUsernameBody } from '@vozzify/contracts';
+import { USERNAME_MAX_LENGTH } from '@vozzify/contracts/auth-rules';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { type UseFormRegisterReturn, useForm } from 'react-hook-form';
@@ -24,7 +24,7 @@ import {
 } from './username-availability';
 
 const usernameResolver = lazyResolver<SetUsernameBody>(() =>
-  import('@notefinder/contracts').then((m) => m.setUsernameBodySchema),
+  import('@vozzify/contracts').then((m) => m.setUsernameBodySchema),
 );
 
 function UsernameInput({

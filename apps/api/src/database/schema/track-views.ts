@@ -1,4 +1,4 @@
-import { LOCALES } from '@notefinder/contracts';
+import { LOCALES } from '@vozzify/contracts';
 import { index, pgEnum, pgTable, text } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';

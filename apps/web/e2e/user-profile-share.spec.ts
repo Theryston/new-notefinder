@@ -12,8 +12,8 @@ const PROFILE = '/en/users/ada_lovelace';
 // The origin the app builds its canonical links from (the same source).
 const SITE_ORIGIN = getSiteUrl().origin;
 const EXPECTED_LINK = `${SITE_ORIGIN}${PROFILE}`;
-const EN_TEXT = "See Ada Lovelace's profile on NoteFinder";
-const EN_SUBJECT = "Ada Lovelace's profile on NoteFinder";
+const EN_TEXT = "See Ada Lovelace's profile on Vozzify";
+const EN_SUBJECT = "Ada Lovelace's profile on Vozzify";
 
 const shareButton = (page: Page) =>
   page.getByRole('button', { name: 'Share', exact: true });
@@ -210,7 +210,7 @@ test.describe('share a Profile', () => {
     page,
   }) => {
     const link = `${SITE_ORIGIN}/pt-BR/users/ada_lovelace`;
-    const text = 'Veja o perfil de Ada Lovelace no NoteFinder';
+    const text = 'Veja o perfil de Ada Lovelace no Vozzify';
     await gotoProfile(page, '/pt-BR/users/ada_lovelace');
     await page
       .getByRole('button', { name: 'Compartilhar', exact: true })
@@ -230,7 +230,7 @@ test.describe('share a Profile', () => {
     expect(facebook.searchParams.get('u')).toBe(link);
     const email = await networkUrl(page, list, 'E-mail');
     expect(email.searchParams.get('subject')).toBe(
-      'Perfil de Ada Lovelace no NoteFinder',
+      'Perfil de Ada Lovelace no Vozzify',
     );
     expect(email.searchParams.get('body')).toBe(`${text}\n${link}`);
   });

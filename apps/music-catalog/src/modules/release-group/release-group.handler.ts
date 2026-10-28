@@ -1,7 +1,7 @@
 import {
   musicCatalogGetReleaseGroupPayloadSchema,
   musicCatalogReleaseGroupSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { ReleaseGroupService } from './release-group.service.js';
 

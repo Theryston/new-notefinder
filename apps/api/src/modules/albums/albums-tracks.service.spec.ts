@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { albumTracksPageSchema } from '@notefinder/contracts';
+import { albumTracksPageSchema } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import { encodeAlbumTrackCursor } from './album-track-cursor.js';

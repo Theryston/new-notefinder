@@ -1,9 +1,6 @@
 'use client';
 
-import type {
-  EditorialPin,
-  HomePinPreviewRequest,
-} from '@notefinder/contracts';
+import type { EditorialPin, HomePinPreviewRequest } from '@vozzify/contracts';
 import dynamic from 'next/dynamic';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';

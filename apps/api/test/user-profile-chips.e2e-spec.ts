@@ -1,4 +1,4 @@
-import { publicProfileSchema } from '@notefinder/contracts';
+import { publicProfileSchema } from '@vozzify/contracts';
 import type { Database } from '../src/database/database.js';
 import { practiceAttempts } from '../src/database/schema/practice-attempts.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';

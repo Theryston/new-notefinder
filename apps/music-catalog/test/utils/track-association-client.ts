@@ -2,7 +2,7 @@ import {
   type MusicCatalogTrackAssociationPayload,
   type MusicCatalogTrackAssociationResult,
   musicCatalogTrackAssociationResultSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { TestClient } from './ws-client.js';
 
 export const requestTrackAssociation = async (

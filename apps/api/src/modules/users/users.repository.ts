@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { CurrentUser, Locale } from '@notefinder/contracts';
+import type { CurrentUser, Locale } from '@vozzify/contracts';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { userFollows } from '../../database/schema/user-follows.js';

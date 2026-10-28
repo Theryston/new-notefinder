@@ -6,15 +6,15 @@ import {
 const track = {
   title: 'Bohemian Rhapsody',
   artistCredit: [{ name: 'Queen', joinPhrase: '' }],
-  coverUrl: 'https://cdn.notefinder.test/covers/track-1.webp',
+  coverUrl: 'https://cdn.vozzify.test/covers/track-1.webp',
   // E2 to A4, as MIDI numbers.
   vocalRange: { lowest: 40, highest: 69 },
 };
 
 const input = {
   to: 'ana@example.com',
-  trackUrl: 'https://notefinder.test/pt-BR/tracks/track-1?x=1&y=2',
-  webUrl: 'https://notefinder.test',
+  trackUrl: 'https://vozzify.test/pt-BR/tracks/track-1?x=1&y=2',
+  webUrl: 'https://vozzify.test',
   track,
 };
 
@@ -24,7 +24,7 @@ describe('track processing emails', () => {
 
     expect(message).toMatchObject({
       to: 'ana@example.com',
-      subject: 'As notas da sua música estão prontas no notefinder',
+      subject: 'As notas da sua música estão prontas no vozzify',
     });
     expect(message.text).toContain(input.trackUrl);
     expect(message.html).toContain('lang="pt-BR"');
@@ -56,7 +56,7 @@ describe('track processing emails', () => {
     const message = renderTrackCompletedEmail({ ...input, locale: 'en' });
 
     expect(message.html).toContain(
-      'src="https://cdn.notefinder.test/covers/track-1.webp"',
+      'src="https://cdn.vozzify.test/covers/track-1.webp"',
     );
     expect(message.html).toContain('width="72"');
   });

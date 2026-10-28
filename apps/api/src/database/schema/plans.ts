@@ -5,7 +5,7 @@ import {
   type LocalizedCatalogCopy,
   PLAN_CURRENCIES,
   type SaveAdminPlanBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   boolean,
   index,

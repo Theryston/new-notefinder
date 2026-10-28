@@ -1,7 +1,7 @@
 'use client';
 
-import type { StreakStatus } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { StreakStatus } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';

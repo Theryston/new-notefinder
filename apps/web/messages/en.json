@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "NoteFinder – see the notes a singer hits",
-    "titleTemplate": "%s | NoteFinder",
+    "title": "Vozzify – see the notes a singer hits",
+    "titleTemplate": "%s | Vozzify",
     "description": "See the exact vocal notes a singer hits in any song on a timeline synced with playback, and get real-time pitch feedback from your mic."
   },
   "home": {
@@ -57,7 +57,7 @@
   },
   "search": {
     "metaTitle": "Search",
-    "metaDescription": "Search every recording by title or artist and open its notes when NoteFinder already processed it.",
+    "metaDescription": "Search every recording by title or artist and open its notes when Vozzify already processed it.",
     "title": "Search",
     "field": {
       "label": "Search songs and artists",
@@ -262,9 +262,9 @@
         "copyFailed": "We couldn't copy the link. Select it and copy it by hand.",
         "includeMoment": "Include current moment ({time})",
         "networks": "Share on",
-        "text": "Sing {title} by {artists} with NoteFinder",
-        "textNoArtists": "Sing {title} with NoteFinder",
-        "subject": "{title} on NoteFinder",
+        "text": "Sing {title} by {artists} with Vozzify",
+        "textNoArtists": "Sing {title} with Vozzify",
+        "subject": "{title} on Vozzify",
         "network": {
           "whatsapp": "WhatsApp",
           "telegram": "Telegram",
@@ -358,8 +358,8 @@
     "celebrationDescription": "{days, number}-day streak. See you tomorrow."
   },
   "header": {
-    "home": "NoteFinder home",
-    "wordmark": "NoteFinder",
+    "home": "Vozzify home",
+    "wordmark": "Vozzify",
     "skipToContent": "Skip to content",
     "search": {
       "label": "Search songs and artists",
@@ -403,7 +403,7 @@
   },
   "terms": {
     "metaTitle": "Terms and Conditions",
-    "metaDescription": "Terms and Conditions of Use of NoteFinder.",
+    "metaDescription": "Terms and Conditions of Use of Vozzify.",
     "title": "Terms and Conditions of Use",
     "lastUpdated": "Last updated: <time>{date}</time>",
     "sectionHeading": "{number}. {title}",
@@ -419,27 +419,27 @@
     "sections": {
       "acceptance": {
         "title": "Acceptance of Terms",
-        "body": "By accessing and using NoteFinder, you agree to comply with and be bound by the following terms and conditions of use. If you do not agree with any part of these terms, you must not use our service."
+        "body": "By accessing and using Vozzify, you agree to comply with and be bound by the following terms and conditions of use. If you do not agree with any part of these terms, you must not use our service."
       },
       "service": {
         "title": "Description of the Service",
-        "body": "NoteFinder is a platform that helps users discover the vocal notes of songs. Our service provides music analysis and note visualization tools for educational and entertainment purposes. The source code is open source, released under the MIT License, and is available at <repository>{repositoryUrl}</repository>. The license covers only the source code; it grants no rights over the music or other third-party content shown on the site."
+        "body": "Vozzify is a platform that helps users discover the vocal notes of songs. Our service provides music analysis and note visualization tools for educational and entertainment purposes. The source code is open source, released under the MIT License, and is available at <repository>{repositoryUrl}</repository>. The license covers only the source code; it grants no rights over the music or other third-party content shown on the site."
       },
       "copyright": {
         "title": "Music Content and Copyright",
-        "body": "Music playback on NoteFinder follows the policy below:",
+        "body": "Music playback on Vozzify follows the policy below:",
         "items": {
-          "directPlayback": "<strong>Direct playback on the site</strong> only when: (i) the musical work allows playback or streaming under the applicable licenses; or (ii) NoteFinder has validly acquired or licensed the rights needed to play the work internally on our domain.",
+          "directPlayback": "<strong>Direct playback on the site</strong> only when: (i) the musical work allows playback or streaming under the applicable licenses; or (ii) Vozzify has validly acquired or licensed the rights needed to play the work internally on our domain.",
           "otherCases": "<strong>All other cases</strong>: the song is played exclusively through the <strong>official YouTube player</strong>, via the official YouTube API. In these cases, the content is served and controlled by YouTube, and any copyright matters are governed by YouTube's Terms of Service and policies.",
           "noModification": "We do not modify, redistribute or resell music content; all copyrights and related rights remain with their respective holders.",
           "noStorage": "We do not upload or store recordings on our servers, except where covered by a valid license that authorizes us to play them internally as described above.",
-          "analysisTool": "NoteFinder is a tool for analyzing and visualizing music data and complies with applicable copyright law."
+          "analysisTool": "Vozzify is a tool for analyzing and visualizing music data and complies with applicable copyright law."
         },
-        "artistRemoval": "If you are an artist whose music is on NoteFinder and you do not want it to be available here, just contact us at <email>{address}</email>."
+        "artistRemoval": "If you are an artist whose music is on Vozzify and you do not want it to be available here, just contact us at <email>{address}</email>."
       },
       "acceptableUse": {
         "title": "Acceptable Use",
-        "body": "By using NoteFinder, you agree to:",
+        "body": "By using Vozzify, you agree to:",
         "items": {
           "lawfulUse": "Use the service only for lawful purposes and in accordance with these Terms",
           "noIntrusion": "Not attempt to access restricted areas of the system or reverse engineer it",
@@ -459,7 +459,7 @@
       },
       "liability": {
         "title": "Limitation of Liability",
-        "body": "NoteFinder is provided “as is” and “as available”. We do not guarantee that the service will be uninterrupted, secure or error-free. In no event will we be liable for any direct, indirect, incidental, special or consequential damages resulting from the use of, or inability to use, our service."
+        "body": "Vozzify is provided “as is” and “as available”. We do not guarantee that the service will be uninterrupted, secure or error-free. In no event will we be liable for any direct, indirect, incidental, special or consequential damages resulting from the use of, or inability to use, our service."
       },
       "accuracy": {
         "title": "Accuracy of Information",
@@ -496,7 +496,7 @@
       "metaTitle": "Edit profile",
       "overline": "Your account",
       "title": "Edit profile",
-      "description": "Change how you appear to other singers on NoteFinder.",
+      "description": "Change how you appear to other singers on Vozzify.",
       "loading": "Loading your profile",
       "sections": {
         "profile": "Public profile",
@@ -524,8 +524,8 @@
     }
   },
   "auth": {
-    "home": "NoteFinder home",
-    "wordmark": "NoteFinder",
+    "home": "Vozzify home",
+    "wordmark": "Vozzify",
     "step": "Step {current} of {total}",
     "loading": "Loading",
     "featured": {
@@ -611,7 +611,7 @@
     },
     "signUp": {
       "metaTitle": "Create account",
-      "metaDescription": "Create your NoteFinder account to save favorite songs, track your practice and sing with real-time pitch feedback.",
+      "metaDescription": "Create your Vozzify account to save favorite songs, track your practice and sing with real-time pitch feedback.",
       "title": "Create your account",
       "description": "Save your favorite songs, keep a practice streak and sing along with pitch feedback.",
       "submit": "Create account",
@@ -622,9 +622,9 @@
     },
     "signIn": {
       "metaTitle": "Sign in",
-      "metaDescription": "Sign in to NoteFinder to see your favorite songs, keep your practice streak and sing with real-time pitch feedback.",
+      "metaDescription": "Sign in to Vozzify to see your favorite songs, keep your practice streak and sing with real-time pitch feedback.",
       "overline": "Your account",
-      "title": "Sign in to NoteFinder",
+      "title": "Sign in to Vozzify",
       "description": "Use your email or username to get back to your favorite songs and practice streak.",
       "passwordReset": "Password changed. Sign in with your new password.",
       "emailOrUsername": {
@@ -660,7 +660,7 @@
       "metaTitle": "Choose your username",
       "welcome": "Welcome, {name}",
       "title": "Choose your username",
-      "description": "It's how other singers find you on NoteFinder. You can change the suggestion.",
+      "description": "It's how other singers find you on Vozzify. You can change the suggestion.",
       "submit": "Continue"
     },
     "session": {
@@ -669,7 +669,7 @@
     },
     "forgotPassword": {
       "metaTitle": "Reset your password",
-      "metaDescription": "Forgot your NoteFinder password? Enter your email and we'll send you a code to choose a new one.",
+      "metaDescription": "Forgot your Vozzify password? Enter your email and we'll send you a code to choose a new one.",
       "overline": "Forgot password",
       "request": {
         "title": "Forgot your password?",
@@ -734,7 +734,7 @@
   },
   "artists": {
     "metaTitle": "{name}",
-    "metaDescription": "{name} with {count, plural, one {# track} other {# tracks}} on NoteFinder.",
+    "metaDescription": "{name} with {count, plural, one {# track} other {# tracks}} on Vozzify.",
     "header": {
       "trackCount": "{count, plural, one {# track} other {# tracks}}",
       "genresLabel": "Genres",
@@ -762,7 +762,7 @@
   },
   "albums": {
     "metaTitle": "{title}",
-    "metaDescription": "The songs on {title} with their vocal notes on NoteFinder.",
+    "metaDescription": "The songs on {title} with their vocal notes on Vozzify.",
     "header": {
       "loading": "Loading album…",
       "artistsLabel": "Artists",
@@ -867,8 +867,8 @@
       "copied": "Link copied",
       "copyFailed": "We couldn't copy the link. Select it and copy it by hand.",
       "networks": "Share on",
-      "text": "See {name}'s profile on NoteFinder",
-      "subject": "{name}'s profile on NoteFinder",
+      "text": "See {name}'s profile on Vozzify",
+      "subject": "{name}'s profile on Vozzify",
       "network": {
         "whatsapp": "WhatsApp",
         "telegram": "Telegram",
@@ -880,7 +880,7 @@
   },
   "publicProfile": {
     "metaTitle": "{name}",
-    "metaDescription": "The profile of {name} on NoteFinder.",
+    "metaDescription": "The profile of {name} on Vozzify.",
     "banner": {
       "memberSince": "Member since {date}",
       "loading": "Loading profile…"
@@ -972,7 +972,7 @@
   },
   "admin": {
     "metaTitle": "Admin",
-    "metaDescription": "Manage the NoteFinder home page.",
+    "metaDescription": "Manage the Vozzify home page.",
     "title": "Admin",
     "description": "Manage what the home page shows.",
     "cards": {
@@ -992,7 +992,7 @@
   },
   "adminHomePins": {
     "metaTitle": "Home pins",
-    "metaDescription": "Pin heroes and rows on the NoteFinder home.",
+    "metaDescription": "Pin heroes and rows on the Vozzify home.",
     "overline": "Admin",
     "title": "Home pins",
     "description": "Feature heroes and themed rows on the home page. A pin goes live at its start time, and the algorithm takes over when it ends.",

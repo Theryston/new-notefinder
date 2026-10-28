@@ -4,7 +4,7 @@ import {
   catalogTrackSchema,
   catalogTrackTagSchema,
   catalogTrackWorkSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
 // Locks the MusicBrainz sections of a track entry: releases, works, tags

@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import { OTP_LENGTH } from '@notefinder/contracts';
+import { OTP_LENGTH } from '@vozzify/contracts';
 import type { BetterAuthOptions } from 'better-auth';
 import { emailOTP } from 'better-auth/plugins';
 import type { EmailService } from '../../integrations/email/email.service.js';

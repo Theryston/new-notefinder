@@ -41,7 +41,7 @@ test.describe('terms page', () => {
       expect(response?.status()).toBe(200);
 
       await expect(page.locator('html')).toHaveAttribute('lang', locale);
-      await expect(page).toHaveTitle(`${terms.metaTitle} | NoteFinder`);
+      await expect(page).toHaveTitle(`${terms.metaTitle} | Vozzify`);
       await expect(
         page.getByRole('heading', { level: 1, name: terms.title }),
       ).toBeVisible();

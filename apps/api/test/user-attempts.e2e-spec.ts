@@ -1,7 +1,7 @@
 import {
   type PracticeAttemptHistoryPage,
   practiceAttemptHistoryPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import request from 'supertest';
 import { practiceAttempts } from '../src/database/schema/practice-attempts.js';

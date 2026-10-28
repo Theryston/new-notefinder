@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { HomePeopleRow } from '@notefinder/contracts';
+import type { HomePeopleRow } from '@vozzify/contracts';
 import { AttemptsProfileService } from '../attempts/attempts-profile.service.js';
 import { ProfileVisibilityService } from '../users/profile-visibility.service.js';
 import { HomeSocialRepository } from './home-social.repository.js';

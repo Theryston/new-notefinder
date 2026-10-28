@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProfileSection } from '@notefinder/contracts';
+import type { ProfileSection } from '@vozzify/contracts';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { createContext, type ReactNode, useContext } from 'react';
 

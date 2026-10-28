@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type {
   PracticeAttempt,
   SubmitPracticeAttemptBody,
-} from '@notefinder/contracts';
-import { LOCALES, type Locale } from '@notefinder/contracts';
+} from '@vozzify/contracts';
+import { LOCALES, type Locale } from '@vozzify/contracts';
 import { PersonalHomeQueueService } from '../home/home-personal-queue.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AttemptsService } from './attempts.service.js';

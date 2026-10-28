@@ -1,9 +1,9 @@
-import type { CursorPage } from '@notefinder/contracts';
 import {
   infiniteQueryOptions,
   keepPreviousData,
   type QueryKey,
 } from '@tanstack/react-query';
+import type { CursorPage } from '@vozzify/contracts';
 
 export type CursorPagesInput<TItem> = {
   queryKey: QueryKey;

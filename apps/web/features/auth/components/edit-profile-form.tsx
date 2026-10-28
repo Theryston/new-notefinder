@@ -1,16 +1,16 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import type {
   ApiErrorCode,
   CurrentUser,
   DailyPracticeTargetSeconds,
   UpdateMeBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   asDailyPracticeTargetSeconds,
   DEFAULT_DAILY_PRACTICE_TARGET_SECONDS,
-} from '@notefinder/contracts/daily-target-rules';
-import { useMutation } from '@tanstack/react-query';
+} from '@vozzify/contracts/daily-target-rules';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -37,7 +37,7 @@ import { FormField, fieldErrorProps } from './form-field';
 import { ProfileAvatar, type ProfileUser } from './profile-avatar';
 
 const updateMeResolver = lazyResolver<UpdateMeBody>(() =>
-  import('@notefinder/contracts').then((m) => m.updateMeBodySchema),
+  import('@vozzify/contracts').then((m) => m.updateMeBodySchema),
 );
 
 // The request code failed to load (offline): same message as a server fault.

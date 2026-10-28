@@ -1,4 +1,4 @@
-import { currentUserSchema } from '@notefinder/contracts';
+import { currentUserSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { sessions } from '../src/database/schema/auth.js';

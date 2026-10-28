@@ -1,4 +1,4 @@
-import type { HomeRowTitle, HomeTrack } from '@notefinder/contracts';
+import type { HomeRowTitle, HomeTrack } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 

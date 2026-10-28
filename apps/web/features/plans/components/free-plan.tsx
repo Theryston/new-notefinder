@@ -1,4 +1,4 @@
-import type { Plan } from '@notefinder/contracts';
+import type { Plan } from '@vozzify/contracts';
 import { ArrowRightIcon, ChevronDownIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { buttonVariants } from '@/components/ui/button';

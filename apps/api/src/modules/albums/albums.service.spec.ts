@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { albumSchema } from '@notefinder/contracts';
+import { albumSchema } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import { AlbumsRepository } from './albums.repository.js';

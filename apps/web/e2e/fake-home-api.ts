@@ -14,7 +14,7 @@ import { json, readBody } from './fake-api-http.ts';
 const PAGE_SIZE = 6;
 
 /** The session cookie the web forwards, like the real Better Auth one. */
-const SESSION_COOKIE = 'notefinder.session_token=';
+const SESSION_COOKIE = 'vozzify.session_token=';
 
 type FakeHomeLocale = 'en' | 'pt-BR';
 
@@ -75,7 +75,7 @@ const fixtureTrack = (id: string, title: string) => ({
   id,
   title,
   coverUrl: null,
-  artistCredit: [{ name: 'NoteFinder', joinPhrase: '' }],
+  artistCredit: [{ name: 'Vozzify', joinPhrase: '' }],
   durationMs: 180000,
   vocalRange: { lowest: 45, highest: 64 },
 });

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { FollowListPage } from '@notefinder/contracts';
+import type { FollowListPage } from '@vozzify/contracts';
 import { UsersService } from '../users/users.service.js';
 import {
   decodeFollowListCursor,

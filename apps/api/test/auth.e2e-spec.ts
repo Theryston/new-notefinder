@@ -1,4 +1,4 @@
-import { currentUserSchema } from '@notefinder/contracts';
+import { currentUserSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import { accounts, sessions } from '../src/database/schema/auth.js';
 import { users } from '../src/database/schema/users.js';
@@ -61,7 +61,7 @@ describe('Auth (e2e)', () => {
       expect(await spec.testApp.db.select().from(sessions)).toEqual([]);
 
       const signUpEmail = await takeOtpEmail(spec.testApp, NEW_USER.email);
-      expect(signUpEmail.subject).toBe('Your notefinder verification code');
+      expect(signUpEmail.subject).toBe('Your vozzify verification code');
 
       const refused = await signIn(spec.client, NEW_USER).expect(403);
       expect(refused.body).toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
@@ -151,7 +151,7 @@ describe('Auth (e2e)', () => {
       );
 
       const email = await takeOtpEmail(spec.testApp, NEW_USER.email);
-      expect(email.subject).toBe('Seu código de verificação do notefinder');
+      expect(email.subject).toBe('Seu código de verificação do vozzify');
       expect(email.html).toContain('<html lang="pt-BR">');
       expect(email.text).toContain(email.otp);
     });
@@ -160,7 +160,7 @@ describe('Auth (e2e)', () => {
       await signUp(spec.client.set('Accept-Language', 'fr-FR'), NEW_USER);
 
       const email = await takeOtpEmail(spec.testApp, NEW_USER.email);
-      expect(email.subject).toBe('Your notefinder verification code');
+      expect(email.subject).toBe('Your vozzify verification code');
       expect(email.html).toContain('<html lang="en">');
     });
   });
@@ -280,7 +280,7 @@ describe('Auth (e2e)', () => {
 
       await requestReset(user.email).expect(200);
       const email = await takeOtpEmail(spec.testApp, user.email);
-      expect(email.subject).toBe('Your notefinder password reset code');
+      expect(email.subject).toBe('Your vozzify password reset code');
 
       await spec.client
         .post('/v1/auth/email-otp/reset-password')
@@ -333,7 +333,7 @@ describe('Auth (e2e)', () => {
 
       const email = await takeOtpEmail(spec.testApp, user.email);
       expect(email.subject).toBe(
-        'Seu código para redefinir a senha do notefinder',
+        'Seu código para redefinir a senha do vozzify',
       );
     });
   });
@@ -342,7 +342,7 @@ describe('Auth (e2e)', () => {
     const updateUser = (body: Record<string, unknown>) =>
       spec.client.post('/v1/auth/update-user').send(body);
 
-    // Profile fields are written through notefinder's own routes only
+    // Profile fields are written through vozzify's own routes only
     // (`PUT /v1/me/username`, see users-username.e2e-spec.ts).
     describe.each([
       ['a user with a username', 'ada'],

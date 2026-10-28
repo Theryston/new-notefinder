@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-import type { ApiError } from '@notefinder/contracts';
+import type { ApiError } from '@vozzify/contracts';
 import type { z } from 'zod';
 import { ZodValidationException } from '../zod/zod-validation.pipe.js';
 import { AppException, errorCodeFromHttpStatus } from './app-exception.js';

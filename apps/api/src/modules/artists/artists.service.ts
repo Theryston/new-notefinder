@@ -3,7 +3,7 @@ import type {
   Artist,
   CatalogTracksPage,
   CursorPaginationQuery,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TracksService } from '../tracks/tracks.service.js';
 import { type ArtistRecord, ArtistsRepository } from './artists.repository.js';

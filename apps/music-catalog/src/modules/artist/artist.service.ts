@@ -1,4 +1,4 @@
-import type { MusicCatalogArtist } from '@notefinder/contracts';
+import type { MusicCatalogArtist } from '@vozzify/contracts';
 import { missingEntityError } from '../../errors/missing-entity-error.js';
 import { votedGenres } from '../../lib/tag-votes.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';

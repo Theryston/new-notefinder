@@ -45,7 +45,7 @@ const serverEnvSchema = z.object({
       z.array(
         z
           .string()
-          .refine(isBareHost, 'must be a bare host such as notefinder.example'),
+          .refine(isBareHost, 'must be a bare host such as vozzify.example'),
       ),
     ),
   // e2e builds only: the practice page plays with a fake clock instead of

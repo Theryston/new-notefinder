@@ -26,7 +26,7 @@ import {
   editorialPinMetricsPageSchema,
   editorialPinPageSchema,
   editorialPinSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

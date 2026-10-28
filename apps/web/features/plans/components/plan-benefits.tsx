@@ -1,4 +1,4 @@
-import type { PlanBenefit } from '@notefinder/contracts';
+import type { PlanBenefit } from '@vozzify/contracts';
 import { CheckIcon, ClockIcon, InfoIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 

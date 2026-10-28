@@ -6,7 +6,7 @@ import {
 } from './email-layout.js';
 import { EMAIL_LAYOUT_MJML } from './email-layout-skeleton.js';
 
-const webUrl = 'https://notefinder.test';
+const webUrl = 'https://vozzify.test';
 
 const layoutInput = {
   webUrl,
@@ -123,9 +123,9 @@ describe('renderEmailLayout', () => {
 
 describe('emailButton', () => {
   it('escapes the href and the label', () => {
-    const button = emailButton('https://notefinder.test/a?x=1&y=2', 'Go & see');
+    const button = emailButton('https://vozzify.test/a?x=1&y=2', 'Go & see');
 
-    expect(button).toContain('href="https://notefinder.test/a?x=1&amp;y=2"');
+    expect(button).toContain('href="https://vozzify.test/a?x=1&amp;y=2"');
     expect(button).toContain('>Go &amp; see</a>');
   });
 });

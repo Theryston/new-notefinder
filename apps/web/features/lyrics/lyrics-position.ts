@@ -1,4 +1,4 @@
-import type { TrackLyricLine, TrackLyricWord } from '@notefinder/contracts';
+import type { TrackLyricLine, TrackLyricWord } from '@vozzify/contracts';
 
 /** Where a word is in the song at a moment: sung, being sung, or still to come. */
 export type WordState = 'sung' | 'current' | 'upcoming';

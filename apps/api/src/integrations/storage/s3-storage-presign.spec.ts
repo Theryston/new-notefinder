@@ -10,7 +10,7 @@ import { StorageError } from './storage.service.js';
 const config = {
   endpoint: 'http://localhost:9000',
   region: 'us-east-1',
-  bucket: 'notefinder',
+  bucket: 'vozzify',
   accessKeyId: 'access-key',
   secretAccessKey: 'secret-key',
   forcePathStyle: true,
@@ -45,7 +45,7 @@ describe('S3StorageService.presignPublicPut', () => {
     const call = presigner.mock.calls[0];
     expect(call?.[0]).toBeInstanceOf(PutObjectCommand);
     expect(call?.[0]?.input).toEqual({
-      Bucket: 'notefinder',
+      Bucket: 'vozzify',
       Key: put.key,
       ContentType: 'audio/wav',
     });
@@ -91,7 +91,7 @@ describe('S3StorageService.presignPublicPut', () => {
     const url = new URL(await service.presignPublicPut(put));
 
     expect(url.origin).toBe('http://localhost:9000');
-    expect(url.pathname).toBe(`/notefinder/${put.key}`);
+    expect(url.pathname).toBe(`/vozzify/${put.key}`);
     expect(url.searchParams.get('X-Amz-Expires')).toBe('7200');
     expect(url.searchParams.get('X-Amz-Signature')).toMatch(/^[0-9a-f]{64}$/);
     client.destroy();

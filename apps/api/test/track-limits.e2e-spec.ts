@@ -1,4 +1,4 @@
-import type { TrackProcessingStatus } from '@notefinder/contracts';
+import type { TrackProcessingStatus } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import { trackProcessings } from '../src/database/schema/track-processings.js';
 import { tracks } from '../src/database/schema/tracks.js';

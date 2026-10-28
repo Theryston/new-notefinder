@@ -1,4 +1,4 @@
-import { CATALOG_DATASETS } from '@notefinder/contracts';
+import { CATALOG_DATASETS } from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import type { Database } from './database.js';
 

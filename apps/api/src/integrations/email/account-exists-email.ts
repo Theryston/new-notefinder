@@ -21,27 +21,27 @@ type AccountExistsEmailCopy = {
 // User-facing copy lives only here, one entry per locale.
 const MESSAGES = {
   en: {
-    subject: 'You already have a notefinder account',
+    subject: 'You already have a vozzify account',
     overline: 'Account',
     title: 'Sign in instead',
-    preheader: 'You already have a NoteFinder account with this email.',
+    preheader: 'You already have a Vozzify account with this email.',
     reason:
-      'You got this email because someone tried to sign up on NoteFinder with this address.',
+      'You got this email because someone tried to sign up on Vozzify with this address.',
     intro:
-      'Someone tried to create a notefinder account with this email, but it already has one.',
+      'Someone tried to create a vozzify account with this email, but it already has one.',
     action:
       'If it was you, sign in instead. Forgot your password? Use "Forgot password" on the sign-in page to get a reset code.',
     ignore: "If it wasn't you, ignore this email. Your account hasn't changed.",
   },
   'pt-BR': {
-    subject: 'Você já tem uma conta no notefinder',
+    subject: 'Você já tem uma conta no vozzify',
     overline: 'Conta',
     title: 'Entre na sua conta',
-    preheader: 'Você já tem uma conta no NoteFinder com este email.',
+    preheader: 'Você já tem uma conta no Vozzify com este email.',
     reason:
-      'Você recebeu este email porque alguém tentou criar uma conta no NoteFinder com este endereço.',
+      'Você recebeu este email porque alguém tentou criar uma conta no Vozzify com este endereço.',
     intro:
-      'Alguém tentou criar uma conta no notefinder com este email, mas ele já tem uma.',
+      'Alguém tentou criar uma conta no vozzify com este email, mas ele já tem uma.',
     action:
       'Se foi você, é só entrar. Esqueceu a senha? Use "Esqueci minha senha" na página de entrar para receber um código.',
     ignore: 'Se não foi você, ignore este email. Nada mudou na sua conta.',

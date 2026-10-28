@@ -16,7 +16,7 @@ const escapeGlob = (pattern: string): string =>
 const cacheKey = (key: string): string => redisKey('cache', key);
 
 /**
- * JSON cache on Redis. Keys are relative to `notefinder:cache:` and start with
+ * JSON cache on Redis. Keys are relative to `vozzify:cache:` and start with
  * the owning feature (`tracks:<id>`), so `del('tracks:*')` flushes one feature
  * without touching queues or rate-limit counters.
  *

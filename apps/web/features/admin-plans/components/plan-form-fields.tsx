@@ -1,6 +1,6 @@
 'use client';
 
-import type { SaveAdminPlanBody } from '@notefinder/contracts';
+import type { SaveAdminPlanBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { UseFormRegister } from 'react-hook-form';
 import { Input } from '@/components/ui/input';

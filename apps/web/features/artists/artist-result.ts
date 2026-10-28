@@ -1,4 +1,4 @@
-import type { Artist } from '@notefinder/contracts';
+import type { Artist } from '@vozzify/contracts';
 
 import { entityOutcomeFromError } from '@/lib/entity-route';
 

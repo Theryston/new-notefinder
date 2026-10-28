@@ -1,7 +1,7 @@
 import {
   type UserFavoritesPage,
   userFavoritesPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { trackFavorites } from '../src/database/schema/track-favorites.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';

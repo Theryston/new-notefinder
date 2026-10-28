@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PublicProfile } from '@notefinder/contracts';
+import type { PublicProfile } from '@vozzify/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import { UserProfileService } from '../users/user-profile.service.js';
 

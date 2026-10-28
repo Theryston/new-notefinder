@@ -1,4 +1,4 @@
-import type { CursorPage } from '@notefinder/contracts';
+import type { CursorPage } from '@vozzify/contracts';
 import { decodeSitemapCursor, encodeSitemapCursor } from './sitemap-cursor.js';
 
 /** A listed row as its repository reads it: the ID and the last change, plus any extra fields. */

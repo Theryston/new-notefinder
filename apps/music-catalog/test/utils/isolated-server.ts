@@ -1,4 +1,4 @@
-import type { BootstrapPhase } from '@notefinder/contracts';
+import type { BootstrapPhase } from '@vozzify/contracts';
 import { inject } from 'vitest';
 import { parseServerEnv, type ServerEnv } from '../../src/config/env.js';
 import { createMusicCatalogServer } from '../../src/create-server.js';

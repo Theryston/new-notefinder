@@ -20,7 +20,7 @@ describe('search readiness database reads', () => {
       throw new Error('Could not read the stalled handshake server port');
     }
     const pool = createPool(
-      `postgres://notefinder:unused@127.0.0.1:${address.port}/notefinder`,
+      `postgres://vozzify:unused@127.0.0.1:${address.port}/vozzify`,
       () => undefined,
     );
     const db = createDatabase(pool);

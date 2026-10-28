@@ -1,7 +1,7 @@
 import type {
   CatalogDataset,
   MusicCatalogReimportStatus,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import { planReimport } from './reimport-plan.js';

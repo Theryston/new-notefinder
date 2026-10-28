@@ -1,7 +1,7 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, type OnModuleInit } from '@nestjs/common';
-import type { Locale } from '@notefinder/contracts';
-import { LOCALES } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
+import { LOCALES } from '@vozzify/contracts';
 import { type Job, type Queue, UnrecoverableError } from 'bullmq';
 import {
   HOME_FEED_QUEUE,

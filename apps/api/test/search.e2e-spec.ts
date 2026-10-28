@@ -1,4 +1,4 @@
-import { searchResultSchema } from '@notefinder/contracts';
+import { searchResultSchema } from '@vozzify/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { testMbid } from './utils/factories.js';
 import {

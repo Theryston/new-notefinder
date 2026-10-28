@@ -12,6 +12,9 @@ import {
 
 type SyncTriggerRow = { name: string; table: string };
 
+const prefixPattern = (prefix: string): string =>
+  `${prefix.replaceAll('_', '\\_')}\\_%`;
+
 /**
  * The recording outbox: entries the change triggers wrote, and the triggers
  * themselves. The triggers live on mbslave's tables, so they are installed
@@ -120,28 +123,35 @@ export class RecordingOutboxRepository {
   }
 
   private async listSyncTriggers(): Promise<SyncTriggerRow[]> {
-    // `\_` keeps the prefix's own underscore from matching any character.
-    const prefixPattern = `${SYNC_TRIGGER_PREFIX}\\_%`;
+    // The function identity survives a product rename, so old trigger names
+    // are reconciled instead of being left beside the new ones.
     const result = await this.getDb().execute<SyncTriggerRow>(sql`
       select t.tgname as "name", c.relname as "table"
       from pg_trigger t
       join pg_class c on c.oid = t.tgrelid
       join pg_namespace n on n.oid = c.relnamespace
+      join pg_proc p on p.oid = t.tgfoid
+      join pg_namespace fn on fn.oid = p.pronamespace
       where n.nspname = 'musicbrainz'
-        and t.tgname like ${prefixPattern}
+        and (
+          t.tgname like ${prefixPattern(SYNC_TRIGGER_PREFIX)}
+          or (
+            fn.nspname = 'music_catalog'
+            and p.proname like ${prefixPattern(SYNC_FUNCTION_PREFIX)}
+          )
+        )
         and not t.tgisinternal
     `);
     return result.rows;
   }
 
   private async listSyncFunctions(): Promise<string[]> {
-    const prefixPattern = `${SYNC_FUNCTION_PREFIX}\\_%`;
     const result = await this.getDb().execute<{ name: string }>(sql`
       select p.proname as "name"
       from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'music_catalog'
-        and p.proname like ${prefixPattern}
+        and p.proname like ${prefixPattern(SYNC_FUNCTION_PREFIX)}
     `);
     return result.rows.map((row) => row.name);
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackContributorEntry } from '@notefinder/contracts';
+import type { TrackContributorEntry } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';

@@ -1,4 +1,4 @@
-import type { TrackProcessingState } from '@notefinder/contracts';
+import type { TrackProcessingState } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Suspense } from 'react';

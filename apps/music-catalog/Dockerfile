@@ -48,7 +48,7 @@ RUN nub --cwd packages/contracts run build && nub --cwd apps/music-catalog run b
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production
 # The workspace layout is kept, because the installed packages link to each
-# other by relative path (the app's node_modules/@notefinder/contracts points
+# other by relative path (the app's node_modules/@vozzify/contracts points
 # at packages/contracts).
 WORKDIR /app/apps/music-catalog
 COPY --from=app-deps /app/node_modules /app/node_modules

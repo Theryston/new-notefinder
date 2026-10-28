@@ -1,4 +1,4 @@
-import { musicCatalogErrorSchema } from '@notefinder/contracts';
+import { musicCatalogErrorSchema } from '@vozzify/contracts';
 import { buildUnauthorizedResponse } from './handshake.js';
 
 const parse = (raw: string) => {

@@ -5,7 +5,7 @@
 
 ## Context
 
-notefinder shows an album page at `/albums/[id]`, reached from shared links and
+vozzify shows an album page at `/albums/[id]`, reached from shared links and
 from legacy bookmarks (ADR 0001 keeps those URLs working). MusicBrainz models an
 album at two levels: a **release** is one edition (a country, a format, a
 remaster, a reissue), and a **release group** is the album across all of its

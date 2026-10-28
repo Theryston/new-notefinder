@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import type { ApiError, ApiErrorCode } from '@notefinder/contracts';
+import type { ApiError, ApiErrorCode } from '@vozzify/contracts';
 
 export const API_ERROR_HTTP_STATUS = {
   BAD_REQUEST: HttpStatus.BAD_REQUEST,

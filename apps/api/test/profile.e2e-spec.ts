@@ -3,7 +3,7 @@ import {
   cacheTags,
   currentUserSchema,
   NAME_MAX_LENGTH,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { users } from '../src/database/schema/users.js';
@@ -552,7 +552,7 @@ describe('PATCH /v1/me (e2e)', () => {
 
     it('answers an error, and saves nothing, when the storage fails', async () => {
       const broken = await createTestApp({
-        env: { S3_BUCKET: 'notefinder-missing-bucket' },
+        env: { S3_BUCKET: 'vozzify-missing-bucket' },
       });
       try {
         const client = createAuthClient(broken);

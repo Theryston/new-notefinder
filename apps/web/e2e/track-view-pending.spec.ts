@@ -55,7 +55,7 @@ test('waits for an anonymous view across sign-in before attaching its ID', async
     ],
   });
   await page.addInitScript(() =>
-    localStorage.setItem('notefinder:visitor-id', 'pending-view-visitor'),
+    localStorage.setItem('vozzify:visitor-id', 'pending-view-visitor'),
   );
   await page.goto(`/en/tracks/${trackId}`);
   await expect.poll(() => posts.length).toBe(1);

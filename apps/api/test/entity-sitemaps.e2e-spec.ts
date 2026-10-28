@@ -2,7 +2,7 @@ import {
   albumSitemapPageSchema,
   artistSitemapPageSchema,
   userSitemapPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import request from 'supertest';
 import {
   createAlbumDisc,

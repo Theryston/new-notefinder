@@ -1,4 +1,4 @@
-import type { BillingCycle, PlanOffer } from '@notefinder/contracts';
+import type { BillingCycle, PlanOffer } from '@vozzify/contracts';
 
 const MONTHS_PER_YEAR = 12;
 

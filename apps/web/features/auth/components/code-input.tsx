@@ -1,6 +1,6 @@
 'use client';
 
-import { OTP_LENGTH } from '@notefinder/contracts/auth-rules';
+import { OTP_LENGTH } from '@vozzify/contracts/auth-rules';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import type { RefCallBack } from 'react-hook-form';
 

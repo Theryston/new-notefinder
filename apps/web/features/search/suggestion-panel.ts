@@ -1,4 +1,4 @@
-import type { SearchResultItem } from '@notefinder/contracts';
+import type { SearchResultItem } from '@vozzify/contracts';
 
 /** What the suggestions panel lists above its trailing "Search for" row. */
 export type SuggestionPanelContent = {

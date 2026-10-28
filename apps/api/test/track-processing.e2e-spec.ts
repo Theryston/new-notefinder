@@ -1,4 +1,4 @@
-import { trackProcessingStateSchema } from '@notefinder/contracts';
+import { trackProcessingStateSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';

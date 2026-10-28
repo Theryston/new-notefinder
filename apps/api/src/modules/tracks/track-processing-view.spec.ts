@@ -1,4 +1,4 @@
-import { trackProcessingSchema } from '@notefinder/contracts';
+import { trackProcessingSchema } from '@vozzify/contracts';
 import {
   isRetryableFailureCode,
   type TrackProcessingRow,

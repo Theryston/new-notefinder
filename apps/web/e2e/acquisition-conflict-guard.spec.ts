@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 const userId = 'usr_existing';
-const recordedKey = `notefinder:acquisition-recorded:${userId}`;
+const recordedKey = `vozzify:acquisition-recorded:${userId}`;
 
 async function mockApi(page: Page, responses: number[]) {
   const requests: unknown[] = [];

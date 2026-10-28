@@ -1,4 +1,4 @@
-import type { SubmitPracticeAttemptBody } from '@notefinder/contracts';
+import type { SubmitPracticeAttemptBody } from '@vozzify/contracts';
 
 import {
   type PendingAttemptStorage,

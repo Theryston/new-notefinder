@@ -1,7 +1,7 @@
 import {
   type CatalogTracksPage,
   catalogTracksPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {

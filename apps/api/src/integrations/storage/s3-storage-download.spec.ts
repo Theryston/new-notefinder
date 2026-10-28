@@ -4,7 +4,7 @@ import { StorageError } from './storage.service.js';
 const config = {
   endpoint: 'http://localhost:9000',
   region: 'us-east-1',
-  bucket: 'notefinder',
+  bucket: 'vozzify',
   accessKeyId: 'access-key',
   secretAccessKey: 'secret-key',
   forcePathStyle: true,

@@ -1,4 +1,4 @@
-import type { CatalogTrack } from '@notefinder/contracts';
+import type { CatalogTrack } from '@vozzify/contracts';
 
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
 

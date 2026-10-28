@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'notefinder-data.s3.us-east-005.backblazeb2.com',
+        hostname: 'files.vozzify.com',
       },
     ],
   },

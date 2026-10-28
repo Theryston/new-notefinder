@@ -1,4 +1,4 @@
-import type { SaveAdminPlanBody } from '@notefinder/contracts';
+import type { SaveAdminPlanBody } from '@vozzify/contracts';
 import type { Resolver } from 'react-hook-form';
 
 export const planFormResolver: Resolver<SaveAdminPlanBody> = async (
@@ -8,7 +8,7 @@ export const planFormResolver: Resolver<SaveAdminPlanBody> = async (
 ) => {
   const [{ zodResolver }, { saveAdminPlanBodySchema }] = await Promise.all([
     import('@hookform/resolvers/zod'),
-    import('@notefinder/contracts'),
+    import('@vozzify/contracts'),
   ]);
   return zodResolver(saveAdminPlanBodySchema)(values, context, options);
 };

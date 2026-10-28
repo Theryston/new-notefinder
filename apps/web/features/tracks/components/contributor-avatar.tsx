@@ -1,4 +1,4 @@
-import type { TrackContributor } from '@notefinder/contracts';
+import type { TrackContributor } from '@vozzify/contracts';
 
 import { UserAvatar } from '@/features/auth/components/user-avatar';
 

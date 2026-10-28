@@ -18,11 +18,11 @@ describe('HomeSocialStore', () => {
     await store.write('viewer', []);
 
     expect(cache.get).toHaveBeenCalledWith(
-      'notefinder:home-social-similarity:viewer',
+      'vozzify:home-social-similarity:viewer',
       expect.any(Object),
     );
     expect(cache.set).toHaveBeenCalledWith(
-      'notefinder:home-social-similarity:viewer',
+      'vozzify:home-social-similarity:viewer',
       [],
       604800,
     );

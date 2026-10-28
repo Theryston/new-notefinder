@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { cacheTags, LOCALES, type Locale } from '@notefinder/contracts';
+import { cacheTags, LOCALES, type Locale } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { PersonalHomeQueueService } from '../home/home-personal-queue.service.js';
 import { UsersService } from '../users/users.service.js';

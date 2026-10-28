@@ -1,6 +1,6 @@
 'use client';
 
-import type { PracticeAttemptHistoryItem } from '@notefinder/contracts';
+import type { PracticeAttemptHistoryItem } from '@vozzify/contracts';
 import { useFormatter } from 'next-intl';
 
 import { groupAttemptsByDay } from '../group-attempts-by-day';

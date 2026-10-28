@@ -1,4 +1,4 @@
-import { AVATAR_MAX_BYTES } from '@notefinder/contracts/avatar-rules';
+import { AVATAR_MAX_BYTES } from '@vozzify/contracts/avatar-rules';
 import { describe, expect, it } from 'vitest';
 
 import {

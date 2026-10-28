@@ -4,7 +4,7 @@ import {
   type CatalogTrack,
   type CatalogTracksPage,
   catalogTracksPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { browserApi } from '@/lib/api/browser';
 import { cursorPagesQueryOptions } from '@/lib/cursor-pages-query';
 

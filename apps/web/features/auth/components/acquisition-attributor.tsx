@@ -1,7 +1,7 @@
 'use client';
 
-import type { RecordAcquisitionBody } from '@notefinder/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type { RecordAcquisitionBody } from '@vozzify/contracts';
 import { useEffect, useRef } from 'react';
 
 import { sessionUserOptions } from '@/features/auth/session';
@@ -15,7 +15,7 @@ import {
 } from '../campaign-touches';
 
 const acquisitionRecordedKey = (userId: string) =>
-  `notefinder:acquisition-recorded:${userId}`;
+  `vozzify:acquisition-recorded:${userId}`;
 
 function markAcquisitionRecorded(userId: string): void {
   try {
@@ -35,7 +35,7 @@ export function AcquisitionAttributor() {
       body: RecordAcquisitionBody;
     }) => {
       const [{ browserApi }, { acquisitionRecordedSchema }] = await Promise.all(
-        [import('@/lib/api/browser'), import('@notefinder/contracts')],
+        [import('@/lib/api/browser'), import('@vozzify/contracts')],
       );
       return browserApi('/me/acquisition', {
         method: 'POST',

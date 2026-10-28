@@ -1,7 +1,4 @@
-import {
-  profileFollowSchema,
-  publicProfileSchema,
-} from '@notefinder/contracts';
+import { profileFollowSchema, publicProfileSchema } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { browserApi } from '@/lib/api/browser';

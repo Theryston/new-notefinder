@@ -1,4 +1,4 @@
-import { SITEMAP_PAGE_SIZE } from '@notefinder/contracts';
+import { SITEMAP_PAGE_SIZE } from '@vozzify/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,10 +8,10 @@ import {
 } from './entity-sitemap';
 
 vi.mock('@/lib/sitemap/request-origin', () => ({
-  requestSiteOrigin: () => 'https://notefinder.com.br',
+  requestSiteOrigin: () => 'https://vozzify.com',
 }));
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 const entries = [
   { id: 'alb-b', updatedAt: '2026-10-14T12:00:00.000Z' },
   { id: 'alb-a', updatedAt: '2026-10-01T08:30:00.000Z' },

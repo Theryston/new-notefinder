@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { MusicCatalogTrackAssociationPayload } from '@notefinder/contracts';
+import type { MusicCatalogTrackAssociationPayload } from '@vozzify/contracts';
 import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';
 import {
   TRACK_ASSOCIATION_BATCH_SIZE,

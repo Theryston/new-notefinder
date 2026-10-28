@@ -9,7 +9,7 @@ import {
 import {
   type PinTrackSearchResult,
   pinTrackSearchResultSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { PinTrackSearchQueryDto } from './editorial-pin-dtos.js';

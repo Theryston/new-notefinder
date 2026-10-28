@@ -2,7 +2,7 @@ import {
   adminPlanCatalogSchema,
   adminPlanSchema,
   type SaveAdminPlanBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { browserApi } from '@/lib/api/browser';
 
 export function fetchAdminPlans(signal?: AbortSignal) {

@@ -1,5 +1,5 @@
-import type { Locale, PlanCatalog } from '@notefinder/contracts';
 import { expect, type Locator, type Page, test } from '@playwright/test';
+import type { Locale, PlanCatalog } from '@vozzify/contracts';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';
 import { messages } from './messages';

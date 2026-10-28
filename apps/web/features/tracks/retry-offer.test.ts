@@ -1,4 +1,4 @@
-import type { TrackProcessing } from '@notefinder/contracts';
+import type { TrackProcessing } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '@/lib/api/api-error';

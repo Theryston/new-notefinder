@@ -23,7 +23,7 @@ import {
   benefitPlansSchema,
   setPlanBenefitsBodySchema,
   writeBenefitBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

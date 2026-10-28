@@ -1,4 +1,4 @@
-import type { HomeGenresRow } from '@notefinder/contracts';
+import type { HomeGenresRow } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { TrackCoverPlaceholder } from '@/features/tracks/components/track-cover-placeholder';

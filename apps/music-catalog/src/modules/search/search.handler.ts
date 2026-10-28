@@ -1,7 +1,7 @@
 import {
   musicCatalogSearchPayloadSchema,
   musicCatalogSearchResultSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { SearchService } from './search.service.js';
 

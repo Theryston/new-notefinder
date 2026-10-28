@@ -1,4 +1,4 @@
-import type { Subscription } from '@notefinder/contracts';
+import type { Subscription } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import type { StripeSubscription } from '../../integrations/stripe/stripe-billing.service.js';
 

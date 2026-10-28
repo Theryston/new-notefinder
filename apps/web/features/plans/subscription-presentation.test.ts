@@ -1,4 +1,4 @@
-import type { Subscription } from '@notefinder/contracts';
+import type { Subscription } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 import { subscriptionState } from './subscription-presentation';
 

@@ -27,18 +27,18 @@ describe('SITEMAP_EXTRA_HOSTS', () => {
   it('reads a comma-separated list of hosts, trimmed and lowercased', async () => {
     vi.stubEnv(
       'SITEMAP_EXTRA_HOSTS',
-      ' Notefinder.Example , staging.example:8443',
+      ' Vozzify.Example , staging.example:8443',
     );
     const getServerEnv = await loadServerEnv();
 
     expect(getServerEnv().SITEMAP_EXTRA_HOSTS).toEqual([
-      'notefinder.example',
+      'vozzify.example',
       'staging.example:8443',
     ]);
   });
 
   it('fails at start when an entry is not a bare host', async () => {
-    vi.stubEnv('SITEMAP_EXTRA_HOSTS', 'notefinder.example/terms');
+    vi.stubEnv('SITEMAP_EXTRA_HOSTS', 'vozzify.example/terms');
     const getServerEnv = await loadServerEnv();
 
     expect(() => getServerEnv()).toThrow(/SITEMAP_EXTRA_HOSTS/);

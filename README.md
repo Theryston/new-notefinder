@@ -1,8 +1,12 @@
-# notefinder
+# vozzify
 
 Rewrite of [notefinder](https://github.com/theryston/notefinder) with a
 standalone API and web frontend. Monorepo managed with
 [Turborepo](https://turborepo.dev) and [nub](https://nubjs.com).
+
+For an existing installation, follow the
+[brand and domain cutover](docs/vozzify-brand-cutover.md) before deploying
+the renamed services.
 
 ## Structure
 

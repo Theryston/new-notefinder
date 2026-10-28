@@ -1,10 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import {
-  cacheTags,
-  type EditorialPin,
-  type Locale,
-} from '@notefinder/contracts';
+import { cacheTags, type EditorialPin, type Locale } from '@vozzify/contracts';
 import type { Queue } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { affectedLocales } from './editorial-pin-state.js';

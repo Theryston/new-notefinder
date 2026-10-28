@@ -3,7 +3,7 @@ import type {
   CreateEditorialPinBody,
   EditorialPinActor,
   UpdateEditorialPinBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { fakeTransactionalDatabase } from '../../../test/utils/fake-transactional-db.js';
 import { encodeTupleCursor } from '../../common/cursor/tuple-cursor.js';
 import { AppException } from '../../common/errors/app-exception.js';

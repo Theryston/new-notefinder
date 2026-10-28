@@ -1,4 +1,4 @@
-import type { Recording, RecordingRelease } from '@notefinder/contracts';
+import type { Recording, RecordingRelease } from '@vozzify/contracts';
 import { compareText, compareTextNullsLast } from '../../lib/compare.js';
 import { coverArtUrl } from '../../lib/cover-art-url.js';
 import { chooseTags } from './genre-fallback.js';

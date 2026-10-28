@@ -49,7 +49,7 @@ test.describe('practice preferences', () => {
     // account to keep showing HARD.
     await page.evaluate(() =>
       localStorage.setItem(
-        'notefinder.scoring.v1',
+        'vozzify.scoring.v1',
         JSON.stringify({ difficulty: 'NORMAL', octaveMode: 'ANY' }),
       ),
     );

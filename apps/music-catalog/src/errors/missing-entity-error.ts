@@ -1,4 +1,4 @@
-import type { MusicCatalogErrorCode } from '@notefinder/contracts';
+import type { MusicCatalogErrorCode } from '@vozzify/contracts';
 import { CatalogError } from './catalog-error.js';
 
 /** The protocol's two codes for one kind of entity, and its name for messages. */

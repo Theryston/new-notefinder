@@ -1,4 +1,4 @@
-import type { AdminPlan } from '@notefinder/contracts';
+import type { AdminPlan } from '@vozzify/contracts';
 import type { PlansRepository } from './plans.repository.js';
 
 export function adminPlanOf(

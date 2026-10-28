@@ -1,7 +1,7 @@
 import type {
   ApiError as ApiErrorBody,
   ApiErrorCode,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 // Types only, on purpose: the query client (in every page's first-load
 // JavaScript) imports `ApiError`, so this file must not pull in Zod. Parsing

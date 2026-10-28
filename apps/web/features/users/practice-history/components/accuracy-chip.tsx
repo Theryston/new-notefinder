@@ -1,6 +1,6 @@
 'use client';
 
-import { type AccuracyBand, accuracyBand } from '@notefinder/contracts';
+import { type AccuracyBand, accuracyBand } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';

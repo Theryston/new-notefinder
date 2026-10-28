@@ -236,29 +236,29 @@ describe('recording sync: MusicBrainz changes reach the index (e2e)', () => {
     });
     await indexCatalog(server());
     const syncTriggerNames = async (): Promise<string[]> => {
-      const pattern = 'notefinder_sync\\_%';
+      const pattern = 'vozzify_sync\\_%';
       const result = await db.execute<{ name: string }>(
         sql`select tgname as "name" from pg_trigger where tgname like ${pattern}`,
       );
       return result.rows.map((row) => row.name).sort();
     };
     await db.execute(
-      sql`drop trigger notefinder_sync_artist_alias on musicbrainz.artist_alias`,
+      sql`drop trigger vozzify_sync_artist_alias on musicbrainz.artist_alias`,
     );
     await db.execute(
       sql`create function music_catalog.sync_outbox_from_retired() returns trigger
         language plpgsql as $fn$ begin return null; end; $fn$`,
     );
     await db.execute(
-      sql`create trigger notefinder_sync_retired after insert on musicbrainz.isrc
+      sql`create trigger vozzify_sync_retired after insert on musicbrainz.isrc
         for each row execute function music_catalog.sync_outbox_from_retired()`,
     );
 
     await syncOnce();
 
     const names = await syncTriggerNames();
-    expect(names).toContain('notefinder_sync_artist_alias');
-    expect(names).not.toContain('notefinder_sync_retired');
+    expect(names).toContain('vozzify_sync_artist_alias');
+    expect(names).not.toContain('vozzify_sync_retired');
     const functionPattern = 'sync_outbox_from\\_%';
     const functions = await db.execute<{ name: string }>(
       sql`select p.proname as "name" from pg_proc p

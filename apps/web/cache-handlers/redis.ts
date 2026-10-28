@@ -26,7 +26,7 @@ import {
 // Next's own default: `cacheMaxMemorySize` (50 MB) for the built-in handler.
 const IN_MEMORY_MAX_BYTES = 50 * 1024 * 1024;
 // Bump when the stored entry format changes.
-const KEY_PREFIX = 'notefinder:web-cache:v1';
+const KEY_PREFIX = 'vozzify:web-cache:v1';
 
 const cacheEnvSchema = z.object({
   CACHE_REDIS_URL: z

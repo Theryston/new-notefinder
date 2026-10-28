@@ -1,4 +1,4 @@
-import { homeRowSchema, localeSchema } from '@notefinder/contracts';
+import { homeRowSchema, localeSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 import { HOME_ALGORITHM_VERSION } from './home-rules.js';
 

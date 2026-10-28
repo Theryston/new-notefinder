@@ -1,4 +1,4 @@
-import type { MostSungArtist } from '@notefinder/contracts';
+import type { MostSungArtist } from '@vozzify/contracts';
 
 export type ArtistGroup = {
   artist: MostSungArtist;

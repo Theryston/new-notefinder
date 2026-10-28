@@ -1,11 +1,11 @@
 'use client';
 
-import type { TrackContributorsPage } from '@notefinder/contracts';
 import {
   type InfiniteData,
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
+import type { TrackContributorsPage } from '@vozzify/contracts';
 
 import {
   setContributorFollow,

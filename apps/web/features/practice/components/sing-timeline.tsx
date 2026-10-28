@@ -1,9 +1,6 @@
 'use client';
 
-import type {
-  SubmitPracticeAttemptBody,
-  TrackNote,
-} from '@notefinder/contracts';
+import type { SubmitPracticeAttemptBody, TrackNote } from '@vozzify/contracts';
 import { type ReactNode, useMemo } from 'react';
 
 import {

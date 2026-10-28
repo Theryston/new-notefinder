@@ -43,8 +43,8 @@ describe('transpose storage', () => {
 
   it('reads a stored value that is out of range or garbage safely', () => {
     const storage = memoryStorage();
-    storage.setItem('notefinder:transpose:a', '99');
-    storage.setItem('notefinder:transpose:b', 'loud');
+    storage.setItem('vozzify:transpose:a', '99');
+    storage.setItem('vozzify:transpose:b', 'loud');
 
     expect(readTranspose(storage, 'a')).toBe(12);
     expect(readTranspose(storage, 'b')).toBe(0);

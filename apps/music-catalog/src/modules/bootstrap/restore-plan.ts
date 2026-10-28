@@ -1,4 +1,4 @@
-import type { CatalogDataset } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
 import type { BootstrapState } from './bootstrap.repository.js';
 
 /**

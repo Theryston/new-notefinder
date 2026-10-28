@@ -1,7 +1,7 @@
 import {
   type RecordingSummary,
   recordingSummarySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /**
  * Minimal compact catalog result for tests, parsed against the protocol

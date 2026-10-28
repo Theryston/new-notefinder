@@ -59,12 +59,12 @@ importers:
       '@nestjs/throttler':
         specifier: ^6.7.1
         version: 6.7.1(@nestjs/common@12.1.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.1.0(@nestjs/common@12.1.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@12.1.0)(@standard-schema/spec@1.1.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
-      '@notefinder/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
       '@paralleldrive/cuid2':
         specifier: ^3.3.0
         version: 3.3.0
+      '@vozzify/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -177,7 +177,7 @@ importers:
 
   apps/music-catalog:
     dependencies:
-      '@notefinder/contracts':
+      '@vozzify/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       drizzle-orm:
@@ -249,12 +249,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(react-hook-form@7.89.0(@types/react@19.3.0)(react@19.2.8))(zod@4.6.5)
-      '@notefinder/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
       '@tanstack/react-query':
         specifier: ^5.104.0
         version: 5.104.0(react@19.2.8)
+      '@vozzify/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       better-auth:
         specifier: ^1.7.6
         version: 1.7.6(drizzle-kit@0.31.11(drizzle-orm@0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)(react@19.2.8))(pg@8.23.0)(zod@4.6.5))(drizzle-orm@0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)(react@19.2.8))(next@16.3.4(@playwright/test@1.63.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(server-only@0.0.1))(pg@8.23.0)(react@19.2.8)(react-dom@19.2.8(react@19.2.8))(vitest@4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(@vitest/expect@4.1.11)(happy-dom@21.0.3)(vite@8.3.1(@types/node@20.19.43)(tsx@4.23.15)))

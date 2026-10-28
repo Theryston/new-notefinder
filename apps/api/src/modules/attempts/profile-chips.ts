@@ -1,4 +1,4 @@
-import type { MostSungArtist, TrackVocalRange } from '@notefinder/contracts';
+import type { MostSungArtist, TrackVocalRange } from '@vozzify/contracts';
 import {
   type ArtistGroup,
   rankMostSungArtists,

@@ -1,4 +1,4 @@
-import { type Locale, trackProcessingStateSchema } from '@notefinder/contracts';
+import { type Locale, trackProcessingStateSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import type { Response } from 'supertest';
 import {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { userSitemapXml } from './user-sitemap-xml';
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 const updatedAt = '2026-10-14T12:00:00.000Z';
 
 const locs = (xml: string): string[] =>

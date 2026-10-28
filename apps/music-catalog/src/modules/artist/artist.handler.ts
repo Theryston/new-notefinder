@@ -1,7 +1,7 @@
 import {
   musicCatalogArtistSchema,
   musicCatalogGetArtistPayloadSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { ArtistService } from './artist.service.js';
 

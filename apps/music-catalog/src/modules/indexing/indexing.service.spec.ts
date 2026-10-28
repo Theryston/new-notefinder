@@ -1,4 +1,4 @@
-import type { BootstrapPhase } from '@notefinder/contracts';
+import type { BootstrapPhase } from '@vozzify/contracts';
 import type { MeilisearchIndex } from '../../integrations/meilisearch/meilisearch-index.js';
 import {
   RECORDINGS_INDEX,

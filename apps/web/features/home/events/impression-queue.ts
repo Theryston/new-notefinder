@@ -1,4 +1,4 @@
-import type { HomeRowImpressionEvent } from '@notefinder/contracts';
+import type { HomeRowImpressionEvent } from '@vozzify/contracts';
 
 export type QueuedImpression = Omit<HomeRowImpressionEvent, 'type'>;
 

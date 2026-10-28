@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import type { Queue } from 'bullmq';
 import {
   PERSONAL_HOME_FEED_QUEUE,

@@ -15,7 +15,7 @@ import {
   type PinTrackSearchResult,
   type PinTrackSummary,
   type UpdateEditorialPinBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   decodeTupleCursor,
   encodeTupleCursor,

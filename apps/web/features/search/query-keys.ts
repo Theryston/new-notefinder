@@ -1,4 +1,4 @@
-import { type SearchQuery, searchQuerySchema } from '@notefinder/contracts';
+import { type SearchQuery, searchQuerySchema } from '@vozzify/contracts';
 
 import { SEARCH_SUGGESTIONS_LIMIT } from './search-params';
 

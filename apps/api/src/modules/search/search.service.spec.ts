@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { searchResultSchema } from '@notefinder/contracts';
+import { searchResultSchema } from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { recordingSummary } from '../../../test/utils/recording-summaries.js';
 import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';

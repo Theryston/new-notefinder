@@ -1,4 +1,4 @@
-import { recordEventsResponseSchema } from '@notefinder/contracts';
+import { recordEventsResponseSchema } from '@vozzify/contracts';
 import type { Job } from 'bullmq';
 import { sql } from 'drizzle-orm';
 import request from 'supertest';

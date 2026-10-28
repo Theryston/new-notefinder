@@ -425,7 +425,7 @@ describe('createCacheHandlerFromEnv', () => {
 
     expect(createRedisClient).toHaveBeenCalledWith('redis://localhost:6380');
     expect([...store.data.keys()][0]).toMatch(
-      /^notefinder:web-cache:v1:build-1:entry:/,
+      /^vozzify:web-cache:v1:build-1:entry:/,
     );
   });
 

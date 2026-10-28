@@ -1,6 +1,6 @@
 /**
  * Auth rules shared by the API and the clients' forms. Kept free of Zod so
- * clients can import them (`@notefinder/contracts/auth-rules`) without
+ * clients can import them (`@vozzify/contracts/auth-rules`) without
  * shipping the schema library on first load.
  */
 

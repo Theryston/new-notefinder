@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { Artist } from '@notefinder/contracts';
+import type { Artist } from '@vozzify/contracts';
 import { and, asc, count, eq, gt } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {

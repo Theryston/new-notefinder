@@ -2,7 +2,7 @@ import {
   type PracticePreferences,
   practicePreferencesSchema,
   type UpdatePracticePreferencesBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

@@ -1,4 +1,4 @@
-import { trackContributorsPageSchema } from '@notefinder/contracts';
+import { trackContributorsPageSchema } from '@vozzify/contracts';
 import { trackContributors } from '../src/database/schema/track-contributors.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';

@@ -5,14 +5,14 @@
 
 ## Context
 
-notefinder replaces the legacy app (<https://github.com/theryston/notefinder>)
+vozzify replaces the legacy app (<https://github.com/theryston/notefinder>)
 on the same domain, so no legacy URL may return 404. The first plan was to
 import all legacy data keeping its IDs as primary keys, which made the new
 schema follow the legacy Prisma model: nullable columns the legacy rows need,
 enums copied 1:1, YouTube Music IDs as the catalog's identity.
 
 The catalog is changing architecture: tracks, artists and albums will come
-from notefinder's own database and search instead of YouTube Music, and every
+from vozzify's own database and search instead of YouTube Music, and every
 track will be reprocessed. Keeping legacy IDs and shapes for data that is
 rebuilt anyway only constrains the new design.
 

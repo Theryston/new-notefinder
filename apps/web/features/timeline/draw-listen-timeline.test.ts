@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { noteOn as sung } from '@/lib/note-fixtures';

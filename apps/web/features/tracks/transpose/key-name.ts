@@ -1,4 +1,4 @@
-import { PITCH_CLASS_NAMES, type TrackKey } from '@notefinder/contracts';
+import { PITCH_CLASS_NAMES, type TrackKey } from '@vozzify/contracts';
 
 import { transposeKey } from './transpose';
 

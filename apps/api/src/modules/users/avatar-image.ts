@@ -1,4 +1,4 @@
-import { AVATAR_MIME_TYPES, type AvatarMimeType } from '@notefinder/contracts';
+import { AVATAR_MIME_TYPES, type AvatarMimeType } from '@vozzify/contracts';
 import { z } from 'zod';
 import { ZodValidationException } from '../../common/zod/zod-validation.pipe.js';
 import { encodeWebp } from '../../integrations/image/image-encoder.js';

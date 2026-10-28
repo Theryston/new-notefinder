@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackProcessingState } from '@notefinder/contracts';
+import type { TrackProcessingState } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 

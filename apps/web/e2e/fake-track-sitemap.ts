@@ -22,7 +22,7 @@ export const sitemapTracks: FakeTrack[] = [
 const sitemapCovers = new Map([
   [
     'clx-sitemap-hot',
-    'https://files.notefinder.example/covers/clx-sitemap-hot.webp',
+    'https://files.vozzify.example/covers/clx-sitemap-hot.webp',
   ],
 ]);
 

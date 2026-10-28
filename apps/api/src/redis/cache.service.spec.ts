@@ -36,7 +36,7 @@ describe('CacheService', () => {
         id: 't1',
         title: 'Song',
       });
-      expect(redis.get).toHaveBeenCalledWith('notefinder:cache:tracks:t1');
+      expect(redis.get).toHaveBeenCalledWith('vozzify:cache:tracks:t1');
     });
 
     it('returns undefined on a miss', async () => {
@@ -51,7 +51,7 @@ describe('CacheService', () => {
       await expect(cache.get('tracks:t1', trackSchema)).resolves.toBe(
         undefined,
       );
-      expect(redis.unlink).toHaveBeenCalledWith('notefinder:cache:tracks:t1');
+      expect(redis.unlink).toHaveBeenCalledWith('vozzify:cache:tracks:t1');
     });
 
     it('drops values that are not valid JSON', async () => {
@@ -74,7 +74,7 @@ describe('CacheService', () => {
     it('stores JSON with a TTL in seconds', async () => {
       await cache.set('tracks:t1', { id: 't1', title: 'Song' }, 60);
       expect(redis.set).toHaveBeenCalledWith(
-        'notefinder:cache:tracks:t1',
+        'vozzify:cache:tracks:t1',
         '{"id":"t1","title":"Song"}',
         'EX',
         60,
@@ -114,7 +114,7 @@ describe('CacheService', () => {
         cache.wrap('tracks:t1', 60, trackSchema, async () => value),
       ).resolves.toBe(value);
       expect(redis.set).toHaveBeenCalledWith(
-        'notefinder:cache:tracks:t1',
+        'vozzify:cache:tracks:t1',
         JSON.stringify(value),
         'EX',
         60,
@@ -133,20 +133,20 @@ describe('CacheService', () => {
   describe('del', () => {
     it('unlinks a single key', async () => {
       await cache.del('tracks:t1');
-      expect(redis.unlink).toHaveBeenCalledWith('notefinder:cache:tracks:t1');
+      expect(redis.unlink).toHaveBeenCalledWith('vozzify:cache:tracks:t1');
       expect(redis.scan).not.toHaveBeenCalled();
     });
 
     it('scans and unlinks every key matching a pattern', async () => {
       redis.scan
-        .mockResolvedValueOnce(['7', ['notefinder:cache:tracks:a']])
+        .mockResolvedValueOnce(['7', ['vozzify:cache:tracks:a']])
         .mockResolvedValueOnce(['0', []]);
       await cache.del('tracks:*');
       expect(redis.scan).toHaveBeenNthCalledWith(
         1,
         '0',
         'MATCH',
-        'notefinder:cache:tracks:*',
+        'vozzify:cache:tracks:*',
         'COUNT',
         500,
       );
@@ -154,12 +154,12 @@ describe('CacheService', () => {
         2,
         '7',
         'MATCH',
-        'notefinder:cache:tracks:*',
+        'vozzify:cache:tracks:*',
         'COUNT',
         500,
       );
       expect(redis.unlink).toHaveBeenCalledTimes(1);
-      expect(redis.unlink).toHaveBeenCalledWith('notefinder:cache:tracks:a');
+      expect(redis.unlink).toHaveBeenCalledWith('vozzify:cache:tracks:a');
     });
 
     it('matches glob characters other than * literally', async () => {
@@ -168,7 +168,7 @@ describe('CacheService', () => {
       expect(redis.scan).toHaveBeenCalledWith(
         '0',
         'MATCH',
-        'notefinder:cache:users:a\\?b\\[c\\]:*',
+        'vozzify:cache:users:a\\?b\\[c\\]:*',
         'COUNT',
         500,
       );
@@ -185,7 +185,7 @@ describe('CacheService', () => {
       redis.set.mockResolvedValue('OK');
       await expect(cache.acquire('lock', 30)).resolves.toBe(true);
       expect(redis.set).toHaveBeenCalledWith(
-        'notefinder:cache:lock',
+        'vozzify:cache:lock',
         '1',
         'EX',
         30,

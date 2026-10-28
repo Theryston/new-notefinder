@@ -1,4 +1,4 @@
-import type { BootstrapPhase } from '@notefinder/contracts';
+import type { BootstrapPhase } from '@vozzify/contracts';
 import type { Logger } from '../../logger.js';
 import { SearchReadiness } from './search-readiness.js';
 

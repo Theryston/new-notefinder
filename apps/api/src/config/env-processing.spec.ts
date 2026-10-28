@@ -3,7 +3,7 @@ import { parseEnv } from './env.js';
 // The Processing and Bright Data settings, kept apart from env.spec.ts.
 const required = {
   NODE_ENV: 'test',
-  DATABASE_URL: 'postgres://user:pass@localhost:5432/notefinder',
+  DATABASE_URL: 'postgres://user:pass@localhost:5432/vozzify',
   REDIS_URL: 'redis://localhost:6379',
 };
 

@@ -1,4 +1,4 @@
-import { STREAK_MAX_HEARTBEAT_SECONDS } from '@notefinder/contracts';
+import { STREAK_MAX_HEARTBEAT_SECONDS } from '@vozzify/contracts';
 
 /** The target of a User who never picked one, as in the legacy app. */
 export const DEFAULT_TARGET_SECONDS = 5 * 60;

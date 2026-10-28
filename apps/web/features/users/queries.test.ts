@@ -1,4 +1,4 @@
-import { cacheTags, publicProfileSummarySchema } from '@notefinder/contracts';
+import { cacheTags, publicProfileSummarySchema } from '@vozzify/contracts';
 import { cacheTag } from 'next/cache';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

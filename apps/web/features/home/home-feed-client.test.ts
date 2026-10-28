@@ -1,4 +1,4 @@
-import { homeFeedPageSchema } from '@notefinder/contracts';
+import { homeFeedPageSchema } from '@vozzify/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { fetchHomePageInBrowser } from './home-feed-client';
 

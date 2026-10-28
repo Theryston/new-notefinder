@@ -20,7 +20,7 @@ export type CodePurpose = 'email-verification' | 'forget-password';
 // keep the original key, so countdowns already stored still apply.
 const storageKey = (email: string, purpose: CodePurpose) => {
   const scope = purpose === 'email-verification' ? '' : `${purpose}:`;
-  return `notefinder:otp-sent-at:${scope}${email.trim().toLowerCase()}`;
+  return `vozzify:otp-sent-at:${scope}${email.trim().toLowerCase()}`;
 };
 
 /**

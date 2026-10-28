@@ -4,7 +4,7 @@ import type {
   Mbid,
   MusicCatalogReleaseGroup,
   Recording,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   type CatalogEntity,
   type CatalogLookupType,

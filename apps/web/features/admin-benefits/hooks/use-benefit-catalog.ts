@@ -1,7 +1,7 @@
 'use client';
 
-import type { WriteBenefitBody } from '@notefinder/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { WriteBenefitBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { isApiError } from '@/lib/api/api-error';

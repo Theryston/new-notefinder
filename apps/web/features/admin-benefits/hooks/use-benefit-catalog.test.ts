@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-import type { AdminBenefits, WriteBenefitBody } from '@notefinder/contracts';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { AdminBenefits, WriteBenefitBody } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';

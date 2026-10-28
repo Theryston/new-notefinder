@@ -3,7 +3,7 @@ import {
   TRACK_PROCESSING_STATUSES,
   TRACK_PROCESSING_STEPS,
   TRACK_PROCESSING_VIDEO_SOURCES,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { and, eq, type SQL, sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,

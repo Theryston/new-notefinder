@@ -1,5 +1,5 @@
 import type { TestingModuleBuilder } from '@nestjs/testing';
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import type { z } from 'zod';
 import { REFRESH_PERSONAL_HOME_FEED_JOB } from '../src/modules/home/home-personal.job.js';
 import { PersonalHomeProcessor } from '../src/modules/home/home-personal.processor.js';

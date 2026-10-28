@@ -1,4 +1,4 @@
-import type { TrackProcessingVideoSource } from '@notefinder/contracts';
+import type { TrackProcessingVideoSource } from '@vozzify/contracts';
 
 // What a Processing stores as its steps run (CONTEXT.md "Processing"). A retry
 // keeps the outputs of the failed run, so the steps that already ran are not

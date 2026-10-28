@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { trackProcessingStateSchema } from '@notefinder/contracts';
+import { trackProcessingStateSchema } from '@vozzify/contracts';
 import { TrackContributorRepository } from './track-contributor.repository.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import { TrackProcessingService } from './track-processing.service.js';

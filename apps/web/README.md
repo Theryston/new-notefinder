@@ -1,8 +1,8 @@
-# notefinder web
+# vozzify web
 
-Next.js web client for notefinder: search a song, see the exact vocal notes on
+Next.js web client for vozzify: search a song, see the exact vocal notes on
 a timeline synced with playback and get real-time pitch feedback from your
-mic. All data comes from the notefinder API (`apps/api`).
+mic. All data comes from the vozzify API (`apps/api`).
 
 ## Running locally
 

@@ -1,4 +1,4 @@
-import type { HomeFeedPage } from '@notefinder/contracts';
+import type { HomeFeedPage } from '@vozzify/contracts';
 import { cookies } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';

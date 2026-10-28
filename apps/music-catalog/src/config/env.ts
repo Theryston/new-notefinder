@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { catalogDatasetSchema } from '@notefinder/contracts';
+import { catalogDatasetSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 
 // Long enough that a key can't be guessed, and that the local placeholder in

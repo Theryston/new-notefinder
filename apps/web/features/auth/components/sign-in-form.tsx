@@ -1,7 +1,7 @@
 'use client';
 
-import type { SignInBody } from '@notefinder/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { SignInBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,7 +30,7 @@ import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
 
 const signInResolver = lazyResolver<SignInBody>(() =>
-  import('@notefinder/contracts').then((m) => m.signInBodySchema),
+  import('@vozzify/contracts').then((m) => m.signInBodySchema),
 );
 
 type SignInError = AuthErrorCode | 'GOOGLE';

@@ -1,4 +1,4 @@
-import { publicProfileSchema } from '@notefinder/contracts';
+import { publicProfileSchema } from '@vozzify/contracts';
 import { useAuthSpec } from './utils/auth-spec.js';
 import { createUser, createUserFollow } from './utils/factories.js';
 

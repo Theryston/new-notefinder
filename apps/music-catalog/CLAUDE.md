@@ -35,7 +35,7 @@ MBID, for the API's metadata import.
 
 Stack: Node/TypeScript **without Nest**, ESM, `ws`, Drizzle ORM + PostgreSQL
 (`pg`), Meilisearch (its official JS client, behind `integrations/`), Zod
-(protocol schemas come from `@notefinder/contracts`), Vitest, Testcontainers. Not a public API: it has no OpenAPI, no versioned URLs and no
+(protocol schemas come from `@vozzify/contracts`), Vitest, Testcontainers. Not a public API: it has no OpenAPI, no versioned URLs and no
 users; only trusted services with an API key connect.
 
 ## Commands
@@ -198,7 +198,7 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
 
 - **Handler** (`*.handler.ts`): the WebSocket counterpart of a controller. It
   is built with `defineHandler({ type, payload, result, run })` from `ws/`,
-  using the payload and result schemas from `@notefinder/contracts`, and
+  using the payload and result schemas from `@vozzify/contracts`, and
   calls one service method. No business rules, no Drizzle. `defineHandler`
   validates the payload (`VALIDATION_FAILED`) and parses the result with the
   contract schema, so no extra field ever leaks to a client.
@@ -228,7 +228,7 @@ test/                     e2e specs + helpers (test server, ws client, Testconta
 - `tsx` runs the TypeScript in dev and for `db:migrate`; production runs the
   output of `tsc` (`dist/`).
 
-## Protocol (`@notefinder/contracts`, `music-catalog.ts`, `music-catalog-recording.ts` and `music-catalog-search.ts`)
+## Protocol (`@vozzify/contracts`, `music-catalog.ts`, `music-catalog-recording.ts` and `music-catalog-search.ts`)
 
 The schemas and types live in contracts and are the only definition of the
 protocol; never redeclare them here. They are **private**: not part of the
@@ -551,7 +551,7 @@ nub run infra:up
 ```
 
 Dropping only the volume works too
-(`docker volume rm notefinder_music-catalog-postgres-data`), but `-v` drops
+(`docker volume rm vozzify_music-catalog-postgres-data`), but `-v` drops
 every dev volume (the API's database included). Never run either against a
 database that holds anything worth keeping.
 
@@ -604,7 +604,7 @@ Processing, never read from the catalog.
 After the first import, every change to the MusicBrainz tables reaches the
 `recordings` index through the outbox, while the service stays live:
 
-- **Triggers** (`sync-tracked-tables.ts`): one `notefinder_sync_<table>`
+- **Triggers** (`sync-tracked-tables.ts`): one `vozzify_sync_<table>`
   trigger per tracked table writes the affected Recording ids (with the MBID
   each had then) to `music_catalog.recording_outbox`. Both the `NEW` and the
   `OLD` row are enqueued, so deletes and moved links are caught; re-enqueueing
@@ -689,7 +689,7 @@ could not start there anyway).
   file under `src/database/schema/musicbrainz/`) and only read from.
 - **Token** (`MBSLAVE_MUSICBRAINZ_TOKEN` or
   `MBSLAVE_MUSICBRAINZ_TOKEN_FILE`): the 40-character MetaBrainz access
-  token, free for non-commercial use (notefinder is non-commercial, decided
+  token, free for non-commercial use (vozzify is non-commercial, decided
   after the spike). Required in `full` mode, validated at container startup
   (`assertReplicationToken`, before any download); the dump download itself
   needs no token. The file variant suits Docker secrets. The compose file
@@ -1168,10 +1168,10 @@ event; grep the quoted messages).
 
 ### Licence
 
-notefinder is **non-commercial**, which is what the free MetaBrainz token
+vozzify is **non-commercial**, which is what the free MetaBrainz token
 requires. The replication packets and the derived dump (tags and genres) are
 **CC BY-NC-SA 3.0**: attribution is owed wherever genres and tags are shown (web
-work, outside this service), and if notefinder ever becomes commercial the
+work, outside this service), and if vozzify ever becomes commercial the
 MetaBrainz tier and that data must be revisited first (ADR 0002). This is not
 legal advice.
 

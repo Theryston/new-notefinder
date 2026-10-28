@@ -1,9 +1,9 @@
+import { queryOptions } from '@tanstack/react-query';
 import {
   type ProfileFollow,
   profileFollowSchema,
   publicProfileSchema,
-} from '@notefinder/contracts';
-import { queryOptions } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 import { z } from 'zod';
 
 import { browserApi } from '@/lib/api/browser';

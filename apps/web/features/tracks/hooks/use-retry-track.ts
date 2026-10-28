@@ -1,7 +1,7 @@
 'use client';
 
-import { trackProcessingStateSchema } from '@notefinder/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { trackProcessingStateSchema } from '@vozzify/contracts';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 

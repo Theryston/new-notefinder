@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackDetail } from '@notefinder/contracts';
+import type { TrackDetail } from '@vozzify/contracts';
 import { Share2Icon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';

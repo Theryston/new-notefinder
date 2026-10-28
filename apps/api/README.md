@@ -1,6 +1,6 @@
-# notefinder API
+# vozzify API
 
-NestJS REST API behind notefinder: tracks, vocal notes, artists, albums,
+NestJS REST API behind vozzify: tracks, vocal notes, artists, albums,
 users and practice stats. It serves the web app and, later, the mobile app.
 Every route lives under `/v1`.
 
@@ -32,7 +32,7 @@ Drizzle ORM on Postgres. Run these from `apps/api`:
   never run on boot; production runs `node dist/database/migrate.js` (the
   image needs the `drizzle/` folder).
 - `nub run db:seed` upserts the development user you can sign in as
-  (`seed@notefinder.dev` / `notefinder-seed`). Development only: safe to
+  (`seed@vozzify.dev` / `vozzify-seed`). Development only: safe to
   re-run, refuses `NODE_ENV=production`. Seed data grows with the features
   that add tables.
 - `nub run db:studio` opens Drizzle Studio.
@@ -49,8 +49,8 @@ Uploads (Avatars) go to an S3-compatible bucket through `StorageService`
 (`src/integrations/storage`): `putPublicObject({ key, body, contentType })`
 stores a publicly readable object and `publicUrl(key)` gives the URL it is
 served from. Locally that is the MinIO started by `nub run infra:up` (bucket
-created on start; console at <http://localhost:9001>, user `notefinder`,
-password `notefinder-local`); production uses AWS S3 behind a public files
+created on start; console at <http://localhost:9001>, user `vozzify`,
+password `vozzify-local`); production uses AWS S3 behind a public files
 domain. The `S3_*` variables in [`.env.example`](./.env.example) go together:
 the API refuses to boot when they are incomplete or missing. E2E tests start
 their own MinIO; without Docker, point them at a server dedicated to tests

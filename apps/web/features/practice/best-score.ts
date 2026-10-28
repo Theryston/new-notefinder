@@ -1,7 +1,7 @@
 import type {
   BestPracticeScores,
   PracticeDifficulty,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /**
  * The User's best saved score at a difficulty, or null where no run was

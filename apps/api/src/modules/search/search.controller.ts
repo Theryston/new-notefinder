@@ -8,7 +8,7 @@ import {
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { seconds, Throttle } from '@nestjs/throttler';
-import { type SearchResult, searchResultSchema } from '@notefinder/contracts';
+import { type SearchResult, searchResultSchema } from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { SearchService } from './search.service.js';

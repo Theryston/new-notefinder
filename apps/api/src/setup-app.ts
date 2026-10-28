@@ -90,6 +90,6 @@ export const createOpenApiDocument = (app: INestApplication): OpenAPIObject =>
   cleanupOpenApiDoc(
     SwaggerModule.createDocument(
       app,
-      new DocumentBuilder().setTitle('notefinder API').setVersion('1').build(),
+      new DocumentBuilder().setTitle('vozzify API').setVersion('1').build(),
     ),
   );

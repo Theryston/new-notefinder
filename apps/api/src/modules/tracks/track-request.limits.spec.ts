@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { CreateTrackBody } from '@notefinder/contracts';
+import type { CreateTrackBody } from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { recordingFixture } from '../../../test/utils/recording-fixtures.js';
 import { DATABASE, DATABASE_POOL } from '../../database/database.js';

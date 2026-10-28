@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { TrackTrendingQueueService } from './track-trending-queue.service.js';
 import { TrackViewRepository } from './track-view.repository.js';
 import { TracksService } from './tracks.service.js';

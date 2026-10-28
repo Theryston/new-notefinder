@@ -1,4 +1,4 @@
-import { apiErrorSchema } from '@notefinder/contracts';
+import { apiErrorSchema } from '@vozzify/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CreateTrackBody } from '@notefinder/contracts';
+import type { CreateTrackBody } from '@vozzify/contracts';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
 import type { RequestedTrack } from './track-request.service.js';
 import { TrackRequestLauncherService } from './track-request-launcher.service.js';

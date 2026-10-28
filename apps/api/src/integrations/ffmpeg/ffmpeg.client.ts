@@ -52,7 +52,7 @@ export class FfmpegClient {
     outputName: string,
     options: string[],
   ): Promise<Uint8Array<ArrayBuffer>> {
-    const dir = await mkdtemp(join(tmpdir(), 'notefinder-audio-'));
+    const dir = await mkdtemp(join(tmpdir(), 'vozzify-audio-'));
     try {
       const inputPath = join(dir, inputName);
       const outputPath = join(dir, outputName);

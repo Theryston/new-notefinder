@@ -5,7 +5,7 @@ import type {
   Plan,
   PlanCurrency,
   PlanOffer,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { ArrowRightIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';

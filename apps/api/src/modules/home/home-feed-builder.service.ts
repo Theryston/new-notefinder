@@ -8,7 +8,7 @@ import type {
   HomeRowTitle,
   HomeTrack,
   Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { type StoredHomeFeed } from './home-feed.js';
 import { composeEntityRows, composeHomeRows } from './home-feed-composer.js';
 import {

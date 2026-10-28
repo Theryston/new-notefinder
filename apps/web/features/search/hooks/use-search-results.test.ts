@@ -1,5 +1,5 @@
-import { SEARCH_DEFAULT_LIMIT } from '@notefinder/contracts';
 import { QueryClient } from '@tanstack/react-query';
+import { SEARCH_DEFAULT_LIMIT } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/env/client', () => ({

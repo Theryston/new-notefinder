@@ -13,7 +13,7 @@ async function open(
 ) {
   await page.addInitScript(() => {
     localStorage.setItem(
-      'notefinder.singing-aids.v1',
+      'vozzify.singing-aids.v1',
       JSON.stringify({ countIn: false, guideMelody: false, offset: 0 }),
     );
   });
@@ -237,9 +237,9 @@ test('instrumental tracks hydrate settings and preserve the untouched preference
   page,
 }) => {
   await page.addInitScript(() => {
-    if (!localStorage.getItem('notefinder.scoring.v1'))
+    if (!localStorage.getItem('vozzify.scoring.v1'))
       localStorage.setItem(
-        'notefinder.scoring.v1',
+        'vozzify.scoring.v1',
         JSON.stringify({ difficulty: 'HARD', octaveMode: 'EXACT' }),
       );
   });
@@ -287,7 +287,7 @@ test('saved exact octave mode judges a reloaded track before Settings is opened'
 }) => {
   await page.addInitScript(() => {
     localStorage.setItem(
-      'notefinder.scoring.v1',
+      'vozzify.scoring.v1',
       JSON.stringify({ difficulty: 'HARD', octaveMode: 'EXACT' }),
     );
   });

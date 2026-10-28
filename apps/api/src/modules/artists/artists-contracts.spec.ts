@@ -1,7 +1,4 @@
-import {
-  artistSchema,
-  resourceMovedDetailsSchema,
-} from '@notefinder/contracts';
+import { artistSchema, resourceMovedDetailsSchema } from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
 // Locks the artist header contract: what the detail endpoint answers, and

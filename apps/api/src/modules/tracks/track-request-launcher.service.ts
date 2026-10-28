@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CreateTrackBody } from '@notefinder/contracts';
+import type { CreateTrackBody } from '@vozzify/contracts';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import {
   type RequestedTrack,

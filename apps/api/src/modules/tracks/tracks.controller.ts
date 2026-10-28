@@ -33,7 +33,7 @@ import {
   trackDetailSchema,
   trackNotesSchema,
   trackProcessingStateSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';

@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import {
   DAILY_PRACTICE_TARGET_SECONDS,
   updateMeBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { createOpenApiDocument } from '../../setup-app.js';
 import { createZodDto } from './create-zod-dto.js';
 

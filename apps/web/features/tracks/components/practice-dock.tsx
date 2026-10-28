@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackKey } from '@notefinder/contracts';
+import type { TrackKey } from '@vozzify/contracts';
 import { SettingsIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';

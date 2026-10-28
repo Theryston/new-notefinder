@@ -1,6 +1,6 @@
 'use client';
 
-import type { PracticeAttemptHistoryItem } from '@notefinder/contracts';
+import type { PracticeAttemptHistoryItem } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';

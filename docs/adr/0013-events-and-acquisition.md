@@ -46,7 +46,7 @@ default partition. The operator creates the next month's partition with the
 month's deploy until a scheduled job does it (out of scope, like retention).
 
 **The visitor id lives in local storage, not a cookie.** The browser keeps a
-random id under `notefinder:visitor-id` and sends it with every batch. No
+random id under `vozzify:visitor-id` and sends it with every batch. No
 cookie is set, so no consent banner is needed. The id is stored on the User at
 sign-up, joining earlier events to the account without a backfill. Browsers
 that clear storage after days without a visit lose attribution for late

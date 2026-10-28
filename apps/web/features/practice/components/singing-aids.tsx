@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 

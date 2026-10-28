@@ -1,4 +1,4 @@
-import type { MusicCatalogRequestType } from '@notefinder/contracts';
+import type { MusicCatalogRequestType } from '@vozzify/contracts';
 import type { z } from 'zod';
 import { CatalogError } from '../errors/catalog-error.js';
 import { formatIssues } from './envelope.js';
@@ -20,7 +20,7 @@ type HandlerSpec<TPayload extends z.ZodType, TResult extends z.ZodType> = {
  * Ties a request type to its contract: the payload is validated before `run`
  * sees it (a bad one is `VALIDATION_FAILED`), and the result is parsed with
  * the contract's result schema, so a field the schema doesn't declare never
- * reaches the client. Both schemas come from `@notefinder/contracts`.
+ * reaches the client. Both schemas come from `@vozzify/contracts`.
  */
 export const defineHandler = <
   TPayload extends z.ZodType,

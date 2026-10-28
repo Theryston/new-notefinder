@@ -1,4 +1,4 @@
-import { createTrackResultSchema, type Recording } from '@notefinder/contracts';
+import { createTrackResultSchema, type Recording } from '@vozzify/contracts';
 import { asc, eq } from 'drizzle-orm';
 import {
   albumArtists,

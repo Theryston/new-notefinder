@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { CreateTrackBody } from '@notefinder/contracts';
+import type { CreateTrackBody } from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { TrackMetadataQueueService } from './track-metadata-queue.service.js';
 import { TrackRequestFlowService } from './track-request-flow.service.js';

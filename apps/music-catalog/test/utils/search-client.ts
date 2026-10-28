@@ -1,7 +1,7 @@
 import {
   type MusicCatalogSearchResponse,
   musicCatalogSearchResponseSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { TestClient } from './ws-client.js';
 
 /**

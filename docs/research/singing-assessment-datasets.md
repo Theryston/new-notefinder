@@ -29,7 +29,7 @@ synthetic-audio defects**. These targets are not interchangeable. Availability
 of a repository also does not establish commercial permission for its audio,
 annotations, weights and dependencies.
 
-| Resource | Supervision and population | Best use for notefinder | Commercial position found |
+| Resource | Supervision and population | Best use for vozzify | Commercial position found |
 | --- | --- | --- | --- |
 | VocalSet | About 10 hours, 20 professional singers, 17 techniques, five vowels, exercises and excerpts | Train/test technique descriptors; controlled acoustic experiments | CC BY 4.0 provenance; attribute creators and verify chosen release |
 | GTSinger | 80.59 hours, 20 skilled singers, nine languages; six phoneme-level technique labels | Research multilingual technique recognition and contextual labels | Dataset CC BY-NC-SA 4.0; additional permission needed for commercial use |
@@ -295,4 +295,4 @@ part of this research.
 These recommendations are proposed product/research choices. No reviewed
 resource establishes a universal objective score for good singing, a reliable
 consumer-microphone measurement of muscular tension, or validated performance
-across the full notefinder audience without additional evaluation.
+across the full vozzify audience without additional evaluation.

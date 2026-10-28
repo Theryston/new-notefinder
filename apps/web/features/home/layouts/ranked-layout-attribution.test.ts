@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import type { HomeRankedRow } from '@notefinder/contracts';
+import type { HomeRankedRow } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -12,7 +12,7 @@ import { RankedLayout } from './ranked-layout';
 vi.mock('@/lib/i18n/navigation', async () => {
   const { createElement: create } = await import('react');
   const localize = (path: string) =>
-    new URL(path, 'https://notefinder.test').pathname;
+    new URL(path, 'https://vozzify.test').pathname;
   return {
     Link: ({
       href,

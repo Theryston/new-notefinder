@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { cacheTags, LOCALES } from '@notefinder/contracts';
+import { cacheTags, LOCALES } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { PersonalHomeQueueService } from '../home/home-personal-queue.service.js';
 import { UsersService } from '../users/users.service.js';

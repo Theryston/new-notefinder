@@ -1,4 +1,4 @@
-import type { AlbumTracksPage } from '@notefinder/contracts';
+import type { AlbumTracksPage } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 
