@@ -13,7 +13,7 @@ export const instant = false;
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('plans');
   return {
-    title: t('title'),
+    title: t('metaTitle'),
     description: t('description'),
     alternates: localeAlternates(await getLocale(), '/plans'),
   };
@@ -27,13 +27,10 @@ export default async function PlansPage() {
   ]);
   const catalog = await getPlanCatalog(locale).catch(() => null);
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl space-y-3">
-        <h1 className="font-extrabold text-4xl tracking-tighter md:text-5xl">
-          {t('title')}
-        </h1>
-        <p className="text-lg text-muted-foreground">{t('description')}</p>
-        <p className="text-muted-foreground text-sm">{t('disclosure')}</p>
+    <div className="space-y-7 pt-4 md:pt-6">
+      <header className="max-w-2xl space-y-2">
+        <h1 className="font-extrabold text-4xl tracking-tight">{t('title')}</h1>
+        <p className="text-base text-muted-foreground">{t('intro')}</p>
       </header>
       <PlanComparison locale={locale} catalog={catalog} />
     </div>

@@ -83,6 +83,21 @@ describe('Stripe billing network boundary', () => {
       'https://api.stripe.com/v1/subscriptions/sub_test?expand[]=latest_invoice',
     );
   });
+  it('expires an abandoned checkout through the provider before replacement', async () => {
+    const expired = { ...session, status: 'expired', url: null };
+    network.mockResolvedValueOnce(Response.json(expired));
+    expect(
+      await new StripeBillingService(env()).expireCheckout('cs_test'),
+    ).toEqual(expired);
+    expect(network).toHaveBeenCalledWith(
+      'https://api.stripe.com/v1/checkout/sessions/cs_test/expire',
+      expect.objectContaining({ method: 'POST', body: '' }),
+    );
+    network.mockResolvedValueOnce(new Response('{}', { status: 400 }));
+    await expect(
+      new StripeBillingService(env()).expireCheckout('cs_test'),
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+  });
   it('reconciles lost checkout responses through paginated provider session records', async () => {
     network
       .mockResolvedValueOnce(

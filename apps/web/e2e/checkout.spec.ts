@@ -1,113 +1,7 @@
 import type { Subscription } from '@notefinder/contracts';
 import { expect, test } from '@playwright/test';
 import { ADA, mockAuthApi } from './auth-api-mock';
-import { defaultPlanCatalog } from './fake-plans-api';
 import { messages } from './messages';
-
-for (const locale of ['en', 'pt-BR'] as const) {
-  for (const cycle of ['monthly', 'annual'] as const) {
-    test(`checkout discloses future benefits and sends the ${locale} ${cycle} catalog offer`, async ({
-      page,
-    }) => {
-      await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
-      const catalog = defaultPlanCatalog(locale);
-      const pro = catalog.plans.find((plan) => plan.id === 'pro');
-      if (!pro) throw new Error('Expected Pro');
-      pro.saleAvailable = true;
-      await page.route('**/v1/plans?*', (route) =>
-        route.fulfill({ json: catalog }),
-      );
-      let requested: unknown;
-      await page.route('**/v1/me/subscription/checkout', async (route) => {
-        if (route.request().method() === 'OPTIONS')
-          return route.fulfill({
-            status: 204,
-            headers: {
-              'access-control-allow-origin': '*',
-              'access-control-allow-headers': 'content-type',
-              'access-control-allow-methods': 'POST',
-            },
-          });
-        requested = route.request().postDataJSON();
-        await route.fulfill({
-          json: {
-            action: 'checkout',
-            url: 'https://checkout.stripe.com/c/pay/nf-test',
-          },
-        });
-      });
-      await page.route('https://checkout.stripe.com/**', (route) =>
-        route.fulfill({ body: '<html></html>', contentType: 'text/html' }),
-      );
-      await page.goto(
-        `/${locale}/subscribe?plan=pro&cycle=${cycle}&offer=${cycle}`,
-      );
-      const t = messages[locale].billing;
-      await expect(
-        page.getByRole('heading', {
-          name: t.checkoutTitle.replace('{plan}', 'Pro'),
-        }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('list').getByText(t.comingSoon, { exact: false }),
-      ).toHaveCount(7);
-      const pay = page.getByRole('button', { name: t.pay });
-      await expect(pay).toBeDisabled();
-      await page.getByRole('checkbox').check();
-      await pay.click();
-      await expect(page).toHaveURL(/checkout.stripe.com/);
-      expect(requested).toEqual({
-        planId: 'pro',
-        offerId: cycle,
-        cycle,
-        locale,
-        comingSoonAcknowledged: true,
-      });
-    });
-  }
-}
-test('sign-in and username onboarding preserve the intended offer', async ({
-  page,
-}) => {
-  let signedIn = false;
-  await mockAuthApi(page, {
-    overrides: {
-      '/sign-in/email': () => {
-        signedIn = true;
-        return { body: { token: 'token', user: ADA } };
-      },
-      '/get-session': () => ({
-        body: signedIn ? { session: { id: 'session' }, user: ADA } : null,
-      }),
-    },
-  });
-  const path = '/subscribe?plan=pro&cycle=annual&offer=annual';
-  await page.goto(`/en${path}`);
-  await expect(page).toHaveURL(/sign-in/);
-  expect(new URL(page.url()).searchParams.get('redirectTo')).toBe(path);
-  await page
-    .getByLabel(messages.en.auth.signIn.emailOrUsername.label)
-    .fill(ADA.email);
-  await page
-    .getByLabel(messages.en.auth.fields.password.label, { exact: true })
-    .fill('correct-password');
-  await page
-    .getByRole('button', { name: messages.en.auth.signIn.submit, exact: true })
-    .click();
-  await expect(page).toHaveURL(/setup-username/);
-  expect(new URL(page.url()).searchParams.get('redirectTo')).toBe(path);
-});
-
-test('stale offers remain recoverable before payment', async ({ page }) => {
-  await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
-  await page.route('**/v1/plans?*', (route) =>
-    route.fulfill({ json: defaultPlanCatalog('en') }),
-  );
-  await page.goto('/en/subscribe?plan=pro&cycle=annual&offer=stale');
-  await expect(page.getByRole('main').getByRole('alert')).toContainText(
-    messages.en.billing.unavailable,
-  );
-});
 
 for (const status of ['pending', 'confirmed', 'unsuccessful'] as const) {
   test(`private subscription shows ${status} in its contracted currency`, async ({
@@ -136,8 +30,8 @@ for (const status of ['pending', 'confirmed', 'unsuccessful'] as const) {
     await expect(
       page.getByText(messages.en.billing[status], { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText('Contract currency: BRL')).toBeVisible();
-    await expect(page.getByText(/R\$19.90/)).toBeVisible();
+    await expect(page.getByText('BRL', { exact: true })).toBeVisible();
+    await expect(page.getByText('R$19.90', { exact: true })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
@@ -257,7 +151,9 @@ test('switching the summary language retains contract currency with a clean cons
     route.fulfill({ status: 201, json: { recorded: true } }),
   );
   await page.goto('/en/subscription?result=pending');
-  await expect(page.getByText('Contract currency: USD')).toBeVisible();
+  await expect(
+    page.getByRole('main').getByText('USD', { exact: true }),
+  ).toBeVisible();
   await page
     .getByRole('contentinfo')
     .getByRole('group', { name: messages.en.header.preferences.language })
@@ -270,10 +166,10 @@ test('switching the summary language retains contract currency with a clean cons
     page.getByText(messages['pt-BR'].billing.confirmed, { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText(
-      messages['pt-BR'].billing.contractCurrency.replace('{currency}', 'USD'),
-    ),
+    page.getByRole('main').getByText('USD', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/US\$.*3,50/)).toBeVisible();
+  await expect(
+    page.getByRole('main').getByText('US$ 3,50', { exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

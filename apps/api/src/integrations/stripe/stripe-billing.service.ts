@@ -135,6 +135,14 @@ export class StripeBillingService {
       await this.request(`checkout/sessions/${encodeURIComponent(id)}`),
     );
   }
+  async expireCheckout(id: string): Promise<StripeCheckout> {
+    return sessionSchema.parse(
+      await this.request(
+        `checkout/sessions/${encodeURIComponent(id)}/expire`,
+        {},
+      ),
+    );
+  }
   async getSubscription(id: string): Promise<StripeSubscription> {
     return subscriptionSchema.parse(
       await this.request(

@@ -1169,22 +1169,45 @@
     }
   },
   "plans": {
-    "title": "Find your plan",
+    "title": "Your voice, your pace.",
     "description": "Compare what is available today and what each plan has planned.",
     "disclosure": "Benefits marked coming soon describe future functionality. Core singing stays available without paid membership.",
-    "freePrice": "Free, always",
+    "freePrice": "No subscription. No practice limits.",
     "annualCharge": "{amount} billed annually",
     "monthlyCharge": "{amount} billed monthly",
     "currency": "Offers in {currency}. Prices are set independently for each currency.",
     "comingSoon": "Coming soon",
     "available": "Available",
-    "startSinging": "Start singing",
+    "startSinging": "Continue for free",
     "checkoutPending": "Subscriptions will open here when checkout is available.",
     "noOffers": "No billing cycles are currently offered.",
     "error": "Plans could not be loaded. Please try again.",
     "retry": "Try again",
     "empty": "There are no plans to compare right now.",
-    "salesPaused": "New subscriptions are currently unavailable."
+    "salesPaused": "New subscriptions are currently unavailable.",
+    "metaTitle": "Plans",
+    "intro": "The essentials are free. The next step is yours.",
+    "includedIn": "Included in {plan}",
+    "includedBenefits": "What's included",
+    "includesFree": "Everything in the free plan",
+    "nextStep": "Your next step",
+    "choosePlan": "Choose {plan}",
+    "chooseCycle": "Choose your billing cycle",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "perMonth": "/month",
+    "savingsMonths": "{count, plural, one {Save # month} other {Save # months}}",
+    "comingNext": "What's next",
+    "upcomingCount": "{count, plural, one {# feature in development} other {# features in development}}",
+    "upcomingDisclosure": "Features marked coming soon are still in development.",
+    "preview": {
+      "illustration": "Illustration of the free vocal-note timeline",
+      "title": "Your next song",
+      "description": "Follow every note while you sing.",
+      "findSong": "Find a song to sing",
+      "currentNote": "Current note",
+      "microphone": "Microphone"
+    }
   },
   "adminPlans": {
     "title": "Plans and prices",
@@ -1260,16 +1283,10 @@
   "billing": {
     "chooseAnnual": "Choose annual",
     "chooseMonthly": "Choose monthly",
-    "checkoutTitle": "Subscribe to {plan}",
     "annualCharge": "{amount} charged annually",
     "monthlyCharge": "{amount} charged monthly",
-    "immediateBilling": "Payment starts immediately. You will continue to Stripe to pay securely.",
-    "available": "Available",
-    "comingSoon": "Coming soon",
-    "acknowledge": "I understand that benefits marked coming soon are not available yet and that billing starts immediately.",
     "checkoutError": "Checkout could not start. The offer may have changed. Review the plans and try again.",
-    "redirecting": "Opening Stripe…",
-    "pay": "Continue to payment",
+    "redirecting": "Loading…",
     "unavailable": "This offer is no longer available. Please choose a current offer.",
     "viewPlans": "View plans",
     "loading": "Loading subscription…",
@@ -1284,7 +1301,45 @@
     "periodStart": "Current period started on {date}",
     "periodEnd": "Current period ends on {date}",
     "noSubscription": "You have no paid subscription.",
-    "checkoutHeading": "Subscribe",
-    "benefitStatus": "{benefit} · {status}"
+    "subscription": {
+      "intro": "Your plan, payment and subscription details in one place.",
+      "planSummary": "Plan summary",
+      "currentPlan": "Current plan",
+      "freePlan": "Free",
+      "freeCaption": "Keep exploring the music catalog.",
+      "findSong": "Find a song",
+      "monthlyUnit": "/ month",
+      "annualUnit": "/ year",
+      "currentPeriod": "Current period",
+      "overview": "Overview",
+      "periodStart": "Period started",
+      "periodEnd": "Current period ends",
+      "nextCharge": "Next payment",
+      "dateUnavailable": "Not available yet",
+      "billingCycle": "Billing cycle",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "contractCurrency": "Contract currency",
+      "endingDescription": "Your subscription will end at the close of this period.",
+      "states": {
+        "active": "Active",
+        "ending": "Ends after this period",
+        "pending": "Awaiting confirmation",
+        "unsuccessful": "Not active",
+        "free": "No subscription"
+      },
+      "titles": {
+        "active": "Everything ready for your next song.",
+        "ending": "Your current period is still available.",
+        "pending": "Your payment is being confirmed.",
+        "unsuccessful": "Your payment was not completed.",
+        "free": "Your voice already has a place here."
+      },
+      "payment": {
+        "confirmed": "Payment confirmed",
+        "pending": "Awaiting payment confirmation",
+        "unsuccessful": "Payment not confirmed"
+      }
+    }
   }
 }

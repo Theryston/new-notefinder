@@ -1169,22 +1169,45 @@
     }
   },
   "plans": {
-    "title": "Encontre seu plano",
+    "title": "Seu canto, no seu ritmo.",
     "description": "Compare o que está disponível hoje e o que cada plano está preparando.",
     "disclosure": "Benefícios marcados como em breve descrevem funcionalidades futuras. O canto básico continua disponível sem assinatura paga.",
-    "freePrice": "Grátis, sempre",
+    "freePrice": "Sem assinatura. Sem limite de prática.",
     "annualCharge": "{amount} cobrados por ano",
     "monthlyCharge": "{amount} cobrados por mês",
     "currency": "Ofertas em {currency}. Os preços são definidos de forma independente para cada moeda.",
     "comingSoon": "Em breve",
     "available": "Disponível",
-    "startSinging": "Começar a cantar",
+    "startSinging": "Continuar no Grátis",
     "checkoutPending": "As assinaturas serão abertas aqui quando o pagamento estiver disponível.",
     "noOffers": "Nenhum ciclo de cobrança está disponível no momento.",
     "error": "Não foi possível carregar os planos. Tente novamente.",
     "retry": "Tentar novamente",
     "empty": "Não há planos para comparar no momento.",
-    "salesPaused": "Novas assinaturas estão indisponíveis no momento."
+    "salesPaused": "Novas assinaturas estão indisponíveis no momento.",
+    "metaTitle": "Planos",
+    "intro": "O essencial é grátis. O próximo passo é seu.",
+    "includedIn": "Incluído no {plan}",
+    "includedBenefits": "O que está incluído",
+    "includesFree": "Tudo do plano Grátis",
+    "nextStep": "Seu próximo passo",
+    "choosePlan": "Escolher {plan}",
+    "chooseCycle": "Escolha seu ciclo de cobrança",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "perMonth": "/mês",
+    "savingsMonths": "{count, plural, one {# mês de economia} other {# meses de economia}}",
+    "comingNext": "O que vem a seguir",
+    "upcomingCount": "{count, plural, one {# recurso em desenvolvimento} other {# recursos em desenvolvimento}}",
+    "upcomingDisclosure": "Os recursos marcados como em breve ainda estão em desenvolvimento.",
+    "preview": {
+      "illustration": "Ilustração da linha do tempo de notas vocais do plano grátis",
+      "title": "Sua próxima música",
+      "description": "Acompanhe cada nota enquanto canta.",
+      "findSong": "Encontrar uma música para cantar",
+      "currentNote": "Nota atual",
+      "microphone": "Microfone"
+    }
   },
   "adminPlans": {
     "title": "Planos e preços",
@@ -1260,16 +1283,10 @@
   "billing": {
     "chooseAnnual": "Escolher anual",
     "chooseMonthly": "Escolher mensal",
-    "checkoutTitle": "Assinar {plan}",
     "annualCharge": "{amount} cobrados anualmente",
     "monthlyCharge": "{amount} cobrados mensalmente",
-    "immediateBilling": "A cobrança começa imediatamente. Você continuará no Stripe para pagar com segurança.",
-    "available": "Disponível",
-    "comingSoon": "Em breve",
-    "acknowledge": "Entendo que os benefícios marcados como em breve ainda não estão disponíveis e que a cobrança começa imediatamente.",
     "checkoutError": "Não foi possível iniciar o pagamento. A oferta pode ter mudado. Confira os planos e tente novamente.",
-    "redirecting": "Abrindo Stripe…",
-    "pay": "Continuar para pagamento",
+    "redirecting": "Carregando…",
     "unavailable": "Esta oferta não está mais disponível. Escolha uma oferta atual.",
     "viewPlans": "Ver planos",
     "loading": "Carregando assinatura…",
@@ -1284,7 +1301,45 @@
     "periodStart": "O período atual começou em {date}",
     "periodEnd": "O período atual termina em {date}",
     "noSubscription": "Você não tem uma assinatura paga.",
-    "checkoutHeading": "Assinar",
-    "benefitStatus": "{benefit} · {status}"
+    "subscription": {
+      "intro": "Seu plano, pagamento e período em um só lugar.",
+      "planSummary": "Resumo do plano",
+      "currentPlan": "Plano atual",
+      "freePlan": "Grátis",
+      "freeCaption": "Continue explorando o catálogo de músicas.",
+      "findSong": "Encontrar uma música",
+      "monthlyUnit": "/ mês",
+      "annualUnit": "/ ano",
+      "currentPeriod": "Período atual",
+      "overview": "Visão geral",
+      "periodStart": "Início do período",
+      "periodEnd": "Fim do período atual",
+      "nextCharge": "Próxima cobrança",
+      "dateUnavailable": "Ainda não disponível",
+      "billingCycle": "Ciclo de cobrança",
+      "monthly": "Mensal",
+      "annual": "Anual",
+      "contractCurrency": "Moeda do contrato",
+      "endingDescription": "Sua assinatura será encerrada ao final deste período.",
+      "states": {
+        "active": "Ativa",
+        "ending": "Encerra ao fim do período",
+        "pending": "Aguardando confirmação",
+        "unsuccessful": "Inativa",
+        "free": "Sem assinatura"
+      },
+      "titles": {
+        "active": "Tudo pronto para a próxima música.",
+        "ending": "Seu período atual continua disponível.",
+        "pending": "Estamos confirmando seu pagamento.",
+        "unsuccessful": "Seu pagamento não foi concluído.",
+        "free": "Sua voz já tem espaço por aqui."
+      },
+      "payment": {
+        "confirmed": "Pagamento confirmado",
+        "pending": "Aguardando confirmação do pagamento",
+        "unsuccessful": "Pagamento não confirmado"
+      }
+    }
   }
 }

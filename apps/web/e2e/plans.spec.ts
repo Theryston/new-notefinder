@@ -8,6 +8,8 @@ import {
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';
 import { messages } from './messages';
+import { registerPlanCheckoutJourneys } from './plans-checkout-journeys';
+import { registerPlanLayoutJourneys } from './plans-layout-journeys';
 import { webServerEnv } from './web-server-env';
 
 test.describe.configure({ mode: 'serial' });
@@ -89,16 +91,22 @@ for (const locale of ['en', 'pt-BR'] as const) {
       exact: true,
     });
     await expect(free.getByText(t.plans.freePrice)).toBeVisible();
-    await expect(
-      free.getByText(t.plans.available, { exact: true }),
-    ).toHaveCount(5);
+    await free.getByText(t.plans.includedBenefits, { exact: true }).click();
+    await expect(free.getByRole('listitem')).toHaveCount(5);
+    for (const benefit of defaultPlanCatalog(locale).plans[0]?.benefits ?? []) {
+      await expect(free.getByText(benefit.name, { exact: true })).toBeVisible();
+      await expect(
+        free.getByRole('listitem').filter({ hasText: benefit.name }),
+      ).toHaveAttribute('title', benefit.description);
+    }
     await expect(
       free.getByRole('link', { name: t.plans.startSinging }),
     ).toHaveAttribute('href', `/${locale}/search`);
     const pro = page.getByRole('article', { name: 'Pro', exact: true });
     await expect(
       pro.getByText(t.plans.comingSoon, { exact: true }),
-    ).toHaveCount(7);
+    ).toHaveCount(1);
+    await expect(pro.getByRole('listitem')).toHaveCount(7);
     const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: locale === 'en' ? 'USD' : 'BRL',
@@ -106,18 +114,27 @@ for (const locale of ['en', 'pt-BR'] as const) {
     const monthly = formatter.format(locale === 'en' ? 3.5 : 19.9);
     const annual = formatter.format(locale === 'en' ? 35 : 199);
     await expect(
-      pro.getByText(t.plans.monthlyCharge.replace('{amount}', monthly), {
-        exact: true,
-      }),
+      pro
+        .getByTestId('plan-price')
+        .getByText(t.plans.monthlyCharge.replace('{amount}', monthly), {
+          exact: true,
+        }),
     ).toBeVisible();
+    await pro.getByRole('radio', { name: new RegExp(t.plans.annual) }).check();
     await expect(
-      pro.getByText(t.plans.annualCharge.replace('{amount}', annual), {
-        exact: true,
-      }),
+      pro
+        .getByTestId('plan-price')
+        .getByText(t.plans.annualCharge.replace('{amount}', annual), {
+          exact: true,
+        }),
     ).toBeVisible();
     await expect(pro.getByText(t.plans.checkoutPending)).toBeVisible();
     await expect(pro.getByRole('link')).toHaveCount(0);
-    await expect(pro.getByRole('button')).toHaveCount(0);
+    await expect(
+      pro.getByRole('button', {
+        name: t.plans.choosePlan.replace('{plan}', 'Pro'),
+      }),
+    ).toHaveCount(0);
   });
 
   test(`signed-in Users reach plans through the account menu (${locale})`, async ({
@@ -157,7 +174,8 @@ for (const locale of ['en', 'pt-BR'] as const) {
     const pro = page.getByRole('article', { name: 'Pro', exact: true });
     await expect(
       pro.getByText(t.plans.comingSoon, { exact: true }),
-    ).toHaveCount(7);
+    ).toHaveCount(1);
+    await expect(pro.getByRole('listitem')).toHaveCount(7);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
     );
@@ -205,7 +223,9 @@ test('catalog updates retain configured cycles, omit undisclosed benefits, and s
   }).toPass();
   const studio = page.getByRole('article', { name: 'Studio', exact: true });
   await expect(
-    studio.getByText('$48.00 billed annually', { exact: true }),
+    studio
+      .getByTestId('plan-price')
+      .getByText('$48.00 billed annually', { exact: true }),
   ).toBeVisible();
   await expect(studio.getByText(/billed monthly/)).toHaveCount(0);
   await expect(
@@ -228,3 +248,6 @@ test('catalog updates retain configured cycles, omit undisclosed benefits, and s
 registerAdminPlanJourneys();
 registerPlanRetryJourney();
 registerInvalidPlanPriceJourneys();
+registerPlanCheckoutJourneys(installCatalog);
+
+registerPlanLayoutJourneys(installCatalog);

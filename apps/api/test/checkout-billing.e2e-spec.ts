@@ -109,8 +109,172 @@ describe('Stripe Checkout contracts over HTTP (e2e)', () => {
           .send(checkoutBody('pt-BR'))
           .expect(201)
       ).body,
-    ).toEqual({ action: 'manage' });
+    ).toEqual({ action: 'checkout', url: expect.any(String) });
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
+  });
+  it('replaces an abandoned monthly checkout with the selected annual offer', async () => {
+    const { client } = await billingUser(app);
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('pt-BR'))
+      .expect(201);
+    const previous = [...fake.sessions.values()][0];
+    if (!previous) throw new Error('Expected monthly checkout');
+    const result = await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('pt-BR', 'annual'))
+      .expect(201);
+    expect(result.body).toEqual({
+      action: 'checkout',
+      url: expect.any(String),
+    });
+    expect(result.body.url).not.toBe(previous.url);
+    expect(result.body.url).toBe(
+      [...fake.sessions.values()].find((session) => session.status === 'open')
+        ?.url,
+    );
+    expect(previous.status).toBe('expired');
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
+    expect(fake.provider.createCheckout.mock.calls[1]?.[0]).toMatchObject({
+      price: 'price_brl_annual',
+      customer: previous.customer,
+    });
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({
+      cycle: 'annual',
+      currency: 'BRL',
+      amount: 19900,
+      status: 'pending',
+      paidMembership: false,
+    });
+    const event = signedEvent(
+      previous.customer,
+      undefined,
+      'checkout.session.expired',
+    );
+    await app.http
+      .post('/v1/billing/stripe-webhook')
+      .set('Content-Type', 'application/json')
+      .set('stripe-signature', event.signature)
+      .send(event.body)
+      .expect(200);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({
+      cycle: 'annual',
+      status: 'pending',
+      paidMembership: false,
+    });
+  });
+  it('serializes concurrent switches and reuses the new checkout', async () => {
+    const { client } = await billingUser(app);
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    const results = await Promise.all([
+      client.post(`${ROOT}/checkout`).send(checkoutBody('en', 'annual')),
+      client.post(`${ROOT}/checkout`).send(checkoutBody('en', 'annual')),
+    ]);
+    expect(results.map((result) => result.status)).toEqual([201, 201]);
+    expect(results[0]?.body).toEqual(results[1]?.body);
+    expect(results[0]?.body.action).toBe('checkout');
+    expect(fake.provider.expireCheckout).toHaveBeenCalledTimes(1);
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
+    expect(
+      [...fake.sessions.values()].filter(
+        (session) => session.status === 'open',
+      ),
+    ).toHaveLength(1);
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(3);
+    expect((await client.get(ROOT).expect(200)).body.subscription.cycle).toBe(
+      'monthly',
+    );
+  });
+  it.each(['complete', 'subscription'])(
+    'keeps a completed payment while its %s state awaits the webhook',
+    async (state) => {
+      const { client } = await billingUser(app);
+      await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+      const session = [...fake.sessions.values()][0];
+      if (!session) throw new Error('Expected checkout');
+      if (state === 'complete') session.status = 'complete';
+      else session.subscription = 'sub_processing';
+      const result = await client
+        .post(`${ROOT}/checkout`)
+        .send(checkoutBody('en', 'annual'))
+        .expect(201);
+      expect(result.body).toEqual({ action: 'manage' });
+      expect(fake.provider.expireCheckout).not.toHaveBeenCalled();
+      expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
+    },
+  );
+  it('validates the replacement before expiring the previous checkout', async () => {
+    const { client } = await billingUser(app);
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    await client
+      .post(`${ROOT}/checkout`)
+      .send({ ...checkoutBody('en', 'annual'), offerId: 'stale' })
+      .expect(409);
+    expect(fake.provider.expireCheckout).not.toHaveBeenCalled();
+    expect([...fake.sessions.values()][0]?.status).toBe('open');
     expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
+  });
+  it('retains the previous checkout when expiry fails and safely retries a lost expiry response', async () => {
+    const { client } = await billingUser(app);
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    const expire = fake.provider.expireCheckout.getMockImplementation();
+    if (!expire) throw new Error('Expected expiry fake');
+    fake.provider.expireCheckout.mockRejectedValueOnce(
+      new Error('Provider unavailable'),
+    );
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('en', 'annual'))
+      .expect(500);
+    expect([...fake.sessions.values()][0]?.status).toBe('open');
+    expect((await client.get(ROOT).expect(200)).body.subscription.cycle).toBe(
+      'monthly',
+    );
+    fake.provider.expireCheckout.mockImplementationOnce(async (id) => {
+      await expire(id);
+      throw new Error('Expiry response was lost');
+    });
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('en', 'annual'))
+      .expect(500);
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('en', 'annual'))
+      .expect(201);
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
+    expect((await client.get(ROOT).expect(200)).body.subscription.cycle).toBe(
+      'annual',
+    );
+  });
+  it('recovers a replacement checkout after its creation response is lost', async () => {
+    const { client } = await billingUser(app);
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    const create = fake.provider.createCheckout.getMockImplementation();
+    if (!create) throw new Error('Expected provider fake');
+    fake.provider.createCheckout.mockImplementationOnce(async (input) => {
+      await create(input);
+      throw new Error('Replacement response was lost');
+    });
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('en', 'annual'))
+      .expect(500);
+    const result = await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('en', 'annual'))
+      .expect(201);
+    expect(result.body.action).toBe('checkout');
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
+    expect(fake.provider.expireCheckout).toHaveBeenCalledTimes(1);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({ cycle: 'annual', status: 'pending' });
   });
   it('rejects stale, disabled, incomplete and browser-priced offers before creating checkout', async () => {
     const { client } = await billingUser(app);
@@ -165,7 +329,7 @@ describe('Stripe Checkout contracts over HTTP (e2e)', () => {
       fake.provider.createCheckout.mock.calls[1]?.[0].id,
     );
   });
-  it('recovers a lost provider response instead of starting a different contract', async () => {
+  it('recovers and expires a lost provider response before switching offers', async () => {
     const { client } = await billingUser(app);
     const create = fake.provider.createCheckout.getMockImplementation();
     if (!create) throw new Error('Expected provider fake');
@@ -181,13 +345,18 @@ describe('Stripe Checkout contracts over HTTP (e2e)', () => {
           .send(checkoutBody('pt-BR'))
           .expect(201)
       ).body,
-    ).toEqual({ action: 'manage' });
-    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
-    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
+    ).toEqual({ action: 'checkout', url: expect.any(String) });
+    await client
+      .post(`${ROOT}/checkout`)
+      .send(checkoutBody('pt-BR'))
+      .expect(201);
+    expect(fake.provider.expireCheckout).toHaveBeenCalledTimes(1);
+    expect([...fake.sessions.values()][0]?.status).toBe('expired');
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(2);
     expect(fake.provider.createCustomer).toHaveBeenCalledTimes(1);
     expect(
       (await client.get(ROOT).expect(200)).body.subscription,
-    ).toMatchObject({ currency: 'USD', amount: 350, paidMembership: false });
+    ).toMatchObject({ currency: 'BRL', amount: 1990, paidMembership: false });
   });
   it('reconciles an unpaid slot after an outage, repricing and provider key expiry', async () => {
     const { client, user } = await billingUser(app);

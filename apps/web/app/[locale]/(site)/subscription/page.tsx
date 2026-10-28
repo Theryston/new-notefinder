@@ -37,8 +37,16 @@ export default async function Page(props: {
 }) {
   const t = await getTranslations('billing');
   return (
-    <Suspense fallback={<BillingSkeleton label={t('loading')} />}>
-      <SubscriptionPage {...props} />
-    </Suspense>
+    <div className="space-y-8 pt-4 md:pt-6">
+      <div className="space-y-2">
+        <h1 className="font-extrabold text-4xl tracking-tight">
+          {t('summaryTitle')}
+        </h1>
+        <p className="text-muted-foreground">{t('subscription.intro')}</p>
+      </div>
+      <Suspense fallback={<BillingSkeleton label={t('loading')} />}>
+        <SubscriptionPage {...props} />
+      </Suspense>
+    </div>
   );
 }

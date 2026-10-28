@@ -1,10 +1,12 @@
 'use client';
-import { useFormatter, useLocale, useTranslations } from 'next-intl';
+
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
-import { Link } from '@/lib/i18n/navigation';
 import { useSubscription } from '../hooks/use-billing';
 import { BillingSkeleton } from './billing-skeleton';
+import { SubscriptionCard } from './subscription-card';
+import { SubscriptionPeriod } from './subscription-period';
 
 export function SubscriptionSummary({ cancelled }: { cancelled: boolean }) {
   return (
@@ -17,6 +19,7 @@ export function SubscriptionSummary({ cancelled }: { cancelled: boolean }) {
     />
   );
 }
+
 function UserSubscriptionSummary({
   userId,
   cancelled,
@@ -26,12 +29,11 @@ function UserSubscriptionSummary({
 }) {
   const locale = useLocale();
   const t = useTranslations('billing');
-  const format = useFormatter();
   const result = useSubscription(userId, locale);
   if (result.isPending) return <BillingSkeleton label={t('loading')} />;
   if (result.isError)
     return (
-      <div role="alert">
+      <div role="alert" className="space-y-4 rounded-2xl bg-surface p-6">
         <p>{t('summaryError')}</p>
         <Button
           onClick={() => {
@@ -42,58 +44,17 @@ function UserSubscriptionSummary({
         </Button>
       </div>
     );
-  const subscription = result.data.subscription;
   return (
-    <section className="max-w-xl space-y-6 rounded-2xl bg-card p-6 shadow-sm">
-      <h1 className="font-bold text-3xl tracking-tight">{t('summaryTitle')}</h1>
-      {cancelled ? <p role="status">{t('cancelled')}</p> : null}
-      {subscription ? (
-        <>
-          <h2 className="font-semibold text-xl">{subscription.planName}</h2>
-          <p role="status">{t(subscription.status)}</p>
-          <p>
-            {t(
-              subscription.cycle === 'annual'
-                ? 'annualCharge'
-                : 'monthlyCharge',
-              {
-                amount: format.number(subscription.amount / 100, {
-                  style: 'currency',
-                  currency: subscription.currency,
-                }),
-              },
-            )}
-          </p>
-          <p>{t('contractCurrency', { currency: subscription.currency })}</p>
-          {subscription.currentPeriodStart ? (
-            <p>
-              {t('periodStart', {
-                date: format.dateTime(
-                  new Date(subscription.currentPeriodStart),
-                  { dateStyle: 'medium' },
-                ),
-              })}
-            </p>
-          ) : null}
-          {subscription.currentPeriodEnd ? (
-            <p>
-              {t('periodEnd', {
-                date: format.dateTime(new Date(subscription.currentPeriodEnd), {
-                  dateStyle: 'medium',
-                }),
-              })}
-            </p>
-          ) : null}
-        </>
-      ) : (
-        <p>{t('noSubscription')}</p>
-      )}
-      <Link
-        href="/plans"
-        className="inline-flex min-h-10 items-center underline"
-      >
-        {t('viewPlans')}
-      </Link>
-    </section>
+    <div className="space-y-6">
+      {cancelled ? (
+        <p role="status" className="rounded-2xl bg-muted p-4 text-sm">
+          {t('cancelled')}
+        </p>
+      ) : null}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)] lg:gap-12">
+        <SubscriptionCard subscription={result.data.subscription} />
+        <SubscriptionPeriod subscription={result.data.subscription} />
+      </div>
+    </div>
   );
 }
