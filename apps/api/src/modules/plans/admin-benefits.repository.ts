@@ -12,7 +12,11 @@ export class AdminBenefitsRepository {
   async listBenefits() {
     const [rows, links] = await Promise.all([
       this.txHost.tx
-        .select()
+        .select({
+          id: benefits.id,
+          copy: benefits.copy,
+          status: benefits.status,
+        })
         .from(benefits)
         .orderBy(asc(benefits.createdAt), asc(benefits.id)),
       this.txHost.tx
@@ -45,7 +49,10 @@ export class AdminBenefitsRepository {
         .from(plans)
         .orderBy(asc(plans.displayOrder), asc(plans.id)),
       this.txHost.tx
-        .select()
+        .select({
+          planId: planBenefits.planId,
+          benefitId: planBenefits.benefitId,
+        })
         .from(planBenefits)
         .orderBy(asc(planBenefits.position)),
     ]);
