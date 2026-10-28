@@ -1304,6 +1304,81 @@
         ]
       }
     },
+    "/v1/me/subscription/checkout": {
+      "post": {
+        "operationId": "SubscriptionsController_checkout_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/v1/me/subscription": {
+      "get": {
+        "operationId": "SubscriptionsController_summary_v1",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "en",
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/v1/billing/stripe-webhook": {
+      "post": {
+        "operationId": "StripeWebhookController_webhook_v1",
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/v1/admin/plans": {
       "get": {
         "operationId": "AdminPlansController_list_v1",
@@ -3458,6 +3533,47 @@
             "type": "boolean"
           }
         }
+      },
+      "CreateCheckoutDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "offerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cycle": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "annual"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "comingSoonAcknowledged": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "planId",
+          "offerId",
+          "cycle",
+          "locale",
+          "comingSoonAcknowledged"
+        ],
+        "additionalProperties": false
       },
       "ContractingDto": {
         "type": "object",

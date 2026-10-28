@@ -1284,6 +1284,7 @@
     "periodStart": "Current period started on {date}",
     "periodEnd": "Current period ends on {date}",
     "noSubscription": "You have no paid subscription.",
-    "checkoutHeading": "Subscribe"
+    "checkoutHeading": "Subscribe",
+    "benefitStatus": "{benefit} · {status}"
   }
 }

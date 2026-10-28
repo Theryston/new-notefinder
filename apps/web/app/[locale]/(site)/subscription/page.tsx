@@ -32,11 +32,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function Page(props: {
+export default async function Page(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations('billing');
   return (
-    <Suspense fallback={<BillingSkeleton />}>
+    <Suspense fallback={<BillingSkeleton label={t('loading')} />}>
       <SubscriptionPage {...props} />
     </Suspense>
   );

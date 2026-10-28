@@ -1,16 +1,16 @@
-import { getTranslations } from 'next-intl/server';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export async function BillingSkeleton({
+export function BillingSkeleton({
   checkout = false,
+  label,
 }: {
   checkout?: boolean;
+  label: string;
 }) {
-  const t = await getTranslations('billing');
   return (
     <section
       aria-busy="true"
-      aria-label={t('loading')}
+      aria-label={label}
       className="max-w-xl space-y-6 rounded-2xl bg-card p-6 shadow-sm"
     >
       <Skeleton className="h-9 w-3/4" />

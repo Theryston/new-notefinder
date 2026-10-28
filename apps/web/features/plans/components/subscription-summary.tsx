@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { Link } from '@/lib/i18n/navigation';
 import { useSubscription } from '../hooks/use-billing';
+import { BillingSkeleton } from './billing-skeleton';
 
 export function SubscriptionSummary({ cancelled }: { cancelled: boolean }) {
   return (
@@ -27,7 +28,7 @@ function UserSubscriptionSummary({
   const t = useTranslations('billing');
   const format = useFormatter();
   const result = useSubscription(userId, locale);
-  if (result.isPending) return <p role="status">{t('loading')}</p>;
+  if (result.isPending) return <BillingSkeleton label={t('loading')} />;
   if (result.isError)
     return (
       <div role="alert">

@@ -62,8 +62,12 @@ export function CheckoutConfirmation({ plan, offer, currency }: Props) {
       <ul className="space-y-2">
         {plan.benefits.map((benefit) => (
           <li key={benefit.id}>
-            {benefit.name} ·{' '}
-            {t(benefit.status === 'available' ? 'available' : 'comingSoon')}
+            {t('benefitStatus', {
+              benefit: benefit.name,
+              status: t(
+                benefit.status === 'available' ? 'available' : 'comingSoon',
+              ),
+            })}
           </li>
         ))}
       </ul>
@@ -72,7 +76,7 @@ export function CheckoutConfirmation({ plan, offer, currency }: Props) {
           type="checkbox"
           checked={acknowledged}
           onChange={(event) => setAcknowledged(event.target.checked)}
-          className="mt-1 size-4"
+          className="mt-1 size-4 accent-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         />
         {t('acknowledge')}
       </label>

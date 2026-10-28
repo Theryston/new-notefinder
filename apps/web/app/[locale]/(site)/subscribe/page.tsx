@@ -19,7 +19,7 @@ async function SubscribePage({
     if (typeof params[key] === 'string') query.set(key, params[key]);
   return (
     <NextIntlClientProvider messages={{ billing }}>
-      <BillingGate redirectTo={`/subscribe?${query}`}>
+      <BillingGate checkout redirectTo={`/subscribe?${query}`}>
         <CheckoutOffer
           planId={query.get('plan') ?? ''}
           offerId={query.get('offer') ?? ''}
@@ -39,11 +39,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function Page(props: {
+export default async function Page(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations('billing');
   return (
-    <Suspense fallback={<BillingSkeleton checkout />}>
+    <Suspense fallback={<BillingSkeleton checkout label={t('loading')} />}>
       <SubscribePage {...props} />
     </Suspense>
   );

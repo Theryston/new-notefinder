@@ -1284,6 +1284,7 @@
     "periodStart": "O período atual começou em {date}",
     "periodEnd": "O período atual termina em {date}",
     "noSubscription": "Você não tem uma assinatura paga.",
-    "checkoutHeading": "Assinar"
+    "checkoutHeading": "Assinar",
+    "benefitStatus": "{benefit} · {status}"
   }
 }
