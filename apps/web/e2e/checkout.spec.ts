@@ -227,3 +227,50 @@ test('switching Users in one browser never reuses another User subscription', as
   ).toHaveCount(0);
   expect(documents).toBe(1);
 });
+
+test('switching the summary language retains contract currency with a clean console', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  page.on('pageerror', (error) => errors.push(error.message));
+  await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
+  const subscription: Subscription = {
+    planId: 'pro',
+    planName: 'Pro',
+    cycle: 'monthly',
+    currency: 'USD',
+    amount: 350,
+    status: 'confirmed',
+    providerStatus: 'active',
+    paidMembership: true,
+    currentPeriodStart: '2026-10-28T12:00:00.000Z',
+    currentPeriodEnd: '2026-11-28T12:00:00.000Z',
+    cancelAtPeriodEnd: false,
+  };
+  await page.route('**/v1/me/subscription?*', (route) =>
+    route.fulfill({ json: { subscription } }),
+  );
+  await page.goto('/en/subscription?result=pending');
+  await expect(page.getByText('Contract currency: USD')).toBeVisible();
+  await page
+    .getByRole('contentinfo')
+    .getByRole('group', { name: messages.en.header.preferences.language })
+    .getByRole('button', {
+      name: messages.en.header.preferences.languages['pt-BR'],
+    })
+    .click();
+  await expect(page).toHaveURL(/\/pt-BR\/subscription\?result=pending$/);
+  await expect(
+    page.getByText(messages['pt-BR'].billing.confirmed, { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      messages['pt-BR'].billing.contractCurrency.replace('{currency}', 'USD'),
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(/US\$.*3,50/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
