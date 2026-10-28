@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { messages } from './messages';
 
 const CONTACT_EMAIL = 'hello@theryston.dev';
-const REPOSITORY_URL = 'https://github.com/Theryston/new-notefinder';
+const REPOSITORY_URL = 'https://github.com/Theryston/vozzify';
 
 // The order the terms are numbered in (and the legacy page used).
 const sectionOrder = [

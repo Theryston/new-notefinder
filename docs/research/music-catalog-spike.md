@@ -4,9 +4,9 @@
 > official MusicBrainz sample dump, dropped in #85 in favor of `full` and
 > `tiny`. The numbers are kept as history.
 
-Findings for [#56](https://github.com/Theryston/new-notefinder/issues/56), the
+Findings for [#56](https://github.com/Theryston/vozzify/issues/56), the
 spike behind the Music catalog spec
-([#55](https://github.com/Theryston/new-notefinder/issues/55)). Work done on
+([#55](https://github.com/Theryston/vozzify/issues/55)). Work done on
 2026-09-30. Vocabulary (Music catalog, Recording, Lyrics) is the one defined in
 `CONTEXT.md`.
 
@@ -53,7 +53,7 @@ Decisions of the spec that are affected are collected in
 ## Decisions taken after this spike
 
 Added to this PR after review. The maintainer took the decisions
-below in [this comment on #55](https://github.com/Theryston/new-notefinder/issues/55#issuecomment-5915812512)
+below in [this comment on #55](https://github.com/Theryston/vozzify/issues/55#issuecomment-5915812512)
 and in the "Decided after the spike (#56)" part of #55's Implementation
 Decisions, which override the older text of the spec. The findings in the rest
 of this document are left as written, as the record of what the spike saw and
@@ -61,9 +61,9 @@ proposed; where a decision differs from a proposal in
 [Impact on the spec (#55)](#impact-on-the-spec-55), it says so.
 
 - **Search engine: pending a benchmark.** Tuned Sonic vs Meilisearch vs
-  Postgres full-text search on the MusicBrainz sample; [#58](https://github.com/Theryston/new-notefinder/issues/58)
+  Postgres full-text search on the MusicBrainz sample; [#58](https://github.com/Theryston/vozzify/issues/58)
   (Search) is blocked until the maintainer picks from the numbers in
-  [#68](https://github.com/Theryston/new-notefinder/issues/68). Whatever the
+  [#68](https://github.com/Theryston/vozzify/issues/68). Whatever the
   engine, results keep its relevance order when loaded from Postgres.
   **Differs from the proposals** (impact item 1): the spike suggested keeping
   tuned Sonic and benchmarking it at 40 M documents, and measured Postgres
@@ -73,18 +73,18 @@ proposed; where a decision differs from a proposal in
 - **Licence: notefinder is non-commercial.** It uses the free MetaBrainz token;
   attribution for genres and tags (CC BY-NC-SA 3.0) is owed where they are
   shown, which is web work and out of scope for the Music catalog. Carried by
-  [#62](https://github.com/Theryston/new-notefinder/issues/62) (replication,
-  note in the app's `CLAUDE.md`) and [#65](https://github.com/Theryston/new-notefinder/issues/65)
+  [#62](https://github.com/Theryston/vozzify/issues/62) (replication,
+  note in the app's `CLAUDE.md`) and [#65](https://github.com/Theryston/vozzify/issues/65)
   (deploy docs). Answers impact item 2; the "core dump only, no genres, no
   sync" fallback is not needed.
 - **Restore: the mbslave container owns it**, with `init --empty` + `import`,
   mbslave pinned to git tag `v31.0.1`, recording `restored`; the worker waits
   for `restored`, then installs triggers, imports Lyrics and indexes. Carried by
-  [#60](https://github.com/Theryston/new-notefinder/issues/60). **Matches** the
+  [#60](https://github.com/Theryston/vozzify/issues/60). **Matches** the
   proposal in impact item 6 (the worker waits on a recorded phase rather than
   on polling `replication_control`, as that item suggested).
 - **Yearly schema change: CI bump PR plus an automatic blue-green reimport**,
-  new ticket [#69](https://github.com/Theryston/new-notefinder/issues/69). A
+  new ticket [#69](https://github.com/Theryston/vozzify/issues/69). A
   scheduled CI job opens a PR bumping the pinned mbslave version and runs the
   e2e suite on it; the maintainer merges it and runs `docker compose pull &&
   docker compose up -d`; the service then restores and indexes a parallel copy
@@ -103,7 +103,7 @@ proposed; where a decision differs from a proposal in
   tie); the same generator feeds the e2e fixture, the import and match code is
   the same for fake and real dumps, and nothing is downloaded from LRCLIB. The
   importer checks the dump's schema and fails loudly on a mismatch. Carried by
-  [#63](https://github.com/Theryston/new-notefinder/issues/63). **Differs from
+  [#63](https://github.com/Theryston/vozzify/issues/63). **Differs from
   the proposal** (impact item 4): the spike proposed publishing a small slice
   of the real LRCLIB data in the real schema; the decision generates synthetic
   data instead, so no real lyrics are published or downloaded in `sample`.
@@ -111,8 +111,8 @@ proposed; where a decision differs from a proposal in
   days** (env, default 30), about 260 GB of temporary disk per import, deleted
   afterwards. The worker still checks the (undocumented) listing, as section 5
   describes, but imports a newer dump at most once per interval. Carried by
-  [#63](https://github.com/Theryston/new-notefinder/issues/63) and
-  [#64](https://github.com/Theryston/new-notefinder/issues/64). Answers impact
+  [#63](https://github.com/Theryston/vozzify/issues/63) and
+  [#64](https://github.com/Theryston/vozzify/issues/64). Answers impact
   item 3. The two-pass import proposed there (match on `tracks` first, copy
   lyrics text only for matched Recordings, to avoid about 110 GB of text) is
   not mentioned in the comment or in the decision block of #63, so it remains a
@@ -122,7 +122,7 @@ proposed; where a decision differs from a proposal in
   temporary per LRCLIB import, about twice the steady state during a
   blue-green reimport, and at least 8 GB of RAM; `sample` is about 3.9 GB
   Postgres and 0.6 GB of index, about 12 minutes. These are this document's
-  numbers, taken as the plan. Carried by [#65](https://github.com/Theryston/new-notefinder/issues/65)
+  numbers, taken as the plan. Carried by [#65](https://github.com/Theryston/vozzify/issues/65)
   (now also blocked by #69). The "search index" size is Sonic's until #68
   decides the engine.
 
