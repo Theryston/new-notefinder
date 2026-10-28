@@ -1399,6 +1399,210 @@
         ]
       }
     },
+    "/v1/admin/benefits": {
+      "get": {
+        "operationId": "AdminBenefitsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminBenefitsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteBenefitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/benefits/{benefitId}": {
+      "get": {
+        "operationId": "AdminBenefitsController_get_v1",
+        "parameters": [
+          {
+            "name": "benefitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminBenefitsController_update_v1",
+        "parameters": [
+          {
+            "name": "benefitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteBenefitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminBenefitsController_remove_v1",
+        "parameters": [
+          {
+            "name": "benefitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/plan-benefits": {
+      "get": {
+        "operationId": "AdminPlanBenefitsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/plan-benefits/{planId}": {
+      "put": {
+        "operationId": "AdminPlanBenefitsController_update_v1",
+        "parameters": [
+          {
+            "name": "planId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPlanBenefitsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "No valid session."
+          },
+          "403": {
+            "description": "The User is not an admin."
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/albums/{id}": {
       "get": {
         "operationId": "AlbumsController_getAlbum_v1",
@@ -3366,6 +3570,67 @@
           "enabledCycles",
           "prices"
         ]
+      },
+      "WriteBenefitDto": {
+        "type": "object",
+        "properties": {
+          "copy": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "name",
+                "description"
+              ]
+            },
+            "required": [
+              "en",
+              "pt-BR"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "coming-soon",
+              "hidden"
+            ]
+          }
+        },
+        "required": [
+          "copy",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "SetPlanBenefitsDto": {
+        "type": "object",
+        "properties": {
+          "benefitIds": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "benefitIds"
+        ],
+        "additionalProperties": false
       },
       "UpdatePracticePreferencesBodyDto": {
         "type": "object",

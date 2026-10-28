@@ -983,6 +983,10 @@
       "plans": {
         "title": "Planos e preços",
         "description": "Gerencie planos pagos traduzidos, ciclos de cobrança e disponibilidade para novas vendas."
+      },
+      "benefits": {
+        "title": "Benefícios dos planos",
+        "description": "Gerencie as descrições compartilhadas e escolha os benefícios apresentados por cada plano. As alterações no catálogo afetam apenas a apresentação da oferta."
       }
     }
   },
@@ -1216,5 +1220,41 @@
     "pending": "Sincronização pendente.",
     "pendingHelp": "Tente novamente a alteração salva. As configurações serão mantidas até a sincronização ser concluída.",
     "testMode": "A cobrança está sendo validada no modo de teste do Stripe. Alterações no catálogo não mudam assinaturas existentes."
+  },
+  "adminBenefits": {
+    "title": "Benefícios dos planos",
+    "description": "Gerencie as descrições compartilhadas e escolha os benefícios apresentados por cada plano. As alterações no catálogo afetam apenas a apresentação da oferta.",
+    "create": "Criar benefício",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "name": "Nome",
+    "descriptionField": "Descrição",
+    "status": "Disponibilidade global",
+    "statuses": {
+      "available": "Disponível",
+      "coming-soon": "Em breve",
+      "hidden": "Oculto"
+    },
+    "locales": {
+      "en": "Inglês",
+      "pt-BR": "Português brasileiro"
+    },
+    "invalidCopy": "Preencha o nome (1–120 caracteres) e a descrição (1–1000 caracteres) de cada idioma.",
+    "loading": "Carregando benefícios…",
+    "loadError": "Não foi possível carregar os benefícios.",
+    "retry": "Tentar novamente",
+    "empty": "Nenhum benefício ainda. Crie um para começar seu catálogo.",
+    "planBenefits": "Benefícios por plano",
+    "noPlans": "Não há planos para configurar.",
+    "saveLinks": "Salvar benefícios do plano",
+    "moveUp": "Mover {name} para cima",
+    "moveDown": "Mover {name} para baixo",
+    "deleteTitle": "Excluir {name}?",
+    "deleteDescription": "Isso remove o benefício de todos os planos vinculados. As assinaturas existentes e o histórico de cobranças são preservados.",
+    "usedBy": "Planos que usam este benefício",
+    "unused": "Nenhum plano usa este benefício.",
+    "confirmDelete": "Excluir benefício"
   }
 }

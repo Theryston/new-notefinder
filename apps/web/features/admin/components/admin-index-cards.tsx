@@ -7,6 +7,7 @@ import { Link } from '@/lib/i18n/navigation';
 
 const sections = [
   { href: '/admin/home-pins', key: 'homePins' },
+  { href: '/admin/benefits', key: 'benefits' },
   { href: '/admin/plans', key: 'plans' },
 ] as const;
 
@@ -15,18 +16,18 @@ export function AdminIndexCards() {
   const t = useTranslations('admin');
   return (
     <ul className="flex flex-col gap-3 py-2">
-      {sections.map(({ href, key }) => (
-        <li key={key}>
+      {sections.map((section) => (
+        <li key={section.key}>
           <Link
-            href={href}
+            href={section.href}
             className="flex items-center justify-between gap-4 rounded-2xl border bg-card px-5 py-4 shadow-xs outline-none transition-colors duration-150 ease-out hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <span className="flex min-w-0 flex-col">
               <span className="font-bold text-lg tracking-tight">
-                {t(`cards.${key}.title`)}
+                {t(`cards.${section.key}.title`)}
               </span>
               <span className="text-muted-foreground text-sm">
-                {t(`cards.${key}.description`)}
+                {t(`cards.${section.key}.description`)}
               </span>
             </span>
             <ChevronRightIcon
