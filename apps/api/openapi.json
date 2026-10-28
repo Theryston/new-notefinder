@@ -1276,6 +1276,34 @@
         ]
       }
     },
+    "/v1/plans": {
+      "get": {
+        "operationId": "PlansController_getCatalog_v1",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "en",
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public plan comparison in the selected locale and offer currency."
+          }
+        },
+        "tags": [
+          "plans"
+        ]
+      }
+    },
     "/v1/albums/{id}": {
       "get": {
         "operationId": "AlbumsController_getAlbum_v1",

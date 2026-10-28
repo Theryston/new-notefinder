@@ -6,6 +6,7 @@ export * from './auth.js';
 export * from './daily-practice-streaks.js';
 export * from './editorial-pins.js';
 export * from './events.js';
+export * from './plans.js';
 export * from './practice-attempts.js';
 export * from './practice-heartbeats.js';
 export * from './relations.js';

@@ -217,3 +217,35 @@ resolve old URLs: a legacy ID map points it to the record's current ID, and
 the old URL redirects there. Users have no Legacy ID: they keep the ID they
 had in the legacy app.
 _Avoid_: Old ID, external ID
+
+### Plans and billing
+
+**Plan**:
+A named offer in the public comparison, with localized content, ordered Benefits
+and its enabled Billing cycles. Free preserves the core singing experience;
+a paid Plan describes its advertised offer without making future capabilities
+available merely by listing them.
+_Avoid_: Tier, package, membership (for the catalog entry)
+
+**Benefit**:
+A reusable description of something a Plan offers. Its availability is shared
+across all Plans that list it: available, coming soon or hidden. Coming soon
+describes future functionality; hidden Benefits are absent from the public
+comparison.
+_Avoid_: Feature flag, permission, entitlement (for presentation metadata)
+
+**Subscription**:
+One User's paid contract for a Plan. Free is a comparison entry and does not
+create a paid Subscription.
+_Avoid_: Plan (for a User's contract), role
+
+**Billing cycle**:
+The monthly or annual period a paid offer charges for. An annual offer charges
+its full annual total; a monthly equivalent is only a secondary comparison.
+_Avoid_: Frequency, interval (for the domain concept)
+
+**Trial**:
+A configured period before eligible Users are charged for a paid Subscription.
+Zero Trial days means immediate billing. Listing a Trial in the catalog does
+not itself establish a User's eligibility or grant paid membership.
+_Avoid_: Demo, preview

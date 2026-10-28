@@ -383,7 +383,8 @@
       "myProfile": "Meu perfil",
       "editProfile": "Editar perfil",
       "signOut": "Sair",
-      "signingOut": "Saindo"
+      "signingOut": "Saindo",
+      "plans": "Planos"
     },
     "preferences": {
       "theme": "Tema",
@@ -1158,5 +1159,22 @@
         "sponsored": "Sinal de patrocinado"
       }
     }
+  },
+  "plans": {
+    "title": "Encontre seu plano",
+    "description": "Compare o que está disponível hoje e o que cada plano está preparando.",
+    "disclosure": "Benefícios marcados como em breve descrevem funcionalidades futuras. O canto básico continua disponível sem assinatura paga.",
+    "freePrice": "Grátis, sempre",
+    "annualCharge": "{amount} cobrados por ano",
+    "monthlyCharge": "{amount} cobrados por mês",
+    "currency": "Ofertas em {currency}. Os preços são definidos de forma independente para cada moeda.",
+    "comingSoon": "Em breve",
+    "available": "Disponível",
+    "startSinging": "Começar a cantar",
+    "checkoutPending": "As assinaturas serão abertas aqui quando o pagamento estiver disponível.",
+    "noOffers": "Nenhum ciclo de cobrança está disponível no momento.",
+    "error": "Não foi possível carregar os planos. Tente novamente.",
+    "retry": "Tentar novamente",
+    "empty": "Não há planos para comparar no momento."
   }
 }

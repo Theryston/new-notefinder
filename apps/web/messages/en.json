@@ -383,7 +383,8 @@
       "myProfile": "My profile",
       "editProfile": "Edit profile",
       "signOut": "Sign out",
-      "signingOut": "Signing out"
+      "signingOut": "Signing out",
+      "plans": "Plans"
     },
     "preferences": {
       "theme": "Theme",
@@ -1158,5 +1159,22 @@
         "sponsored": "Sponsored flag"
       }
     }
+  },
+  "plans": {
+    "title": "Find your plan",
+    "description": "Compare what is available today and what each plan has planned.",
+    "disclosure": "Benefits marked coming soon describe future functionality. Core singing stays available without paid membership.",
+    "freePrice": "Free, always",
+    "annualCharge": "{amount} billed annually",
+    "monthlyCharge": "{amount} billed monthly",
+    "currency": "Offers in {currency}. Prices are set independently for each currency.",
+    "comingSoon": "Coming soon",
+    "available": "Available",
+    "startSinging": "Start singing",
+    "checkoutPending": "Subscriptions will open here when checkout is available.",
+    "noOffers": "No billing cycles are currently offered.",
+    "error": "Plans could not be loaded. Please try again.",
+    "retry": "Try again",
+    "empty": "There are no plans to compare right now."
   }
 }

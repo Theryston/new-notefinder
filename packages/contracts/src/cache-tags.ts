@@ -10,6 +10,9 @@ import type { Locale } from './locales.js';
  * deterministic and at most 256 characters long (Next.js limit).
  */
 export const cacheTags = {
+  /** Public plan/benefit catalog only; never private subscription data. */
+  plans: 'plans',
+  planCatalog: (locale: Locale) => `plans:${locale}`,
   /**
    * The public home feed of one locale (`GET /v1/home`). Scoped by locale so a
    * regeneration of one feed never drops the cache of the other.
