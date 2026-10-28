@@ -30,8 +30,8 @@ for (const status of ['pending', 'confirmed', 'unsuccessful'] as const) {
     await expect(
       page.getByText(messages.en.billing[status], { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText('Contract currency: BRL')).toBeVisible();
-    await expect(page.getByText(/R\$19.90/)).toBeVisible();
+    await expect(page.getByText('BRL', { exact: true })).toBeVisible();
+    await expect(page.getByText('R$19.90', { exact: true })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
@@ -151,7 +151,9 @@ test('switching the summary language retains contract currency with a clean cons
     route.fulfill({ status: 201, json: { recorded: true } }),
   );
   await page.goto('/en/subscription?result=pending');
-  await expect(page.getByText('Contract currency: USD')).toBeVisible();
+  await expect(
+    page.getByRole('main').getByText('USD', { exact: true }),
+  ).toBeVisible();
   await page
     .getByRole('contentinfo')
     .getByRole('group', { name: messages.en.header.preferences.language })
@@ -164,10 +166,10 @@ test('switching the summary language retains contract currency with a clean cons
     page.getByText(messages['pt-BR'].billing.confirmed, { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText(
-      messages['pt-BR'].billing.contractCurrency.replace('{currency}', 'USD'),
-    ),
+    page.getByRole('main').getByText('USD', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/US\$.*3,50/)).toBeVisible();
+  await expect(
+    page.getByRole('main').getByText('US$ 3,50', { exact: true }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });

@@ -1300,6 +1300,46 @@
     "contractCurrency": "Contract currency: {currency}",
     "periodStart": "Current period started on {date}",
     "periodEnd": "Current period ends on {date}",
-    "noSubscription": "You have no paid subscription."
+    "noSubscription": "You have no paid subscription.",
+    "subscription": {
+      "intro": "Your plan, payment and subscription details in one place.",
+      "planSummary": "Plan summary",
+      "currentPlan": "Current plan",
+      "freePlan": "Free",
+      "freeCaption": "Keep exploring the music catalog.",
+      "findSong": "Find a song",
+      "monthlyUnit": "/ month",
+      "annualUnit": "/ year",
+      "currentPeriod": "Current period",
+      "overview": "Overview",
+      "periodStart": "Period started",
+      "periodEnd": "Current period ends",
+      "nextCharge": "Next payment",
+      "dateUnavailable": "Not available yet",
+      "billingCycle": "Billing cycle",
+      "monthly": "Monthly",
+      "annual": "Annual",
+      "contractCurrency": "Contract currency",
+      "endingDescription": "Your subscription will end at the close of this period.",
+      "states": {
+        "active": "Active",
+        "ending": "Ends after this period",
+        "pending": "Awaiting confirmation",
+        "unsuccessful": "Not active",
+        "free": "No subscription"
+      },
+      "titles": {
+        "active": "Everything ready for your next song.",
+        "ending": "Your current period is still available.",
+        "pending": "Your payment is being confirmed.",
+        "unsuccessful": "Your payment was not completed.",
+        "free": "Your voice already has a place here."
+      },
+      "payment": {
+        "confirmed": "Payment confirmed",
+        "pending": "Awaiting payment confirmation",
+        "unsuccessful": "Payment not confirmed"
+      }
+    }
   }
 }

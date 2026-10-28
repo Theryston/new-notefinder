@@ -1300,6 +1300,46 @@
     "contractCurrency": "Moeda do contrato: {currency}",
     "periodStart": "O período atual começou em {date}",
     "periodEnd": "O período atual termina em {date}",
-    "noSubscription": "Você não tem uma assinatura paga."
+    "noSubscription": "Você não tem uma assinatura paga.",
+    "subscription": {
+      "intro": "Seu plano, pagamento e período em um só lugar.",
+      "planSummary": "Resumo do plano",
+      "currentPlan": "Plano atual",
+      "freePlan": "Grátis",
+      "freeCaption": "Continue explorando o catálogo de músicas.",
+      "findSong": "Encontrar uma música",
+      "monthlyUnit": "/ mês",
+      "annualUnit": "/ ano",
+      "currentPeriod": "Período atual",
+      "overview": "Visão geral",
+      "periodStart": "Início do período",
+      "periodEnd": "Fim do período atual",
+      "nextCharge": "Próxima cobrança",
+      "dateUnavailable": "Ainda não disponível",
+      "billingCycle": "Ciclo de cobrança",
+      "monthly": "Mensal",
+      "annual": "Anual",
+      "contractCurrency": "Moeda do contrato",
+      "endingDescription": "Sua assinatura será encerrada ao final deste período.",
+      "states": {
+        "active": "Ativa",
+        "ending": "Encerra ao fim do período",
+        "pending": "Aguardando confirmação",
+        "unsuccessful": "Inativa",
+        "free": "Sem assinatura"
+      },
+      "titles": {
+        "active": "Tudo pronto para a próxima música.",
+        "ending": "Seu período atual continua disponível.",
+        "pending": "Estamos confirmando seu pagamento.",
+        "unsuccessful": "Seu pagamento não foi concluído.",
+        "free": "Sua voz já tem espaço por aqui."
+      },
+      "payment": {
+        "confirmed": "Pagamento confirmado",
+        "pending": "Aguardando confirmação do pagamento",
+        "unsuccessful": "Pagamento não confirmado"
+      }
+    }
   }
 }
