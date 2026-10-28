@@ -4,7 +4,8 @@ name: Music catalog images
 # `server`, `worker` and the migrations, and the mbslave image) plus the
 # production compose in apps/music-catalog/deploy. Pull requests build both
 # images (nothing is pushed, so a broken Dockerfile is caught before merge)
-# and validate the compose; a push to main publishes the images. See
+# and validate the compose; a push to main publishes both images and asks
+# Coolify to pull them and redeploy. See
 # apps/music-catalog/CLAUDE.md, "Operations (production)".
 on:
   pull_request:
@@ -15,6 +16,7 @@ on:
       - nub.lock
       - tsconfig.base.json
       - .github/workflows/music-catalog-images.yml
+      - .github/scripts/deploy-coolify*
   push:
     branches: [main]
     paths:
@@ -24,11 +26,12 @@ on:
       - nub.lock
       - tsconfig.base.json
       - .github/workflows/music-catalog-images.yml
+      - .github/scripts/deploy-coolify*
 
 concurrency:
   group: music-catalog-images-${{ github.ref }}
-  # A newer push to main must not cancel the publish of an older one: the
-  # `sha-` tags are what a deploy pins.
+  # Keep both latest tags together: another push must not interrupt a
+  # publication or start publishing while its deploy job is still running.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -41,6 +44,9 @@ jobs:
       COMPOSE: docker compose -f apps/music-catalog/deploy/compose.yaml --env-file apps/music-catalog/deploy/.env.example
     steps:
       - uses: actions/checkout@v4
+
+      - name: Test the Coolify deployment request
+        run: bash .github/scripts/deploy-coolify.test.sh
 
       # The production compose must render against the example env, so the
       # example always lists what the compose needs to start.
@@ -134,8 +140,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # `sha-<short commit>` is the immutable tag a deploy pins; `latest`
-      # moves with main, which is what the example env follows.
+      # Coolify follows latest; keep sha tags available for explicit rollbacks.
       - name: Tags and labels
         id: meta
         uses: docker/metadata-action@v6
@@ -161,3 +166,17 @@ jobs:
           provenance: false
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+  deploy:
+    needs: [compose, images]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy the published images to Coolify
+        env:
+          COOLIFY_DEPLOY_URL: ${{ secrets.COOLIFY_MUSIC_CATALOG_DEPLOY_URL }}
+          COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: bash .github/scripts/deploy-coolify.sh
