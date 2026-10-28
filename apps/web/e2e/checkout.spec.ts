@@ -253,6 +253,9 @@ test('switching the summary language retains contract currency with a clean cons
   await page.route('**/v1/me/subscription?*', (route) =>
     route.fulfill({ json: { subscription } }),
   );
+  await page.route('**/v1/me/acquisition', (route) =>
+    route.fulfill({ status: 201, json: { recorded: true } }),
+  );
   await page.goto('/en/subscription?result=pending');
   await expect(page.getByText('Contract currency: USD')).toBeVisible();
   await page
