@@ -47,7 +47,7 @@ nub run format              # biome check --write, all packages
 nub run check-types         # tsc in every package
 nub run test                # unit tests
 nub run test:cov            # unit tests + coverage thresholds (what CI runs)
-nub run test:mutation --filter=api   # Stryker mutation tests (per app: api | web | music-catalog)
+nub run test:mutation --filter=api   # optional local Stryker mutation tests (api | web | music-catalog)
 nub run test:e2e            # API + Music catalog e2e (Testcontainers Postgres, MinIO, Meilisearch) + web Playwright
 nub run build               # production build of everything
 nub run dev --filter=web    # scope any task to one package (web | api | music-catalog | note-detector | @vozzify/contracts)
@@ -210,7 +210,7 @@ design token means updating `DESIGN.md` and the tokens in
   Playwright for critical flows (search, track page, auth).
 - **Every bug fix comes with a test that reproduces it.**
 
-### Code quality metrics (enforced by CI)
+### Code quality metrics
 
 **The quality configs are the source of truth. Never edit them.** That
 covers coverage thresholds (`vitest.config*.ts`), Stryker `thresholds`,
@@ -232,9 +232,9 @@ the maintainer changes these files.
   under a measured path. The API e2e suite has its own thresholds (in
   `apps/api/vitest.config.e2e.ts`, report in `coverage-e2e/`), which cover
   those controllers and repositories; same rule (never change them).
-- **Mutation score**: coverage says a line ran, not that a test would notice
-  it breaking. Stryker (`nub run test:mutation`, `stryker.config.json` per
-  app, its own workflow in CI) changes the unit-tested code (flips
+- **Mutation score (optional, local only)**: mutation testing is not a CI
+  check or a required PR gate. Stryker (`nub run test:mutation`,
+  `stryker.config.json` per app) changes the unit-tested code (flips
   conditions, removes calls, …) and fails when fewer mutants than
   `thresholds.break` are killed (api 58%, web 66%, music-catalog 58%). Same
   rule as coverage: never change it; report an improved score in the PR. A
