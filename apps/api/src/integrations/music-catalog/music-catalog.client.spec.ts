@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { musicCatalogTrackAssociationPayloadSchema } from '@notefinder/contracts';
+import { musicCatalogTrackAssociationPayloadSchema } from '@vozzify/contracts';
 import { WebSocketServer } from 'ws';
 import {
   type FakeMusicCatalog,

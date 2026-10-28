@@ -2,7 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import type {
   CreateEditorialPinBody,
   EditorialPinActor,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { fakeTransactionalDatabase } from '../../../test/utils/fake-transactional-db.js';
 import { AppException } from '../../common/errors/app-exception.js';
 import { DATABASE, DATABASE_POOL } from '../../database/database.js';

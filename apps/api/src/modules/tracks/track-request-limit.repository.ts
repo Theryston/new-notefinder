@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import { TRACK_PROCESSING_TERMINAL_STATUSES } from '@notefinder/contracts';
+import { TRACK_PROCESSING_TERMINAL_STATUSES } from '@vozzify/contracts';
 import {
   and,
   count,

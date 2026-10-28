@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { defaultScoring, PracticeScore, type ScoringSettings } from './scoring';
 
 type Loop = { start: number; end: number } | null;

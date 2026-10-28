@@ -2,7 +2,7 @@ import {
   type MusicCatalogStatusResponse,
   musicCatalogErrorResponseSchema,
   musicCatalogStatusResponseSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { useTestServer } from './utils/create-test-server.js';
 import { setBootstrapState } from './utils/database.js';
 import { useTestClient } from './utils/use-test-client.js';

@@ -1,5 +1,5 @@
-import { isValidUsername } from '@notefinder/contracts/auth-rules';
 import { queryOptions } from '@tanstack/react-query';
+import { isValidUsername } from '@vozzify/contracts/auth-rules';
 
 import { loadAuthClient } from './auth-client';
 import { authKeys } from './query-keys';

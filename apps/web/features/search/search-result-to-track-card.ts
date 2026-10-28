@@ -1,4 +1,4 @@
-import type { SearchResultItem } from '@notefinder/contracts';
+import type { SearchResultItem } from '@vozzify/contracts';
 
 import type { TrackCardProps } from '@/features/tracks/components/track-card';
 

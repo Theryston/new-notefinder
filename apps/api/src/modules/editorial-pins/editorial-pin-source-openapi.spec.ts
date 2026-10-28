@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import {
   createEditorialPinBodySchema,
   editorialPinSourceSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
 import { createOpenApiDocument } from '../../setup-app.js';
 

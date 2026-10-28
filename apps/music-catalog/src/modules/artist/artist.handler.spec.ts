@@ -1,4 +1,4 @@
-import type { MusicCatalogArtist } from '@notefinder/contracts';
+import type { MusicCatalogArtist } from '@vozzify/contracts';
 import { createGetArtistHandler } from './artist.handler.js';
 import type { ArtistService } from './artist.service.js';
 

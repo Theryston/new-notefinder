@@ -1,4 +1,4 @@
-import { adminPlanCatalogSchema, adminPlanSchema } from '@notefinder/contracts';
+import { adminPlanCatalogSchema, adminPlanSchema } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browserApi } from '@/lib/api/browser';
 import { fetchAdminPlans, saveAdminPlan, setContracting } from './client';

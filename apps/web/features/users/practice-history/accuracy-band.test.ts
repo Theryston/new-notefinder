@@ -1,7 +1,7 @@
-import { accuracyBand } from '@notefinder/contracts';
+import { accuracyBand } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
-// The bands live in @notefinder/contracts, which has no test runner of its own,
+// The bands live in @vozzify/contracts, which has no test runner of its own,
 // so their boundaries are pinned here.
 describe('accuracyBand', () => {
   it.each([

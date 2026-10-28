@@ -1,4 +1,4 @@
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import { StreaksService } from '../streaks/streaks.service.js';
 
 const title = (key: string) => ({ key, params: {} });

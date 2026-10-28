@@ -1,4 +1,4 @@
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import type { ReactNode } from 'react';
 
 import type { SponsoredPlacement } from '../components/sponsored-notice';

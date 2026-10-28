@@ -7,7 +7,7 @@ import {
   type EditorialPinState,
   type EditorialPinTitles,
   LOCALES,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   boolean,
   index,

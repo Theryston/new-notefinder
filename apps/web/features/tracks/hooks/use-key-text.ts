@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackKey } from '@notefinder/contracts';
+import type { TrackKey } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { useTranspose } from '../stores/transpose-store';

@@ -15,7 +15,7 @@ export type RequestMarks = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const MARK_VALUE = 'requested';
 
 const markKey = (recordingMbid: string): string =>
-  `notefinder.track-request.${recordingMbid}`;
+  `vozzify.track-request.${recordingMbid}`;
 
 /** This tab's marks, or `undefined` when the browser refuses its session storage. */
 export function tabRequestMarks(): RequestMarks | undefined {

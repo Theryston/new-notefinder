@@ -5,7 +5,7 @@ import {
   type TrackProcessingStatus,
   type TrackProcessingStep,
   type TrackProcessingVideoSource,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /**
  * Failures that repeating the Processing cannot fix: no matching video, or a

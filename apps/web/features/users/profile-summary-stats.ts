@@ -1,4 +1,4 @@
-import type { PublicProfileSummary } from '@notefinder/contracts';
+import type { PublicProfileSummary } from '@vozzify/contracts';
 
 /**
  * The numbers of the Summary section, in display order. The component and its

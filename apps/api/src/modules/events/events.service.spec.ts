@@ -1,6 +1,6 @@
 import { getQueueToken } from '@nestjs/bullmq';
 import { Test } from '@nestjs/testing';
-import type { HomeEvent } from '@notefinder/contracts';
+import type { HomeEvent } from '@vozzify/contracts';
 import { EVENTS_QUEUE } from './events.job.js';
 import { EventsService } from './events.service.js';
 

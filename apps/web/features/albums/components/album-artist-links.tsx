@@ -1,6 +1,6 @@
 'use client';
 
-import type { AlbumArtist } from '@notefinder/contracts';
+import type { AlbumArtist } from '@vozzify/contracts';
 import { useId, useState } from 'react';
 
 import { Link } from '@/lib/i18n/navigation';

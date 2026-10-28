@@ -1,4 +1,4 @@
-import type { MusicCatalogReleaseGroup } from '@notefinder/contracts';
+import type { MusicCatalogReleaseGroup } from '@vozzify/contracts';
 import { missingEntityError } from '../../errors/missing-entity-error.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import { assembleReleaseGroup } from './assemble-release-group.js';

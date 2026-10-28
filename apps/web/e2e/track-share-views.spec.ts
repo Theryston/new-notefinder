@@ -170,7 +170,7 @@ test.describe('Track views', () => {
     const trackId = 'clx-views-once';
     await setTrackMock({ tracks: [completedTrack(trackId)] });
     await page.addInitScript(() =>
-      localStorage.setItem('notefinder:visitor-id', 'views-once-visitor'),
+      localStorage.setItem('vozzify:visitor-id', 'views-once-visitor'),
     );
 
     await page.goto(`/en/tracks/${trackId}`);
@@ -208,7 +208,7 @@ test.describe('Track views', () => {
     const trackId = 'clx-views-attach';
     await setTrackMock({ tracks: [completedTrack(trackId)] });
     await page.addInitScript(() =>
-      localStorage.setItem('notefinder:visitor-id', 'views-attach-visitor'),
+      localStorage.setItem('vozzify:visitor-id', 'views-attach-visitor'),
     );
     await page.goto(`/en/tracks/${trackId}`);
     await expect.poll(() => api.posts.length).toBe(1);

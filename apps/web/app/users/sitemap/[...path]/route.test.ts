@@ -8,7 +8,7 @@ vi.mock('@/features/users/sitemap-queries', () => ({
   getUserSitemapFile: vi.fn(),
 }));
 vi.mock('@/lib/sitemap/request-origin', () => ({
-  requestSiteOrigin: () => 'https://notefinder.com.br',
+  requestSiteOrigin: () => 'https://vozzify.com',
 }));
 
 const mockFile = vi.mocked(getUserSitemapFile);
@@ -40,7 +40,7 @@ describe('GET /users/sitemap/[...path]', () => {
     expect(response.headers.get('cache-control')).toContain('s-maxage=3600');
     expect(response.headers.get('vary')).toBe('X-Forwarded-Host, Host');
     expect(await response.text()).toContain(
-      '<loc>https://notefinder.com.br/en/users/grace</loc>',
+      '<loc>https://vozzify.com/en/users/grace</loc>',
     );
   });
 

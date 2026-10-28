@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { shiftedVoiceTime } from '../calibration-math';
 import { type PlaybackSource, toggleMic } from '../mic-controller';

@@ -9,26 +9,26 @@ describe('trackSitemapXml', () => {
   ];
 
   it('lists each Track in each locale, in the order given, with its translations', () => {
-    const xml = trackSitemapXml(entries, 'https://notefinder.com.br/');
+    const xml = trackSitemapXml(entries, 'https://vozzify.com/');
 
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
       (match) => match[1],
     );
     expect(locs).toEqual([
-      'https://notefinder.com.br/en/tracks/clx-hot',
-      'https://notefinder.com.br/pt-BR/tracks/clx-hot',
-      'https://notefinder.com.br/en/tracks/clx-cold',
-      'https://notefinder.com.br/pt-BR/tracks/clx-cold',
+      'https://vozzify.com/en/tracks/clx-hot',
+      'https://vozzify.com/pt-BR/tracks/clx-hot',
+      'https://vozzify.com/en/tracks/clx-cold',
+      'https://vozzify.com/pt-BR/tracks/clx-cold',
     ]);
     expect(xml).toContain('<lastmod>2026-10-14T12:00:00.000Z</lastmod>');
     expect(xml).toContain(
-      '<xhtml:link rel="alternate" hreflang="pt-BR" href="https://notefinder.com.br/pt-BR/tracks/clx-hot"/>',
+      '<xhtml:link rel="alternate" hreflang="pt-BR" href="https://vozzify.com/pt-BR/tracks/clx-hot"/>',
     );
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
   });
 
   it('is a valid empty sitemap with no Tracks', () => {
-    expect(trackSitemapXml([], 'https://notefinder.com.br')).toBe(
+    expect(trackSitemapXml([], 'https://vozzify.com')).toBe(
       '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml"></urlset>',
     );
   });
@@ -36,7 +36,7 @@ describe('trackSitemapXml', () => {
   it('escapes what XML reserves', () => {
     const xml = trackSitemapXml(
       [{ id: 'a&b', updatedAt: '2026-10-14T12:00:00.000Z' }],
-      'https://notefinder.com.br',
+      'https://vozzify.com',
     );
 
     expect(xml).toContain('/en/tracks/a%26b');
@@ -46,11 +46,11 @@ describe('trackSitemapXml', () => {
   it('gives each Track URL x-default, its changefreq and its priority', () => {
     const xml = trackSitemapXml(
       [{ id: 'clx-hot', updatedAt: '2026-10-14T12:00:00.000Z' }],
-      'https://notefinder.com.br',
+      'https://vozzify.com',
     );
 
     expect(xml).toContain(
-      '<xhtml:link rel="alternate" hreflang="x-default" href="https://notefinder.com.br/tracks/clx-hot"/>',
+      '<xhtml:link rel="alternate" hreflang="x-default" href="https://vozzify.com/tracks/clx-hot"/>',
     );
     expect(xml).toContain(
       '<changefreq>daily</changefreq><priority>0.8</priority>',
@@ -71,7 +71,7 @@ describe('trackSitemapXml', () => {
           coverUrl: null,
         },
       ],
-      'https://notefinder.com.br',
+      'https://vozzify.com',
     );
 
     // Two locale URLs per Track: the first pair is the covered Track.
@@ -93,10 +93,10 @@ describe('trackSitemapXml', () => {
   it('keeps a Track ID with a slash inside one encoded segment', () => {
     const xml = trackSitemapXml(
       [{ id: 'a/b', updatedAt: '2026-10-14T12:00:00.000Z' }],
-      'https://notefinder.com.br',
+      'https://vozzify.com',
     );
 
-    expect(xml).toContain('https://notefinder.com.br/en/tracks/a%2Fb');
+    expect(xml).toContain('https://vozzify.com/en/tracks/a%2Fb');
     expect(xml).not.toContain('/tracks/a/b');
   });
 });

@@ -1,4 +1,4 @@
-import { NAME_MAX_LENGTH, nameSchema } from '@notefinder/contracts';
+import { NAME_MAX_LENGTH, nameSchema } from '@vozzify/contracts';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { z } from 'zod';
 
@@ -12,7 +12,7 @@ const submittedFieldsSchema = z.object({
 });
 
 /**
- * Applies notefinder's sign-up rules to a raw sign-up body and returns the
+ * Applies vozzify's sign-up rules to a raw sign-up body and returns the
  * fields to store instead of the submitted ones:
  * - the Avatar is refused, so a new account can't point it at an arbitrary
  *   URL; it only comes from the Avatar upload or the Google profile;

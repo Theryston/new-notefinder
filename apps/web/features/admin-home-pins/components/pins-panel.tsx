@@ -1,6 +1,6 @@
 'use client';
 
-import type { EditorialPin, EditorialPinMetrics } from '@notefinder/contracts';
+import type { EditorialPin, EditorialPinMetrics } from '@vozzify/contracts';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';

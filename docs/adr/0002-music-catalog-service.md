@@ -5,7 +5,7 @@
 
 ## Context
 
-notefinder's catalog (Tracks, Artists, Albums) stops depending on YouTube
+vozzify's catalog (Tracks, Artists, Albums) stops depending on YouTube
 Music (ADR 0001) and needs its own source of every song in the world to
 search and pick from. The data is open: MusicBrainz publishes its database
 as dumps plus hourly replication packets, and LRCLIB publishes Lyrics as a
@@ -23,7 +23,7 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
     `full`) doesn't fit the API's stateless, multi-instance model.
 - **The API talks to it over one long-lived, authenticated WebSocket.**
   - The protocol is private: a request/response envelope with correlation ids,
-    and its own error codes, in `@notefinder/contracts`.
+    and its own error codes, in `@vozzify/contracts`.
   - Auth is `Authorization: Bearer <key>` on the handshake, with a key list so
     keys can be rotated.
   - It is not part of the public OpenAPI.
@@ -52,7 +52,7 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
   - It handled typos and prefixes, with p95 latency of 22-97 ms.
   - Tuned Sonic, the first choice, got 84.8% and 49.8%, at an 815 ms p95.
   - The cost is disk: the full index is extrapolated at 79-149 GB.
-- **Data licence:** notefinder is non-commercial.
+- **Data licence:** vozzify is non-commercial.
   - It uses MetaBrainz's free non-commercial replication token.
   - Replication packets and the tags/genres dump are CC BY-NC-SA 3.0, so the web
     owes attribution where genres and tags are shown.
@@ -73,12 +73,12 @@ issue #55 and its comments, and in `docs/research/music-catalog-spike.md`.
   matching.
 - **Grouping Recordings into songs.** Rejected; see "unit" above.
 - **A commercial MetaBrainz account, or CC0 data only.** Not needed while
-  notefinder is non-commercial. CC0-only would have meant no replication and no
+  vozzify is non-commercial. CC0-only would have meant no replication and no
   genres.
 
 ## Consequences
 
-- If notefinder becomes commercial, the MetaBrainz tier and the CC BY-NC-SA data
+- If vozzify becomes commercial, the MetaBrainz tier and the CC BY-NC-SA data
   (replication and genres) must be revisited first.
 - The server needs about 150-220 GB of steady disk in `full`, plus about 260 GB
   temporary per LRCLIB import and about 2x during a blue-green reimport.

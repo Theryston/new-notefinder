@@ -1,6 +1,6 @@
 'use client';
-import type { SaveAdminPlanBody } from '@notefinder/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { SaveAdminPlanBody } from '@vozzify/contracts';
 import { adminPlanKeys } from '../query-keys';
 
 export function useSaveAdminPlan(options: {

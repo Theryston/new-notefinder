@@ -104,7 +104,7 @@ const dropParallelSyncTriggers = async (db: Database): Promise<void> => {
     join pg_class c on c.oid = t.tgrelid
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'musicbrainz'
-      and t.tgname like 'notefinder\_sync\_%'
+      and t.tgname like 'vozzify\_sync\_%'
       and not t.tgisinternal
   `);
   for (const trigger of triggers.rows) {

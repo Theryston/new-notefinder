@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { EditorialPin, HomeRow } from '@notefinder/contracts';
+import type { EditorialPin, HomeRow } from '@vozzify/contracts';
 import { EditorialPinsService } from '../editorial-pins/editorial-pins.service.js';
 import { HomeRepository, type HomeTrackRecord } from './home.repository.js';
 import {

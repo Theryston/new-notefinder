@@ -1,5 +1,5 @@
 import 'server-only';
-import { type CurrentUser, currentUserSchema } from '@notefinder/contracts';
+import { type CurrentUser, currentUserSchema } from '@vozzify/contracts';
 import { cache } from 'react';
 
 import { ApiError } from '@/lib/api/api-error';

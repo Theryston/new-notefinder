@@ -3,7 +3,7 @@ import {
   type StreakStatus,
   streakHeartbeatResultSchema,
   streakStatusSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { dailyPracticeStreaks } from '../src/database/schema/daily-practice-streaks.js';

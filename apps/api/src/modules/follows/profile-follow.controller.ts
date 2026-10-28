@@ -6,8 +6,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { ProfileFollow } from '@notefinder/contracts';
-import { profileFollowSchema } from '@notefinder/contracts';
+import type { ProfileFollow } from '@vozzify/contracts';
+import { profileFollowSchema } from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';

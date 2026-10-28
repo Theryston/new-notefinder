@@ -1,4 +1,4 @@
-import type { AdminPlan, SaveAdminPlanBody } from '@notefinder/contracts';
+import type { AdminPlan, SaveAdminPlanBody } from '@vozzify/contracts';
 
 export function planFormDefaults(plan?: AdminPlan): SaveAdminPlanBody {
   if (plan?.pendingOperation) return plan.pendingOperation;

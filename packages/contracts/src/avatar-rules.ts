@@ -1,7 +1,7 @@
 /**
  * Rules for an uploaded Avatar, shared by the API and the clients' pre-check.
  * Kept free of Zod so clients can import them
- * (`@notefinder/contracts/avatar-rules`) without shipping the schema library
+ * (`@vozzify/contracts/avatar-rules`) without shipping the schema library
  * on first load.
  */
 

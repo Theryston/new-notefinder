@@ -1,4 +1,4 @@
-import type { TrackContributor } from '@notefinder/contracts';
+import type { TrackContributor } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/lib/i18n/navigation';

@@ -9,7 +9,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { HttpAdapterHost } from '@nestjs/core';
-import { apiErrorSchema } from '@notefinder/contracts';
+import { apiErrorSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 import { ZodSerializationException } from '../zod/zod-serializer.interceptor.js';
 import { ZodValidationException } from '../zod/zod-validation.pipe.js';

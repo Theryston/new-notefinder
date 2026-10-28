@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import type { UserRole } from '@notefinder/contracts';
+import type { UserRole } from '@vozzify/contracts';
 
 export const ROLES_KEY = Symbol('ROLES');
 

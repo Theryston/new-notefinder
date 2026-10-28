@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 // The contact address and the source repository live here, not in the
 // translations, so they can't drift apart between locales.
 const CONTACT_EMAIL = 'hello@theryston.dev';
-const REPOSITORY_URL = 'https://github.com/Theryston/new-notefinder';
+const REPOSITORY_URL = 'https://github.com/Theryston/vozzify';
 
 // The brand color sits on the underline, not the text: `text-primary` on the
 // page is 3.5:1, below the 4.5:1 that body-size text needs (DESIGN.md).

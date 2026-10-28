@@ -1,4 +1,4 @@
-import type { CatalogDataset } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
 import type { Logger } from '../../logger.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RestoreService } from '../bootstrap/restore.service.js';

@@ -1,6 +1,6 @@
-import type { CampaignTouch } from '@notefinder/contracts';
+import type { CampaignTouch } from '@vozzify/contracts';
 
-export const CAMPAIGN_TOUCHES_KEY = 'notefinder:campaign-touches';
+export const CAMPAIGN_TOUCHES_KEY = 'vozzify:campaign-touches';
 
 const PARAMETER_FIELDS = [
   ['utm_source', 'utmSource'],

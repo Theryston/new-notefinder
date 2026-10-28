@@ -1,4 +1,4 @@
-import type { HomeRowTitle } from '@notefinder/contracts';
+import type { HomeRowTitle } from '@vozzify/contracts';
 import type { HomeRepository } from './home.repository.js';
 import {
   type HomeCandidate,

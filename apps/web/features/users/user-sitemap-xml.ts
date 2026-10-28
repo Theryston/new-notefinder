@@ -1,4 +1,4 @@
-import type { UserSitemapEntry } from '@notefinder/contracts';
+import type { UserSitemapEntry } from '@vozzify/contracts';
 
 import {
   buildSitemapUrlset,

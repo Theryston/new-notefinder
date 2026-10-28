@@ -1,7 +1,7 @@
 'use client';
 
-import type { EditorialPinKind } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { EditorialPinKind } from '@vozzify/contracts';
 import { useEffect, useState } from 'react';
 
 import {

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type {
   ListTrackSitemapQuery,
   TrackSitemapPage,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { TrackSitemapRepository } from './track-sitemap.repository.js';
 import {
   decodeTrackSitemapCursor,

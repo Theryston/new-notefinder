@@ -92,7 +92,8 @@ docker-compose.yml          web-redis for local dev (included by the root compos
 
 ## Legacy routes (no 404s)
 
-This app replaces the legacy notefinder web app on the same domain. **Every
+This app replaces the legacy notefinder web app at `notefinder.com.br` with
+Vozzify at `vozzify.com`. **Every
 legacy URL must keep working**: either the route still exists or it
 redirects to the new one. Redirects keep dynamic segments (IDs, usernames)
 and query params as they are, except the legacy catalog ID redirect below,
@@ -152,11 +153,11 @@ leaf possible and pass server-fetched data down as props.
 ### Server (initial render)
 
 - All server reads go through `lib/api` (typed fetch wrapper around `API_URL`)
-  and are parsed with the `@notefinder/contracts` schemas. Errors surface as a
+  and are parsed with the `@vozzify/contracts` schemas. Errors surface as a
   typed `ApiError` (envelope `{ statusCode, code, message }`).
 - Feature fetchers in `features/<f>/queries.ts` use `'use cache'` +
   `cacheTag(...)` + `cacheLife(...)`. Tag names come from the shared tag
-  builders in `@notefinder/contracts` (the API invalidates the same tags).
+  builders in `@vozzify/contracts` (the API invalidates the same tags).
 - Public data (tracks, notes, artists, home sections): `'use cache'` (use
   `'use cache: remote'` for data that must be shared across instances in
   production). Pick the longest `cacheLife` that is still correct; freshness
@@ -313,7 +314,7 @@ leaf possible and pass server-fetched data down as props.
   it, wrap calls in `authRequest()` (a thrown network error becomes a
   returned one), validate forms with `lazyResolver()` (Zod loads on the first
   validation) and import plain constants from
-  `@notefinder/contracts/auth-rules`, which has no Zod.
+  `@vozzify/contracts/auth-rules`, which has no Zod.
 - The session on the client is a TanStack query (`sessionUserOptions()` in
   `features/auth/session.ts`: a plain `GET /v1/auth/get-session`, `null` when
   signed out), not Better Auth's `useSession()`. Update it after anything
@@ -342,7 +343,7 @@ leaf possible and pass server-fetched data down as props.
   sent as the `avatar` file part of that same request; the file is checked
   before the upload with `avatarFileProblem()`
   (`features/auth/avatar-file.ts`), which reads the limits from
-  `@notefinder/contracts/avatar-rules` (no Zod). The API still decides from
+  `@vozzify/contracts/avatar-rules` (no Zod). The API still decides from
   the file's content. Toasts use `components/ui/sonner` (`Toaster` mounted by
   the page that toasts).
 - **Zod stays out of first-load JS.** `lib/api/api-error.ts` (the

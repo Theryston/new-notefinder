@@ -30,7 +30,7 @@ describe('Auth onboarding (e2e)', () => {
       await signUp(spec.client, { ...NEW_USER, email: user.email }).expect(200);
 
       const email = await takeEmail(spec.testApp, user.email);
-      expect(email.subject).toBe('You already have a notefinder account');
+      expect(email.subject).toBe('You already have a vozzify account');
       expect(await countEmailsTo(spec.testApp, user.email)).toBe(0);
     });
 
@@ -46,7 +46,7 @@ describe('Auth onboarding (e2e)', () => {
       ).expect(200);
 
       const email = await takeEmail(spec.testApp, user.email);
-      expect(email.subject).toBe('Você já tem uma conta no notefinder');
+      expect(email.subject).toBe('Você já tem uma conta no vozzify');
     });
   });
 

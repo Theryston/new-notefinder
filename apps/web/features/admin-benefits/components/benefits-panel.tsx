@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminBenefit } from '@notefinder/contracts';
+import type { AdminBenefit } from '@vozzify/contracts';
 import dynamic from 'next/dynamic';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';

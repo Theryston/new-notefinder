@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UserTrackState } from '@notefinder/contracts';
+import type { UserTrackState } from '@vozzify/contracts';
 import { TracksService } from '../tracks/tracks.service.js';
 import { FavoritesRepository } from './favorites.repository.js';
 

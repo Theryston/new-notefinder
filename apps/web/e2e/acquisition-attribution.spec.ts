@@ -190,7 +190,7 @@ test('attaches a second account after signing out in the same tab', async ({
 
   await page.evaluate(() => {
     window.localStorage.setItem(
-      'notefinder:campaign-touches',
+      'vozzify:campaign-touches',
       JSON.stringify({
         firstTouch: { utmSource: 'second-account' },
         lastTouch: { utmSource: 'second-account' },

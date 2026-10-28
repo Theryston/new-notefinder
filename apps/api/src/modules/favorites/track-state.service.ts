@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TrackPracticeState } from '@notefinder/contracts';
+import type { TrackPracticeState } from '@vozzify/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import { FavoritesService } from './favorites.service.js';
 

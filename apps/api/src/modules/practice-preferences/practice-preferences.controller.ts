@@ -8,7 +8,7 @@ import {
 import {
   type PracticePreferences,
   practicePreferencesSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import type { AuthUser } from '../auth/auth.js';

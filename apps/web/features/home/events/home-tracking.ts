@@ -1,4 +1,4 @@
-import type { HomeEvent } from '@notefinder/contracts';
+import type { HomeEvent } from '@vozzify/contracts';
 import { getClientEnv } from '@/lib/env/client';
 import { withClickId } from '@/lib/home-click-id';
 import { getOrCreateVisitorId } from '@/lib/visitor-id';

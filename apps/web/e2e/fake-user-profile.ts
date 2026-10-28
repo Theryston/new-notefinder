@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { PublicProfileSummary } from '@notefinder/contracts';
+import type { PublicProfileSummary } from '@vozzify/contracts';
 
 import { json } from './fake-api-http.ts';
 import {

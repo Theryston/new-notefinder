@@ -1,6 +1,6 @@
 'use client';
 
-import type { HomePinPreviewRequest, Locale } from '@notefinder/contracts';
+import type { HomePinPreviewRequest, Locale } from '@vozzify/contracts';
 import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 

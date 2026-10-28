@@ -5,7 +5,7 @@ import { StorageError, StorageService } from './storage.service.js';
 const config = {
   endpoint: 'http://localhost:9000',
   region: 'us-east-1',
-  bucket: 'notefinder',
+  bucket: 'vozzify',
   accessKeyId: 'access-key',
   secretAccessKey: 'secret-key',
   forcePathStyle: true,
@@ -45,7 +45,7 @@ describe('S3StorageService', () => {
       const command = send.mock.calls[0]?.[0];
       expect(command).toBeInstanceOf(PutObjectCommand);
       expect(command.input).toEqual({
-        Bucket: 'notefinder',
+        Bucket: 'vozzify',
         Key: 'avatars/user-1.webp',
         Body: object.body,
         ContentType: 'image/webp',
@@ -89,10 +89,10 @@ describe('S3StorageService', () => {
     it('keeps the base path, for path-style servers', () => {
       const pathStyle = new S3StorageService(
         { send, destroy },
-        { ...config, publicUrl: 'http://localhost:9000/notefinder' },
+        { ...config, publicUrl: 'http://localhost:9000/vozzify' },
       );
       expect(pathStyle.publicUrl('a/b.png')).toBe(
-        'http://localhost:9000/notefinder/a/b.png',
+        'http://localhost:9000/vozzify/a/b.png',
       );
     });
 
@@ -112,7 +112,7 @@ describe('S3StorageService', () => {
       const command = send.mock.calls[0]?.[0];
       expect(command).toBeInstanceOf(HeadObjectCommand);
       expect(command.input).toEqual({
-        Bucket: 'notefinder',
+        Bucket: 'vozzify',
         Key: 'track-audio/a.wav',
       });
     });

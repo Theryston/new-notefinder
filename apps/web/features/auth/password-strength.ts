@@ -1,4 +1,4 @@
-import { PASSWORD_MIN_LENGTH } from '@notefinder/contracts/auth-rules';
+import { PASSWORD_MIN_LENGTH } from '@vozzify/contracts/auth-rules';
 
 /** 0: too short to be accepted, 1: weak, 2: fair, 3: strong. */
 export type PasswordStrength = 0 | 1 | 2 | 3;

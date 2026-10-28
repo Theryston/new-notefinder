@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 
 export function nextNotesTarget(notes: readonly TrackNote[], time: number) {
   if (notes.some((note) => note.start <= time && note.end > time)) return null;

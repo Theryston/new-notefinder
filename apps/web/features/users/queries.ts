@@ -10,7 +10,7 @@ import {
   publicProfileSummarySchema,
   type UserFavoritesPage,
   userFavoritesPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { isApiError } from '@/lib/api/api-error';

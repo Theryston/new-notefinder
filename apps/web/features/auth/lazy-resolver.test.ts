@@ -1,4 +1,4 @@
-import { signUpBodySchema } from '@notefinder/contracts';
+import { signUpBodySchema } from '@vozzify/contracts';
 import type { ResolverOptions } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 

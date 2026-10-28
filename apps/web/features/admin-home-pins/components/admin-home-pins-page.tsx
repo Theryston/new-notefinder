@@ -7,7 +7,7 @@ import {
   EDITORIAL_PIN_TITLE_MAX_LENGTH,
   HERO_POSITION,
   LOCALES,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 

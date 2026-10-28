@@ -4,7 +4,7 @@ import {
   type MusicCatalogRepresentativeRelease,
   musicCatalogArtistSchema,
   musicCatalogReleaseGroupSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { testMbid } from './factories.js';
 
 // Music catalog release groups and artists for the metadata import tests,

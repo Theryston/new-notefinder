@@ -26,7 +26,7 @@ type TrackedTable = {
 };
 
 /** Prefix of every trigger this ticket owns, so stale ones can be found. */
-export const SYNC_TRIGGER_PREFIX = 'notefinder_sync';
+export const SYNC_TRIGGER_PREFIX = 'vozzify_sync';
 
 export const triggerName = (table: string): string =>
   `${SYNC_TRIGGER_PREFIX}_${table}`;

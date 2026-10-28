@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackAudio } from '@notefinder/contracts';
+import type { TrackAudio } from '@vozzify/contracts';
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import type { PlaybackController } from '../playback/playback-controller';

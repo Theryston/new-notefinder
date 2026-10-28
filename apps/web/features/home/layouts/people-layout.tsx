@@ -1,4 +1,4 @@
-import type { HomePeopleRow } from '@notefinder/contracts';
+import type { HomePeopleRow } from '@vozzify/contracts';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

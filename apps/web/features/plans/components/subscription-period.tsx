@@ -1,6 +1,6 @@
 'use client';
 
-import type { Subscription } from '@notefinder/contracts';
+import type { Subscription } from '@vozzify/contracts';
 import { ArrowRightIcon, CheckIcon, Clock3Icon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/navigation';

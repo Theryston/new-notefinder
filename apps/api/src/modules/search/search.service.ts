@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type {
   MusicCatalogSearchParams,
   SearchResult,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';
 
 @Injectable()

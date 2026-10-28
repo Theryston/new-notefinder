@@ -1,4 +1,4 @@
-import type { HomeRowTitle } from '@notefinder/contracts';
+import type { HomeRowTitle } from '@vozzify/contracts';
 import { NextIntlClientProvider } from 'next-intl';
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';

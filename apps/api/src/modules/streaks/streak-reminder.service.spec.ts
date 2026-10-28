@@ -37,7 +37,7 @@ describe('Practice reminder job', () => {
         StreakReminderProcessor,
         { provide: StreakReminderRepository, useValue: repository },
         { provide: EmailService, useValue: emails },
-        { provide: ENV, useValue: { WEB_URL: 'https://notefinder.test' } },
+        { provide: ENV, useValue: { WEB_URL: 'https://vozzify.test' } },
         { provide: getQueueToken(STREAK_REMINDER_QUEUE), useValue: queue },
       ],
     })
@@ -62,7 +62,7 @@ describe('Practice reminder job', () => {
     expect(emails.send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: recipient.email,
-        text: expect.stringContaining('https://notefinder.test/en'),
+        text: expect.stringContaining('https://vozzify.test/en'),
       }),
       { jobId: 'streak-reminder-user-1-2026-03-10', retainForSeconds: 172800 },
     );

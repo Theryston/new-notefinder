@@ -24,7 +24,7 @@ import {
   currentUserSchema,
   type ProfileVisibility,
   profileVisibilitySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AllowMissingUsername } from '../../common/decorators/allow-missing-username.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

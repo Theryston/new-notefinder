@@ -1,6 +1,6 @@
 'use client';
 
-import type { HomeFeedPage, Locale } from '@notefinder/contracts';
+import type { HomeFeedPage, Locale } from '@vozzify/contracts';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef } from 'react';

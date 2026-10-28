@@ -102,13 +102,13 @@ describe('planTriggerSync', () => {
       ...existing,
       triggers: [
         ...existing.triggers,
-        { name: 'notefinder_sync_retired', table: 'isrc' },
+        { name: 'vozzify_sync_retired', table: 'isrc' },
       ],
     });
 
     expect(plan.reinstall).toBe(true);
     expect(plan.staleTriggers).toEqual([
-      { name: 'notefinder_sync_retired', table: 'isrc' },
+      { name: 'vozzify_sync_retired', table: 'isrc' },
     ]);
   });
 

@@ -1,4 +1,4 @@
-import type { PublicProfile } from '@notefinder/contracts';
+import type { PublicProfile } from '@vozzify/contracts';
 
 import { cn } from '@/lib/utils';
 

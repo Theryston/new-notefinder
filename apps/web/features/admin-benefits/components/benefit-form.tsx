@@ -5,7 +5,7 @@ import {
   type AdminBenefit,
   type WriteBenefitBody,
   writeBenefitBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';

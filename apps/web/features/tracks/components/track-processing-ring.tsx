@@ -1,4 +1,4 @@
-import type { TrackHeader } from '@notefinder/contracts';
+import type { TrackHeader } from '@vozzify/contracts';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 

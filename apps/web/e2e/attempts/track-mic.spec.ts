@@ -33,7 +33,7 @@ const sungTrack = (id: string): FakeTrack => ({
 async function openTrack(page: Page, id: string, locale: string) {
   await page.addInitScript(() => {
     localStorage.setItem(
-      'notefinder.singing-aids.v1',
+      'vozzify.singing-aids.v1',
       JSON.stringify({ countIn: false, guideMelody: false, offset: 0 }),
     );
   });
@@ -63,7 +63,7 @@ const bestScoreOf = (
   percent: number,
 ) => messages.practice.scoring.bestScore.replace('{percent}', String(percent));
 
-const pendingKey = (trackId: string) => `notefinder:pending-attempt:${trackId}`;
+const pendingKey = (trackId: string) => `vozzify:pending-attempt:${trackId}`;
 
 for (const { locale, messages } of cases) {
   test.describe(`saved attempts (${locale})`, () => {

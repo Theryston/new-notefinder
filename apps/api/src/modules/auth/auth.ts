@@ -1,11 +1,11 @@
 import { Logger } from '@nestjs/common';
+import { createId } from '@paralleldrive/cuid2';
 import {
   PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
   USERNAME_PATTERN,
-} from '@notefinder/contracts';
-import { createId } from '@paralleldrive/cuid2';
+} from '@vozzify/contracts';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
@@ -53,7 +53,7 @@ const errorMessage = (error: unknown): string =>
 
 /** The options that don't depend on the environment or on services. */
 const staticOptions = {
-  appName: 'notefinder',
+  appName: 'vozzify',
   basePath: AUTH_BASE_PATH,
   user: {
     additionalFields: {
@@ -114,10 +114,10 @@ const staticOptions = {
     accountLinking: { enabled: true, trustedProviders: ['google'] },
   },
   disabledPaths: [
-    // Passwordless OTP sign-in isn't a notefinder feature.
+    // Passwordless OTP sign-in isn't a vozzify feature.
     '/sign-in/email-otp',
     // Profile fields (name, username, image) are written through
-    // notefinder's own `/v1/me` routes, which enforce their rules: an
+    // vozzify's own `/v1/me` routes, which enforce their rules: an
     // immutable username and avatars that only we upload. Disabled for
     // everyone, so it can't be used to bypass them.
     '/update-user',
@@ -163,7 +163,7 @@ const rateLimitOptions = (
 });
 
 const advancedOptions = (env: Env): BetterAuthOptions['advanced'] => ({
-  cookiePrefix: 'notefinder',
+  cookiePrefix: 'vozzify',
   useSecureCookies: env.NODE_ENV === 'production',
   // Web on the apex and API on a subdomain: scoping the cookie to the shared
   // domain lets the web server read and forward it.

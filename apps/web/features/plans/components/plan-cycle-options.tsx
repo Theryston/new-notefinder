@@ -1,10 +1,6 @@
 'use client';
 
-import type {
-  BillingCycle,
-  PlanCurrency,
-  PlanOffer,
-} from '@notefinder/contracts';
+import type { BillingCycle, PlanCurrency, PlanOffer } from '@vozzify/contracts';
 import { useFormatter, useTranslations } from 'next-intl';
 import { annualSavingsMonths } from '../plan-pricing';
 

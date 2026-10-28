@@ -5,7 +5,7 @@ import type {
   Locale,
   Mbid,
   Recording,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { MusicCatalogClient } from '../../integrations/music-catalog/music-catalog.client.js';
 import { trackRowsFromRecording } from './track-from-recording.js';

@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { CreateTrackBody } from '@notefinder/contracts';
+import type { CreateTrackBody } from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { TrackPipelineService } from './track-pipeline.service.js';
 import { TrackRequestService } from './track-request.service.js';

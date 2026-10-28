@@ -1,6 +1,6 @@
 'use client';
 
-import type { CatalogTracksPage } from '@notefinder/contracts';
+import type { CatalogTracksPage } from '@vozzify/contracts';
 import { toCatalogTrackCardProps } from '@/features/tracks/components/catalog-track-to-track-card';
 import { PaginatedTrackGrid } from '@/features/tracks/components/paginated-track-grid';
 import type { TrackGridMessages } from '@/features/tracks/components/track-grid-messages';

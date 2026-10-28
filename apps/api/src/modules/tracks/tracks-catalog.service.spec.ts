@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { catalogTrackSchema } from '@notefinder/contracts';
+import { catalogTrackSchema } from '@vozzify/contracts';
 import { TracksRepository } from './tracks.repository.js';
 import { TracksService } from './tracks.service.js';
 

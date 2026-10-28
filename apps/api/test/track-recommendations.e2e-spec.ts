@@ -1,4 +1,4 @@
-import { trackRecommendationsSchema } from '@notefinder/contracts';
+import { trackRecommendationsSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';

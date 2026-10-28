@@ -1,5 +1,5 @@
 'use client';
-import type { BillingCycle, SaveAdminPlanBody } from '@notefinder/contracts';
+import type { BillingCycle, SaveAdminPlanBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { UseFormReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';

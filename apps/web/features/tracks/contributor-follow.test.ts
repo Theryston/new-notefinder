@@ -1,8 +1,8 @@
+import type { InfiniteData } from '@tanstack/react-query';
 import type {
   TrackContributorEntry,
   TrackContributorsPage,
-} from '@notefinder/contracts';
-import type { InfiniteData } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

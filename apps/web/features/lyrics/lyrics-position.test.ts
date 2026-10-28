@@ -1,4 +1,4 @@
-import type { TrackLyricLine } from '@notefinder/contracts';
+import type { TrackLyricLine } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

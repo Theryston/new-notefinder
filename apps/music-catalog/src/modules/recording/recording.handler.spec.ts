@@ -1,4 +1,4 @@
-import type { Recording } from '@notefinder/contracts';
+import type { Recording } from '@vozzify/contracts';
 import { createGetRecordingHandler } from './recording.handler.js';
 import type { RecordingService } from './recording.service.js';
 

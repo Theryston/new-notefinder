@@ -26,7 +26,7 @@ describe('parseEnv', () => {
       GOOGLE_CLIENT_ID: undefined,
       GOOGLE_CLIENT_SECRET: undefined,
       RESEND_API_KEY: undefined,
-      EMAIL_FROM: 'notefinder <noreply@notefinder.com.br>',
+      EMAIL_FROM: 'vozzify <noreply@vozzify.com>',
     });
   });
 
@@ -36,49 +36,46 @@ describe('parseEnv', () => {
         DATABASE_URL,
         NODE_ENV: 'production',
         PORT: '8080',
-        WEB_ORIGINS: 'https://notefinder.com.br, https://www.notefinder.com.br',
+        WEB_ORIGINS: 'https://vozzify.com, https://www.vozzify.com',
         REDIS_URL: 'rediss://user:pass@redis.internal:6380/1',
         TRUST_PROXY: '2',
         RATE_LIMIT_TTL_SECONDS: '30',
         RATE_LIMIT_MAX: '60',
-        WEB_URL: 'https://notefinder.com.br/',
+        WEB_URL: 'https://vozzify.com/',
         REVALIDATE_SECRET: SECRET,
         BETTER_AUTH_SECRET: AUTH_SECRET,
-        BETTER_AUTH_URL: 'https://api.notefinder.com.br/',
-        AUTH_COOKIE_DOMAIN: 'notefinder.com.br',
+        BETTER_AUTH_URL: 'https://api.vozzify.com/',
+        AUTH_COOKIE_DOMAIN: 'vozzify.com',
         GOOGLE_CLIENT_ID: 'google-id',
         GOOGLE_CLIENT_SECRET: 'google-secret',
         RESEND_API_KEY: 're_123',
         RAPIDAPI_API_KEY: 'rapid-key',
         RUNPOD_API_KEY: 'runpod-key',
         RUNPOD_ENDPOINT_ID: 'endpoint-1',
-        EMAIL_FROM: 'notefinder <hi@notefinder.com.br>',
+        EMAIL_FROM: 'vozzify <hi@vozzify.com>',
       }),
     ).toEqual({
       NODE_ENV: 'production',
       PORT: 8080,
-      WEB_ORIGINS: [
-        'https://notefinder.com.br',
-        'https://www.notefinder.com.br',
-      ],
+      WEB_ORIGINS: ['https://vozzify.com', 'https://www.vozzify.com'],
       SWAGGER_ENABLED: false,
       DATABASE_URL,
       REDIS_URL: 'rediss://user:pass@redis.internal:6380/1',
       TRUST_PROXY: 2,
       RATE_LIMIT_TTL_SECONDS: 30,
       RATE_LIMIT_MAX: 60,
-      WEB_URL: 'https://notefinder.com.br',
+      WEB_URL: 'https://vozzify.com',
       REVALIDATE_SECRET: SECRET,
       BETTER_AUTH_SECRET: AUTH_SECRET,
-      BETTER_AUTH_URL: 'https://api.notefinder.com.br',
-      AUTH_COOKIE_DOMAIN: 'notefinder.com.br',
+      BETTER_AUTH_URL: 'https://api.vozzify.com',
+      AUTH_COOKIE_DOMAIN: 'vozzify.com',
       GOOGLE_CLIENT_ID: 'google-id',
       GOOGLE_CLIENT_SECRET: 'google-secret',
       RESEND_API_KEY: 're_123',
       RAPIDAPI_API_KEY: 'rapid-key',
       RUNPOD_API_KEY: 'runpod-key',
       RUNPOD_ENDPOINT_ID: 'endpoint-1',
-      EMAIL_FROM: 'notefinder <hi@notefinder.com.br>',
+      EMAIL_FROM: 'vozzify <hi@vozzify.com>',
     });
   });
 
@@ -199,11 +196,11 @@ describe('parseEnv S3 storage settings', () => {
   const storage = {
     S3_ENDPOINT: 'http://localhost:9000',
     S3_REGION: 'us-east-1',
-    S3_BUCKET: 'notefinder',
+    S3_BUCKET: 'vozzify',
     S3_ACCESS_KEY_ID: 'access-key',
     S3_SECRET_ACCESS_KEY: 'secret-key',
     S3_FORCE_PATH_STYLE: 'true',
-    S3_PUBLIC_URL: 'http://localhost:9000/notefinder/',
+    S3_PUBLIC_URL: 'http://localhost:9000/vozzify/',
   };
   const mandatory = [
     'S3_REGION',
@@ -217,12 +214,12 @@ describe('parseEnv S3 storage settings', () => {
     expect(parseEnv({ ...required, ...storage })).toMatchObject({
       S3_ENDPOINT: 'http://localhost:9000',
       S3_REGION: 'us-east-1',
-      S3_BUCKET: 'notefinder',
+      S3_BUCKET: 'vozzify',
       S3_ACCESS_KEY_ID: 'access-key',
       S3_SECRET_ACCESS_KEY: 'secret-key',
       S3_FORCE_PATH_STYLE: true,
       // Trailing slashes are dropped so URLs can be built as `${base}/${key}`.
-      S3_PUBLIC_URL: 'http://localhost:9000/notefinder',
+      S3_PUBLIC_URL: 'http://localhost:9000/vozzify',
     });
   });
 
@@ -231,9 +228,9 @@ describe('parseEnv S3 storage settings', () => {
       parseEnv({
         ...required,
         ...storage,
-        S3_PUBLIC_URL: 'https://files.notefinder.com.br//',
+        S3_PUBLIC_URL: 'https://files.vozzify.com//',
       }).S3_PUBLIC_URL,
-    ).toBe('https://files.notefinder.com.br');
+    ).toBe('https://files.vozzify.com');
   });
 
   it('needs neither the endpoint nor path style on AWS', () => {
@@ -241,7 +238,7 @@ describe('parseEnv S3 storage settings', () => {
     const env = parseEnv({ ...required, ...aws });
     expect(env.S3_ENDPOINT).toBeUndefined();
     expect(env.S3_FORCE_PATH_STYLE).toBeUndefined();
-    expect(env.S3_BUCKET).toBe('notefinder');
+    expect(env.S3_BUCKET).toBe('vozzify');
   });
 
   it('accepts a config with no S3 variable at all', () => {
@@ -282,7 +279,7 @@ describe('parseEnv S3 storage settings', () => {
 
   it.each([
     ['S3_ENDPOINT', 'localhost:9000'],
-    ['S3_PUBLIC_URL', 'files.notefinder.com.br'],
+    ['S3_PUBLIC_URL', 'files.vozzify.com'],
     ['S3_BUCKET', 'ab'],
     ['S3_BUCKET', 'Uppercase'],
     ['S3_BUCKET', '-leading-hyphen'],
@@ -296,14 +293,12 @@ describe('parseEnv S3 storage settings', () => {
     ).toThrowError(new RegExp(key));
   });
 
-  it.each([
-    'abc',
-    'notefinder-files',
-    'files.notefinder.com.br',
-    'a'.repeat(63),
-  ])('accepts the bucket name %s', (bucket) => {
-    expect(
-      parseEnv({ ...required, ...storage, S3_BUCKET: bucket }).S3_BUCKET,
-    ).toBe(bucket);
-  });
+  it.each(['abc', 'vozzify-files', 'files.vozzify.com', 'a'.repeat(63)])(
+    'accepts the bucket name %s',
+    (bucket) => {
+      expect(
+        parseEnv({ ...required, ...storage, S3_BUCKET: bucket }).S3_BUCKET,
+      ).toBe(bucket);
+    },
+  );
 });

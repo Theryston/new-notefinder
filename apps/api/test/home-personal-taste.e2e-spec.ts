@@ -1,5 +1,5 @@
 import type { TestingModuleBuilder } from '@nestjs/testing';
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import { artists, trackArtists } from '../src/database/schema/artists.js';
 import { practiceAttempts } from '../src/database/schema/practice-attempts.js';
 import { trackFavorites } from '../src/database/schema/track-favorites.js';

@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import type {
   EditorialPinHistoryPage,
   EditorialPinKind,
@@ -6,8 +7,7 @@ import type {
   HomePinPreviewRequest,
   HomePinPreviewResponse,
   PinTrackSearchResult,
-} from '@notefinder/contracts';
-import { queryOptions } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 
 /** TanStack Query keys of the admin pins panel. */
 export const adminPinKeys = {

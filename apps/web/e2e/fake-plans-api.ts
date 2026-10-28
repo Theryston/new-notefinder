@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import type { Locale, PlanCatalog } from '@notefinder/contracts';
+import type { Locale, PlanCatalog } from '@vozzify/contracts';
 
 import { json, readBody } from './fake-api-http.ts';
 

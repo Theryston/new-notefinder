@@ -3,7 +3,7 @@ import {
   type CurrentUser,
   currentUserSchema,
   type UpdateMeBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { ApiError } from '@/lib/api/api-error';
 import { browserApi } from '@/lib/api/browser';

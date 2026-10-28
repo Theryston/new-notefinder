@@ -31,8 +31,8 @@ describe('RedisThrottlerStorage', () => {
     expect(evalMock).toHaveBeenCalledWith(
       expect.any(String),
       2,
-      'notefinder:throttler:{default:hash}:hits',
-      'notefinder:throttler:{default:hash}:blocked',
+      'vozzify:throttler:{default:hash}:hits',
+      'vozzify:throttler:{default:hash}:blocked',
       60_000,
       120,
       60_000,

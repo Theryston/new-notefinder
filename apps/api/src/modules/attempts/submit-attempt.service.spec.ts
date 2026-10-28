@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { LOCALES } from '@notefinder/contracts';
+import { LOCALES } from '@vozzify/contracts';
 import { PersonalHomeQueueService } from '../home/home-personal-queue.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AttemptsService } from './attempts.service.js';

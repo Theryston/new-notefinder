@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 
 /** Shifts a sung pitch by whole octaves onto a reference pitch. */
 export function foldVoiceOctave(midi: number, reference: number): number {

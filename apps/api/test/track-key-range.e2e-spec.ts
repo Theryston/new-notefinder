@@ -1,4 +1,4 @@
-import { trackDetailSchema } from '@notefinder/contracts';
+import { trackDetailSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import { backfillTrackNoteSummaries } from '../src/database/backfill-track-note-summaries.js';
 import { trackNotes } from '../src/database/schema/track-notes.js';

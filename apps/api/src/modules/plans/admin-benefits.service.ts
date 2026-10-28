@@ -6,7 +6,7 @@ import {
   cacheTags,
   LOCALES,
   type WriteBenefitBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { AdminBenefitsRepository } from './admin-benefits.repository.js';

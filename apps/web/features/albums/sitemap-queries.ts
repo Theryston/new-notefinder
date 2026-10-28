@@ -5,7 +5,7 @@ import {
   albumSitemapPageSchema,
   cacheTags,
   SITEMAP_PAGE_SIZE,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';

@@ -4,7 +4,7 @@ import {
   cacheTags,
   type TrackProcessingFailureCode,
   type TrackProcessingStep,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { type Queue, UnrecoverableError } from 'bullmq';
 import { catalogPageTags } from '../../integrations/web-revalidation/catalog-page-tags.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';

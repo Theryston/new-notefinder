@@ -1,4 +1,4 @@
-import { PITCH_CLASS_NAMES, type TrackNote } from '@notefinder/contracts';
+import { PITCH_CLASS_NAMES, type TrackNote } from '@vozzify/contracts';
 
 /** A note on the key of this name and octave (`C#`, 3), for test fixtures. */
 export function noteOn(

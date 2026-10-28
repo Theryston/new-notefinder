@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AlbumSitemapPage, SitemapQuery } from '@notefinder/contracts';
+import type { AlbumSitemapPage, SitemapQuery } from '@vozzify/contracts';
 import { listSitemapPage } from '../../common/sitemap/sitemap-page.js';
 import { AlbumSitemapRepository } from './album-sitemap.repository.js';
 

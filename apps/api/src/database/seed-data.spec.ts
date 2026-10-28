@@ -2,7 +2,7 @@ import {
   mbidSchema,
   setUsernameBodySchema,
   signUpBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import {
   SEED_ALBUM_ARTISTS,
   SEED_ALBUMS,

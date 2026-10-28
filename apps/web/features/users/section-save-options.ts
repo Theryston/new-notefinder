@@ -1,5 +1,5 @@
-import type { ProfileSection, ProfileVisibility } from '@notefinder/contracts';
 import type { QueryClient } from '@tanstack/react-query';
+import type { ProfileSection, ProfileVisibility } from '@vozzify/contracts';
 
 import { saveSectionVisibility } from './profile-visibility-query';
 import { profileKeys } from './query-keys';

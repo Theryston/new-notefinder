@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { ProfileSection, ProfileVisibility } from '@notefinder/contracts';
+import type { ProfileSection, ProfileVisibility } from '@vozzify/contracts';
 
 import { json, readBody } from './fake-api-http.ts';
 
@@ -13,7 +13,7 @@ import { json, readBody } from './fake-api-http.ts';
  */
 
 /** The cookie that signs a request in as the owner of one Profile. */
-export const OWNER_COOKIE = 'notefinder-e2e-owner';
+export const OWNER_COOKIE = 'vozzify-e2e-owner';
 
 /** The API's address, where specs reach the fake to set its state. */
 const FAKE_API = 'http://127.0.0.1:3333';
@@ -35,9 +35,7 @@ let state: VisibilityMock = { visibility: {} };
 
 /** The username the request is signed in as the owner of, if any. */
 const ownerOf = (request: IncomingMessage): string | undefined =>
-  /(?:^|;\s*)notefinder-e2e-owner=([^;]+)/.exec(
-    request.headers.cookie ?? '',
-  )?.[1];
+  /(?:^|;\s*)vozzify-e2e-owner=([^;]+)/.exec(request.headers.cookie ?? '')?.[1];
 
 const flagsOf = (username: string): ProfileVisibility =>
   state.visibility[username] ?? SHOWN;

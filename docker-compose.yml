@@ -1,4 +1,4 @@
-name: notefinder
+name: vozzify
 
 # App-specific services (the web cache Redis, the Music catalog's Postgres and
 # Meilisearch) live next to their app.
@@ -11,15 +11,15 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: notefinder
-      POSTGRES_PASSWORD: notefinder
-      POSTGRES_DB: notefinder
+      POSTGRES_USER: vozzify
+      POSTGRES_PASSWORD: vozzify
+      POSTGRES_DB: vozzify
     ports:
       - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U notefinder -d notefinder']
+      test: ['CMD-SHELL', 'pg_isready -U vozzify -d vozzify']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -47,8 +47,8 @@ services:
     restart: unless-stopped
     command: ['server', '/data', '--console-address', ':9001']
     environment:
-      MINIO_ROOT_USER: notefinder
-      MINIO_ROOT_PASSWORD: notefinder-local
+      MINIO_ROOT_USER: vozzify
+      MINIO_ROOT_PASSWORD: vozzify-local
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -70,14 +70,14 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: notefinder
-      MINIO_ROOT_PASSWORD: notefinder-local
+      MINIO_ROOT_USER: vozzify
+      MINIO_ROOT_PASSWORD: vozzify-local
     entrypoint: ['/bin/sh', '-c']
     command:
       - |
         mc alias set storage http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
-        mc mb --ignore-existing storage/notefinder &&
-        mc anonymous set download storage/notefinder
+        mc mb --ignore-existing storage/vozzify &&
+        mc anonymous set download storage/vozzify
 
 volumes:
   postgres-data:

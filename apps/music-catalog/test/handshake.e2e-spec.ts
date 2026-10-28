@@ -1,4 +1,4 @@
-import { musicCatalogErrorSchema } from '@notefinder/contracts';
+import { musicCatalogErrorSchema } from '@vozzify/contracts';
 import {
   API_KEY,
   ROTATED_API_KEY,

@@ -1,4 +1,4 @@
-import type { CatalogDataset } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
 
 export type ReplicationTokenOptions = {
   /** Which MusicBrainz data this deployment runs (`CATALOG_DATASET`). */

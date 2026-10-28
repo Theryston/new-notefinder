@@ -3,7 +3,7 @@ import 'server-only';
 import {
   type TrackProcessingState,
   trackProcessingStateSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cache } from 'react';
 
 import { serverApi } from '@/lib/api/server';

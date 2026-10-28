@@ -129,7 +129,7 @@ const toSwaggerPropertyMetadata = (
 
 /**
  * Creates a DTO class from a Zod schema (always one from
- * `@notefinder/contracts`). The global `ZodValidationPipe` validates and
+ * `@vozzify/contracts`). The global `ZodValidationPipe` validates and
  * parses any argument typed with it:
  *
  * `class ListTracksQueryDto extends createZodDto(listTracksQuerySchema) {}`

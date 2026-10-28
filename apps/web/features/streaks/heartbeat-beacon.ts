@@ -1,4 +1,4 @@
-import type { StreakHeartbeatBody } from '@notefinder/contracts';
+import type { StreakHeartbeatBody } from '@vozzify/contracts';
 
 /**
  * What `navigator.sendBeacon` needs to post a heartbeat: the browser sends it

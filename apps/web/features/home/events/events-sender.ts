@@ -1,7 +1,4 @@
-import type {
-  HomeItemClickEvent,
-  RecordEventsBody,
-} from '@notefinder/contracts';
+import type { HomeItemClickEvent, RecordEventsBody } from '@vozzify/contracts';
 
 /** What a home click carries: the card, its row, and where it was shown. */
 export type ClickTarget = {

@@ -20,9 +20,9 @@ Use these image references in the saved Coolify Compose definition:
 ```yaml
 services:
   server:
-    image: ghcr.io/theryston/new-notefinder/music-catalog:latest
+    image: ghcr.io/theryston/vozzify/music-catalog:latest
   mbslave:
-    image: ghcr.io/theryston/new-notefinder/music-catalog-mbslave:latest
+    image: ghcr.io/theryston/vozzify/music-catalog-mbslave:latest
 ```
 
 The server, worker and migration job use the first image; the importer uses

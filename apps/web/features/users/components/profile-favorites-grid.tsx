@@ -1,6 +1,6 @@
 'use client';
 
-import type { UserFavoritesPage } from '@notefinder/contracts';
+import type { UserFavoritesPage } from '@vozzify/contracts';
 import type { ReactNode } from 'react';
 
 import { toCatalogTrackCardProps } from '@/features/tracks/components/catalog-track-to-track-card';

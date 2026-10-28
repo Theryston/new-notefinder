@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sitemapIndexXml } from './sitemap-index-xml';
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 
 describe('sitemapIndexXml', () => {
   it('lists the five content sitemaps with absolute URLs for the host', () => {
@@ -36,6 +36,6 @@ describe('sitemapIndexXml', () => {
     expect(xml).toContain(
       '<loc>http://localhost:3000/tracks/sitemap/0.xml</loc>',
     );
-    expect(xml).not.toContain('notefinder.com.br');
+    expect(xml).not.toContain('vozzify.com');
   });
 });

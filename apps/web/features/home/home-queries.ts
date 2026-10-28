@@ -1,10 +1,6 @@
 import 'server-only';
 
-import {
-  cacheTags,
-  type HomeFeedPage,
-  type Locale,
-} from '@notefinder/contracts';
+import { cacheTags, type HomeFeedPage, type Locale } from '@vozzify/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 
 import { serverApi } from '@/lib/api/server';

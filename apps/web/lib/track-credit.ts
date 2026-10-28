@@ -1,4 +1,4 @@
-import type { TrackArtistCreditEntry } from '@notefinder/contracts';
+import type { TrackArtistCreditEntry } from '@vozzify/contracts';
 
 /**
  * The credit as the Recording prints it: each name followed by the join phrase

@@ -16,7 +16,7 @@ import { seconds, Throttle } from '@nestjs/throttler';
 import {
   type RecordEventsResponse,
   recordEventsResponseSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

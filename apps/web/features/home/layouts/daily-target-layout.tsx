@@ -1,4 +1,4 @@
-import type { HomeDailyTargetRow } from '@notefinder/contracts';
+import type { HomeDailyTargetRow } from '@vozzify/contracts';
 import { FlameIcon, TargetIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { messages } from './messages';
 
 const CONTACT_EMAIL = 'hello@theryston.dev';
-const REPOSITORY_URL = 'https://github.com/Theryston/new-notefinder';
+const REPOSITORY_URL = 'https://github.com/Theryston/vozzify';
 
 // The order the terms are numbered in (and the legacy page used).
 const sectionOrder = [
@@ -41,7 +41,7 @@ test.describe('terms page', () => {
       expect(response?.status()).toBe(200);
 
       await expect(page.locator('html')).toHaveAttribute('lang', locale);
-      await expect(page).toHaveTitle(`${terms.metaTitle} | NoteFinder`);
+      await expect(page).toHaveTitle(`${terms.metaTitle} | Vozzify`);
       await expect(
         page.getByRole('heading', { level: 1, name: terms.title }),
       ).toBeVisible();

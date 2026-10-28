@@ -4,7 +4,7 @@ import { catalogTrackSchema } from './artists.js';
 import { mbidSchema } from './music-catalog.js';
 import { cursorPageSchema } from './pagination.js';
 
-// The notefinder catalog's Album: a public entity with its own URL, backed by
+// The vozzify catalog's Album: a public entity with its own URL, backed by
 // one MusicBrainz release group (every edition of one album, not a single
 // release). Created when a Recording is reprocessed, never on reads. The
 // header shows the cover, the title, the credited artists, the type line and

@@ -1,7 +1,7 @@
 import type {
   PracticePreferences,
   UpdatePracticePreferencesBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { saveScoringSettings } from './stores/scoring-settings';
 import { saveSingingAids } from './stores/singing-aids-store';

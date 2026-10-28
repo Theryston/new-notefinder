@@ -14,7 +14,7 @@ const defaults: Preferences = {
   guideMelodyManual: false,
   offset: 0,
 };
-const KEY = 'notefinder.singing-aids.v1';
+const KEY = 'vozzify.singing-aids.v1';
 export const singingAidsStore = createStore<Preferences>(() => defaults);
 
 /** localStorage belongs to this browser/device, never the account. */

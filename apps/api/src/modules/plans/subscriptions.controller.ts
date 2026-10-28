@@ -17,7 +17,7 @@ import {
   createCheckoutBodySchema,
   currentSubscriptionSchema,
   listPlansQuerySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';

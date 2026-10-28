@@ -22,7 +22,7 @@ import {
   musicCatalogGetReleaseGroupResponseSchema,
   musicCatalogSearchResponseSchema,
   type Recording,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { z } from 'zod';
 import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';

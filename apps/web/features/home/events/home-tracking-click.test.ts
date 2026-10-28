@@ -41,7 +41,7 @@ describe('home card navigation targets', () => {
       innerWidth: 1024,
       innerHeight: 768,
     });
-    storage.setItem('notefinder:visitor-id', 'visitor-1');
+    storage.setItem('vozzify:visitor-id', 'visitor-1');
     document.body.innerHTML =
       '<section data-home-row-id="row-0">' +
       '<a href="/en/tracks/song" data-home-item-id="song" ' +

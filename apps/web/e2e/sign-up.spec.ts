@@ -205,7 +205,7 @@ test.describe('verify-email and setup-username guards', () => {
       if (sessionStorage.getItem('seeded')) return;
       sessionStorage.setItem('seeded', '1');
       localStorage.setItem(
-        'notefinder:otp-sent-at:ada@example.com',
+        'vozzify:otp-sent-at:ada@example.com',
         String(Date.now() - 45_000),
       );
     });
@@ -221,7 +221,7 @@ test.describe('verify-email and setup-username guards', () => {
     const calls = await mockAuthApi(page);
     await page.addInitScript(() => {
       localStorage.setItem(
-        'notefinder:otp-sent-at:ada@example.com',
+        'vozzify:otp-sent-at:ada@example.com',
         String(Date.now() - 120_000),
       );
     });
@@ -238,7 +238,7 @@ test.describe('verify-email and setup-username guards', () => {
       calls.some((call) => call.url().endsWith('/send-verification-otp')),
     ).toBe(true);
     const stored = await page.evaluate(() =>
-      Number(localStorage.getItem('notefinder:otp-sent-at:ada@example.com')),
+      Number(localStorage.getItem('vozzify:otp-sent-at:ada@example.com')),
     );
     expect(Date.now() - stored).toBeLessThan(10_000);
   });

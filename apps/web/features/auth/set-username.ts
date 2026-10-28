@@ -2,7 +2,7 @@ import {
   type ApiErrorCode,
   currentUserSchema,
   type SetUsernameBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 import { ApiError } from '@/lib/api/api-error';
 import { browserApi } from '@/lib/api/browser';

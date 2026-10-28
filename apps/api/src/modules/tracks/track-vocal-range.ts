@@ -1,4 +1,4 @@
-import { nearestKey, type TrackVocalRange } from '@notefinder/contracts';
+import { nearestKey, type TrackVocalRange } from '@vozzify/contracts';
 
 const LOWEST_MIDI = 0;
 const HIGHEST_MIDI = 127;

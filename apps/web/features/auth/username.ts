@@ -1,4 +1,4 @@
-import { USERNAME_MAX_LENGTH } from '@notefinder/contracts/auth-rules';
+import { USERNAME_MAX_LENGTH } from '@vozzify/contracts/auth-rules';
 
 const SUFFIX_DIGITS = 4;
 // Used when the name has no letter or digit left after slugifying.

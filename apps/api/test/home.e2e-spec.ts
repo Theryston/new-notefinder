@@ -1,5 +1,5 @@
 import type { TestingModuleBuilder } from '@nestjs/testing';
-import { cacheTags, type HomeRow } from '@notefinder/contracts';
+import { cacheTags, type HomeRow } from '@vozzify/contracts';
 import request from 'supertest';
 import type { z } from 'zod';
 import type { Database } from '../src/database/database.js';

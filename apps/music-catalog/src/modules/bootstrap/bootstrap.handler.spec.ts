@@ -1,4 +1,4 @@
-import type { MusicCatalogStatusResult } from '@notefinder/contracts';
+import type { MusicCatalogStatusResult } from '@vozzify/contracts';
 import { createStatusHandler } from './bootstrap.handler.js';
 import type { BootstrapService } from './bootstrap.service.js';
 

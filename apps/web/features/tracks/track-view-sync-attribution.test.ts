@@ -46,6 +46,6 @@ it('creates a new immutable view for each home click on the same Track', async (
     'en',
     { clickId: 'click-b', visitorId: 'visitor-1' },
   );
-  expect(values.get('notefinder:track-view:same-track')).toContain('click-b');
+  expect(values.get('vozzify:track-view:same-track')).toContain('click-b');
   vi.unstubAllGlobals();
 });

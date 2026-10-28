@@ -1,4 +1,4 @@
-import type { TrackRequestLimit } from '@notefinder/contracts';
+import type { TrackRequestLimit } from '@vozzify/contracts';
 import type { Env } from '../../config/env.js';
 
 /** What one User may hold and request, as the env sets it (see `.env.example`). */

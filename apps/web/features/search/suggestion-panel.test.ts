@@ -1,4 +1,4 @@
-import type { SearchResultItem } from '@notefinder/contracts';
+import type { SearchResultItem } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { suggestionPanelContent } from './suggestion-panel';

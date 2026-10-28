@@ -1,4 +1,4 @@
-import type { AlbumArtist } from '@notefinder/contracts';
+import type { AlbumArtist } from '@vozzify/contracts';
 
 /** How many credited artists the header lists before "and N more". */
 export const VISIBLE_ALBUM_ARTISTS = 3;

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TrackAudio } from '@notefinder/contracts';
+import type { TrackAudio } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import type { AuthUser } from '../auth/auth.js';
 import { TrackDirectAudioRepository } from './track-direct-audio.repository.js';

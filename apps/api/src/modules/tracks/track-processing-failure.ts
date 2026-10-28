@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import type { TrackProcessingFailureCode } from '@notefinder/contracts';
+import type { TrackProcessingFailureCode } from '@vozzify/contracts';
 
 /**
  * A step that ends the Processing with a known failure code (`VIDEO_NOT_FOUND`,

@@ -1,4 +1,4 @@
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { resolveEmailLocale } from '../../integrations/email/email-locale.js';
 
 /** The request a Better Auth hook runs for, when there is one. */

@@ -348,7 +348,7 @@ test.describe('home feed', () => {
 
 /** The session cookie the web reads, like the real Better Auth one. */
 const SESSION_COOKIE = {
-  name: 'notefinder.session_token',
+  name: 'vozzify.session_token',
   value: 'signed-in',
 };
 

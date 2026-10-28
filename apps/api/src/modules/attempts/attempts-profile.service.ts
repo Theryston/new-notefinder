@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TrackVocalRange } from '@notefinder/contracts';
+import type { TrackVocalRange } from '@vozzify/contracts';
 import { AttemptsRepository } from './attempts.repository.js';
 import { deriveVocalRange, type VocalRangeGroup } from './profile-chips.js';
 

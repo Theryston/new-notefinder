@@ -232,7 +232,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
   }) => {
     await page.addInitScript(() => {
       localStorage.setItem(
-        'notefinder.singing-aids.v1',
+        'vozzify.singing-aids.v1',
         JSON.stringify({ countIn: true, guideMelody: true, offset: 0 }),
       );
     });

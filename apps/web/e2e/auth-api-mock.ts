@@ -3,7 +3,7 @@ import type { Page, Request, Route } from '@playwright/test';
 // Any host: the API URL the browser calls is inlined when the app is built
 // (`NEXT_PUBLIC_API_URL`), so it depends on the build, not on this suite.
 const AUTH_ROUTES = '**/v1/auth/**';
-// notefinder's own route the setup-username step calls.
+// vozzify's own route the setup-username step calls.
 const USERNAME_ROUTE = '**/v1/me/username';
 
 export const WRONG_OTP = '000000';

@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import {
   type TrackDetail,
   type TrackLyrics,
@@ -5,8 +6,7 @@ import {
   trackDetailSchema,
   trackLyricsSchema,
   trackNotesSchema,
-} from '@notefinder/contracts';
-import { queryOptions } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

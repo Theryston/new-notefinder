@@ -8,7 +8,7 @@ vi.mock('@/features/tracks/sitemap-queries', () => ({
   getTrackSitemapFile: vi.fn(),
 }));
 vi.mock('@/lib/sitemap/request-origin', () => ({
-  requestSiteOrigin: () => 'https://notefinder.com.br',
+  requestSiteOrigin: () => 'https://vozzify.com',
 }));
 
 const mockFile = vi.mocked(getTrackSitemapFile);

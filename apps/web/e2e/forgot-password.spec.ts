@@ -5,8 +5,7 @@ import { messages } from './messages';
 
 const { auth, authErrors } = messages.en;
 const { forgotPassword } = auth;
-const RESET_SENT_AT_KEY =
-  'notefinder:otp-sent-at:forget-password:ada@example.com';
+const RESET_SENT_AT_KEY = 'vozzify:otp-sent-at:forget-password:ada@example.com';
 
 const bodyOf = (request: Request): Record<string, unknown> =>
   request.postDataJSON() ?? {};
@@ -143,7 +142,7 @@ test.describe('forgot password flow', () => {
     await page.addInitScript((key) => {
       localStorage.setItem(key, String(Date.now() - 120_000));
       localStorage.setItem(
-        'notefinder:otp-sent-at:ada@example.com',
+        'vozzify:otp-sent-at:ada@example.com',
         String(Date.now()),
       );
     }, RESET_SENT_AT_KEY);

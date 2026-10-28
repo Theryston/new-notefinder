@@ -1,4 +1,4 @@
-import type { AlbumTrack } from '@notefinder/contracts';
+import type { AlbumTrack } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { albumTrackGroupBy, discHeading } from './album-disc-headings';

@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 
 export type Judgment = 'hit' | 'near' | 'miss';
 export type ScoringSettings = {

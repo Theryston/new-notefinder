@@ -3,7 +3,7 @@ import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   type TrackSitemapPage,
   trackSitemapPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { ListTrackSitemapQueryDto } from './list-track-sitemap-query.dto.js';

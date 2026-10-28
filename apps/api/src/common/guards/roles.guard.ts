@@ -4,7 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { UserRole } from '@notefinder/contracts';
+import type { UserRole } from '@vozzify/contracts';
 import { currentUserFromContext } from '../decorators/current-user.decorator.js';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { AppException } from '../errors/app-exception.js';

@@ -5,7 +5,7 @@ import {
   type HomeTrack,
   LOCALES,
   type Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import type { HomeTrackRecord } from './home.repository.js';
 import { HomeRepository } from './home.repository.js';

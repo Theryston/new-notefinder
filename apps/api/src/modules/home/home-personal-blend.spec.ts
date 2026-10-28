@@ -1,4 +1,4 @@
-import type { HomeTrack } from '@notefinder/contracts';
+import type { HomeTrack } from '@vozzify/contracts';
 import type { UserTrackSignal } from './home-personal.repository.js';
 import {
   blendDiscoveryCandidates,

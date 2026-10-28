@@ -1,4 +1,4 @@
-import type { EditorialPinState } from '@notefinder/contracts';
+import type { EditorialPinState } from '@vozzify/contracts';
 import {
   affectedLocales,
   changedFieldsOf,

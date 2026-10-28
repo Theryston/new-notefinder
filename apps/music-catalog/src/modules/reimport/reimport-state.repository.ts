@@ -1,4 +1,4 @@
-import type { ReimportPhase } from '@notefinder/contracts';
+import type { ReimportPhase } from '@vozzify/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import { acquireCatalogWriteLock } from '../../database/catalog-write-lock.js';
 import type { Database } from '../../database/database.js';

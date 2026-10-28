@@ -1,6 +1,6 @@
 /**
  * Daily target rules shared by the API and the clients. Kept free of Zod so
- * clients can import them (`@notefinder/contracts/daily-target-rules`)
+ * clients can import them (`@vozzify/contracts/daily-target-rules`)
  * without shipping the schema library on first load.
  */
 

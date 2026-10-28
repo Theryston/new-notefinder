@@ -19,7 +19,7 @@ describe('rememberTranspose', () => {
 
   it('applies what was remembered for the Track', () => {
     const storage = memoryStorage();
-    storage.setItem('notefinder:transpose:track-1', '3');
+    storage.setItem('vozzify:transpose:track-1', '3');
 
     const stop = rememberTranspose(storage, 'track-1');
 
@@ -33,7 +33,7 @@ describe('rememberTranspose', () => {
 
     setTranspose(-2);
 
-    expect(storage.getItem('notefinder:transpose:track-1')).toBe('-2');
+    expect(storage.getItem('vozzify:transpose:track-1')).toBe('-2');
     stop();
   });
 
@@ -45,7 +45,7 @@ describe('rememberTranspose', () => {
     stop();
 
     expect(semitones()).toBe(0);
-    expect(storage.getItem('notefinder:transpose:track-1')).toBe('4');
+    expect(storage.getItem('vozzify:transpose:track-1')).toBe('4');
   });
 
   it('keeps the value inside the stepper limits', () => {

@@ -1,7 +1,7 @@
 import {
   type TrackProcessingStep,
   trackProcessingStepSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { z } from 'zod';
 
 // The queue of a Track's Processing (ADR 0004): each step is a job that loads

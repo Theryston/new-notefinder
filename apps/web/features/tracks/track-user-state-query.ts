@@ -1,5 +1,5 @@
-import { trackPracticeStateSchema } from '@notefinder/contracts';
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
+import { trackPracticeStateSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 
 import { browserApi } from '@/lib/api/browser';

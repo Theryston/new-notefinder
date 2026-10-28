@@ -88,7 +88,7 @@ describe('Storage (e2e)', () => {
 
   it('fails with a StorageError when the bucket does not exist', async () => {
     const missing = await createTestApp({
-      env: { S3_BUCKET: 'notefinder-missing-bucket' },
+      env: { S3_BUCKET: 'vozzify-missing-bucket' },
     });
     try {
       await expect(

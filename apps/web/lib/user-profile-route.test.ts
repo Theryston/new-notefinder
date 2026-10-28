@@ -37,7 +37,7 @@ describe('needsLowercaseRedirect', () => {
 describe('userProfileRedirectUrl', () => {
   it('lowercases the username and keeps the query', () => {
     const url = userProfileRedirectUrl(
-      'https://notefinder.test/en/users/Ada_Lovelace?x=1&time=30',
+      'https://vozzify.test/en/users/Ada_Lovelace?x=1&time=30',
       'Ada_Lovelace',
     );
 

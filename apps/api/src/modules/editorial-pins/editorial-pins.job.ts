@@ -1,4 +1,4 @@
-import { LOCALES, localeSchema } from '@notefinder/contracts';
+import { LOCALES, localeSchema } from '@vozzify/contracts';
 import { z } from 'zod';
 
 // A pin going live or ending changes the home a visitor sees at that exact

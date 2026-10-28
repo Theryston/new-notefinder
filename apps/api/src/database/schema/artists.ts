@@ -3,7 +3,7 @@ import { id, timestamps } from '../columns.js';
 import { tracks } from './tracks.js';
 
 /**
- * Notefinder catalog Artist: a public entity with its own URL, distinct
+ * Vozzify catalog Artist: a public entity with its own URL, distinct
  * from a MusicBrainz artist credit. Created when a Recording is reprocessed;
  * reads never call the Music catalog. Genres are display strings, most
  * relevant first, so the header renders without another lookup.

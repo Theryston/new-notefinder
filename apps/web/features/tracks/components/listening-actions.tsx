@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { MaximizeIcon, SkipForwardIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type RefObject, useEffect, useRef } from 'react';

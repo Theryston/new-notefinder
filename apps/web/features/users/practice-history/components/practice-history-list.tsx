@@ -1,7 +1,7 @@
 'use client';
 
-import type { PracticeAttemptHistoryPage } from '@notefinder/contracts';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type { PracticeAttemptHistoryPage } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
-import type { PracticeAttempt } from '@notefinder/contracts';
-import { practiceSpeedSchema } from '@notefinder/contracts';
+import type { PracticeAttempt } from '@vozzify/contracts';
+import { practiceSpeedSchema } from '@vozzify/contracts';
 import type { PracticeAttemptRow } from './attempts.repository.js';
 
 /** A saved run as the API answers it, timestamps as ISO 8601 text. */

@@ -1,4 +1,4 @@
-import { publicProfileSchema } from '@notefinder/contracts';
+import { publicProfileSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { userFollows } from '../src/database/schema/user-follows.js';

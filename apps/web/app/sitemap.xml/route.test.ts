@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/sitemap/request-origin', () => ({
-  requestSiteOrigin: () => 'https://notefinder.com.br',
+  requestSiteOrigin: () => 'https://vozzify.com',
 }));
 vi.mock('./sitemap-file-counts', () => ({
   loadSitemapFileCounts: async () => ({ albums: 1, artists: 1, users: 1 }),
@@ -18,11 +18,7 @@ describe('GET /sitemap.xml', () => {
     expect(response.headers.get('cache-control')).toContain('s-maxage=3600');
     expect(response.headers.get('vary')).toBe('X-Forwarded-Host, Host');
     const xml = await response.text();
-    expect(xml).toContain(
-      '<loc>https://notefinder.com.br/pages/sitemap/0.xml</loc>',
-    );
-    expect(xml).toContain(
-      '<loc>https://notefinder.com.br/users/sitemap/0.xml</loc>',
-    );
+    expect(xml).toContain('<loc>https://vozzify.com/pages/sitemap/0.xml</loc>');
+    expect(xml).toContain('<loc>https://vozzify.com/users/sitemap/0.xml</loc>');
   });
 });

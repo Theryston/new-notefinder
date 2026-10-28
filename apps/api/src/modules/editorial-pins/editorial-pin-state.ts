@@ -8,7 +8,7 @@ import {
   type EditorialPinTitles,
   LOCALES,
   type Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /** A pin as the database holds it: its fields with the Tracks, in order. */
 export type EditorialPinWrite = {

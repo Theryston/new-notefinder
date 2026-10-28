@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type {
   ListUserAttemptsQuery,
   PracticeAttemptHistoryPage,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { UsersService } from '../users/users.service.js';
 import { toPracticeAttempt } from './attempt-view.js';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Subscription } from '@notefinder/contracts';
+import type { Subscription } from '@vozzify/contracts';
 import { ArrowRightIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { buttonVariants } from '@/components/ui/button';

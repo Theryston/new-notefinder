@@ -1,9 +1,6 @@
 'use client';
 
-import type {
-  EditorialPinKind,
-  EditorialPinLayout,
-} from '@notefinder/contracts';
+import type { EditorialPinKind, EditorialPinLayout } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller } from 'react-hook-form';

@@ -1,4 +1,4 @@
-import type { PublicProfile } from '@notefinder/contracts';
+import type { PublicProfile } from '@vozzify/contracts';
 
 /** The three follow numbers under a Profile banner. */
 export type FollowCounts = Pick<

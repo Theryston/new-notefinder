@@ -1,10 +1,10 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import type { ProfileVisibility, PublicProfile } from '@notefinder/contracts';
+import type { ProfileVisibility, PublicProfile } from '@vozzify/contracts';
 import {
   profileVisibilitySchema,
   publicProfileSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { ProfileVisibilityService } from '../users/profile-visibility.service.js';

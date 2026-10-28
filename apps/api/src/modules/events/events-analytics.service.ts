@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { EditorialPinMetrics } from '@notefinder/contracts';
+import type { EditorialPinMetrics } from '@vozzify/contracts';
 import { EventsRepository, type PinEventWindow } from './events.repository.js';
 
 export type PinMetricsWindow = PinEventWindow & {

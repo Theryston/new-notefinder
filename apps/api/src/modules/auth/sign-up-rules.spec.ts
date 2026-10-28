@@ -1,4 +1,4 @@
-import { NAME_MAX_LENGTH } from '@notefinder/contracts';
+import { NAME_MAX_LENGTH } from '@vozzify/contracts';
 import { APIError } from 'better-auth/api';
 import { enforceSignUpRules, validateSignUpBody } from './sign-up-rules.js';
 

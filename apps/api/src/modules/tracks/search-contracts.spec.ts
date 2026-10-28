@@ -2,7 +2,7 @@ import {
   musicCatalogSearchPayloadSchema,
   searchQuerySchema,
   searchResultItemSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 import { recordingSummary } from '../../../test/utils/recording-summaries.js';
 

@@ -1,4 +1,4 @@
-import type { MusicCatalogResponse } from '@notefinder/contracts';
+import type { MusicCatalogResponse } from '@vozzify/contracts';
 import { CatalogError } from '../errors/catalog-error.js';
 import type { Logger } from '../logger.js';
 import {

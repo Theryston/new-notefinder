@@ -1,7 +1,7 @@
 'use client';
 
-import type { StreakStatus } from '@notefinder/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { StreakStatus } from '@vozzify/contracts';
 import { useEffect, useRef } from 'react';
 
 import { getClientEnv } from '@/lib/env/client';

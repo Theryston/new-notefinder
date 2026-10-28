@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { HomeService } from './home.service.js';
 import { encodeHomeCursor } from './home-cursor.js';

@@ -1,4 +1,4 @@
-import type { TrackProcessing } from '@notefinder/contracts';
+import type { TrackProcessing } from '@vozzify/contracts';
 import { CheckIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 

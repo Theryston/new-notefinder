@@ -1,6 +1,6 @@
 'use client';
 
-import type { SearchResultItem } from '@notefinder/contracts';
+import type { SearchResultItem } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 

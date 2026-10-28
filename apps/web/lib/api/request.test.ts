@@ -1,4 +1,4 @@
-import { cursorPageSchema } from '@notefinder/contracts';
+import { cursorPageSchema } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 

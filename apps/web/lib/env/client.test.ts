@@ -17,13 +17,13 @@ describe('getSiteUrl', () => {
   });
 
   it('uses NEXT_PUBLIC_SITE_URL', async () => {
-    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://notefinder.com.br');
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://vozzify.com');
     const getSiteUrl = await loadGetSiteUrl();
-    expect(getSiteUrl().origin).toBe('https://notefinder.com.br');
+    expect(getSiteUrl().origin).toBe('https://vozzify.com');
   });
 
   it('rejects an invalid URL', async () => {
-    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'notefinder.com.br');
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'vozzify.com');
     const getSiteUrl = await loadGetSiteUrl();
     expect(() => getSiteUrl()).toThrowError(/NEXT_PUBLIC_SITE_URL/);
   });

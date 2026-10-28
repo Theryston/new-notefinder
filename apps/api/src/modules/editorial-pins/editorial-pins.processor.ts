@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 import { type Job, UnrecoverableError } from 'bullmq';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import {

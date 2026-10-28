@@ -7,7 +7,7 @@ import { createAuth } from './auth.js';
 
 const baseEnv = {
   NODE_ENV: 'test',
-  DATABASE_URL: 'postgres://notefinder@localhost:5432/notefinder',
+  DATABASE_URL: 'postgres://vozzify@localhost:5432/vozzify',
   REDIS_URL: 'redis://localhost:6379',
 };
 
@@ -72,11 +72,11 @@ describe('createAuth', () => {
 
   it('shares secure cookies with the web domain in production', () => {
     const { auth } = setup(
-      parseEnv({ ...productionEnv, AUTH_COOKIE_DOMAIN: 'notefinder.com.br' }),
+      parseEnv({ ...productionEnv, AUTH_COOKIE_DOMAIN: 'vozzify.com' }),
     );
     expect(auth.options.advanced).toMatchObject({
       useSecureCookies: true,
-      crossSubDomainCookies: { enabled: true, domain: 'notefinder.com.br' },
+      crossSubDomainCookies: { enabled: true, domain: 'vozzify.com' },
     });
   });
 
@@ -161,7 +161,7 @@ describe('createAuth', () => {
       });
     });
 
-    it('ignores code types notefinder does not use', async () => {
+    it('ignores code types vozzify does not use', async () => {
       vi.spyOn(Logger.prototype, 'warn').mockReturnValue();
       const { auth, emailService } = setup();
       await sendVerificationOtp(auth)(

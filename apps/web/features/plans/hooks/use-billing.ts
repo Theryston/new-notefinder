@@ -7,7 +7,7 @@ export function useSubscription(userId: string, locale: string) {
     queryKey: billingKeys.subscription(userId, locale),
     queryFn: async () => {
       const [{ browserApi }, { currentSubscriptionSchema }] = await Promise.all(
-        [import('@/lib/api/browser'), import('@notefinder/contracts')],
+        [import('@/lib/api/browser'), import('@vozzify/contracts')],
       );
       return browserApi('/me/subscription', {
         schema: currentSubscriptionSchema,

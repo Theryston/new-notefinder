@@ -1,4 +1,4 @@
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { EMAIL_QUEUE } from '../src/integrations/email/email.job.js';
 import { TrackJobRunnerService } from '../src/modules/tracks/track-job-runner.service.js';
 import type { TestApp } from './utils/create-test-app.js';
@@ -58,7 +58,7 @@ describe('Track Processing emails (e2e)', () => {
     expect(emails).toHaveLength(1);
     expect(emails[0]).toMatchObject({
       to: creator.email,
-      subject: 'Your notes are ready on notefinder',
+      subject: 'Your notes are ready on vozzify',
     });
     expect(emails[0]?.text).toContain(`/en/tracks/${trackId}`);
   });
@@ -81,11 +81,11 @@ describe('Track Processing emails (e2e)', () => {
     );
     expect(failed.map((email) => email.subject)).toEqual([
       'We could not finish the notes of a track',
-      'Your notes are ready on notefinder',
+      'Your notes are ready on vozzify',
     ]);
     expect(completedForRetrier).toEqual([
       expect.objectContaining({
-        subject: 'As notas da sua música estão prontas no notefinder',
+        subject: 'As notas da sua música estão prontas no vozzify',
       }),
     ]);
     expect(completedForRetrier[0]?.html).toContain(`/pt-BR/tracks/${trackId}`);

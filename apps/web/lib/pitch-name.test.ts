@@ -1,4 +1,4 @@
-import { nearestKey, pitchName } from '@notefinder/contracts';
+import { nearestKey, pitchName } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 describe('nearestKey', () => {

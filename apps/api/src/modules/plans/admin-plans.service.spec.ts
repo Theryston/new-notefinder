@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import type { SaveAdminPlanBody } from '@notefinder/contracts';
+import type { SaveAdminPlanBody } from '@vozzify/contracts';
 import { fakeTransactionalDatabase } from '../../../test/utils/fake-transactional-db.js';
 import { DATABASE, DATABASE_POOL } from '../../database/database.js';
 import { DatabaseModule } from '../../database/database.module.js';

@@ -30,7 +30,7 @@ const memory = () => {
 
 const keepView = (storage: ReturnType<typeof memory>, viewId: string) =>
   storage.setItem(
-    'notefinder:track-view:track-1',
+    'vozzify:track-view:track-1',
     JSON.stringify({ viewId, attached: true }),
   );
 

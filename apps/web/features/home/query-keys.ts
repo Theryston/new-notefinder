@@ -1,4 +1,4 @@
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 
 /** Keys of the home's client queries; one feed per locale. */
 export const homeQueryKeys = {

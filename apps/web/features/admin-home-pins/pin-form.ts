@@ -5,7 +5,7 @@ import type {
   EditorialPinKind,
   EditorialPinLayout,
   Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /**
  * The pin facts the form needs at runtime. Built by the server page from the

@@ -8,7 +8,7 @@ import type {
   EditorialPinKind,
   EditorialPinState,
   Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {

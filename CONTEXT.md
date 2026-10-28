@@ -1,6 +1,6 @@
-# notefinder
+# vozzify
 
-notefinder shows the vocal notes a singer hits in a song, synced with
+vozzify shows the vocal notes a singer hits in a song, synced with
 playback, with real-time pitch feedback from the user's mic.
 
 ## Language
@@ -8,7 +8,7 @@ playback, with real-time pitch feedback from the user's mic.
 ### Accounts
 
 **User**:
-A person with an account on notefinder, signed up by email or Google.
+A person with an account on vozzify, signed up by email or Google.
 _Avoid_: Account (for the person), member, customer
 
 **Username**:
@@ -52,13 +52,13 @@ _Avoid_: Favorite artist, top artist
 
 **Music catalog**:
 Every Recording in the world with its artists, releases and genres, kept in
-sync with MusicBrainz. It is where notefinder's own catalog (the
+sync with MusicBrainz. It is where vozzify's own catalog (the
 Tracks, Artists and Albums that have notes and public URLs) finds songs; a
-Recording is not a Track until a User asks notefinder to process it.
-_Avoid_: Catalog (alone, which means notefinder's own catalog)
+Recording is not a Track until a User asks vozzify to process it.
+_Avoid_: Catalog (alone, which means vozzify's own catalog)
 
 **Track**:
-A Recording taken into notefinder's own catalog, with its own public URL.
+A Recording taken into vozzify's own catalog, with its own public URL.
 It exists from the moment a User asks for it to be processed, and has
 vocal notes only once its Processing completes. One Track per Recording.
 _Avoid_: Song, music
@@ -132,7 +132,7 @@ _Avoid_: Lyrics (the words of a Recording, which the catalog no longer holds),
 transcript, subtitles
 
 **Album**:
-A notefinder catalog entity with its own public URL, backed by one MusicBrainz
+A vozzify catalog entity with its own public URL, backed by one MusicBrainz
 release group: the album across all of its editions, so every edition of one
 album shares one URL. It exists once its Recordings are reprocessed (see
 `docs/adr/0003-album-is-a-release-group.md`).

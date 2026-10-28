@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * The NoteFinder symbol. Decorative (the wordmark or a translated label next
+ * The Vozzify symbol. Decorative (the wordmark or a translated label next
  * to it names the brand); it inherits `currentColor`, which defaults to the
  * brand orange.
  */

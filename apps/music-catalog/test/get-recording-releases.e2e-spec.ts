@@ -1,4 +1,4 @@
-import type { Recording } from '@notefinder/contracts';
+import type { Recording } from '@vozzify/contracts';
 import { useTestServer } from './utils/create-test-server.js';
 import { requestRecording } from './utils/get-recording-client.js';
 import {

@@ -1,4 +1,4 @@
-import type { CatalogDataset } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
 import { MbslaveClient } from '../../integrations/mbslave/mbslave-client.js';
 import { createLogger } from '../../logger.js';
 import type { BootstrapRepository } from './bootstrap.repository.js';

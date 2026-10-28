@@ -1,4 +1,4 @@
-import type { MusicCatalogError } from '@notefinder/contracts';
+import type { MusicCatalogError } from '@vozzify/contracts';
 
 const UNAUTHORIZED_ERROR: MusicCatalogError = {
   code: 'UNAUTHORIZED',

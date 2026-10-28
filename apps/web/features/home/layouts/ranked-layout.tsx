@@ -1,4 +1,4 @@
-import type { HomeRankedRow } from '@notefinder/contracts';
+import type { HomeRankedRow } from '@vozzify/contracts';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';

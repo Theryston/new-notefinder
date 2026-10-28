@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { apiErrorCodeSchema } from '@notefinder/contracts';
+import { apiErrorCodeSchema } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routing } from './routing';

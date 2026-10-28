@@ -1,4 +1,4 @@
-import { planCatalogSchema } from '@notefinder/contracts';
+import { planCatalogSchema } from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import request from 'supertest';
 import { planPrices, plans } from '../src/database/schema/plans.js';

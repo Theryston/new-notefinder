@@ -1,4 +1,4 @@
-import type { CatalogDataset } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
 import type { ServerEnv, WorkerEnv } from './config/env.js';
 import { createCutoverWatcher } from './cutover-watcher.js';
 import type { Database } from './database/database.js';

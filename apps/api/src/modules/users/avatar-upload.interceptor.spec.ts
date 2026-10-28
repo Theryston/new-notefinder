@@ -4,7 +4,7 @@ import {
   type ExecutionContext,
   PayloadTooLargeException,
 } from '@nestjs/common';
-import { AVATAR_MAX_BYTES } from '@notefinder/contracts';
+import { AVATAR_MAX_BYTES } from '@vozzify/contracts';
 import { firstValueFrom, type Observable, of } from 'rxjs';
 import { ZodValidationException } from '../../common/zod/zod-validation.pipe.js';
 import { AvatarUploadInterceptor } from './avatar-upload.interceptor.js';

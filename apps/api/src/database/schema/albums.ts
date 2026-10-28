@@ -12,7 +12,7 @@ import { artists } from './artists.js';
 import { tracks } from './tracks.js';
 
 /**
- * Notefinder catalog Album: a public entity with its own URL, backed by one
+ * Vozzify catalog Album: a public entity with its own URL, backed by one
  * MusicBrainz release group (every edition of an album, never a single
  * release; see `docs/adr/0003-album-is-a-release-group.md`). Created when a
  * Recording is reprocessed; reads never call the Music catalog. The header

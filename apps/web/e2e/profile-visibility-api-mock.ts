@@ -1,5 +1,5 @@
-import type { ProfileVisibility } from '@notefinder/contracts';
 import type { Page, Request } from '@playwright/test';
+import type { ProfileVisibility } from '@vozzify/contracts';
 
 const VISIBILITY_ROUTE = '**/v1/me/profile-visibility';
 

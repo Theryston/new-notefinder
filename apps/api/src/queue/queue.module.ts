@@ -12,7 +12,7 @@ const createQueueOptions = (env: Env): QueueOptions => ({
   // BullMQ opens its own connections from these options (workers need
   // blocking connections that retry forever), instead of the shared client.
   connection: { url: env.REDIS_URL },
-  prefix: 'notefinder:bull',
+  prefix: 'vozzify:bull',
   defaultJobOptions: {
     attempts: 5,
     // 5s, 10s, 20s, 40s between attempts.

@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { type PointerEvent, useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '@/lib/utils';

@@ -4,7 +4,7 @@ import {
   cacheTags,
   type TrackRecommendations,
   trackRecommendationsSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { cacheLife, cacheTag } from 'next/cache';
 import { serverApi } from '@/lib/api/server';
 

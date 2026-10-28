@@ -5,8 +5,8 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { PracticeAttemptHistoryPage } from '@notefinder/contracts';
-import { practiceAttemptHistoryPageSchema } from '@notefinder/contracts';
+import type { PracticeAttemptHistoryPage } from '@vozzify/contracts';
+import { practiceAttemptHistoryPageSchema } from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

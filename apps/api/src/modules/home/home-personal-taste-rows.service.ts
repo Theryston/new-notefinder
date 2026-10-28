@@ -5,7 +5,7 @@ import type {
   HomeRow,
   HomeRowTitle,
   HomeTrack,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import type { MostSungArtistActivity } from '../attempts/profile-chips-ranking.js';
 import { composeHomeRows } from './home-feed-composer.js';

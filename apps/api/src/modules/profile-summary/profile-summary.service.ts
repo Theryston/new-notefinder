@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type {
   ProfileVisibility,
   PublicProfileSummary,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import { FavoritesService } from '../favorites/favorites.service.js';
 import { StreaksService } from '../streaks/streaks.service.js';

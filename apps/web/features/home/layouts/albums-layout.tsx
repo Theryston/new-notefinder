@@ -1,4 +1,4 @@
-import type { HomeAlbumsRow } from '@notefinder/contracts';
+import type { HomeAlbumsRow } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { TrackCoverArt } from '@/features/tracks/components/track-cover-art';

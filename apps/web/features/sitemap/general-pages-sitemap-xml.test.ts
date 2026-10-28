@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { generalPagesSitemapXml } from './general-pages-sitemap-xml';
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 
 const urlBlocks = (xml: string): string[] =>
   [...xml.matchAll(/<url>(.*?)<\/url>/g)].map((match) => match[1] ?? '');

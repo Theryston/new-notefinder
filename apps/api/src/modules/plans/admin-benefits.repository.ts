@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { WriteBenefitBody } from '@notefinder/contracts';
+import type { WriteBenefitBody } from '@vozzify/contracts';
 import { asc, eq, inArray } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { benefits, planBenefits, plans } from '../../database/schema/plans.js';

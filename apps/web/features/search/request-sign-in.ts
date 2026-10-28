@@ -4,7 +4,7 @@ import type { SignInHref } from '@/features/tracks/components/track-card';
 export const PROCESS_PARAM = 'process';
 
 // Any origin works: it only lets `URL` resolve the path and its query.
-const BASE = 'http://notefinder.invalid';
+const BASE = 'http://vozzify.invalid';
 
 /**
  * The search page's path and query, as the visitor's URL has them: `q` when

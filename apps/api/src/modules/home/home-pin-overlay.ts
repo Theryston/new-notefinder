@@ -4,7 +4,7 @@ import type {
   HomeRowTitle,
   HomeTrack,
   HomeVocalRangeTrack,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { explorationSlotCount } from './home-personal-recommendations.js';
 import { HOME_MAX_ROWS, HOME_ROW_RULES } from './home-rules.js';
 

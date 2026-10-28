@@ -1,4 +1,4 @@
-import { updateMeBodySchema } from '@notefinder/contracts';
+import { updateMeBodySchema } from '@vozzify/contracts';
 
 const name = 'Ada King';
 

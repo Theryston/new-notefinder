@@ -1,6 +1,6 @@
 'use client';
 
-import type { PlanCurrency, PlanOffer } from '@notefinder/contracts';
+import type { PlanCurrency, PlanOffer } from '@vozzify/contracts';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { monthlyPlanAmount } from '../plan-pricing';
 

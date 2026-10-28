@@ -1,7 +1,4 @@
-import {
-  type RevalidateBody,
-  revalidateBodySchema,
-} from '@notefinder/contracts';
+import { type RevalidateBody, revalidateBodySchema } from '@vozzify/contracts';
 
 export const WEB_REVALIDATION_QUEUE = 'web-revalidation';
 export const WEB_REVALIDATION_JOB = 'revalidate';

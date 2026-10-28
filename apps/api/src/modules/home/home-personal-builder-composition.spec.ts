@@ -1,6 +1,6 @@
 import type { InjectionToken, ValueProvider } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import type { HomeRow, HomeTrack } from '@notefinder/contracts';
+import type { HomeRow, HomeTrack } from '@vozzify/contracts';
 import { AttemptsService } from '../attempts/attempts.service.js';
 import { StreaksService } from '../streaks/streaks.service.js';
 import { UsersService } from '../users/users.service.js';

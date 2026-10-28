@@ -1,4 +1,4 @@
-import type { MusicCatalogGenre } from '@notefinder/contracts';
+import type { MusicCatalogGenre } from '@vozzify/contracts';
 import { compareText } from './compare.js';
 
 /** A tag with its vote count; `genreMbid` is set when it is also a genre. */

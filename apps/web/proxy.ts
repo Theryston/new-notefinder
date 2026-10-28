@@ -1,4 +1,4 @@
-import { clickIdSchema } from '@notefinder/contracts';
+import { clickIdSchema } from '@vozzify/contracts';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {

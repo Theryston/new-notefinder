@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@notefinder/contracts';
+import type { ApiErrorCode } from '@vozzify/contracts';
 import { notFound } from 'next/navigation';
 import * as rootParams from 'next/root-params';
 import { getRequestConfig } from 'next-intl/server';

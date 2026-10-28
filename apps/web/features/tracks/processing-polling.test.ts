@@ -1,4 +1,4 @@
-import type { TrackProcessingState } from '@notefinder/contracts';
+import type { TrackProcessingState } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

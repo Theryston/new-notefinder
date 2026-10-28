@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { cacheTags } from '@notefinder/contracts';
+import { cacheTags } from '@vozzify/contracts';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { ProfileVisibilityRepository } from './profile-visibility.repository.js';
 import { ProfileVisibilityService } from './profile-visibility.service.js';

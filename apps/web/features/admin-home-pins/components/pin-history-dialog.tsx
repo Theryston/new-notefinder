@@ -1,7 +1,7 @@
 'use client';
 
-import type { EditorialPin } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { EditorialPin } from '@vozzify/contracts';
 import { useFormatter, useTranslations } from 'next-intl';
 import {
   Dialog,

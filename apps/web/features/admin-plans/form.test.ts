@@ -1,4 +1,4 @@
-import type { AdminPlan } from '@notefinder/contracts';
+import type { AdminPlan } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 import { planFormDefaults } from './form';
 

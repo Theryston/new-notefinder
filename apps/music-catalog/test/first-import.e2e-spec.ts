@@ -1,5 +1,5 @@
-import type { CatalogDataset } from '@notefinder/contracts';
-import { musicCatalogStatusResponseSchema } from '@notefinder/contracts';
+import type { CatalogDataset } from '@vozzify/contracts';
+import { musicCatalogStatusResponseSchema } from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import { inject } from 'vitest';
 import { MbslaveClient } from '../src/integrations/mbslave/mbslave-client.js';

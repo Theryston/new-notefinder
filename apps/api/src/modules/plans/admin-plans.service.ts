@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { cacheTags, type SaveAdminPlanBody } from '@notefinder/contracts';
+import { cacheTags, type SaveAdminPlanBody } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeCatalogService } from '../../integrations/stripe/stripe-catalog.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';

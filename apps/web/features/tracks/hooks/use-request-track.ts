@@ -1,11 +1,11 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import {
   type CreateTrackResult,
   createTrackResultSchema,
   type Locale,
-} from '@notefinder/contracts';
-import { useMutation } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 

@@ -2,7 +2,7 @@ import {
   cacheTags,
   catalogTrackSchema,
   catalogTracksPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { testMbid } from '../../../test/utils/factories.js';
 
 // Locks the nested track-list contract: one entry per processed Recording

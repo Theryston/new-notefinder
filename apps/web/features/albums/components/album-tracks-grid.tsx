@@ -1,6 +1,6 @@
 'use client';
 
-import type { AlbumTracksPage } from '@notefinder/contracts';
+import type { AlbumTracksPage } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 
 import { toCatalogTrackCardProps } from '@/features/tracks/components/catalog-track-to-track-card';

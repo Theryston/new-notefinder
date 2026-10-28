@@ -17,7 +17,7 @@ const createProcessor = async (overrides: Record<string, string> = {}) => {
     REDIS_URL: 'redis://localhost:6379',
     BETTER_AUTH_SECRET: 'a'.repeat(32),
     RESEND_API_KEY: 're_test',
-    EMAIL_FROM: 'notefinder <noreply@notefinder.com.br>',
+    EMAIL_FROM: 'vozzify <noreply@vozzify.com>',
     ...overrides,
   });
   const moduleRef = await Test.createTestingModule({
@@ -62,7 +62,7 @@ describe('EmailProcessor', () => {
       },
     });
     expect(JSON.parse(String(init?.body))).toEqual({
-      from: 'notefinder <noreply@notefinder.com.br>',
+      from: 'vozzify <noreply@vozzify.com>',
       to: ['ana@example.com'],
       subject: 'Your code',
       html: '<p>123456</p>',

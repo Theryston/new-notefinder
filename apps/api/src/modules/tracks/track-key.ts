@@ -1,4 +1,4 @@
-import { nearestKey, type TrackKey } from '@notefinder/contracts';
+import { nearestKey, type TrackKey } from '@vozzify/contracts';
 import type { NoteSpan } from './track-note-span.js';
 
 // Key estimation as the legacy app does it (`estimateKey` in its

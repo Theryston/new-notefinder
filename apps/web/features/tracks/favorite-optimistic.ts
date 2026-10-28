@@ -1,5 +1,5 @@
-import type { UserTrackState } from '@notefinder/contracts';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import type { UserTrackState } from '@vozzify/contracts';
 
 import { type RequestErrorMessage, requestErrorMessage } from './request-error';
 

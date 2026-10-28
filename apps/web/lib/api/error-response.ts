@@ -1,4 +1,4 @@
-import { apiErrorSchema } from '@notefinder/contracts';
+import { apiErrorSchema } from '@vozzify/contracts';
 
 import { ApiError } from './api-error';
 

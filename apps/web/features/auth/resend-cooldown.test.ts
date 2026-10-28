@@ -55,18 +55,16 @@ describe('code sent-at storage', () => {
     expect(readCodeSentAt(storage, 'ada@example.com', 'forget-password')).toBe(
       5678,
     );
-    expect(storage.getItem('notefinder:otp-sent-at:ada@example.com')).toBe(
-      '1234',
-    );
+    expect(storage.getItem('vozzify:otp-sent-at:ada@example.com')).toBe('1234');
     expect(
-      storage.getItem('notefinder:otp-sent-at:forget-password:ada@example.com'),
+      storage.getItem('vozzify:otp-sent-at:forget-password:ada@example.com'),
     ).toBe('5678');
   });
 
   it('ignores missing or invalid values', () => {
     const storage = memoryStorage();
     expect(readCodeSentAt(storage, 'ada@example.com')).toBeNull();
-    storage.setItem('notefinder:otp-sent-at:ada@example.com', 'nope');
+    storage.setItem('vozzify:otp-sent-at:ada@example.com', 'nope');
     expect(readCodeSentAt(storage, 'ada@example.com')).toBeNull();
     expect(readCodeSentAt(undefined, 'ada@example.com')).toBeNull();
   });

@@ -1,16 +1,16 @@
 'use client';
 
 import {
-  SEARCH_DEFAULT_LIMIT,
-  SEARCH_MAX_OFFSET,
-  type SearchResult,
-  searchResultSchema,
-} from '@notefinder/contracts';
-import {
   infiniteQueryOptions,
   keepPreviousData,
   useInfiniteQuery,
 } from '@tanstack/react-query';
+import {
+  SEARCH_DEFAULT_LIMIT,
+  SEARCH_MAX_OFFSET,
+  type SearchResult,
+  searchResultSchema,
+} from '@vozzify/contracts';
 import { browserApi } from '@/lib/api/browser';
 
 import { searchKeys } from '../query-keys';

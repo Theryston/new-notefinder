@@ -7,7 +7,7 @@ describe('renderAccountExistsEmail', () => {
     const message = renderAccountExistsEmail({
       to: 'ana@example.com',
       locale,
-      webUrl: 'https://notefinder.test',
+      webUrl: 'https://vozzify.test',
     });
 
     expect(emailMessageSchema.parse(message)).toEqual(message);
@@ -17,17 +17,17 @@ describe('renderAccountExistsEmail', () => {
 
   it('writes each locale in its language', () => {
     const to = 'ana@example.com';
-    const webUrl = 'https://notefinder.test';
+    const webUrl = 'https://vozzify.test';
     expect(
       renderAccountExistsEmail({ to, locale: 'en', webUrl }),
     ).toMatchObject({
-      subject: 'You already have a notefinder account',
+      subject: 'You already have a vozzify account',
       text: expect.stringContaining('Forgot password'),
     });
     expect(
       renderAccountExistsEmail({ to, locale: 'pt-BR', webUrl }),
     ).toMatchObject({
-      subject: 'Você já tem uma conta no notefinder',
+      subject: 'Você já tem uma conta no vozzify',
       text: expect.stringContaining('Esqueci minha senha'),
     });
   });
@@ -36,7 +36,7 @@ describe('renderAccountExistsEmail', () => {
     const { html } = renderAccountExistsEmail({
       to: 'ana@example.com',
       locale: 'en',
-      webUrl: 'https://notefinder.test',
+      webUrl: 'https://vozzify.test',
     });
     expect(html).toContain('&quot;Forgot password&quot;');
     expect(html).not.toContain('"Forgot password"');

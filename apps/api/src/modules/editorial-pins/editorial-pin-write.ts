@@ -2,7 +2,7 @@ import {
   type CreateEditorialPinBody,
   type EditorialPin,
   type EditorialPinSource,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { EditorialPinWrite } from './editorial-pin-state.js';
 import { toEditorialPin } from './editorial-pin-state.js';
 

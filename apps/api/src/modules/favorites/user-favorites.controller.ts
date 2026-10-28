@@ -5,8 +5,8 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { UserFavoritesPage } from '@notefinder/contracts';
-import { userFavoritesPageSchema } from '@notefinder/contracts';
+import type { UserFavoritesPage } from '@vozzify/contracts';
+import { userFavoritesPageSchema } from '@vozzify/contracts';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';

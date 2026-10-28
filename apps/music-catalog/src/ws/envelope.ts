@@ -6,7 +6,7 @@ import {
   type MusicCatalogSuccessResponse,
   musicCatalogRequestIdSchema,
   musicCatalogRequestSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { CatalogError } from '../errors/catalog-error.js';
 
 export type ParsedRequest =

@@ -1,4 +1,4 @@
-import { accuracyBand } from '@notefinder/contracts';
+import { accuracyBand } from '@vozzify/contracts';
 
 /**
  * The personal blend of the home feed. The public popularity is the base and

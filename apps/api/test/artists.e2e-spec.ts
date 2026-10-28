@@ -1,4 +1,4 @@
-import { artistSchema } from '@notefinder/contracts';
+import { artistSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import { artists, legacyArtistIds } from '../src/database/schema/artists.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';

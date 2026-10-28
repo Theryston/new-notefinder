@@ -1,4 +1,4 @@
-import type { HomeCarouselRow } from '@notefinder/contracts';
+import type { HomeCarouselRow } from '@vozzify/contracts';
 
 import { RowCarouselShell, RowTrackCards } from './row-carousel-shell';
 

@@ -1,4 +1,4 @@
-import { currentUserSchema } from '@notefinder/contracts';
+import { currentUserSchema } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { users } from '../src/database/schema/users.js';

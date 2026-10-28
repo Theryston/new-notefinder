@@ -1,4 +1,4 @@
-import type { SignInBody } from '@notefinder/contracts';
+import type { SignInBody } from '@vozzify/contracts';
 
 import type { AuthErrorCode } from './auth-error';
 import type { SessionUser } from './session';

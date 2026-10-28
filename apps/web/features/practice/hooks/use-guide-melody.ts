@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 import { useEffect, useState } from 'react';
 
 import { startGuidePlayer } from '../guide-player';

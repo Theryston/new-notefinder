@@ -3,7 +3,7 @@
 Read the root `CLAUDE.md` first; this file only adds API-specific rules.
 
 Stack: NestJS 12 (Express, **ESM**), Drizzle ORM + PostgreSQL, Better Auth,
-BullMQ + Redis, Zod (via `@notefinder/contracts` + the in-house `src/common/zod/`), Vitest.
+BullMQ + Redis, Zod (via `@vozzify/contracts` + the in-house `src/common/zod/`), Vitest.
 Serves the web app today and the mobile app later, so treat every endpoint as a
 public, versioned contract.
 
@@ -28,7 +28,7 @@ nub run db:migrate   # apply migrations (dev); production runs
                      # `node dist/database/migrate.js`, so the image ships drizzle/
 nub run db:studio    # Drizzle Studio
 nub run db:seed      # deterministic, idempotent dev data; refuses NODE_ENV=production
-                     # (sign in as seed@notefinder.dev / notefinder-seed)
+                     # (sign in as seed@vozzify.dev / vozzify-seed)
 ```
 
 These scripts run through `tsx`, which does **not** emit decorator metadata:
@@ -124,7 +124,7 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
 - Status codes: `200` read/update, `201` create (return the resource), `204`
   delete/no body, `202` accepted async work (e.g. track import queued).
 - **Validation**: request DTOs are `createZodDto(schema)` from
-  `src/common/zod/`, with the schema imported from `@notefinder/contracts`.
+  `src/common/zod/`, with the schema imported from `@vozzify/contracts`.
   The global `ZodValidationPipe` parses and coerces them. Responses are
   serialized through their contract schema (`@ZodSerializerDto`) so no extra
   DB field ever leaks. (`nestjs-zod` is not used: it doesn't support NestJS
@@ -149,7 +149,7 @@ test/                     e2e specs + helpers (app factory, Testcontainers setup
   fixed key `avatars/{userId}.webp` and saved as
   `<public URL>?cacheBust=<timestamp>`. The file is stored before the row is
   written, so a failed upload changes nothing. Size and accepted types are
-  constants in `@notefinder/contracts/avatar-rules`.
+  constants in `@vozzify/contracts/avatar-rules`.
 - **Lists** use cursor pagination: query `cursorPaginationQuerySchema`,
   response `cursorPageSchema(item)` → `{ items, nextCursor }`. Cursors are
   opaque strings (base64 of the sort key), never raw offsets.
@@ -264,7 +264,7 @@ isn't obvious), so the import script can be written from those notes.
   a username never changes afterwards.
 - Better Auth's `POST /v1/auth/update-user` is **disabled** for everyone
   (`disabledPaths`, it answers 404), so an existing user's profile fields
-  (name, username, image) change only through notefinder's own `/v1/me`
+  (name, username, image) change only through vozzify's own `/v1/me`
   routes, which enforce the rules Better Auth doesn't know (immutable
   username, avatars we upload ourselves). Don't re-enable it or add a Better
   Auth endpoint that edits those fields.
@@ -287,7 +287,7 @@ isn't obvious), so the import script can be written from those notes.
   Better Auth's `trustedOrigins` allow only `WEB_ORIGINS`.
 - **Production env**: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
   `RESEND_API_KEY` (required, so codes are never silently lost) and
-  `AUTH_COOKIE_DOMAIN=notefinder.com.br` (the API is on a subdomain; without
+  `AUTH_COOKIE_DOMAIN=vozzify.com` (the API is on a subdomain; without
   it the web server never receives the session cookie).
 
 ## Jobs, queues and cache (Redis)
@@ -328,7 +328,7 @@ isn't obvious), so the import script can be written from those notes.
   cache misses / no limiting instead of errors.
 - When data rendered by public web pages changes (a track finished processing,
   score updated, …), call `WebRevalidationService.revalidate(tags)` with tags
-  from `cacheTags` in `@notefinder/contracts` (never hard-coded strings). It
+  from `cacheTags` in `@vozzify/contracts` (never hard-coded strings). It
   enqueues a job that POSTs them to the web's `/api/revalidate`.
 
 ## Config, logging, lifecycle

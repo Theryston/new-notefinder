@@ -1,4 +1,4 @@
-import type { HomeRow } from '@notefinder/contracts';
+import type { HomeRow } from '@vozzify/contracts';
 import request from 'supertest';
 import type { Database } from '../src/database/database.js';
 import { practiceAttempts } from '../src/database/schema/practice-attempts.js';

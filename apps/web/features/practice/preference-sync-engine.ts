@@ -1,4 +1,4 @@
-import type { UpdatePracticePreferencesBody } from '@notefinder/contracts';
+import type { UpdatePracticePreferencesBody } from '@vozzify/contracts';
 import {
   getPracticePreferences,
   updatePracticePreferences,

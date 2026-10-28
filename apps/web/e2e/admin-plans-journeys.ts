@@ -1,9 +1,3 @@
-import type {
-  AdminPlan,
-  AdminPlanCatalog,
-  Locale,
-  SaveAdminPlanBody,
-} from '@notefinder/contracts';
 import {
   type APIRequestContext,
   expect,
@@ -11,6 +5,12 @@ import {
   type Page,
   test,
 } from '@playwright/test';
+import type {
+  AdminPlan,
+  AdminPlanCatalog,
+  Locale,
+  SaveAdminPlanBody,
+} from '@vozzify/contracts';
 import { adminLocales, adminUser, regularUser } from './admin-users';
 import { mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';

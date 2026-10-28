@@ -1,6 +1,6 @@
 'use client';
 
-import type { SignInBody } from '@notefinder/contracts';
+import type { SignInBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import type { UseFormReturn } from 'react-hook-form';
 

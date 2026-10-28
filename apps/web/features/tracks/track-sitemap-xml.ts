@@ -1,4 +1,4 @@
-import type { TrackSitemapEntry } from '@notefinder/contracts';
+import type { TrackSitemapEntry } from '@vozzify/contracts';
 
 import { sitemapShardIndex } from '@/lib/sitemap/sitemap-shard';
 import {

@@ -1,7 +1,4 @@
-import type {
-  TrackArtistCreditEntry,
-  TrackKeyMode,
-} from '@notefinder/contracts';
+import type { TrackArtistCreditEntry, TrackKeyMode } from '@vozzify/contracts';
 import { sql } from 'drizzle-orm';
 import {
   boolean,

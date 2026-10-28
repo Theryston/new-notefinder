@@ -45,7 +45,7 @@ export const EMAIL_LAYOUT_MJML = `<mjml lang="NFSLOT_LANG">
       <mj-section background-color="#FA4900" border-radius="24px" padding="28px">
         <mj-column>
           <mj-text color="#FFFFFF" font-size="19px" font-weight="700" letter-spacing="-0.02em" padding="0">
-            <img src="NFSLOT_ICON_URL" width="24" height="24" alt="" style="display:inline-block;vertical-align:middle;margin-right:7px;border:0;" />NoteFinder
+            <img src="NFSLOT_ICON_URL" width="24" height="24" alt="" style="display:inline-block;vertical-align:middle;margin-right:7px;border:0;" />Vozzify
           </mj-text>
           <mj-text color="#FFFFFF" font-size="12px" font-weight="600" letter-spacing="0.05em" padding="40px 0 0">
             <span style="text-transform:uppercase;">NFSLOT_OVERLINE</span>

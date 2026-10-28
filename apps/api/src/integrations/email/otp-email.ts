@@ -26,54 +26,54 @@ type OtpEmailCopy = {
 const MESSAGES = {
   en: {
     'email-verification': {
-      subject: 'Your notefinder verification code',
+      subject: 'Your vozzify verification code',
       overline: 'Email verification',
       title: 'Your code',
-      intro: 'Use this code to verify your email on notefinder:',
+      intro: 'Use this code to verify your email on vozzify:',
       expiry: (minutes) => `The code expires in ${minutes} minutes.`,
       preheader: (otp, minutes) =>
         `Your code is ${otp}. It expires in ${minutes} minutes.`,
       reason:
-        'You got this email because someone asked to verify this address on NoteFinder.',
-      ignore: "If you didn't create a notefinder account, ignore this email.",
+        'You got this email because someone asked to verify this address on Vozzify.',
+      ignore: "If you didn't create a vozzify account, ignore this email.",
     },
     'forget-password': {
-      subject: 'Your notefinder password reset code',
+      subject: 'Your vozzify password reset code',
       overline: 'Password reset',
       title: 'Your code',
-      intro: 'Use this code to reset your notefinder password:',
+      intro: 'Use this code to reset your vozzify password:',
       expiry: (minutes) => `The code expires in ${minutes} minutes.`,
       preheader: (otp, minutes) =>
         `Your code is ${otp}. It expires in ${minutes} minutes.`,
       reason:
-        'You got this email because someone asked to reset the password of this NoteFinder account.',
+        'You got this email because someone asked to reset the password of this Vozzify account.',
       ignore:
         "If you didn't ask to reset your password, ignore this email. Your password stays the same.",
     },
   },
   'pt-BR': {
     'email-verification': {
-      subject: 'Seu código de verificação do notefinder',
+      subject: 'Seu código de verificação do vozzify',
       overline: 'Verificação de email',
       title: 'Seu código',
-      intro: 'Use este código para verificar seu email no notefinder:',
+      intro: 'Use este código para verificar seu email no vozzify:',
       expiry: (minutes) => `O código expira em ${minutes} minutos.`,
       preheader: (otp, minutes) =>
         `Seu código é ${otp}. Ele expira em ${minutes} minutos.`,
       reason:
-        'Você recebeu este email porque alguém pediu para verificar este endereço no NoteFinder.',
-      ignore: 'Se você não criou uma conta no notefinder, ignore este email.',
+        'Você recebeu este email porque alguém pediu para verificar este endereço no Vozzify.',
+      ignore: 'Se você não criou uma conta no vozzify, ignore este email.',
     },
     'forget-password': {
-      subject: 'Seu código para redefinir a senha do notefinder',
+      subject: 'Seu código para redefinir a senha do vozzify',
       overline: 'Redefinir senha',
       title: 'Seu código',
-      intro: 'Use este código para redefinir sua senha do notefinder:',
+      intro: 'Use este código para redefinir sua senha do vozzify:',
       expiry: (minutes) => `O código expira em ${minutes} minutos.`,
       preheader: (otp, minutes) =>
         `Seu código é ${otp}. Ele expira em ${minutes} minutos.`,
       reason:
-        'Você recebeu este email porque alguém pediu para redefinir a senha desta conta do NoteFinder.',
+        'Você recebeu este email porque alguém pediu para redefinir a senha desta conta do Vozzify.',
       ignore:
         'Se você não pediu para redefinir sua senha, ignore este email. Sua senha continua a mesma.',
     },

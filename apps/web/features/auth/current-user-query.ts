@@ -1,5 +1,5 @@
-import { asDailyPracticeTargetSeconds } from '@notefinder/contracts/daily-target-rules';
 import { queryOptions } from '@tanstack/react-query';
+import { asDailyPracticeTargetSeconds } from '@vozzify/contracts/daily-target-rules';
 
 import { authKeys } from './query-keys';
 

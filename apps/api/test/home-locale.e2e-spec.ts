@@ -1,4 +1,4 @@
-import { type HomeRow, type Locale } from '@notefinder/contracts';
+import { type HomeRow, type Locale } from '@vozzify/contracts';
 import request from 'supertest';
 import { trackViews } from '../src/database/schema/track-views.js';
 import { WEB_REVALIDATION_QUEUE } from '../src/integrations/web-revalidation/web-revalidation.job.js';

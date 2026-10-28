@@ -1,4 +1,4 @@
-import { SEARCH_MAX_TOTAL_HITS } from '@notefinder/contracts';
+import { SEARCH_MAX_TOTAL_HITS } from '@vozzify/contracts';
 import type { IndexSettings } from '../integrations/meilisearch/meilisearch-index.js';
 
 /**

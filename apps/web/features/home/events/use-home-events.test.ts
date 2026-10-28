@@ -315,7 +315,7 @@ describe('useHomeEvents', () => {
         visitorId: string;
       }
     ).visitorId;
-    expect(window.localStorage.getItem('notefinder:visitor-id')).toBe(
+    expect(window.localStorage.getItem('vozzify:visitor-id')).toBe(
       firstVisitor,
     );
     sendBeaconMock.mockClear();

@@ -16,7 +16,7 @@ import {
 import {
   homePinPreviewRequestSchema,
   homePinPreviewResponseSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Response } from 'express';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';

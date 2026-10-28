@@ -1,7 +1,7 @@
 'use client';
 
-import type { DailyPracticeTargetSeconds } from '@notefinder/contracts/daily-target-rules';
-import { DAILY_PRACTICE_TARGET_SECONDS } from '@notefinder/contracts/daily-target-rules';
+import type { DailyPracticeTargetSeconds } from '@vozzify/contracts/daily-target-rules';
+import { DAILY_PRACTICE_TARGET_SECONDS } from '@vozzify/contracts/daily-target-rules';
 import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 

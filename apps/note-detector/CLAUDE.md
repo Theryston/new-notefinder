@@ -292,7 +292,7 @@ Python is pinned in `.python-version` (3.12).
 directory (`Dockerfile`, linux/amd64, CUDA 12.6 base) on every pull request
 that touches it, and publishes it to GHCR on a push to `main`:
 
-- `ghcr.io/theryston/new-notefinder/note-detector:latest` moves with `main`;
+- `ghcr.io/theryston/vozzify/note-detector:latest` moves with `main`;
 - `…:sha-<short>` is immutable.
 
 The workflow passes the commit as the `GIT_SHA` build arg. RunPod serverless

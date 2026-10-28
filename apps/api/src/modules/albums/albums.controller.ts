@@ -10,7 +10,7 @@ import {
   type AlbumTracksPage,
   albumSchema,
   albumTracksPageSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { AlbumIdParamDto } from './album-id-param.dto.js';

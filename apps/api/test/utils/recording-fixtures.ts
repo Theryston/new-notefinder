@@ -1,4 +1,4 @@
-import { type Recording, recordingSchema } from '@notefinder/contracts';
+import { type Recording, recordingSchema } from '@vozzify/contracts';
 import { testMbid } from './factories.js';
 
 /**

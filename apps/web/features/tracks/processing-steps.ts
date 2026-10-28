@@ -2,7 +2,7 @@ import {
   TRACK_PROCESSING_STEPS,
   type TrackProcessingStatus,
   type TrackProcessingStep,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /** Where one step of a Processing stands, as the step list shows it. */
 export type StepState = 'done' | 'current' | 'pending' | 'failed';

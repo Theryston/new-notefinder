@@ -1,8 +1,5 @@
-import {
-  type FollowListPage,
-  followListPageSchema,
-} from '@notefinder/contracts';
 import { infiniteQueryOptions } from '@tanstack/react-query';
+import { type FollowListPage, followListPageSchema } from '@vozzify/contracts';
 
 import { browserApi } from '@/lib/api/browser';
 

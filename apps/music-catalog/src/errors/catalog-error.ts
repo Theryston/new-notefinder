@@ -1,4 +1,4 @@
-import type { MusicCatalogErrorCode } from '@notefinder/contracts';
+import type { MusicCatalogErrorCode } from '@vozzify/contracts';
 
 /**
  * An expected failure a client can act on. Throw it from a service or a

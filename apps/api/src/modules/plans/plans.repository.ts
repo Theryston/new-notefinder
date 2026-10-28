@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { AdminPlanPrice, SaveAdminPlanBody } from '@notefinder/contracts';
+import type { AdminPlanPrice, SaveAdminPlanBody } from '@vozzify/contracts';
 import { and, asc, eq, gt, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {

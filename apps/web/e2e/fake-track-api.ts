@@ -23,7 +23,7 @@ export type { FakeTrack } from './fake-track-types.ts';
  * that need a signed-in page set this cookie as well as mocking the browser.
  */
 export const SIGNED_IN_COOKIE = {
-  name: 'notefinder-e2e-session',
+  name: 'vozzify-e2e-session',
   value: 'signed-in',
 } as const;
 

@@ -1,10 +1,10 @@
 'use client';
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateEditorialPinBody,
   UpdateEditorialPinBody,
-} from '@notefinder/contracts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+} from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 

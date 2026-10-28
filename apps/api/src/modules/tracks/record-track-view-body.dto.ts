@@ -1,4 +1,4 @@
-import { recordTrackViewBodySchema } from '@notefinder/contracts';
+import { recordTrackViewBodySchema } from '@vozzify/contracts';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
 
 export class RecordTrackViewBodyDto extends createZodDto(

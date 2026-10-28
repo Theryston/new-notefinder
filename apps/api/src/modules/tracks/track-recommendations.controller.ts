@@ -3,7 +3,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   type TrackRecommendations,
   trackRecommendationsSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { TrackVocalRange } from '@notefinder/contracts';
+import type { TrackVocalRange } from '@vozzify/contracts';
 import { PlayIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';

@@ -1,5 +1,5 @@
-import type { HomeFeedPage, Locale } from '@notefinder/contracts';
 import { infiniteQueryOptions } from '@tanstack/react-query';
+import type { HomeFeedPage, Locale } from '@vozzify/contracts';
 
 import type { HomePageRequest } from './home-feed-client';
 import { homeQueryKeys } from './query-keys';

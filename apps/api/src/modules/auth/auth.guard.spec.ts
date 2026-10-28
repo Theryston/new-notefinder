@@ -88,17 +88,17 @@ describe('AuthGuard', () => {
 
   it('attaches the user and session on private routes', async () => {
     withSession({ user, session });
-    const request: FakeRequest = { headers: { cookie: 'notefinder.x=1' } };
+    const request: FakeRequest = { headers: { cookie: 'vozzify.x=1' } };
     const context = createContext(PrivateController, 'handler', request);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(request).toMatchObject({ user, authSession: session });
     const [{ headers }] = getSession.mock.lastCall ?? [];
-    expect(headers.get('cookie')).toBe('notefinder.x=1');
+    expect(headers.get('cookie')).toBe('vozzify.x=1');
   });
 
   it('forwards a refreshed session cookie', async () => {
-    withSession({ user, session }, ['notefinder.session_token=new; Path=/']);
+    withSession({ user, session }, ['vozzify.session_token=new; Path=/']);
     const response = { append: vi.fn() };
     const context = createContext(
       PrivateController,
@@ -109,7 +109,7 @@ describe('AuthGuard', () => {
 
     await guard.canActivate(context);
     expect(response.append).toHaveBeenCalledWith('Set-Cookie', [
-      'notefinder.session_token=new; Path=/',
+      'vozzify.session_token=new; Path=/',
     ]);
   });
 

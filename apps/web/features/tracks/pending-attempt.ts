@@ -1,7 +1,7 @@
 import {
   type SubmitPracticeAttemptBody,
   submitPracticeAttemptBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 
 /** A visitor's run, waiting in the session for the sign-in to submit it. */
 export type PendingAttempt = {
@@ -9,7 +9,7 @@ export type PendingAttempt = {
   body: SubmitPracticeAttemptBody;
 };
 
-const KEY_PREFIX = 'notefinder:pending-attempt:';
+const KEY_PREFIX = 'vozzify:pending-attempt:';
 
 const keyOf = (trackId: string) => `${KEY_PREFIX}${trackId}`;
 

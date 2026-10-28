@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { and, eq, gte, isNull, type SQL, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { trackViews } from '../../database/schema/track-views.js';

@@ -1,4 +1,4 @@
-import type { HomeRow, HomeTrack } from '@notefinder/contracts';
+import type { HomeRow, HomeTrack } from '@vozzify/contracts';
 import { applyEditorialPins, type OverlayPin } from './home-pin-overlay.js';
 
 const track = (id: string, cover = true): HomeTrack => ({

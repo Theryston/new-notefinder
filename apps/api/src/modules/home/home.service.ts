@@ -5,7 +5,7 @@ import type {
   HomePinPreviewResponse,
   HomeRow,
   Locale,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { decodeHomeCursor, encodeHomeCursor } from './home-cursor.js';
 import type { StoredPersonalHomeFeed } from './home-feed.js';

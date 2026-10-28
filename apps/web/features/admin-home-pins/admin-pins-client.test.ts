@@ -5,7 +5,7 @@ import {
   editorialPinPageSchema,
   editorialPinSchema,
   type UpdateEditorialPinBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { browserApi } from '@/lib/api/browser';

@@ -1,4 +1,4 @@
-import { trackAudioSchema } from '@notefinder/contracts';
+import { trackAudioSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import { createAuthClient, signIn } from './utils/auth.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sitemapIndexXml } from './sitemap-index-xml';
 
-const origin = 'https://notefinder.com.br';
+const origin = 'https://vozzify.com';
 
 const locsOf = (xml: string) =>
   [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);

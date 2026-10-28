@@ -1,7 +1,7 @@
 import {
   type PracticePreferences,
   practicePreferencesSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import request from 'supertest';
 import { signIn } from './utils/auth.js';
 import { useAuthSpec } from './utils/auth-spec.js';

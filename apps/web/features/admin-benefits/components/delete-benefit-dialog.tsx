@@ -1,7 +1,7 @@
 'use client';
 
-import type { AdminBenefit } from '@notefinder/contracts';
 import { useQuery } from '@tanstack/react-query';
+import type { AdminBenefit } from '@vozzify/contracts';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {

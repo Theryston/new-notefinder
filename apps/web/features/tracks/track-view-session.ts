@@ -9,7 +9,7 @@ export type SessionView = {
 /** What a visit to the Track page has to send, if anything. */
 export type ViewAction = 'record' | 'attach' | 'none';
 
-const keyOf = (trackId: string) => `notefinder:track-view:${trackId}`;
+const keyOf = (trackId: string) => `vozzify:track-view:${trackId}`;
 
 type ReadableStorage = Pick<Storage, 'getItem'>;
 type WritableStorage = Pick<Storage, 'setItem'>;

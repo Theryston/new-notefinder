@@ -1,4 +1,4 @@
-import type { PublicProfileSummary } from '@notefinder/contracts';
+import type { PublicProfileSummary } from '@vozzify/contracts';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import {
   PROFILE_SUMMARY_FIELDS,

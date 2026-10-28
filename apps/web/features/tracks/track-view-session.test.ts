@@ -51,7 +51,7 @@ describe('stored view', () => {
     ['without the attached flag', '{"viewId":"v1"}'],
   ])('ignores a stored value that is %s', (_name, raw) => {
     const storage = memoryStorage();
-    storage.setItem('notefinder:track-view:track-1', raw);
+    storage.setItem('vozzify:track-view:track-1', raw);
 
     expect(readStoredView(storage, 'track-1')).toBeUndefined();
   });

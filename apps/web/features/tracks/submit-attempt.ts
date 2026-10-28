@@ -1,5 +1,5 @@
-import type { SubmitPracticeAttemptBody } from '@notefinder/contracts';
 import type { QueryClient } from '@tanstack/react-query';
+import type { SubmitPracticeAttemptBody } from '@vozzify/contracts';
 import { toast } from 'sonner';
 
 import { submitPracticeAttempt } from './attempt-queries';

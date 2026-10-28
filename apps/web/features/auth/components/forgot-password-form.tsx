@@ -1,6 +1,6 @@
 'use client';
 
-import type { ForgotPasswordBody } from '@notefinder/contracts';
+import type { ForgotPasswordBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -20,7 +20,7 @@ import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
 
 const forgotPasswordResolver = lazyResolver<ForgotPasswordBody>(() =>
-  import('@notefinder/contracts').then((m) => m.forgotPasswordBodySchema),
+  import('@vozzify/contracts').then((m) => m.forgotPasswordBodySchema),
 );
 
 function RememberedLink({ redirectTo }: { redirectTo: string }) {

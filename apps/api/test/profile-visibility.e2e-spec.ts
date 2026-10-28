@@ -2,7 +2,7 @@ import {
   cacheTags,
   type ProfileVisibility,
   profileVisibilitySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { users } from '../src/database/schema/users.js';

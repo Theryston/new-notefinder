@@ -1,5 +1,5 @@
-import { homePinPreviewRequestSchema } from '@notefinder/contracts';
 import type { Page, Request, Route } from '@playwright/test';
+import { homePinPreviewRequestSchema } from '@vozzify/contracts';
 
 // Any host: the API URL the browser calls is inlined when the app is built
 // (`NEXT_PUBLIC_API_URL`), so it depends on the build, not on this suite.

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type {
   PracticePreferences,
   UpdatePracticePreferencesBody,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { PracticePreferencesRow } from './practice-preferences.repository.js';
 import { PracticePreferencesRepository } from './practice-preferences.repository.js';
 

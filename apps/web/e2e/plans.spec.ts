@@ -1,5 +1,5 @@
-import type { Locale, PlanCatalog } from '@notefinder/contracts';
 import { expect, test } from '@playwright/test';
+import type { Locale, PlanCatalog } from '@vozzify/contracts';
 import {
   registerAdminPlanJourneys,
   registerInvalidPlanPriceJourneys,

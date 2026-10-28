@@ -1,7 +1,7 @@
 import type {
   MusicCatalogTrackAssociationPayload,
   MusicCatalogTrackAssociationResult,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import type { Database } from '../../database/database.js';
 import { CatalogError } from '../../errors/catalog-error.js';
 import type { TrackAssociationRepository } from './track-association.repository.js';

@@ -4,7 +4,7 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { defaultScoring, type ScoringSettings } from '../scoring';
 
-const KEY = 'notefinder.scoring.v1';
+const KEY = 'vozzify.scoring.v1';
 export const scoringSettings = createStore<ScoringSettings>(
   () => defaultScoring,
 );

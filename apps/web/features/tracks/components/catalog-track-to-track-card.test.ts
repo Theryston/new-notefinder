@@ -1,4 +1,4 @@
-import type { CatalogTrack } from '@notefinder/contracts';
+import type { CatalogTrack } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { toCatalogTrackCardProps } from './catalog-track-to-track-card';

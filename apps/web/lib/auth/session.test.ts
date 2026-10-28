@@ -31,7 +31,7 @@ beforeEach(() => {
   vi.stubEnv('REVALIDATE_SECRET', 'test-revalidate-secret-at-least-32-chars');
   vi.stubGlobal('fetch', fetchMock);
   requestHeaders.current = new Headers({
-    cookie: 'notefinder.session_token=abc',
+    cookie: 'vozzify.session_token=abc',
   });
 });
 
@@ -47,7 +47,7 @@ describe('getCurrentUser', () => {
     await expect(getCurrentUser()).resolves.toEqual(user);
     expect(lastRequest().url).toBe('http://api.test/v1/me');
     expect(lastRequest().headers.get('cookie')).toBe(
-      'notefinder.session_token=abc',
+      'vozzify.session_token=abc',
     );
   });
 

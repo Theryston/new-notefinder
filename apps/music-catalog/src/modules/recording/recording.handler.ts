@@ -1,7 +1,7 @@
 import {
   musicCatalogGetRecordingPayloadSchema,
   recordingSchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { defineHandler, type Handler } from '../../ws/handler.js';
 import type { RecordingService } from './recording.service.js';
 

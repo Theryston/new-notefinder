@@ -3,7 +3,7 @@ import type {
   HomeTrack,
   HomeVocalRangeRow,
   TrackVocalRange,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { composeHomeRows } from './home-feed-composer.js';
 import type { DiscoveryTrack } from './home-personal-blend.js';
 import { challengeOverrun, voiceFitScore } from './home-voice-fit.js';

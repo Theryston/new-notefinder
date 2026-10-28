@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import type { Locale } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { TrackProcessingRepository } from './track-processing.repository.js';
 import type { TrackRequester } from './track-requester.service.js';

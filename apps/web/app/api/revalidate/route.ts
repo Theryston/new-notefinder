@@ -4,7 +4,7 @@ import {
   type ApiError,
   type ApiErrorCode,
   revalidateBodySchema,
-} from '@notefinder/contracts';
+} from '@vozzify/contracts';
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 

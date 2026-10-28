@@ -1,4 +1,4 @@
-import type { Artist } from '@notefinder/contracts';
+import type { Artist } from '@vozzify/contracts';
 import { cn } from 'cn';
 import { getTranslations } from 'next-intl/server';
 

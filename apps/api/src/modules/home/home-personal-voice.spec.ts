@@ -1,8 +1,4 @@
-import type {
-  HomeRow,
-  HomeTrack,
-  TrackVocalRange,
-} from '@notefinder/contracts';
+import type { HomeRow, HomeTrack, TrackVocalRange } from '@vozzify/contracts';
 import { buildPersonalVoiceRows } from './home-personal-voice.js';
 
 const USER_RANGE: TrackVocalRange = { lowest: 60, highest: 72 };

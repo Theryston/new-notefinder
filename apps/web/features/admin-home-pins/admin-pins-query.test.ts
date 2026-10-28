@@ -1,5 +1,5 @@
-import type { EditorialPinHistoryPage } from '@notefinder/contracts';
 import type { QueryFunctionContext } from '@tanstack/react-query';
+import type { EditorialPinHistoryPage } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchAdminPinHistory, fetchAdminPins } from './admin-pins-client';
 import {

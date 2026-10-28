@@ -1,4 +1,4 @@
-import type { SitemapEntry } from '@notefinder/contracts';
+import type { SitemapEntry } from '@vozzify/contracts';
 
 import { requestSiteOrigin } from '@/lib/sitemap/request-origin';
 import { sitemapFileResponse } from '@/lib/sitemap/sitemap-file-response';

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { CreateCheckoutBody } from '@notefinder/contracts';
+import type { CreateCheckoutBody } from '@vozzify/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {

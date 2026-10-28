@@ -13,7 +13,7 @@ import {
  * changed. Runs in the background with retries, so a slow or briefly
  * unavailable web app never fails the API request that triggered it.
  *
- * Build tags with `cacheTags` from `@notefinder/contracts`, never by hand:
+ * Build tags with `cacheTags` from `@vozzify/contracts`, never by hand:
  * `revalidate([cacheTags.track(id), cacheTags.tracks])`.
  */
 @Injectable()

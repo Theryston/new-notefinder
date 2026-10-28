@@ -1,7 +1,7 @@
 'use client';
 
-import type { ResetPasswordBody } from '@notefinder/contracts';
 import { useQueryClient } from '@tanstack/react-query';
+import type { ResetPasswordBody } from '@vozzify/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Controller, type UseFormReturn, useForm } from 'react-hook-form';
@@ -23,7 +23,7 @@ import { SubmitButton } from './submit-button';
 import { TextLink } from './text-link';
 
 const resetPasswordResolver = lazyResolver<ResetPasswordBody>(() =>
-  import('@notefinder/contracts').then((m) => m.resetPasswordBodySchema),
+  import('@vozzify/contracts').then((m) => m.resetPasswordBodySchema),
 );
 
 type Notice = { tone: 'error'; code: AuthErrorCode } | { tone: 'success' };

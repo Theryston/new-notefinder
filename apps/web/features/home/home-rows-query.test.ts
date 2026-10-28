@@ -1,4 +1,4 @@
-import type { HomeFeedPage } from '@notefinder/contracts';
+import type { HomeFeedPage } from '@vozzify/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { fetchHomeRowsPage, homeRowsQueryOptions } from './home-rows-query';
 

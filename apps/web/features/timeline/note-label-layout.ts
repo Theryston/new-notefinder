@@ -1,4 +1,4 @@
-import type { TrackNote } from '@notefinder/contracts';
+import type { TrackNote } from '@vozzify/contracts';
 
 import { keyOf, noteName } from '@/lib/music-notes';
 

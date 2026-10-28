@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import { createId } from '@paralleldrive/cuid2';
 import type {
   CheckoutResult,
   CreateCheckoutBody,
   CurrentSubscription,
   Locale,
-} from '@notefinder/contracts';
-import { createId } from '@paralleldrive/cuid2';
+} from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';

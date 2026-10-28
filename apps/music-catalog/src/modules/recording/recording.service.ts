@@ -1,4 +1,4 @@
-import type { Recording } from '@notefinder/contracts';
+import type { Recording } from '@vozzify/contracts';
 import { missingEntityError } from '../../errors/missing-entity-error.js';
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import { assembleRecording } from './assemble-recording.js';

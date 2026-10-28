@@ -1,11 +1,11 @@
+import type { Page, Route } from '@playwright/test';
 import {
   type AdminBenefit,
   type BenefitPlans,
   setPlanBenefitsBodySchema,
   type WriteBenefitBody,
   writeBenefitBodySchema,
-} from '@notefinder/contracts';
-import type { Page, Route } from '@playwright/test';
+} from '@vozzify/contracts';
 
 const planCopy = (name: string) => ({
   en: { name, description: 'Plan description' },

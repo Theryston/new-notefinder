@@ -23,14 +23,14 @@ type UserRow = typeof users.$inferInsert & { id: string };
 export const SEED_USER = {
   id: 'seeduser01',
   name: 'Seed Creator',
-  email: 'seed@notefinder.dev',
+  email: 'seed@vozzify.dev',
   emailVerified: true,
   username: 'seed_creator',
   role: 'USER',
 } satisfies UserRow;
 
 // Development only: `assertSeedAllowed` keeps the seed away from production.
-export const SEED_USER_PASSWORD = 'notefinder-seed';
+export const SEED_USER_PASSWORD = 'vozzify-seed';
 
 /** The seed writes development data (a known password), never to production. */
 export const assertSeedAllowed = (nodeEnv: string): void => {

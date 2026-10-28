@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminBenefits, BenefitPlan } from '@notefinder/contracts';
+import type { AdminBenefits, BenefitPlan } from '@vozzify/contracts';
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';

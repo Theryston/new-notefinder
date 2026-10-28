@@ -1,4 +1,4 @@
-import type { CampaignTouch } from '@notefinder/contracts';
+import type { CampaignTouch } from '@vozzify/contracts';
 import { jsonb, pgTable, text, unique } from 'drizzle-orm/pg-core';
 import { id, timestamps } from '../columns.js';
 import { users } from './users.js';

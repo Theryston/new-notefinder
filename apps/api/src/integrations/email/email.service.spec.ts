@@ -15,7 +15,7 @@ describe('EmailService', () => {
       providers: [
         EmailService,
         { provide: getQueueToken(EMAIL_QUEUE), useValue: queue },
-        { provide: ENV, useValue: { WEB_URL: 'https://notefinder.test' } },
+        { provide: ENV, useValue: { WEB_URL: 'https://vozzify.test' } },
       ],
     }).compile();
     service = moduleRef.get(EmailService);
@@ -55,7 +55,7 @@ describe('EmailService', () => {
       EMAIL_JOB,
       expect.objectContaining({
         to: 'ana@example.com',
-        subject: 'Seu código para redefinir a senha do notefinder',
+        subject: 'Seu código para redefinir a senha do vozzify',
         text: expect.stringContaining('654321'),
       }),
       expect.any(Object),
@@ -72,11 +72,11 @@ describe('EmailService', () => {
     });
     const [, message] = queue.add.mock.calls[0] ?? [];
     expect(message).toMatchObject({
-      html: expect.stringContaining('href="https://notefinder.test/en/terms"'),
+      html: expect.stringContaining('href="https://vozzify.test/en/terms"'),
     });
     expect(message).toMatchObject({
       html: expect.stringContaining(
-        'src="https://notefinder.test/apple-icon.png"',
+        'src="https://vozzify.test/apple-icon.png"',
       ),
     });
   });
@@ -87,7 +87,7 @@ describe('EmailService', () => {
       EMAIL_JOB,
       expect.objectContaining({
         to: 'ana@example.com',
-        subject: 'You already have a notefinder account',
+        subject: 'You already have a vozzify account',
       }),
       expect.any(Object),
     );

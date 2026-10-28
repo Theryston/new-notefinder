@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { RecordAcquisitionBody } from '@notefinder/contracts';
+import type { RecordAcquisitionBody } from '@vozzify/contracts';
 import { eq } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import { userAcquisitions } from '../../database/schema/user-acquisitions.js';

@@ -1,4 +1,4 @@
-import type { FollowListPage } from '@notefinder/contracts';
+import type { FollowListPage } from '@vozzify/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {

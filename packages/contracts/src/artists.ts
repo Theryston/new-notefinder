@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { mbidSchema } from './music-catalog.js';
 import { cursorPageSchema } from './pagination.js';
 
-// The notefinder catalog's Artist: a public entity with its own URL,
+// The vozzify catalog's Artist: a public entity with its own URL,
 // distinct from a MusicBrainz artist credit. Created when a Recording is
 // reprocessed, never on reads. The header shows the name, an initials visual
 // (no artist images in the catalog), the track count and the genres.

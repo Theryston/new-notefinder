@@ -13,7 +13,7 @@ let loading: Promise<unknown> | undefined;
  * so the first validation doesn't wait for the chunk.
  */
 export function preloadPinFormSchema(): Promise<unknown> {
-  loading ??= import('@notefinder/contracts').catch((error: unknown) => {
+  loading ??= import('@vozzify/contracts').catch((error: unknown) => {
     // A failed chunk load is retried on the next validation.
     loading = undefined;
     throw error;
@@ -29,9 +29,7 @@ export function preloadPinFormSchema(): Promise<unknown> {
  * message; Zod's own sentences never render.
  */
 export const pinFormResolver: Resolver<PinFormValues> = async (values) => {
-  const { createEditorialPinBodySchema } = await import(
-    '@notefinder/contracts'
-  );
+  const { createEditorialPinBodySchema } = await import('@vozzify/contracts');
   const startsAtValid =
     values.startsAt === '' || !Number.isNaN(Date.parse(values.startsAt));
   const endsAtValid =

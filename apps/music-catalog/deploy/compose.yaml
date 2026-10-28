@@ -50,7 +50,7 @@ x-app-env: &app-env
 # The Node image: the server, the worker and the migrations run from it,
 # chosen by command.
 x-node-image: &node-image
-  image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/new-notefinder}/music-catalog:${IMAGE_TAG:?set IMAGE_TAG in .env}
+  image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/vozzify}/music-catalog:${IMAGE_TAG:?set IMAGE_TAG in .env}
   logging: *logging
 
 services:
@@ -251,7 +251,7 @@ services:
   # never restarted. No health check: it has no liveness signal and `tiny`
   # exits by design, so watch `status` and its logs instead.
   mbslave:
-    image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/new-notefinder}/music-catalog-mbslave:${IMAGE_TAG:?set IMAGE_TAG in .env}
+    image: ${IMAGE_REPOSITORY:-ghcr.io/theryston/vozzify}/music-catalog-mbslave:${IMAGE_TAG:?set IMAGE_TAG in .env}
     restart: on-failure
     logging: *logging
     # Forwards signals to, and reaps, the mbslave and psql children it spawns.

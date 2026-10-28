@@ -1,6 +1,6 @@
 import type { Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import type { SitemapQuery } from '@notefinder/contracts';
+import type { SitemapQuery } from '@vozzify/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeSitemapCursor } from '../../src/common/sitemap/sitemap-cursor.js';
 

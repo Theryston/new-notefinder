@@ -1,7 +1,4 @@
-import {
-  type FollowListPage,
-  followListPageSchema,
-} from '@notefinder/contracts';
+import { type FollowListPage, followListPageSchema } from '@vozzify/contracts';
 import { userFollows } from '../src/database/schema/user-follows.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';

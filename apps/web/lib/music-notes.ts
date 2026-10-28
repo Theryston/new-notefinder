@@ -1,4 +1,4 @@
-import { nearestKey, pitchName, type TrackNote } from '@notefinder/contracts';
+import { nearestKey, pitchName, type TrackNote } from '@vozzify/contracts';
 
 /** The key of a note: the MIDI number nearest to its pitch (`A4` is 69). */
 export function keyOf(note: Pick<TrackNote, 'pitch'>): number {

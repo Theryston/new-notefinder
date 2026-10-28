@@ -2,8 +2,8 @@ import {
   signUpBodySchema,
   type UpdateMeBody,
   updateMeBodySchema,
-} from '@notefinder/contracts';
-import { NAME_MAX_LENGTH } from '@notefinder/contracts/auth-rules';
+} from '@vozzify/contracts';
+import { NAME_MAX_LENGTH } from '@vozzify/contracts/auth-rules';
 import { describe, expect, it } from 'vitest';
 
 // Sign-up and edit profile share one Name rule (`nameSchema`); each form

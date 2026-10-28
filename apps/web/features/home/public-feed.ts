@@ -1,5 +1,5 @@
-import type { Locale } from '@notefinder/contracts';
-import { type HomeFeedPage, homeFeedPageSchema } from '@notefinder/contracts';
+import type { Locale } from '@vozzify/contracts';
+import { type HomeFeedPage, homeFeedPageSchema } from '@vozzify/contracts';
 
 /**
  * The API call behind the cached public feed. It never forwards the visitor's

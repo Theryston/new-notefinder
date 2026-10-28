@@ -1,4 +1,4 @@
-import { publicProfileSchema } from '@notefinder/contracts';
+import { publicProfileSchema } from '@vozzify/contracts';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
 import { createUser } from './utils/factories.js';

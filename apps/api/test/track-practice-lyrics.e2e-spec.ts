@@ -1,4 +1,4 @@
-import { trackLyricsSchema } from '@notefinder/contracts';
+import { trackLyricsSchema } from '@vozzify/contracts';
 import request from 'supertest';
 import {
   trackLyricLines,

@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { type TrackLyrics, trackLyricsSchema } from '@notefinder/contracts';
+import { type TrackLyrics, trackLyricsSchema } from '@vozzify/contracts';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { TrackIdParamDto } from './track-id-param.dto.js';

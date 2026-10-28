@@ -1,7 +1,7 @@
 'use client';
 
-import type { CreateCheckoutBody, Plan } from '@notefinder/contracts';
 import { useMutation } from '@tanstack/react-query';
+import type { CreateCheckoutBody, Plan } from '@vozzify/contracts';
 import { useLocale } from 'next-intl';
 import { useRouter } from '@/lib/i18n/navigation';
 
@@ -12,7 +12,7 @@ export function useCheckout(planId: string) {
     mutationFn: async (offer: Plan['offers'][number]) => {
       const [{ browserApi }, { checkoutResultSchema }] = await Promise.all([
         import('@/lib/api/browser'),
-        import('@notefinder/contracts'),
+        import('@vozzify/contracts'),
       ]);
       const body: CreateCheckoutBody = {
         planId,
