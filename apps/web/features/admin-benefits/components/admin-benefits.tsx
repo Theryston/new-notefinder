@@ -1,11 +1,11 @@
 'use client';
 
 import { notFound } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { useRouter } from '@/lib/i18n/navigation';
 import { BenefitsPanel } from './benefits-panel';
+import { BenefitsSkeleton } from './benefits-skeleton';
 
 export function AdminBenefits() {
   return (
@@ -23,7 +23,6 @@ function AdminGate({
   loading: boolean;
 }) {
   const router = useRouter();
-  const t = useTranslations('adminBenefits');
   useEffect(() => {
     if (!loading && user === null)
       router.replace({
@@ -31,7 +30,7 @@ function AdminGate({
         query: { redirectTo: '/admin/benefits' },
       });
   }, [loading, user, router]);
-  if (loading || user === null) return <p role="status">{t('loading')}</p>;
+  if (loading || user === null) return <BenefitsSkeleton />;
   if (user.role !== 'ADMIN') notFound();
   return <BenefitsPanel />;
 }

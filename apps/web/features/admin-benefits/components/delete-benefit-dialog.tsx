@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { isLocale } from '@/lib/i18n/routing';
 import type { useBenefitCatalog } from '../hooks/use-benefit-catalog';
+import { benefitKeys } from '../query-keys';
 
 type Props = {
   benefit: AdminBenefit;
@@ -25,7 +26,7 @@ export function DeleteBenefitDialog({ benefit, remove, close }: Props) {
   const pageLocale = useLocale();
   const locale = isLocale(pageLocale) ? pageLocale : 'en';
   const current = useQuery({
-    queryKey: ['admin-benefits', 'delete', benefit.id],
+    queryKey: benefitKeys.deletionImpact(benefit.id),
     retry: false,
     queryFn: async () =>
       (await import('../benefits-client')).fetchBenefit(benefit.id),

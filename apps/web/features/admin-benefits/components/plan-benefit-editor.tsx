@@ -18,7 +18,10 @@ export function PlanBenefitEditor({ plan, benefits, link }: Props) {
   const t = useTranslations('adminBenefits');
   const pageLocale = useLocale();
   const locale = isLocale(pageLocale) ? pageLocale : 'en';
-  const [ids, setIds] = useState(plan.benefitIds);
+  const [draft, setIds] = useState(plan.benefitIds);
+  const ids = draft.filter((id) =>
+    benefits.some((benefit) => benefit.id === id),
+  );
   const move = (index: number, offset: number) => {
     const next = [...ids];
     const id = next[index];

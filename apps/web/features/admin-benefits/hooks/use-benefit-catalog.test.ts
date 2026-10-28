@@ -107,14 +107,18 @@ describe('Admin benefit catalog client', () => {
       await act(async () => {
         await harness.read().save.mutateAsync({ body });
       });
-      expect(harness.read().benefits.data?.[0]?.copy.en.name).toBe('Cloud');
+      await vi.waitFor(() =>
+        expect(harness.read().benefits.data?.[0]?.copy.en.name).toBe('Cloud'),
+      );
       await act(async () => {
         await harness.read().save.mutateAsync({
           id: 'cloud',
           body: { ...body, status: 'available' },
         });
       });
-      expect(harness.read().benefits.data?.[0]?.status).toBe('available');
+      await vi.waitFor(() =>
+        expect(harness.read().benefits.data?.[0]?.status).toBe('available'),
+      );
       expect(await fetchBenefit('cloud')).toMatchObject({
         id: 'cloud',
         status: 'available',
@@ -127,7 +131,7 @@ describe('Admin benefit catalog client', () => {
       await act(async () => {
         await harness.read().remove.mutateAsync('cloud');
       });
-      expect(harness.read().benefits.data).toEqual([]);
+      await vi.waitFor(() => expect(harness.read().benefits.data).toEqual([]));
       const reads = fetchMock.mock.calls.filter(
         ([, init]) => init?.method === 'GET',
       );

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { isLocale } from '@/lib/i18n/routing';
 import { useBenefitCatalog } from '../hooks/use-benefit-catalog';
+import { BenefitsSkeleton } from './benefits-skeleton';
 import { PlanBenefitEditor } from './plan-benefit-editor';
 
 const BenefitForm = dynamic(() =>
@@ -27,7 +28,7 @@ export function BenefitsPanel() {
   const [editing, setEditing] = useState<AdminBenefit | 'new' | null>(null);
   const [deleting, setDeleting] = useState<AdminBenefit | null>(null);
   if (catalog.benefits.isPending || catalog.plans.isPending)
-    return <p role="status">{t('loading')}</p>;
+    return <BenefitsSkeleton />;
   if (catalog.benefits.isError || catalog.plans.isError)
     return (
       <div role="alert" className="flex flex-col items-start gap-3">
@@ -82,7 +83,7 @@ export function BenefitsPanel() {
       <div className="grid gap-4 md:grid-cols-2">
         {catalog.plans.data.map((plan) => (
           <PlanBenefitEditor
-            key={`${plan.id}:${plan.benefitIds.join(',')}:${benefits.map((benefit) => benefit.id).join(',')}`}
+            key={`${plan.id}:${plan.benefitIds.join(',')}`}
             plan={plan}
             benefits={benefits}
             link={catalog.link}
