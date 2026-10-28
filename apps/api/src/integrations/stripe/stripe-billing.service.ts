@@ -96,6 +96,40 @@ export class StripeBillingService {
       ),
     );
   }
+  async findCheckout(
+    customer: string,
+    contractId: string,
+  ): Promise<StripeCheckout | null> {
+    let cursor: string | undefined;
+    do {
+      const query = new URLSearchParams({
+        customer,
+        limit: '100',
+        ...(cursor ? { starting_after: cursor } : {}),
+      });
+      const page = z
+        .object({
+          data: z.array(
+            sessionSchema.extend({
+              metadata: z.record(z.string(), z.string()),
+            }),
+          ),
+          has_more: z.boolean(),
+        })
+        .parse(await this.request(`checkout/sessions?${query}`));
+      const match = page.data.find(
+        (session) => session.metadata.contractId === contractId,
+      );
+      if (match) return match;
+      cursor = page.has_more ? page.data.at(-1)?.id : undefined;
+      if (page.has_more && !cursor)
+        throw new AppException(
+          'SERVICE_UNAVAILABLE',
+          'Stripe checkout reconciliation is incomplete',
+        );
+    } while (cursor);
+    return null;
+  }
   async getCheckout(id: string): Promise<StripeCheckout> {
     return sessionSchema.parse(
       await this.request(`checkout/sessions/${encodeURIComponent(id)}`),

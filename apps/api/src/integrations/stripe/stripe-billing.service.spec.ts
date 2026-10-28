@@ -83,6 +83,36 @@ describe('Stripe billing network boundary', () => {
       'https://api.stripe.com/v1/subscriptions/sub_test?expand[]=latest_invoice',
     );
   });
+  it('reconciles lost checkout responses through paginated provider session records', async () => {
+    network
+      .mockResolvedValueOnce(
+        Response.json({
+          data: [{ ...session, id: 'cs_other', metadata: {} }],
+          has_more: true,
+        }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          data: [{ ...session, metadata: { contractId: 'attempt' } }],
+          has_more: false,
+        }),
+      );
+    expect(
+      (
+        await new StripeBillingService(env()).findCheckout(
+          'cus_test',
+          'attempt',
+        )
+      )?.id,
+    ).toBe('cs_test');
+    expect(String(network.mock.calls[1]?.[0])).toContain(
+      'starting_after=cs_other',
+    );
+    network.mockResolvedValueOnce(Response.json({ data: [], has_more: false }));
+    expect(
+      await new StripeBillingService(env()).findCheckout('cus_test', 'absent'),
+    ).toBeNull();
+  });
   it('rejects missing configuration, provider failures and live-mode objects', async () => {
     await expect(
       new StripeBillingService(env('')).createCustomer('user'),

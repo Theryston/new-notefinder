@@ -48,9 +48,9 @@ for (const locale of ['en', 'pt-BR'] as const) {
           name: t.checkoutTitle.replace('{plan}', 'Pro'),
         }),
       ).toBeVisible();
-      await expect(page.getByText(t.comingSoon, { exact: false })).toHaveCount(
-        7,
-      );
+      await expect(
+        page.getByRole('list').getByText(t.comingSoon, { exact: false }),
+      ).toHaveCount(7);
       const pay = page.getByRole('button', { name: t.pay });
       await expect(pay).toBeDisabled();
       await page.getByRole('checkbox').check();
@@ -69,7 +69,18 @@ for (const locale of ['en', 'pt-BR'] as const) {
 test('sign-in and username onboarding preserve the intended offer', async ({
   page,
 }) => {
-  await mockAuthApi(page);
+  let signedIn = false;
+  await mockAuthApi(page, {
+    overrides: {
+      '/sign-in/email': () => {
+        signedIn = true;
+        return { body: { token: 'token', user: ADA } };
+      },
+      '/get-session': () => ({
+        body: signedIn ? { session: { id: 'session' }, user: ADA } : null,
+      }),
+    },
+  });
   const path = '/subscribe?plan=pro&cycle=annual&offer=annual';
   await page.goto(`/en${path}`);
   await expect(page).toHaveURL(/sign-in/);
@@ -87,15 +98,13 @@ test('sign-in and username onboarding preserve the intended offer', async ({
   expect(new URL(page.url()).searchParams.get('redirectTo')).toBe(path);
 });
 
-test('stale offers and provider errors remain recoverable before payment', async ({
-  page,
-}) => {
+test('stale offers remain recoverable before payment', async ({ page }) => {
   await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
   await page.route('**/v1/plans?*', (route) =>
     route.fulfill({ json: defaultPlanCatalog('en') }),
   );
   await page.goto('/en/subscribe?plan=pro&cycle=annual&offer=stale');
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     messages.en.billing.unavailable,
   );
 });

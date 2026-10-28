@@ -1,9 +1,9 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { Link } from '@/lib/i18n/navigation';
+import { useSubscription } from '../hooks/use-billing';
 
 export function SubscriptionSummary({ cancelled }: { cancelled: boolean }) {
   return (
@@ -26,20 +26,7 @@ function UserSubscriptionSummary({
   const locale = useLocale();
   const t = useTranslations('billing');
   const format = useFormatter();
-  const result = useQuery({
-    queryKey: ['billing', 'subscription', userId, locale],
-    queryFn: async () => {
-      const [{ browserApi }, { currentSubscriptionSchema }] = await Promise.all(
-        [import('@/lib/api/browser'), import('@notefinder/contracts')],
-      );
-      return browserApi('/me/subscription', {
-        schema: currentSubscriptionSchema,
-        query: { locale },
-      });
-    },
-    refetchInterval: (query) =>
-      query.state.data?.subscription?.status === 'pending' ? 5000 : false,
-  });
+  const result = useSubscription(userId, locale);
   if (result.isPending) return <p role="status">{t('loading')}</p>;
   if (result.isError)
     return (

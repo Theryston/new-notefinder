@@ -35,6 +35,9 @@ export function billingProvider() {
       sessions.set(session.id, session);
       return session;
     }),
+    findCheckout: vi.fn(
+      async (_customer: string, id: string) => sessions.get(`cs_${id}`) ?? null,
+    ),
     getCheckout: vi.fn(async (id: string) => {
       const session = sessions.get(id);
       if (!session) throw new Error('Unknown checkout');
@@ -70,7 +73,7 @@ export async function billingCatalog(app: TestApp) {
     enabledCycles: ['monthly', 'annual'],
     copy: {
       en: { name: 'Pro', description: 'Support singing.' },
-      'pt-BR': { name: 'Pro', description: 'Apoie o canto.' },
+      'pt-BR': { name: 'Pro', description: 'Localized singing support.' },
     },
   });
   await app.db

@@ -1,16 +1,17 @@
-import { connection } from 'next/server';
+import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import { BillingGate } from '@/features/plans/components/billing-gate';
+import { BillingSkeleton } from '@/features/plans/components/billing-skeleton';
 import { SubscriptionSummary } from '@/features/plans/components/subscription-summary';
+import { localeAlternates } from '@/lib/i18n/metadata';
 
-export const instant = false;
-export default async function SubscriptionPage({
+async function SubscriptionPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await connection();
   const params = await searchParams;
   const { billing } = await getMessages();
   return (
@@ -19,5 +20,24 @@ export default async function SubscriptionPage({
         <SubscriptionSummary cancelled={params.result === 'cancelled'} />
       </BillingGate>
     </NextIntlClientProvider>
+  );
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('billing');
+  return {
+    title: t('summaryTitle'),
+    alternates: localeAlternates(await getLocale(), '/subscription'),
+    robots: { index: false, follow: false },
+  };
+}
+
+export default function Page(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <Suspense fallback={<BillingSkeleton />}>
+      <SubscriptionPage {...props} />
+    </Suspense>
   );
 }

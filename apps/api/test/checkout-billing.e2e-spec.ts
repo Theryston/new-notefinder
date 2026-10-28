@@ -4,6 +4,7 @@ import {
   planPrices,
   plans,
 } from '../src/database/schema/plans.js';
+import { subscriptions } from '../src/database/schema/subscriptions.js';
 import { StripeBillingService } from '../src/integrations/stripe/stripe-billing.service.js';
 import {
   billingCatalog,
@@ -101,6 +102,14 @@ describe('Stripe Checkout contracts over HTTP (e2e)', () => {
     expect(results[0]?.body).toEqual(results[1]?.body);
     expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
     await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    expect(
+      (
+        await client
+          .post(`${ROOT}/checkout`)
+          .send(checkoutBody('pt-BR'))
+          .expect(201)
+      ).body,
+    ).toEqual({ action: 'manage' });
     expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
   });
   it('rejects stale, disabled, incomplete and browser-priced offers before creating checkout', async () => {
@@ -155,6 +164,71 @@ describe('Stripe Checkout contracts over HTTP (e2e)', () => {
     expect(fake.provider.createCheckout.mock.calls[2]?.[0].id).not.toBe(
       fake.provider.createCheckout.mock.calls[1]?.[0].id,
     );
+  });
+  it('recovers a lost provider response instead of starting a different contract', async () => {
+    const { client } = await billingUser(app);
+    const create = fake.provider.createCheckout.getMockImplementation();
+    if (!create) throw new Error('Expected provider fake');
+    fake.provider.createCheckout.mockImplementationOnce(async (input) => {
+      await create(input);
+      throw new Error('Response was lost after creation');
+    });
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(500);
+    expect(
+      (
+        await client
+          .post(`${ROOT}/checkout`)
+          .send(checkoutBody('pt-BR'))
+          .expect(201)
+      ).body,
+    ).toEqual({ action: 'manage' });
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
+    expect(fake.provider.createCustomer).toHaveBeenCalledTimes(1);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({ currency: 'USD', amount: 350, paidMembership: false });
+  });
+  it('reconciles an unpaid slot after an outage, repricing and provider key expiry', async () => {
+    const { client, user } = await billingUser(app);
+    fake.provider.createCheckout.mockRejectedValueOnce(
+      new Error('Provider unavailable before creation'),
+    );
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(500);
+    const previous = fake.provider.createCheckout.mock.calls[0]?.[0].id;
+    await app.db
+      .update(subscriptions)
+      .set({ createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) })
+      .where(eq(subscriptions.userId, user.id));
+    await app.db
+      .update(planPrices)
+      .set({ current: false })
+      .where(eq(planPrices.id, 'usd-monthly'));
+    await app.db.insert(planPrices).values({
+      id: 'usd-new',
+      planId: 'pro',
+      cycle: 'monthly',
+      currency: 'USD',
+      amount: 400,
+      stripePriceId: 'price_usd_new',
+    });
+    await client
+      .post(`${ROOT}/checkout`)
+      .send({ ...checkoutBody(), offerId: 'usd-new' })
+      .expect(201);
+    expect(fake.provider.createCheckout.mock.calls[1]?.[0].id).not.toBe(
+      previous,
+    );
+    expect(fake.provider.findCheckout).toHaveBeenCalled();
+    expect(fake.provider.createCustomer).toHaveBeenCalledTimes(1);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({
+      currency: 'USD',
+      amount: 400,
+      status: 'pending',
+      paidMembership: false,
+    });
   });
   it('keeps another User private and requires completed username onboarding', async () => {
     const { client } = await billingUser(app);

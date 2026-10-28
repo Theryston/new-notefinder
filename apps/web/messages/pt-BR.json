@@ -1283,6 +1283,7 @@
     "contractCurrency": "Moeda do contrato: {currency}",
     "periodStart": "O período atual começou em {date}",
     "periodEnd": "O período atual termina em {date}",
-    "noSubscription": "Você não tem uma assinatura paga."
+    "noSubscription": "Você não tem uma assinatura paga.",
+    "checkoutHeading": "Assinar"
   }
 }

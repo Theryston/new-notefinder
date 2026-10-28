@@ -87,6 +87,25 @@ describe('Signed Stripe webhook confirmation (e2e)', () => {
       (await client.get(ROOT).expect(200)).body.subscription,
     ).toMatchObject({ paidMembership: true, status: 'confirmed' });
   });
+  it('confirms a paid provider contract even when the checkout creation response was lost', async () => {
+    const { client } = await billingUser(app);
+    const create = fake.provider.createCheckout.getMockImplementation();
+    if (!create) throw new Error('Expected provider fake');
+    fake.provider.createCheckout.mockImplementationOnce(async (input) => {
+      await create(input);
+      throw new Error('Provider response was lost');
+    });
+    await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(500);
+    const session = [...fake.sessions.values()][0];
+    if (!session) throw new Error('Expected provider checkout');
+    const provider = paidProvider(session);
+    fake.contracts.set(provider.id, provider);
+    await deliver(signedEvent(session.customer)).expect(200);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({ paidMembership: true, status: 'confirmed' });
+    expect(fake.provider.createCheckout).toHaveBeenCalledTimes(1);
+  });
   it('refuses a provider contract for the wrong customer or immutable price', async () => {
     const { client } = await billingUser(app);
     await client.post(`${ROOT}/checkout`).send(checkoutBody()).expect(201);

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type {
@@ -7,6 +6,7 @@ import type {
   CurrentSubscription,
   Locale,
 } from '@notefinder/contracts';
+import { createId } from '@paralleldrive/cuid2';
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
@@ -25,6 +25,8 @@ export class SubscriptionsService {
     body: CreateCheckoutBody,
   ): Promise<CheckoutResult> {
     await this.reserve(userId, body);
+    await this.ensureCustomer(userId);
+    await this.reconcile(userId, body);
     return this.start(userId, body);
   }
 
@@ -46,7 +48,7 @@ export class SubscriptionsService {
     }
     const price = checkoutOffer(await this.repository.offer(body), body);
     const reservation = {
-      id: randomUUID(),
+      id: createId(),
       userId,
       planId: body.planId,
       priceId: price.id,
@@ -64,6 +66,56 @@ export class SubscriptionsService {
   }
 
   @Transactional()
+  async ensureCustomer(userId: string) {
+    await this.repository.lock(userId);
+    if ((await this.repository.customer(userId))?.stripeCustomerId) return;
+    await this.repository.saveCustomer(
+      userId,
+      await this.stripe.createCustomer(userId),
+    );
+  }
+
+  // A lost Stripe response is reconciled before changing or retrying an attempt.
+  // Persist the recovered session or replacement key before any session creation.
+  @Transactional()
+  async reconcile(userId: string, body: CreateCheckoutBody) {
+    await this.repository.lock(userId);
+    const row = await this.repository.current(userId);
+    if (!row || row.contract.checkoutId || row.contract.stripeSubscriptionId)
+      return;
+    const customer = await this.repository.customer(userId);
+    if (!customer?.stripeCustomerId)
+      throw new AppException('CONFLICT', 'Billing customer is missing');
+    const session = await this.stripe.findCheckout(
+      customer.stripeCustomerId,
+      row.contract.id,
+    );
+    if (session) {
+      await this.repository.update(userId, {
+        checkoutId: session.id,
+        checkoutUrl: session.url,
+      });
+      return;
+    }
+    const price = checkoutOffer(await this.repository.offer(body), body);
+    if (
+      row.contract.priceId === price.id &&
+      Date.now() - row.contract.createdAt.getTime() < 23 * 60 * 60 * 1000
+    )
+      return;
+    await this.repository.update(userId, {
+      id: createId(),
+      planId: body.planId,
+      priceId: price.id,
+      cycle: price.cycle,
+      currency: price.currency,
+      amount: price.amount,
+      stripePriceId: price.stripePriceId,
+      createdAt: new Date(),
+    });
+  }
+
+  @Transactional()
   async start(
     userId: string,
     body: CreateCheckoutBody,
@@ -74,6 +126,12 @@ export class SubscriptionsService {
       throw new AppException('CONFLICT', 'Checkout reservation is missing');
     const contract = row.contract;
     if (contract.stripeSubscriptionId) return { action: 'manage' };
+    if (
+      contract.priceId !== body.offerId ||
+      contract.planId !== body.planId ||
+      contract.cycle !== body.cycle
+    )
+      return { action: 'manage' };
     if (contract.checkoutId) {
       const session = await this.stripe.getCheckout(contract.checkoutId);
       if (session.status === 'complete') return { action: 'manage' };
@@ -84,21 +142,10 @@ export class SubscriptionsService {
         'Checkout expired; retry the selected offer',
       );
     }
-    if (Date.now() - contract.createdAt.getTime() > 23 * 60 * 60 * 1000)
-      throw new AppException(
-        'SERVICE_UNAVAILABLE',
-        'Checkout requires provider reconciliation before retry',
-      );
     checkoutOffer(await this.repository.offer(body), body);
-    if (contract.priceId !== body.offerId)
-      throw new AppException(
-        'CONFLICT',
-        'A different offer is already reserved',
-      );
-    const existing = await this.repository.customer(userId);
-    const customer =
-      existing?.stripeCustomerId ?? (await this.stripe.createCustomer(userId));
-    await this.repository.saveCustomer(userId, customer);
+    const customer = (await this.repository.customer(userId))?.stripeCustomerId;
+    if (!customer)
+      throw new AppException('CONFLICT', 'Billing customer is missing');
     const session = await this.stripe.createCheckout({
       id: contract.id,
       customer,
@@ -158,8 +205,16 @@ export class SubscriptionsService {
 
   private async refresh(userId: string, customer: string) {
     const row = await this.repository.current(userId);
-    if (!row?.contract.checkoutId) return;
-    const session = await this.stripe.getCheckout(row.contract.checkoutId);
+    if (!row) return;
+    const session = row.contract.checkoutId
+      ? await this.stripe.getCheckout(row.contract.checkoutId)
+      : await this.stripe.findCheckout(customer, row.contract.id);
+    if (!session) return;
+    if (!row.contract.checkoutId)
+      await this.repository.update(userId, {
+        checkoutId: session.id,
+        checkoutUrl: session.url,
+      });
     if (session.customer !== customer)
       throw new AppException('CONFLICT', 'Checkout customer mismatch');
     if (session.subscription) {
