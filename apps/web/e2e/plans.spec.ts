@@ -2,6 +2,7 @@ import type { Locale, PlanCatalog } from '@notefinder/contracts';
 import { expect, test } from '@playwright/test';
 import {
   registerAdminPlanJourneys,
+  registerInvalidPlanPriceJourneys,
   registerPlanRetryJourney,
 } from './admin-plans-journeys';
 import { ADA, mockAuthApi } from './auth-api-mock';
@@ -226,3 +227,4 @@ test('catalog updates retain configured cycles, omit undisclosed benefits, and s
 
 registerAdminPlanJourneys();
 registerPlanRetryJourney();
+registerInvalidPlanPriceJourneys();

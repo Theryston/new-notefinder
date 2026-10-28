@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import type { AdminPlanPrice, SaveAdminPlanBody } from '@notefinder/contracts';
-import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   benefits,
@@ -11,6 +11,7 @@ import {
   planSyncOperations,
   plans,
 } from '../../database/schema/plans.js';
+import type { PlanSyncClaim } from './plan-sync-claim.js';
 
 type CatalogPlanRecord = Omit<
   typeof plans.$inferSelect,
@@ -52,7 +53,7 @@ export class PlansRepository {
         )
         .orderBy(asc(planBenefits.position)),
       this.txHost.tx
-        .select()
+        .select({ contractingEnabled: planCatalogSettings.contractingEnabled })
         .from(planCatalogSettings)
         .where(eq(planCatalogSettings.id, 'catalog')),
     ]);
@@ -67,23 +68,40 @@ export class PlansRepository {
     }));
   }
   async list() {
-    const [rows, prices, operations] = await Promise.all([
+    const [rows, prices] = await Promise.all([
       this.txHost.tx
-        .select()
+        .select({
+          id: plans.id,
+          kind: plans.kind,
+          copy: plans.copy,
+          displayOrder: plans.displayOrder,
+          published: plans.published,
+          saleEnabled: plans.saleEnabled,
+          enabledCycles: plans.enabledCycles,
+          operation: {
+            status: planSyncOperations.status,
+            body: planSyncOperations.body,
+          },
+        })
         .from(plans)
+        .leftJoin(
+          planSyncOperations,
+          eq(planSyncOperations.id, plans.pendingSyncId),
+        )
         .orderBy(asc(plans.displayOrder), asc(plans.id)),
       this.txHost.tx
-        .select()
+        .select({
+          planId: planPrices.planId,
+          cycle: planPrices.cycle,
+          currency: planPrices.currency,
+          amount: planPrices.amount,
+        })
         .from(planPrices)
         .where(eq(planPrices.current, true)),
-      this.txHost.tx.select().from(planSyncOperations),
     ]);
     return rows.map((row) => ({
       ...row,
       prices: prices.filter((price) => price.planId === row.id),
-      operation: operations.find(
-        (operation) => operation.id === row.pendingSyncId,
-      ),
     }));
   }
 
@@ -94,7 +112,10 @@ export class PlansRepository {
   }
 
   async find(id: string, lock = false) {
-    const query = this.txHost.tx.select().from(plans).where(eq(plans.id, id));
+    const query = this.txHost.tx
+      .select({ kind: plans.kind, pendingSyncId: plans.pendingSyncId })
+      .from(plans)
+      .where(eq(plans.id, id));
     const rows = lock ? await query.for('update') : await query;
     return rows[0];
   }
@@ -108,25 +129,54 @@ export class PlansRepository {
 
   async operation(id: string) {
     const rows = await this.txHost.tx
-      .select()
+      .select({
+        planId: planSyncOperations.planId,
+        body: planSyncOperations.body,
+        status: planSyncOperations.status,
+        leaseUntil: planSyncOperations.leaseUntil,
+      })
       .from(planSyncOperations)
       .where(eq(planSyncOperations.id, id));
     return rows[0];
   }
 
-  async claim(planId: string, body: SaveAdminPlanBody) {
+  async claim(planId: string, body: SaveAdminPlanBody, leaseToken: string) {
     await this.txHost.tx
       .insert(planSyncOperations)
       .values({ id: body.operationId, planId, body, status: 'pending' })
       .onConflictDoNothing();
     await this.txHost.tx
       .update(planSyncOperations)
-      .set({ status: 'pending', leaseUntil: new Date(Date.now() + 120_000) })
+      .set({
+        status: 'pending',
+        leaseUntil: new Date(Date.now() + 120_000),
+        leaseToken,
+      })
       .where(eq(planSyncOperations.id, body.operationId));
     await this.txHost.tx
       .update(plans)
       .set({ pendingSyncId: body.operationId })
       .where(eq(plans.id, planId));
+  }
+
+  async ownsLease(claim: PlanSyncClaim) {
+    const rows = await this.txHost.tx
+      .select({ id: plans.id })
+      .from(plans)
+      .innerJoin(
+        planSyncOperations,
+        eq(plans.pendingSyncId, planSyncOperations.id),
+      )
+      .where(
+        and(
+          eq(plans.id, claim.planId),
+          eq(planSyncOperations.id, claim.operationId),
+          eq(planSyncOperations.leaseToken, claim.leaseToken),
+          eq(planSyncOperations.status, 'pending'),
+          gt(planSyncOperations.leaseUntil, new Date()),
+        ),
+      );
+    return rows.length > 0;
   }
 
   async setProduct(planId: string, productId: string) {
@@ -138,7 +188,7 @@ export class PlansRepository {
 
   async stagedPrice(id: string) {
     const rows = await this.txHost.tx
-      .select()
+      .select({ id: planPrices.id })
       .from(planPrices)
       .where(eq(planPrices.id, id));
     return rows[0];
@@ -175,20 +225,20 @@ export class PlansRepository {
       .where(eq(plans.id, planId));
     await this.txHost.tx
       .update(planSyncOperations)
-      .set({ status: 'synced', leaseUntil: null })
+      .set({ status: 'synced', leaseUntil: null, leaseToken: null })
       .where(eq(planSyncOperations.id, body.operationId));
   }
 
   async fail(operationId: string) {
     await this.txHost.tx
       .update(planSyncOperations)
-      .set({ status: 'failed', leaseUntil: null })
+      .set({ status: 'failed', leaseUntil: null, leaseToken: null })
       .where(eq(planSyncOperations.id, operationId));
   }
 
   async contractingEnabled() {
     const rows = await this.txHost.tx
-      .select()
+      .select({ contractingEnabled: planCatalogSettings.contractingEnabled })
       .from(planCatalogSettings)
       .where(eq(planCatalogSettings.id, 'catalog'));
     return rows[0]?.contractingEnabled ?? false;
@@ -206,10 +256,11 @@ export class PlansRepository {
 
   async currentPrice(planId: string, price: AdminPlanPrice) {
     const rows = await this.txHost.tx
-      .select()
+      .select({ id: planPrices.id })
       .from(planPrices)
       .where(
         and(
+          isNotNull(planPrices.stripePriceId),
           eq(planPrices.planId, planId),
           eq(planPrices.current, true),
           eq(planPrices.cycle, price.cycle),
@@ -217,6 +268,6 @@ export class PlansRepository {
           eq(planPrices.amount, price.amount),
         ),
       );
-    return rows.find((row) => row.stripePriceId !== null);
+    return rows[0];
   }
 }

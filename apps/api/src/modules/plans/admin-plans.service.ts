@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
@@ -6,6 +7,7 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { StripeCatalogService } from '../../integrations/stripe/stripe-catalog.service.js';
 import { WebRevalidationService } from '../../integrations/web-revalidation/web-revalidation.service.js';
 import { adminPlanOf } from './admin-plan-mapping.js';
+import type { PlanSyncClaim } from './plan-sync-claim.js';
 import { PlansRepository } from './plans.repository.js';
 
 @Injectable()
@@ -36,19 +38,28 @@ export class AdminPlansService {
   }
 
   async save(planId: string, body: SaveAdminPlanBody, create = false) {
-    const completed = await this.prepare(planId, body, create);
+    const claim = {
+      planId,
+      operationId: body.operationId,
+      leaseToken: randomUUID(),
+    };
+    const completed = await this.prepare(
+      planId,
+      body,
+      create,
+      claim.leaseToken,
+    );
     if (!completed) {
       try {
-        const productId = await this.stripe.syncProduct({
-          planId,
-          copy: body.copy,
-          operationId: body.operationId,
-        });
-        await this.plans.setProduct(planId, productId);
+        const productId = await this.syncProduct(claim, body);
         const priceIds = await this.syncPrices(planId, productId, body);
-        await this.complete(planId, body, priceIds);
+        await this.complete(claim, body, { productId, priceIds });
       } catch {
-        await this.plans.fail(body.operationId);
+        if (!(await this.failClaim(claim)))
+          throw new AppException(
+            'CONFLICT',
+            'The synchronization claim is no longer current',
+          );
         throw new AppException(
           'SERVICE_UNAVAILABLE',
           'Plan synchronization failed; retry the same operation',
@@ -66,16 +77,9 @@ export class AdminPlansService {
     planId: string,
     body: SaveAdminPlanBody,
     create: boolean,
+    leaseToken: string,
   ) {
     await this.plans.lockOperation(body.operationId);
-    if (create) await this.plans.createDraft(planId, body);
-    const plan = await this.plans.find(planId, true);
-    if (!plan) throw new AppException('NOT_FOUND', 'Plan not found');
-    if (plan.kind !== 'paid')
-      throw new AppException(
-        'VALIDATION_FAILED',
-        'Only paid plans have billing offers',
-      );
     const operation = await this.plans.operation(body.operationId);
     if (
       operation &&
@@ -87,20 +91,58 @@ export class AdminPlansService {
       );
     }
     if (operation?.status === 'synced') return true;
-    if (plan.pendingSyncId && plan.pendingSyncId !== body.operationId) {
-      throw new AppException(
-        'CONFLICT',
-        'Retry the pending change before submitting another',
-      );
-    }
     if (operation?.leaseUntil && operation.leaseUntil.getTime() > Date.now()) {
       throw new AppException(
         'CONFLICT',
         'The synchronization is already running',
       );
     }
-    await this.plans.claim(planId, body);
+    let snapshot = await this.plans.find(planId);
+    if (snapshot) this.assertClaimablePlan(snapshot, body.operationId);
+    if (create) {
+      await this.plans.createDraft(planId, body);
+      snapshot ??= await this.plans.find(planId);
+    }
+    this.assertClaimablePlan(snapshot, body.operationId);
+    this.assertClaimablePlan(
+      await this.plans.find(planId, true),
+      body.operationId,
+    );
+    await this.plans.claim(planId, body, leaseToken);
     return false;
+  }
+
+  private assertClaimablePlan(
+    plan: Awaited<ReturnType<PlansRepository['find']>>,
+    operationId: string,
+  ) {
+    if (!plan) throw new AppException('NOT_FOUND', 'Plan not found');
+    if (plan.kind !== 'paid')
+      throw new AppException(
+        'VALIDATION_FAILED',
+        'Only paid plans have billing offers',
+      );
+    if (plan.pendingSyncId && plan.pendingSyncId !== operationId)
+      throw new AppException(
+        'CONFLICT',
+        'Retry the pending change before submitting another',
+      );
+  }
+
+  // Mutable provider copy must follow claim order even after a worker stalls.
+  @Transactional()
+  private async syncProduct(claim: PlanSyncClaim, body: SaveAdminPlanBody) {
+    await this.plans.find(claim.planId, true);
+    if (!(await this.plans.ownsLease(claim)))
+      throw new AppException(
+        'CONFLICT',
+        'The synchronization claim is no longer current',
+      );
+    return this.stripe.syncProduct({
+      planId: claim.planId,
+      copy: body.copy,
+      operationId: claim.operationId,
+    });
   }
 
   private async syncPrices(
@@ -131,12 +173,26 @@ export class AdminPlansService {
 
   @Transactional()
   private async complete(
-    planId: string,
+    claim: PlanSyncClaim,
     body: SaveAdminPlanBody,
-    priceIds: string[],
+    result: { productId: string; priceIds: string[] },
   ) {
-    await this.plans.find(planId, true);
-    await this.plans.complete(planId, body, priceIds);
+    await this.plans.find(claim.planId, true);
+    if (!(await this.plans.ownsLease(claim)))
+      throw new AppException(
+        'CONFLICT',
+        'The synchronization claim is no longer current',
+      );
+    await this.plans.setProduct(claim.planId, result.productId);
+    await this.plans.complete(claim.planId, body, result.priceIds);
+  }
+
+  @Transactional()
+  private async failClaim(claim: PlanSyncClaim) {
+    await this.plans.find(claim.planId, true);
+    if (!(await this.plans.ownsLease(claim))) return false;
+    await this.plans.fail(claim.operationId);
+    return true;
   }
 
   private announce() {

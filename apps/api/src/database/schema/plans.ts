@@ -107,6 +107,7 @@ export const planSyncOperations = pgTable(
     body: jsonb().$type<SaveAdminPlanBody>().notNull(),
     status: text().$type<'pending' | 'failed' | 'synced'>().notNull(),
     leaseUntil: timestamp({ withTimezone: true }),
+    leaseToken: text(),
     ...timestamps,
   },
   (table) => [index().on(table.planId)],

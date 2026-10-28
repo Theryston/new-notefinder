@@ -224,3 +224,25 @@ export function registerPlanRetryJourney() {
     expect(ids[0]).toBe(ids[1]);
   });
 }
+
+export function registerInvalidPlanPriceJourneys() {
+  for (const { locale, copy } of adminLocales) {
+    test(`${locale}: shows translated invalid-price validation`, async ({
+      page,
+    }) => {
+      await mockAuthApi(page, { user: adminUser });
+      const ids = await failedPlanWrites(page);
+      const t = copy.adminPlans;
+      await page.goto(`/${locale}/admin/plans`);
+      await page.getByRole('button', { name: t.newPlan, exact: true }).click();
+      const form = page.getByRole('form', { name: t.editPlan });
+      await fillPlan(form, locale);
+      for (const amount of ['0', '1.5']) {
+        await form.locator('#monthly-USD').fill(amount);
+        await form.getByRole('button', { name: t.save }).click();
+        await expect(form.getByRole('alert')).toHaveText(t.invalid);
+        expect(ids).toHaveLength(0);
+      }
+    });
+  }
+}

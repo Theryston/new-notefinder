@@ -39,6 +39,7 @@ const repository = {
   lockOperation: vi.fn(),
   operation: vi.fn(),
   claim: vi.fn(),
+  ownsLease: vi.fn(),
   setProduct: vi.fn(),
   currentPrice: vi.fn(),
   stagedPrice: vi.fn(),
@@ -56,6 +57,7 @@ describe('Admin plan synchronization policy', () => {
     vi.resetAllMocks();
     repository.list.mockResolvedValue([row()]);
     repository.find.mockResolvedValue(row());
+    repository.ownsLease.mockResolvedValue(true);
     repository.contractingEnabled.mockResolvedValue(false);
     stripe.syncProduct.mockResolvedValue('prod_studio');
     stripe.ensurePrice.mockResolvedValue('price_synced');
@@ -206,4 +208,59 @@ describe('Admin plan synchronization policy', () => {
       pendingOperation: input(),
     });
   });
+});
+
+describe('Obsolete synchronization workers', () => {
+  it.each(['before-provider', 'before-publish', 'provider-failure'] as const)(
+    'does not change state after losing ownership %s',
+    async (when) => {
+      const repo = {
+        ...repository,
+        list: vi.fn().mockResolvedValue([row()]),
+        find: vi.fn().mockResolvedValue(row()),
+        operation: vi.fn().mockResolvedValue(undefined),
+        ownsLease: vi.fn().mockResolvedValue(false),
+        currentPrice: vi.fn().mockResolvedValue(undefined),
+        stagedPrice: vi.fn().mockResolvedValue(undefined),
+        complete: vi.fn(),
+        fail: vi.fn(),
+        setProduct: vi.fn(),
+      };
+      const provider = {
+        syncProduct: vi.fn().mockResolvedValue('prod_studio'),
+        ensurePrice: vi.fn().mockResolvedValue('price_studio'),
+      };
+      const { db, pool } = fakeTransactionalDatabase();
+      const module = await Test.createTestingModule({
+        imports: [DatabaseModule],
+        providers: [
+          AdminPlansService,
+          { provide: PlansRepository, useValue: repo },
+          { provide: StripeCatalogService, useValue: provider },
+          { provide: WebRevalidationService, useValue: revalidation },
+        ],
+      })
+        .overrideProvider(DATABASE)
+        .useValue(db)
+        .overrideProvider(DATABASE_POOL)
+        .useValue(pool)
+        .compile();
+      const service = module.get(AdminPlansService);
+      if (when !== 'before-provider')
+        repo.ownsLease.mockResolvedValueOnce(true);
+      if (when === 'provider-failure')
+        provider.ensurePrice.mockRejectedValueOnce(
+          new Error('Obsolete provider failure'),
+        );
+      await expect(service.save('studio', input())).rejects.toMatchObject({
+        code: 'CONFLICT',
+      });
+      if (when === 'before-provider')
+        expect(provider.syncProduct).not.toHaveBeenCalled();
+      expect(repo.complete).not.toHaveBeenCalled();
+      expect(repo.fail).not.toHaveBeenCalled();
+      expect(repo.setProduct).not.toHaveBeenCalled();
+      await module.close();
+    },
+  );
 });

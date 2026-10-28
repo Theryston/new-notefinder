@@ -1,13 +1,12 @@
 'use client';
 import type { AdminPlan, SaveAdminPlanBody } from '@notefinder/contracts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/api-error';
 import { planFormDefaults } from '../form';
 import { planFormResolver } from '../form-resolver';
-import { adminPlanKeys } from '../query-keys';
+import { useSaveAdminPlan } from '../hooks/use-admin-plan-mutations';
 import { PlanCopyFields, PlanSettingsFields } from './plan-form-fields';
 import { PlanPriceFields } from './plan-price-fields';
 
@@ -20,25 +19,15 @@ export function PlanForm({
 }) {
   const t = useTranslations('adminPlans');
   const errors = useTranslations('errors');
-  const queryClient = useQueryClient();
   const form = useForm<SaveAdminPlanBody>({
     defaultValues: planFormDefaults(plan),
     resolver: planFormResolver,
   });
-  const save = useMutation({
-    mutationFn: async (body: SaveAdminPlanBody) =>
-      (await import('../client')).saveAdminPlan(body, plan?.id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminPlanKeys.catalog });
-      onClose();
-    },
-    onError: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminPlanKeys.catalog });
-    },
-  });
+  const save = useSaveAdminPlan({ planId: plan?.id, onSuccess: onClose });
   const submit = form.handleSubmit((values) => save.mutate(values));
   return (
     <form
+      noValidate
       onSubmit={submit}
       className="space-y-6 rounded-2xl border bg-card p-4 md:p-6"
       aria-label={t('editPlan')}

@@ -1,29 +1,20 @@
 'use client';
 import type { AdminPlan } from '@notefinder/contracts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/api-error';
-import { adminPlanKeys } from '../query-keys';
+import { useContractingMutation } from '../hooks/use-admin-plan-mutations';
+import { useAdminPlans } from '../hooks/use-admin-plans';
 import { AdminPlansSkeleton } from './admin-plans-skeleton';
 import { PlanForm } from './plan-form';
 
 export function PlansPanel() {
   const t = useTranslations('adminPlans');
   const errors = useTranslations('errors');
-  const client = useQueryClient();
   const [editing, setEditing] = useState<AdminPlan | 'new' | null>(null);
-  const catalog = useQuery({
-    queryKey: adminPlanKeys.catalog,
-    queryFn: async ({ signal }) =>
-      (await import('../client')).fetchAdminPlans(signal),
-  });
-  const contracting = useMutation({
-    mutationFn: async (value: boolean) =>
-      (await import('../client')).setContracting(value),
-    onSuccess: (value) => client.setQueryData(adminPlanKeys.catalog, value),
-  });
+  const catalog = useAdminPlans();
+  const contracting = useContractingMutation();
   if (catalog.isPending) return <AdminPlansSkeleton />;
   if (catalog.error)
     return (
