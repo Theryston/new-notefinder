@@ -1,9 +1,9 @@
 import type { Plan, PlanCatalog } from '@notefinder/contracts';
 import { CheckIcon, ClockIcon } from 'lucide-react';
 import { getFormatter, getTranslations } from 'next-intl/server';
-
 import { buttonVariants } from '@/components/ui/button';
 import { Link } from '@/lib/i18n/navigation';
+import { CheckoutSelection } from './checkout-selection';
 
 type Props = { plan: Plan; currency: PlanCatalog['currency'] };
 
@@ -83,11 +83,18 @@ export async function PlanCard({ plan, currency }: Props) {
             {t('startSinging')}
           </Link>
         ) : (
-          <p className="text-muted-foreground text-sm">
-            {t(
-              plan.saleAvailable === false ? 'salesPaused' : 'checkoutPending',
-            )}
-          </p>
+          <>
+            <CheckoutSelection plan={plan} />
+            {plan.saleAvailable !== true ? (
+              <p className="text-muted-foreground text-sm">
+                {t(
+                  plan.saleAvailable === false
+                    ? 'salesPaused'
+                    : 'checkoutPending',
+                )}
+              </p>
+            ) : null}
+          </>
         )}
       </div>
     </article>

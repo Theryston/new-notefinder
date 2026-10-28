@@ -4,6 +4,7 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { HttpAdapterHost, Reflector } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   DocumentBuilder,
   type OpenAPIObject,
@@ -66,6 +67,10 @@ export const configureApp = (app: INestApplication): void => {
     forwardClientIp,
     toNodeHandler(app.get<Auth>(AUTH)),
   );
+
+  // Registered after Better Auth so its raw stream remains untouched.
+  const adapter = app.getHttpAdapter();
+  if (adapter instanceof ExpressAdapter) adapter.useBodyParser('json', true);
 
   app.useGlobalPipes(new ZodValidationPipe());
   app.useGlobalInterceptors(new ZodSerializerInterceptor(app.get(Reflector)));

@@ -33,6 +33,7 @@ export * from './revalidation.js';
 export * from './search.js';
 export * from './sitemaps.js';
 export * from './streaks.js';
+export * from './subscriptions.js';
 export { type TrackAudio, trackAudioSchema } from './track-audio.js';
 export * from './track-processing.js';
 export * from './track-views.js';
