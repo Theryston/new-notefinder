@@ -62,7 +62,12 @@ const workerEnvSchema = envSchema.extend({
   MEILISEARCH_WRITE_API_KEY: z.string().min(1),
   // Recordings sent to Meilisearch per task: bigger batches index faster and
   // use more memory, smaller ones checkpoint more often.
-  INDEXING_BATCH_SIZE: z.coerce.number().int().min(1).max(10_000).default(2000),
+  INDEXING_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10_000)
+    .default(10_000),
   // The parallel database the blue-green reimport rebuilds the catalog in
   // after MusicBrainz's yearly schema change (same server, other database).
   // Absent, the worker never reimports (see apps/music-catalog/CLAUDE.md).

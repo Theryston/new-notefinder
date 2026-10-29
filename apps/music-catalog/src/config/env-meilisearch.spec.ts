@@ -65,7 +65,7 @@ describe('parseWorkerEnv', () => {
     expect(parseWorkerEnv(worker)).toMatchObject({
       MEILISEARCH_URL: 'http://localhost:7700',
       MEILISEARCH_WRITE_API_KEY: WRITE_KEY,
-      INDEXING_BATCH_SIZE: 2000,
+      INDEXING_BATCH_SIZE: 10_000,
     });
   });
 

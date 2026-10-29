@@ -582,14 +582,18 @@ come from env; version pinned to a stable v1.x in the dev compose
   `restoring` or there is no bootstrap row, nothing happens. On `restored` the
   worker records `indexing`, applies the index settings, and walks the
   Recordings by MusicBrainz's integer id, `INDEXING_BATCH_SIZE` at a time
-  (default 2000): read the batch's documents (one query per kind of data per
-  batch, not per Recording), send them, **wait for the Meilisearch task**, then
-  write the checkpoint (`music_catalog.indexing_checkpoint`, one row per index).
+  (default 10000). `runIndexingWindow` prepares and submits up to three batches
+  while previous Meilisearch tasks run. Each window holds the catalog write
+  fence through all its tasks, then releases it so association deliveries can
+  proceed between windows. Tasks are confirmed in source order before writing
+  each checkpoint (`music_catalog.indexing_checkpoint`, one row per index).
   When no Recording is left it records `ready`. A worker that dies or is
   restarted in the middle resumes after the checkpoint (a batch that was sent
   but not checkpointed is sent again, which replaces the same documents); a task
-  that fails throws, the loop logs it and the next tick resumes. Aborting the
-  worker's signal stops it after the batch in progress. Every tick drains the
+  that fails prevents checkpoints beyond it. Read, task or checkpoint failures
+  drain every submitted task before releasing the fence, then throw; the next
+  tick retries from the last confirmed checkpoint. Aborting the worker's signal
+  stops admission and drains submitted tasks. Every tick drains the
   outbox first (a no-op until `ready`), then runs the initial indexing (a no-op
   once `ready`).
 
@@ -1336,7 +1340,7 @@ and 959 MB (mbslave).
   | `MEILISEARCH_URL` | Meilisearch, `http(s)://` (dev compose: port 7700); server and worker |
   | `MEILISEARCH_SEARCH_API_KEY` | Search-only key; required by the **server** only |
   | `MEILISEARCH_WRITE_API_KEY` | Key that can write; required by the **worker** only |
-  | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 2000, 1 to 10000); worker |
+  | `INDEXING_BATCH_SIZE` | Recordings per Meilisearch task while indexing (default 10000, 1 to 10000); worker |
   | `MUSICBRAINZ_DUMP_BASE_URL` | The `.../data` directory the dumps are published under (default: the official one); restore (see "First import") |
   | `MBSLAVE_REF` | The mbslave release in the mbslave image (baked in from its build argument); recorded with a schema-change stall (see "Yearly schema change") |
   | `REIMPORT_DATABASE_URL` | The parallel database a reimport rebuilds (same server, other database); absent, nothing ever reimports (see "Yearly schema change"); restore, worker and server (boot fallback) |
@@ -1361,8 +1365,8 @@ and 959 MB (mbslave).
   production, text otherwise). No `console.*`. Never log API keys, the
   `Authorization` header or whole request bodies.
 - Shutdown: on SIGINT/SIGTERM the server closes every connection with 1001,
-  stops listening and closes the pool; the worker stops indexing after the
-  batch in progress, finishes its tick and exits. Keep both stateless so
+  stops listening and closes the pool; the worker drains already submitted
+  batches, finishes its tick and exits. Keep both stateless so
   several instances can run the server (run **one** worker: two would index
   the same batches twice, which is harmless but wasted work).
 
