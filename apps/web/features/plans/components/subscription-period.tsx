@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { subscriptionState } from '../subscription-presentation';
+import { PortalButton } from './portal-button';
 
 export function SubscriptionPeriod({
   subscription,
@@ -32,6 +33,7 @@ export function SubscriptionPeriod({
         {description}
       </p>
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
+      {subscription?.providerStatus ? <PortalButton /> : null}
       <Link
         href="/plans"
         className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"

@@ -33,3 +33,8 @@ export const currentSubscriptionSchema = z.object({
   subscription: subscriptionSchema.nullable(),
 });
 export type CurrentSubscription = z.infer<typeof currentSubscriptionSchema>;
+
+export const createPortalBodySchema = z.strictObject({ locale: localeSchema });
+export type CreatePortalBody = z.infer<typeof createPortalBodySchema>;
+export const portalSessionSchema = z.object({ url: z.url() });
+export type PortalSession = z.infer<typeof portalSessionSchema>;

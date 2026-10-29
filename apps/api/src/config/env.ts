@@ -104,6 +104,9 @@ const envSchema = z
     // when unset, emails (including one-time codes) are logged instead.
     RESEND_API_KEY: optional(z.string().min(1)),
     STRIPE_SECRET_KEY: optional(z.string().regex(/^sk_test_[a-zA-Z0-9]+$/)),
+    STRIPE_PORTAL_CONFIGURATION_ID: optional(
+      z.string().regex(/^bpc_[a-zA-Z0-9]+$/),
+    ),
     STRIPE_WEBHOOK_SECRET: optional(z.string().startsWith('whsec_').min(10)),
     EMAIL_FROM: z.string().min(3).default('vozzify <noreply@vozzify.com>'),
     // Optional here so the schema itself doesn't force a storage config on

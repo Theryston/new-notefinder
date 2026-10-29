@@ -1320,6 +1320,8 @@
       "monthly": "Mensal",
       "annual": "Anual",
       "contractCurrency": "Moeda do contrato",
+      "manage": "Gerenciar assinatura",
+      "manageError": "Não foi possível abrir o gerenciamento de cobrança. Tente novamente.",
       "endingDescription": "Sua assinatura será encerrada ao final deste período.",
       "states": {
         "active": "Ativa",

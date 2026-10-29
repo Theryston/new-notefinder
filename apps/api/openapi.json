@@ -1328,6 +1328,30 @@
         ]
       }
     },
+    "/v1/me/subscription/portal": {
+      "post": {
+        "operationId": "SubscriptionsController_portal_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePortalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/v1/me/subscription": {
       "get": {
         "operationId": "SubscriptionsController_summary_v1",
@@ -3572,6 +3596,22 @@
           "cycle",
           "locale",
           "comingSoonAcknowledged"
+        ],
+        "additionalProperties": false
+      },
+      "CreatePortalDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pt-BR"
+            ]
+          }
+        },
+        "required": [
+          "locale"
         ],
         "additionalProperties": false
       },
