@@ -20,6 +20,7 @@ import {
   currentSubscriptionSchema,
   listPlansQuerySchema,
   portalSessionSchema,
+  trialEligibilitySchema,
 } from '@vozzify/contracts';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -64,6 +65,12 @@ export class SubscriptionsController {
   @ZodSerializerDto(portalSessionSchema)
   portal(@CurrentUser() user: AuthUser, @Body() body: CreatePortalDto) {
     return this.subscriptions.portal(user.id, body.locale);
+  }
+  @Get('trial-eligibility')
+  @Header('Cache-Control', 'private, no-store')
+  @ZodSerializerDto(trialEligibilitySchema)
+  trialEligibility(@CurrentUser() user: AuthUser) {
+    return this.subscriptions.trialEligibility(user.id);
   }
   @Get()
   @ApiOkResponse({ type: CurrentSubscriptionDto })

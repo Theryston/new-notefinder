@@ -9,6 +9,7 @@ export function adminPlanOf(
     kind: row.kind,
     copy: row.copy,
     displayOrder: row.displayOrder,
+    trialDays: row.trialDays,
     published: row.published,
     saleEnabled: row.saleEnabled,
     enabledCycles: row.enabledCycles,

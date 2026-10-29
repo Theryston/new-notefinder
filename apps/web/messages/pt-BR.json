@@ -1169,6 +1169,9 @@
     }
   },
   "plans": {
+    "trialOffer": "{days, plural, one {# dia} other {# dias}} grátis com cartão. A cobrança começa automaticamente após o teste, salvo cancelamento; a Stripe mostra a data da primeira cobrança.",
+    "trialFirstCharge": "Primeira cobrança estimada se você começar hoje: {date}. A Stripe confirma a data exata.",
+    "trialUsed": "Você já usou seu teste. A cobrança começa imediatamente.",
     "title": "Seu canto, no seu ritmo.",
     "description": "Compare o que está disponível hoje e o que cada plano está preparando.",
     "disclosure": "Benefícios marcados como em breve descrevem funcionalidades futuras. O canto básico continua disponível sem assinatura paga.",
@@ -1218,6 +1221,7 @@
     "description": "Descrição",
     "english": "Inglês",
     "portuguese": "Português brasileiro",
+    "trialDays": "Dias de teste",
     "displayOrder": "Ordem de exibição",
     "published": "Publicar plano",
     "saleEnabled": "Disponível para novas vendas",
@@ -1295,6 +1299,9 @@
       "loadError": "Não foi possível carregar as ofertas.",
       "error": "Não foi possível agendar a alteração. Tente novamente."
     },
+    "trialStatus": "Teste grátis",
+    "trialEndingDescription": "Seu teste está cancelado e permanece ativo até o fim. Você não será cobrado.",
+    "trialDescription": "Seu teste está ativo. Cancele antes do fim para evitar a primeira cobrança.",
     "chooseAnnual": "Escolher anual",
     "chooseMonthly": "Escolher mensal",
     "annualCharge": "{amount} cobrados anualmente",
@@ -1309,6 +1316,8 @@
     "summaryTitle": "Sua assinatura",
     "cancelled": "O pagamento foi cancelado. Nenhum pagamento foi confirmado.",
     "pending": "O pagamento aguarda confirmação. Esta página será atualizada quando a confirmação chegar.",
+    "recoveryGrace": "O pagamento da renovação falhou. Atualize sua forma de pagamento antes de {date} para manter sua assinatura paga.",
+    "recoverySuspended": "Sua assinatura paga está suspensa até a confirmação do pagamento. Atualize sua forma de pagamento para reativá-la.",
     "confirmed": "Pagamento confirmado. Sua assinatura está ativa.",
     "unsuccessful": "O pagamento não foi concluído ou a assinatura não está mais ativa.",
     "contractCurrency": "Moeda do contrato: {currency}",
@@ -1316,6 +1325,7 @@
     "periodEnd": "O período atual termina em {date}",
     "noSubscription": "Você não tem uma assinatura paga.",
     "subscription": {
+      "trialLabel": "Teste iniciado",
       "intro": "Seu plano, pagamento e período em um só lugar.",
       "planSummary": "Resumo do plano",
       "currentPlan": "Plano atual",
@@ -1335,11 +1345,15 @@
       "monthly": "Mensal",
       "annual": "Anual",
       "contractCurrency": "Moeda do contrato",
+      "updatePayment": "Atualizar forma de pagamento",
       "manage": "Gerenciar assinatura",
       "manageError": "Não foi possível abrir o gerenciamento de cobrança. Tente novamente.",
       "endedDescription": "Sua assinatura paga foi encerrada.",
       "endingDescription": "Sua assinatura será encerrada ao final deste período.",
+      "recoveryDeadline": "Prazo de recuperação",
       "states": {
+        "overdue": "Pagamento em atraso",
+        "suspended": "Assinatura suspensa",
         "active": "Ativa",
         "ended": "Encerrada",
         "ending": "Encerra ao fim do período",
@@ -1348,6 +1362,8 @@
         "free": "Sem assinatura"
       },
       "titles": {
+        "overdue": "Sua renovação precisa de atenção.",
+        "suspended": "Sua assinatura paga está suspensa.",
         "active": "Tudo pronto para a próxima música.",
         "ended": "Sua assinatura foi encerrada.",
         "ending": "Seu período atual continua disponível.",
@@ -1356,6 +1372,7 @@
         "free": "Sua voz já tem espaço por aqui."
       },
       "payment": {
+        "overdue": "Falha no pagamento da renovação",
         "confirmed": "Pagamento confirmado",
         "pending": "Aguardando confirmação do pagamento",
         "unsuccessful": "Pagamento não confirmado"

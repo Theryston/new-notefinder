@@ -11,6 +11,9 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
+import { refreshSubscription } from './refresh-subscription.js';
+import { recoveryDeadline } from './renewal-recovery.js';
+import { replaceEndedContract } from './replace-ended-contract.js';
 import { SubscriptionChangesService } from './subscription-changes.service.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
@@ -28,6 +31,7 @@ export class SubscriptionsService {
   ): Promise<CheckoutResult> {
     await this.reserve(userId, body);
     await this.ensureCustomer(userId);
+    await this.replaceEnded(userId, body);
     await this.reconcile(userId, body);
     await this.replacePendingCheckout(userId, body);
     return this.start(userId, body);
@@ -47,16 +51,29 @@ export class SubscriptionsService {
     return {
       id: createId(),
       userId,
+      ...(await this.offerFields(userId, body, price)),
+      checkoutId: null,
+      checkoutUrl: null,
+      createdAt: new Date(),
+      status: 'pending' as const,
+    };
+  }
+
+  private async offerFields(
+    userId: string,
+    body: CreateCheckoutBody,
+    price: ReturnType<typeof checkoutOffer>,
+  ) {
+    return {
       planId: body.planId,
       priceId: price.id,
       cycle: price.cycle,
       currency: price.currency,
       amount: price.amount,
       stripePriceId: price.stripePriceId,
-      checkoutId: null,
-      checkoutUrl: null,
-      createdAt: new Date(),
-      status: 'pending' as const,
+      trialDays: (await this.repository.customer(userId))?.trialUsedAt
+        ? 0
+        : price.trialDays,
     };
   }
 
@@ -68,6 +85,16 @@ export class SubscriptionsService {
       userId,
       await this.stripe.createCustomer(userId),
     );
+  }
+
+  @Transactional()
+  async replaceEnded(userId: string, body: CreateCheckoutBody) {
+    await replaceEndedContract({
+      userId,
+      repository: this.repository,
+      stripe: this.stripe,
+      reservation: () => this.reservation(userId, body),
+    });
   }
 
   // A lost Stripe response is reconciled before changing or retrying an attempt.
@@ -100,12 +127,7 @@ export class SubscriptionsService {
       return;
     await this.repository.update(userId, {
       id: createId(),
-      planId: body.planId,
-      priceId: price.id,
-      cycle: price.cycle,
-      currency: price.currency,
-      amount: price.amount,
-      stripePriceId: price.stripePriceId,
+      ...(await this.offerFields(userId, body, price)),
       createdAt: new Date(),
     });
   }
@@ -124,9 +146,11 @@ export class SubscriptionsService {
     const sameOffer =
       contract.priceId === body.offerId &&
       contract.planId === body.planId &&
-      contract.cycle === body.cycle;
+      contract.cycle === body.cycle &&
+      contract.trialDays === (body.trialDays ?? 0);
     if (session.status === 'open' && sameOffer) return;
     const reservation = await this.reservation(userId, body);
+    assertTrialTerms(reservation.trialDays, body.trialDays);
     const expired =
       session.status === 'expired'
         ? session
@@ -158,6 +182,7 @@ export class SubscriptionsService {
       contract.cycle !== body.cycle
     )
       return { action: 'manage' };
+    assertTrialTerms(contract.trialDays, body.trialDays);
     if (contract.checkoutId) {
       const session = await this.stripe.getCheckout(contract.checkoutId);
       if (session.status === 'complete' || session.subscription)
@@ -178,6 +203,7 @@ export class SubscriptionsService {
       customer,
       price: contract.stripePriceId,
       locale: body.locale,
+      trialDays: contract.trialDays,
     });
     if (!session.url || session.customer !== customer)
       throw new AppException(
@@ -200,6 +226,11 @@ export class SubscriptionsService {
     return this.summary(userId, locale);
   }
 
+  async trialEligibility(userId: string) {
+    const customer = await this.repository.customer(userId);
+    return { eligible: !customer?.trialUsedAt };
+  }
+
   async portal(userId: string, locale: Locale) {
     const row = await this.repository.current(userId);
     const customer = await this.repository.customer(userId);
@@ -215,9 +246,11 @@ export class SubscriptionsService {
     if (!row) return { subscription: null };
     const contract = row.contract;
     const pendingChange = await this.changes.visible(userId, locale);
+    const deadline = recoveryDeadline(contract.recoveryStartedAt);
     return {
       subscription: {
         pendingChange,
+        recoveryDeadline: deadline?.toISOString() ?? null,
         planId: contract.planId,
         planName: row.copy[locale].name,
         cycle: contract.cycle,
@@ -225,9 +258,10 @@ export class SubscriptionsService {
         amount: contract.amount,
         status: contract.status,
         providerStatus: contract.providerStatus,
-        paidMembership:
-          contract.paidMembership &&
-          (contract.currentPeriodEnd?.getTime() ?? 0) > Date.now(),
+        paidMembership: deadline
+          ? deadline.getTime() > Date.now()
+          : contract.paidMembership &&
+            (contract.currentPeriodEnd?.getTime() ?? 0) > Date.now(),
         currentPeriodStart: contract.currentPeriodStart?.toISOString() ?? null,
         currentPeriodEnd: contract.currentPeriodEnd?.toISOString() ?? null,
         cancelAtPeriodEnd: contract.cancelAtPeriodEnd,
@@ -239,7 +273,8 @@ export class SubscriptionsService {
   async webhook(event: {
     id: string;
     type: string;
-    data: { object: { customer?: string } };
+    created?: number;
+    data: { object: { customer?: string; id?: string } };
   }) {
     const customer = event.data.object.customer;
     if (!customer) return;
@@ -247,36 +282,21 @@ export class SubscriptionsService {
     if (!userId) return;
     await this.repository.lock(userId);
     if (await this.repository.processed(event.id)) return;
-    await this.refresh(userId, customer);
+    await refreshSubscription({
+      userId,
+      customer,
+      event,
+      repository: this.repository,
+      stripe: this.stripe,
+    });
     await this.repository.markProcessed(event.id);
   }
+}
 
-  private async refresh(userId: string, customer: string) {
-    const row = await this.repository.current(userId);
-    if (!row) return;
-    const session = row.contract.checkoutId
-      ? await this.stripe.getCheckout(row.contract.checkoutId)
-      : await this.stripe.findCheckout(customer, row.contract.id);
-    if (!session) return;
-    if (!row.contract.checkoutId)
-      await this.repository.update(userId, {
-        checkoutId: session.id,
-        checkoutUrl: session.url,
-      });
-    if (session.customer !== customer)
-      throw new AppException('CONFLICT', 'Checkout customer mismatch');
-    if (session.subscription) {
-      await this.changes.refreshProvider({
-        userId,
-        customer,
-        contract: row.contract,
-        subscription: session.subscription,
-      });
-    } else if (session.status === 'expired') {
-      await this.repository.update(userId, {
-        status: 'unsuccessful',
-        paidMembership: false,
-      });
-    }
-  }
+function assertTrialTerms(expected: number, accepted?: number) {
+  if (expected !== (accepted ?? 0))
+    throw new AppException(
+      'CONFLICT',
+      'Trial terms have changed; review the offer',
+    );
 }

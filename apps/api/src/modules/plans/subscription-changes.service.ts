@@ -5,7 +5,6 @@ import type { CreateSubscriptionChangeBody, Locale } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { saleOffer } from './sale-offer.js';
-import { confirmedSubscription } from './subscription-state.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 @Injectable()
@@ -151,63 +150,5 @@ export class SubscriptionChangesService {
       amount: change.amount,
       effectiveAt: change.effectiveAt,
     };
-  }
-
-  async refreshProvider(input: {
-    userId: string;
-    customer: string;
-    contract: NonNullable<
-      Awaited<ReturnType<SubscriptionsRepository['current']>>
-    >['contract'];
-    subscription: string;
-  }) {
-    const provider = await this.stripe.getSubscription(input.subscription);
-    const pending = await this.repository.change(input.userId);
-    const item = provider.items.data[0];
-    const current = pending
-      ? {
-          ...pending.change,
-          effectiveAt: pending.change.effectiveAt.toISOString(),
-        }
-      : null;
-    const candidates = [current, pending?.change.agreed].filter(
-      (value) => value != null,
-    );
-    const activated =
-      item &&
-      candidates.find(
-        (change) =>
-          item.price.id === change.stripePriceId &&
-          item.current_period_start * 1000 >=
-            new Date(change.effectiveAt).getTime(),
-      );
-    const projection = confirmedSubscription({
-      contract: activated
-        ? { ...input.contract, ...activated }
-        : input.contract,
-      provider,
-      customer: input.customer,
-    });
-    await this.repository.update(
-      input.userId,
-      activated
-        ? {
-            ...projection,
-            planId: activated.planId,
-            priceId: activated.priceId,
-            cycle: activated.cycle,
-            currency: activated.currency,
-            amount: activated.amount,
-            stripePriceId: activated.stripePriceId,
-          }
-        : projection,
-    );
-    if (
-      pending &&
-      (activated ||
-        provider.cancel_at_period_end ||
-        provider.status === 'canceled')
-    )
-      await this.repository.deleteChange(input.userId);
   }
 }

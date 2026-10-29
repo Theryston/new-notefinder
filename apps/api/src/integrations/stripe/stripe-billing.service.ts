@@ -17,11 +17,14 @@ export type {
   StripeSubscription,
 } from './stripe-billing-schemas.js';
 
+import { firstInvoiceFailure } from './stripe-failure-history.js';
+import { portalConfiguration } from './stripe-portal-schema.js';
 import {
   type ScheduleInput,
   schedulePhases,
   validateSchedule,
 } from './stripe-schedule.js';
+import { trialPayment } from './stripe-trial-payment.js';
 
 @Injectable()
 export class StripeBillingService {
@@ -42,6 +45,7 @@ export class StripeBillingService {
     customer: string;
     price: string;
     locale: Locale;
+    trialDays?: number;
   }) {
     const base = `${this.env.WEB_URL}/${input.locale}/subscription`;
     return sessionSchema.parse(
@@ -52,12 +56,20 @@ export class StripeBillingService {
           customer: input.customer,
           'line_items[0][price]': input.price,
           'line_items[0][quantity]': '1',
+          ...(input.trialDays
+            ? {
+                'subscription_data[trial_period_days]': String(input.trialDays),
+                payment_method_collection: 'always',
+                'payment_method_types[0]': 'card',
+              }
+            : {}),
           success_url: `${base}?result=pending`,
           cancel_url: `${base}?result=cancelled`,
           locale: input.locale === 'pt-BR' ? 'pt-BR' : 'en',
           'metadata[contractId]': input.id,
-          'custom_text[submit][message]': (input.locale === 'pt-BR' ? ptBR : en)
-            .checkoutDisclosure,
+          'custom_text[submit][message]': input.trialDays
+            ? (input.locale === 'pt-BR' ? ptBR : en).trialCheckoutDisclosure
+            : (input.locale === 'pt-BR' ? ptBR : en).checkoutDisclosure,
         },
         `checkout-${input.id}`,
       ),
@@ -70,25 +82,11 @@ export class StripeBillingService {
         'SERVICE_UNAVAILABLE',
         'Stripe portal configuration is missing',
       );
-    const config = z
-      .object({
-        active: z.literal(true),
-        livemode: z.literal(false),
-        features: z.object({
-          invoice_history: z.object({ enabled: z.literal(true) }),
-          payment_method_update: z.object({ enabled: z.literal(true) }),
-          subscription_cancel: z.object({
-            enabled: z.literal(true),
-            mode: z.literal('at_period_end'),
-          }),
-          subscription_update: z.object({ enabled: z.literal(false) }),
-        }),
-      })
-      .safeParse(
-        await this.request(
-          `billing_portal/configurations/${encodeURIComponent(configuration)}`,
-        ),
-      );
+    const config = portalConfiguration.safeParse(
+      await this.request(
+        `billing_portal/configurations/${encodeURIComponent(configuration)}`,
+      ),
+    );
     if (!config.success)
       throw new AppException(
         'SERVICE_UNAVAILABLE',
@@ -154,11 +152,21 @@ export class StripeBillingService {
     );
   }
   async getSubscription(id: string): Promise<StripeSubscription> {
-    return subscriptionSchema.parse(
+    const subscription = subscriptionSchema.parse(
       await this.request(
         `subscriptions/${encodeURIComponent(id)}?expand[]=latest_invoice`,
       ),
     );
+    return trialPayment(subscription, (path) => this.request(path));
+  }
+
+  async firstInvoiceFailure(input: {
+    invoiceId: string;
+    customer: string;
+    invoiceCreated: number;
+    latestFailure: number;
+  }): Promise<number> {
+    return firstInvoiceFailure(input, (path) => this.request(path));
   }
   async prepareSchedule(input: ScheduleInput) {
     const provider = await this.schedulableSubscription(input);

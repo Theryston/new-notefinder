@@ -49,6 +49,16 @@ export function PlanSettingsFields({
           {...register('displayOrder', { valueAsNumber: true })}
         />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="trial-days">{t('trialDays')}</Label>
+        <Input
+          id="trial-days"
+          type="number"
+          min={0}
+          max={730}
+          {...register('trialDays', { valueAsNumber: true })}
+        />
+      </div>
       {(['published', 'saleEnabled'] as const).map((key) => (
         <Label key={key} className="flex min-h-10 items-center gap-2">
           <input type="checkbox" {...register(key)} />

@@ -12,6 +12,7 @@ import {
   billingCustomers,
   billingEvents,
   subscriptionChanges,
+  subscriptionHistory,
   subscriptions,
 } from '../../database/schema/subscriptions.js';
 
@@ -37,6 +38,17 @@ export class SubscriptionsRepository {
       .from(billingCustomers)
       .where(eq(billingCustomers.userId, userId));
     return rows[0];
+  }
+  async markTrialUsed(userId: string) {
+    await this.txHost.tx
+      .update(billingCustomers)
+      .set({ trialUsedAt: new Date() })
+      .where(
+        and(
+          eq(billingCustomers.userId, userId),
+          sql`${billingCustomers.trialUsedAt} is null`,
+        ),
+      );
   }
   async userForCustomer(customer: string) {
     const rows = await this.txHost.tx
@@ -68,6 +80,17 @@ export class SubscriptionsRepository {
       .from(planCatalogSettings)
       .where(eq(planCatalogSettings.id, 'catalog'));
     return { rows, enabled: settings[0]?.contractingEnabled === true };
+  }
+  async archive(contract: typeof subscriptions.$inferSelect) {
+    await this.txHost.tx
+      .insert(subscriptionHistory)
+      .values({ id: contract.id, userId: contract.userId, contract })
+      .onConflictDoNothing();
+  }
+  async remove(userId: string) {
+    await this.txHost.tx
+      .delete(subscriptions)
+      .where(eq(subscriptions.userId, userId));
   }
   async create(input: typeof subscriptions.$inferInsert) {
     await this.txHost.tx.insert(subscriptions).values(input);

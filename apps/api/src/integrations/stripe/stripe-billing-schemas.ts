@@ -26,10 +26,16 @@ export const subscriptionSchema = z.object({
   currency: z.string(),
   cancel_at_period_end: z.boolean(),
   schedule: z.string().nullable().optional(),
+  trial_end: z.number().nullable().optional(),
+  trial_start: z.number().nullable().optional(),
+  default_payment_method: z.string().nullable().optional(),
   latest_invoice: z
     .object({
       status: z.string().nullable(),
-
+      id: z.string().optional(),
+      billing_reason: z.string().nullable().optional(),
+      created: z.number().optional(),
+      due_date: z.number().nullable().optional(),
       amount_paid: z.number(),
     })
     .nullable(),
