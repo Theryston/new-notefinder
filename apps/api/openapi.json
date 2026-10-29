@@ -1328,6 +1328,51 @@
         ]
       }
     },
+    "/v1/me/subscription/change": {
+      "post": {
+        "operationId": "SubscriptionsController_change_v1",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "en",
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentSubscriptionDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/v1/me/subscription/portal": {
       "post": {
         "operationId": "SubscriptionsController_portal_v1",
@@ -1372,7 +1417,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentSubscriptionDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -3598,6 +3650,160 @@
           "comingSoonAcknowledged"
         ],
         "additionalProperties": false
+      },
+      "CreateChangeDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "offerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cycle": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "annual"
+            ]
+          }
+        },
+        "required": [
+          "planId",
+          "offerId",
+          "cycle"
+        ],
+        "additionalProperties": false
+      },
+      "CurrentSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "pendingChange": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "planId": {
+                    "type": "string"
+                  },
+                  "planName": {
+                    "type": "string"
+                  },
+                  "cycle": {
+                    "type": "string",
+                    "enum": [
+                      "monthly",
+                      "annual"
+                    ]
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "BRL",
+                      "USD"
+                    ]
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991
+                  },
+                  "effectiveAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "planId",
+                  "planName",
+                  "cycle",
+                  "currency",
+                  "amount",
+                  "effectiveAt"
+                ]
+              },
+              "planId": {
+                "type": "string"
+              },
+              "planName": {
+                "type": "string"
+              },
+              "cycle": {
+                "type": "string",
+                "enum": [
+                  "monthly",
+                  "annual"
+                ]
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "BRL",
+                  "USD"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "confirmed",
+                  "unsuccessful"
+                ]
+              },
+              "providerStatus": {
+                "nullable": true,
+                "type": "string"
+              },
+              "paidMembership": {
+                "type": "boolean"
+              },
+              "currentPeriodStart": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "currentPeriodEnd": {
+                "nullable": true,
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "cancelAtPeriodEnd": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "planId",
+              "planName",
+              "cycle",
+              "currency",
+              "amount",
+              "status",
+              "providerStatus",
+              "paidMembership",
+              "currentPeriodStart",
+              "currentPeriodEnd",
+              "cancelAtPeriodEnd"
+            ]
+          }
+        },
+        "required": [
+          "subscription"
+        ]
       },
       "CreatePortalDto": {
         "type": "object",

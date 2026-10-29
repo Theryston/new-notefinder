@@ -26,9 +26,7 @@ export function schedulePhases(input: ScheduleInput) {
     'phases[1][items][0][price]': input.nextPrice,
     'phases[1][items][0][quantity]': '1',
     'phases[1][proration_behavior]': 'none',
-    'phases[1][duration][interval]':
-      input.nextCycle === 'annual' ? 'year' : 'month',
-    'phases[1][duration][interval_count]': '1',
+    'phases[1][iterations]': '1',
   };
 }
 
@@ -37,6 +35,8 @@ const scheduleSchema = z.object({
   livemode: z.literal(false),
   subscription: z.string(),
   status: z.literal('active'),
+  end_behavior: z.literal('release').optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
   phases: z
     .array(
       z
@@ -64,7 +64,7 @@ function emptySetting(value: unknown): boolean {
     (typeof value === 'object' &&
       value !== null &&
       !Array.isArray(value) &&
-      Object.keys(value).length === 0)
+      Object.values(value).every(emptySetting))
   );
 }
 function safePhase(phase: z.infer<typeof scheduleSchema>['phases'][number]) {
@@ -118,6 +118,8 @@ export function validateSchedule(
   if (
     !schedule.success ||
     schedule.data.id !== scheduleId ||
+    (schedule.data.metadata &&
+      Object.keys(schedule.data.metadata).length > 0) ||
     schedule.data.subscription !== input.subscription ||
     !current ||
     !safePhase(current) ||

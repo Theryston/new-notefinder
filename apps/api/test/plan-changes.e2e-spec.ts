@@ -17,12 +17,16 @@ describe('Scheduled subscription changes (e2e)', () => {
   let app: TestApp;
   const fake = billingProvider();
   const schedule = vi.fn(async () => 'sched_test');
+  const prepare = vi.fn(
+    async (_input: { schedule: string | null }) => 'sched_test',
+  );
   beforeAll(async () => {
     app = await createTestApp({
       env: { STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET },
       override: (builder) =>
         builder.overrideProvider(StripeBillingService).useValue({
           ...fake.provider,
+          prepareSchedule: prepare,
           scheduleChange: schedule,
         }),
     });
@@ -201,5 +205,28 @@ describe('Scheduled subscription changes (e2e)', () => {
       .post(`${ROOT}/change`)
       .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
       .expect(409);
+  });
+  it('persists the provider schedule before update and resumes after a lost response beyond the idempotency window', async () => {
+    const { client } = await subscriber();
+    const destination = {
+      planId: 'pro',
+      offerId: 'usd-annual',
+      cycle: 'annual',
+    };
+    schedule.mockRejectedValueOnce(new Error('Lost provider response'));
+    await client.post(`${ROOT}/change`).send(destination).expect(500);
+    const now = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(now + 25 * 60 * 60 * 1000);
+    try {
+      await client.post(`${ROOT}/change`).send(destination).expect(201);
+      expect(prepare.mock.calls[1]?.[0]).toMatchObject({
+        schedule: 'sched_test',
+      });
+      expect(
+        (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
+      ).toMatchObject({ cycle: 'annual', amount: 3500 });
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 });

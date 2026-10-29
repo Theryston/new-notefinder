@@ -16,6 +16,7 @@ export class SubscriptionChangesService {
   ) {}
   async change(userId: string, body: CreateSubscriptionChangeBody) {
     await this.reserveChange(userId, body);
+    await this.prepareSchedule(userId);
     await this.scheduleChange(userId);
   }
 
@@ -73,18 +74,36 @@ export class SubscriptionChangesService {
   }
 
   @Transactional()
+  async prepareSchedule(userId: string) {
+    await this.repository.lock(userId);
+    const input = await this.scheduleInput(userId);
+    if (!input) return;
+    const scheduleId = await this.stripe.prepareSchedule(input);
+    await this.repository.updateChange(userId, {
+      stripeScheduleId: scheduleId,
+    });
+  }
+
+  @Transactional()
   async scheduleChange(userId: string) {
     await this.repository.lock(userId);
+    const input = await this.scheduleInput(userId);
+    if (!input) return;
+    await this.stripe.scheduleChange(input);
+    await this.repository.updateChange(userId, { applied: true });
+  }
+
+  private async scheduleInput(userId: string) {
     const row = await this.repository.current(userId);
     const pending = await this.repository.change(userId);
     if (!row?.contract.stripeSubscriptionId || !pending)
       throw new AppException('CONFLICT', 'Subscription change is unavailable');
-    if (pending.change.applied) return;
+    if (pending.change.applied) return null;
     const contract = row.contract;
     const subscription = contract.stripeSubscriptionId;
     if (!subscription)
       throw new AppException('CONFLICT', 'Subscription is unavailable');
-    const scheduleId = await this.stripe.scheduleChange({
+    return {
       id: pending.change.id,
       subscription,
       schedule: pending.change.stripeScheduleId,
@@ -95,11 +114,7 @@ export class SubscriptionChangesService {
       previousCycle: pending.change.agreed?.cycle ?? null,
       start: Math.floor((contract.currentPeriodStart?.getTime() ?? 0) / 1000),
       end: Math.floor(pending.change.effectiveAt.getTime() / 1000),
-    });
-    await this.repository.updateChange(userId, {
-      stripeScheduleId: scheduleId,
-      applied: true,
-    });
+    };
   }
   async visible(userId: string, locale: Locale) {
     const row = await this.repository.change(userId);

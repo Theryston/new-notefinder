@@ -11,7 +11,7 @@ import {
   type RawBodyRequest,
   Req,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   checkoutResultSchema,
   createCheckoutBodySchema,
@@ -29,9 +29,9 @@ import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js
 import { ENV, type Env } from '../../config/env.js';
 import { verifyStripeEvent } from '../../integrations/stripe/stripe-webhook.js';
 import type { AuthUser } from '../auth/auth.js';
-import { SubscriptionChangesService } from './subscription-changes.service.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 
+class CurrentSubscriptionDto extends createZodDto(currentSubscriptionSchema) {}
 class CreateCheckoutDto extends createZodDto(createCheckoutBodySchema) {}
 class CreateChangeDto extends createZodDto(
   createSubscriptionChangeBodySchema,
@@ -41,10 +41,7 @@ class SubscriptionQueryDto extends createZodDto(listPlansQuerySchema) {}
 @ApiTags('subscriptions')
 @Controller('me/subscription')
 export class SubscriptionsController {
-  constructor(
-    private readonly subscriptions: SubscriptionsService,
-    private readonly changes: SubscriptionChangesService,
-  ) {}
+  constructor(private readonly subscriptions: SubscriptionsService) {}
   @Post('checkout')
   @Header('Cache-Control', 'private, no-store')
   @ZodSerializerDto(checkoutResultSchema)
@@ -52,6 +49,7 @@ export class SubscriptionsController {
     return this.subscriptions.checkout(user.id, body);
   }
   @Post('change')
+  @ApiCreatedResponse({ type: CurrentSubscriptionDto })
   @Header('Cache-Control', 'private, no-store')
   @ZodSerializerDto(currentSubscriptionSchema)
   async change(
@@ -59,8 +57,7 @@ export class SubscriptionsController {
     @Body() body: CreateChangeDto,
     @Query() query: SubscriptionQueryDto,
   ) {
-    await this.changes.change(user.id, body);
-    return this.subscriptions.summary(user.id, query.locale);
+    return this.subscriptions.change(user.id, body, query.locale);
   }
   @Post('portal')
   @Header('Cache-Control', 'private, no-store')
@@ -69,6 +66,7 @@ export class SubscriptionsController {
     return this.subscriptions.portal(user.id, body.locale);
   }
   @Get()
+  @ApiOkResponse({ type: CurrentSubscriptionDto })
   @Header('Cache-Control', 'private, no-store')
   @ZodSerializerDto(currentSubscriptionSchema)
   summary(@CurrentUser() user: AuthUser, @Query() query: SubscriptionQueryDto) {

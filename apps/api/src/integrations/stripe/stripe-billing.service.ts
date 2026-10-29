@@ -36,6 +36,7 @@ const subscriptionSchema = z.object({
   ]),
   currency: z.string(),
   cancel_at_period_end: z.boolean(),
+  schedule: z.string().nullable().optional(),
   latest_invoice: z
     .object({
       status: z.string().nullable(),
@@ -198,24 +199,17 @@ export class StripeBillingService {
       ),
     );
   }
-  async scheduleChange(input: ScheduleInput) {
-    const provider = await this.getSubscription(input.subscription);
-    const item = provider.items.data[0];
+  async prepareSchedule(input: ScheduleInput) {
+    const provider = await this.schedulableSubscription(input);
     if (
-      provider.cancel_at_period_end ||
-      provider.status !== 'active' ||
-      !item ||
-      item.price.id !== input.currentPrice ||
-      item.current_period_start !== input.start ||
-      item.current_period_end !== input.end ||
-      input.end * 1000 <= Date.now()
+      input.schedule &&
+      provider.schedule &&
+      input.schedule !== provider.schedule
     )
-      throw new AppException(
-        'CONFLICT',
-        'Subscription changed before scheduling',
-      );
+      throw new AppException('CONFLICT', 'Subscription schedule changed');
     const schedule =
       input.schedule ??
+      provider.schedule ??
       z
         .object({ id: z.string(), livemode: z.literal(false) })
         .parse(
@@ -232,13 +226,48 @@ export class StripeBillingService {
       input,
       schedule,
     );
+    return schedule;
+  }
+
+  async scheduleChange(input: ScheduleInput) {
+    await this.schedulableSubscription(input);
+    if (!input.schedule)
+      throw new AppException('CONFLICT', 'Subscription schedule is missing');
+    validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(input.schedule)}`,
+      ),
+      input,
+      input.schedule,
+    );
     const result = await this.request(
-      `subscription_schedules/${encodeURIComponent(schedule)}`,
+      `subscription_schedules/${encodeURIComponent(input.schedule)}`,
       schedulePhases(input),
       `change-${input.id}`,
     );
-    validateSchedule(result, input, schedule, true);
-    return schedule;
+    validateSchedule(result, input, input.schedule, true);
+  }
+
+  private async schedulableSubscription(input: ScheduleInput) {
+    const provider = await this.getSubscription(input.subscription);
+    const item = provider.items.data[0];
+    if (
+      provider.cancel_at_period_end ||
+      provider.status !== 'active' ||
+      !item ||
+      item.price.id !== input.currentPrice ||
+      item.current_period_start !== input.start ||
+      item.current_period_end !== input.end ||
+      input.end * 1000 <= Date.now() ||
+      (input.schedule &&
+        provider.schedule &&
+        provider.schedule !== input.schedule)
+    )
+      throw new AppException(
+        'CONFLICT',
+        'Subscription changed before scheduling',
+      );
+    return provider;
   }
   private async request(
     path: string,

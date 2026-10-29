@@ -47,59 +47,85 @@ describe('Stripe subscription scheduling', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
   it('preserves the current price until period end without proration', async () => {
+    const current = {
+      id: 'sched_test',
+      livemode: false,
+      subscription: 'sub_test',
+      status: 'active',
+      phases: [
+        {
+          start_date: start,
+          end_date: start + 3600,
+          items: [{ price: 'price_current', quantity: 1 }],
+        },
+      ],
+    };
+    const end = new Date((start + 3600) * 1000);
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+    const next = {
+      ...current,
+      phases: [
+        ...current.phases,
+        {
+          start_date: start + 3600,
+          end_date: Math.floor(end.getTime() / 1000),
+          items: [{ price: 'price_next', quantity: 1 }],
+        },
+      ],
+    };
     network
       .mockResolvedValueOnce(Response.json(subscription))
-      .mockResolvedValueOnce(
-        Response.json({ id: 'sched_test', livemode: false }),
-      )
-      .mockResolvedValueOnce(
-        Response.json({
-          id: 'sched_test',
-          livemode: false,
-          subscription: 'sub_test',
-          status: 'active',
-          phases: [
-            {
-              start_date: start,
-              end_date: start + 3600,
-              items: [{ price: 'price_current', quantity: 1 }],
-            },
-          ],
-        }),
-      )
-      .mockResolvedValueOnce(
-        Response.json({
-          id: 'sched_test',
-          livemode: false,
-          subscription: 'sub_test',
-          status: 'active',
-          phases: [
-            {
-              start_date: start,
-              end_date: start + 3600,
-              items: [{ price: 'price_current', quantity: 1 }],
-            },
-            {
-              start_date: start + 3600,
-              end_date: Math.floor(
-                new Date((start + 3600) * 1000).setUTCFullYear(
-                  new Date((start + 3600) * 1000).getUTCFullYear() + 1,
-                ) / 1000,
-              ),
-              items: [{ price: 'price_next', quantity: 1 }],
-            },
-          ],
-        }),
-      );
-    const result = await new StripeBillingService(env).scheduleChange(input);
-    expect(result).toBe('sched_test');
+      .mockResolvedValueOnce(Response.json(current))
+      .mockResolvedValueOnce(Response.json(next));
+    await new StripeBillingService(env).scheduleChange({
+      ...input,
+      schedule: 'sched_test',
+    });
     const params = new URLSearchParams(
-      String(network.mock.calls[3]?.[1]?.body),
+      String(network.mock.calls[2]?.[1]?.body),
     );
     expect(params.get('phases[0][items][0][price]')).toBe('price_current');
     expect(params.get('phases[0][end_date]')).toBe(String(input.end));
     expect(params.get('phases[1][items][0][price]')).toBe('price_next');
+    expect(params.get('phases[1][iterations]')).toBe('1');
+    expect(params.has('phases[1][duration][interval]')).toBe(false);
     expect(params.get('proration_behavior')).toBe('none');
+    expect(network.mock.calls[2]?.[1]?.headers).toMatchObject({
+      'Stripe-Version': '2025-06-30.basil',
+    });
+  });
+  it('recovers an already attached schedule after its creation response was lost', async () => {
+    network
+      .mockResolvedValueOnce(
+        Response.json({ ...subscription, schedule: 'sched_recovered' }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'sched_recovered',
+          livemode: false,
+          subscription: 'sub_test',
+          status: 'active',
+          phases: [
+            {
+              start_date: start,
+              end_date: start + 3600,
+              automatic_tax: {
+                disabled_reason: null,
+                enabled: false,
+                liability: null,
+              },
+              items: [{ price: 'price_current', quantity: 1 }],
+            },
+          ],
+        }),
+      );
+    expect(await new StripeBillingService(env).prepareSchedule(input)).toBe(
+      'sched_recovered',
+    );
+    expect(network).toHaveBeenCalledTimes(2);
+    expect(
+      network.mock.calls.every(([, options]) => options?.method === 'GET'),
+    ).toBe(true);
   });
   it('refuses to schedule when Stripe reports a cancellation after local reservation', async () => {
     network.mockResolvedValueOnce(
@@ -124,6 +150,11 @@ describe('Stripe subscription scheduling', () => {
               start_date: start,
               end_date: start + 3600,
               discounts: [{ coupon: 'coupon_unexpected' }],
+              automatic_tax: {
+                disabled_reason: null,
+                enabled: false,
+                liability: null,
+              },
               items: [{ price: 'price_current', quantity: 1 }],
             },
           ],

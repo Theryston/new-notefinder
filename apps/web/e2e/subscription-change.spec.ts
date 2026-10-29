@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Subscription } from '@vozzify/contracts';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';
 import { messages } from './messages';
@@ -6,7 +7,7 @@ import { messages } from './messages';
 for (const locale of ['en', 'pt-BR'] as const) {
   test(`subscriber confirms a future change in ${locale}`, async ({ page }) => {
     await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
-    const subscription = {
+    const subscription: Subscription = {
       planId: 'pro',
       planName: 'Pro',
       cycle: 'monthly',
@@ -18,14 +19,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
       currentPeriodStart: '2026-10-28T12:00:00.000Z',
       currentPeriodEnd: '2027-10-28T12:00:00.000Z',
       cancelAtPeriodEnd: false,
-      pendingChange: null as null | {
-        planId: string;
-        planName: string;
-        cycle: string;
-        currency: string;
-        amount: number;
-        effectiveAt: string;
-      },
+      pendingChange: null,
     };
     await page.route('**/v1/plans?*', async (route) => {
       const requested =
@@ -52,7 +46,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
         cycle: 'annual',
         currency: 'USD',
         amount: 3500,
-        effectiveAt: subscription.currentPeriodEnd,
+        effectiveAt: '2027-10-28T12:00:00.000Z',
       };
       await route.fulfill({ json: { subscription } });
     });

@@ -4,6 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import type {
   CheckoutResult,
   CreateCheckoutBody,
+  CreateSubscriptionChangeBody,
   CurrentSubscription,
   Locale,
 } from '@vozzify/contracts';
@@ -188,6 +189,15 @@ export class SubscriptionsService {
       checkoutUrl: session.url,
     });
     return { action: 'checkout', url: session.url };
+  }
+
+  async change(
+    userId: string,
+    body: CreateSubscriptionChangeBody,
+    locale: Locale,
+  ) {
+    await this.changes.change(userId, body);
+    return this.summary(userId, locale);
   }
 
   async portal(userId: string, locale: Locale) {
