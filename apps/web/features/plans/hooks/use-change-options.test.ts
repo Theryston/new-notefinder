@@ -75,7 +75,7 @@ beforeEach(() => {
         plans:
           options.query?.locale === 'en'
             ? [plan]
-            : [{ ...plan, name: 'Plano localizado' }],
+            : [{ ...plan, name: 'Localized plan' }],
       };
     },
   );
@@ -89,7 +89,7 @@ describe('Subscription change offers', () => {
         ['en', 'pt-BR'],
       );
       expect(view.current().catalog.data).toEqual([
-        { ...plan.offers[0], planId: 'pro', name: 'Plano localizado' },
+        { ...plan.offers[0], planId: 'pro', name: 'Localized plan' },
       ]);
     } finally {
       await view.close();
