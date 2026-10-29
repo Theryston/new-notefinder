@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { subscriptionState } from '../subscription-presentation';
+import { PortalButton } from './portal-button';
 
 export function SubscriptionPeriod({
   subscription,
@@ -17,9 +18,11 @@ export function SubscriptionPeriod({
   const description =
     state === 'free'
       ? t('noSubscription')
-      : state === 'ending'
-        ? t('subscription.endingDescription')
-        : t(state === 'active' ? 'confirmed' : state);
+      : state === 'ended'
+        ? t('subscription.endedDescription')
+        : state === 'ending'
+          ? t('subscription.endingDescription')
+          : t(state === 'active' ? 'confirmed' : state);
   return (
     <section className="min-w-0 space-y-4 pt-1">
       <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
@@ -32,6 +35,7 @@ export function SubscriptionPeriod({
         {description}
       </p>
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
+      {subscription?.providerStatus ? <PortalButton /> : null}
       <Link
         href="/plans"
         className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
@@ -47,7 +51,7 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
   const t = useTranslations('billing.subscription');
   const format = useFormatter();
   const state = subscriptionState(subscription);
-  const paid = state === 'active' || state === 'ending';
+  const paid = state === 'active' || state === 'ending' || state === 'ended';
   const date = (value: string | null) =>
     value
       ? format.dateTime(new Date(value), { dateStyle: 'medium' })
@@ -68,7 +72,13 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
           done={paid}
         />
         <PeriodEvent
-          label={t(state === 'active' ? 'nextCharge' : 'periodEnd')}
+          label={t(
+            state === 'active'
+              ? 'nextCharge'
+              : state === 'ended'
+                ? 'periodEnded'
+                : 'periodEnd',
+          )}
           value={date(subscription.currentPeriodEnd)}
         />
       </ol>

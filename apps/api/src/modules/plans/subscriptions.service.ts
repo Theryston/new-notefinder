@@ -189,6 +189,16 @@ export class SubscriptionsService {
     return { action: 'checkout', url: session.url };
   }
 
+  async portal(userId: string, locale: Locale) {
+    const row = await this.repository.current(userId);
+    const customer = await this.repository.customer(userId);
+    if (!row?.contract.stripeSubscriptionId || !customer?.stripeCustomerId)
+      throw new AppException('CONFLICT', 'Subscription is unavailable');
+    return {
+      url: await this.stripe.createPortal(customer.stripeCustomerId, locale),
+    };
+  }
+
   async summary(userId: string, locale: Locale): Promise<CurrentSubscription> {
     const row = await this.repository.current(userId);
     if (!row) return { subscription: null };

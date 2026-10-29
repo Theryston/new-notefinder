@@ -15,8 +15,10 @@ import { ApiTags } from '@nestjs/swagger';
 import {
   checkoutResultSchema,
   createCheckoutBodySchema,
+  createPortalBodySchema,
   currentSubscriptionSchema,
   listPlansQuerySchema,
+  portalSessionSchema,
 } from '@vozzify/contracts';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -29,6 +31,7 @@ import type { AuthUser } from '../auth/auth.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 
 class CreateCheckoutDto extends createZodDto(createCheckoutBodySchema) {}
+class CreatePortalDto extends createZodDto(createPortalBodySchema) {}
 class SubscriptionQueryDto extends createZodDto(listPlansQuerySchema) {}
 @ApiTags('subscriptions')
 @Controller('me/subscription')
@@ -39,6 +42,12 @@ export class SubscriptionsController {
   @ZodSerializerDto(checkoutResultSchema)
   checkout(@CurrentUser() user: AuthUser, @Body() body: CreateCheckoutDto) {
     return this.subscriptions.checkout(user.id, body);
+  }
+  @Post('portal')
+  @Header('Cache-Control', 'private, no-store')
+  @ZodSerializerDto(portalSessionSchema)
+  portal(@CurrentUser() user: AuthUser, @Body() body: CreatePortalDto) {
+    return this.subscriptions.portal(user.id, body.locale);
   }
   @Get()
   @Header('Cache-Control', 'private, no-store')

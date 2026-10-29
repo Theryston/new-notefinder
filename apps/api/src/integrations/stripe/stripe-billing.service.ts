@@ -96,6 +96,49 @@ export class StripeBillingService {
       ),
     );
   }
+  async createPortal(customer: string, locale: Locale) {
+    const configuration = this.env.STRIPE_PORTAL_CONFIGURATION_ID;
+    if (!configuration)
+      throw new AppException(
+        'SERVICE_UNAVAILABLE',
+        'Stripe portal configuration is missing',
+      );
+    const config = z
+      .object({
+        active: z.literal(true),
+        livemode: z.literal(false),
+        features: z.object({
+          invoice_history: z.object({ enabled: z.literal(true) }),
+          payment_method_update: z.object({ enabled: z.literal(true) }),
+          subscription_cancel: z.object({
+            enabled: z.literal(true),
+            mode: z.literal('at_period_end'),
+          }),
+          subscription_update: z.object({ enabled: z.literal(false) }),
+        }),
+      })
+      .safeParse(
+        await this.request(
+          `billing_portal/configurations/${encodeURIComponent(configuration)}`,
+        ),
+      );
+    if (!config.success)
+      throw new AppException(
+        'SERVICE_UNAVAILABLE',
+        'Stripe portal configuration is unsafe',
+      );
+    const session = z
+      .object({ url: z.url(), livemode: z.literal(false) })
+      .parse(
+        await this.request('billing_portal/sessions', {
+          customer,
+          configuration,
+          return_url: `${this.env.WEB_URL}/${locale}/subscription`,
+          locale: locale === 'pt-BR' ? 'pt-BR' : 'en',
+        }),
+      );
+    return session.url;
+  }
   async findCheckout(
     customer: string,
     contractId: string,
