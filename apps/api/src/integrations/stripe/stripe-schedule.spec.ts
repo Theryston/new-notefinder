@@ -40,6 +40,13 @@ const subscription = {
   },
 };
 
+const scheduleEnvelope = {
+  id: 'sched_test',
+  livemode: false,
+  subscription: 'sub_test',
+  status: 'active',
+};
+
 describe('Stripe subscription scheduling', () => {
   const network = vi.fn<typeof fetch>();
   beforeEach(() => {
@@ -142,10 +149,7 @@ describe('Stripe subscription scheduling', () => {
       .mockResolvedValueOnce(Response.json(subscription))
       .mockResolvedValueOnce(
         Response.json({
-          id: 'sched_test',
-          livemode: false,
-          subscription: 'sub_test',
-          status: 'active',
+          ...scheduleEnvelope,
           phases: [
             {
               start_date: start,
@@ -174,10 +178,7 @@ describe('Stripe subscription scheduling', () => {
       .mockResolvedValueOnce(Response.json(subscription))
       .mockResolvedValueOnce(
         Response.json({
-          id: 'sched_test',
-          livemode: false,
-          subscription: 'sub_test',
-          status: 'active',
+          ...scheduleEnvelope,
           phases: [
             {
               start_date: start,
