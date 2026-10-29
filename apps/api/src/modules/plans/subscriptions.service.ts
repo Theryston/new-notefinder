@@ -10,7 +10,7 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
-import { confirmedSubscription } from './subscription-state.js';
+import { SubscriptionChangesService } from './subscription-changes.service.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 @Injectable()
@@ -18,6 +18,7 @@ export class SubscriptionsService {
   constructor(
     private readonly repository: SubscriptionsRepository,
     private readonly stripe: StripeBillingService,
+    private readonly changes: SubscriptionChangesService,
   ) {}
 
   async checkout(
@@ -203,8 +204,10 @@ export class SubscriptionsService {
     const row = await this.repository.current(userId);
     if (!row) return { subscription: null };
     const contract = row.contract;
+    const pendingChange = await this.changes.visible(userId, locale);
     return {
       subscription: {
+        pendingChange,
         planId: contract.planId,
         planName: row.copy[locale].name,
         cycle: contract.cycle,
@@ -253,11 +256,12 @@ export class SubscriptionsService {
     if (session.customer !== customer)
       throw new AppException('CONFLICT', 'Checkout customer mismatch');
     if (session.subscription) {
-      const provider = await this.stripe.getSubscription(session.subscription);
-      await this.repository.update(
+      await this.changes.refreshProvider({
         userId,
-        confirmedSubscription({ contract: row.contract, provider, customer }),
-      );
+        customer,
+        contract: row.contract,
+        subscription: session.subscription,
+      });
     } else if (session.status === 'expired') {
       await this.repository.update(userId, {
         status: 'unsuccessful',

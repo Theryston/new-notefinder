@@ -1281,6 +1281,20 @@
     "confirmDelete": "Excluir benefício"
   },
   "billing": {
+    "change": {
+      "title": "Alterar plano",
+      "select": "Escolha um plano e ciclo de cobrança",
+      "placeholder": "Selecione uma oferta",
+      "option": "{plan} — {cycle} — {amount}",
+      "monthly": "mensal",
+      "annual": "anual",
+      "pending": "{plan}, {cycle}: {amount} a partir de {date}.",
+      "confirmation": "Sua assinatura atual continua até {date}. Depois, {plan} custará {amount} no ciclo {cycle}.",
+      "confirm": "Confirmar alteração",
+      "review": "Revisar alteração",
+      "loadError": "Não foi possível carregar as ofertas.",
+      "error": "Não foi possível agendar a alteração. Tente novamente."
+    },
     "chooseAnnual": "Escolher anual",
     "chooseMonthly": "Escolher mensal",
     "annualCharge": "{amount} cobrados anualmente",

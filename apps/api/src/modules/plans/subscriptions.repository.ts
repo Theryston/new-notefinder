@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
-import type { CreateCheckoutBody } from '@vozzify/contracts';
+import type { CreateSubscriptionChangeBody } from '@vozzify/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
@@ -11,6 +11,7 @@ import {
 import {
   billingCustomers,
   billingEvents,
+  subscriptionChanges,
   subscriptions,
 } from '../../database/schema/subscriptions.js';
 
@@ -53,7 +54,7 @@ export class SubscriptionsRepository {
         set: { stripeCustomerId: customer },
       });
   }
-  async offer(body: CreateCheckoutBody) {
+  async offer(body: Pick<CreateSubscriptionChangeBody, 'planId'>) {
     const rows = await this.txHost.tx
       .select({ plan: plans, price: planPrices })
       .from(plans)
@@ -95,5 +96,43 @@ export class SubscriptionsRepository {
       .insert(billingEvents)
       .values({ providerEventId: id })
       .onConflictDoNothing();
+  }
+  async change(userId: string) {
+    const rows = await this.txHost.tx
+      .select({ change: subscriptionChanges, copy: plans.copy })
+      .from(subscriptionChanges)
+      .innerJoin(plans, eq(plans.id, subscriptionChanges.planId))
+      .where(eq(subscriptionChanges.userId, userId));
+    return rows[0];
+  }
+  async saveChange(input: typeof subscriptionChanges.$inferInsert) {
+    await this.txHost.tx
+      .insert(subscriptionChanges)
+      .values(input)
+      .onConflictDoUpdate({
+        target: subscriptionChanges.userId,
+        set: input,
+      });
+  }
+  async updateChange(
+    userId: string,
+    input: Partial<typeof subscriptionChanges.$inferInsert>,
+  ) {
+    await this.txHost.tx
+      .update(subscriptionChanges)
+      .set(input)
+      .where(eq(subscriptionChanges.userId, userId));
+  }
+  async deleteChange(userId: string) {
+    await this.txHost.tx
+      .delete(subscriptionChanges)
+      .where(eq(subscriptionChanges.userId, userId));
+  }
+  async planCopy(planId: string) {
+    const rows = await this.txHost.tx
+      .select({ copy: plans.copy })
+      .from(plans)
+      .where(eq(plans.id, planId));
+    return rows[0]?.copy;
   }
 }

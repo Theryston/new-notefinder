@@ -1,45 +1,19 @@
-import { type CreateCheckoutBody, PLAN_CURRENCIES } from '@vozzify/contracts';
+import type { CreateCheckoutBody } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
+import { saleOffer } from './sale-offer.js';
 import type { SubscriptionsRepository } from './subscriptions.repository.js';
 
 export function checkoutOffer(
   input: Awaited<ReturnType<SubscriptionsRepository['offer']>>,
   body: CreateCheckoutBody,
 ) {
-  const plan = input.rows[0]?.plan;
-  const currency = body.locale === 'pt-BR' ? 'BRL' : 'USD';
-  const price = input.rows.find(
-    (row) =>
-      row.price.id === body.offerId &&
-      row.price.cycle === body.cycle &&
-      row.price.currency === currency,
-  )?.price;
-  const complete = plan?.enabledCycles.every((cycle) =>
-    PLAN_CURRENCIES.every((required) =>
-      input.rows.some(
-        (row) =>
-          row.price.cycle === cycle &&
-          row.price.currency === required &&
-          row.price.amount > 0 &&
-          row.price.stripePriceId,
-      ),
-    ),
+  const message = 'The selected immediate-billing offer is no longer available';
+  if (input.rows[0]?.plan.trialDays !== 0)
+    throw new AppException('CONFLICT', message);
+  return saleOffer(
+    input,
+    body,
+    body.locale === 'pt-BR' ? 'BRL' : 'USD',
+    message,
   );
-  if (
-    !input.enabled ||
-    !plan ||
-    plan.kind !== 'paid' ||
-    !plan.published ||
-    !plan.saleEnabled ||
-    plan.pendingSyncId ||
-    !plan.enabledCycles.includes(body.cycle) ||
-    !complete ||
-    !price?.stripePriceId ||
-    plan.trialDays !== 0
-  )
-    throw new AppException(
-      'CONFLICT',
-      'The selected immediate-billing offer is no longer available',
-    );
-  return { ...price, stripePriceId: price.stripePriceId };
 }

@@ -13,6 +13,7 @@ import { AdminPlansService } from './admin-plans.service.js';
 import { PlansController } from './plans.controller.js';
 import { PlansRepository } from './plans.repository.js';
 import { PlansService } from './plans.service.js';
+import { SubscriptionChangesService } from './subscription-changes.service.js';
 import {
   StripeWebhookController,
   SubscriptionsController,
@@ -34,6 +35,7 @@ import { SubscriptionsService } from './subscriptions.service.js';
     PlansRepository,
     SubscriptionsRepository,
     SubscriptionsService,
+    SubscriptionChangesService,
     StripeBillingService,
     PlansService,
     AdminPlansService,

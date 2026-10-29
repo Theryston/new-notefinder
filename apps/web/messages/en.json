@@ -1281,6 +1281,20 @@
     "confirmDelete": "Delete benefit"
   },
   "billing": {
+    "change": {
+      "title": "Change plan",
+      "select": "Choose a plan and billing cycle",
+      "placeholder": "Select an offer",
+      "option": "{plan} — {cycle} — {amount}",
+      "monthly": "monthly",
+      "annual": "annual",
+      "pending": "{plan}, {cycle}: {amount} starting {date}.",
+      "confirmation": "Your current membership stays in place until {date}. Then {plan} will cost {amount} {cycle}.",
+      "confirm": "Confirm change",
+      "review": "Review change",
+      "loadError": "Offers could not be loaded.",
+      "error": "The change could not be scheduled. Try again."
+    },
     "chooseAnnual": "Choose annual",
     "chooseMonthly": "Choose monthly",
     "annualCharge": "{amount} charged annually",

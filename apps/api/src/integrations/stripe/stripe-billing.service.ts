@@ -5,6 +5,11 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
 import en from './locales/en.json' with { type: 'json' };
 import ptBR from './locales/pt-BR.json' with { type: 'json' };
+import {
+  type ScheduleInput,
+  schedulePhases,
+  validateSchedule,
+} from './stripe-schedule.js';
 
 const sessionSchema = z.object({
   id: z.string(),
@@ -192,6 +197,48 @@ export class StripeBillingService {
         `subscriptions/${encodeURIComponent(id)}?expand[]=latest_invoice`,
       ),
     );
+  }
+  async scheduleChange(input: ScheduleInput) {
+    const provider = await this.getSubscription(input.subscription);
+    const item = provider.items.data[0];
+    if (
+      provider.cancel_at_period_end ||
+      provider.status !== 'active' ||
+      !item ||
+      item.price.id !== input.currentPrice ||
+      item.current_period_start !== input.start ||
+      item.current_period_end !== input.end ||
+      input.end * 1000 <= Date.now()
+    )
+      throw new AppException(
+        'CONFLICT',
+        'Subscription changed before scheduling',
+      );
+    const schedule =
+      input.schedule ??
+      z
+        .object({ id: z.string(), livemode: z.literal(false) })
+        .parse(
+          await this.request(
+            'subscription_schedules',
+            { from_subscription: input.subscription },
+            `schedule-${input.subscription}-${input.end}`,
+          ),
+        ).id;
+    validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(schedule)}`,
+      ),
+      input,
+      schedule,
+    );
+    const result = await this.request(
+      `subscription_schedules/${encodeURIComponent(schedule)}`,
+      schedulePhases(input),
+      `change-${input.id}`,
+    );
+    validateSchedule(result, input, schedule, true);
+    return schedule;
   }
   private async request(
     path: string,

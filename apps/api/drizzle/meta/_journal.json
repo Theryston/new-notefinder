@@ -260,6 +260,13 @@
       "when": 1793195666742,
       "tag": "0036_kind_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793287903488,
+      "tag": "0037_melted_hellfire_club",
+      "breakpoints": true
     }
   ]
 }
