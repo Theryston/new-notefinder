@@ -93,17 +93,22 @@ function RecoveryNotice({ subscription }: { subscription: Subscription }) {
   );
 }
 
-function PeriodTimeline({ subscription }: { subscription: Subscription }) {
+function usePeriodDate() {
   const t = useTranslations('billing.subscription');
   const format = useFormatter();
+  return (value: string | null) =>
+    value
+      ? format.dateTime(new Date(value), { dateStyle: 'medium' })
+      : t('dateUnavailable');
+}
+
+function PeriodTimeline({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  const date = usePeriodDate();
   const state = subscriptionState(subscription);
   if (subscription.recoveryDeadline)
     return <RecoveryTimeline subscription={subscription} />;
   const paid = state === 'active' || state === 'ending' || state === 'ended';
-  const date = (value: string | null) =>
-    value
-      ? format.dateTime(new Date(value), { dateStyle: 'medium' })
-      : t('dateUnavailable');
   return (
     <>
       <ol className="pt-4">
@@ -141,11 +146,7 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
 
 function RecoveryTimeline({ subscription }: { subscription: Subscription }) {
   const t = useTranslations('billing.subscription');
-  const format = useFormatter();
-  const date = (value: string | null) =>
-    value
-      ? format.dateTime(new Date(value), { dateStyle: 'medium' })
-      : t('dateUnavailable');
+  const date = usePeriodDate();
   return (
     <>
       <ol className="pt-4">

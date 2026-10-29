@@ -48,6 +48,20 @@ export class SubscriptionsService {
     return {
       id: createId(),
       userId,
+      ...(await this.offerFields(userId, body, price)),
+      checkoutId: null,
+      checkoutUrl: null,
+      createdAt: new Date(),
+      status: 'pending' as const,
+    };
+  }
+
+  private async offerFields(
+    userId: string,
+    body: CreateCheckoutBody,
+    price: ReturnType<typeof checkoutOffer>,
+  ) {
+    return {
       planId: body.planId,
       priceId: price.id,
       cycle: price.cycle,
@@ -57,10 +71,6 @@ export class SubscriptionsService {
       trialDays: (await this.repository.customer(userId))?.trialUsedAt
         ? 0
         : price.trialDays,
-      checkoutId: null,
-      checkoutUrl: null,
-      createdAt: new Date(),
-      status: 'pending' as const,
     };
   }
 
@@ -114,15 +124,7 @@ export class SubscriptionsService {
       return;
     await this.repository.update(userId, {
       id: createId(),
-      planId: body.planId,
-      priceId: price.id,
-      cycle: price.cycle,
-      currency: price.currency,
-      amount: price.amount,
-      stripePriceId: price.stripePriceId,
-      trialDays: (await this.repository.customer(userId))?.trialUsedAt
-        ? 0
-        : price.trialDays,
+      ...(await this.offerFields(userId, body, price)),
       createdAt: new Date(),
     });
   }
