@@ -1352,6 +1352,20 @@
         ]
       }
     },
+    "/v1/me/subscription/trial-eligibility": {
+      "get": {
+        "operationId": "SubscriptionsController_trialEligibility_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/v1/me/subscription": {
       "get": {
         "operationId": "SubscriptionsController_summary_v1",
@@ -3588,6 +3602,11 @@
             "enum": [
               true
             ]
+          },
+          "trialDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 730
           }
         },
         "required": [
@@ -3664,6 +3683,11 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "trialDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 730
           },
           "published": {
             "type": "boolean"

@@ -9,7 +9,13 @@ export function useCheckout(planId: string) {
   const locale = useLocale();
   const router = useRouter();
   return useMutation({
-    mutationFn: async (offer: Plan['offers'][number]) => {
+    mutationFn: async ({
+      offer,
+      trialDays,
+    }: {
+      offer: Plan['offers'][number];
+      trialDays: number;
+    }) => {
       const [{ browserApi }, { checkoutResultSchema }] = await Promise.all([
         import('@/lib/api/browser'),
         import('@vozzify/contracts'),
@@ -20,6 +26,7 @@ export function useCheckout(planId: string) {
         cycle: offer.cycle,
         locale,
         comingSoonAcknowledged: true,
+        ...(trialDays > 0 ? { trialDays } : {}),
       };
       return browserApi('/me/subscription/checkout', {
         schema: checkoutResultSchema,

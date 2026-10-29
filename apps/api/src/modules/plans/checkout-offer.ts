@@ -34,12 +34,15 @@ export function checkoutOffer(
     plan.pendingSyncId ||
     !plan.enabledCycles.includes(body.cycle) ||
     !complete ||
-    !price?.stripePriceId ||
-    plan.trialDays !== 0
+    !price?.stripePriceId
   )
     throw new AppException(
       'CONFLICT',
-      'The selected immediate-billing offer is no longer available',
+      'The selected offer is no longer available',
     );
-  return { ...price, stripePriceId: price.stripePriceId };
+  return {
+    ...price,
+    stripePriceId: price.stripePriceId,
+    trialDays: plan.trialDays,
+  };
 }

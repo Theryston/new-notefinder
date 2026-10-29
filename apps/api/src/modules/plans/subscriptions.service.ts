@@ -10,8 +10,10 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
+import { replaceEndedContract } from './replace-ended-contract.js';
 import { confirmedSubscription } from './subscription-state.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
+import { isAgreedTrial } from './trial-terms.js';
 
 @Injectable()
 export class SubscriptionsService {
@@ -26,6 +28,7 @@ export class SubscriptionsService {
   ): Promise<CheckoutResult> {
     await this.reserve(userId, body);
     await this.ensureCustomer(userId);
+    await this.replaceEnded(userId, body);
     await this.reconcile(userId, body);
     await this.replacePendingCheckout(userId, body);
     return this.start(userId, body);
@@ -51,6 +54,9 @@ export class SubscriptionsService {
       currency: price.currency,
       amount: price.amount,
       stripePriceId: price.stripePriceId,
+      trialDays: (await this.repository.customer(userId))?.trialUsedAt
+        ? 0
+        : price.trialDays,
       checkoutId: null,
       checkoutUrl: null,
       createdAt: new Date(),
@@ -66,6 +72,16 @@ export class SubscriptionsService {
       userId,
       await this.stripe.createCustomer(userId),
     );
+  }
+
+  @Transactional()
+  async replaceEnded(userId: string, body: CreateCheckoutBody) {
+    await replaceEndedContract({
+      userId,
+      repository: this.repository,
+      stripe: this.stripe,
+      reservation: () => this.reservation(userId, body),
+    });
   }
 
   // A lost Stripe response is reconciled before changing or retrying an attempt.
@@ -104,6 +120,9 @@ export class SubscriptionsService {
       currency: price.currency,
       amount: price.amount,
       stripePriceId: price.stripePriceId,
+      trialDays: (await this.repository.customer(userId))?.trialUsedAt
+        ? 0
+        : price.trialDays,
       createdAt: new Date(),
     });
   }
@@ -122,9 +141,11 @@ export class SubscriptionsService {
     const sameOffer =
       contract.priceId === body.offerId &&
       contract.planId === body.planId &&
-      contract.cycle === body.cycle;
+      contract.cycle === body.cycle &&
+      contract.trialDays === (body.trialDays ?? 0);
     if (session.status === 'open' && sameOffer) return;
     const reservation = await this.reservation(userId, body);
+    assertTrialTerms(reservation.trialDays, body.trialDays);
     const expired =
       session.status === 'expired'
         ? session
@@ -156,6 +177,7 @@ export class SubscriptionsService {
       contract.cycle !== body.cycle
     )
       return { action: 'manage' };
+    assertTrialTerms(contract.trialDays, body.trialDays);
     if (contract.checkoutId) {
       const session = await this.stripe.getCheckout(contract.checkoutId);
       if (session.status === 'complete' || session.subscription)
@@ -176,6 +198,7 @@ export class SubscriptionsService {
       customer,
       price: contract.stripePriceId,
       locale: body.locale,
+      trialDays: contract.trialDays,
     });
     if (!session.url || session.customer !== customer)
       throw new AppException(
@@ -187,6 +210,11 @@ export class SubscriptionsService {
       checkoutUrl: session.url,
     });
     return { action: 'checkout', url: session.url };
+  }
+
+  async trialEligibility(userId: string) {
+    const customer = await this.repository.customer(userId);
+    return { eligible: !customer?.trialUsedAt };
   }
 
   async portal(userId: string, locale: Locale) {
@@ -252,12 +280,23 @@ export class SubscriptionsService {
       });
     if (session.customer !== customer)
       throw new AppException('CONFLICT', 'Checkout customer mismatch');
-    if (session.subscription) {
+    if (session.subscription && session.status === 'complete') {
       const provider = await this.stripe.getSubscription(session.subscription);
-      await this.repository.update(
-        userId,
-        confirmedSubscription({ contract: row.contract, provider, customer }),
-      );
+      const projection = confirmedSubscription({
+        contract: row.contract,
+        provider,
+        customer,
+      });
+      if (
+        isAgreedTrial(row.contract.trialDays, provider) &&
+        (provider.status === 'trialing'
+          ? projection.paidMembership
+          : ['active', 'past_due', 'unpaid', 'canceled'].includes(
+              provider.status,
+            ))
+      )
+        await this.repository.markTrialUsed(userId);
+      await this.repository.update(userId, projection);
     } else if (session.status === 'expired') {
       await this.repository.update(userId, {
         status: 'unsuccessful',
@@ -265,4 +304,12 @@ export class SubscriptionsService {
       });
     }
   }
+}
+
+function assertTrialTerms(expected: number, accepted?: number) {
+  if (expected !== (accepted ?? 0))
+    throw new AppException(
+      'CONFLICT',
+      'Trial terms have changed; review the offer',
+    );
 }

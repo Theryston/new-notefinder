@@ -16,15 +16,18 @@ export function SubscriptionPeriod({
   const t = useTranslations('billing');
   const state = subscriptionState(subscription);
   const description =
-    state === 'free'
-      ? t('noSubscription')
-      : state === 'ended'
-        ? t('subscription.endedDescription')
-        : state === 'ending'
-          ? t('subscription.endingDescription')
-          : t(state === 'active' ? 'confirmed' : state);
+    subscription?.providerStatus === 'trialing'
+      ? t(
+          subscription.cancelAtPeriodEnd
+            ? 'trialEndingDescription'
+            : 'trialDescription',
+        )
+      : t(descriptionKey(state));
   return (
     <section className="min-w-0 space-y-4 pt-1">
+      {subscription?.providerStatus === 'trialing' ? (
+        <p className="font-semibold">{t('trialStatus')}</p>
+      ) : null}
       <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
         {t(`subscription.${subscription ? 'currentPeriod' : 'overview'}`)}
       </p>
@@ -65,9 +68,13 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
           done={paid}
         />
         <PeriodEvent
-          label={t(
-            `payment.${paid ? 'confirmed' : state === 'pending' ? 'pending' : 'unsuccessful'}`,
-          )}
+          label={
+            subscription.providerStatus === 'trialing'
+              ? t('trialLabel')
+              : t(
+                  `payment.${paid ? 'confirmed' : state === 'pending' ? 'pending' : 'unsuccessful'}`,
+                )
+          }
           value={t(`states.${state}`)}
           done={paid}
         />
@@ -122,4 +129,11 @@ function PeriodEvent({
       </div>
     </li>
   );
+}
+
+function descriptionKey(state: ReturnType<typeof subscriptionState>) {
+  if (state === 'free') return 'noSubscription';
+  if (state === 'ended') return 'subscription.endedDescription';
+  if (state === 'ending') return 'subscription.endingDescription';
+  return state === 'active' ? 'confirmed' : state;
 }
