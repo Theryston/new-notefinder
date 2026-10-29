@@ -43,18 +43,13 @@ const scheduleSchema = z.object({
         .object({
           start_date: z.number(),
           end_date: z.number(),
-          items: z
-            .array(
-              z
-                .object({ price: z.string(), quantity: z.literal(1) })
-                .passthrough(),
-            )
-            .length(1),
+          items: z.array(
+            z.object({ price: z.string(), quantity: z.number() }).passthrough(),
+          ),
         })
         .passthrough(),
     )
-    .min(1)
-    .max(2),
+    .min(1),
 });
 function emptySetting(value: unknown): boolean {
   return (
@@ -81,7 +76,9 @@ function safePhase(phase: z.infer<typeof scheduleSchema>['phases'][number]) {
   const item = phase.items[0];
   return (
     safe &&
+    phase.items.length === 1 &&
     item &&
+    item.quantity === 1 &&
     Object.entries(item).every(
       ([key, value]) =>
         key === 'price' ||
@@ -113,14 +110,24 @@ export function validateSchedule(
 ) {
   const schedule = scheduleSchema.safeParse(raw);
   const phases = schedule.success ? schedule.data.phases : [];
-  const current = phases[0];
-  const future = phases[1];
+  const currentIndex = phases.findIndex(
+    (phase) => phase.start_date === input.start && phase.end_date === input.end,
+  );
+  const current = phases[currentIndex];
+  const future = phases[currentIndex + 1];
+  const past = phases.slice(0, currentIndex);
   if (
     !schedule.success ||
     schedule.data.id !== scheduleId ||
     (schedule.data.metadata &&
       Object.keys(schedule.data.metadata).length > 0) ||
     schedule.data.subscription !== input.subscription ||
+    currentIndex < 0 ||
+    past.some(
+      (phase) =>
+        phase.end_date > input.start || phase.start_date >= phase.end_date,
+    ) ||
+    phases.length > currentIndex + 2 ||
     !current ||
     !safePhase(current) ||
     current.start_date !== input.start ||

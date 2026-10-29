@@ -1,5 +1,6 @@
 import { parseEnv } from '../../config/env.js';
 import { StripeBillingService } from './stripe-billing.service.js';
+import { validateSchedule } from './stripe-schedule.js';
 
 const env = parseEnv({
   NODE_ENV: 'test',
@@ -231,5 +232,47 @@ describe('Stripe subscription scheduling', () => {
     expect(await new StripeBillingService(env).inspectSchedule(input)).toBe(
       'pending',
     );
+  });
+  it('allows a later change after a completed phase without dropping unknown future phases', () => {
+    const current = {
+      start_date: start,
+      end_date: input.end,
+      items: [{ price: 'price_current', quantity: 1 }],
+    };
+    const past = {
+      start_date: start - 100,
+      end_date: start,
+      items: [{ price: 'old_price', quantity: 1 }],
+    };
+    const end = new Date(input.end * 1000);
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+    const future = {
+      start_date: input.end,
+      end_date: Math.floor(end.getTime() / 1000),
+      items: [{ price: 'price_next', quantity: 1 }],
+    };
+    const data = {
+      id: 'sched_test',
+      livemode: false,
+      subscription: 'sub_test',
+      status: 'active',
+      phases: [past, current],
+    };
+    expect(validateSchedule(data, input, 'sched_test')).toBeNull();
+    expect(
+      validateSchedule(
+        { ...data, phases: [past, current, future] },
+        input,
+        'sched_test',
+        true,
+      ),
+    ).toBe('price_next');
+    expect(() =>
+      validateSchedule(
+        { ...data, phases: [past, current, future, future] },
+        input,
+        'sched_test',
+      ),
+    ).toThrow();
   });
 });
