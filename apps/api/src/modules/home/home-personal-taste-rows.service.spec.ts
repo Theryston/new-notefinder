@@ -124,7 +124,7 @@ describe('PersonalHomeTasteRowsService', () => {
     } as unknown as PersonalHomeTasteRepository;
     const activities = Array.from({ length: 6 }, (_, index) => ({
       artist: { id: `artist-${index}`, name: `Artist ${index}` },
-      lastAttemptAt: new Date(),
+      lastAttemptAt: new Date('2026-01-01T00:00:00.000Z'),
     }));
     const attempts = {
       mostSungArtistActivities: vi.fn().mockResolvedValue(activities),
