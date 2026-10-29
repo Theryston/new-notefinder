@@ -23,6 +23,7 @@ export class SubscriptionChangesService {
   @Transactional()
   async reserveChange(userId: string, body: CreateSubscriptionChangeBody) {
     await this.repository.lock(userId);
+    await this.reconcilePending(userId);
     const row = await this.repository.current(userId);
     const contract = row?.contract;
     if (
@@ -74,6 +75,17 @@ export class SubscriptionChangesService {
   }
 
   @Transactional()
+  async reconcilePending(userId: string) {
+    await this.repository.lock(userId);
+    const pending = await this.repository.change(userId);
+    if (!pending || pending.change.applied) return;
+    const input = await this.scheduleInput(userId);
+    if (!input) return;
+    if ((await this.stripe.inspectSchedule(input)) === 'pending')
+      await this.repository.updateChange(userId, { applied: true });
+  }
+
+  @Transactional()
   async prepareSchedule(userId: string) {
     await this.repository.lock(userId);
     const input = await this.scheduleInput(userId);
@@ -116,7 +128,10 @@ export class SubscriptionChangesService {
       end: Math.floor(pending.change.effectiveAt.getTime() / 1000),
     };
   }
+  @Transactional()
   async visible(userId: string, locale: Locale) {
+    await this.repository.lock(userId);
+    await this.reconcilePending(userId);
     const row = await this.repository.change(userId);
     if (!row) return null;
     const change = row.change.applied

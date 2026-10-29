@@ -16,9 +16,21 @@ const ROOT = '/v1/me/subscription';
 describe('Scheduled subscription changes (e2e)', () => {
   let app: TestApp;
   const fake = billingProvider();
-  const schedule = vi.fn(async () => 'sched_test');
+  let remotePrice: string | null = null;
+  const schedule = vi.fn(async (input: { nextPrice: string }) => {
+    remotePrice = input.nextPrice;
+  });
+  const inspect = vi.fn(async (input: { nextPrice: string }) =>
+    remotePrice === input.nextPrice
+      ? ('pending' as const)
+      : ('previous' as const),
+  );
   const prepare = vi.fn(
-    async (_input: { schedule: string | null }) => 'sched_test',
+    async (_input: {
+      schedule: string | null;
+      previousPrice?: string | null;
+      nextPrice?: string;
+    }) => 'sched_test',
   );
   beforeAll(async () => {
     app = await createTestApp({
@@ -27,6 +39,7 @@ describe('Scheduled subscription changes (e2e)', () => {
         builder.overrideProvider(StripeBillingService).useValue({
           ...fake.provider,
           prepareSchedule: prepare,
+          inspectSchedule: inspect,
           scheduleChange: schedule,
         }),
     });
@@ -38,6 +51,7 @@ describe('Scheduled subscription changes (e2e)', () => {
     fake.sessions.clear();
     fake.contracts.clear();
     vi.clearAllMocks();
+    remotePrice = null;
   });
   async function subscriber(cycle: 'monthly' | 'annual' = 'monthly') {
     const { client } = await billingUser(app);
@@ -228,5 +242,34 @@ describe('Scheduled subscription changes (e2e)', () => {
     } finally {
       vi.restoreAllMocks();
     }
+  });
+  it('reconciles a successful provider update whose response was lost before another revision', async () => {
+    const { client } = await subscriber();
+    await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
+      .expect(201);
+    schedule.mockImplementationOnce(async (input) => {
+      remotePrice = input.nextPrice;
+      throw new Error('Response lost after provider update');
+    });
+    await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-monthly', cycle: 'monthly' })
+      .expect(500);
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
+    ).toMatchObject({ cycle: 'monthly', amount: 350 });
+    await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
+      .expect(201);
+    expect(prepare.mock.calls.at(-1)?.[0]).toMatchObject({
+      previousPrice: 'price_usd_monthly',
+      nextPrice: 'price_usd_annual',
+    });
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
+    ).toMatchObject({ cycle: 'annual', amount: 3500 });
   });
 });

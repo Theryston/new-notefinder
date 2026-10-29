@@ -145,4 +145,5 @@ export function validateSchedule(
       'CONFLICT',
       'Stripe schedule contains unrecognised terms',
     );
+  return future?.items[0]?.price ?? null;
 }

@@ -6,61 +6,22 @@ import { ENV, type Env } from '../../config/env.js';
 import en from './locales/en.json' with { type: 'json' };
 import ptBR from './locales/pt-BR.json' with { type: 'json' };
 import {
+  type StripeCheckout,
+  type StripeSubscription,
+  sessionSchema,
+  subscriptionSchema,
+} from './stripe-billing-schemas.js';
+
+export type {
+  StripeCheckout,
+  StripeSubscription,
+} from './stripe-billing-schemas.js';
+
+import {
   type ScheduleInput,
   schedulePhases,
   validateSchedule,
 } from './stripe-schedule.js';
-
-const sessionSchema = z.object({
-  id: z.string(),
-  livemode: z.literal(false),
-  url: z.url().nullable(),
-  status: z.enum(['open', 'complete', 'expired']),
-  customer: z.string(),
-  subscription: z.string().nullable(),
-});
-export type StripeCheckout = z.infer<typeof sessionSchema>;
-const subscriptionSchema = z.object({
-  id: z.string(),
-  livemode: z.literal(false),
-  customer: z.string(),
-  status: z.enum([
-    'incomplete',
-    'incomplete_expired',
-    'trialing',
-    'active',
-    'past_due',
-    'canceled',
-    'unpaid',
-    'paused',
-  ]),
-  currency: z.string(),
-  cancel_at_period_end: z.boolean(),
-  schedule: z.string().nullable().optional(),
-  latest_invoice: z
-    .object({
-      status: z.string().nullable(),
-
-      amount_paid: z.number(),
-    })
-    .nullable(),
-  items: z.object({
-    data: z
-      .array(
-        z.object({
-          price: z.object({
-            id: z.string(),
-            unit_amount: z.number().nullable(),
-            currency: z.string(),
-          }),
-          current_period_start: z.number(),
-          current_period_end: z.number(),
-        }),
-      )
-      .length(1),
-  }),
-});
-export type StripeSubscription = z.infer<typeof subscriptionSchema>;
 
 @Injectable()
 export class StripeBillingService {
@@ -227,6 +188,33 @@ export class StripeBillingService {
       schedule,
     );
     return schedule;
+  }
+
+  async inspectSchedule(input: ScheduleInput) {
+    const provider = await this.schedulableSubscription(input);
+    const schedule = input.schedule ?? provider.schedule;
+    if (!schedule) {
+      if (input.previousPrice)
+        throw new AppException(
+          'CONFLICT',
+          'Previous subscription schedule is missing',
+        );
+      return 'previous' as const;
+    }
+    const price = validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(schedule)}`,
+      ),
+      input,
+      schedule,
+    );
+    if (price === input.nextPrice) return 'pending' as const;
+    if (price === input.previousPrice || (!price && !input.previousPrice))
+      return 'previous' as const;
+    throw new AppException(
+      'CONFLICT',
+      'Subscription schedule is not reconciled',
+    );
   }
 
   async scheduleChange(input: ScheduleInput) {

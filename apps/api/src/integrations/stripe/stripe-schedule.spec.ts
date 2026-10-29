@@ -201,4 +201,35 @@ describe('Stripe subscription scheduling', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     expect(network).toHaveBeenCalledTimes(2);
   });
+  it('identifies the confirmed destination from the current provider schedule', async () => {
+    const end = new Date(input.end * 1000);
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+    network
+      .mockResolvedValueOnce(
+        Response.json({ ...subscription, schedule: 'sched_test' }),
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'sched_test',
+          livemode: false,
+          subscription: 'sub_test',
+          status: 'active',
+          phases: [
+            {
+              start_date: start,
+              end_date: input.end,
+              items: [{ price: 'price_current', quantity: 1 }],
+            },
+            {
+              start_date: input.end,
+              end_date: Math.floor(end.getTime() / 1000),
+              items: [{ price: 'price_next', quantity: 1 }],
+            },
+          ],
+        }),
+      );
+    expect(await new StripeBillingService(env).inspectSchedule(input)).toBe(
+      'pending',
+    );
+  });
 });
