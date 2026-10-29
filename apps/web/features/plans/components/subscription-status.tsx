@@ -21,7 +21,8 @@ export function SubscriptionStatus({
           'bg-warning/10 text-warning':
             state === 'pending' || state === 'ending',
           'bg-destructive/10 text-destructive': state === 'unsuccessful',
-          'bg-muted text-muted-foreground': state === 'free',
+          'bg-muted text-muted-foreground':
+            state === 'free' || state === 'ended',
         },
       )}
     >

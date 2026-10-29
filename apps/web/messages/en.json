@@ -1313,6 +1313,7 @@
       "currentPeriod": "Current period",
       "overview": "Overview",
       "periodStart": "Period started",
+      "periodEnded": "Period ended",
       "periodEnd": "Current period ends",
       "nextCharge": "Next payment",
       "dateUnavailable": "Not available yet",
@@ -1322,9 +1323,11 @@
       "contractCurrency": "Contract currency",
       "manage": "Manage subscription",
       "manageError": "Could not open billing management. Please try again.",
+      "endedDescription": "Your paid subscription has ended.",
       "endingDescription": "Your subscription will end at the close of this period.",
       "states": {
         "active": "Active",
+        "ended": "Ended",
         "ending": "Ends after this period",
         "pending": "Awaiting confirmation",
         "unsuccessful": "Not active",
@@ -1332,6 +1335,7 @@
       },
       "titles": {
         "active": "Everything ready for your next song.",
+        "ended": "Your subscription has ended.",
         "ending": "Your current period is still available.",
         "pending": "Your payment is being confirmed.",
         "unsuccessful": "Your payment was not completed.",

@@ -18,9 +18,11 @@ export function SubscriptionPeriod({
   const description =
     state === 'free'
       ? t('noSubscription')
-      : state === 'ending'
-        ? t('subscription.endingDescription')
-        : t(state === 'active' ? 'confirmed' : state);
+      : state === 'ended'
+        ? t('subscription.endedDescription')
+        : state === 'ending'
+          ? t('subscription.endingDescription')
+          : t(state === 'active' ? 'confirmed' : state);
   return (
     <section className="min-w-0 space-y-4 pt-1">
       <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
@@ -49,7 +51,7 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
   const t = useTranslations('billing.subscription');
   const format = useFormatter();
   const state = subscriptionState(subscription);
-  const paid = state === 'active' || state === 'ending';
+  const paid = state === 'active' || state === 'ending' || state === 'ended';
   const date = (value: string | null) =>
     value
       ? format.dateTime(new Date(value), { dateStyle: 'medium' })
@@ -70,7 +72,13 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
           done={paid}
         />
         <PeriodEvent
-          label={t(state === 'active' ? 'nextCharge' : 'periodEnd')}
+          label={t(
+            state === 'active'
+              ? 'nextCharge'
+              : state === 'ended'
+                ? 'periodEnded'
+                : 'periodEnd',
+          )}
           value={date(subscription.currentPeriodEnd)}
         />
       </ol>

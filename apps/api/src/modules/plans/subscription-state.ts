@@ -7,6 +7,7 @@ type Contract = {
   stripePriceId: string;
   amount: number;
   currency: string;
+  cancelAtPeriodEnd?: boolean;
 };
 export function confirmedSubscription(input: {
   contract: Contract;
@@ -34,13 +35,21 @@ export function confirmedSubscription(input: {
     provider.latest_invoice?.status === 'paid' &&
     provider.latest_invoice.amount_paid >= contract.amount &&
     item.current_period_end * 1000 > Date.now();
-  const status: Subscription['status'] = paidMembership
-    ? 'confirmed'
-    : ['canceled', 'incomplete_expired', 'unpaid', 'past_due'].includes(
-          provider.status,
-        )
-      ? 'unsuccessful'
-      : 'pending';
+  const endedPaidCancellation =
+    (provider.cancel_at_period_end ||
+      (contract.cancelAtPeriodEnd && provider.status === 'canceled')) &&
+    (provider.status === 'active' || provider.status === 'canceled') &&
+    provider.latest_invoice?.status === 'paid' &&
+    provider.latest_invoice.amount_paid >= contract.amount &&
+    item.current_period_end * 1000 <= Date.now();
+  const status: Subscription['status'] =
+    paidMembership || endedPaidCancellation
+      ? 'confirmed'
+      : ['canceled', 'incomplete_expired', 'unpaid', 'past_due'].includes(
+            provider.status,
+          )
+        ? 'unsuccessful'
+        : 'pending';
   return {
     stripeSubscriptionId: provider.id,
     providerStatus: provider.status,
@@ -48,6 +57,7 @@ export function confirmedSubscription(input: {
     paidMembership,
     currentPeriodStart: new Date(item.current_period_start * 1000),
     currentPeriodEnd: new Date(item.current_period_end * 1000),
-    cancelAtPeriodEnd: provider.cancel_at_period_end,
+    cancelAtPeriodEnd:
+      provider.cancel_at_period_end || Boolean(endedPaidCancellation),
   };
 }

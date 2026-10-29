@@ -79,6 +79,10 @@ describe('Customer portal (e2e)', () => {
     if (!session) throw new Error('Expected checkout');
     const provider = paidProvider(session);
     fake.contracts.set(provider.id, provider);
+    const item = provider.items.data[0];
+    if (!item) throw new Error('Expected subscription item');
+    item.current_period_end = Math.floor(Date.now() / 1000) + 30;
+    const initialEnd = item.current_period_end;
     const deliver = async (event: ReturnType<typeof signedEvent>) =>
       app.http
         .post('/v1/billing/stripe-webhook')
@@ -96,13 +100,16 @@ describe('Customer portal (e2e)', () => {
       .post(`${ROOT}/checkout`)
       .send(checkoutBody())
       .expect(409);
-    const item = provider.items.data[0];
-    if (!item) throw new Error('Expected subscription item');
-    item.current_period_end = Math.floor(Date.now() / 1000) + 60;
+    item.current_period_end = initialEnd + 30;
     await deliver(signedEvent(session.customer, 'evt_renewal', 'invoice.paid'));
     expect(
       (await client.get(ROOT).expect(200)).body.subscription,
-    ).toMatchObject({ planName: 'Pro', amount: 350, paidMembership: true });
+    ).toMatchObject({
+      planName: 'Pro',
+      amount: 350,
+      paidMembership: true,
+      currentPeriodEnd: new Date(item.current_period_end * 1000).toISOString(),
+    });
     provider.cancel_at_period_end = true;
     const cancellation = signedEvent(
       session.customer,
@@ -127,6 +134,22 @@ describe('Customer portal (e2e)', () => {
       (await client.get(ROOT).expect(200)).body.subscription.paidMembership,
     ).toBe(false);
     vi.spyOn(Date, 'now').mockReturnValue(end + 1);
+    provider.status = 'canceled';
+    provider.cancel_at_period_end = false;
+    await deliver(
+      signedEvent(
+        session.customer,
+        'evt_ended',
+        'customer.subscription.deleted',
+      ),
+    );
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription,
+    ).toMatchObject({
+      status: 'confirmed',
+      cancelAtPeriodEnd: true,
+      paidMembership: false,
+    });
     expect(
       (await client.get(ROOT).expect(200)).body.subscription.paidMembership,
     ).toBe(false);
