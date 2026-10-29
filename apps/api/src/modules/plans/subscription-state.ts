@@ -1,6 +1,7 @@
 import type { Subscription } from '@vozzify/contracts';
 import { AppException } from '../../common/errors/app-exception.js';
 import type { StripeSubscription } from '../../integrations/stripe/stripe-billing.service.js';
+import { isAgreedTrial } from './trial-terms.js';
 
 type Contract = {
   stripeSubscriptionId: string | null;
@@ -8,6 +9,7 @@ type Contract = {
   amount: number;
   currency: string;
   cancelAtPeriodEnd?: boolean;
+  trialDays?: number;
 };
 export function confirmedSubscription(input: {
   contract: Contract;
@@ -31,10 +33,11 @@ export function confirmedSubscription(input: {
       'Provider subscription does not match the contracted offer',
     );
   const paidMembership =
-    provider.status === 'active' &&
-    provider.latest_invoice?.status === 'paid' &&
-    provider.latest_invoice.amount_paid >= contract.amount &&
-    item.current_period_end * 1000 > Date.now();
+    confirmedTrial(contract, provider, item.current_period_end) ||
+    (provider.status === 'active' &&
+      provider.latest_invoice?.status === 'paid' &&
+      provider.latest_invoice.amount_paid >= contract.amount &&
+      item.current_period_end * 1000 > Date.now());
   const endedPaidCancellation =
     (provider.cancel_at_period_end ||
       (contract.cancelAtPeriodEnd && provider.status === 'canceled')) &&
@@ -60,4 +63,17 @@ export function confirmedSubscription(input: {
     cancelAtPeriodEnd:
       provider.cancel_at_period_end || Boolean(endedPaidCancellation),
   };
+}
+
+function confirmedTrial(
+  contract: Contract,
+  provider: StripeSubscription,
+  periodEnd: number,
+) {
+  return (
+    provider.status === 'trialing' &&
+    isAgreedTrial(contract.trialDays ?? 0, provider) &&
+    provider.trial_end === periodEnd &&
+    periodEnd * 1000 > Date.now()
+  );
 }

@@ -1169,6 +1169,9 @@
     }
   },
   "plans": {
+    "trialOffer": "{days, plural, one {# dia} other {# dias}} grátis com cartão. A cobrança começa automaticamente após o teste, salvo cancelamento; a Stripe mostra a data da primeira cobrança.",
+    "trialFirstCharge": "Primeira cobrança estimada se você começar hoje: {date}. A Stripe confirma a data exata.",
+    "trialUsed": "Você já usou seu teste. A cobrança começa imediatamente.",
     "title": "Seu canto, no seu ritmo.",
     "description": "Compare o que está disponível hoje e o que cada plano está preparando.",
     "disclosure": "Benefícios marcados como em breve descrevem funcionalidades futuras. O canto básico continua disponível sem assinatura paga.",
@@ -1218,6 +1221,7 @@
     "description": "Descrição",
     "english": "Inglês",
     "portuguese": "Português brasileiro",
+    "trialDays": "Dias de teste",
     "displayOrder": "Ordem de exibição",
     "published": "Publicar plano",
     "saleEnabled": "Disponível para novas vendas",
@@ -1281,6 +1285,9 @@
     "confirmDelete": "Excluir benefício"
   },
   "billing": {
+    "trialStatus": "Teste grátis",
+    "trialEndingDescription": "Seu teste está cancelado e permanece ativo até o fim. Você não será cobrado.",
+    "trialDescription": "Seu teste está ativo. Cancele antes do fim para evitar a primeira cobrança.",
     "chooseAnnual": "Escolher anual",
     "chooseMonthly": "Escolher mensal",
     "annualCharge": "{amount} cobrados anualmente",
@@ -1302,6 +1309,7 @@
     "periodEnd": "O período atual termina em {date}",
     "noSubscription": "Você não tem uma assinatura paga.",
     "subscription": {
+      "trialLabel": "Teste iniciado",
       "intro": "Seu plano, pagamento e período em um só lugar.",
       "planSummary": "Resumo do plano",
       "currentPlan": "Plano atual",

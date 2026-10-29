@@ -75,6 +75,7 @@ export class PlansRepository {
           kind: plans.kind,
           copy: plans.copy,
           displayOrder: plans.displayOrder,
+          trialDays: plans.trialDays,
           published: plans.published,
           saleEnabled: plans.saleEnabled,
           enabledCycles: plans.enabledCycles,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import type {
   BillingCycle,
   Plan,
@@ -17,12 +18,17 @@ import { useCheckout } from '../hooks/use-checkout';
 import { selectedPlanOffer } from '../plan-pricing';
 import { PlanCycleOptions } from './plan-cycle-options';
 import { PlanPrice } from './plan-price';
+import { TrialDisclosure } from './trial-disclosure';
 
-type CheckoutPlan = Pick<Plan, 'id' | 'name' | 'offers' | 'saleAvailable'>;
+type CheckoutPlan = Pick<
+  Plan,
+  'id' | 'name' | 'offers' | 'saleAvailable' | 'trialDays'
+>;
 type Props = { plan: CheckoutPlan; currency: PlanCurrency };
 type SelectionProps = Props & {
   loading: boolean;
   signedIn: boolean;
+  userId: string | undefined;
   ready: boolean;
 };
 
@@ -35,6 +41,7 @@ export function CheckoutSelection({ plan, currency }: Props) {
           currency={currency}
           loading={loading}
           signedIn={Boolean(user)}
+          userId={user?.id}
           ready={Boolean(user?.emailVerified && user.username)}
         />
       )}
@@ -45,12 +52,34 @@ export function CheckoutSelection({ plan, currency }: Props) {
 function UserCheckoutSelection(props: SelectionProps) {
   const t = useTranslations('plans');
   const billing = useTranslations('billing');
-  const selection = usePlanSelection(props);
+  const eligibility = useTrialEligibility(
+    props.userId,
+    props.signedIn && props.ready && props.plan.trialDays > 0,
+  );
+  const days = props.signedIn
+    ? eligibility.data?.eligible
+      ? props.plan.trialDays
+      : 0
+    : props.plan.trialDays;
+  const selection = usePlanSelection({
+    ...props,
+    trialDays: days,
+    eligibilityLoading:
+      props.signedIn && props.plan.trialDays > 0 && !eligibility.data,
+  });
   if (!selection.offer)
     return <p className="text-muted-foreground text-sm">{t('noOffers')}</p>;
   return (
     <div className="space-y-5">
       <PlanPrice offer={selection.offer} currency={props.currency} />
+      <TrialDisclosure
+        offered={props.plan.trialDays}
+        days={days}
+        visible={!props.signedIn || Boolean(eligibility.data)}
+      />
+      {eligibility.isError ? (
+        <p role="alert">{billing('checkoutError')}</p>
+      ) : null}
       <PlanCycleOptions
         planId={props.plan.id}
         offers={props.plan.offers}
@@ -74,15 +103,23 @@ function UserCheckoutSelection(props: SelectionProps) {
   );
 }
 
-function usePlanSelection(props: SelectionProps) {
+function usePlanSelection(
+  props: SelectionProps & { trialDays: number; eligibilityLoading: boolean },
+) {
   const { plan, loading, signedIn, ready } = props;
-  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const search = useSearchParams();
+  const selectedCycle =
+    search.get('plan') === plan.id && search.get('cycle') === 'annual'
+      ? 'annual'
+      : 'monthly';
+  const [cycle, setCycle] = useState<BillingCycle>(selectedCycle);
   const router = useRouter();
   const checkout = useCheckout(plan.id);
   const offer = selectedPlanOffer(plan.offers, cycle);
   const resume = useResumeCheckout({
     ...props,
-    start: checkout.mutate,
+    loading: props.loading || props.eligibilityLoading,
+    start: (offer) => checkout.mutate({ offer, trialDays: props.trialDays }),
     select: setCycle,
   });
   function choose() {
@@ -97,14 +134,19 @@ function usePlanSelection(props: SelectionProps) {
         pathname: '/sign-in',
         query: { redirectTo: `/plans?${query}` },
       });
-    } else if (ready) checkout.mutate(offer);
+    } else if (ready && !props.eligibilityLoading)
+      checkout.mutate({ offer, trialDays: props.trialDays });
   }
   return {
     offer,
     setCycle,
     choose,
     busy: checkout.isPending,
-    disabled: loading || checkout.isPending || (signedIn && !ready),
+    disabled:
+      loading ||
+      checkout.isPending ||
+      props.eligibilityLoading ||
+      (signedIn && !ready),
     failed: checkout.isError,
     unavailable: resume.unavailable,
   };
@@ -162,6 +204,7 @@ function useResumeCheckout({
       !ready ||
       !selected ||
       !offer ||
+      plan.trialDays > 0 ||
       attempted.current ||
       plan.saleAvailable !== true
     )
@@ -185,6 +228,23 @@ function useResumeCheckout({
     router,
     search,
     plan.saleAvailable,
+    plan.trialDays,
   ]);
   return { unavailable: selected && !offer };
+}
+
+function useTrialEligibility(userId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['billing', 'trial-eligibility', userId],
+    enabled,
+    queryFn: async () => {
+      const [{ browserApi }, { trialEligibilitySchema }] = await Promise.all([
+        import('@/lib/api/browser'),
+        import('@vozzify/contracts'),
+      ]);
+      return browserApi('/me/subscription/trial-eligibility', {
+        schema: trialEligibilitySchema,
+      });
+    },
+  });
 }

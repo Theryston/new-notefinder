@@ -260,6 +260,20 @@
       "when": 1793195666742,
       "tag": "0036_kind_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793284597179,
+      "tag": "0037_mute_midnight",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793285358032,
+      "tag": "0038_safe_typhoid_mary",
+      "breakpoints": true
     }
   ]
 }
