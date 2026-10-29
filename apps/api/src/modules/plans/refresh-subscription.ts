@@ -57,15 +57,18 @@ async function refreshConfirmed(input: {
   const { row, userId, customer, event, repository, stripe, subscription } =
     input;
   const provider = await stripe.getSubscription(subscription);
+  const pending = await repository.change(userId);
+  const activated = activatedChange(pending, provider);
+  const contract = activated ? { ...row.contract, ...activated } : row.contract;
   const projection = confirmedSubscription({
-    contract: row.contract,
+    contract,
     provider,
     customer,
   });
   const paidInvoice =
     provider.status === 'active' &&
     provider.latest_invoice?.status === 'paid' &&
-    provider.latest_invoice.amount_paid >= row.contract.amount;
+    provider.latest_invoice.amount_paid >= contract.amount;
   const recovery = renewalRecovery({
     hasPaidInvoice: row.contract.hasPaidInvoice,
     recoveryInvoiceId: row.contract.recoveryInvoiceId,
@@ -91,10 +94,49 @@ async function refreshConfirmed(input: {
     await repository.markTrialUsed(userId);
   await repository.update(userId, {
     ...projection,
+    ...activatedFields(activated),
     ...recovery,
     hasPaidInvoice: row.contract.hasPaidInvoice || paidInvoice,
     ...(recovery.recoveryStartedAt
       ? { status: 'confirmed' as const, paidMembership: true }
       : {}),
   });
+  if (
+    pending &&
+    (activated ||
+      provider.cancel_at_period_end ||
+      provider.status === 'canceled')
+  )
+    await repository.deleteChange(userId);
+}
+
+function activatedChange(
+  pending: Awaited<ReturnType<SubscriptionsRepository['change']>>,
+  provider: Awaited<ReturnType<StripeBillingService['getSubscription']>>,
+) {
+  const item = provider.items.data[0];
+  const candidates = [pending?.change, pending?.change.agreed].filter(
+    (value) => value != null,
+  );
+  const activated =
+    item &&
+    candidates.find(
+      (change) =>
+        item.price.id === change.stripePriceId &&
+        item.current_period_start * 1000 >=
+          new Date(change.effectiveAt).getTime(),
+    );
+  return activated;
+}
+
+function activatedFields(activated: ReturnType<typeof activatedChange>) {
+  if (!activated) return {};
+  return {
+    planId: activated.planId,
+    priceId: activated.priceId,
+    cycle: activated.cycle,
+    currency: activated.currency,
+    amount: activated.amount,
+    stripePriceId: activated.stripePriceId,
+  };
 }

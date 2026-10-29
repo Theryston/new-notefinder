@@ -281,6 +281,13 @@
       "when": 1793295085707,
       "tag": "0037_hot_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793298193586,
+      "tag": "0040_stale_master_chief",
+      "breakpoints": true
     }
   ]
 }

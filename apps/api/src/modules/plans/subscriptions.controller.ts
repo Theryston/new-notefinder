@@ -11,11 +11,12 @@ import {
   type RawBodyRequest,
   Req,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   checkoutResultSchema,
   createCheckoutBodySchema,
   createPortalBodySchema,
+  createSubscriptionChangeBodySchema,
   currentSubscriptionSchema,
   listPlansQuerySchema,
   portalSessionSchema,
@@ -31,7 +32,11 @@ import { verifyStripeEvent } from '../../integrations/stripe/stripe-webhook.js';
 import type { AuthUser } from '../auth/auth.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 
+class CurrentSubscriptionDto extends createZodDto(currentSubscriptionSchema) {}
 class CreateCheckoutDto extends createZodDto(createCheckoutBodySchema) {}
+class CreateChangeDto extends createZodDto(
+  createSubscriptionChangeBodySchema,
+) {}
 class CreatePortalDto extends createZodDto(createPortalBodySchema) {}
 class SubscriptionQueryDto extends createZodDto(listPlansQuerySchema) {}
 @ApiTags('subscriptions')
@@ -43,6 +48,17 @@ export class SubscriptionsController {
   @ZodSerializerDto(checkoutResultSchema)
   checkout(@CurrentUser() user: AuthUser, @Body() body: CreateCheckoutDto) {
     return this.subscriptions.checkout(user.id, body);
+  }
+  @Post('change')
+  @ApiCreatedResponse({ type: CurrentSubscriptionDto })
+  @Header('Cache-Control', 'private, no-store')
+  @ZodSerializerDto(currentSubscriptionSchema)
+  async change(
+    @CurrentUser() user: AuthUser,
+    @Body() body: CreateChangeDto,
+    @Query() query: SubscriptionQueryDto,
+  ) {
+    return this.subscriptions.change(user.id, body, query.locale);
   }
   @Post('portal')
   @Header('Cache-Control', 'private, no-store')
@@ -57,6 +73,7 @@ export class SubscriptionsController {
     return this.subscriptions.trialEligibility(user.id);
   }
   @Get()
+  @ApiOkResponse({ type: CurrentSubscriptionDto })
   @Header('Cache-Control', 'private, no-store')
   @ZodSerializerDto(currentSubscriptionSchema)
   summary(@CurrentUser() user: AuthUser, @Query() query: SubscriptionQueryDto) {

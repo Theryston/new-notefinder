@@ -81,3 +81,38 @@ export const billingEvents = pgTable(
   },
   (table) => [unique().on(table.providerEventId)],
 );
+
+// The snapshot is retained even if the destination price is later retired.
+export const subscriptionChanges = pgTable('subscription_changes', {
+  id: id(),
+  subscriptionId: text()
+    .notNull()
+    .references(() => subscriptions.id, { onDelete: 'cascade' }),
+  userId: text()
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  planId: text()
+    .notNull()
+    .references(() => plans.id, { onDelete: 'restrict' }),
+  priceId: text()
+    .notNull()
+    .references(() => planPrices.id, { onDelete: 'restrict' }),
+  cycle: billingCycle().notNull(),
+  currency: planCurrency().notNull(),
+  amount: integer().notNull(),
+  stripePriceId: text().notNull(),
+  effectiveAt: timestamp({ withTimezone: true }).notNull(),
+  stripeScheduleId: text(),
+  applied: boolean().notNull().default(false),
+  agreed: jsonb().$type<{
+    planId: string;
+    priceId: string;
+    cycle: 'monthly' | 'annual';
+    currency: 'BRL' | 'USD';
+    amount: number;
+    stripePriceId: string;
+    effectiveAt: string;
+  }>(),
+  ...timestamps,
+});

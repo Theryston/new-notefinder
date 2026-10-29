@@ -5,63 +5,26 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
 import en from './locales/en.json' with { type: 'json' };
 import ptBR from './locales/pt-BR.json' with { type: 'json' };
-import { firstInvoiceFailure } from './stripe-failure-history.js';
+import {
+  type StripeCheckout,
+  type StripeSubscription,
+  sessionSchema,
+  subscriptionSchema,
+} from './stripe-billing-schemas.js';
 
-const sessionSchema = z.object({
-  id: z.string(),
-  livemode: z.literal(false),
-  url: z.url().nullable(),
-  status: z.enum(['open', 'complete', 'expired']),
-  customer: z.string(),
-  subscription: z.string().nullable(),
-});
-export type StripeCheckout = z.infer<typeof sessionSchema>;
-const subscriptionSchema = z.object({
-  id: z.string(),
-  livemode: z.literal(false),
-  customer: z.string(),
-  status: z.enum([
-    'incomplete',
-    'incomplete_expired',
-    'trialing',
-    'active',
-    'past_due',
-    'canceled',
-    'unpaid',
-    'paused',
-  ]),
-  currency: z.string(),
-  cancel_at_period_end: z.boolean(),
-  trial_end: z.number().nullable().optional(),
-  trial_start: z.number().nullable().optional(),
-  default_payment_method: z.string().nullable().optional(),
-  latest_invoice: z
-    .object({
-      status: z.string().nullable(),
-      id: z.string().optional(),
-      billing_reason: z.string().nullable().optional(),
-      created: z.number().optional(),
-      due_date: z.number().nullable().optional(),
-      amount_paid: z.number(),
-    })
-    .nullable(),
-  items: z.object({
-    data: z
-      .array(
-        z.object({
-          price: z.object({
-            id: z.string(),
-            unit_amount: z.number().nullable(),
-            currency: z.string(),
-          }),
-          current_period_start: z.number(),
-          current_period_end: z.number(),
-        }),
-      )
-      .length(1),
-  }),
-});
-export type StripeSubscription = z.infer<typeof subscriptionSchema>;
+export type {
+  StripeCheckout,
+  StripeSubscription,
+} from './stripe-billing-schemas.js';
+
+import { firstInvoiceFailure } from './stripe-failure-history.js';
+import { portalConfiguration } from './stripe-portal-schema.js';
+import {
+  type ScheduleInput,
+  schedulePhases,
+  validateSchedule,
+} from './stripe-schedule.js';
+import { trialPayment } from './stripe-trial-payment.js';
 
 @Injectable()
 export class StripeBillingService {
@@ -119,25 +82,11 @@ export class StripeBillingService {
         'SERVICE_UNAVAILABLE',
         'Stripe portal configuration is missing',
       );
-    const config = z
-      .object({
-        active: z.literal(true),
-        livemode: z.literal(false),
-        features: z.object({
-          invoice_history: z.object({ enabled: z.literal(true) }),
-          payment_method_update: z.object({ enabled: z.literal(true) }),
-          subscription_cancel: z.object({
-            enabled: z.literal(true),
-            mode: z.literal('at_period_end'),
-          }),
-          subscription_update: z.object({ enabled: z.literal(false) }),
-        }),
-      })
-      .safeParse(
-        await this.request(
-          `billing_portal/configurations/${encodeURIComponent(configuration)}`,
-        ),
-      );
+    const config = portalConfiguration.safeParse(
+      await this.request(
+        `billing_portal/configurations/${encodeURIComponent(configuration)}`,
+      ),
+    );
     if (!config.success)
       throw new AppException(
         'SERVICE_UNAVAILABLE',
@@ -208,35 +157,9 @@ export class StripeBillingService {
         `subscriptions/${encodeURIComponent(id)}?expand[]=latest_invoice`,
       ),
     );
-    if (!subscription.trial_end || subscription.default_payment_method)
-      return subscription;
-    const customer = z
-      .object({
-        id: z.literal(subscription.customer),
-        livemode: z.literal(false),
-        invoice_settings: z.object({
-          default_payment_method: z.string().nullable(),
-        }),
-      })
-      .parse(
-        await this.request(
-          `customers/${encodeURIComponent(subscription.customer)}`,
-        ),
-      );
-    const methodId = customer.invoice_settings.default_payment_method;
-    if (!methodId) return subscription;
-    const method = z
-      .object({
-        id: z.literal(methodId),
-        livemode: z.literal(false),
-        customer: z.literal(subscription.customer),
-        type: z.literal('card'),
-      })
-      .parse(
-        await this.request(`payment_methods/${encodeURIComponent(methodId)}`),
-      );
-    return { ...subscription, default_payment_method: method.id };
+    return trialPayment(subscription, (path) => this.request(path));
   }
+
   async firstInvoiceFailure(input: {
     invoiceId: string;
     customer: string;
@@ -244,6 +167,103 @@ export class StripeBillingService {
     latestFailure: number;
   }): Promise<number> {
     return firstInvoiceFailure(input, (path) => this.request(path));
+  }
+  async prepareSchedule(input: ScheduleInput) {
+    const provider = await this.schedulableSubscription(input);
+    if (
+      input.schedule &&
+      provider.schedule &&
+      input.schedule !== provider.schedule
+    )
+      throw new AppException('CONFLICT', 'Subscription schedule changed');
+    const schedule =
+      input.schedule ??
+      provider.schedule ??
+      z
+        .object({ id: z.string(), livemode: z.literal(false) })
+        .parse(
+          await this.request(
+            'subscription_schedules',
+            { from_subscription: input.subscription },
+            `schedule-${input.subscription}-${input.end}`,
+          ),
+        ).id;
+    validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(schedule)}`,
+      ),
+      input,
+      schedule,
+    );
+    return schedule;
+  }
+
+  async inspectSchedule(input: ScheduleInput) {
+    const provider = await this.schedulableSubscription(input);
+    const schedule = input.schedule ?? provider.schedule;
+    if (!schedule) {
+      if (input.previousPrice)
+        throw new AppException(
+          'CONFLICT',
+          'Previous subscription schedule is missing',
+        );
+      return 'previous' as const;
+    }
+    const price = validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(schedule)}`,
+      ),
+      input,
+      schedule,
+    );
+    if (price === input.nextPrice) return 'pending' as const;
+    if (price === input.previousPrice || (!price && !input.previousPrice))
+      return 'previous' as const;
+    throw new AppException(
+      'CONFLICT',
+      'Subscription schedule is not reconciled',
+    );
+  }
+
+  async scheduleChange(input: ScheduleInput) {
+    await this.schedulableSubscription(input);
+    if (!input.schedule)
+      throw new AppException('CONFLICT', 'Subscription schedule is missing');
+    validateSchedule(
+      await this.request(
+        `subscription_schedules/${encodeURIComponent(input.schedule)}`,
+      ),
+      input,
+      input.schedule,
+    );
+    const result = await this.request(
+      `subscription_schedules/${encodeURIComponent(input.schedule)}`,
+      schedulePhases(input),
+      `change-${input.id}`,
+    );
+    validateSchedule(result, input, input.schedule, true);
+  }
+
+  private async schedulableSubscription(input: ScheduleInput) {
+    const provider = await this.getSubscription(input.subscription);
+    const item = provider.items.data[0];
+    if (
+      provider.cancel_at_period_end ||
+      provider.status !== 'active' ||
+      !item ||
+      item.price.id !== input.currentPrice ||
+      item.current_period_start !== input.start ||
+      item.current_period_end !== input.end ||
+      input.end * 1000 <= Date.now() ||
+      (input.schedule &&
+        provider.schedule &&
+        provider.schedule !== input.schedule)
+    )
+      throw new AppException(
+        'CONFLICT',
+        'Subscription changed before scheduling',
+      );
+    return provider;
   }
   private async request(
     path: string,

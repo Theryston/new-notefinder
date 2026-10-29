@@ -16,7 +16,26 @@ export const checkoutResultSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('manage') }),
 ]);
 export type CheckoutResult = z.infer<typeof checkoutResultSchema>;
+export const createSubscriptionChangeBodySchema = z.strictObject({
+  planId: z.string().min(1),
+  offerId: z.string().min(1),
+  cycle: billingCycleSchema,
+});
+export type CreateSubscriptionChangeBody = z.infer<
+  typeof createSubscriptionChangeBodySchema
+>;
+
+export const pendingSubscriptionChangeSchema = z.object({
+  planId: z.string(),
+  planName: z.string(),
+  cycle: billingCycleSchema,
+  currency: planCurrencySchema,
+  amount: z.number().int().positive(),
+  effectiveAt: z.iso.datetime(),
+});
+
 export const subscriptionSchema = z.object({
+  pendingChange: pendingSubscriptionChangeSchema.nullable().optional(),
   planId: z.string(),
   planName: z.string(),
   cycle: billingCycleSchema,

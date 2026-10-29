@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { Subscription } from '@vozzify/contracts';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
+import { subscriptionFixture } from './subscription-fixture';
 
 for (const status of ['pending', 'confirmed', 'unsuccessful'] as const) {
   test(`private subscription shows ${status} in its contracted currency`, async ({
@@ -131,19 +132,7 @@ test('switching the summary language retains contract currency with a clean cons
   });
   page.on('pageerror', (error) => errors.push(error.message));
   await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
-  const subscription: Subscription = {
-    planId: 'pro',
-    planName: 'Pro',
-    cycle: 'monthly',
-    currency: 'USD',
-    amount: 350,
-    status: 'confirmed',
-    providerStatus: 'active',
-    paidMembership: true,
-    currentPeriodStart: '2026-10-28T12:00:00.000Z',
-    currentPeriodEnd: '2026-11-28T12:00:00.000Z',
-    cancelAtPeriodEnd: false,
-  };
+  const subscription = subscriptionFixture();
   await page.route('**/v1/me/subscription?*', (route) =>
     route.fulfill({ json: { subscription } }),
   );

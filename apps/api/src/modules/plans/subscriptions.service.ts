@@ -4,6 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import type {
   CheckoutResult,
   CreateCheckoutBody,
+  CreateSubscriptionChangeBody,
   CurrentSubscription,
   Locale,
 } from '@vozzify/contracts';
@@ -13,6 +14,7 @@ import { checkoutOffer } from './checkout-offer.js';
 import { refreshSubscription } from './refresh-subscription.js';
 import { recoveryDeadline } from './renewal-recovery.js';
 import { replaceEndedContract } from './replace-ended-contract.js';
+import { SubscriptionChangesService } from './subscription-changes.service.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 @Injectable()
@@ -20,6 +22,7 @@ export class SubscriptionsService {
   constructor(
     private readonly repository: SubscriptionsRepository,
     private readonly stripe: StripeBillingService,
+    private readonly changes: SubscriptionChangesService,
   ) {}
 
   async checkout(
@@ -214,6 +217,15 @@ export class SubscriptionsService {
     return { action: 'checkout', url: session.url };
   }
 
+  async change(
+    userId: string,
+    body: CreateSubscriptionChangeBody,
+    locale: Locale,
+  ) {
+    await this.changes.change(userId, body);
+    return this.summary(userId, locale);
+  }
+
   async trialEligibility(userId: string) {
     const customer = await this.repository.customer(userId);
     return { eligible: !customer?.trialUsedAt };
@@ -233,9 +245,11 @@ export class SubscriptionsService {
     const row = await this.repository.current(userId);
     if (!row) return { subscription: null };
     const contract = row.contract;
+    const pendingChange = await this.changes.visible(userId, locale);
     const deadline = recoveryDeadline(contract.recoveryStartedAt);
     return {
       subscription: {
+        pendingChange,
         recoveryDeadline: deadline?.toISOString() ?? null,
         planId: contract.planId,
         planName: row.copy[locale].name,

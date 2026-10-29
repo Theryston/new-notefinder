@@ -1,27 +1,17 @@
 import { expect, test } from '@playwright/test';
-import type { Subscription } from '@vozzify/contracts';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { messages } from './messages';
+import { subscriptionFixture } from './subscription-fixture';
 
 for (const locale of ['en', 'pt-BR'] as const) {
   test(`shows recovery terms and restores the summary in ${locale}`, async ({
     page,
   }) => {
     await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
-    const subscription: Subscription = {
-      planId: 'pro',
-      planName: 'Pro',
-      cycle: 'monthly',
-      currency: 'USD',
-      amount: 350,
-      status: 'confirmed',
+    const subscription = subscriptionFixture({
       providerStatus: 'past_due',
-      paidMembership: true,
-      currentPeriodStart: '2026-10-28T12:00:00.000Z',
-      currentPeriodEnd: '2026-11-28T12:00:00.000Z',
-      cancelAtPeriodEnd: false,
       recoveryDeadline: '2026-11-30T12:00:00.000Z',
-    };
+    });
     await page.route('**/v1/me/subscription?*', (route) =>
       route.fulfill({ json: { subscription } }),
     );
