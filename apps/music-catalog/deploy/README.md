@@ -54,3 +54,23 @@ The tests exercise the real request script with a fake curl executable:
 successful HTTP and HTTPS calls, POST authentication, missing configuration,
 unsupported URL schemes, and private output on network and HTTP failures.
 They never contact Coolify or restart a container.
+
+## Initial indexing throughput
+
+The worker defaults to 10,000 Recordings per task. It prepares and submits up
+to three batches while earlier tasks are still indexing, then confirms them
+in source order. Each window retains the catalog write fence until all its
+submitted tasks settle. This bounds queued work and lets association delivery
+proceed between windows.
+
+An existing Coolify Compose definition with an explicit
+`INDEXING_BATCH_SIZE: '2000'` must be changed to `'10000'` when deploying this
+version. The image default does not override an explicit environment value.
+Keep the existing volumes and checkpoint. Once the restore has completed,
+worker restarts resume indexing after the last confirmed batch; they do not
+repeat the MusicBrainz restore. A failed or uncheckpointed task is replayed
+by MBID, replacing the same documents.
+
+Smaller batches reduce memory usage and shutdown drain time. A worker stop
+may need to finish up to three tasks; allow those tasks to settle before
+restarting when possible. A forced stop can replay uncheckpointed documents.

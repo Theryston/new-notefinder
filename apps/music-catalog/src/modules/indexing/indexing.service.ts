@@ -9,6 +9,7 @@ import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RecordingDocumentService } from '../recording/recording-document.service.js';
 import type { IndexingRepository } from './indexing.repository.js';
 import { indexingPercent } from './indexing-progress.js';
+import { runIndexingWindow } from './indexing-window.js';
 
 export type IndexingServiceDeps = {
   bootstrap: BootstrapService;
@@ -29,13 +30,13 @@ export class IndexingService {
   /**
    * One round of the worker's initial indexing. It waits (does nothing)
    * until the mbslave container has restored the MusicBrainz data, then
-   * sends every Recording to Meilisearch in batches: each batch is waited
-   * for, and only then is the checkpoint moved past it, so a worker that
+   * pipelines up to three batches at a time. The checkpoint moves only
+   * after each batch is confirmed, in source order, so a worker that
    * dies mid-indexing resumes after the last batch Meilisearch confirmed
    * (a batch that was sent but not checkpointed is sent again, which is
    * harmless: documents are replaced by MBID). When the last batch is in,
-   * the catalog becomes `ready`. Aborting `signal` stops it after the batch
-   * in progress; the next round continues.
+   * the catalog becomes `ready`. Aborting `signal` drains the batches
+   * already sent; the next round continues.
    */
   async run(signal: AbortSignal): Promise<void> {
     const { bootstrap } = this.deps;
@@ -82,30 +83,34 @@ export class IndexingService {
     const { documents, index, repository, batchSize, logger } = this.deps;
     let afterId = checkpoint;
     let indexed = 0;
-    for (let batchNumber = 1; !signal.aborted; batchNumber++) {
-      const writeBatch = async () => {
-        const batch = await documents.findBatch(afterId, batchSize);
-        if (batch === undefined) return undefined;
-        await index.upsert(batch.documents);
-        await repository.saveCheckpoint(
-          RECORDINGS_INDEX.uid,
-          batch.lastRecordingId,
-        );
-        return batch;
-      };
-      const batch = await (this.deps.writeLock?.(writeBatch) ?? writeBatch());
-      if (batch === undefined) {
-        return true;
-      }
-      afterId = batch.lastRecordingId;
-      indexed += batch.documents.length;
-      logger.info('Indexed a batch of Recordings', {
-        batch: batchNumber,
-        indexed,
-        total,
-        percent: indexingPercent(indexed, total),
-        lastRecordingId: afterId,
-      });
+    let batchNumber = 0;
+    while (!signal.aborted) {
+      const writeWindow = () =>
+        runIndexingWindow({
+          afterId,
+          batchSize,
+          signal,
+          documents,
+          index,
+          confirm: async (batch) => {
+            await repository.saveCheckpoint(
+              RECORDINGS_INDEX.uid,
+              batch.lastRecordingId,
+            );
+            indexed += batch.documents.length;
+            logger.info('Indexed a batch of Recordings', {
+              batch: ++batchNumber,
+              indexed,
+              total,
+              percent: indexingPercent(indexed, total),
+              lastRecordingId: batch.lastRecordingId,
+            });
+          },
+        });
+      const window = await (this.deps.writeLock?.(writeWindow) ??
+        writeWindow());
+      if (window.exhausted && !signal.aborted) return true;
+      afterId = window.afterId;
     }
     logger.info('Indexing paused: the worker is stopping', { indexed });
     return false;

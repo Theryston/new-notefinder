@@ -8,7 +8,10 @@ import {
 import type { BootstrapService } from '../bootstrap/bootstrap.service.js';
 import type { RecordingDocumentService } from '../recording/recording-document.service.js';
 import type { IndexingRepository } from './indexing.repository.js';
-import { IndexingService } from './indexing.service.js';
+import {
+  IndexingService,
+  type IndexingServiceDeps,
+} from './indexing.service.js';
 
 const doc = (id: number): RecordingDocument => ({
   mbid: `mbid-${id}`,
@@ -38,6 +41,7 @@ type Options = {
   total?: number;
   checkpoint?: number;
   batchSize?: number;
+  writeLock?: IndexingServiceDeps['writeLock'];
 };
 
 const setup = (options: Options = {}) => {
@@ -80,6 +84,7 @@ const setup = (options: Options = {}) => {
     index: index as unknown as MeilisearchIndex<RecordingDocument>,
     batchSize: options.batchSize ?? 2,
     logger,
+    writeLock: options.writeLock,
   });
   return { service, bootstrap, documents, repository, index, logger, events };
 };
@@ -88,6 +93,44 @@ const signal = () => new AbortController().signal;
 
 describe('IndexingService', () => {
   describe('run', () => {
+    it('holds the write fence until submitted tasks settle and releases it between windows', async () => {
+      let locked = false;
+      let windows = 0;
+      let releaseTasks = (): void => undefined;
+      const pending = new Promise<void>((resolve) => {
+        releaseTasks = resolve;
+      });
+      const writeLock = async <Result>(run: () => Promise<Result>) => {
+        windows++;
+        locked = true;
+        try {
+          return await run();
+        } finally {
+          locked = false;
+        }
+      };
+      const { service, index, repository } = setup({
+        total: 7,
+        batchSize: 2,
+        writeLock,
+      });
+      index.upsert.mockImplementation(async () => {
+        expect(locked).toBe(true);
+        await pending;
+      });
+      const running = service.run(signal());
+      await vi.waitFor(() => expect(index.upsert).toHaveBeenCalledTimes(3));
+      expect(locked).toBe(true);
+      expect(repository.saveCheckpoint).not.toHaveBeenCalled();
+      releaseTasks();
+      await running;
+      expect(locked).toBe(false);
+      expect(windows).toBe(2);
+      expect(repository.saveCheckpoint.mock.calls.map(([, id]) => id)).toEqual([
+        2, 4, 6, 7,
+      ]);
+    });
+
     it('indexes every Recording in batches and only then marks the catalog ready', async () => {
       const { service, events } = setup({ total: 5, batchSize: 2 });
 
@@ -97,10 +140,10 @@ describe('IndexingService', () => {
         'startIndexing',
         'ensure',
         'upsert mbid-1,mbid-2',
-        'checkpoint 2',
         'upsert mbid-3,mbid-4',
-        'checkpoint 4',
         'upsert mbid-5',
+        'checkpoint 2',
+        'checkpoint 4',
         'checkpoint 5',
         'markReady',
       ]);
