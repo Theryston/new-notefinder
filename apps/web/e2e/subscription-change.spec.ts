@@ -54,13 +54,19 @@ for (const locale of ['en', 'pt-BR'] as const) {
     const t = messages[locale].billing.change;
     await page.getByLabel(t.select).selectOption('annual');
     await page.getByRole('button', { name: t.review }).click();
-    await expect(page.getByText(/35[,.]00/)).toBeVisible();
+    await expect(
+      page.locator('p').filter({ hasText: /35[,.]00/ }),
+    ).toBeVisible();
     await page.getByRole('button', { name: t.confirm }).click();
     await expect(
       page.getByRole('status').filter({ hasText: 'Pro' }),
     ).toBeVisible();
     await expect(
-      page.getByText(locale === 'en' ? '$3.50' : 'US$ 3,50'),
+      page
+        .getByRole('region', {
+          name: messages[locale].billing.subscription.planSummary,
+        })
+        .getByText(locale === 'en' ? '$3.50' : 'US$ 3,50', { exact: true }),
     ).toBeVisible();
   });
 }
