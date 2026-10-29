@@ -5,6 +5,7 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
 import en from './locales/en.json' with { type: 'json' };
 import ptBR from './locales/pt-BR.json' with { type: 'json' };
+import { firstInvoiceFailure } from './stripe-failure-history.js';
 
 const sessionSchema = z.object({
   id: z.string(),
@@ -195,6 +196,14 @@ export class StripeBillingService {
         `subscriptions/${encodeURIComponent(id)}?expand[]=latest_invoice`,
       ),
     );
+  }
+  async firstInvoiceFailure(input: {
+    invoiceId: string;
+    customer: string;
+    invoiceCreated: number;
+    latestFailure: number;
+  }): Promise<number> {
+    return firstInvoiceFailure(input, (path) => this.request(path));
   }
   private async request(
     path: string,

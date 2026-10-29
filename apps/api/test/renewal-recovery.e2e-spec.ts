@@ -39,11 +39,14 @@ const ROOT = '/v1/me/subscription';
 describe('failed renewal recovery (e2e)', () => {
   let app: TestApp;
   const fake = billingProvider();
+  const firstInvoiceFailure = vi.fn();
   beforeAll(async () => {
     app = await createTestApp({
       env: { STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET },
       override: (builder) =>
-        builder.overrideProvider(StripeBillingService).useValue(fake.provider),
+        builder
+          .overrideProvider(StripeBillingService)
+          .useValue({ ...fake.provider, firstInvoiceFailure }),
     });
   });
   afterAll(async () => {
@@ -52,6 +55,7 @@ describe('failed renewal recovery (e2e)', () => {
   beforeEach(async () => {
     await resetDatabase(app.db);
     await billingCatalog(app);
+    firstInvoiceFailure.mockReset();
     fake.sessions.clear();
     fake.contracts.clear();
   });
@@ -78,6 +82,7 @@ describe('failed renewal recovery (e2e)', () => {
   it('retains access until the original renewal deadline and restores it after confirmed payment', async () => {
     const { client, session, provider } = await confirmedContract();
     const start = Math.floor(Date.now() / 1000) - 120;
+    firstInvoiceFailure.mockResolvedValue(start);
     provider.status = 'past_due';
     provider.latest_invoice = {
       id: 'in_renewal',
@@ -97,7 +102,8 @@ describe('failed renewal recovery (e2e)', () => {
     );
     expect(
       (await client.get(ROOT).expect(200)).body.subscription.recoveryDeadline,
-    ).toBe(new Date((start + 60 + 3 * 86400) * 1000).toISOString());
+    ).toBe(new Date((start + 3 * 86400) * 1000).toISOString());
+    expect(firstInvoiceFailure).toHaveBeenCalledOnce();
     await deliver(
       failedEvent(session.customer, 'evt_failure', 'in_renewal', start),
     );

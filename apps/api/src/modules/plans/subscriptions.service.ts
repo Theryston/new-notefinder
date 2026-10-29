@@ -10,6 +10,7 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
+import { renewalFailure } from './renewal-failure.js';
 import { recoveryDeadline, renewalRecovery } from './renewal-recovery.js';
 import { confirmedSubscription } from './subscription-state.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
@@ -283,12 +284,14 @@ export class SubscriptionsService {
         providerStatus: provider.status,
         paidConfirmed: paidInvoice,
         invoice: provider.latest_invoice,
-        failure:
-          event.type === 'invoice.payment_failed' &&
-          event.created !== undefined &&
-          event.data.object.id
-            ? { invoiceId: event.data.object.id, occurredAt: event.created }
-            : null,
+        failure: await renewalFailure({
+          stripe: this.stripe,
+          customer,
+          provider,
+          event,
+          hasPaidInvoice: row.contract.hasPaidInvoice,
+          recoveryStartedAt: row.contract.recoveryStartedAt,
+        }),
       });
       await this.repository.update(userId, {
         ...confirmed,
