@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { createTranslator } from 'next-intl';
 import { adminUser } from './admin-users';
 import { ADA, mockAuthApi } from './auth-api-mock';
 import { defaultPlanCatalog } from './fake-plans-api';
@@ -16,6 +17,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
   test(`trial disclosure and private summary in ${locale}`, async ({
     page,
   }) => {
+    const translate = createTranslator({ locale, messages: messages[locale] });
     const catalog = defaultPlanCatalog(locale);
     const pro = catalog.plans.find((plan) => plan.id === 'pro');
     if (!pro) throw new Error('Expected paid plan');
@@ -69,42 +71,34 @@ for (const locale of ['en', 'pt-BR'] as const) {
     await expect(async () => {
       await page.goto(`/${locale}/plans`);
       await expect(
-        page.getByText(
-          locale === 'en'
-            ? /14 days free with a card/
-            : /14 dias grátis com cartão/,
-        ),
+        page.getByText(translate('plans.trialOffer', { days: 14 }), {
+          exact: true,
+        }),
       ).toBeVisible();
     }).toPass();
     await expect(
       page.getByText(
-        locale === 'en'
-          ? /Estimated first charge/
-          : /Primeira cobrança estimada/,
+        messages[locale].plans.trialFirstCharge.split('{date}')[0] ?? '',
       ),
     ).toBeVisible();
     await page
       .getByRole('button', {
-        name: locale === 'en' ? 'Choose Pro' : 'Escolher Pro',
+        name: translate('plans.choosePlan', { plan: 'Pro' }),
       })
       .click();
     await expect(page).toHaveURL(new RegExp(`/${locale}/subscription`));
     await expect(
-      page.getByText(locale === 'en' ? 'Free trial' : 'Teste grátis', {
-        exact: true,
-      }),
+      page.getByText(translate('billing.trialStatus'), { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText(
-        locale === 'en' ? /Cancel before it ends/ : /Cancele antes do fim/,
-      ),
+      page.getByText(translate('billing.trialDescription'), { exact: true }),
     ).toBeVisible();
     canceled = true;
     await page.reload();
     await expect(
-      page.getByText(
-        locale === 'en' ? /You will not be charged/ : /Você não será cobrado/,
-      ),
+      page.getByText(translate('billing.trialEndingDescription'), {
+        exact: true,
+      }),
     ).toBeVisible();
     await fetch('http://127.0.0.1:3333/__plans-mock/set', {
       method: 'POST',

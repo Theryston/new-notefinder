@@ -100,8 +100,9 @@ export class StripeBillingService {
           cancel_url: `${base}?result=cancelled`,
           locale: input.locale === 'pt-BR' ? 'pt-BR' : 'en',
           'metadata[contractId]': input.id,
-          'custom_text[submit][message]': (input.locale === 'pt-BR' ? ptBR : en)
-            .checkoutDisclosure,
+          'custom_text[submit][message]': input.trialDays
+            ? (input.locale === 'pt-BR' ? ptBR : en).trialCheckoutDisclosure
+            : (input.locale === 'pt-BR' ? ptBR : en).checkoutDisclosure,
         },
         `checkout-${input.id}`,
       ),

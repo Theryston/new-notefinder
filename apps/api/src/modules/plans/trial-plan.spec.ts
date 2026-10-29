@@ -5,7 +5,7 @@ describe('Plan trial configuration', () => {
     operationId: 'a3ec84c8-a4e1-4c9c-b847-d67aa12f922a',
     copy: {
       en: { name: 'Pro', description: 'Support.' },
-      'pt-BR': { name: 'Pro', description: 'Suporte.' },
+      'pt-BR': { name: 'Pro', description: 'Support.' },
     },
     displayOrder: 0,
     published: false,

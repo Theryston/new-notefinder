@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import type {
   BillingCycle,
   Plan,
@@ -15,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { useRouter } from '@/lib/i18n/navigation';
 import { useCheckout } from '../hooks/use-checkout';
+import { useTrialEligibility } from '../hooks/use-trial-eligibility';
 import { selectedPlanOffer } from '../plan-pricing';
 import { PlanCycleOptions } from './plan-cycle-options';
 import { PlanPrice } from './plan-price';
@@ -231,20 +231,4 @@ function useResumeCheckout({
     plan.trialDays,
   ]);
   return { unavailable: selected && !offer };
-}
-
-function useTrialEligibility(userId: string | undefined, enabled: boolean) {
-  return useQuery({
-    queryKey: ['billing', 'trial-eligibility', userId],
-    enabled,
-    queryFn: async () => {
-      const [{ browserApi }, { trialEligibilitySchema }] = await Promise.all([
-        import('@/lib/api/browser'),
-        import('@vozzify/contracts'),
-      ]);
-      return browserApi('/me/subscription/trial-eligibility', {
-        schema: trialEligibilitySchema,
-      });
-    },
-  });
 }
