@@ -45,7 +45,7 @@ for (const locale of ['en', 'pt-BR'] as const) {
     await expect(
       timeline.getByText(messages[locale].billing.subscription.states.overdue),
     ).toBeVisible();
-    const alert = page.getByRole('alert');
+    const alert = page.getByRole('main').getByRole('alert');
     const date = new Intl.DateTimeFormat(locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
