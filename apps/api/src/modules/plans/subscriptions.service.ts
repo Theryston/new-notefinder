@@ -10,6 +10,7 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
+import { recoveryDeadline, renewalRecovery } from './renewal-recovery.js';
 import { confirmedSubscription } from './subscription-state.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
@@ -203,8 +204,10 @@ export class SubscriptionsService {
     const row = await this.repository.current(userId);
     if (!row) return { subscription: null };
     const contract = row.contract;
+    const deadline = recoveryDeadline(contract.recoveryStartedAt);
     return {
       subscription: {
+        recoveryDeadline: deadline?.toISOString() ?? null,
         planId: contract.planId,
         planName: row.copy[locale].name,
         cycle: contract.cycle,
@@ -212,9 +215,10 @@ export class SubscriptionsService {
         amount: contract.amount,
         status: contract.status,
         providerStatus: contract.providerStatus,
-        paidMembership:
-          contract.paidMembership &&
-          (contract.currentPeriodEnd?.getTime() ?? 0) > Date.now(),
+        paidMembership: deadline
+          ? deadline.getTime() > Date.now()
+          : contract.paidMembership &&
+            (contract.currentPeriodEnd?.getTime() ?? 0) > Date.now(),
         currentPeriodStart: contract.currentPeriodStart?.toISOString() ?? null,
         currentPeriodEnd: contract.currentPeriodEnd?.toISOString() ?? null,
         cancelAtPeriodEnd: contract.cancelAtPeriodEnd,
@@ -254,10 +258,31 @@ export class SubscriptionsService {
       throw new AppException('CONFLICT', 'Checkout customer mismatch');
     if (session.subscription) {
       const provider = await this.stripe.getSubscription(session.subscription);
-      await this.repository.update(
-        userId,
-        confirmedSubscription({ contract: row.contract, provider, customer }),
-      );
+      const confirmed = confirmedSubscription({
+        contract: row.contract,
+        provider,
+        customer,
+      });
+      const paidInvoice =
+        provider.status === 'active' &&
+        provider.latest_invoice?.status === 'paid' &&
+        provider.latest_invoice.amount_paid >= row.contract.amount;
+      const recovery = renewalRecovery({
+        hasPaidInvoice: row.contract.hasPaidInvoice,
+        recoveryInvoiceId: row.contract.recoveryInvoiceId,
+        recoveryStartedAt: row.contract.recoveryStartedAt,
+        providerStatus: provider.status,
+        paidConfirmed: paidInvoice,
+        invoice: provider.latest_invoice,
+      });
+      await this.repository.update(userId, {
+        ...confirmed,
+        ...recovery,
+        hasPaidInvoice: row.contract.hasPaidInvoice || paidInvoice,
+        ...(recovery.recoveryStartedAt
+          ? { status: 'confirmed' as const, paidMembership: true }
+          : {}),
+      });
     } else if (session.status === 'expired') {
       await this.repository.update(userId, {
         status: 'unsuccessful',

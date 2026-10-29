@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 
-export function PortalButton() {
+export function PortalButton({ recovery = false }: { recovery?: boolean }) {
   const locale = useLocale();
   const t = useTranslations('billing.subscription');
   const portal = useMutation({
@@ -24,7 +24,7 @@ export function PortalButton() {
   return (
     <div className="space-y-2">
       <Button disabled={portal.isPending} onClick={() => portal.mutate()}>
-        {t('manage')}
+        {t(recovery ? 'updatePayment' : 'manage')}
       </Button>
       {portal.isError ? <p role="alert">{t('manageError')}</p> : null}
     </div>

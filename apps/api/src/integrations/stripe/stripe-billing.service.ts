@@ -34,7 +34,10 @@ const subscriptionSchema = z.object({
   latest_invoice: z
     .object({
       status: z.string().nullable(),
-
+      id: z.string().optional(),
+      billing_reason: z.string().nullable().optional(),
+      created: z.number().optional(),
+      due_date: z.number().nullable().optional(),
       amount_paid: z.number(),
     })
     .nullable(),

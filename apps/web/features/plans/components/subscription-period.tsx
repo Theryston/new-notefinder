@@ -34,8 +34,11 @@ export function SubscriptionPeriod({
       <p role="status" className="max-w-prose text-muted-foreground text-sm">
         {description}
       </p>
+      {subscription ? <RecoveryNotice subscription={subscription} /> : null}
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
-      {subscription?.providerStatus ? <PortalButton /> : null}
+      {subscription?.providerStatus ? (
+        <PortalButton recovery={Boolean(subscription.recoveryDeadline)} />
+      ) : null}
       <Link
         href="/plans"
         className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
@@ -44,6 +47,26 @@ export function SubscriptionPeriod({
         <ArrowRightIcon aria-hidden className="size-4" />
       </Link>
     </section>
+  );
+}
+
+function RecoveryNotice({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing');
+  const format = useFormatter();
+  if (!subscription.recoveryDeadline) return null;
+  const date = format.dateTime(new Date(subscription.recoveryDeadline), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  return (
+    <p
+      role="alert"
+      className="rounded-xl bg-warning/10 p-4 text-foreground text-sm"
+    >
+      {subscription.paidMembership
+        ? t('recoveryGrace', { date })
+        : t('recoverySuspended')}
+    </p>
   );
 }
 

@@ -27,6 +27,7 @@ export const subscriptionSchema = z.object({
   currentPeriodStart: z.iso.datetime().nullable(),
   currentPeriodEnd: z.iso.datetime().nullable(),
   cancelAtPeriodEnd: z.boolean(),
+  recoveryDeadline: z.iso.datetime().nullable().optional(),
 });
 export type Subscription = z.infer<typeof subscriptionSchema>;
 export const currentSubscriptionSchema = z.object({
