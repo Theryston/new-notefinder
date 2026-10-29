@@ -5,8 +5,14 @@ import { AppException } from '../../common/errors/app-exception.js';
 const eventSchema = z.object({
   id: z.string().min(1),
   type: z.string(),
+  created: z.number().int().nonnegative().optional(),
   livemode: z.literal(false),
-  data: z.object({ object: z.object({ customer: z.string().optional() }) }),
+  data: z.object({
+    object: z.object({
+      customer: z.string().optional(),
+      id: z.string().optional(),
+    }),
+  }),
 });
 
 /** Stripe signs the exact raw bytes, with a five-minute replay tolerance. */

@@ -5,6 +5,7 @@ import { AppException } from '../../common/errors/app-exception.js';
 import { ENV, type Env } from '../../config/env.js';
 import en from './locales/en.json' with { type: 'json' };
 import ptBR from './locales/pt-BR.json' with { type: 'json' };
+import { firstInvoiceFailure } from './stripe-failure-history.js';
 
 const sessionSchema = z.object({
   id: z.string(),
@@ -37,7 +38,10 @@ const subscriptionSchema = z.object({
   latest_invoice: z
     .object({
       status: z.string().nullable(),
-
+      id: z.string().optional(),
+      billing_reason: z.string().nullable().optional(),
+      created: z.number().optional(),
+      due_date: z.number().nullable().optional(),
       amount_paid: z.number(),
     })
     .nullable(),
@@ -232,6 +236,14 @@ export class StripeBillingService {
         await this.request(`payment_methods/${encodeURIComponent(methodId)}`),
       );
     return { ...subscription, default_payment_method: method.id };
+  }
+  async firstInvoiceFailure(input: {
+    invoiceId: string;
+    customer: string;
+    invoiceCreated: number;
+    latestFailure: number;
+  }): Promise<number> {
+    return firstInvoiceFailure(input, (path) => this.request(path));
   }
   private async request(
     path: string,

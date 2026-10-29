@@ -1302,6 +1302,8 @@
     "summaryTitle": "Sua assinatura",
     "cancelled": "O pagamento foi cancelado. Nenhum pagamento foi confirmado.",
     "pending": "O pagamento aguarda confirmação. Esta página será atualizada quando a confirmação chegar.",
+    "recoveryGrace": "O pagamento da renovação falhou. Atualize sua forma de pagamento antes de {date} para manter sua assinatura paga.",
+    "recoverySuspended": "Sua assinatura paga está suspensa até a confirmação do pagamento. Atualize sua forma de pagamento para reativá-la.",
     "confirmed": "Pagamento confirmado. Sua assinatura está ativa.",
     "unsuccessful": "O pagamento não foi concluído ou a assinatura não está mais ativa.",
     "contractCurrency": "Moeda do contrato: {currency}",
@@ -1329,11 +1331,15 @@
       "monthly": "Mensal",
       "annual": "Anual",
       "contractCurrency": "Moeda do contrato",
+      "updatePayment": "Atualizar forma de pagamento",
       "manage": "Gerenciar assinatura",
       "manageError": "Não foi possível abrir o gerenciamento de cobrança. Tente novamente.",
       "endedDescription": "Sua assinatura paga foi encerrada.",
       "endingDescription": "Sua assinatura será encerrada ao final deste período.",
+      "recoveryDeadline": "Prazo de recuperação",
       "states": {
+        "overdue": "Pagamento em atraso",
+        "suspended": "Assinatura suspensa",
         "active": "Ativa",
         "ended": "Encerrada",
         "ending": "Encerra ao fim do período",
@@ -1342,6 +1348,8 @@
         "free": "Sem assinatura"
       },
       "titles": {
+        "overdue": "Sua renovação precisa de atenção.",
+        "suspended": "Sua assinatura paga está suspensa.",
         "active": "Tudo pronto para a próxima música.",
         "ended": "Sua assinatura foi encerrada.",
         "ending": "Seu período atual continua disponível.",
@@ -1350,6 +1358,7 @@
         "free": "Sua voz já tem espaço por aqui."
       },
       "payment": {
+        "overdue": "Falha no pagamento da renovação",
         "confirmed": "Pagamento confirmado",
         "pending": "Aguardando confirmação do pagamento",
         "unsuccessful": "Pagamento não confirmado"

@@ -1302,6 +1302,8 @@
     "summaryTitle": "Your subscription",
     "cancelled": "Checkout was cancelled. Payment has not been confirmed.",
     "pending": "Payment is pending confirmation. This page will update when confirmation arrives.",
+    "recoveryGrace": "Your renewal payment failed. Update your payment method before {date} to keep your paid membership.",
+    "recoverySuspended": "Your paid membership is suspended until payment is confirmed. Update your payment method to restore it.",
     "confirmed": "Payment confirmed. Your subscription is active.",
     "unsuccessful": "Payment was unsuccessful or the subscription is no longer active.",
     "contractCurrency": "Contract currency: {currency}",
@@ -1329,11 +1331,15 @@
       "monthly": "Monthly",
       "annual": "Annual",
       "contractCurrency": "Contract currency",
+      "updatePayment": "Update payment method",
       "manage": "Manage subscription",
       "manageError": "Could not open billing management. Please try again.",
       "endedDescription": "Your paid subscription has ended.",
       "endingDescription": "Your subscription will end at the close of this period.",
+      "recoveryDeadline": "Recovery deadline",
       "states": {
+        "overdue": "Payment overdue",
+        "suspended": "Membership suspended",
         "active": "Active",
         "ended": "Ended",
         "ending": "Ends after this period",
@@ -1342,6 +1348,8 @@
         "free": "No subscription"
       },
       "titles": {
+        "overdue": "Your renewal needs attention.",
+        "suspended": "Your paid membership is suspended.",
         "active": "Everything ready for your next song.",
         "ended": "Your subscription has ended.",
         "ending": "Your current period is still available.",
@@ -1350,6 +1358,7 @@
         "free": "Your voice already has a place here."
       },
       "payment": {
+        "overdue": "Renewal payment failed",
         "confirmed": "Payment confirmed",
         "pending": "Awaiting payment confirmation",
         "unsuccessful": "Payment not confirmed"

@@ -15,14 +15,11 @@ export function SubscriptionPeriod({
 }) {
   const t = useTranslations('billing');
   const state = subscriptionState(subscription);
-  const description =
-    subscription?.providerStatus === 'trialing'
-      ? t(
-          subscription.cancelAtPeriodEnd
-            ? 'trialEndingDescription'
-            : 'trialDescription',
-        )
-      : t(descriptionKey(state));
+  const recoveryState = subscription?.recoveryDeadline
+    ? subscription.paidMembership
+      ? 'overdue'
+      : 'suspended'
+    : null;
   return (
     <section className="min-w-0 space-y-4 pt-1">
       {subscription?.providerStatus === 'trialing' ? (
@@ -32,13 +29,16 @@ export function SubscriptionPeriod({
         {t(`subscription.${subscription ? 'currentPeriod' : 'overview'}`)}
       </p>
       <h2 className="max-w-96 font-bold text-2xl tracking-tight md:text-3xl">
-        {t(`subscription.titles.${state}`)}
+        {t(`subscription.titles.${recoveryState ?? state}`)}
       </h2>
-      <p role="status" className="max-w-prose text-muted-foreground text-sm">
-        {description}
-      </p>
+      {!recoveryState ? (
+        <PeriodDescription state={state} subscription={subscription} />
+      ) : null}
+      {subscription ? <RecoveryNotice subscription={subscription} /> : null}
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
-      {subscription?.providerStatus ? <PortalButton /> : null}
+      {subscription?.providerStatus ? (
+        <PortalButton recovery={Boolean(subscription.recoveryDeadline)} />
+      ) : null}
       <Link
         href="/plans"
         className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
@@ -50,15 +50,65 @@ export function SubscriptionPeriod({
   );
 }
 
-function PeriodTimeline({ subscription }: { subscription: Subscription }) {
+function PeriodDescription({
+  state,
+  subscription,
+}: {
+  state: ReturnType<typeof subscriptionState>;
+  subscription: Subscription | null;
+}) {
+  const t = useTranslations('billing');
+  const description =
+    subscription?.providerStatus === 'trialing'
+      ? t(
+          subscription.cancelAtPeriodEnd
+            ? 'trialEndingDescription'
+            : 'trialDescription',
+        )
+      : t(descriptionKey(state));
+  return (
+    <p role="status" className="max-w-prose text-muted-foreground text-sm">
+      {description}
+    </p>
+  );
+}
+
+function RecoveryNotice({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing');
+  const format = useFormatter();
+  if (!subscription.recoveryDeadline) return null;
+  const date = format.dateTime(new Date(subscription.recoveryDeadline), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  return (
+    <p
+      role="alert"
+      className="rounded-xl bg-warning/10 p-4 text-foreground text-sm"
+    >
+      {subscription.paidMembership
+        ? t('recoveryGrace', { date })
+        : t('recoverySuspended')}
+    </p>
+  );
+}
+
+function usePeriodDate() {
   const t = useTranslations('billing.subscription');
   const format = useFormatter();
-  const state = subscriptionState(subscription);
-  const paid = state === 'active' || state === 'ending' || state === 'ended';
-  const date = (value: string | null) =>
+  return (value: string | null) =>
     value
       ? format.dateTime(new Date(value), { dateStyle: 'medium' })
       : t('dateUnavailable');
+}
+
+function PeriodTimeline({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  const date = usePeriodDate();
+  const state = subscriptionState(subscription);
+  if (subscription.recoveryDeadline)
+    return <RecoveryTimeline subscription={subscription} />;
+  const paid = state === 'active' || state === 'ending' || state === 'ended';
   return (
     <>
       <ol className="pt-4">
@@ -89,17 +139,50 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
           value={date(subscription.currentPeriodEnd)}
         />
       </ol>
-      <dl className="flex flex-wrap gap-x-9 gap-y-4 border-border border-t pt-5 text-xs">
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t('billingCycle')}</dt>
-          <dd className="font-semibold">{t(subscription.cycle)}</dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t('contractCurrency')}</dt>
-          <dd className="font-semibold">{subscription.currency}</dd>
-        </div>
-      </dl>
+      <BillingDetails subscription={subscription} />
     </>
+  );
+}
+
+function RecoveryTimeline({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  const date = usePeriodDate();
+  return (
+    <>
+      <ol className="pt-4">
+        <PeriodEvent
+          label={t('periodStart')}
+          value={date(subscription.currentPeriodStart)}
+        />
+        <PeriodEvent
+          label={t('payment.overdue')}
+          value={t(
+            `states.${subscription.paidMembership ? 'overdue' : 'suspended'}`,
+          )}
+        />
+        <PeriodEvent
+          label={t('recoveryDeadline')}
+          value={date(subscription.recoveryDeadline ?? null)}
+        />
+      </ol>
+      <BillingDetails subscription={subscription} />
+    </>
+  );
+}
+
+function BillingDetails({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  return (
+    <dl className="flex flex-wrap gap-x-9 gap-y-4 border-border border-t pt-5 text-xs">
+      <div className="space-y-1">
+        <dt className="text-muted-foreground">{t('billingCycle')}</dt>
+        <dd className="font-semibold">{t(subscription.cycle)}</dd>
+      </div>
+      <div className="space-y-1">
+        <dt className="text-muted-foreground">{t('contractCurrency')}</dt>
+        <dd className="font-semibold">{subscription.currency}</dd>
+      </div>
+    </dl>
   );
 }
 

@@ -51,6 +51,9 @@ export const subscriptions = pgTable(
       .notNull()
       .default('pending'),
     paidMembership: boolean().notNull().default(false),
+    hasPaidInvoice: boolean().notNull().default(false),
+    recoveryInvoiceId: text(),
+    recoveryStartedAt: timestamp({ withTimezone: true }),
     trialDays: integer().notNull().default(0),
     currentPeriodStart: timestamp({ withTimezone: true }),
     currentPeriodEnd: timestamp({ withTimezone: true }),
