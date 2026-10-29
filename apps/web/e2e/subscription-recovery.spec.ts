@@ -33,8 +33,17 @@ for (const locale of ['en', 'pt-BR'] as const) {
       }),
     );
     await page.goto(`/${locale}/subscription`);
+    const summary = page.getByRole('region', {
+      name: messages[locale].billing.subscription.planSummary,
+    });
+    const timeline = page.getByRole('list').filter({
+      hasText: messages[locale].billing.subscription.payment.overdue,
+    });
     await expect(
-      page.getByText(messages[locale].billing.subscription.states.overdue),
+      summary.getByText(messages[locale].billing.subscription.states.overdue),
+    ).toBeVisible();
+    await expect(
+      timeline.getByText(messages[locale].billing.subscription.states.overdue),
     ).toBeVisible();
     const alert = page.getByRole('alert');
     const date = new Intl.DateTimeFormat(locale, {
@@ -65,7 +74,12 @@ for (const locale of ['en', 'pt-BR'] as const) {
       page.getByText(messages[locale].billing.subscription.payment.confirmed),
     ).toHaveCount(0);
     await expect(
-      page.getByText(messages[locale].billing.subscription.states.suspended),
+      summary.getByText(messages[locale].billing.subscription.states.suspended),
+    ).toBeVisible();
+    await expect(
+      timeline.getByText(
+        messages[locale].billing.subscription.states.suspended,
+      ),
     ).toBeVisible();
     subscription.paidMembership = true;
     subscription.providerStatus = 'active';
