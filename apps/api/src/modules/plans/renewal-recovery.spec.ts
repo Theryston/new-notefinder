@@ -6,7 +6,7 @@ describe('failed renewal recovery', () => {
     id: 'in_renewal',
     status: 'open',
     billing_reason: 'subscription_cycle',
-    created: 1000,
+    created: 500,
     due_date: null,
   };
   it('retains the original deadline on retries', () => {
@@ -17,6 +17,7 @@ describe('failed renewal recovery', () => {
       providerStatus: 'past_due',
       paidConfirmed: false,
       invoice: failed,
+      failure: { invoiceId: 'in_renewal', occurredAt: 1000 },
     });
     expect(recovery.recoveryStartedAt).toEqual(new Date(1000000));
     expect(recoveryDeadline(recovery.recoveryStartedAt)).toEqual(
@@ -27,9 +28,44 @@ describe('failed renewal recovery', () => {
       ...recovery,
       providerStatus: 'past_due',
       paidConfirmed: false,
-      invoice: { ...failed, created: 2000 },
+      invoice: failed,
+      failure: { invoiceId: 'in_renewal', occurredAt: 2000 },
     });
     expect(retry).toEqual(recovery);
+    const older = renewalRecovery({
+      hasPaidInvoice: true,
+      ...retry,
+      providerStatus: 'past_due',
+      paidConfirmed: false,
+      invoice: failed,
+      failure: { invoiceId: 'in_renewal', occurredAt: 900 },
+    });
+    expect(older.recoveryStartedAt).toEqual(new Date(900000));
+  });
+  it('uses an explicit due date and ignores unrelated or missing failure events', () => {
+    const input = {
+      hasPaidInvoice: true,
+      recoveryInvoiceId: null,
+      recoveryStartedAt: null,
+      providerStatus: 'past_due',
+      paidConfirmed: false,
+      invoice: { ...failed, due_date: 800 },
+    };
+    expect(
+      renewalRecovery({
+        ...input,
+        failure: { invoiceId: 'in_renewal', occurredAt: 1000 },
+      }).recoveryStartedAt,
+    ).toEqual(new Date(800000));
+    expect(
+      renewalRecovery({ ...input, failure: null }).recoveryStartedAt,
+    ).toBeNull();
+    expect(
+      renewalRecovery({
+        ...input,
+        failure: { invoiceId: 'in_other', occurredAt: 1000 },
+      }).recoveryStartedAt,
+    ).toBeNull();
   });
   it('never grants a grace window to an unpaid initial charge or trial conversion', () => {
     expect(
@@ -40,6 +76,7 @@ describe('failed renewal recovery', () => {
         providerStatus: 'past_due',
         paidConfirmed: false,
         invoice: failed,
+        failure: { invoiceId: 'in_renewal', occurredAt: 1000 },
       }).recoveryStartedAt,
     ).toBeNull();
   });
@@ -55,6 +92,7 @@ describe('failed renewal recovery', () => {
         providerStatus: 'active',
         paidConfirmed: true,
         invoice: { ...failed, status: 'paid' },
+        failure: null,
       }).recoveryStartedAt,
     ).toBeNull();
     expect(
@@ -64,6 +102,7 @@ describe('failed renewal recovery', () => {
         providerStatus: 'unpaid',
         paidConfirmed: false,
         invoice: failed,
+        failure: { invoiceId: 'in_renewal', occurredAt: 1000 },
       }),
     ).toEqual(recovery);
   });

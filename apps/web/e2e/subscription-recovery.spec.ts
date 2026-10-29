@@ -37,17 +37,33 @@ for (const locale of ['en', 'pt-BR'] as const) {
       page.getByText(messages[locale].billing.subscription.states.overdue),
     ).toBeVisible();
     const alert = page.getByRole('alert');
-    await expect(alert).toContainText(
-      locale === 'en'
-        ? 'renewal payment failed'
-        : 'pagamento da renovação falhou',
+    const date = new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(subscription.recoveryDeadline ?? ''));
+    await expect(alert).toHaveText(
+      messages[locale].billing.recoveryGrace.replace('{date}', date),
     );
-    await expect(alert).toContainText(
-      locale === 'en' ? 'Nov 30, 2026' : '30 de nov. de 2026',
-    );
+    await expect(
+      page.getByText(messages[locale].billing.confirmed),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText(messages[locale].billing.subscription.payment.confirmed),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', {
+        name: messages[locale].billing.subscription.titles.active,
+      }),
+    ).toHaveCount(0);
     subscription.paidMembership = false;
     await page.reload();
     await expect(alert).toHaveText(messages[locale].billing.recoverySuspended);
+    await expect(
+      page.getByText(messages[locale].billing.confirmed),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText(messages[locale].billing.subscription.payment.confirmed),
+    ).toHaveCount(0);
     await expect(
       page.getByText(messages[locale].billing.subscription.states.suspended),
     ).toBeVisible();

@@ -230,7 +230,8 @@ export class SubscriptionsService {
   async webhook(event: {
     id: string;
     type: string;
-    data: { object: { customer?: string } };
+    created?: number;
+    data: { object: { customer?: string; id?: string } };
   }) {
     const customer = event.data.object.customer;
     if (!customer) return;
@@ -238,11 +239,19 @@ export class SubscriptionsService {
     if (!userId) return;
     await this.repository.lock(userId);
     if (await this.repository.processed(event.id)) return;
-    await this.refresh(userId, customer);
+    await this.refresh(userId, customer, event);
     await this.repository.markProcessed(event.id);
   }
 
-  private async refresh(userId: string, customer: string) {
+  private async refresh(
+    userId: string,
+    customer: string,
+    event: {
+      type: string;
+      created?: number;
+      data: { object: { id?: string } };
+    },
+  ) {
     const row = await this.repository.current(userId);
     if (!row) return;
     const session = row.contract.checkoutId
@@ -274,6 +283,12 @@ export class SubscriptionsService {
         providerStatus: provider.status,
         paidConfirmed: paidInvoice,
         invoice: provider.latest_invoice,
+        failure:
+          event.type === 'invoice.payment_failed' &&
+          event.created !== undefined &&
+          event.data.object.id
+            ? { invoiceId: event.data.object.id, occurredAt: event.created }
+            : null,
       });
       await this.repository.update(userId, {
         ...confirmed,

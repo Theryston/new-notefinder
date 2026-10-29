@@ -15,25 +15,20 @@ export function SubscriptionPeriod({
 }) {
   const t = useTranslations('billing');
   const state = subscriptionState(subscription);
-  const description =
-    state === 'free'
-      ? t('noSubscription')
-      : state === 'ended'
-        ? t('subscription.endedDescription')
-        : state === 'ending'
-          ? t('subscription.endingDescription')
-          : t(state === 'active' ? 'confirmed' : state);
+  const recoveryState = subscription?.recoveryDeadline
+    ? subscription.paidMembership
+      ? 'overdue'
+      : 'suspended'
+    : null;
   return (
     <section className="min-w-0 space-y-4 pt-1">
       <p className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">
         {t(`subscription.${subscription ? 'currentPeriod' : 'overview'}`)}
       </p>
       <h2 className="max-w-96 font-bold text-2xl tracking-tight md:text-3xl">
-        {t(`subscription.titles.${state}`)}
+        {t(`subscription.titles.${recoveryState ?? state}`)}
       </h2>
-      <p role="status" className="max-w-prose text-muted-foreground text-sm">
-        {description}
-      </p>
+      {!recoveryState ? <PeriodDescription state={state} /> : null}
       {subscription ? <RecoveryNotice subscription={subscription} /> : null}
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
       {subscription?.providerStatus ? (
@@ -47,6 +42,27 @@ export function SubscriptionPeriod({
         <ArrowRightIcon aria-hidden className="size-4" />
       </Link>
     </section>
+  );
+}
+
+function PeriodDescription({
+  state,
+}: {
+  state: ReturnType<typeof subscriptionState>;
+}) {
+  const t = useTranslations('billing');
+  const description =
+    state === 'free'
+      ? t('noSubscription')
+      : state === 'ended'
+        ? t('subscription.endedDescription')
+        : state === 'ending'
+          ? t('subscription.endingDescription')
+          : t(state === 'active' ? 'confirmed' : state);
+  return (
+    <p role="status" className="max-w-prose text-muted-foreground text-sm">
+      {description}
+    </p>
   );
 }
 
@@ -74,6 +90,8 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
   const t = useTranslations('billing.subscription');
   const format = useFormatter();
   const state = subscriptionState(subscription);
+  if (subscription.recoveryDeadline)
+    return <RecoveryTimeline subscription={subscription} />;
   const paid = state === 'active' || state === 'ending' || state === 'ended';
   const date = (value: string | null) =>
     value
@@ -105,17 +123,54 @@ function PeriodTimeline({ subscription }: { subscription: Subscription }) {
           value={date(subscription.currentPeriodEnd)}
         />
       </ol>
-      <dl className="flex flex-wrap gap-x-9 gap-y-4 border-border border-t pt-5 text-xs">
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t('billingCycle')}</dt>
-          <dd className="font-semibold">{t(subscription.cycle)}</dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-muted-foreground">{t('contractCurrency')}</dt>
-          <dd className="font-semibold">{subscription.currency}</dd>
-        </div>
-      </dl>
+      <BillingDetails subscription={subscription} />
     </>
+  );
+}
+
+function RecoveryTimeline({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  const format = useFormatter();
+  const date = (value: string | null) =>
+    value
+      ? format.dateTime(new Date(value), { dateStyle: 'medium' })
+      : t('dateUnavailable');
+  return (
+    <>
+      <ol className="pt-4">
+        <PeriodEvent
+          label={t('periodStart')}
+          value={date(subscription.currentPeriodStart)}
+        />
+        <PeriodEvent
+          label={t('payment.overdue')}
+          value={t(
+            `states.${subscription.paidMembership ? 'overdue' : 'suspended'}`,
+          )}
+        />
+        <PeriodEvent
+          label={t('recoveryDeadline')}
+          value={date(subscription.recoveryDeadline ?? null)}
+        />
+      </ol>
+      <BillingDetails subscription={subscription} />
+    </>
+  );
+}
+
+function BillingDetails({ subscription }: { subscription: Subscription }) {
+  const t = useTranslations('billing.subscription');
+  return (
+    <dl className="flex flex-wrap gap-x-9 gap-y-4 border-border border-t pt-5 text-xs">
+      <div className="space-y-1">
+        <dt className="text-muted-foreground">{t('billingCycle')}</dt>
+        <dd className="font-semibold">{t(subscription.cycle)}</dd>
+      </div>
+      <div className="space-y-1">
+        <dt className="text-muted-foreground">{t('contractCurrency')}</dt>
+        <dd className="font-semibold">{subscription.currency}</dd>
+      </div>
+    </dl>
   );
 }
 

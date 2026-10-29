@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { eq, sql } from 'drizzle-orm';
 import { subscriptions } from '../src/database/schema/subscriptions.js';
@@ -13,6 +14,26 @@ import {
 } from './utils/billing-fixture.js';
 import { createTestApp, type TestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
+
+function failedEvent(
+  customer: string,
+  id: string,
+  invoiceId: string,
+  created: number,
+) {
+  const body = JSON.stringify({
+    id,
+    type: 'invoice.payment_failed',
+    created,
+    livemode: false,
+    data: { object: { customer, id: invoiceId } },
+  });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const digest = createHmac('sha256', WEBHOOK_SECRET)
+    .update(`${timestamp}.${body}`)
+    .digest('hex');
+  return { body, signature: `t=${timestamp},v1=${digest}` };
+}
 
 const ROOT = '/v1/me/subscription';
 describe('failed renewal recovery (e2e)', () => {
@@ -56,18 +77,29 @@ describe('failed renewal recovery (e2e)', () => {
   }
   it('retains access until the original renewal deadline and restores it after confirmed payment', async () => {
     const { client, session, provider } = await confirmedContract();
-    const start = Math.floor(Date.now() / 1000);
+    const start = Math.floor(Date.now() / 1000) - 120;
     provider.status = 'past_due';
     provider.latest_invoice = {
       id: 'in_renewal',
       status: 'open',
       amount_paid: 0,
-      created: start,
+      created: start - 3600,
       due_date: null,
       billing_reason: 'subscription_cycle',
     };
     await deliver(
-      signedEvent(session.customer, 'evt_failure', 'invoice.payment_failed'),
+      failedEvent(
+        session.customer,
+        'evt_retry_first',
+        'in_renewal',
+        start + 60,
+      ),
+    );
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription.recoveryDeadline,
+    ).toBe(new Date((start + 60 + 3 * 86400) * 1000).toISOString());
+    await deliver(
+      failedEvent(session.customer, 'evt_failure', 'in_renewal', start),
     );
     const deadline = (start + 3 * 86400) * 1000;
     vi.spyOn(Date, 'now').mockReturnValue(deadline - 1);
@@ -78,7 +110,7 @@ describe('failed renewal recovery (e2e)', () => {
       recoveryDeadline: new Date(deadline).toISOString(),
     });
     await deliver(
-      signedEvent(session.customer, 'evt_retry', 'invoice.payment_failed'),
+      failedEvent(session.customer, 'evt_retry', 'in_renewal', start + 60),
     );
     vi.spyOn(Date, 'now').mockReturnValue(deadline);
     expect(
@@ -126,7 +158,12 @@ describe('failed renewal recovery (e2e)', () => {
     };
     fake.contracts.set(provider.id, provider);
     await deliver(
-      signedEvent(session.customer, 'evt_initial', 'invoice.payment_failed'),
+      failedEvent(
+        session.customer,
+        'evt_initial',
+        'in_initial',
+        Math.floor(Date.now() / 1000),
+      ),
     );
     expect(
       (await client.get(ROOT).expect(200)).body.subscription,

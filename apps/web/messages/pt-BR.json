@@ -1328,6 +1328,7 @@
       "manageError": "Não foi possível abrir o gerenciamento de cobrança. Tente novamente.",
       "endedDescription": "Sua assinatura paga foi encerrada.",
       "endingDescription": "Sua assinatura será encerrada ao final deste período.",
+      "recoveryDeadline": "Prazo de recuperação",
       "states": {
         "overdue": "Pagamento em atraso",
         "suspended": "Assinatura suspensa",
@@ -1339,6 +1340,8 @@
         "free": "Sem assinatura"
       },
       "titles": {
+        "overdue": "Sua renovação precisa de atenção.",
+        "suspended": "Sua assinatura paga está suspensa.",
         "active": "Tudo pronto para a próxima música.",
         "ended": "Sua assinatura foi encerrada.",
         "ending": "Seu período atual continua disponível.",
@@ -1347,6 +1350,7 @@
         "free": "Sua voz já tem espaço por aqui."
       },
       "payment": {
+        "overdue": "Falha no pagamento da renovação",
         "confirmed": "Pagamento confirmado",
         "pending": "Aguardando confirmação do pagamento",
         "unsuccessful": "Pagamento não confirmado"
