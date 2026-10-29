@@ -1,5 +1,5 @@
 {
-  "id": "ad838106-fd78-4865-9a47-61e871c12c13",
+  "id": "d0f610a8-2bf9-44f7-bbe6-8a03294d4185",
   "prevId": "7b7c576f-de54-4065-b578-cf623b11302c",
   "version": "7",
   "dialect": "postgresql",
@@ -2413,6 +2413,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "trial_used_at": {
+          "name": "trial_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2604,24 +2610,12 @@
           "notNull": true,
           "default": false
         },
-        "has_paid_invoice": {
-          "name": "has_paid_invoice",
-          "type": "boolean",
+        "trial_days": {
+          "name": "trial_days",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": false
-        },
-        "recovery_invoice_id": {
-          "name": "recovery_invoice_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "recovery_started_at": {
-          "name": "recovery_started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
+          "default": 0
         },
         "current_period_start": {
           "name": "current_period_start",

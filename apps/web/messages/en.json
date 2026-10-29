@@ -1169,6 +1169,9 @@
     }
   },
   "plans": {
+    "trialOffer": "{days, plural, one {# day} other {# days}} free with a card. Billing starts automatically after the trial unless canceled; Stripe shows the first charge date.",
+    "trialFirstCharge": "Estimated first charge if you start today: {date}. Stripe confirms the exact date.",
+    "trialUsed": "Your trial has already been used. Billing starts immediately.",
     "title": "Your voice, your pace.",
     "description": "Compare what is available today and what each plan has planned.",
     "disclosure": "Benefits marked coming soon describe future functionality. Core singing stays available without paid membership.",
@@ -1218,6 +1221,7 @@
     "description": "Description",
     "english": "English",
     "portuguese": "Brazilian Portuguese",
+    "trialDays": "Trial days",
     "displayOrder": "Display order",
     "published": "Publish plan",
     "saleEnabled": "Available for new sales",
@@ -1281,6 +1285,9 @@
     "confirmDelete": "Delete benefit"
   },
   "billing": {
+    "trialStatus": "Free trial",
+    "trialEndingDescription": "Your trial is canceled and remains active until its end. You will not be charged.",
+    "trialDescription": "Your trial is active. Cancel before it ends to avoid the first charge.",
     "chooseAnnual": "Choose annual",
     "chooseMonthly": "Choose monthly",
     "annualCharge": "{amount} charged annually",
@@ -1304,6 +1311,7 @@
     "periodEnd": "Current period ends on {date}",
     "noSubscription": "You have no paid subscription.",
     "subscription": {
+      "trialLabel": "Trial started",
       "intro": "Your plan, payment and subscription details in one place.",
       "planSummary": "Plan summary",
       "currentPlan": "Current plan",

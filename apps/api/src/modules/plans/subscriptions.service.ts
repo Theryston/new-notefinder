@@ -10,9 +10,9 @@ import type {
 import { AppException } from '../../common/errors/app-exception.js';
 import { StripeBillingService } from '../../integrations/stripe/stripe-billing.service.js';
 import { checkoutOffer } from './checkout-offer.js';
-import { renewalFailure } from './renewal-failure.js';
-import { recoveryDeadline, renewalRecovery } from './renewal-recovery.js';
-import { confirmedSubscription } from './subscription-state.js';
+import { refreshSubscription } from './refresh-subscription.js';
+import { recoveryDeadline } from './renewal-recovery.js';
+import { replaceEndedContract } from './replace-ended-contract.js';
 import { SubscriptionsRepository } from './subscriptions.repository.js';
 
 @Injectable()
@@ -28,6 +28,7 @@ export class SubscriptionsService {
   ): Promise<CheckoutResult> {
     await this.reserve(userId, body);
     await this.ensureCustomer(userId);
+    await this.replaceEnded(userId, body);
     await this.reconcile(userId, body);
     await this.replacePendingCheckout(userId, body);
     return this.start(userId, body);
@@ -53,6 +54,9 @@ export class SubscriptionsService {
       currency: price.currency,
       amount: price.amount,
       stripePriceId: price.stripePriceId,
+      trialDays: (await this.repository.customer(userId))?.trialUsedAt
+        ? 0
+        : price.trialDays,
       checkoutId: null,
       checkoutUrl: null,
       createdAt: new Date(),
@@ -68,6 +72,16 @@ export class SubscriptionsService {
       userId,
       await this.stripe.createCustomer(userId),
     );
+  }
+
+  @Transactional()
+  async replaceEnded(userId: string, body: CreateCheckoutBody) {
+    await replaceEndedContract({
+      userId,
+      repository: this.repository,
+      stripe: this.stripe,
+      reservation: () => this.reservation(userId, body),
+    });
   }
 
   // A lost Stripe response is reconciled before changing or retrying an attempt.
@@ -106,6 +120,9 @@ export class SubscriptionsService {
       currency: price.currency,
       amount: price.amount,
       stripePriceId: price.stripePriceId,
+      trialDays: (await this.repository.customer(userId))?.trialUsedAt
+        ? 0
+        : price.trialDays,
       createdAt: new Date(),
     });
   }
@@ -124,9 +141,11 @@ export class SubscriptionsService {
     const sameOffer =
       contract.priceId === body.offerId &&
       contract.planId === body.planId &&
-      contract.cycle === body.cycle;
+      contract.cycle === body.cycle &&
+      contract.trialDays === (body.trialDays ?? 0);
     if (session.status === 'open' && sameOffer) return;
     const reservation = await this.reservation(userId, body);
+    assertTrialTerms(reservation.trialDays, body.trialDays);
     const expired =
       session.status === 'expired'
         ? session
@@ -158,6 +177,7 @@ export class SubscriptionsService {
       contract.cycle !== body.cycle
     )
       return { action: 'manage' };
+    assertTrialTerms(contract.trialDays, body.trialDays);
     if (contract.checkoutId) {
       const session = await this.stripe.getCheckout(contract.checkoutId);
       if (session.status === 'complete' || session.subscription)
@@ -178,6 +198,7 @@ export class SubscriptionsService {
       customer,
       price: contract.stripePriceId,
       locale: body.locale,
+      trialDays: contract.trialDays,
     });
     if (!session.url || session.customer !== customer)
       throw new AppException(
@@ -189,6 +210,11 @@ export class SubscriptionsService {
       checkoutUrl: session.url,
     });
     return { action: 'checkout', url: session.url };
+  }
+
+  async trialEligibility(userId: string) {
+    const customer = await this.repository.customer(userId);
+    return { eligible: !customer?.trialUsedAt };
   }
 
   async portal(userId: string, locale: Locale) {
@@ -240,72 +266,21 @@ export class SubscriptionsService {
     if (!userId) return;
     await this.repository.lock(userId);
     if (await this.repository.processed(event.id)) return;
-    await this.refresh(userId, customer, event);
+    await refreshSubscription({
+      userId,
+      customer,
+      event,
+      repository: this.repository,
+      stripe: this.stripe,
+    });
     await this.repository.markProcessed(event.id);
   }
+}
 
-  private async refresh(
-    userId: string,
-    customer: string,
-    event: {
-      type: string;
-      created?: number;
-      data: { object: { id?: string } };
-    },
-  ) {
-    const row = await this.repository.current(userId);
-    if (!row) return;
-    const session = row.contract.checkoutId
-      ? await this.stripe.getCheckout(row.contract.checkoutId)
-      : await this.stripe.findCheckout(customer, row.contract.id);
-    if (!session) return;
-    if (!row.contract.checkoutId)
-      await this.repository.update(userId, {
-        checkoutId: session.id,
-        checkoutUrl: session.url,
-      });
-    if (session.customer !== customer)
-      throw new AppException('CONFLICT', 'Checkout customer mismatch');
-    if (session.subscription) {
-      const provider = await this.stripe.getSubscription(session.subscription);
-      const confirmed = confirmedSubscription({
-        contract: row.contract,
-        provider,
-        customer,
-      });
-      const paidInvoice =
-        provider.status === 'active' &&
-        provider.latest_invoice?.status === 'paid' &&
-        provider.latest_invoice.amount_paid >= row.contract.amount;
-      const recovery = renewalRecovery({
-        hasPaidInvoice: row.contract.hasPaidInvoice,
-        recoveryInvoiceId: row.contract.recoveryInvoiceId,
-        recoveryStartedAt: row.contract.recoveryStartedAt,
-        providerStatus: provider.status,
-        paidConfirmed: paidInvoice,
-        invoice: provider.latest_invoice,
-        failure: await renewalFailure({
-          stripe: this.stripe,
-          customer,
-          provider,
-          event,
-          hasPaidInvoice: row.contract.hasPaidInvoice,
-          recoveryStartedAt: row.contract.recoveryStartedAt,
-        }),
-      });
-      await this.repository.update(userId, {
-        ...confirmed,
-        ...recovery,
-        hasPaidInvoice: row.contract.hasPaidInvoice || paidInvoice,
-        ...(recovery.recoveryStartedAt
-          ? { status: 'confirmed' as const, paidMembership: true }
-          : {}),
-      });
-    } else if (session.status === 'expired') {
-      await this.repository.update(userId, {
-        status: 'unsuccessful',
-        paidMembership: false,
-      });
-    }
-  }
+function assertTrialTerms(expected: number, accepted?: number) {
+  if (expected !== (accepted ?? 0))
+    throw new AppException(
+      'CONFLICT',
+      'Trial terms have changed; review the offer',
+    );
 }

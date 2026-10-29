@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -18,6 +19,7 @@ export const billingCustomers = pgTable('billing_customers', {
     .references(() => users.id, { onDelete: 'cascade' })
     .unique(),
   stripeCustomerId: text().unique(),
+  trialUsedAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });
 
@@ -52,6 +54,7 @@ export const subscriptions = pgTable(
     hasPaidInvoice: boolean().notNull().default(false),
     recoveryInvoiceId: text(),
     recoveryStartedAt: timestamp({ withTimezone: true }),
+    trialDays: integer().notNull().default(0),
     currentPeriodStart: timestamp({ withTimezone: true }),
     currentPeriodEnd: timestamp({ withTimezone: true }),
     cancelAtPeriodEnd: boolean().notNull().default(false),
@@ -59,6 +62,15 @@ export const subscriptions = pgTable(
   },
   (table) => [index().on(table.planId), index().on(table.priceId)],
 );
+
+export const subscriptionHistory = pgTable('subscription_history', {
+  id: text().primaryKey(),
+  userId: text()
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  contract: jsonb().notNull(),
+  ...timestamps,
+});
 
 export const billingEvents = pgTable(
   'billing_events',

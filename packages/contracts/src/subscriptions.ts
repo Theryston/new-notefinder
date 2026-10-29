@@ -8,6 +8,7 @@ export const createCheckoutBodySchema = z.strictObject({
   cycle: billingCycleSchema,
   locale: localeSchema,
   comingSoonAcknowledged: z.literal(true),
+  trialDays: z.number().int().nonnegative().max(730).optional(),
 });
 export type CreateCheckoutBody = z.infer<typeof createCheckoutBodySchema>;
 export const checkoutResultSchema = z.discriminatedUnion('action', [
@@ -34,6 +35,9 @@ export const currentSubscriptionSchema = z.object({
   subscription: subscriptionSchema.nullable(),
 });
 export type CurrentSubscription = z.infer<typeof currentSubscriptionSchema>;
+
+export const trialEligibilitySchema = z.object({ eligible: z.boolean() });
+export type TrialEligibility = z.infer<typeof trialEligibilitySchema>;
 
 export const createPortalBodySchema = z.strictObject({ locale: localeSchema });
 export type CreatePortalBody = z.infer<typeof createPortalBodySchema>;

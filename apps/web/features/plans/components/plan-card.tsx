@@ -32,6 +32,7 @@ export async function PlanCard({
         plan={{
           id: plan.id,
           name: plan.name,
+          trialDays: plan.trialDays,
           offers: plan.offers,
           saleAvailable: plan.saleAvailable,
         }}

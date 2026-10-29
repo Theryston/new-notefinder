@@ -32,6 +32,9 @@ const subscriptionSchema = z.object({
   ]),
   currency: z.string(),
   cancel_at_period_end: z.boolean(),
+  trial_end: z.number().nullable().optional(),
+  trial_start: z.number().nullable().optional(),
+  default_payment_method: z.string().nullable().optional(),
   latest_invoice: z
     .object({
       status: z.string().nullable(),
@@ -79,6 +82,7 @@ export class StripeBillingService {
     customer: string;
     price: string;
     locale: Locale;
+    trialDays?: number;
   }) {
     const base = `${this.env.WEB_URL}/${input.locale}/subscription`;
     return sessionSchema.parse(
@@ -89,12 +93,20 @@ export class StripeBillingService {
           customer: input.customer,
           'line_items[0][price]': input.price,
           'line_items[0][quantity]': '1',
+          ...(input.trialDays
+            ? {
+                'subscription_data[trial_period_days]': String(input.trialDays),
+                payment_method_collection: 'always',
+                'payment_method_types[0]': 'card',
+              }
+            : {}),
           success_url: `${base}?result=pending`,
           cancel_url: `${base}?result=cancelled`,
           locale: input.locale === 'pt-BR' ? 'pt-BR' : 'en',
           'metadata[contractId]': input.id,
-          'custom_text[submit][message]': (input.locale === 'pt-BR' ? ptBR : en)
-            .checkoutDisclosure,
+          'custom_text[submit][message]': input.trialDays
+            ? (input.locale === 'pt-BR' ? ptBR : en).trialCheckoutDisclosure
+            : (input.locale === 'pt-BR' ? ptBR : en).checkoutDisclosure,
         },
         `checkout-${input.id}`,
       ),
@@ -191,11 +203,39 @@ export class StripeBillingService {
     );
   }
   async getSubscription(id: string): Promise<StripeSubscription> {
-    return subscriptionSchema.parse(
+    const subscription = subscriptionSchema.parse(
       await this.request(
         `subscriptions/${encodeURIComponent(id)}?expand[]=latest_invoice`,
       ),
     );
+    if (!subscription.trial_end || subscription.default_payment_method)
+      return subscription;
+    const customer = z
+      .object({
+        id: z.literal(subscription.customer),
+        livemode: z.literal(false),
+        invoice_settings: z.object({
+          default_payment_method: z.string().nullable(),
+        }),
+      })
+      .parse(
+        await this.request(
+          `customers/${encodeURIComponent(subscription.customer)}`,
+        ),
+      );
+    const methodId = customer.invoice_settings.default_payment_method;
+    if (!methodId) return subscription;
+    const method = z
+      .object({
+        id: z.literal(methodId),
+        livemode: z.literal(false),
+        customer: z.literal(subscription.customer),
+        type: z.literal('card'),
+      })
+      .parse(
+        await this.request(`payment_methods/${encodeURIComponent(methodId)}`),
+      );
+    return { ...subscription, default_payment_method: method.id };
   }
   async firstInvoiceFailure(input: {
     invoiceId: string;
