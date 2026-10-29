@@ -65,6 +65,7 @@ const setup = () => {
 describe('runIndexingWindow', () => {
   it('stops submission if an earlier task fails while the next batch loads', async () => {
     const { run, tasks, index, documents, confirm } = setup();
+    const failure = new Error('earlier task failed');
     const loading = pendingTask();
     documents.findBatch
       .mockResolvedValueOnce(batch(1))
@@ -73,11 +74,11 @@ describe('runIndexingWindow', () => {
         return batch(2);
       });
     const running = run();
-    const rejected = expect(running).rejects.toThrow('earlier task failed');
+    const rejected = expect(running).rejects.toBe(failure);
     await vi.waitFor(() =>
       expect(documents.findBatch).toHaveBeenCalledTimes(2),
     );
-    tasks[0]?.reject(new Error('earlier task failed'));
+    tasks[0]?.reject(failure);
     loading.resolve();
     await rejected;
     expect(index.upsert).toHaveBeenCalledTimes(1);
@@ -118,8 +119,9 @@ describe('runIndexingWindow', () => {
 
   it('never checkpoints beyond a failed batch and drains later writes before rejecting', async () => {
     const { run, tasks, index, confirm } = setup();
+    const failure = new Error('batch failed');
     const running = run();
-    const rejected = expect(running).rejects.toThrow('batch failed');
+    const rejected = expect(running).rejects.toBe(failure);
     let settled = false;
     void running.then(
       () => {
@@ -130,7 +132,7 @@ describe('runIndexingWindow', () => {
       },
     );
     await vi.waitFor(() => expect(index.upsert).toHaveBeenCalledTimes(3));
-    tasks[1]?.reject(new Error('batch failed'));
+    tasks[1]?.reject(failure);
     tasks[0]?.resolve();
     await vi.waitFor(() =>
       expect(confirm).toHaveBeenCalledExactlyOnceWith(batch(1)),
@@ -143,11 +145,12 @@ describe('runIndexingWindow', () => {
 
   it('drains sent tasks and confirms them after a source read fails', async () => {
     const { run, tasks, documents, index, confirm } = setup();
+    const failure = new Error('read failed');
     documents.findBatch
       .mockResolvedValueOnce(batch(1))
-      .mockRejectedValueOnce(new Error('read failed'));
+      .mockRejectedValueOnce(failure);
     const running = run();
-    const rejected = expect(running).rejects.toThrow('read failed');
+    const rejected = expect(running).rejects.toBe(failure);
     await vi.waitFor(() => expect(index.upsert).toHaveBeenCalledTimes(1));
     tasks[0]?.resolve();
     await rejected;
@@ -157,9 +160,10 @@ describe('runIndexingWindow', () => {
 
   it('drains writes after a checkpoint fails without confirming later batches', async () => {
     const { run, tasks, index, confirm } = setup();
-    confirm.mockRejectedValueOnce(new Error('checkpoint failed'));
+    const failure = new Error('checkpoint failed');
+    confirm.mockRejectedValueOnce(failure);
     const running = run();
-    const rejected = expect(running).rejects.toThrow('checkpoint failed');
+    const rejected = expect(running).rejects.toBe(failure);
     await vi.waitFor(() => expect(index.upsert).toHaveBeenCalledTimes(3));
     for (const task of tasks) task.resolve();
     await rejected;
