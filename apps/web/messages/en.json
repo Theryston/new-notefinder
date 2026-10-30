@@ -1246,7 +1246,7 @@
     "failed": "Synchronization failed. Open the plan to retry.",
     "pending": "Synchronization pending.",
     "pendingHelp": "Retry the saved change first. Its settings are preserved until synchronization succeeds.",
-    "testMode": "Billing is being validated in Stripe test mode. Catalog changes do not change existing subscriptions.",
+    "testMode": "Billing is being validated in Stripe test mode. Price changes apply to existing subscribers at a renewal after at least 30 days’ notice.",
     "priceMigrationsPending": "{count, plural, one {# price change pending} other {# price changes pending}}",
     "priceMigrationsFailed": "{count, plural, one {# price change needs attention} other {# price changes need attention}}",
     "priceMigrationsRetryFailed": "Could not retry price changes.",

@@ -54,6 +54,14 @@ for (const locale of ['en', 'pt-BR'] as const) {
       await route.fulfill({ json: plan, headers });
     });
     await page.goto(`/${locale}/admin/plans`);
+    await expect(
+      page.getByText(
+        locale === 'en'
+          ? 'Billing is being validated in Stripe test mode. Price changes apply to existing subscribers at a renewal after at least 30 days’ notice.'
+          : 'A cobrança está sendo validada no modo de teste do Stripe. Alterações de preço são aplicadas às assinaturas existentes em uma renovação após aviso com pelo menos 30 dias de antecedência.',
+        { exact: true },
+      ),
+    ).toBeVisible();
     await page
       .getByRole('button', { name: t.adminPlans.edit.replace('{name}', 'Pro') })
       .click();
