@@ -52,11 +52,13 @@ for (const width of [360, 1280]) {
         page.getByText(t.subscription.annual, { exact: true }),
       ).toBeVisible();
       const plans = page.getByRole('link', { name: t.viewPlans, exact: true });
-      await expect(plans).toHaveCount(1);
-      await expect(plans).toHaveAttribute('href', '/pt-BR/plans');
+      await expect(plans).toHaveCount(0);
+      await expect(
+        card.getByRole('button', { name: t.subscription.manage }),
+      ).toBeVisible();
       await expect(
         card.getByRole('link', { name: t.subscription.findSong }),
-      ).toHaveAttribute('href', '/pt-BR/search');
+      ).toHaveCount(0);
       const bounds = await card.boundingBox();
       const details = await page
         .getByRole('heading', { name: t.subscription.titles.active })

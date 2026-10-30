@@ -384,6 +384,7 @@
       "editProfile": "Edit profile",
       "signOut": "Sign out",
       "signingOut": "Signing out",
+      "subscription": "Subscription",
       "plans": "Plans"
     },
     "preferences": {
@@ -1290,6 +1291,13 @@
   },
   "billing": {
     "change": {
+      "restoreConfirmation": "Cancel the scheduled change and keep your current {plan} plan, billed {cycle} at {amount}.",
+      "restoreConfirm": "Keep current plan",
+      "activeOffer": "Active plan",
+      "scheduledOffer": "Scheduled plan",
+      "close": "Close",
+      "loading": "Loading offers…",
+      "empty": "No offers are available right now.",
       "title": "Change plan",
       "select": "Choose a plan and billing cycle",
       "placeholder": "Select an offer",

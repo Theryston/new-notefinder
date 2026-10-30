@@ -1,11 +1,8 @@
 'use client';
 
 import type { Subscription } from '@vozzify/contracts';
-import { ArrowRightIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { buttonVariants } from '@/components/ui/button';
-import { Link } from '@/lib/i18n/navigation';
-import { subscriptionState } from '../subscription-presentation';
+import { PortalButton } from './portal-button';
 import { SubscriptionStatus } from './subscription-status';
 
 export function SubscriptionCard({
@@ -14,7 +11,6 @@ export function SubscriptionCard({
   subscription: Subscription | null;
 }) {
   const t = useTranslations('billing.subscription');
-  const state = subscriptionState(subscription);
   return (
     <section
       aria-label={t('planSummary')}
@@ -40,14 +36,8 @@ export function SubscriptionCard({
           <p className="text-muted-foreground text-sm">{t('freeCaption')}</p>
         )}
       </div>
-      {state === 'active' || state === 'ending' ? (
-        <Link
-          href="/search"
-          className={buttonVariants({ className: 'relative w-full' })}
-        >
-          {t('findSong')}
-          <ArrowRightIcon aria-hidden />
-        </Link>
+      {subscription?.providerStatus ? (
+        <PortalButton recovery={Boolean(subscription.recoveryDeadline)} />
       ) : null}
     </section>
   );

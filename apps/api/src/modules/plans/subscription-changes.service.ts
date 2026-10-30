@@ -136,12 +136,16 @@ export class SubscriptionChangesService {
   async reconcilePending(userId: string) {
     await this.repository.lock(userId);
     const pending = await this.repository.change(userId);
-    if (!pending || pending.change.applied) return;
+    if (!pending) return;
     const input = await this.scheduleInput(userId);
     if (!input) return;
+    if (pending.change.applied) {
+      await this.stripe.scheduleChange(input);
+      await this.completeChange(userId, input);
+      return;
+    }
     if ((await this.stripe.inspectSchedule(input)) === 'pending') {
-      await this.repository.updateChange(userId, { applied: true });
-      await this.repository.cancelReprices(userId, pending.change.id);
+      await this.completeChange(userId, input);
     }
   }
 
@@ -162,7 +166,20 @@ export class SubscriptionChangesService {
     const input = await this.scheduleInput(userId);
     if (!input) return;
     await this.stripe.scheduleChange(input);
-    await this.repository.updateChange(userId, { applied: true });
+    await this.completeChange(userId, input);
+  }
+
+  private async completeChange(
+    userId: string,
+    input: {
+      id: string;
+      currentPrice: string;
+      nextPrice: string;
+    },
+  ) {
+    if (input.nextPrice === input.currentPrice)
+      await this.repository.deleteChange(userId);
+    else await this.repository.updateChange(userId, { applied: true });
     await this.repository.cancelReprices(userId, input.id);
   }
 
@@ -171,7 +188,11 @@ export class SubscriptionChangesService {
     const pending = await this.repository.change(userId);
     if (!row?.contract.stripeSubscriptionId || !pending)
       throw new AppException('CONFLICT', 'Subscription change is unavailable');
-    if (pending.change.applied) return null;
+    if (
+      pending.change.applied &&
+      pending.change.stripePriceId !== row.contract.stripePriceId
+    )
+      return null;
     const contract = row.contract;
     const subscription = contract.stripeSubscriptionId;
     if (!subscription)

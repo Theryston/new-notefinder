@@ -1,4 +1,5 @@
 import { planPrices, plans } from '../src/database/schema/plans.js';
+import { subscriptionChanges } from '../src/database/schema/subscriptions.js';
 import { StripeBillingService } from '../src/integrations/stripe/stripe-billing.service.js';
 import {
   billingCatalog,
@@ -259,17 +260,57 @@ describe('Scheduled subscription changes (e2e)', () => {
       .expect(500);
     expect(
       (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
-    ).toMatchObject({ cycle: 'monthly', amount: 350 });
+    ).toBeNull();
     await client
       .post(`${ROOT}/change`)
       .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
       .expect(201);
     expect(prepare.mock.calls.at(-1)?.[0]).toMatchObject({
-      previousPrice: 'price_usd_monthly',
+      previousPrice: null,
       nextPrice: 'price_usd_annual',
     });
     expect(
       (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
     ).toMatchObject({ cycle: 'annual', amount: 3500 });
+  });
+  it('removes the scheduled change when the current offer is selected again', async () => {
+    const { client } = await subscriber();
+    await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
+      .expect(201);
+    const result = await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-monthly', cycle: 'monthly' })
+      .expect(201);
+    expect(result.body.subscription).toMatchObject({
+      cycle: 'monthly',
+      amount: 350,
+      paidMembership: true,
+      pendingChange: null,
+    });
+    expect(
+      (await client.get(ROOT).expect(200)).body.subscription.pendingChange,
+    ).toBeNull();
+    expect(schedule).toHaveBeenCalledTimes(2);
+  });
+  it('cleans up an already applied schedule that repeats the active offer', async () => {
+    const { client } = await subscriber();
+    await client
+      .post(`${ROOT}/change`)
+      .send({ planId: 'pro', offerId: 'usd-annual', cycle: 'annual' })
+      .expect(201);
+    await app.db.update(subscriptionChanges).set({
+      priceId: 'usd-monthly',
+      stripePriceId: 'price_usd_monthly',
+      cycle: 'monthly',
+      amount: 350,
+    });
+    const result = await client.get(ROOT).expect(200);
+    expect(result.body.subscription).toMatchObject({
+      cycle: 'monthly',
+      pendingChange: null,
+    });
+    expect(schedule).toHaveBeenCalledTimes(2);
   });
 });

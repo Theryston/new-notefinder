@@ -6,7 +6,6 @@ import { SessionUserBoundary } from '@/features/auth/components/session-user';
 import { useSubscription } from '../hooks/use-billing';
 import { BillingSkeleton } from './billing-skeleton';
 import { SubscriptionCard } from './subscription-card';
-import { SubscriptionChange } from './subscription-change';
 import { SubscriptionPeriod } from './subscription-period';
 
 export function SubscriptionSummary({ cancelled }: { cancelled: boolean }) {
@@ -52,15 +51,12 @@ function UserSubscriptionSummary({
           {t('cancelled')}
         </p>
       ) : null}
-      {result.data.subscription ? (
-        <SubscriptionChange
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)] lg:gap-12">
+        <SubscriptionCard subscription={result.data.subscription} />
+        <SubscriptionPeriod
           subscription={result.data.subscription}
           userId={userId}
         />
-      ) : null}
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)] lg:gap-12">
-        <SubscriptionCard subscription={result.data.subscription} />
-        <SubscriptionPeriod subscription={result.data.subscription} />
       </div>
     </div>
   );

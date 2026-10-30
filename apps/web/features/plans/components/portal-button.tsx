@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import { ArrowRightIcon } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 
@@ -22,9 +23,14 @@ export function PortalButton({ recovery = false }: { recovery?: boolean }) {
     onSuccess: ({ url }) => window.location.assign(url),
   });
   return (
-    <div className="space-y-2">
-      <Button disabled={portal.isPending} onClick={() => portal.mutate()}>
+    <div className="relative w-full space-y-2">
+      <Button
+        className="w-full"
+        disabled={portal.isPending}
+        onClick={() => portal.mutate()}
+      >
         {t(recovery ? 'updatePayment' : 'manage')}
+        <ArrowRightIcon aria-hidden />
       </Button>
       {portal.isError ? <p role="alert">{t('manageError')}</p> : null}
     </div>
