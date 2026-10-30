@@ -30,18 +30,16 @@ import {
   createUser,
   DEFAULT_PASSWORD,
 } from './utils/factories.js';
-import { priceChangeBody as body } from './utils/price-change-body.js';
-
-function nearRenewal() {
-  const date = new Date(Date.now() + 10 * 86400_000);
-  date.setUTCDate(Math.min(28, date.getUTCDate()));
-  return Math.floor(date.getTime() / 1000);
-}
+import {
+  priceChangeBody as body,
+  nearRenewal,
+} from './utils/price-change-body.js';
+import { checkRejectedRetry } from './utils/price-change-rejected.js';
 
 describe('notice dispatch and scheduling (e2e)', () => {
   let app: TestApp;
   let delivery:
-    | { state: 'missing' | 'failed' }
+    | { state: 'missing' | 'failed' | 'rejected' }
     | { state: 'sent'; sentAt: Date } = { state: 'missing' };
   let end = 0;
   let currentPrice = 'price_usd_monthly';
@@ -479,6 +477,18 @@ describe('notice dispatch and scheduling (e2e)', () => {
     expect(catalog.body.plans[0].priceMigrations).toMatchObject({ pending: 1 });
     await app.app.get(PriceChangesService).processPending();
     expect(email.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows a proven rejected notice to be retried after a day', async () => {
+    const { admin } = await setup();
+    await checkRejectedRetry({
+      app,
+      admin,
+      email,
+      setDelivery: (value) => {
+        delivery = value;
+      },
+    });
   });
 
   it('recovers an ambiguous dispatch only after confirming the provider record', async () => {

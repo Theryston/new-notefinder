@@ -44,6 +44,16 @@ export class PriceChangeRetryService {
       await this.changes.update(id, { scheduleStatus: 'pending' });
       return;
     }
+    if (change.noticeStatus === 'rejected') {
+      await this.changes.update(id, {
+        noticeAttempt: change.noticeAttempt + 1,
+        noticeStatus: 'pending',
+        noticeStartedAt: null,
+        noticeMessage: null,
+        effectiveAt: null,
+      });
+      return;
+    }
     if (change.noticeStatus !== 'failed') return;
     if (change.noticeSentAt && change.effectiveAt) {
       await this.restartNotice(id, change);

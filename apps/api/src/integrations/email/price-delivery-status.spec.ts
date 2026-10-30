@@ -13,6 +13,8 @@ const job = {
   getState: vi.fn(),
   retry: vi.fn(),
   finishedOn: Date.parse('2026-01-01T00:00:00Z'),
+  attemptsMade: 0,
+  failedReason: '',
 };
 const queue = { getJob: vi.fn() };
 
@@ -42,6 +44,20 @@ describe('confirmed email delivery state', () => {
       state: 'sent',
       sentAt: new Date('2026-01-01T00:00:00Z'),
     });
+  });
+  it('distinguishes a first definitive rejection from ambiguous attempts', async () => {
+    queue.getJob.mockResolvedValue(job);
+    job.getState.mockResolvedValue('failed');
+    job.attemptsMade = 1;
+    job.failedReason = 'Resend rejected the email with HTTP 403';
+    expect(await service.delivery('notice')).toEqual({ state: 'rejected' });
+    job.attemptsMade = 2;
+    expect(await service.delivery('notice')).toEqual({ state: 'failed' });
+    job.attemptsMade = 1;
+    job.failedReason = 'Resend rejected the email with HTTP 429';
+    expect(await service.delivery('notice')).toEqual({ state: 'failed' });
+    job.failedReason = '';
+    job.attemptsMade = 0;
   });
   it('retries only an existing failed job', async () => {
     queue.getJob.mockResolvedValue(job);

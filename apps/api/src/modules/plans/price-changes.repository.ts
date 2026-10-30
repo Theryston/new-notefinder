@@ -76,7 +76,10 @@ export class PriceChangesRepository {
             'failed',
           ]),
           or(
-            eq(subscriptionPriceChanges.noticeStatus, 'failed'),
+            inArray(subscriptionPriceChanges.noticeStatus, [
+              'failed',
+              'rejected',
+            ]),
             eq(subscriptionPriceChanges.scheduleStatus, 'failed'),
           ),
         ),
@@ -177,7 +180,7 @@ export class PriceChangesRepository {
     id: string,
     attempt: number,
     expected: 'sending' | 'failed',
-    status: 'failed' | 'uncertain',
+    status: 'failed' | 'uncertain' | 'rejected',
   ) {
     await this.txHost.tx
       .update(subscriptionPriceChanges)

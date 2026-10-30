@@ -15,3 +15,9 @@ export const priceChangeBody = () => ({
     { cycle: 'annual', currency: 'USD', amount: 3500 },
   ],
 });
+
+export function nearRenewal() {
+  const date = new Date(Date.now() + 10 * 86400_000);
+  date.setUTCDate(Math.min(28, date.getUTCDate()));
+  return Math.floor(date.getTime() / 1000);
+}

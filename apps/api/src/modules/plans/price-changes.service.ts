@@ -73,16 +73,8 @@ export class PriceChangesService {
         row.change.noticeAttempt,
       );
       await this.schedule.apply(id, userId);
-    } else if (delivery.state === 'failed') {
-      await this.changes.transitionNotice(
-        id,
-        row.change.noticeAttempt,
-        'sending',
-        row.change.noticeStartedAt &&
-          Date.now() - row.change.noticeStartedAt.getTime() >= DAY
-          ? 'uncertain'
-          : 'failed',
-      );
+    } else if (delivery.state === 'rejected' || delivery.state === 'failed') {
+      await this.recordFailure(id, row.change, delivery.state);
     } else if (
       delivery.state === 'missing' &&
       row.change.noticeMessage &&
@@ -102,5 +94,26 @@ export class PriceChangesService {
         });
       }
     }
+  }
+  private async recordFailure(
+    id: string,
+    change: NonNullable<
+      Awaited<ReturnType<PriceChangesRepository['find']>>
+    >['change'],
+    state: 'rejected' | 'failed',
+  ) {
+    const status =
+      state === 'rejected'
+        ? 'rejected'
+        : change.noticeStartedAt &&
+            Date.now() - change.noticeStartedAt.getTime() >= DAY
+          ? 'uncertain'
+          : 'failed';
+    await this.changes.transitionNotice(
+      id,
+      change.noticeAttempt,
+      'sending',
+      status,
+    );
   }
 }

@@ -119,8 +119,8 @@ export class PlansRepository {
     return this.txHost.tx
       .select({
         planId: subscriptions.planId,
-        pending: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} not in ('failed', 'uncertain') and ${subscriptionPriceChanges.scheduleStatus} in ('pending', 'scheduled'))::integer`,
-        failed: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} = 'failed' or ${subscriptionPriceChanges.scheduleStatus} = 'failed')::integer`,
+        pending: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} not in ('failed', 'uncertain', 'rejected') and ${subscriptionPriceChanges.scheduleStatus} in ('pending', 'scheduled'))::integer`,
+        failed: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} in ('failed', 'rejected') or ${subscriptionPriceChanges.scheduleStatus} = 'failed')::integer`,
         uncertain: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} = 'uncertain')::integer`,
       })
       .from(subscriptionPriceChanges)

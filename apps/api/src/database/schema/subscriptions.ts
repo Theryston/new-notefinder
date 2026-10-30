@@ -139,7 +139,9 @@ export const subscriptionPriceChanges = pgTable(
     oldAmount: integer().notNull(),
     newAmount: integer().notNull(),
     noticeStatus: text()
-      .$type<'pending' | 'sending' | 'sent' | 'failed' | 'uncertain'>()
+      .$type<
+        'pending' | 'sending' | 'sent' | 'failed' | 'uncertain' | 'rejected'
+      >()
       .notNull()
       .default('pending'),
     noticeStartedAt: timestamp({ withTimezone: true }),
@@ -169,5 +171,6 @@ export const subscriptionPriceChanges = pgTable(
   (table) => [
     unique().on(table.subscriptionId, table.newPriceId),
     index().on(table.noticeStatus, table.scheduleStatus),
+    index().on(table.userId, table.scheduleStatus, table.sequence),
   ],
 );
