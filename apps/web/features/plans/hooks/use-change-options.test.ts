@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Subscription } from '@vozzify/contracts';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { billingKeys } from '../query-keys';
 import { useChangeOptions } from './use-change-options';
 
@@ -32,6 +32,12 @@ const plan = {
   saleAvailable: true,
   offers: [{ id: 'usd-annual', cycle: 'annual', amount: 3500 }],
 };
+
+beforeAll(async () => {
+  // Schema compilation must finish before the query-readiness polling window.
+  await import('@vozzify/contracts');
+});
+
 async function renderOptions() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
