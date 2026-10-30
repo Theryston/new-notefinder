@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SubscriptionNavigation } from '@/features/plans/components/subscription-navigation';
 import { Link } from '@/lib/i18n/navigation';
 
 import type { SessionUser } from '../session';
@@ -40,7 +41,7 @@ import { UserAvatar } from './user-avatar';
 
 type MenuLink = { href: string; label: string; icon: LucideIcon };
 
-function useMenuLinks(user: SessionUser): MenuLink[] {
+function useMenuLinks(user: SessionUser, subscribed: boolean): MenuLink[] {
   const t = useTranslations('header');
   const profile: MenuLink[] = user.username
     ? [
@@ -54,7 +55,11 @@ function useMenuLinks(user: SessionUser): MenuLink[] {
   return [
     ...profile,
     { href: '/me/edit', label: t('account.editProfile'), icon: PencilIcon },
-    { href: '/plans', label: t('account.plans'), icon: LayersIcon },
+    {
+      href: subscribed ? '/subscription' : '/plans',
+      label: t(subscribed ? 'account.subscription' : 'account.plans'),
+      icon: LayersIcon,
+    },
   ];
 }
 
@@ -77,11 +82,12 @@ function UserSummary({ user }: { user: SessionUser }) {
 }
 
 type Props = { user: SessionUser; currentPath: string };
+type MenuProps = Props & { subscribed: boolean };
 
 /** The signed-in user's menu: a dropdown from `md` up. */
-function UserDropdown({ user, currentPath }: Props) {
+function UserDropdown({ user, currentPath, subscribed }: MenuProps) {
   const t = useTranslations('header');
-  const links = useMenuLinks(user);
+  const links = useMenuLinks(user, subscribed);
   const { signOut, pending } = useSignOut();
 
   return (
@@ -138,9 +144,9 @@ function UserDropdown({ user, currentPath }: Props) {
 }
 
 /** The same menu as a bottom sheet, below `md`. */
-function UserDrawer({ user, currentPath }: Props) {
+function UserDrawer({ user, currentPath, subscribed }: MenuProps) {
   const t = useTranslations('header');
-  const links = useMenuLinks(user);
+  const links = useMenuLinks(user, subscribed);
   const { signOut, pending } = useSignOut();
 
   return (
@@ -204,6 +210,19 @@ const avatarSlotClassName = 'mr-0.5 items-center';
 
 /** Avatar button opening the signed-in user's menu. */
 export function UserMenu(props: Props) {
+  return props.user.id ? (
+    <SubscriptionNavigation
+      userId={props.user.id}
+      render={(subscribed) => (
+        <UserMenuContent {...props} subscribed={subscribed} />
+      )}
+    />
+  ) : (
+    <UserMenuContent {...props} subscribed={false} />
+  );
+}
+
+function UserMenuContent(props: MenuProps) {
   return (
     <>
       <div className={`hidden md:flex ${avatarSlotClassName}`}>

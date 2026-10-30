@@ -6,13 +6,15 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { subscriptionState } from '../subscription-presentation';
-import { PortalButton } from './portal-button';
 import { PriceChangeNotice } from './price-change-notice';
+import { SubscriptionChange } from './subscription-change';
 
 export function SubscriptionPeriod({
   subscription,
+  userId,
 }: {
   subscription: Subscription | null;
+  userId: string;
 }) {
   const t = useTranslations('billing');
   const state = subscriptionState(subscription);
@@ -38,16 +40,18 @@ export function SubscriptionPeriod({
       {subscription ? <RecoveryNotice subscription={subscription} /> : null}
       {subscription ? <PriceChangeNotice subscription={subscription} /> : null}
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
-      {subscription?.providerStatus ? (
-        <PortalButton recovery={Boolean(subscription.recoveryDeadline)} />
+      {subscription ? (
+        <SubscriptionChange subscription={subscription} userId={userId} />
       ) : null}
-      <Link
-        href="/plans"
-        className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
-      >
-        {t('viewPlans')}
-        <ArrowRightIcon aria-hidden className="size-4" />
-      </Link>
+      {!subscription?.paidMembership ? (
+        <Link
+          href="/plans"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full font-semibold text-primary text-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
+        >
+          {t('viewPlans')}
+          <ArrowRightIcon aria-hidden className="size-4" />
+        </Link>
+      ) : null}
     </section>
   );
 }

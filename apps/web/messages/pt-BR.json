@@ -384,6 +384,7 @@
       "editProfile": "Editar perfil",
       "signOut": "Sair",
       "signingOut": "Saindo",
+      "subscription": "Assinatura",
       "plans": "Planos"
     },
     "preferences": {
@@ -1290,7 +1291,14 @@
   },
   "billing": {
     "change": {
-      "title": "Alterar plano",
+      "restoreConfirmation": "Cancelar a mudança agendada e manter seu plano {plan} atual, com cobrança {cycle} de {amount}.",
+      "restoreConfirm": "Manter plano atual",
+      "activeOffer": "Plano ativo",
+      "scheduledOffer": "Plano agendado",
+      "close": "Fechar",
+      "loading": "Carregando ofertas…",
+      "empty": "Nenhuma oferta disponível no momento.",
+      "title": "Mudar plano",
       "select": "Escolha um plano e ciclo de cobrança",
       "placeholder": "Selecione uma oferta",
       "option": "{plan} — {cycle} — {amount}",

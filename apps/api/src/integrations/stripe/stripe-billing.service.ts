@@ -22,10 +22,10 @@ import { portalConfiguration } from './stripe-portal-schema.js';
 import {
   type ScheduleInput,
   scheduleForProvider,
-  schedulePhases,
   validateSchedule,
 } from './stripe-schedule.js';
 import { trialPayment } from './stripe-trial-payment.js';
+import { updateSchedule } from './stripe-update-schedule.js';
 
 @Injectable()
 export class StripeBillingService {
@@ -171,6 +171,8 @@ export class StripeBillingService {
   }
   async prepareSchedule(input: ScheduleInput) {
     const provider = await this.schedulableSubscription(input);
+    if (input.nextPrice === input.currentPrice)
+      return provider.schedule ?? null;
     if (
       input.schedule &&
       provider.schedule &&
@@ -186,7 +188,7 @@ export class StripeBillingService {
           await this.request(
             'subscription_schedules',
             { from_subscription: input.subscription },
-            `schedule-${input.subscription}-${input.end}`,
+            `schedule-${input.id}`,
           ),
         ).id;
     validateSchedule(
@@ -201,6 +203,8 @@ export class StripeBillingService {
 
   async inspectSchedule(input: ScheduleInput) {
     const provider = await this.schedulableSubscription(input);
+    if (input.nextPrice === input.currentPrice && !provider.schedule)
+      return 'pending' as const;
     const schedule = input.schedule ?? provider.schedule;
     if (!schedule) {
       if (input.previousPrice)
@@ -234,22 +238,9 @@ export class StripeBillingService {
 
   async scheduleChange(input: ScheduleInput) {
     const provider = await this.schedulableSubscription(input);
-    const scheduled = scheduleForProvider(input, provider);
-    if (!input.schedule)
-      throw new AppException('CONFLICT', 'Subscription schedule is missing');
-    validateSchedule(
-      await this.request(
-        `subscription_schedules/${encodeURIComponent(input.schedule)}`,
-      ),
-      scheduled,
-      input.schedule,
+    return updateSchedule(input, provider, (path, body, key) =>
+      this.request(path, body, key),
     );
-    const result = await this.request(
-      `subscription_schedules/${encodeURIComponent(input.schedule)}`,
-      schedulePhases(scheduled),
-      `change-${input.id}`,
-    );
-    validateSchedule(result, scheduled, input.schedule, true);
   }
 
   private async schedulableSubscription(input: ScheduleInput) {

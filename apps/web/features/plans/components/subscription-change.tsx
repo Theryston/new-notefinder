@@ -2,8 +2,17 @@
 
 import type { Subscription } from '@vozzify/contracts';
 import { useFormatter, useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useChangeOptions } from '../hooks/use-change-options';
+import { ChangeOffers } from './change-offers';
 
 export function SubscriptionChange({
   subscription,
@@ -13,59 +22,59 @@ export function SubscriptionChange({
   userId: string;
 }) {
   const t = useTranslations('billing.change');
-  const {
-    catalog,
-    selection,
-    setSelection,
-    confirming,
-    setConfirming,
-    offer,
-    mutation,
-  } = useChangeOptions(subscription, userId);
+  const [open, setOpen] = useState(false);
+  const eligible =
+    subscription.paidMembership &&
+    !subscription.cancelAtPeriodEnd &&
+    Boolean(subscription.currentPeriodEnd);
   return (
-    <section
-      className="space-y-4 rounded-2xl bg-surface p-6"
-      aria-label={t('title')}
-    >
-      <h2 className="font-bold text-xl">{t('title')}</h2>
-      <PendingChange subscription={subscription} />
-      {subscription.paidMembership &&
-      !subscription.cancelAtPeriodEnd &&
-      subscription.currentPeriodEnd ? (
+    <div className="space-y-3">
+      {!open ? <PendingChange subscription={subscription} /> : null}
+      {eligible ? (
         <>
-          <label htmlFor="subscription-change" className="block text-sm">
-            {t('select')}
-          </label>
-          <select
-            id="subscription-change"
-            className="w-full rounded-full border border-border bg-background p-3"
-            value={selection}
-            onChange={(event) => {
-              setSelection(event.target.value);
-              setConfirming(false);
-            }}
-          >
-            <option value="">{t('placeholder')}</option>
-            {catalog.data?.map((item) => (
-              <OfferOption
-                key={item.id}
-                item={item}
-                currency={subscription.currency}
-              />
-            ))}
-          </select>
-          <ChangeError show={catalog.isError} message={t('loadError')} />
-          <ChangeConfirmation
-            subscription={subscription}
-            offer={offer}
-            confirming={confirming}
-            setConfirming={setConfirming}
-            mutation={mutation}
-          />
-          <ChangeError show={mutation.isError} message={t('error')} />
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            {t('title')}
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent closeLabel={t('close')} className="max-w-3xl gap-6">
+              <DialogHeader>
+                <DialogTitle>{t('title')}</DialogTitle>
+                <DialogDescription>{t('select')}</DialogDescription>
+              </DialogHeader>
+              <ChangeContent subscription={subscription} userId={userId} />
+            </DialogContent>
+          </Dialog>
         </>
       ) : null}
-    </section>
+    </div>
+  );
+}
+
+function ChangeContent({
+  subscription,
+  userId,
+}: {
+  subscription: Subscription;
+  userId: string;
+}) {
+  const t = useTranslations('billing.change');
+  const state = useChangeOptions(subscription, userId);
+  return (
+    <div className="space-y-5">
+      <ChangeOffers subscription={subscription} state={state} />
+      <ChangeError show={state.catalog.isError} message={t('loadError')} />
+      {state.confirming ? (
+        <ChangeConfirmation
+          subscription={subscription}
+          offer={state.offer}
+          confirming={state.confirming}
+          setConfirming={state.setConfirming}
+          mutation={state.mutation}
+        />
+      ) : null}
+      <ChangeError show={state.mutation.isError} message={t('error')} />
+      <PendingChange subscription={subscription} />
+    </div>
   );
 }
 
@@ -95,34 +104,6 @@ function ChangeError({ show, message }: { show: boolean; message: string }) {
   return show ? <p role="alert">{message}</p> : null;
 }
 
-function OfferOption({
-  item,
-  currency,
-}: {
-  item: {
-    id: string;
-    name: string;
-    cycle: 'monthly' | 'annual';
-    amount: number;
-  };
-  currency: Subscription['currency'];
-}) {
-  const t = useTranslations('billing.change');
-  const format = useFormatter();
-  return (
-    <option value={item.id}>
-      {t('option', {
-        plan: item.name,
-        cycle: t(item.cycle),
-        amount: format.number(item.amount / 100, {
-          style: 'currency',
-          currency,
-        }),
-      })}
-    </option>
-  );
-}
-
 function ChangeConfirmation({
   subscription,
   offer,
@@ -147,10 +128,14 @@ function ChangeConfirmation({
         {t('review')}
       </Button>
     );
+  const restoring =
+    Boolean(subscription.pendingChange) &&
+    offer.planId === subscription.planId &&
+    offer.cycle === subscription.cycle;
   return (
     <div className="space-y-3">
       <p>
-        {t('confirmation', {
+        {t(restoring ? 'restoreConfirmation' : 'confirmation', {
           plan: offer.name,
           cycle: t(offer.cycle),
           amount: format.number(offer.amount / 100, {
@@ -163,7 +148,7 @@ function ChangeConfirmation({
         })}
       </p>
       <Button disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-        {t('confirm')}
+        {t(restoring ? 'restoreConfirm' : 'confirm')}
       </Button>
     </div>
   );

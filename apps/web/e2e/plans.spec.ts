@@ -141,6 +141,9 @@ for (const locale of ['en', 'pt-BR'] as const) {
     page,
   }) => {
     await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
+    await page.route('**/v1/me/subscription?*', (route) =>
+      route.fulfill({ json: { subscription: null } }),
+    );
     await page.goto(`/${locale}/terms`);
     await page
       .getByRole('button', { name: t.header.account.accountMenu })
@@ -162,6 +165,9 @@ for (const locale of ['en', 'pt-BR'] as const) {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.emulateMedia({ colorScheme: 'dark' });
     await mockAuthApi(page, { user: { ...ADA, username: 'ada' } });
+    await page.route('**/v1/me/subscription?*', (route) =>
+      route.fulfill({ json: { subscription: null } }),
+    );
     await page.goto(`/${locale}/terms`);
     const t = messages[locale];
     await page
