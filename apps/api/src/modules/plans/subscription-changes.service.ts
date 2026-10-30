@@ -19,6 +19,65 @@ export class SubscriptionChangesService {
     await this.scheduleChange(userId);
   }
 
+  async reprice(
+    userId: string,
+    input: { id: string; priceId: string; effectiveAt: Date },
+  ) {
+    await this.reserveReprice(userId, input);
+    await this.prepareSchedule(userId);
+    await this.scheduleChange(userId);
+  }
+
+  @Transactional()
+  async reserveReprice(
+    userId: string,
+    input: { id: string; priceId: string; effectiveAt: Date },
+  ) {
+    await this.repository.lock(userId);
+    const row = await this.repository.current(userId);
+    const price = await this.repository.price(input.priceId);
+    const pending = await this.repository.change(userId);
+    const contract = row?.contract;
+    if (
+      pending?.change.id === input.id &&
+      pending.change.priceId === input.priceId &&
+      pending.change.effectiveAt.getTime() === input.effectiveAt.getTime()
+    )
+      return;
+    if (
+      pending ||
+      !contract?.stripeSubscriptionId ||
+      !contract.currentPeriodEnd ||
+      !contract.currentPeriodStart ||
+      contract.cancelAtPeriodEnd ||
+      !price?.stripePriceId ||
+      contract.planId !== price.planId ||
+      contract.cycle !== price.cycle ||
+      contract.currency !== price.currency ||
+      contract.currentPeriodEnd.getTime() !== input.effectiveAt.getTime() ||
+      contract.currentPeriodEnd.getTime() <= Date.now()
+    )
+      throw new AppException(
+        'CONFLICT',
+        'Subscription repricing is unavailable',
+      );
+    await this.repository.saveChange({
+      id: input.id,
+      userId,
+      subscriptionId: contract.id,
+      planId: price.planId,
+      priceId: price.id,
+      cycle: price.cycle,
+      currency: price.currency,
+      amount: price.amount,
+      stripePriceId: price.stripePriceId,
+      effectiveAt: contract.currentPeriodEnd,
+      stripeScheduleId: null,
+      applied: false,
+      agreed: null,
+    });
+  }
+
   @Transactional()
   async reserveChange(userId: string, body: CreateSubscriptionChangeBody) {
     await this.repository.lock(userId);
@@ -80,8 +139,10 @@ export class SubscriptionChangesService {
     if (!pending || pending.change.applied) return;
     const input = await this.scheduleInput(userId);
     if (!input) return;
-    if ((await this.stripe.inspectSchedule(input)) === 'pending')
+    if ((await this.stripe.inspectSchedule(input)) === 'pending') {
       await this.repository.updateChange(userId, { applied: true });
+      await this.repository.cancelReprices(userId, pending.change.id);
+    }
   }
 
   @Transactional()
@@ -102,6 +163,7 @@ export class SubscriptionChangesService {
     if (!input) return;
     await this.stripe.scheduleChange(input);
     await this.repository.updateChange(userId, { applied: true });
+    await this.repository.cancelReprices(userId, input.id);
   }
 
   private async scheduleInput(userId: string) {
@@ -119,6 +181,7 @@ export class SubscriptionChangesService {
       subscription,
       schedule: pending.change.stripeScheduleId,
       currentPrice: contract.stripePriceId,
+      currentCycle: contract.cycle,
       nextPrice: pending.change.stripePriceId,
       nextCycle: pending.change.cycle,
       previousPrice: pending.change.agreed?.stripePriceId ?? null,

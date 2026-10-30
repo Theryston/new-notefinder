@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AppException } from '../../common/errors/app-exception.js';
+import type { StripeSubscription } from './stripe-billing-schemas.js';
 
 export type ScheduleInput = {
   id: string;
@@ -12,7 +13,17 @@ export type ScheduleInput = {
   previousCycle: 'monthly' | 'annual' | null;
   start: number;
   end: number;
+  trialEnd?: number;
+  currentCycle?: 'monthly' | 'annual';
 };
+export function scheduleForProvider(
+  input: ScheduleInput,
+  provider: StripeSubscription,
+): ScheduleInput {
+  return provider.status === 'trialing' && provider.trial_end
+    ? { ...input, trialEnd: provider.trial_end }
+    : input;
+}
 export function schedulePhases(input: ScheduleInput) {
   return {
     end_behavior: 'release',
@@ -22,6 +33,9 @@ export function schedulePhases(input: ScheduleInput) {
     'phases[0][items][0][price]': input.currentPrice,
     'phases[0][items][0][quantity]': '1',
     'phases[0][proration_behavior]': 'none',
+    ...(input.trialEnd
+      ? { 'phases[0][trial_end]': String(input.trialEnd) }
+      : {}),
     'phases[1][start_date]': String(input.end),
     'phases[1][items][0][price]': input.nextPrice,
     'phases[1][items][0][quantity]': '1',
@@ -62,13 +76,18 @@ function emptySetting(value: unknown): boolean {
       Object.values(value).every(emptySetting))
   );
 }
-function safePhase(phase: z.infer<typeof scheduleSchema>['phases'][number]) {
+function safePhase(
+  phase: z.infer<typeof scheduleSchema>['phases'][number],
+  trialEnd?: number,
+) {
   const ignored = new Set([
     'start_date',
     'end_date',
     'items',
     'currency',
     'proration_behavior',
+    'trial_end',
+    'trial',
   ]);
   const safe = Object.entries(phase).every(
     ([key, value]) => ignored.has(key) || emptySetting(value),
@@ -76,6 +95,10 @@ function safePhase(phase: z.infer<typeof scheduleSchema>['phases'][number]) {
   const item = phase.items[0];
   return (
     safe &&
+    (phase.trial == null ||
+      phase.trial === false ||
+      (phase.trial === true && trialEnd !== undefined)) &&
+    (trialEnd ? phase.trial_end === trialEnd : emptySetting(phase.trial_end)) &&
     phase.items.length === 1 &&
     item &&
     item.quantity === 1 &&
@@ -100,6 +123,27 @@ function phaseEnd(start: number, cycle: 'monthly' | 'annual') {
   ).getUTCDate();
   target.setUTCDate(Math.min(day, lastDay));
   return Math.floor(target.getTime() / 1000);
+}
+
+function safeFuture(
+  phase: z.infer<typeof scheduleSchema>['phases'][number],
+  input: ScheduleInput,
+) {
+  const price = phase.items[0]?.price;
+  const allowed = [input.previousPrice, input.nextPrice];
+  if (input.trialEnd && !input.previousPrice) allowed.push(input.currentPrice);
+  const cycle =
+    price === input.currentPrice && input.trialEnd
+      ? (input.currentCycle ?? input.nextCycle)
+      : price === input.nextPrice
+        ? input.nextCycle
+        : (input.previousCycle ?? input.nextCycle);
+  return (
+    safePhase(phase) &&
+    phase.start_date === input.end &&
+    allowed.includes(price ?? null) &&
+    phase.end_date === phaseEnd(input.end, cycle)
+  );
 }
 
 export function validateSchedule(
@@ -129,24 +173,12 @@ export function validateSchedule(
     ) ||
     phases.length > currentIndex + 2 ||
     !current ||
-    !safePhase(current) ||
+    !safePhase(current, input.trialEnd) ||
     current.start_date !== input.start ||
     current.end_date !== input.end ||
     current.items[0]?.price !== input.currentPrice ||
     (requireFuture && future?.items[0]?.price !== input.nextPrice) ||
-    (future &&
-      (!safePhase(future) ||
-        future.start_date !== input.end ||
-        ![input.previousPrice, input.nextPrice].includes(
-          future.items[0]?.price ?? null,
-        ) ||
-        future.end_date !==
-          phaseEnd(
-            input.end,
-            future.items[0]?.price === input.nextPrice
-              ? input.nextCycle
-              : (input.previousCycle ?? input.nextCycle),
-          )))
+    (future && !safeFuture(future, input))
   )
     throw new AppException(
       'CONFLICT',

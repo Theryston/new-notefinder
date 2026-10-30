@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import type { CreateSubscriptionChangeBody } from '@vozzify/contracts';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { DatabaseAdapter } from '../../database/database.js';
 import {
   planCatalogSettings,
@@ -13,9 +13,11 @@ import {
   billingEvents,
   subscriptionChanges,
   subscriptionHistory,
+  subscriptionPriceChanges,
   subscriptions,
 } from '../../database/schema/subscriptions.js';
 
+import { fanOutPriceChanges } from './price-change-fanout.repository.js';
 @Injectable()
 export class SubscriptionsRepository {
   constructor(private readonly txHost: TransactionHost<DatabaseAdapter>) {}
@@ -31,6 +33,62 @@ export class SubscriptionsRepository {
       .innerJoin(plans, eq(plans.id, subscriptions.planId))
       .where(eq(subscriptions.userId, userId));
     return rows[0];
+  }
+  async price(id: string) {
+    const rows = await this.txHost.tx
+      .select()
+      .from(planPrices)
+      .where(eq(planPrices.id, id));
+    return rows[0];
+  }
+  async pendingPrice(userId: string) {
+    const rows = await this.txHost.tx
+      .select({
+        amount: subscriptionPriceChanges.newAmount,
+        currency: planPrices.currency,
+        effectiveAt: subscriptionPriceChanges.effectiveAt,
+        status: subscriptionPriceChanges.scheduleStatus,
+      })
+      .from(subscriptionPriceChanges)
+      .innerJoin(
+        planPrices,
+        eq(planPrices.id, subscriptionPriceChanges.newPriceId),
+      )
+      .where(
+        and(
+          eq(subscriptionPriceChanges.userId, userId),
+          eq(subscriptionPriceChanges.noticeStatus, 'sent'),
+          inArray(subscriptionPriceChanges.scheduleStatus, [
+            'pending',
+            'scheduled',
+            'failed',
+          ]),
+        ),
+      )
+      .orderBy(asc(subscriptionPriceChanges.sequence))
+      .limit(1);
+    return rows[0];
+  }
+  async cancelReprices(userId: string, acceptedChangeId: string) {
+    const repricing = await this.txHost.tx
+      .select({ id: subscriptionPriceChanges.id })
+      .from(subscriptionPriceChanges)
+      .where(eq(subscriptionPriceChanges.id, acceptedChangeId));
+    if (repricing.length) return;
+    await this.txHost.tx
+      .update(subscriptionPriceChanges)
+      .set({ scheduleStatus: 'cancelled' })
+      .where(
+        and(
+          eq(subscriptionPriceChanges.userId, userId),
+          ne(subscriptionPriceChanges.id, acceptedChangeId),
+          inArray(subscriptionPriceChanges.scheduleStatus, [
+            'pending',
+            'scheduled',
+            'failed',
+          ]),
+        ),
+      );
   }
   async customer(userId: string) {
     const rows = await this.txHost.tx
@@ -83,6 +141,19 @@ export class SubscriptionsRepository {
   }
   async archive(contract: typeof subscriptions.$inferSelect) {
     await this.txHost.tx
+      .update(subscriptionPriceChanges)
+      .set({ scheduleStatus: 'cancelled' })
+      .where(
+        and(
+          eq(subscriptionPriceChanges.subscriptionId, contract.id),
+          inArray(subscriptionPriceChanges.scheduleStatus, [
+            'pending',
+            'failed',
+            'scheduled',
+          ]),
+        ),
+      );
+    await this.txHost.tx
       .insert(subscriptionHistory)
       .values({ id: contract.id, userId: contract.userId, contract })
       .onConflictDoNothing();
@@ -119,6 +190,17 @@ export class SubscriptionsRepository {
       .insert(billingEvents)
       .values({ providerEventId: id })
       .onConflictDoNothing();
+  }
+  async trackPriceChanges(userId: string) {
+    const contract = await this.current(userId);
+    if (!contract) return;
+    // Serialize late checkout confirmation with publication of a new price.
+    await this.txHost.tx
+      .select({ id: plans.id })
+      .from(plans)
+      .where(eq(plans.id, contract.contract.planId))
+      .for('update');
+    await fanOutPriceChanges(this.txHost.tx, { userId });
   }
   async change(userId: string) {
     const rows = await this.txHost.tx

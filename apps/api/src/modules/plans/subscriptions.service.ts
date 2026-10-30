@@ -246,10 +246,24 @@ export class SubscriptionsService {
     if (!row) return { subscription: null };
     const contract = row.contract;
     const pendingChange = await this.changes.visible(userId, locale);
+    const pendingPrice = await this.repository.pendingPrice(userId);
     const deadline = recoveryDeadline(contract.recoveryStartedAt);
     return {
       subscription: {
         pendingChange,
+        ...(!contract.cancelAtPeriodEnd &&
+        pendingPrice?.effectiveAt &&
+        (pendingPrice.status === 'pending' ||
+          pendingPrice.status === 'scheduled' ||
+          pendingPrice.status === 'failed')
+          ? {
+              pendingPriceChange: {
+                ...pendingPrice,
+                effectiveAt: pendingPrice.effectiveAt.toISOString(),
+                status: pendingPrice.status,
+              },
+            }
+          : {}),
         recoveryDeadline: deadline?.toISOString() ?? null,
         planId: contract.planId,
         planName: row.copy[locale].name,
@@ -289,6 +303,7 @@ export class SubscriptionsService {
       repository: this.repository,
       stripe: this.stripe,
     });
+    await this.repository.trackPriceChanges(userId);
     await this.repository.markProcessed(event.id);
   }
 }

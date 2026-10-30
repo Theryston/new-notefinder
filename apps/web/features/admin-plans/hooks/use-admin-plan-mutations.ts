@@ -29,3 +29,12 @@ export function useContractingMutation() {
     onSuccess: (catalog) => client.setQueryData(adminPlanKeys.catalog, catalog),
   });
 }
+
+export function useRetryPriceChanges() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (planId: string) =>
+      (await import('../client')).retryPriceChanges(planId),
+    onSuccess: (catalog) => client.setQueryData(adminPlanKeys.catalog, catalog),
+  });
+}

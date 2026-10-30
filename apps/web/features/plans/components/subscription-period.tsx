@@ -7,6 +7,7 @@ import { Link } from '@/lib/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { subscriptionState } from '../subscription-presentation';
 import { PortalButton } from './portal-button';
+import { PriceChangeNotice } from './price-change-notice';
 
 export function SubscriptionPeriod({
   subscription,
@@ -35,6 +36,7 @@ export function SubscriptionPeriod({
         <PeriodDescription state={state} subscription={subscription} />
       ) : null}
       {subscription ? <RecoveryNotice subscription={subscription} /> : null}
+      {subscription ? <PriceChangeNotice subscription={subscription} /> : null}
       {subscription ? <PeriodTimeline subscription={subscription} /> : null}
       {subscription?.providerStatus ? (
         <PortalButton recovery={Boolean(subscription.recoveryDeadline)} />

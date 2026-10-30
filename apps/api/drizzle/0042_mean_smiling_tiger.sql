@@ -1,0 +1,1 @@
+CREATE INDEX "subscription_price_changes_user_id_schedule_status_sequence_index" ON "subscription_price_changes" USING btree ("user_id","schedule_status","sequence");

@@ -55,9 +55,30 @@ export class EmailService {
         options.retainForSeconds === undefined
           ? true
           : { age: options.retainForSeconds },
-      removeOnFail: { age: DAY_SECONDS },
+      removeOnFail: { age: options.retainForSeconds ?? DAY_SECONDS },
       jobId: options.jobId,
     });
+  }
+
+  async delivery(jobId: string) {
+    const job = await this.queue.getJob(jobId);
+    if (!job) return { state: 'missing' as const };
+    const state = await job.getState();
+    if (state === 'completed' && job.finishedOn)
+      return { state: 'sent' as const, sentAt: new Date(job.finishedOn) };
+    if (state === 'failed') {
+      const rejected =
+        job.attemptsMade === 1 &&
+        /^Resend rejected the email with HTTP (400|401|403|404|422)$/.test(
+          job.failedReason ?? '',
+        );
+      return { state: rejected ? ('rejected' as const) : ('failed' as const) };
+    }
+    return { state: 'pending' as const };
+  }
+  async retryDelivery(jobId: string) {
+    const job = await this.queue.getJob(jobId);
+    if (job && (await job.getState()) === 'failed') await job.retry();
   }
 
   /** Sends a one-time code (email verification, password reset). */

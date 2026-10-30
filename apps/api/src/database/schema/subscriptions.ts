@@ -1,4 +1,5 @@
 import {
+  bigserial,
   boolean,
   index,
   integer,
@@ -116,3 +117,60 @@ export const subscriptionChanges = pgTable('subscription_changes', {
   }>(),
   ...timestamps,
 });
+
+// Each row represents one price notice and its eventual provider transition.
+export const subscriptionPriceChanges = pgTable(
+  'subscription_price_changes',
+  {
+    id: id(),
+    sequence: bigserial({ mode: 'number' }).notNull().unique(),
+    // Contracts move to subscription_history when a User returns, so this ID
+    // outlives the active subscription row.
+    subscriptionId: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    oldPriceId: text()
+      .notNull()
+      .references(() => planPrices.id, { onDelete: 'restrict' }),
+    newPriceId: text()
+      .notNull()
+      .references(() => planPrices.id, { onDelete: 'restrict' }),
+    oldAmount: integer().notNull(),
+    newAmount: integer().notNull(),
+    noticeStatus: text()
+      .$type<
+        'pending' | 'sending' | 'sent' | 'failed' | 'uncertain' | 'rejected'
+      >()
+      .notNull()
+      .default('pending'),
+    noticeStartedAt: timestamp({ withTimezone: true }),
+    noticeSentAt: timestamp({ withTimezone: true }),
+    effectiveAt: timestamp({ withTimezone: true }),
+    noticeAttempt: integer().notNull().default(0),
+    noticeHistory: jsonb()
+      .$type<{ sentAt: string; effectiveAt: string }[]>()
+      .notNull()
+      .default([]),
+    noticeMessage: jsonb().$type<{
+      to: string;
+      subject: string;
+      html: string;
+      text: string;
+      sendBefore?: string;
+      tags?: { name: string; value: string }[];
+    }>(),
+    reconcileCursor: text(),
+    nextReconcileAt: timestamp({ withTimezone: true }),
+    scheduleStatus: text()
+      .$type<'pending' | 'scheduled' | 'failed' | 'completed' | 'cancelled'>()
+      .notNull()
+      .default('pending'),
+    ...timestamps,
+  },
+  (table) => [
+    unique().on(table.subscriptionId, table.newPriceId),
+    index().on(table.noticeStatus, table.scheduleStatus),
+    index().on(table.userId, table.scheduleStatus, table.sequence),
+  ],
+);

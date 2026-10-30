@@ -20,5 +20,6 @@ export function adminPlanOf(
     })),
     syncStatus: row.operation?.status ?? 'synced',
     pendingOperation: row.operation?.body ?? null,
+    ...(row.priceMigrations ? { priceMigrations: row.priceMigrations } : {}),
   };
 }

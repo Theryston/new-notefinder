@@ -288,6 +288,20 @@
       "when": 1793298193586,
       "tag": "0040_stale_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793369739374,
+      "tag": "0041_messy_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793370436610,
+      "tag": "0042_mean_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }
