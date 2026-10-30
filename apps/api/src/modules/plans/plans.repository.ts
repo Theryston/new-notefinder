@@ -11,7 +11,12 @@ import {
   planSyncOperations,
   plans,
 } from '../../database/schema/plans.js';
+import {
+  subscriptionPriceChanges,
+  subscriptions,
+} from '../../database/schema/subscriptions.js';
 import type { PlanSyncClaim } from './plan-sync-claim.js';
+import { fanOutPriceChanges } from './price-change-fanout.repository.js';
 
 type CatalogPlanRecord = Omit<
   typeof plans.$inferSelect,
@@ -68,7 +73,7 @@ export class PlansRepository {
     }));
   }
   async list() {
-    const [rows, prices] = await Promise.all([
+    const [rows, prices, migrations] = await Promise.all([
       this.txHost.tx
         .select({
           id: plans.id,
@@ -99,11 +104,38 @@ export class PlansRepository {
         })
         .from(planPrices)
         .where(eq(planPrices.current, true)),
+      this.migrationCounts(),
     ]);
     return rows.map((row) => ({
       ...row,
       prices: prices.filter((price) => price.planId === row.id),
+      priceMigrations: migrations.find(
+        (migration) => migration.planId === row.id,
+      ),
     }));
+  }
+
+  private migrationCounts() {
+    return this.txHost.tx
+      .select({
+        planId: subscriptions.planId,
+        pending: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} not in ('failed', 'uncertain') and ${subscriptionPriceChanges.scheduleStatus} in ('pending', 'scheduled'))::integer`,
+        failed: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} = 'failed' or ${subscriptionPriceChanges.scheduleStatus} = 'failed')::integer`,
+        uncertain: sql<number>`count(*) filter (where ${subscriptionPriceChanges.noticeStatus} = 'uncertain')::integer`,
+      })
+      .from(subscriptionPriceChanges)
+      .innerJoin(
+        subscriptions,
+        eq(subscriptions.id, subscriptionPriceChanges.subscriptionId),
+      )
+      .where(
+        inArray(subscriptionPriceChanges.scheduleStatus, [
+          'pending',
+          'scheduled',
+          'failed',
+        ]),
+      )
+      .groupBy(subscriptions.planId);
   }
 
   async lockOperation(id: string) {
@@ -219,6 +251,7 @@ export class PlansRepository {
         .set({ current: true })
         .where(eq(planPrices.id, id));
     }
+    await fanOutPriceChanges(this.txHost.tx, { planId });
     const { operationId: _, prices: __, ...settings } = body;
     await this.txHost.tx
       .update(plans)

@@ -60,6 +60,20 @@ export class EmailService {
     });
   }
 
+  async delivery(jobId: string) {
+    const job = await this.queue.getJob(jobId);
+    if (!job) return { state: 'missing' as const };
+    const state = await job.getState();
+    if (state === 'completed' && job.finishedOn)
+      return { state: 'sent' as const, sentAt: new Date(job.finishedOn) };
+    if (state === 'failed') return { state: 'failed' as const };
+    return { state: 'pending' as const };
+  }
+  async retryDelivery(jobId: string) {
+    const job = await this.queue.getJob(jobId);
+    if (job && (await job.getState()) === 'failed') await job.retry();
+  }
+
   /** Sends a one-time code (email verification, password reset). */
   async sendOtp(input: OtpEmailInput): Promise<void> {
     await this.send(renderOtpEmail({ ...input, webUrl: this.env.WEB_URL }));

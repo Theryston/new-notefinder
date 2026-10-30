@@ -11,6 +11,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { createZodDto } from '../../common/zod/create-zod-dto.js';
 import { ZodSerializerDto } from '../../common/zod/zod-serializer.interceptor.js';
 import { AdminPlansService } from './admin-plans.service.js';
+import { PriceChangeRetryService } from './price-change-retry.service.js';
 
 class SavePlanDto extends createZodDto(saveAdminPlanBodySchema) {}
 class PlanParamDto extends createZodDto(adminPlanIdParamSchema) {}
@@ -20,7 +21,10 @@ class ContractingDto extends createZodDto(updateContractingBodySchema) {}
 @Roles('ADMIN')
 @Controller('admin/plans')
 export class AdminPlansController {
-  constructor(private readonly plans: AdminPlansService) {}
+  constructor(
+    private readonly plans: AdminPlansService,
+    private readonly retries: PriceChangeRetryService,
+  ) {}
 
   @Get()
   @ZodSerializerDto(adminPlanCatalogSchema)
@@ -44,5 +48,12 @@ export class AdminPlansController {
   @ZodSerializerDto(adminPlanSchema)
   save(@Param() params: PlanParamDto, @Body() body: SavePlanDto) {
     return this.plans.save(params.planId, body);
+  }
+
+  @Post(':planId/price-changes/retry')
+  @ZodSerializerDto(adminPlanCatalogSchema)
+  async retryPriceChanges(@Param() params: PlanParamDto) {
+    await this.retries.retryPlan(params.planId);
+    return this.plans.list();
   }
 }

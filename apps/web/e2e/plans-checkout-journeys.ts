@@ -70,12 +70,12 @@ async function enableCheckout(install: InstallCatalog, locale: Locale) {
 async function openPlans(page: Page, path: string) {
   await expect(async () => {
     await page.goto(path);
-    await expect(
-      page
-        .getByRole('article', { name: 'Pro', exact: true })
-        .getByRole('button')
-        .first(),
-    ).toBeVisible();
+    const button = page
+      .getByRole('article', { name: 'Pro', exact: true })
+      .getByRole('button')
+      .first();
+    await expect(button).toBeVisible();
+    await expect(button).toBeEnabled();
   }).toPass();
 }
 

@@ -1,0 +1,12 @@
+{
+  "subject": "Your subscription price is changing",
+  "preheader": "Your subscription will renew at a new price.",
+  "overline": "Subscription update",
+  "title": "Your price is changing",
+  "reason": "You received this email because you have a paid subscription.",
+  "oldPrice": "Current price",
+  "newPrice": "New price",
+  "effective": "Effective renewal",
+  "manage": "You can manage or cancel your subscription before this renewal.",
+  "button": "Manage subscription"
+}

@@ -8,6 +8,10 @@ export const emailMessageSchema = z.object({
   subject: z.string().min(1).max(998),
   html: z.string().min(1),
   text: z.string().min(1),
+  sendBefore: z.iso.datetime().optional(),
+  tags: z
+    .array(z.object({ name: z.string().min(1), value: z.string().min(1) }))
+    .optional(),
 });
 
 export type EmailMessage = z.infer<typeof emailMessageSchema>;

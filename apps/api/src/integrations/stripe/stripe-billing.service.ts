@@ -21,6 +21,7 @@ import { firstInvoiceFailure } from './stripe-failure-history.js';
 import { portalConfiguration } from './stripe-portal-schema.js';
 import {
   type ScheduleInput,
+  scheduleForProvider,
   schedulePhases,
   validateSchedule,
 } from './stripe-schedule.js';
@@ -192,7 +193,7 @@ export class StripeBillingService {
       await this.request(
         `subscription_schedules/${encodeURIComponent(schedule)}`,
       ),
-      input,
+      scheduleForProvider(input, provider),
       schedule,
     );
     return schedule;
@@ -213,10 +214,16 @@ export class StripeBillingService {
       await this.request(
         `subscription_schedules/${encodeURIComponent(schedule)}`,
       ),
-      input,
+      scheduleForProvider(input, provider),
       schedule,
     );
     if (price === input.nextPrice) return 'pending' as const;
+    if (
+      provider.status === 'trialing' &&
+      !input.previousPrice &&
+      price === input.currentPrice
+    )
+      return 'previous' as const;
     if (price === input.previousPrice || (!price && !input.previousPrice))
       return 'previous' as const;
     throw new AppException(
@@ -226,22 +233,23 @@ export class StripeBillingService {
   }
 
   async scheduleChange(input: ScheduleInput) {
-    await this.schedulableSubscription(input);
+    const provider = await this.schedulableSubscription(input);
+    const scheduled = scheduleForProvider(input, provider);
     if (!input.schedule)
       throw new AppException('CONFLICT', 'Subscription schedule is missing');
     validateSchedule(
       await this.request(
         `subscription_schedules/${encodeURIComponent(input.schedule)}`,
       ),
-      input,
+      scheduled,
       input.schedule,
     );
     const result = await this.request(
       `subscription_schedules/${encodeURIComponent(input.schedule)}`,
-      schedulePhases(input),
+      schedulePhases(scheduled),
       `change-${input.id}`,
     );
-    validateSchedule(result, input, input.schedule, true);
+    validateSchedule(result, scheduled, input.schedule, true);
   }
 
   private async schedulableSubscription(input: ScheduleInput) {
@@ -249,7 +257,8 @@ export class StripeBillingService {
     const item = provider.items.data[0];
     if (
       provider.cancel_at_period_end ||
-      provider.status !== 'active' ||
+      (provider.status !== 'active' &&
+        (provider.status !== 'trialing' || provider.trial_end !== input.end)) ||
       !item ||
       item.price.id !== input.currentPrice ||
       item.current_period_start !== input.start ||

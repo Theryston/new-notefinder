@@ -25,6 +25,7 @@ export const subscriptionSchema = z.object({
   ]),
   currency: z.string(),
   cancel_at_period_end: z.boolean(),
+  billing_cycle_anchor: z.number().optional(),
   schedule: z.string().nullable().optional(),
   trial_end: z.number().nullable().optional(),
   trial_start: z.number().nullable().optional(),

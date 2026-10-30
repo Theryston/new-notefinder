@@ -1,0 +1,12 @@
+{
+  "subject": "O preço da sua assinatura vai mudar",
+  "preheader": "Sua assinatura será renovada com um novo preço.",
+  "overline": "Atualização da assinatura",
+  "title": "Seu preço vai mudar",
+  "reason": "Você recebeu este email porque tem uma assinatura paga.",
+  "oldPrice": "Preço atual",
+  "newPrice": "Novo preço",
+  "effective": "Renovação a partir de",
+  "manage": "Você pode gerenciar ou cancelar sua assinatura antes dessa renovação.",
+  "button": "Gerenciar assinatura"
+}

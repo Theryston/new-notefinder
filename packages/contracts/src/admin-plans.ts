@@ -72,6 +72,13 @@ export const adminPlanSchema = z.object({
   prices: z.array(adminPlanPriceSchema),
   syncStatus: z.enum(['synced', 'pending', 'failed']),
   pendingOperation: saveAdminPlanBodySchema.nullable(),
+  priceMigrations: z
+    .object({
+      pending: z.number().int().nonnegative(),
+      failed: z.number().int().nonnegative(),
+      uncertain: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
 });
 export type AdminPlan = z.infer<typeof adminPlanSchema>;
 export const adminPlanCatalogSchema = z.object({

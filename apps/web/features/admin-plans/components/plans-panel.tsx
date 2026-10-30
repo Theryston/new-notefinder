@@ -4,7 +4,10 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/api-error';
-import { useContractingMutation } from '../hooks/use-admin-plan-mutations';
+import {
+  useContractingMutation,
+  useRetryPriceChanges,
+} from '../hooks/use-admin-plan-mutations';
 import { useAdminPlans } from '../hooks/use-admin-plans';
 import { AdminPlansSkeleton } from './admin-plans-skeleton';
 import { PlanForm } from './plan-form';
@@ -98,6 +101,7 @@ function PlanListItem({
   onEdit: (plan: AdminPlan) => void;
 }) {
   const t = useTranslations('adminPlans');
+  const retry = useRetryPriceChanges();
   return (
     <li className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border bg-card p-5">
       <div>
@@ -109,6 +113,37 @@ function PlanListItem({
         {plan.pendingOperation ? (
           <p role="status">
             {t(plan.syncStatus === 'failed' ? 'failed' : 'pending')}
+          </p>
+        ) : null}
+        {plan.priceMigrations?.pending ? (
+          <p role="status">
+            {t('priceMigrationsPending', {
+              count: plan.priceMigrations.pending,
+            })}
+          </p>
+        ) : null}
+        {plan.priceMigrations?.failed ? (
+          <div role="alert">
+            <p>
+              {t('priceMigrationsFailed', {
+                count: plan.priceMigrations.failed,
+              })}
+            </p>
+            <Button
+              variant="outline"
+              disabled={retry.isPending}
+              onClick={() => retry.mutate(plan.id)}
+            >
+              {t('retry')}
+            </Button>
+            {retry.isError ? <p>{t('priceMigrationsRetryFailed')}</p> : null}
+          </div>
+        ) : null}
+        {plan.priceMigrations?.uncertain ? (
+          <p role="alert">
+            {t('priceMigrationsUncertain', {
+              count: plan.priceMigrations.uncertain,
+            })}
           </p>
         ) : null}
       </div>

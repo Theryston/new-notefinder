@@ -36,6 +36,15 @@ export const pendingSubscriptionChangeSchema = z.object({
 
 export const subscriptionSchema = z.object({
   pendingChange: pendingSubscriptionChangeSchema.nullable().optional(),
+  pendingPriceChange: z
+    .object({
+      amount: z.number().int().positive(),
+      currency: planCurrencySchema,
+      effectiveAt: z.iso.datetime(),
+      status: z.enum(['pending', 'scheduled', 'failed']),
+    })
+    .nullable()
+    .optional(),
   planId: z.string(),
   planName: z.string(),
   cycle: billingCycleSchema,

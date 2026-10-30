@@ -40,6 +40,12 @@ export class EmailProcessor extends WorkerHost {
     }
     const message = parsed.data;
 
+    if (
+      message.sendBefore &&
+      Date.now() >= new Date(message.sendBefore).getTime()
+    )
+      throw new UnrecoverableError('Email idempotency window expired');
+
     if (this.env.RESEND_API_KEY === undefined) {
       this.logUnsent(message);
       return;
@@ -58,6 +64,7 @@ export class EmailProcessor extends WorkerHost {
         subject: message.subject,
         html: message.html,
         text: message.text,
+        ...(message.tags ? { tags: message.tags } : {}),
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });

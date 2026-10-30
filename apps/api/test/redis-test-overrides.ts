@@ -13,6 +13,8 @@ import { HOME_FEED_QUEUE } from '../src/modules/home/home-feed.job.js';
 import { HomeFeedProcessor } from '../src/modules/home/home-feed.processor.js';
 import { PERSONAL_HOME_FEED_QUEUE } from '../src/modules/home/home-personal.job.js';
 import { PersonalHomeProcessor } from '../src/modules/home/home-personal.processor.js';
+import { PRICE_CHANGE_QUEUE } from '../src/modules/plans/price-change.job.js';
+import { PriceChangeProcessor } from '../src/modules/plans/price-change.processor.js';
 import { STREAK_REMINDER_QUEUE } from '../src/modules/streaks/streak-reminder.job.js';
 import { StreakReminderProcessor } from '../src/modules/streaks/streak-reminder.processor.js';
 import { TrackMetadataProcessor } from '../src/modules/track-metadata/track-metadata.processor.js';
@@ -41,6 +43,7 @@ const QUEUES = [
   PERSONAL_HOME_FEED_QUEUE,
   EDITORIAL_PIN_QUEUE,
   EVENTS_QUEUE,
+  PRICE_CHANGE_QUEUE,
 ] as const;
 /** Every BullMQ processor; overriding one keeps its worker from starting. */
 const PROCESSORS = [
@@ -56,6 +59,7 @@ const PROCESSORS = [
   PersonalHomeProcessor,
   EditorialPinsProcessor,
   EventsProcessor,
+  PriceChangeProcessor,
 ] as const;
 
 export type FakeQueue = {

@@ -1246,7 +1246,11 @@
     "failed": "A sincronização falhou. Abra o plano para tentar novamente.",
     "pending": "Sincronização pendente.",
     "pendingHelp": "Tente novamente a alteração salva. As configurações serão mantidas até a sincronização ser concluída.",
-    "testMode": "A cobrança está sendo validada no modo de teste do Stripe. Alterações no catálogo não mudam assinaturas existentes."
+    "testMode": "A cobrança está sendo validada no modo de teste do Stripe. Alterações no catálogo não mudam assinaturas existentes.",
+    "priceMigrationsPending": "{count, plural, one {# alteração de preço pendente} other {# alterações de preço pendentes}}",
+    "priceMigrationsFailed": "{count, plural, one {# alteração de preço precisa de atenção} other {# alterações de preço precisam de atenção}}",
+    "priceMigrationsRetryFailed": "Não foi possível tentar novamente as alterações de preço.",
+    "priceMigrationsUncertain": "{count, plural, one {# aviso tem entrega incerta e precisa de revisão manual.} other {# avisos têm entrega incerta e precisam de revisão manual.}}"
   },
   "adminBenefits": {
     "title": "Benefícios dos planos",
@@ -1377,6 +1381,9 @@
         "pending": "Aguardando confirmação do pagamento",
         "unsuccessful": "Pagamento não confirmado"
       }
-    }
+    },
+    "priceChangePending": "Seu preço deve mudar para {amount} na renovação em {date}. O agendamento está pendente.",
+    "priceChangeScheduled": "Seu preço mudará para {amount} na renovação em {date}.",
+    "priceChangeFailed": "A mudança de preço para {amount} em {date} precisa de atenção. Seu preço atual permanece até o agendamento."
   }
 }

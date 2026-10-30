@@ -27,3 +27,13 @@ export function setContracting(contractingEnabled: boolean) {
     body: { contractingEnabled },
   });
 }
+
+export function retryPriceChanges(planId: string) {
+  return browserApi(
+    `/admin/plans/${encodeURIComponent(planId)}/price-changes/retry`,
+    {
+      method: 'POST',
+      schema: adminPlanCatalogSchema,
+    },
+  );
+}
